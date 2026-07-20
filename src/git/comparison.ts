@@ -222,7 +222,7 @@ export async function createPinnedComparison(
     options.signal,
   );
 
-  let mergeBaseOutput = Buffer.alloc(0);
+  let mergeBaseOutput: Buffer<ArrayBufferLike> = Buffer.alloc(0);
   try {
     const mergeBaseResult = await runner.run(
       ['merge-base', '--all', baseOid, headOid],

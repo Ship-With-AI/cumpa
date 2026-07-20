@@ -23,7 +23,7 @@ const comparison: PinnedComparison = {
   changedFiles: [
     {
       id: fileId,
-      status: { kind: 'modified' },
+      status: { code: 'M', kind: 'modified', similarity: null },
       oldMode: '100644',
       newMode: '100644',
       oldBlobOid: '4'.repeat(40),

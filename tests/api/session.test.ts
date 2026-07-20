@@ -30,7 +30,7 @@ function comparisonFixture(): PinnedComparison {
     changedFiles: [
       {
         id: fileId,
-        status: { kind: 'renamed', similarity: 100 },
+        status: { code: 'R', kind: 'renamed', similarity: 100 },
         oldMode: '100644',
         newMode: '100644',
         oldBlobOid: '4'.repeat(40),
@@ -43,7 +43,7 @@ function comparisonFixture(): PinnedComparison {
       },
       {
         id: `file_${'b'.repeat(43)}`,
-        status: { kind: 'deleted' },
+        status: { code: 'D', kind: 'deleted', similarity: null },
         oldMode: '100644',
         newMode: '000000',
         oldBlobOid: '6'.repeat(40),

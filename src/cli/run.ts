@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto';
 
 import open from 'open';
 import { z } from 'zod';
-import type { FastifyInstance } from 'fastify';
 
 import { confirmPinnedComparison } from './confirm.js';
 import {
@@ -25,7 +24,7 @@ import {
   createPinnedComparison,
   type CreatePinnedComparisonOptions,
 } from '../git/comparison.js';
-import { createSessionApp } from '../server/app.js';
+import { createSessionApp, type SessionApp } from '../server/app.js';
 import {
   createShutdownController,
   type ShutdownController,
@@ -109,7 +108,7 @@ function createLaunchRuntime(
     (async (url: string) => {
       await open(url);
     });
-  let app: FastifyInstance | undefined;
+  let app: SessionApp | undefined;
   const shutdown = createShutdownController({
     signalSource: dependencies.signalSource,
     abortActiveWork: () => {
@@ -144,7 +143,14 @@ function createLaunchRuntime(
         return undefined;
       }
 
-      app = createSessionApp(comparison, { webRoot: dependencies.webRoot });
+      const token = randomBytes(32).toString('base64url');
+      app = createSessionApp(comparison, {
+        webRoot: dependencies.webRoot,
+        sessionToken: token,
+        diagnostics: ({ correlationId, reason }) => {
+          console.error(`Diff Review request denied [${correlationId}]: ${reason}.`);
+        },
+      });
       await app.listen({ host: '127.0.0.1', port: 0 });
       if (shutdown.isShuttingDown) {
         await shutdown.shutdown();
@@ -162,8 +168,12 @@ function createLaunchRuntime(
           'Fastify did not bind the required IPv4 loopback address',
         );
       }
-      const token = randomBytes(32).toString('base64url');
-      const url = `http://127.0.0.1:${address.port}/#token=${token}`;
+      const authority = `127.0.0.1:${address.port}`;
+      app.bindSessionSecurity({
+        expectedHost: authority,
+        expectedOrigin: `http://${authority}`,
+      });
+      const url = `http://${authority}/#token=${token}`;
 
       output(url);
       output(browserFallback);
