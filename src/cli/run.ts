@@ -179,9 +179,10 @@ function createLaunchRuntime(
       output(browserFallback);
       try {
         await openBrowser(url);
-      } catch (error) {
-        const detail = error instanceof Error ? error.message : String(error);
-        output(`Browser did not open automatically: ${detail}`);
+      } catch {
+        output(
+          'Browser did not open automatically. Open the URL above manually.',
+        );
       }
 
       return { comparison, shutdown, url };
