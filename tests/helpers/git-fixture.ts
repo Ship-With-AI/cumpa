@@ -105,3 +105,143 @@ export async function createGitFixture(
     },
   };
 }
+
+export type ValidationFixtureKind =
+  | 'bare'
+  | 'criss-cross'
+  | 'equal'
+  | 'independent'
+  | 'removed-object'
+  | 'unborn';
+
+export interface ValidationGitFixture {
+  readonly root: string;
+  readonly nestedCwd: string;
+  readonly baseRef: string;
+  readonly headRef: string;
+  readonly baseOid?: string;
+  readonly headOid?: string;
+  git(arguments_: readonly string[]): Buffer;
+  removeObject(oid: string): Promise<void>;
+  cleanup(): Promise<void>;
+}
+
+export async function createValidationGitFixture(
+  kind: ValidationFixtureKind,
+): Promise<ValidationGitFixture> {
+  const temporaryRoot = await mkdtemp(
+    join(tmpdir(), 'diff-review-validation-git-'),
+  );
+  const repositoryRoot = join(temporaryRoot, 'repository');
+  const invokeGit = (arguments_: readonly string[]): Buffer =>
+    execFileSync('git', [...safeGitArguments, ...arguments_], {
+      cwd: repositoryRoot,
+      encoding: 'buffer',
+      env: gitEnvironment,
+      maxBuffer: 4 * 1024 * 1024,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+
+  execFileSync(
+    'git',
+    [
+      ...safeGitArguments,
+      'init',
+      ...(kind === 'bare' ? ['--bare'] : ['--initial-branch=main']),
+      repositoryRoot,
+    ],
+    {
+      encoding: 'buffer',
+      env: gitEnvironment,
+      maxBuffer: 4 * 1024 * 1024,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    },
+  );
+
+  const nestedCwd = join(repositoryRoot, 'nested', 'deep');
+  let baseRef = 'refs/heads/main';
+  let headRef = 'refs/heads/feature';
+  let baseOid: string | undefined;
+  let headOid: string | undefined;
+
+  if (kind !== 'bare') {
+    invokeGit(['config', '--local', 'user.name', 'Diff Review Fixture']);
+    invokeGit(['config', '--local', 'user.email', 'fixture@diff-review.invalid']);
+    invokeGit(['config', '--local', 'commit.gpgSign', 'false']);
+  }
+
+  if (kind !== 'bare' && kind !== 'unborn') {
+    await writeFile(join(repositoryRoot, 'root.txt'), 'root\n');
+    invokeGit(['add', '--', 'root.txt']);
+    invokeGit(['commit', '-m', 'root']);
+    baseOid = invokeGit(['rev-parse', 'HEAD']).toString('ascii').trim();
+
+    if (kind === 'equal') {
+      invokeGit(['branch', 'feature', baseOid]);
+      headOid = baseOid;
+    } else if (kind === 'independent') {
+      invokeGit(['switch', '--orphan', 'feature']);
+      await rm(join(repositoryRoot, 'root.txt'), { force: true });
+      await writeFile(join(repositoryRoot, 'independent.txt'), 'independent\n');
+      invokeGit(['add', '--all']);
+      invokeGit(['commit', '-m', 'independent root']);
+      headOid = invokeGit(['rev-parse', 'HEAD']).toString('ascii').trim();
+    } else if (kind === 'criss-cross') {
+      invokeGit(['switch', '-c', 'left']);
+      await writeFile(join(repositoryRoot, 'left.txt'), 'left\n');
+      invokeGit(['add', '--', 'left.txt']);
+      invokeGit(['commit', '-m', 'left parent']);
+      const leftParent = invokeGit(['rev-parse', 'HEAD'])
+        .toString('ascii')
+        .trim();
+
+      invokeGit(['switch', '-c', 'right', 'main']);
+      await writeFile(join(repositoryRoot, 'right.txt'), 'right\n');
+      invokeGit(['add', '--', 'right.txt']);
+      invokeGit(['commit', '-m', 'right parent']);
+      const rightParent = invokeGit(['rev-parse', 'HEAD'])
+        .toString('ascii')
+        .trim();
+
+      invokeGit(['switch', 'left']);
+      invokeGit(['merge', '--no-ff', '--no-edit', rightParent]);
+      baseOid = invokeGit(['rev-parse', 'HEAD']).toString('ascii').trim();
+
+      invokeGit(['switch', 'right']);
+      invokeGit(['merge', '--no-ff', '--no-edit', leftParent]);
+      headOid = invokeGit(['rev-parse', 'HEAD']).toString('ascii').trim();
+      baseRef = 'refs/heads/left';
+      headRef = 'refs/heads/right';
+    } else {
+      invokeGit(['switch', '-c', 'feature']);
+      await writeFile(join(repositoryRoot, 'feature.txt'), 'feature\n');
+      invokeGit(['add', '--', 'feature.txt']);
+      invokeGit(['commit', '-m', 'feature']);
+      headOid = invokeGit(['rev-parse', 'HEAD']).toString('ascii').trim();
+    }
+  }
+
+  if (kind !== 'bare') {
+    await mkdir(nestedCwd, { recursive: true });
+  }
+
+  return {
+    root: await realpath(repositoryRoot),
+    nestedCwd: kind === 'bare' ? repositoryRoot : nestedCwd,
+    baseRef,
+    headRef,
+    ...(baseOid === undefined ? {} : { baseOid }),
+    ...(headOid === undefined ? {} : { headOid }),
+    git: invokeGit,
+    async removeObject(oid) {
+      const objectDirectory =
+        kind === 'bare'
+          ? join(repositoryRoot, 'objects')
+          : join(repositoryRoot, '.git', 'objects');
+      await rm(join(objectDirectory, oid.slice(0, 2), oid.slice(2)));
+    },
+    async cleanup() {
+      await rm(temporaryRoot, { recursive: true, force: true });
+    },
+  };
+}

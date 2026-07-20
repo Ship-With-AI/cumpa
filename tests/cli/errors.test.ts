@@ -1,0 +1,332 @@
+import { describe, expect, it, vi } from 'vitest';
+
+import { runCli, type RunCliDependencies } from '../../src/cli/run.js';
+import type { PinnedComparison } from '../../src/contracts/comparison.js';
+import type { SourceCandidate } from '../../src/domain/source.js';
+
+const baseOid = '1'.repeat(40);
+const headOid = '2'.repeat(40);
+const mergeBaseOid = '3'.repeat(40);
+
+const baseCandidate = {
+  kind: 'branch',
+  id: 'branch:refs/heads/main',
+  label: 'main',
+  refName: 'refs/heads/main',
+  commitOid: baseOid,
+  shortOid: baseOid.slice(0, 12),
+} as const satisfies SourceCandidate;
+
+const headCandidate = {
+  kind: 'branch',
+  id: 'branch:refs/heads/feature',
+  label: 'feature',
+  refName: 'refs/heads/feature',
+  commitOid: headOid,
+  shortOid: headOid.slice(0, 12),
+} as const satisfies SourceCandidate;
+
+const worktreeCandidate = {
+  kind: 'worktree',
+  id: 'worktree:/repo/linked',
+  label: 'linked',
+  path: '/repo/linked',
+  detached: false,
+  commitOid: headOid,
+  shortOid: headOid.slice(0, 12),
+  availability: 'clean',
+  isCurrentCheckout: false,
+} as const satisfies SourceCandidate;
+
+const comparison: PinnedComparison = {
+  repositoryRoot: '/repo',
+  objectFormat: 'sha1',
+  base: { label: 'main', oid: baseOid },
+  head: { label: 'feature', oid: headOid },
+  mergeBaseOid,
+  hasCommittedChanges: true,
+};
+
+type FailureRecovery =
+  | { readonly kind: 'exit' }
+  | {
+      readonly kind: 'return';
+      readonly role: 'base' | 'head';
+      readonly preserve: 'base' | 'head';
+      readonly focus: 'previous-row' | 'search-input';
+    };
+
+function plannedFailure(
+  kind: string,
+  message: string,
+  recovery: FailureRecovery,
+): Error {
+  return Object.assign(new Error(message), {
+    name: 'LaunchError',
+    kind,
+    recovery,
+  });
+}
+
+const fatalCases = [
+  [
+    'git-missing',
+    'Git is required but was not found. Install Git, then run Diff Review again.',
+  ],
+  [
+    'git-unsupported',
+    'Git 2.43.0 or newer with the required machine protocols is required. Upgrade Git, then run Diff Review again.',
+  ],
+  [
+    'not-worktree',
+    'This directory is not inside a Git worktree. Run Diff Review from a Git worktree.',
+  ],
+  [
+    'bare-repository',
+    'Bare repositories are not supported. Run Diff Review from a non-bare Git worktree.',
+  ],
+  [
+    'empty-repository',
+    'This repository has no commits yet. Create the first commit, then run Diff Review again.',
+  ],
+] as const;
+
+const headRecoveryCases = [
+  [
+    'equal-commits',
+    'Base and head resolve to the same commit. Choose a different head.',
+  ],
+  [
+    'unrelated-histories',
+    'Base and head have unrelated histories; Git could not find a merge base. Choose a different head or go back to change base.',
+  ],
+  [
+    'multiple-merge-bases',
+    'Base and head have multiple merge bases, so this comparison cannot be pinned unambiguously. Choose a different head or go back to change base.',
+  ],
+] as const;
+
+describe('pre-session terminal failure ownership', () => {
+  it.each(fatalCases)(
+    'prints exact %s fatal copy, sets failure status, and performs zero picker, bind, or open activity',
+    async (kind, message) => {
+      const output = vi.fn();
+      const setExitStatus = vi.fn();
+      const pickSources = vi.fn();
+      const createDescriptor = vi.fn();
+      const launchComparison = vi.fn();
+
+      await runCli(
+        { cwd: '/repo' },
+        {
+          discoverCandidates: async () => {
+            throw plannedFailure(kind, message, { kind: 'exit' });
+          },
+          pickSources,
+          createDescriptor,
+          launchComparison,
+          output,
+          setExitStatus,
+        } as RunCliDependencies,
+      );
+
+      expect(output).toHaveBeenCalledExactlyOnceWith(message);
+      expect(setExitStatus).toHaveBeenCalledExactlyOnceWith(1);
+      expect(pickSources).not.toHaveBeenCalled();
+      expect(createDescriptor).not.toHaveBeenCalled();
+      expect(launchComparison).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(headRecoveryCases)(
+    'prints exact %s copy, preserves base, clears head, and focuses the prior head row before a valid retry launches',
+    async (kind, message) => {
+      const output = vi.fn();
+      const setExitStatus = vi.fn();
+      const launchComparison = vi.fn();
+      const pickCalls: unknown[] = [];
+      const selected = { base: baseCandidate, head: headCandidate } as const;
+      const pickSources: NonNullable<RunCliDependencies['pickSources']> = async (
+        options,
+      ) => {
+        pickCalls.push(options);
+        return selected;
+      };
+      let attempts = 0;
+
+      await runCli(
+        { cwd: '/repo' },
+        {
+          discoverCandidates: async () => [baseCandidate, headCandidate],
+          pickSources,
+          createDescriptor: async () => {
+            attempts += 1;
+            if (attempts === 1) {
+              throw plannedFailure(kind, message, {
+                kind: 'return',
+                role: 'head',
+                preserve: 'base',
+                focus: 'previous-row',
+              });
+            }
+            return comparison;
+          },
+          confirmComparison: async () => 'launch',
+          launchComparison,
+          output,
+          setExitStatus,
+        } as RunCliDependencies,
+      );
+
+      expect(output).toHaveBeenCalledExactlyOnceWith(message);
+      expect(setExitStatus).not.toHaveBeenCalled();
+      expect(pickCalls).toHaveLength(2);
+      expect(pickCalls[1]).toMatchObject({
+        initialBase: baseCandidate,
+        recovery: {
+          role: 'head',
+          focusedCandidateId: headCandidate.id,
+          searchTerm: '',
+        },
+      });
+      expect(pickCalls[1]).not.toHaveProperty('initialHead');
+      expect(launchComparison).toHaveBeenCalledExactlyOnceWith(comparison);
+    },
+  );
+
+  it('restores a stale base role while preserving the opposite valid head selection', async () => {
+    const message =
+      'The selected base “main” no longer resolves to a commit. Choose another base or repair the ref with Git.';
+    const output = vi.fn();
+    const pickCalls: unknown[] = [];
+    let attempts = 0;
+
+    await runCli(
+      { cwd: '/repo' },
+      {
+        discoverCandidates: async () => [baseCandidate, headCandidate],
+        pickSources: async (options) => {
+          pickCalls.push(options);
+          return { base: baseCandidate, head: headCandidate };
+        },
+        createDescriptor: async () => {
+          attempts += 1;
+          if (attempts === 1) {
+            throw plannedFailure('endpoint-unavailable', message, {
+              kind: 'return',
+              role: 'base',
+              preserve: 'head',
+              focus: 'previous-row',
+            });
+          }
+          return comparison;
+        },
+        confirmComparison: async () => 'launch',
+        launchComparison: async () => undefined,
+        output,
+      } as RunCliDependencies,
+    );
+
+    expect(output).toHaveBeenCalledExactlyOnceWith(message);
+    expect(pickCalls[1]).toMatchObject({
+      initialHead: headCandidate,
+      recovery: {
+        role: 'base',
+        focusedCandidateId: baseCandidate.id,
+        searchTerm: '',
+      },
+    });
+    expect(pickCalls[1]).not.toHaveProperty('initialBase');
+  });
+
+  it('uses the exact worktree failure copy and falls back to the search input when the failed row disappeared', async () => {
+    const message =
+      'The selected head worktree cannot resolve a committed HEAD. Choose another head or repair the worktree with Git.';
+    const output = vi.fn();
+    const pickCalls: unknown[] = [];
+    let attempts = 0;
+
+    await runCli(
+      { cwd: '/repo' },
+      {
+        discoverCandidates: async () => [baseCandidate, worktreeCandidate],
+        pickSources: async (options) => {
+          pickCalls.push(options);
+          if (attempts === 0) {
+            return { base: baseCandidate, head: worktreeCandidate };
+          }
+          return { base: baseCandidate, head: headCandidate };
+        },
+        createDescriptor: async () => {
+          attempts += 1;
+          if (attempts === 1) {
+            throw plannedFailure('endpoint-unavailable', message, {
+              kind: 'return',
+              role: 'head',
+              preserve: 'base',
+              focus: 'search-input',
+            });
+          }
+          return comparison;
+        },
+        confirmComparison: async () => 'launch',
+        launchComparison: async () => undefined,
+        output,
+      } as RunCliDependencies,
+    );
+
+    expect(output).toHaveBeenCalledExactlyOnceWith(message);
+    expect(pickCalls[1]).toMatchObject({
+      initialBase: baseCandidate,
+      recovery: {
+        role: 'head',
+        focusedCandidateId: undefined,
+        searchTerm: '',
+      },
+    });
+  });
+
+  it('maps a missing merge-base object to head recovery and never binds or opens on the failed attempt', async () => {
+    const message = `Required Git object ${mergeBaseOid.slice(0, 12)} is missing or unreadable. Repair the repository's object data with Git, then retry.`;
+    const output = vi.fn();
+    const launchComparison = vi.fn();
+    const pickCalls: unknown[] = [];
+    let attempts = 0;
+
+    await runCli(
+      { cwd: '/repo' },
+      {
+        discoverCandidates: async () => [baseCandidate, headCandidate],
+        pickSources: async (options) => {
+          pickCalls.push(options);
+          return { base: baseCandidate, head: headCandidate };
+        },
+        createDescriptor: async () => {
+          attempts += 1;
+          if (attempts === 1) {
+            throw plannedFailure('object-unavailable', message, {
+              kind: 'return',
+              role: 'head',
+              preserve: 'base',
+              focus: 'previous-row',
+            });
+          }
+          return comparison;
+        },
+        confirmComparison: async () => 'launch',
+        launchComparison,
+        output,
+      } as RunCliDependencies,
+    );
+
+    expect(output).toHaveBeenCalledExactlyOnceWith(message);
+    expect(pickCalls[1]).toMatchObject({
+      initialBase: baseCandidate,
+      recovery: {
+        role: 'head',
+        focusedCandidateId: headCandidate.id,
+      },
+    });
+    expect(launchComparison).toHaveBeenCalledTimes(1);
+  });
+});
