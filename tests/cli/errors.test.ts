@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { runCli, type RunCliDependencies } from '../../src/cli/run.js';
+import {
+  launchPinnedComparison,
+  runCli,
+  type RunCliDependencies,
+} from '../../src/cli/run.js';
 import {
   pickOrderedSources,
   type SourceSearchPromptConfig,
@@ -403,5 +407,31 @@ describe('pre-session terminal failure ownership', () => {
       base: baseCandidate,
       head: headCandidate,
     });
+  });
+
+  it('keeps the fragment bearer out of browser-opener failure diagnostics', async () => {
+    const output = vi.fn();
+    let rejectedUrl = '';
+    const launched = await launchPinnedComparison(comparison, {
+      output,
+      openBrowser: async (url) => {
+        rejectedUrl = url;
+        throw new Error(`Unable to open ${url}`);
+      },
+    });
+
+    expect(launched).toBeDefined();
+    try {
+      expect(rejectedUrl).toContain('#token=');
+      expect(output).toHaveBeenNthCalledWith(1, rejectedUrl);
+      const postLaunchDiagnostics = output.mock.calls
+        .slice(1)
+        .map(([message]) => message)
+        .join('\n');
+      expect(postLaunchDiagnostics).not.toContain('#token=');
+      expect(postLaunchDiagnostics).not.toContain(rejectedUrl);
+    } finally {
+      await launched?.shutdown.shutdown();
+    }
   });
 });
