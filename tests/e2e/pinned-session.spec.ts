@@ -27,6 +27,12 @@ import {
 } from '../helpers/git-fixture.js';
 import { createShutdownController } from '../../src/server/lifecycle.js';
 import type { ComparisonSelection } from '../../src/contracts/comparison.js';
+import type {
+  FileMetadataResponse,
+  SessionFile,
+  SessionResponse,
+} from '../../src/contracts/api.js';
+
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -558,6 +564,394 @@ test('identity session and empty states', async ({ browser, context, page }, tes
   } finally {
     await stopGeneratedCli(emptyRunning);
     await emptyRepository.cleanup();
+  }
+});
+
+test('metadata and availability states', async ({ browser, context, page }, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  const repository = await createGitFixture();
+  const running = startGeneratedCli(repository);
+  const opaqueFileId = (index: number): string =>
+    `file_${String(index).padStart(43, '0')}`;
+  const exactPath = (utf8: string, display = utf8) => ({
+    bytesBase64url: Buffer.from(utf8).toString('base64url'),
+    display,
+    utf8,
+  });
+  const ids = {
+    supported: opaqueFileId(1),
+    binary: opaqueFileId(2),
+    nonUtf8: opaqueFileId(3),
+    oversized: opaqueFileId(4),
+    submodule: opaqueFileId(5),
+    symlink: opaqueFileId(6),
+    modeOrType: opaqueFileId(7),
+    missingObject: opaqueFileId(8),
+  } as const;
+  const oldPath = exactPath('src/old\tname.ts', 'src/old\\tname.ts');
+  const newPath = exactPath('src/new\nname.ts', 'src/new\\nname.ts');
+  const nonUtf8Path = {
+    bytesBase64url: 'Zml4dHVyZXMv_w',
+    display: 'fixtures/\\xFF',
+  };
+  const files = [
+    {
+      fileId: ids.supported,
+      status: { kind: 'renamed', similarity: 91 },
+      oldPath,
+      newPath,
+      additions: 12,
+      deletions: 4,
+      availability: { kind: 'text' },
+    },
+    {
+      fileId: ids.binary,
+      status: { kind: 'modified' },
+      newPath: exactPath('assets/image.dat'),
+      additions: null,
+      deletions: null,
+      availability: { kind: 'unsupported', reason: 'binary' },
+    },
+    {
+      fileId: ids.nonUtf8,
+      status: { kind: 'modified' },
+      newPath: nonUtf8Path,
+      additions: null,
+      deletions: null,
+      availability: { kind: 'unsupported', reason: 'non-utf8' },
+    },
+    {
+      fileId: ids.oversized,
+      status: { kind: 'added' },
+      newPath: exactPath('generated/oversized.txt'),
+      additions: null,
+      deletions: null,
+      availability: { kind: 'unsupported', reason: 'oversized' },
+    },
+    {
+      fileId: ids.submodule,
+      status: { kind: 'modified' },
+      newPath: exactPath('vendor/module'),
+      additions: null,
+      deletions: null,
+      availability: { kind: 'unsupported', reason: 'submodule' },
+    },
+    {
+      fileId: ids.symlink,
+      status: { kind: 'type-changed' },
+      newPath: exactPath('links/current'),
+      additions: null,
+      deletions: null,
+      availability: { kind: 'unsupported', reason: 'symlink' },
+    },
+    {
+      fileId: ids.modeOrType,
+      status: { kind: 'type-changed' },
+      newPath: exactPath('special/device'),
+      additions: null,
+      deletions: null,
+      availability: { kind: 'unsupported', reason: 'mode-or-type' },
+    },
+    {
+      fileId: ids.missingObject,
+      status: { kind: 'deleted' },
+      oldPath: exactPath('removed/missing.txt'),
+      additions: null,
+      deletions: null,
+      availability: { kind: 'unavailable', reason: 'missing-object' },
+    },
+  ] as const satisfies readonly SessionFile[];
+  const expectedBase = independentlyResolve(repository, [
+    'rev-parse',
+    '--verify',
+    repository.baseRef,
+  ]);
+  const expectedHead = independentlyResolve(repository, [
+    'rev-parse',
+    '--verify',
+    repository.headRef,
+  ]);
+  const expectedMergeBase = independentlyResolve(repository, [
+    'merge-base',
+    '--all',
+    expectedBase,
+    expectedHead,
+  ]);
+  const session = {
+    base: { label: 'Base fixture', oid: expectedBase },
+    head: { label: 'Head fixture', oid: expectedHead },
+    mergeBaseOid: expectedMergeBase,
+    files,
+  } as const satisfies SessionResponse;
+  const modes: Record<keyof typeof ids, readonly [string, string]> = {
+    supported: ['100644', '100755'],
+    binary: ['100644', '100644'],
+    nonUtf8: ['100644', '100644'],
+    oversized: ['000000', '100644'],
+    submodule: ['160000', '160000'],
+    symlink: ['100644', '120000'],
+    modeOrType: ['100644', '100755'],
+    missingObject: ['100644', '000000'],
+  };
+  const metadata = Object.fromEntries(
+    (Object.keys(ids) as (keyof typeof ids)[]).map((key, index) => [
+      ids[key],
+      {
+        ...files[index],
+        oldMode: modes[key][0],
+        newMode: modes[key][1],
+      } satisfies FileMetadataResponse,
+    ]),
+  ) as Record<string, FileMetadataResponse>;
+  const requestEvidence: Array<{
+    method: string;
+    postData: string | null;
+    url: string;
+  }> = [];
+  const requestCounts = new Map<string, number>();
+  const staleGate = Promise.withResolvers<void>();
+  const sessionGate = Promise.withResolvers<void>();
+
+  await page.route('**/api/session', async (route) => {
+    await sessionGate.promise;
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(session),
+    });
+  });
+  await page.route('**/api/files/**', async (route) => {
+    const request = route.request();
+    const requestUrl = new URL(request.url());
+    const fileId = decodeURIComponent(requestUrl.pathname.split('/').at(-1) ?? '');
+    requestEvidence.push({
+      method: request.method(),
+      postData: request.postData(),
+      url: request.url(),
+    });
+    const count = (requestCounts.get(fileId) ?? 0) + 1;
+    requestCounts.set(fileId, count);
+
+    if (fileId === ids.oversized && count === 1) {
+      await staleGate.promise;
+    }
+    if (
+      (fileId === ids.missingObject && count === 1) ||
+      (fileId === ids.modeOrType && count <= 2)
+    ) {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'session-unavailable',
+          message: `must not leak ${repository.root} refs/heads/main`,
+        }),
+      });
+      return;
+    }
+
+    const response = metadata[fileId];
+    expect(response, `[behavioral] unexpected file capability ${fileId}`).toBeDefined();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(response),
+    });
+  });
+
+  try {
+    const url = await waitForLoopbackUrl(running);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
+      origin: new URL(url).origin,
+    });
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('status')).toHaveText('Loading pinned comparison…');
+    sessionGate.resolve();
+
+    const details = page.getByRole('main', { name: 'File details' });
+    await expect(details.getByRole('heading', { level: 2 })).toHaveText(
+      'File details — src/new\\nname.ts',
+    );
+    await expect(details.getByText('Renamed (91% similarity)', { exact: true })).toBeVisible();
+    await expect(details.getByText('Text', { exact: true })).toBeVisible();
+    await expect(
+      details.getByText(
+        'Text file — content preview is not available in this version.',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(details.getByRole('heading', { name: 'Paths' })).toBeVisible();
+    await expect(details.getByText('src/old\\tname.ts', { exact: true })).toBeVisible();
+    await expect(details.getByText('src/new\\nname.ts', { exact: true })).toBeVisible();
+    await expect(details.getByText('12', { exact: true })).toBeVisible();
+    await expect(details.getByText('4', { exact: true })).toBeVisible();
+    await expect(details.getByText('100644', { exact: true })).toBeVisible();
+    await expect(details.getByText('100755', { exact: true })).toBeVisible();
+
+    const oldCopy = details.getByRole('button', { name: 'Copy exact old path' });
+    await oldCopy.focus();
+    await expect(oldCopy).toBeFocused();
+    await oldCopy.click();
+    await expect(oldCopy).toBeFocused();
+    await expect(oldCopy.locator('..').getByRole('status')).toHaveText('Copied');
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe('src/old\tname.ts');
+    const newCopy = details.getByRole('button', { name: 'Copy exact new path' });
+    await newCopy.click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe('src/new\nname.ts');
+
+    const selectFile = async (fileId: string): Promise<void> => {
+      const row = page.locator(`[role="treeitem"][data-file-id="${fileId}"]`);
+      await row.click();
+      await expect(row).toHaveAttribute('aria-selected', 'true');
+    };
+
+    await selectFile(ids.oversized);
+    await expect(details.getByRole('heading', { level: 2 })).toHaveText(
+      'File details — generated/oversized.txt',
+    );
+    await selectFile(ids.binary);
+    await expect(details.getByText('unsupported: binary', { exact: true })).toBeVisible();
+    staleGate.resolve();
+    await expect(details.getByRole('heading', { level: 2 })).toHaveText(
+      'File details — assets/image.dat',
+    );
+    await expect(details.getByText('unsupported: binary', { exact: true })).toBeVisible();
+
+    const reasonMatrix = [
+      {
+        fileId: ids.binary,
+        reason: 'unsupported: binary',
+        explanation:
+          'Git classifies this file as binary. Its metadata remains inspectable, but inline content is unavailable. No in-browser recovery is available in this version.',
+      },
+      {
+        fileId: ids.nonUtf8,
+        reason: 'unsupported: non-utf8',
+        explanation:
+          'This file is not valid UTF-8 text. Its metadata remains inspectable, but inline content is unavailable. No in-browser recovery is available in this version.',
+      },
+      {
+        fileId: ids.oversized,
+        reason: 'unsupported: oversized',
+        explanation:
+          'This file exceeds the inline-content size limit. Its metadata remains inspectable, but inline content is unavailable. No in-browser recovery is available in this version.',
+      },
+      {
+        fileId: ids.submodule,
+        reason: 'unsupported: submodule',
+        explanation:
+          'This entry records a submodule commit, not a regular text file. Its metadata remains inspectable, but inline content is unavailable. Open the submodule with Git outside this session if you need to inspect it.',
+      },
+      {
+        fileId: ids.symlink,
+        reason: 'unsupported: symlink',
+        explanation:
+          'This entry records a symbolic link, not a regular text file. Its metadata remains inspectable, but inline content is unavailable. Inspect the committed link target with Git outside this session if needed.',
+      },
+    ] as const;
+
+    for (const expected of reasonMatrix) {
+      await selectFile(expected.fileId);
+      await expect(
+        details.getByRole('heading', { name: 'File cannot be shown inline' }),
+      ).toBeVisible();
+      await expect(details.getByText(expected.reason, { exact: true })).toBeVisible();
+      await expect(
+        details.getByText(expected.explanation, { exact: true }),
+      ).toBeVisible();
+    }
+
+    await selectFile(ids.nonUtf8);
+    await expect(
+      details.getByText('Exact path bytes (base64url)', { exact: true }),
+    ).toBeVisible();
+    await expect(details.getByText('Zml4dHVyZXMv_w', { exact: true })).toBeVisible();
+    const bytesCopy = details.getByRole('button', {
+      name: 'Copy exact path bytes',
+    });
+    await bytesCopy.click();
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toBe('Zml4dHVyZXMv_w');
+
+    await selectFile(ids.missingObject);
+    await expect(details.getByRole('heading', { level: 2 })).toHaveText(
+      'File details — removed/missing.txt',
+    );
+    await expect(details.getByRole('alert')).toHaveText(
+      'File details could not be loaded. Retry this file. If the problem continues, check the terminal diagnostic.',
+    );
+    await expect(details.getByText('Deleted', { exact: true })).toBeVisible();
+    await expect(details.getByText('Unavailable', { exact: true })).toBeVisible();
+    await expect(details.getByText('removed/missing.txt', { exact: true })).toBeVisible();
+    await details.getByRole('button', { name: 'Retry file details' }).click();
+    await expect(details.getByText('unavailable: missing-object', { exact: true })).toBeVisible();
+    await expect(
+      details.getByText(
+        "The required object for this pinned file is missing or unreadable. Metadata already loaded remains inspectable, but inline content is unavailable. Diff Review will not fall back to a moving ref or worktree file. Repair the repository's object data with Git, then relaunch this comparison.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+
+    await selectFile(ids.modeOrType);
+    await expect(details.getByRole('alert')).toBeVisible();
+    const retry = details.getByRole('button', { name: 'Retry file details' });
+    await retry.click();
+    await expect(details.getByRole('alert')).toBeVisible();
+    await expect(retry).toBeVisible();
+    await expect(details.getByRole('status', { name: /loading/i })).toHaveCount(0);
+    await retry.click();
+    await expect(details.getByText('unsupported: mode-or-type', { exact: true })).toBeVisible();
+    await expect(
+      details.getByText(
+        "This entry's Git mode or object type is not supported as a regular text file. Its metadata remains inspectable, but inline content is unavailable. No in-browser recovery is available in this version.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(details.getByText('100644', { exact: true })).toBeVisible();
+    await expect(details.getByText('100755', { exact: true })).toBeVisible();
+    await expect(details.getByText('Line counts unavailable', { exact: true })).toBeVisible();
+
+    await selectFile(ids.binary);
+    const ordinaryCopy = details.getByRole('button', { name: 'Copy exact path' });
+    await page.evaluate(() => {
+      Object.defineProperty(navigator.clipboard, 'writeText', {
+        configurable: true,
+        value: async () => {
+          throw new DOMException('Clipboard denied', 'NotAllowedError');
+        },
+      });
+    });
+    await ordinaryCopy.click();
+    await expect(ordinaryCopy.locator('..').getByRole('alert')).toHaveText(
+      'Could not copy. Select the value and copy it manually.',
+    );
+    await expect(details.getByText('assets/image.dat', { exact: true })).toBeVisible();
+
+    await expect(page.locator('.monaco-editor, iframe, [aria-label*="editor" i]')).toHaveCount(0);
+    await expect(page.locator('input, textarea, select')).toHaveCount(0);
+    await expect(page.getByText(repository.root, { exact: false })).toHaveCount(0);
+    for (const evidence of requestEvidence) {
+      const requestUrl = new URL(evidence.url);
+      expect(evidence.method).toBe('GET');
+      expect(evidence.postData).toBeNull();
+      expect(requestUrl.search).toBe('');
+      expect(requestUrl.pathname).toMatch(
+        /^\/api\/files\/file_[A-Za-z0-9_-]{43}$/,
+      );
+      expect(Object.values(ids)).toContain(
+        decodeURIComponent(requestUrl.pathname.split('/').at(-1) ?? ''),
+      );
+    }
+  } finally {
+    sessionGate.resolve();
+    staleGate.resolve();
+    await stopGeneratedCli(running);
+    await repository.cleanup();
   }
 });
 
