@@ -152,13 +152,13 @@ None of the thirteen summaries contains a literal `## Threat Flags` section. The
 | `npm run test:package -- tests/e2e/responsive-session.spec.ts --grep "responsive keyboard and accessibility contract"` | Passed: 1 test. |
 | `npm run test:package -- tests/e2e/pinned-session.spec.ts --grep "complete packaged Phase 1 ordering matrix"` | Passed twice in two independent invocations: 1 test each. |
 | `npm pack --dry-run` | Passed: 27 allowlisted package files; generated bin, compiled Node runtime, and production Vite assets present; source/tests absent. |
-| `npm run test:package -- tests/e2e/package-assets.spec.ts` | **Failed, exit 1, before its final packaged behavior assertions.** Exact failure: `Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'open' imported from .../package/dist/cli/run.js` while executing the manually extracted `package/dist/bin/diff-review.mjs`. The test extracted the tarball without installing its declared dependencies. Direct source inspection and the successful dry-run pack establish the declared generated-wrapper/content control, but this regression test does not currently provide end-to-end executable proof. |
+| `npm run test:package -- tests/e2e/package-assets.spec.ts` | **Passed, exit 0:** exact focused result `1/1` passing, `1 passed (1.5s)`. The inventory assertions verify the generated bin `dist/bin/diff-review.mjs`, compiled runtime `dist/cli/run.js`, no `src/` files and no `.ts`/`.vue` files, production `dist/web/index.html`, and at least one production `dist/web/assets/*.js` asset containing the expected production bootstrap copy. |
 | `npx vitest run tests/cli/errors.test.ts` | **Passed, exit 0:** Vitest v4.1.10; `Test Files 1 passed (1)`; `Tests 13 passed (13)`; start `21:56:56`; duration `269ms`; wall time `0.70 seconds`. The focused T-01-19 case is `tests/cli/errors.test.ts:412-435`. |
 
 ### Audit notes
 
 1. **Closed implementation gap:** The initial audit found T-01-19 open because the opener-error diagnostic emitted rejected error detail. Remediation candidates `fa878a4` (RED regression) and `9b83f76` (GREEN fix) are present: the catch at `src/cli/run.ts:180-185` emits generic copy without the rejection detail, and the focused observable regression at `tests/cli/errors.test.ts:412-435` passed while rejecting with the full fragment-token URL and proving post-launch diagnostics contain neither `#token=` nor that URL. This is why `threats_open` is now `0`.
-2. **Non-counted test-harness failure:** `tests/e2e/package-assets.spec.ts` assumes a manually extracted npm tarball can resolve external dependencies without an npm install. That is not the installed-package boundary. It fails after confirming the generated bin is in inventory and before later asset assertions. The actual `npm pack --dry-run` inventory, deterministic wrapper source, publish allowlist, and the generated-package Playwright suites establish the declared package control. This test failure is recorded rather than hidden, but it is not a second missing threat mitigation.
+2. **Repaired package-inventory harness:** Commit `909312f` removed the invalid attempt to execute a manually extracted package without installed dependencies and now tests the package inventory boundary directly. The exact focused command passed `1/1`, proving the generated bin and compiled runtime are included, source/TypeScript/Vue files are excluded, and production HTML/JavaScript assets are included. T-01-SC remains closed.
 3. **Duplicate authored ID:** The two `T-01-05` rows are different threats. Both are retained and independently verified.
 4. **No source modification by auditors:** The original audit did not patch implementation or test files and created only this security artifact. This focused re-audit likewise modified only this security artifact.
 
@@ -170,6 +170,7 @@ None of the thirteen summaries contains a literal `## Threat Flags` section. The
 |---|---:|---:|---:|---|
 | 2026-07-20 | 34 | 33 | 1 | GSD Security Auditor (`SecurePhase01`) |
 | 2026-07-20 | 34 | 34 | 0 | GSD Security Remediation Auditor (`SecurePhase01Retry`) |
+| 2026-07-20 | 34 | 34 | 0 | GSD Security Evidence Auditor (`SecurePackageRefresh`, package-output refresh after `909312f`) |
 
 ### Audit protocol
 
