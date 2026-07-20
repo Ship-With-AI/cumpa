@@ -194,15 +194,24 @@ The packaged browser case observes the following semantic contract:
 - **Verification:** The exact packaged Chromium command reaches and passes the complete tree interaction case using production assets and invalid-UTF-8 fixture paths.
 - **Committed in:** `7f37388`
 
+**2. [Rule 1 - Bug] Reconciled generated planning progress fields**
+- **Found during:** Sequential main closeout
+- **Issue:** The required GSD handlers counted 10 summaries and marked DIFF-01 correctly, but reset `STATE.md` frontmatter progress to `0%`, left the visible bar at `26%`, corrupted the Phase 1 roadmap overview columns, and left its detailed row at `9/13` plans and `20/23` requirements.
+- **Fix:** Restored the state percentage/bar to 10 of 35 plans (`29%`), restored the Phase 1 overview goal and fixed requirement/plan totals, and reconciled the detailed row to `10/13` plans and `21/23` requirements.
+- **Files modified:** `.planning/STATE.md`, `.planning/ROADMAP.md`
+- **Verification:** Ten Phase 1 summary files exist, DIFF-01 is checked and marked Complete, the milestone has 10 of 35 completed plans, and Phase 1 has 10 of 13 plan summaries plus 21 of 23 completed requirements.
+- **Committed in:** Final planning metadata commit
+
 ---
 
-**Total deviations:** 1 auto-fixed (1 blocking issue).
-**Impact on plan:** The fix was necessary to execute the already-tested shared model in the planned browser package. It adds no dependency, duplicate model, API, metadata UI, responsive behavior, or later-phase scope.
+**Total deviations:** 2 auto-fixed (1 blocking issue, 1 generated metadata bug).
+**Impact on plan:** Both fixes were required for production-browser execution or truthful planning state. Neither adds a dependency, duplicate model, API, metadata UI, responsive behavior, or later-phase scope.
 
 ## Issues Encountered
 
 - The first GREEN attempt remained at the missing-tree assertion because the shared exact-path projection was Node-specific. The platform-neutral byte correction resolved the production-browser blocker.
 - A subsequent run reached the rename row and showed that Playwright text-content matching does not include CSS flex gaps around the visual arrow. The behavior assertion was corrected to verify the exact path ends and arrow without treating visual gap layout as literal DOM whitespace.
+- The GSD progress handlers returned correct counts but persisted stale/corrupted display fields; closeout reconciled those fields to summary and requirement facts.
 
 ## Known Stubs
 

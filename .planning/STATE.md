@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-09-PLAN.md
-last_updated: "2026-07-20T14:50:58.958Z"
+stopped_at: Completed 01-10-PLAN.md
+last_updated: "2026-07-20T15:28:35.978Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 9
-  percent: 26
+  completed_plans: 10
+  percent: 29
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 10 of 13
+Plan: 11 of 13
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 01 execution started
 
-Progress: ███░░░░░░░ 26%
+Progress: ███░░░░░░░ 29%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Progress: ███░░░░░░░ 26%
 | Phase 01 P07 | 21min | 2 tasks | 8 files |
 | Phase 01-pinned-local-comparison P08 | 26min | 2 tasks | 12 files |
 | Phase 01-pinned-local-comparison P09 | 15min | 2 tasks | 3 files |
+| Phase 01-pinned-local-comparison P10 | 27min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Exact path bytes and opaque IDs drive tree authority — Status-specific effective paths, bytewise ordering, and selection never parse display strings
 - [Phase 01]: Compact only one-directory and zero-file chains — Mixed file-directory nodes and branched directories remain explicit while exact full prefixes survive compaction
 - [Phase 01]: Keep directory focus separate from file selection — Roving focus can traverse and collapse directories without replacing selectedFileId with path or directory authority
+- [Phase 01]: Render the hierarchy recursively with complete ARIA tree semantics while retaining the Plan 09 model as the only navigation state machine.
+- [Phase 01]: Treat safe display strings as presentation only; opaque file IDs drive keys, selection emissions, and the existing file-capability request.
+- [Phase 01]: Use platform-neutral Uint8Array and base64url operations so the shared exact-path tree projection executes in production browser assets without a Node Buffer polyfill.
 
 ### Pending Todos
 
@@ -119,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T14:50:58.954Z
-Stopped at: Completed 01-09-PLAN.md
+Last session: 2026-07-20T15:28:35.974Z
+Stopped at: Completed 01-10-PLAN.md
 Resume file: None

@@ -38,7 +38,7 @@
 
 ### Diff Workspace
 
-- [ ] **DIFF-01**: User can navigate a changed-file tree showing path, status, and available line counts.
+- [x] **DIFF-01**: User can navigate a changed-file tree showing path, status, and available line counts.
 - [ ] **DIFF-02**: User can open a supported text file as a read-only side-by-side base/head diff.
 - [ ] **DIFF-03**: User sees syntax highlighting selected from the file path while preserving exact blob text.
 - [ ] **DIFF-04**: User can expand hidden unchanged regions and review any revealed context line.
@@ -160,7 +160,7 @@ Each v1 requirement maps to exactly one roadmap phase.
 | CMP-07 | Phase 1 | Complete |
 | CMP-08 | Phase 1 | Pending |
 | CMP-09 | Phase 1 | Complete |
-| DIFF-01 | Phase 1 | Pending |
+| DIFF-01 | Phase 1 | Complete |
 | DIFF-06 | Phase 1 | Pending |
 | SAFE-01 | Phase 1 | Complete |
 | SAFE-02 | Phase 1 | Complete |
