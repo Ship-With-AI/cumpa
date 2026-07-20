@@ -48,6 +48,7 @@ const comparison: PinnedComparison = {
   base: { label: 'main', oid: baseOid },
   head: { label: 'feature', oid: headOid },
   mergeBaseOid,
+  changedFiles: [],
   hasCommittedChanges: true,
 };
 

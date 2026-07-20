@@ -6,6 +6,7 @@ import {
   rename,
   rm,
   symlink,
+  stat,
   unlink,
   writeFile,
 } from 'node:fs/promises';
@@ -46,6 +47,7 @@ interface InventoryFixture {
   readonly baseOid: string;
   readonly headOid: string;
   readonly invalidPathBytesSupported: boolean;
+  readonly distinctUnicodeNormalizationSupported: boolean;
   git(arguments_: readonly string[]): Buffer;
   cleanup(): Promise<void>;
 }
@@ -97,6 +99,13 @@ async function createInventoryFixture(): Promise<InventoryFixture> {
     writeFile(join(root, 'line\nname.txt'), 'newline\n'),
     writeFile(join(root, '-leading.txt'), 'leading\n'),
   ]);
+  const [composedStat, decomposedStat] = await Promise.all([
+    stat(join(root, 'caf\u00e9.txt')),
+    stat(join(root, 'cafe\u0301.txt')),
+  ]);
+  const distinctUnicodeNormalizationSupported =
+    composedStat.dev !== decomposedStat.dev ||
+    composedStat.ino !== decomposedStat.ino;
   let invalidPathBytesSupported = true;
   try {
     await writeFile(
@@ -127,6 +136,7 @@ async function createInventoryFixture(): Promise<InventoryFixture> {
     baseOid,
     headOid,
     invalidPathBytesSupported,
+    distinctUnicodeNormalizationSupported,
     git,
     async cleanup() {
       await rm(root, { recursive: true, force: true });
@@ -290,14 +300,17 @@ describe('native-Git changed-file inventory', () => {
       fileIdNamespace: Buffer.from('difficult path namespace'),
     });
 
-    for (const path of [
+    const utf8Paths = [
       'space name.txt',
       'caf\u00e9.txt',
-      'cafe\u0301.txt',
       'tab\tname.txt',
       'line\nname.txt',
       '-leading.txt',
-    ]) {
+      ...(repository.distinctUnicodeNormalizationSupported
+        ? ['cafe\u0301.txt']
+        : []),
+    ];
+    for (const path of utf8Paths) {
       const file = fileByPath(files, path);
       expect(file.newPath?.bytesBase64url).toBe(Buffer.from(path).toString('base64url'));
     }
@@ -305,9 +318,11 @@ describe('native-Git changed-file inventory', () => {
     expect(fileByPath(files, 'tab\tname.txt').newPath?.display).toBe('tab\\tname.txt');
     expect(fileByPath(files, 'line\nname.txt').newPath?.display).toBe('line\\nname.txt');
     expect(fileByPath(files, '-leading.txt').newPath?.display).toBe('-leading.txt');
-    expect(fileByPath(files, 'caf\u00e9.txt').newPath?.bytesBase64url).not.toBe(
-      fileByPath(files, 'cafe\u0301.txt').newPath?.bytesBase64url,
-    );
+    if (repository.distinctUnicodeNormalizationSupported) {
+      expect(fileByPath(files, 'caf\u00e9.txt').newPath?.bytesBase64url).not.toBe(
+        fileByPath(files, 'cafe\u0301.txt').newPath?.bytesBase64url,
+      );
+    }
 
     const invalidPaths = files.filter(
       (file) => file.newPath !== undefined && file.newPath.utf8 === undefined,
@@ -337,11 +352,20 @@ describe('native-Git changed-file inventory', () => {
     const comparisonSnapshot = JSON.stringify(comparison);
 
     expect(comparison.changedFiles).toHaveLength(
-      repository.invalidPathBytesSupported ? 15 : 13,
+      12 +
+        (repository.distinctUnicodeNormalizationSupported ? 1 : 0) +
+        (repository.invalidPathBytesSupported ? 2 : 0),
     );
     expect(comparison.hasCommittedChanges).toBe(true);
     expect(Object.isFrozen(comparison.changedFiles)).toBe(true);
-    expect(commands.filter((command) => command[0] === 'diff')).toHaveLength(2);
+    expect(
+      commands.filter(
+        (command) =>
+          command[0] === 'diff' &&
+          command.includes(repository.baseOid) &&
+          command.includes(repository.headOid),
+      ),
+    ).toHaveLength(2);
 
     const fixedOptions = {
       repositoryRoot: repository.root,

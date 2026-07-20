@@ -96,6 +96,7 @@ const comparison: PinnedComparison = {
     },
   },
   mergeBaseOid,
+  changedFiles: [],
   hasCommittedChanges: true,
 };
 

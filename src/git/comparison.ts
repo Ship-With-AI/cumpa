@@ -19,6 +19,7 @@ import {
   GitRunnerError,
   type GitRunner,
 } from './runner.js';
+import { createChangedFileInventory } from './inventory.js';
 
 export interface CreatePinnedComparisonOptions {
   readonly cwd: string;
@@ -280,18 +281,15 @@ export async function createPinnedComparison(
     options.signal,
   );
 
-  const committedChangeResult = await runner.run(
-    [
-      'diff',
-      '--name-only',
-      '-z',
-      '--no-ext-diff',
-      '--no-textconv',
+  const changedFiles = await createChangedFileInventory(
+    {
+      repositoryRoot: repository.root,
       mergeBaseOid,
       headOid,
-      '--',
-    ],
-    { cwd: repository.root, signal: options.signal },
+      objectFormat,
+      signal: options.signal,
+    },
+    { runner },
   );
 
   const comparison = PinnedComparisonSchema.parse({
@@ -312,7 +310,8 @@ export async function createPinnedComparison(
         : { source: headSelection.source }),
     },
     mergeBaseOid,
-    hasCommittedChanges: committedChangeResult.stdout.length > 0,
+    changedFiles,
+    hasCommittedChanges: changedFiles.length > 0,
   });
 
   if (comparison.base.source !== undefined) {
