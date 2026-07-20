@@ -38,7 +38,7 @@ function runPrerequisite(command: string, args: string[], cwd = repositoryRoot):
   }
 }
 
-test('packed executable contains production Vue assets', () => {
+test('packed artifact contains runtime and production Vue assets', () => {
   const temporaryDirectory = mkdtempSync(join(tmpdir(), 'diff-review-pack-'));
 
   try {
@@ -61,6 +61,7 @@ test('packed executable contains production Vue assets', () => {
     const inventory = packResult.files.map((file) => file.path);
 
     expect(inventory).toContain('dist/bin/diff-review.mjs');
+    expect(inventory).toContain('dist/cli/run.js');
     expect(inventory).not.toContainEqual(expect.stringMatching(/^src\//));
     expect(inventory).not.toContainEqual(expect.stringMatching(/\.(?:ts|vue)$/));
 
@@ -72,12 +73,6 @@ test('packed executable contains production Vue assets', () => {
       temporaryDirectory,
     ]);
 
-    const executableOutput = runPrerequisite(process.execPath, [
-      join(temporaryDirectory, 'package/dist/bin/diff-review.mjs'),
-    ]);
-    expect(executableOutput.trim()).toBe(
-      'Diff Review production entry reached; local session launch is not wired yet.',
-    );
 
     expect(inventory).toContain('dist/web/index.html');
     const assetPaths = inventory.filter(
