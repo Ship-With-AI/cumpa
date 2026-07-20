@@ -4,10 +4,19 @@ import open from 'open';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 
+import { confirmPinnedComparison } from './confirm.js';
+import { pickOrderedSources } from './picker.js';
 import {
   ComparisonSelectionSchema,
+  type ComparisonSelection,
   type PinnedComparison,
 } from '../contracts/comparison.js';
+import type {
+  OrderedSources,
+  SourceCandidate,
+  WorktreeCandidate,
+} from '../domain/source.js';
+import { discoverSourceCandidates } from '../git/candidates.js';
 import {
   createPinnedComparison,
   type CreatePinnedComparisonOptions,
@@ -25,8 +34,6 @@ const packagedLaunchOptionsSchema = z.strictObject({
   head: ComparisonSelectionSchema,
 });
 
-const notYetWiredMessage =
-  'Diff Review production entry reached; local session launch is not wired yet.';
 const browserFallback =
   'Open the URL above if the browser did not open. Press Ctrl+C to stop.';
 
@@ -36,6 +43,32 @@ export interface LaunchPinnedSessionDependencies {
   readonly signalSource?: ShutdownSignalSource;
   readonly setExitStatus?: (status: number) => void;
   readonly webRoot?: string;
+}
+
+export interface RunCliOptions {
+  readonly cwd: string;
+}
+
+export interface RunCliDependencies {
+  readonly discoverCandidates?: (
+    options: RunCliOptions,
+  ) => Promise<readonly SourceCandidate[]>;
+  readonly pickSources?: (
+    options: {
+      readonly candidates: readonly SourceCandidate[];
+      readonly suggestedHeadId?: string;
+      readonly initialBase?: SourceCandidate;
+    },
+  ) => Promise<OrderedSources>;
+  readonly createDescriptor?: (
+    options: CreatePinnedComparisonOptions,
+  ) => Promise<PinnedComparison>;
+  readonly confirmComparison?: (
+    comparison: PinnedComparison,
+  ) => Promise<'back' | 'launch'>;
+  readonly launchComparison?: (
+    comparison: PinnedComparison,
+  ) => Promise<unknown>;
 }
 
 export interface PinnedSessionLaunch {
@@ -50,10 +83,17 @@ export async function createComparisonLaunchDescriptor(
   return await createPinnedComparison(options);
 }
 
-export async function launchPinnedSession(
-  options: CreatePinnedComparisonOptions,
-  dependencies: LaunchPinnedSessionDependencies = {},
-): Promise<PinnedSessionLaunch | undefined> {
+interface LaunchRuntime {
+  readonly activeGit: AbortController;
+  readonly launch: (
+    comparison: PinnedComparison,
+  ) => Promise<PinnedSessionLaunch | undefined>;
+  readonly fail: (error: unknown) => Promise<undefined>;
+}
+
+function createLaunchRuntime(
+  dependencies: LaunchPinnedSessionDependencies,
+): LaunchRuntime {
   const activeGit = new AbortController();
   const output = dependencies.output ?? console.log;
   const openBrowser =
@@ -78,62 +118,176 @@ export async function launchPinnedSession(
     },
   });
 
-  try {
-    const comparison = await createComparisonLaunchDescriptor({
-      ...options,
-      signal:
-        options.signal === undefined
-          ? activeGit.signal
-          : AbortSignal.any([options.signal, activeGit.signal]),
-    });
-    if (shutdown.isShuttingDown) {
-      await shutdown.shutdown();
-      return undefined;
-    }
-
-    app = createSessionApp(comparison, { webRoot: dependencies.webRoot });
-    await app.listen({ host: '127.0.0.1', port: 0 });
-    if (shutdown.isShuttingDown) {
-      await shutdown.shutdown();
-      return undefined;
-    }
-
-    const address = app.server.address();
-    if (
-      address === null ||
-      typeof address === 'string' ||
-      address.address !== '127.0.0.1' ||
-      address.port === 0
-    ) {
-      throw new Error('Fastify did not bind the required IPv4 loopback address');
-    }
-    const token = randomBytes(32).toString('base64url');
-    const url = `http://127.0.0.1:${address.port}/#token=${token}`;
-
-    output(url);
-    output(browserFallback);
-    try {
-      await openBrowser(url);
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      output(`Browser did not open automatically: ${detail}`);
-    }
-
-    return { comparison, shutdown, url };
-  } catch (error) {
+  const fail = async (error: unknown): Promise<undefined> => {
     if (shutdown.isShuttingDown) {
       await shutdown.shutdown();
       return undefined;
     }
     await shutdown.shutdown(1);
     throw error;
+  };
+
+  const launch = async (
+    comparison: PinnedComparison,
+  ): Promise<PinnedSessionLaunch | undefined> => {
+    try {
+      if (shutdown.isShuttingDown) {
+        await shutdown.shutdown();
+        return undefined;
+      }
+
+      app = createSessionApp(comparison, { webRoot: dependencies.webRoot });
+      await app.listen({ host: '127.0.0.1', port: 0 });
+      if (shutdown.isShuttingDown) {
+        await shutdown.shutdown();
+        return undefined;
+      }
+
+      const address = app.server.address();
+      if (
+        address === null ||
+        typeof address === 'string' ||
+        address.address !== '127.0.0.1' ||
+        address.port === 0
+      ) {
+        throw new Error(
+          'Fastify did not bind the required IPv4 loopback address',
+        );
+      }
+      const token = randomBytes(32).toString('base64url');
+      const url = `http://127.0.0.1:${address.port}/#token=${token}`;
+
+      output(url);
+      output(browserFallback);
+      try {
+        await openBrowser(url);
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : String(error);
+        output(`Browser did not open automatically: ${detail}`);
+      }
+
+      return { comparison, shutdown, url };
+    } catch (error) {
+      return await fail(error);
+    }
+  };
+
+  return { activeGit, launch, fail };
+}
+
+export async function launchPinnedComparison(
+  comparison: PinnedComparison,
+  dependencies: LaunchPinnedSessionDependencies = {},
+): Promise<PinnedSessionLaunch | undefined> {
+  return await createLaunchRuntime(dependencies).launch(comparison);
+}
+
+export async function launchPinnedSession(
+  options: CreatePinnedComparisonOptions,
+  dependencies: LaunchPinnedSessionDependencies = {},
+): Promise<PinnedSessionLaunch | undefined> {
+  const runtime = createLaunchRuntime(dependencies);
+  let comparison: PinnedComparison;
+  try {
+    comparison = await createComparisonLaunchDescriptor({
+      ...options,
+      signal:
+        options.signal === undefined
+          ? runtime.activeGit.signal
+          : AbortSignal.any([options.signal, runtime.activeGit.signal]),
+    });
+  } catch (error) {
+    return await runtime.fail(error);
   }
+  return await runtime.launch(comparison);
+}
+
+function selectionForCandidate(
+  candidate: SourceCandidate,
+): ComparisonSelection {
+  if (candidate.kind === 'branch') {
+    return {
+      label: candidate.label,
+      revision: candidate.refName,
+      source: {
+        kind: 'branch',
+        id: candidate.id,
+        refName: candidate.refName,
+      },
+    };
+  }
+  return selectionForWorktree(candidate);
+}
+
+function selectionForWorktree(
+  candidate: WorktreeCandidate,
+): ComparisonSelection {
+  if (
+    candidate.availability === 'unavailable' ||
+    candidate.commitOid === undefined
+  ) {
+    throw new Error(
+      `Unavailable worktree cannot be selected: ${candidate.path}`,
+    );
+  }
+  return {
+    label: candidate.label,
+    revision: candidate.commitOid,
+    source: {
+      kind: 'worktree',
+      id: candidate.id,
+      path: candidate.path,
+      detached: candidate.detached,
+      dirty: candidate.availability === 'dirty',
+    },
+  };
 }
 
 export async function runCli(
-  ..._arguments: readonly unknown[]
-): Promise<never> {
-  throw new Error('Interactive source selection is not implemented');
+  options: RunCliOptions,
+  dependencies: RunCliDependencies = {},
+): Promise<void> {
+  const discoverCandidates =
+    dependencies.discoverCandidates ?? discoverSourceCandidates;
+  const pickSources = dependencies.pickSources ?? pickOrderedSources;
+  const createDescriptor =
+    dependencies.createDescriptor ?? createComparisonLaunchDescriptor;
+  const confirmComparison =
+    dependencies.confirmComparison ?? confirmPinnedComparison;
+  const launchComparison =
+    dependencies.launchComparison ?? launchPinnedComparison;
+
+  const candidates = await discoverCandidates(options);
+  const suggestedHead = candidates.find(
+    (candidate) =>
+      candidate.kind === 'worktree' &&
+      candidate.isCurrentCheckout &&
+      candidate.availability !== 'unavailable',
+  );
+  let initialBase: SourceCandidate | undefined;
+
+  while (true) {
+    const selected = await pickSources({
+      candidates,
+      ...(suggestedHead === undefined
+        ? {}
+        : { suggestedHeadId: suggestedHead.id }),
+      ...(initialBase === undefined ? {} : { initialBase }),
+    });
+    const comparison = await createDescriptor({
+      cwd: options.cwd,
+      base: selectionForCandidate(selected.base),
+      head: selectionForCandidate(selected.head),
+    });
+    const action = await confirmComparison(comparison);
+    if (action === 'back') {
+      initialBase = selected.base;
+      continue;
+    }
+
+    await launchComparison(comparison);
+    return;
+  }
 }
 
 export function run(): Promise<void>;
@@ -149,7 +303,7 @@ export async function run(
 
   const serializedLaunchOptions = process.env.DIFF_REVIEW_LAUNCH_OPTIONS;
   if (serializedLaunchOptions === undefined) {
-    console.log(notYetWiredMessage);
+    await runCli({ cwd: process.cwd() });
     return;
   }
   const launchOptions = packagedLaunchOptionsSchema.parse(

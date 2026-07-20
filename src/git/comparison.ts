@@ -138,12 +138,30 @@ export async function createPinnedComparison(
   const comparison = PinnedComparisonSchema.parse({
     repositoryRoot: repository.root,
     objectFormat,
-    base: { label: baseSelection.label, oid: baseOid },
-    head: { label: headSelection.label, oid: headOid },
+    base: {
+      label: baseSelection.label,
+      oid: baseOid,
+      ...(baseSelection.source === undefined
+        ? {}
+        : { source: baseSelection.source }),
+    },
+    head: {
+      label: headSelection.label,
+      oid: headOid,
+      ...(headSelection.source === undefined
+        ? {}
+        : { source: headSelection.source }),
+    },
     mergeBaseOid,
     hasCommittedChanges: committedChangeResult.stdout.length > 0,
   });
 
+  if (comparison.base.source !== undefined) {
+    Object.freeze(comparison.base.source);
+  }
+  if (comparison.head.source !== undefined) {
+    Object.freeze(comparison.head.source);
+  }
   Object.freeze(comparison.base);
   Object.freeze(comparison.head);
   return Object.freeze(comparison);

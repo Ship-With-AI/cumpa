@@ -1,0 +1,38 @@
+export const DIRTY_ROW_LABEL = 'Dirty — committed HEAD only';
+export const DIRTY_EXPLANATION =
+  "The worktree's committed HEAD will be reviewed. Staged, unstaged, and untracked bytes are ignored.";
+export const UNAVAILABLE_WORKTREE_REASON =
+  'Unavailable — this registered worktree cannot be resolved. Choose another entry or repair it with Git.';
+
+export type CandidateAvailability = 'clean' | 'dirty' | 'unavailable';
+
+interface SourceCandidateBase {
+  readonly id: string;
+  readonly label: string;
+}
+
+export interface BranchCandidate extends SourceCandidateBase {
+  readonly commitOid: string;
+  readonly shortOid: string;
+  readonly kind: 'branch';
+  readonly refName: string;
+}
+
+export interface WorktreeCandidate extends SourceCandidateBase {
+  readonly kind: 'worktree';
+  readonly commitOid?: string;
+  readonly shortOid?: string;
+  readonly path: string;
+  readonly branchRef?: string;
+  readonly detached: boolean;
+  readonly availability: CandidateAvailability;
+  readonly unavailableReason?: string;
+  readonly isCurrentCheckout: boolean;
+}
+
+export type SourceCandidate = BranchCandidate | WorktreeCandidate;
+
+export interface OrderedSources {
+  readonly base: SourceCandidate;
+  readonly head: SourceCandidate;
+}
