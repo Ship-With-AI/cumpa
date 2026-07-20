@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
-status: executing
-stopped_at: Completed 01-12-PLAN.md
-last_updated: "2026-07-20T16:34:38.318Z"
+status: verifying
+stopped_at: Completed 01-13-PLAN.md
+last_updated: "2026-07-20T17:54:30.805Z"
 last_activity: 2026-07-20
 last_activity_desc: Completed Plan 01-12 selected-file metadata and availability
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 35
-  completed_plans: 12
-  percent: 34
+  completed_plans: 13
+  percent: 25
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
 Plan: 13 of 13
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-20 — Completed Plan 01-12 selected-file metadata and availability
 
 Progress: ███░░░░░░░ 34%
@@ -67,6 +67,7 @@ Progress: ███░░░░░░░ 34%
 | Phase 01-pinned-local-comparison P10 | 27min | 2 tasks | 10 files |
 | Phase 01 P11 | 20min | 2 tasks | 12 files |
 | Phase 01 P12 | 14min | 2 tasks | 6 files |
+| Phase 01 P13 | 26min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Keep safe display paths separate from exact UTF-8 or base64url copy payloads.
 - [Phase 01]: Render session status, paths, counts, and availability immediately; add modes only from matching opaque detail responses.
 - [Phase 01]: Require request-generation and response fileId equality before accepting selected-file details.
+- [Phase 01]: Keep the narrow comparison disclosure in the persistent header while the modal identity sheet occupies the workspace grid row.
+- [Phase 01]: Treat Enter and Space on directory treeitems as directory toggles only; emit file activation only for focused file rows.
+- [Phase 01]: Prove ref immutability by advancing the selected head ref after each packaged server listens and asserting the session remains pinned.
 
 ### Pending Todos
 
@@ -132,6 +136,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T16:34:38.315Z
-Stopped at: Completed 01-12-PLAN.md
+Last session: 2026-07-20T17:54:30.802Z
+Stopped at: Completed 01-13-PLAN.md
 Resume file: None

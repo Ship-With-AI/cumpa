@@ -8,7 +8,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 
 | Phase | Name | Goal | Requirements | Plans |
 |-------|------|------|--------------|-------|
-| 1 | Pinned Local Comparison | A developer can launch from a repository, select any ordered pair of local branches or registered worktrees, and inspect the correct pinned merge-base-to-head changed-file set in a secure local browser session. | 23 | 13 |
+| 1 | Pinned Local Comparison | 13/13 | Complete   | 2026-07-20 |
 | 2 | Anchored Diff Review | Review text side by side and persist a precise line comment that resumes on the same comparison | 11 | 7 |
 | 3 | Complete Review Draft | Manage the full comment/summary lifecycle without silent overwrite, relocation, or selector drift | 8 | 7 |
 | 4 | Agent-Ready Export | Atomically export deterministic canonical JSON and derived Markdown without mutating source | 9 | 8 |
