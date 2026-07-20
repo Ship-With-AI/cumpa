@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-07-20T13:16:59.703Z"
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-07-20T13:48:55.392Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 6
-  percent: 17
+  completed_plans: 7
+  percent: 20
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 7 of 13
+Plan: 8 of 13
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 01 execution started
 
-Progress: ██░░░░░░░░ 17%
+Progress: ██░░░░░░░░ 20%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: ██░░░░░░░░ 17%
 | Phase 01 P03 | 30 min | 2 tasks | 7 files |
 | Phase 01 P05 | 29min | 2 tasks | 10 files |
 | Phase 01 P06 | 32min | 2 tasks | 10 files |
+| Phase 01 P07 | 21min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -87,6 +88,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Parse raw diff and numstat as separate byte and NUL grammars, joining only by exact path-byte tuples.
 - [Phase 01]: Derive opaque file IDs from a process namespace and exact raw-record identity; display paths never select records.
 - [Phase 01]: Use matching rename, copy, external-diff, and text-conversion controls with the same pinned merge-base and head OIDs for both inventory commands.
+- [Phase 01]: Use NUL-framed cat-file commands with validated full object IDs as the sole content authority. — Machine framing stays byte-safe and forbids refs, paths, filters, textconv, and filesystem fallback.
+- [Phase 01]: Classify structural non-regular modes without object access, then inspect every regular side before reading bytes. — This prevents symlink traversal and makes missing, wrong-type, and oversized precedence deterministic.
+- [Phase 01]: Use one strict availability union per changed file and remove free-form unsupported reasons. — Downstream API and UI consumers receive exactly one synchronized machine reason while every record stays visible.
 
 ### Pending Todos
 
@@ -107,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T13:16:59.699Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-07-20T13:48:55.388Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None

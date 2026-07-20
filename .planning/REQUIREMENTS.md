@@ -34,7 +34,7 @@
 - [x] **CMP-06**: User reviews immutable blob contents from the pinned commits rather than staged, unstaged, or untracked filesystem content.
 - [x] **CMP-07**: User can review repositories containing spaces, Unicode, tabs, newlines, or leading dashes in valid paths without selecting or displaying the wrong file.
 - [ ] **CMP-08**: User sees an explanatory empty state when the pinned comparison contains no PR-style changes.
-- [ ] **CMP-09**: User sees why a binary, non-UTF-8, oversized, submodule, or otherwise unsupported file cannot be rendered inline.
+- [x] **CMP-09**: User sees why a binary, non-UTF-8, oversized, submodule, or otherwise unsupported file cannot be rendered inline.
 
 ### Diff Workspace
 
@@ -159,7 +159,7 @@ Each v1 requirement maps to exactly one roadmap phase.
 | CMP-06 | Phase 1 | Complete |
 | CMP-07 | Phase 1 | Complete |
 | CMP-08 | Phase 1 | Pending |
-| CMP-09 | Phase 1 | Pending |
+| CMP-09 | Phase 1 | Complete |
 | DIFF-01 | Phase 1 | Pending |
 | DIFF-06 | Phase 1 | Pending |
 | SAFE-01 | Phase 1 | Complete |
