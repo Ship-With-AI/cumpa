@@ -588,8 +588,8 @@ test('metadata and availability states', async ({ browser, context, page }, test
     modeOrType: opaqueFileId(7),
     missingObject: opaqueFileId(8),
   } as const;
-  const oldPath = exactPath('src/old\tname.ts', 'src/old\\tname.ts');
-  const newPath = exactPath('src/new\nname.ts', 'src/new\\nname.ts');
+  const oldPath = exactPath('00-src/old\tname.ts', '00-src/old\\tname.ts');
+  const newPath = exactPath('00-src/new\nname.ts', '00-src/new\\nname.ts');
   const nonUtf8Path = {
     bytesBase64url: 'Zml4dHVyZXMv_w',
     display: 'fixtures/\\xFF',
@@ -770,7 +770,7 @@ test('metadata and availability states', async ({ browser, context, page }, test
 
     const details = page.getByRole('main', { name: 'File details' });
     await expect(details.getByRole('heading', { level: 2 })).toHaveText(
-      'File details — src/new\\nname.ts',
+      'File details — 00-src/new\\nname.ts',
     );
     await expect(details.getByText('Renamed (91% similarity)', { exact: true })).toBeVisible();
     await expect(details.getByText('Text', { exact: true })).toBeVisible();
@@ -781,8 +781,8 @@ test('metadata and availability states', async ({ browser, context, page }, test
       ),
     ).toBeVisible();
     await expect(details.getByRole('heading', { name: 'Paths' })).toBeVisible();
-    await expect(details.getByText('src/old\\tname.ts', { exact: true })).toBeVisible();
-    await expect(details.getByText('src/new\\nname.ts', { exact: true })).toBeVisible();
+    await expect(details.getByText('00-src/old\\tname.ts', { exact: true })).toBeVisible();
+    await expect(details.getByText('00-src/new\\nname.ts', { exact: true })).toBeVisible();
     await expect(details.getByText('12', { exact: true })).toBeVisible();
     await expect(details.getByText('4', { exact: true })).toBeVisible();
     await expect(details.getByText('100644', { exact: true })).toBeVisible();
@@ -796,12 +796,12 @@ test('metadata and availability states', async ({ browser, context, page }, test
     await expect(oldCopy.locator('..').getByRole('status')).toHaveText('Copied');
     await expect
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-      .toBe('src/old\tname.ts');
+      .toBe('00-src/old\tname.ts');
     const newCopy = details.getByRole('button', { name: 'Copy exact new path' });
     await newCopy.click();
     await expect
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-      .toBe('src/new\nname.ts');
+      .toBe('00-src/new\nname.ts');
 
     const selectFile = async (fileId: string): Promise<void> => {
       const row = page.locator(`[role="treeitem"][data-file-id="${fileId}"]`);

@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue';
 
-const props = defineProps<{
-  readonly label: string;
-  readonly value: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    readonly failureMessage?: string;
+    readonly label: string;
+    readonly value: string;
+  }>(),
+  {
+    failureMessage: 'Copy failed. The full value remains available to select.',
+  },
+);
 
 const feedback = ref<'idle' | 'success' | 'failure'>('idle');
 let resetTimer: ReturnType<typeof setTimeout> | undefined;
@@ -42,13 +48,13 @@ onBeforeUnmount(clearResetTimer);
       :aria-label="label"
       @click="copyValue"
     >
-      Copy
+      {{ feedback === 'success' ? 'Copied' : 'Copy' }}
     </button>
     <span class="copy-feedback" role="status" aria-live="polite">
       {{ feedback === 'success' ? 'Copied' : '' }}
     </span>
     <span v-if="feedback === 'failure'" class="copy-error" role="alert">
-      Copy failed. The full value remains available to select.
+      {{ failureMessage }}
     </span>
   </div>
 </template>

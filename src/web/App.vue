@@ -7,9 +7,14 @@ import {
   shallowRef,
 } from 'vue';
 
-import type { SessionResponse } from '../contracts/api';
+import type {
+  FileMetadataResponse,
+  SessionFile,
+  SessionResponse,
+} from '../contracts/api';
 import {
   createSessionClient,
+  FILE_UNAVAILABLE_MESSAGE,
   SECURITY_FAILURE_MESSAGE,
   SessionClientError,
 } from './api/client';
@@ -17,6 +22,7 @@ import type { SessionClient } from './api/client';
 import EmptyState from './components/EmptyState.vue';
 import ErrorState from './components/ErrorState.vue';
 import FileTree from './components/FileTree.vue';
+import FileMetadataPane from './components/FileMetadataPane.vue';
 import IdentityHeader from './components/IdentityHeader.vue';
 import IdentityPanel from './components/IdentityPanel.vue';
 
@@ -24,11 +30,57 @@ const session = shallowRef<SessionResponse>();
 const errorMessage = ref('');
 const identityOpen = ref(false);
 const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
+const selectedFile = shallowRef<SessionFile>();
+const selectedMetadata = shallowRef<FileMetadataResponse>();
+const detailErrorMessage = ref('');
+const detailLoading = ref(false);
+let detailRequestVersion = 0;
 let sessionClient: SessionClient | undefined;
 
+async function loadFileDetails(
+  fileId: string,
+  clearMetadata: boolean,
+): Promise<void> {
+  const file = session.value?.files.find((candidate) => candidate.fileId === fileId);
+  if (file === undefined || sessionClient === undefined) {
+    return;
+  }
+
+  selectedFile.value = file;
+  if (clearMetadata) {
+    selectedMetadata.value = undefined;
+  }
+  detailErrorMessage.value = '';
+  detailLoading.value = true;
+  const requestVersion = ++detailRequestVersion;
+
+  try {
+    const metadata = await sessionClient.getFileMetadata(fileId);
+    if (requestVersion !== detailRequestVersion) {
+      return;
+    }
+    if (metadata.fileId !== fileId) {
+      throw new Error('File metadata capability mismatch');
+    }
+    selectedMetadata.value = metadata;
+  } catch {
+    if (requestVersion === detailRequestVersion) {
+      detailErrorMessage.value = FILE_UNAVAILABLE_MESSAGE;
+    }
+  } finally {
+    if (requestVersion === detailRequestVersion) {
+      detailLoading.value = false;
+    }
+  }
+}
+
 function selectFile(fileId: string): void {
-  if (sessionClient !== undefined) {
-    void sessionClient.getFileMetadata(fileId).catch(() => undefined);
+  void loadFileDetails(fileId, true);
+}
+
+function retryFileDetails(): void {
+  if (selectedFile.value !== undefined) {
+    void loadFileDetails(selectedFile.value.fileId, false);
   }
 }
 
@@ -95,6 +147,14 @@ onBeforeUnmount(() => {
         v-else
         :files="session.files"
         @select="selectFile"
+      />
+      <FileMetadataPane
+        v-if="selectedFile !== undefined"
+        :file="selectedFile"
+        :metadata="selectedMetadata"
+        :loading="detailLoading"
+        :error-message="detailErrorMessage"
+        @retry="retryFileDetails"
       />
     </div>
   </div>
