@@ -15,23 +15,23 @@
 
 ### Launch and Selection
 
-- [ ] **SEL-01**: User can run the CLI from any directory inside a non-bare Git worktree and have the repository root resolved automatically.
+- [x] **SEL-01**: User can run the CLI from any directory inside a non-bare Git worktree and have the repository root resolved automatically.
 - [ ] **SEL-02**: User receives a clear actionable error when Git is unavailable, the directory is not a reviewable repository, or the repository has no resolvable commit.
 - [ ] **SEL-03**: User can search one picker containing local branches and every registered worktree, including detached worktrees.
 - [ ] **SEL-04**: User can distinguish each picker entry by type, label, worktree path when applicable, short commit ID, and dirty-state indicator.
-- [ ] **SEL-05**: User explicitly selects an ordered base followed by an ordered head.
+- [x] **SEL-05**: User explicitly selects an ordered base followed by an ordered head.
 - [ ] **SEL-06**: User is prevented from starting a review when both selections resolve to the same commit.
 - [ ] **SEL-07**: User sees that dirty worktree state is ignored and that the worktree's committed `HEAD` will be reviewed.
 - [ ] **SEL-08**: User's default browser opens automatically after the server binds, while the terminal prints the URL and shutdown instructions.
 
 ### Comparison
 
-- [ ] **CMP-01**: User reviews the selected head against the merge base of the selected base and head.
-- [ ] **CMP-02**: User sees selected labels plus full base, head, and merge-base commit identities.
+- [x] **CMP-01**: User reviews the selected head against the merge base of the selected base and head.
+- [x] **CMP-02**: User sees selected labels plus full base, head, and merge-base commit identities.
 - [ ] **CMP-03**: User receives a clear error for unrelated histories, multiple merge bases, or unavailable required Git objects.
 - [ ] **CMP-04**: User sees added, modified, deleted, renamed, copied, mode-only, binary, and unsupported changed-file statuses without path corruption.
 - [ ] **CMP-05**: User sees Git-derived addition/deletion counts when textual line counts are available.
-- [ ] **CMP-06**: User reviews immutable blob contents from the pinned commits rather than staged, unstaged, or untracked filesystem content.
+- [x] **CMP-06**: User reviews immutable blob contents from the pinned commits rather than staged, unstaged, or untracked filesystem content.
 - [ ] **CMP-07**: User can review repositories containing spaces, Unicode, tabs, newlines, or leading dashes in valid paths without selecting or displaying the wrong file.
 - [ ] **CMP-08**: User sees an explanatory empty state when the pinned comparison contains no PR-style changes.
 - [ ] **CMP-09**: User sees why a binary, non-UTF-8, oversized, submodule, or otherwise unsupported file cannot be rendered inline.
@@ -143,20 +143,20 @@ Each v1 requirement maps to exactly one roadmap phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEL-01 | Phase 1 | Pending |
+| SEL-01 | Phase 1 | Complete |
 | SEL-02 | Phase 1 | Pending |
 | SEL-03 | Phase 1 | Pending |
 | SEL-04 | Phase 1 | Pending |
-| SEL-05 | Phase 1 | Pending |
+| SEL-05 | Phase 1 | Complete |
 | SEL-06 | Phase 1 | Pending |
 | SEL-07 | Phase 1 | Pending |
 | SEL-08 | Phase 1 | Pending |
-| CMP-01 | Phase 1 | Pending |
-| CMP-02 | Phase 1 | Pending |
+| CMP-01 | Phase 1 | Complete |
+| CMP-02 | Phase 1 | Complete |
 | CMP-03 | Phase 1 | Pending |
 | CMP-04 | Phase 1 | Pending |
 | CMP-05 | Phase 1 | Pending |
-| CMP-06 | Phase 1 | Pending |
+| CMP-06 | Phase 1 | Complete |
 | CMP-07 | Phase 1 | Pending |
 | CMP-08 | Phase 1 | Pending |
 | CMP-09 | Phase 1 | Pending |
@@ -196,6 +196,7 @@ Each v1 requirement maps to exactly one roadmap phase.
 | SAFE-04 | Phase 4 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 51 total
 - Mapped to phases: 51
 - Unmapped: 0

@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-07-20T09:23:43.576Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-07-20T09:58:20.406Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 1
-  percent: 0
+  completed_plans: 2
+  percent: 6
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 2 of 13
+Plan: 3 of 13
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 01 execution started
 
-Progress: ░░░░░░░░░░ 0%
+Progress: █░░░░░░░░░ 6%
 
 ## Performance Metrics
 
@@ -56,6 +56,7 @@ Progress: ░░░░░░░░░░ 0%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 11 min | 3 tasks | 12 files |
+| Phase 01 P02 | 23 min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Use only fourteen audited exact direct releases — The approved supply-chain gate forbids additional or ranged direct dependencies.
 - [Phase 01]: Generate the package bin over compiled production output — The wrapper imports dist/cli/run.js and never falls back to TypeScript source.
 - [Phase 01]: Publish only dist runtime output — The package allowlist excludes TypeScript, Vue source, tests, and development configuration.
+- [Phase 01]: Use hasCommittedChanges as the Plan 01-02 committed fact — Full file inventory remains Plan 01-06 scope.
+- [Phase 01]: Resolve ordered base and head refs exactly once, then use only full object IDs — Moving refs cannot alter the frozen comparison descriptor.
+- [Phase 01]: Suppress repository execution surfaces at the shared Git runner — Hooks, fsmonitor, external diffs, prompts, optional locks, and file transport are disabled.
 
 ### Pending Todos
 
@@ -90,6 +94,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T09:23:43.572Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-07-20T09:58:20.402Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
