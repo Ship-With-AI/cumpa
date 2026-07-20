@@ -8,7 +8,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 
 | Phase | Name | Goal | Requirements | Plans |
 |-------|------|------|--------------|-------|
-| 1 | Pinned Local Comparison | Launch a secure browser session that accurately identifies and lists PR-style changes for any ordered branch/worktree pair | 23 | 13 |
+| 1 | Pinned Local Comparison | 1/13 | In Progress|  |
 | 2 | Anchored Diff Review | Review text side by side and persist a precise line comment that resumes on the same comparison | 11 | 7 |
 | 3 | Complete Review Draft | Manage the full comment/summary lifecycle without silent overwrite, relocation, or selector drift | 8 | 7 |
 | 4 | Agent-Ready Export | Atomically export deterministic canonical JSON and derived Markdown without mutating source | 9 | 8 |
@@ -27,6 +27,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 **Planned implementation units:** 13
 
 **Success Criteria**:
+
 1. From any directory in a real Git worktree, the CLI offers searchable local branch and registered-worktree entries, makes base/head order explicit, warns that dirty bytes are ignored, resolves committed identities, binds an ephemeral loopback server, and opens the browser.
 2. Diverged branch/branch, branch/worktree, worktree/branch, and worktree/worktree fixtures all show the merge-base-to-head file set while the session remains pinned to displayed full commit IDs.
 3. The browser file tree accurately represents additions, modifications, deletions, renames, copies, mode-only changes, available line counts, unsupported content, and unusual valid paths without reading dirty worktree bytes.
@@ -43,6 +44,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 **Planned implementation units:** 7
 
 **Success Criteria**:
+
 1. Selecting a supported text file loads exact base/head blobs into a read-only, syntax-highlighted side-by-side diff with expandable unchanged context and documented file/change navigation.
 2. A reviewer can add a comment to any visible base or head line, including revealed context, and the accepted comment records side-specific path, side, line, blob ID, selected text, surrounding context, and hash.
 3. Comment rendering remains attached and side alignment remains intact across context expansion, resizing, file switching, and Monaco diff recomputation; failures are detected by the prototype before the workspace is extended.
@@ -59,6 +61,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 **Planned implementation units:** 7
 
 **Success Criteria**:
+
 1. A reviewer can edit, delete, resolve, and reopen comments; open/resolved counts update and each listed comment can navigate back to its anchored line.
 2. A reviewer can write and edit one overall summary that persists with the comparison draft.
 3. Concurrent browser tabs cannot silently overwrite newer accepted state; stale revisions receive an explicit conflict and can reload the canonical draft.
@@ -75,6 +78,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 **Planned implementation units:** 8
 
 **Success Criteria**:
+
 1. Export writes versioned, schema-valid `review.json` and derived `review.md` together beneath `.diff-review/exports/`, then shows repository-relative paths and content hashes.
 2. JSON retains comparison identities, summary, every comment state and timestamp, and blob/context anchors; Markdown groups only open actionable comments by file and includes identity/ambiguity instructions for the applying agent.
 3. Re-exporting unchanged review state is deterministic apart from the explicit export timestamp, and a write failure never exposes only one newly updated format.
