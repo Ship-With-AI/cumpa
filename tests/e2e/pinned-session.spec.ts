@@ -26,6 +26,7 @@ import {
   type GitFixture,
 } from '../helpers/git-fixture.js';
 import { createShutdownController } from '../../src/server/lifecycle.js';
+import type { ComparisonSelection } from '../../src/contracts/comparison.js';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -46,6 +47,11 @@ interface RunningCli {
   readonly outputPath: string;
   readonly openerLogPath: string;
   readonly outputDescriptor: number;
+}
+
+interface GeneratedCliSelections {
+  readonly base: ComparisonSelection;
+  readonly head: ComparisonSelection;
 }
 
 function runPrerequisite(command: string, arguments_: readonly string[]): string {
@@ -119,7 +125,13 @@ function assertChromiumPrerequisite(browser: Browser, testInfo: TestInfo): void 
   }
 }
 
-function startGeneratedCli(repository: GitFixture): RunningCli {
+function startGeneratedCli(
+  repository: GitFixture,
+  selections: GeneratedCliSelections = {
+    base: { label: 'Base fixture', revision: repository.baseRef },
+    head: { label: 'Head fixture', revision: repository.headRef },
+  },
+): RunningCli {
   const outputPath = join(packedRoot, `terminal-${crypto.randomUUID()}.log`);
   const openerLogPath = join(packedRoot, `opener-${crypto.randomUUID()}.log`);
   const outputDescriptor = openSync(outputPath, 'w');
@@ -130,8 +142,7 @@ function startGeneratedCli(repository: GitFixture): RunningCli {
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
       DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({
         cwd: repository.nestedCwd,
-        base: { label: 'Base fixture', revision: repository.baseRef },
-        head: { label: 'Head fixture', revision: repository.headRef },
+        ...selections,
       }),
       DIFF_REVIEW_OPENER_LOG: openerLogPath,
       DIFF_REVIEW_TERMINAL_CAPTURE: outputPath,
@@ -285,6 +296,259 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
   } finally {
     await stopGeneratedCli(running);
     await repository.cleanup();
+  }
+});
+
+test('identity session and empty states', async ({ browser, context, page }, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  const repository = await createGitFixture();
+  const expectedBase = independentlyResolve(repository, [
+    'rev-parse',
+    '--verify',
+    repository.baseRef,
+  ]);
+  const expectedHead = independentlyResolve(repository, [
+    'rev-parse',
+    '--verify',
+    repository.headRef,
+  ]);
+  const expectedMergeBase = independentlyResolve(repository, [
+    'merge-base',
+    '--all',
+    expectedBase,
+    expectedHead,
+  ]);
+  const running = startGeneratedCli(repository);
+
+  try {
+    const url = await waitForLoopbackUrl(running);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], {
+      origin: new URL(url).origin,
+    });
+    await proveLoadingTransition(page, url);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      `Diff Review: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
+    );
+    await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
+
+    const disclosure = page.getByRole('button', {
+      name: 'Comparison identities',
+    });
+    await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
+    await disclosure.click();
+    await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
+    const panel = page.getByRole('region', { name: 'Comparison identities' });
+    await expect(panel).toBeVisible();
+
+    const identityRows = panel.locator('.identity-row');
+    await expect(identityRows).toHaveCount(3);
+    await expect(identityRows.nth(0).locator('dt')).toHaveText('Base');
+    await expect(identityRows.nth(1).locator('dt')).toHaveText('Head');
+    await expect(identityRows.nth(2).locator('dt')).toHaveText('Merge base');
+    await expect(identityRows.nth(0).getByText('Base fixture', { exact: true })).toBeVisible();
+    await expect(identityRows.nth(1).getByText('Head fixture', { exact: true })).toBeVisible();
+    await expect(identityRows.nth(0).getByText(expectedBase, { exact: true })).toBeVisible();
+    await expect(identityRows.nth(1).getByText(expectedHead, { exact: true })).toBeVisible();
+    await expect(identityRows.nth(2).getByText(expectedMergeBase, { exact: true })).toBeVisible();
+    await expect(
+      panel.getByText(
+        'This session is pinned to these commits and does not follow moving refs.',
+        { exact: true },
+      ),
+    ).toBeVisible();
+
+    const copyCases = [
+      ['Copy full base commit', expectedBase],
+      ['Copy full head commit', expectedHead],
+      ['Copy full merge-base commit', expectedMergeBase],
+    ] as const;
+    for (const [name, expectedValue] of copyCases) {
+      const button = panel.getByRole('button', { name });
+      await button.click();
+      await expect(button.locator('..').getByRole('status')).toHaveText('Copied');
+      await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(
+        expectedValue,
+      );
+    }
+
+    const baseCopy = panel.getByRole('button', {
+      name: 'Copy full base commit',
+    });
+    await baseCopy.click();
+    await expect(baseCopy.locator('..').getByRole('status')).toHaveText('Copied');
+    await page.waitForTimeout(2_100);
+    await expect(baseCopy.locator('..').getByRole('status')).toBeEmpty();
+
+    await page.evaluate(() => {
+      Object.defineProperty(navigator.clipboard, 'writeText', {
+        configurable: true,
+        value: async () => {
+          throw new DOMException('Clipboard denied', 'NotAllowedError');
+        },
+      });
+    });
+    const failedCopy = panel.getByRole('button', {
+      name: 'Copy full head commit',
+    });
+    await failedCopy.click();
+    await expect(failedCopy.locator('..').getByRole('alert')).toHaveText(
+      'Copy failed. The full value remains available to select.',
+    );
+    await expect(identityRows.nth(1).getByText(expectedHead, { exact: true })).toBeVisible();
+
+    const securityPage = await context.newPage();
+    await securityPage.route('**/api/session', async (route) => {
+      await route.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'request-unavailable',
+          message: `denied ${repository.root} ${new URL(url).hash}`,
+        }),
+      });
+    });
+    await securityPage.goto(url, { waitUntil: 'domcontentloaded' });
+    await expect(securityPage.getByRole('heading', { level: 1 })).toHaveText(
+      'Diff Review: pinned session unavailable',
+    );
+    await expect(securityPage.getByRole('heading', { level: 2 })).toHaveText(
+      'Pinned session unavailable',
+    );
+    await expect(securityPage.getByRole('alert')).toHaveText(
+      'This request is not available in the current session. Relaunch Diff Review from the terminal.',
+    );
+    await expect(securityPage.locator('body')).not.toContainText(repository.root);
+    await expect(securityPage.locator('body')).not.toContainText(new URL(url).hash);
+    await expect(securityPage.getByRole('button', { name: /retry/i })).toHaveCount(0);
+    await expect(securityPage.getByRole('navigation', { name: 'Changed files' })).toHaveCount(0);
+
+    const errorPage = await context.newPage();
+    await errorPage.route('**/api/session', async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 'session-unavailable',
+          message: `diagnostic ${repository.root}`,
+        }),
+      });
+    });
+    await errorPage.goto(url, { waitUntil: 'domcontentloaded' });
+    await expect(errorPage.getByRole('heading', { level: 1 })).toHaveText(
+      'Diff Review: pinned session unavailable',
+    );
+    await expect(errorPage.getByRole('alert')).toHaveText(
+      'This pinned session is unavailable. Return to the terminal and launch Diff Review again. Diagnostic details are shown in the terminal.',
+    );
+    await expect(errorPage.locator('body')).not.toContainText(repository.root);
+    await expect(errorPage.getByRole('button', { name: /retry/i })).toHaveCount(0);
+    await expect(errorPage.getByRole('navigation', { name: 'Changed files' })).toHaveCount(0);
+
+    const stoppedPage = await context.newPage();
+    await stoppedPage.route('**/api/session', async (route) => {
+      await route.abort('connectionrefused');
+    });
+    await stoppedPage.goto(url, { waitUntil: 'domcontentloaded' });
+    await expect(stoppedPage.getByRole('heading', { level: 1 })).toHaveText(
+      'Diff Review: pinned session unavailable',
+    );
+    await expect(stoppedPage.getByRole('alert')).toHaveText(
+      'This pinned session has stopped. Relaunch Diff Review from the terminal to continue.',
+    );
+    await expect(stoppedPage.getByRole('button', { name: /retry/i })).toHaveCount(0);
+    await expect(stoppedPage.getByRole('navigation', { name: 'Changed files' })).toHaveCount(0);
+  } finally {
+    await stopGeneratedCli(running);
+    await repository.cleanup();
+  }
+
+  const dirtyRepository = await createGitFixture();
+  await dirtyRepository.write('dirty-untracked.txt', 'ignored worktree bytes\n');
+  const dirtyRunning = startGeneratedCli(dirtyRepository, {
+    base: {
+      label: 'Base fixture',
+      revision: dirtyRepository.baseRef,
+      source: {
+        kind: 'branch',
+        id: 'branch:base-fixture',
+        refName: dirtyRepository.baseRef,
+      },
+    },
+    head: {
+      label: 'Head worktree',
+      revision: dirtyRepository.headRef,
+      source: {
+        kind: 'worktree',
+        id: 'worktree:head-fixture',
+        path: dirtyRepository.root,
+        detached: false,
+        dirty: true,
+      },
+    },
+  });
+  const dirtyPage = await context.newPage();
+  try {
+    const dirtyUrl = await waitForLoopbackUrl(dirtyRunning);
+    await dirtyPage.goto(dirtyUrl, { waitUntil: 'domcontentloaded' });
+    const dirtyBadge = dirtyPage.getByText('Dirty bytes ignored', {
+      exact: true,
+    });
+    await expect(dirtyBadge).toBeVisible();
+    await expect(
+      dirtyBadge.locator('..').getByText(
+        'Committed HEAD reviewed; staged, unstaged, and untracked bytes ignored.',
+        { exact: true },
+      ),
+    ).toBeAttached();
+    await dirtyPage
+      .getByRole('button', { name: 'Comparison identities' })
+      .click();
+    const dirtyPanel = dirtyPage.getByRole('region', {
+      name: 'Comparison identities',
+    });
+    const dirtyHead = dirtyPanel.locator('.identity-row').nth(1);
+    await expect(
+      dirtyHead.getByText(dirtyRepository.root, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      dirtyHead.getByText(
+        "The worktree's committed HEAD will be reviewed. Staged, unstaged, and untracked bytes are ignored.",
+        { exact: true },
+      ),
+    ).toBeVisible();
+  } finally {
+    await stopGeneratedCli(dirtyRunning);
+    await dirtyRepository.cleanup();
+  }
+
+  const emptyRepository = await createGitFixture({ committedHeadChange: false });
+  const emptyRunning = startGeneratedCli(emptyRepository);
+  const emptyPage = await context.newPage();
+  try {
+    const emptyUrl = await waitForLoopbackUrl(emptyRunning);
+    await emptyPage.goto(emptyUrl, { waitUntil: 'domcontentloaded' });
+    await expect(emptyPage.getByRole('heading', { level: 1 })).toHaveText(
+      /Diff Review: Base fixture · [0-9a-f]{7} → Head fixture · [0-9a-f]{7}/,
+    );
+    await expect(emptyPage.getByRole('heading', { level: 2 })).toHaveText(
+      'No changes in this pinned comparison',
+    );
+    await expect(emptyPage.getByText('0 changed files', { exact: true })).toBeVisible();
+    await expect(
+      emptyPage.getByText(
+        'The merge base and head resolve to identical trees. Open Comparison identities to review the pinned commits, then press Ctrl+C in the terminal when you are finished.',
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(emptyPage.getByRole('alert')).toHaveCount(0);
+    await expect(emptyPage.getByText('Loading pinned comparison…')).toHaveCount(0);
+    await expect(
+      emptyPage.getByRole('button', { name: 'Comparison identities' }),
+    ).toBeVisible();
+  } finally {
+    await stopGeneratedCli(emptyRunning);
+    await emptyRepository.cleanup();
   }
 });
 
