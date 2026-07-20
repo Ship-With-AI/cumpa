@@ -130,6 +130,12 @@ export async function launchPinnedSession(
   }
 }
 
+export async function runCli(
+  ..._arguments: readonly unknown[]
+): Promise<never> {
+  throw new Error('Interactive source selection is not implemented');
+}
+
 export function run(): Promise<void>;
 export function run(
   options: CreatePinnedComparisonOptions,
