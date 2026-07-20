@@ -60,10 +60,18 @@ export interface BuildSourceSearchOptions {
   readonly suggestedHeadId?: string;
 }
 
+export interface PickerRecoveryOptions {
+  readonly role: 'base' | 'head';
+  readonly focusedCandidateId: string | undefined;
+  readonly searchTerm: string;
+}
+
 export interface PickOrderedSourcesOptions {
   readonly candidates: readonly SourceCandidate[];
   readonly suggestedHeadId?: string;
   readonly initialBase?: SourceCandidate;
+  readonly initialHead?: SourceCandidate;
+  readonly recovery?: PickerRecoveryOptions;
 }
 
 export interface PickOrderedSourcesDependencies {
@@ -206,19 +214,25 @@ export function buildSourceSearchItems(
 function sourceForPrompt(
   candidates: readonly SourceCandidate[],
   options: BuildSourceSearchOptions,
+  initialSearchTerm = '',
 ): SourceSearchPromptConfig['source'] {
+  let firstRequest = true;
   return (term, { signal }) => {
     signal.throwIfAborted();
-    return buildSourceSearchItems(candidates, term, options).map((item) =>
-      item.kind === 'separator'
-        ? new Separator(item.label)
-        : {
-            value: item.value,
-            name: item.name,
-            ...(item.kind === 'candidate' && item.disabled !== undefined
-              ? { disabled: item.disabled }
-              : {}),
-          },
+    const effectiveTerm =
+      firstRequest && term === undefined ? initialSearchTerm : term;
+    firstRequest = false;
+    return buildSourceSearchItems(candidates, effectiveTerm, options).map(
+      (item) =>
+        item.kind === 'separator'
+          ? new Separator(item.label)
+          : {
+              value: item.value,
+              name: item.name,
+              ...(item.kind === 'candidate' && item.disabled !== undefined
+                ? { disabled: item.disabled }
+                : {}),
+            },
     );
   };
 }
@@ -239,12 +253,26 @@ export async function pickOrderedSources(
         ...(config.default === undefined ? {} : { default: config.default }),
       }));
   let base = options.initialBase;
+  const retainedHead = options.initialHead;
 
   while (true) {
     if (base === undefined) {
       const selectedBaseId = await prompt({
-        message: BASE_PROMPT,
-        source: sourceForPrompt(options.candidates, { role: 'base' }),
+        message:
+          retainedHead === undefined
+            ? BASE_PROMPT
+            : `${BASE_PROMPT}\nHead retained: ${escapeTerminalText(retainedHead.label)} · ${retainedHead.shortOid ?? 'unavailable'}`,
+        source: sourceForPrompt(
+          options.candidates,
+          { role: 'base' },
+          options.recovery?.role === 'base'
+            ? options.recovery.searchTerm
+            : '',
+        ),
+        ...(options.recovery?.role === 'base' &&
+        options.recovery.focusedCandidateId !== undefined
+          ? { default: options.recovery.focusedCandidateId }
+          : {}),
       });
       base =
         selectedBaseId === undefined
@@ -253,15 +281,28 @@ export async function pickOrderedSources(
       if (base === undefined) {
         throw new Error('Base selection did not identify an available source');
       }
+      if (retainedHead !== undefined) {
+        return Object.freeze({ base, head: retainedHead });
+      }
     }
 
     const selectedHeadId = await prompt({
-      message: HEAD_PROMPT,
-      source: sourceForPrompt(options.candidates, {
-        role: 'head',
-        suggestedHeadId: options.suggestedHeadId,
-      }),
-      default: options.suggestedHeadId,
+      message:
+        options.recovery?.role === 'head'
+          ? `${HEAD_PROMPT}\nBase retained: ${escapeTerminalText(base.label)} · ${base.shortOid ?? 'unavailable'}`
+          : HEAD_PROMPT,
+      source: sourceForPrompt(
+        options.candidates,
+        {
+          role: 'head',
+          suggestedHeadId: options.suggestedHeadId,
+        },
+        options.recovery?.role === 'head' ? options.recovery.searchTerm : '',
+      ),
+      default:
+        options.recovery?.role === 'head'
+          ? options.recovery.focusedCandidateId
+          : options.suggestedHeadId,
       backValue: BACK_TO_BASE,
     });
     if (selectedHeadId === BACK_TO_BASE) {
@@ -269,7 +310,9 @@ export async function pickOrderedSources(
       continue;
     }
     const head =
-      selectedHeadId === undefined ? undefined : candidateById.get(selectedHeadId);
+      selectedHeadId === undefined
+        ? undefined
+        : candidateById.get(selectedHeadId);
     if (head === undefined) {
       throw new Error('Head selection did not identify an available source');
     }

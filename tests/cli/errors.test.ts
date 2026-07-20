@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { runCli, type RunCliDependencies } from '../../src/cli/run.js';
+import {
+  pickOrderedSources,
+  type SourceSearchPromptConfig,
+} from '../../src/cli/picker.js';
 import type { PinnedComparison } from '../../src/contracts/comparison.js';
 import type { SourceCandidate } from '../../src/domain/source.js';
 
@@ -245,11 +249,17 @@ describe('pre-session terminal failure ownership', () => {
     const output = vi.fn();
     const pickCalls: unknown[] = [];
     let attempts = 0;
+    let discoveries = 0;
 
     await runCli(
       { cwd: '/repo' },
       {
-        discoverCandidates: async () => [baseCandidate, worktreeCandidate],
+        discoverCandidates: async () => {
+          discoveries += 1;
+          return discoveries === 1
+            ? [baseCandidate, worktreeCandidate]
+            : [baseCandidate, headCandidate];
+        },
         pickSources: async (options) => {
           pickCalls.push(options);
           if (attempts === 0) {
@@ -328,5 +338,69 @@ describe('pre-session terminal failure ownership', () => {
       },
     });
     expect(launchComparison).toHaveBeenCalledTimes(1);
+  });
+
+  it('restores the actual picker at the failed role with the opposite endpoint visibly retained', async () => {
+    const headConfigs: SourceSearchPromptConfig[] = [];
+    const recoveredHead = await pickOrderedSources(
+      {
+        candidates: [baseCandidate, headCandidate],
+        initialBase: baseCandidate,
+        recovery: {
+          role: 'head',
+          focusedCandidateId: headCandidate.id,
+          searchTerm: 'feature',
+        },
+      },
+      {
+        prompt: async (config) => {
+          headConfigs.push(config);
+          return headCandidate.id;
+        },
+      },
+    );
+
+    expect(headConfigs).toHaveLength(1);
+    expect(headConfigs[0]).toMatchObject({
+      message: expect.stringContaining(
+        `Base retained: main · ${baseCandidate.shortOid}`,
+      ),
+      default: headCandidate.id,
+    });
+    expect(recoveredHead).toEqual({
+      base: baseCandidate,
+      head: headCandidate,
+    });
+
+    const baseConfigs: SourceSearchPromptConfig[] = [];
+    const recoveredBase = await pickOrderedSources(
+      {
+        candidates: [baseCandidate, headCandidate],
+        initialHead: headCandidate,
+        recovery: {
+          role: 'base',
+          focusedCandidateId: baseCandidate.id,
+          searchTerm: 'main',
+        },
+      },
+      {
+        prompt: async (config) => {
+          baseConfigs.push(config);
+          return baseCandidate.id;
+        },
+      },
+    );
+
+    expect(baseConfigs).toHaveLength(1);
+    expect(baseConfigs[0]).toMatchObject({
+      message: expect.stringContaining(
+        `Head retained: feature · ${headCandidate.shortOid}`,
+      ),
+      default: baseCandidate.id,
+    });
+    expect(recoveredBase).toEqual({
+      base: baseCandidate,
+      head: headCandidate,
+    });
   });
 });

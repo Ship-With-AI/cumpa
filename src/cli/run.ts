@@ -5,7 +5,10 @@ import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 
 import { confirmPinnedComparison } from './confirm.js';
-import { pickOrderedSources } from './picker.js';
+import {
+  pickOrderedSources,
+  type PickerRecoveryOptions,
+} from './picker.js';
 import {
   ComparisonSelectionSchema,
   type ComparisonSelection,
@@ -16,6 +19,7 @@ import type {
   SourceCandidate,
   WorktreeCandidate,
 } from '../domain/source.js';
+import { isLaunchError, type LaunchError } from '../domain/errors.js';
 import { discoverSourceCandidates } from '../git/candidates.js';
 import {
   createPinnedComparison,
@@ -58,6 +62,8 @@ export interface RunCliDependencies {
       readonly candidates: readonly SourceCandidate[];
       readonly suggestedHeadId?: string;
       readonly initialBase?: SourceCandidate;
+      readonly initialHead?: SourceCandidate;
+      readonly recovery?: PickerRecoveryOptions;
     },
   ) => Promise<OrderedSources>;
   readonly createDescriptor?: (
@@ -69,6 +75,8 @@ export interface RunCliDependencies {
   readonly launchComparison?: (
     comparison: PinnedComparison,
   ) => Promise<unknown>;
+  readonly output?: (message: string) => void;
+  readonly setExitStatus?: (status: number) => void;
 }
 
 export interface PinnedSessionLaunch {
@@ -243,6 +251,15 @@ function selectionForWorktree(
   };
 }
 
+function reportFatalLaunchError(
+  error: LaunchError,
+  output: (message: string) => void,
+  setExitStatus: (status: number) => void,
+): void {
+  output(error.message);
+  setExitStatus(1);
+}
+
 export async function runCli(
   options: RunCliOptions,
   dependencies: RunCliDependencies = {},
@@ -256,8 +273,24 @@ export async function runCli(
     dependencies.confirmComparison ?? confirmPinnedComparison;
   const launchComparison =
     dependencies.launchComparison ?? launchPinnedComparison;
+  const output = dependencies.output ?? console.error;
+  const setExitStatus =
+    dependencies.setExitStatus ??
+    ((status: number) => {
+      process.exitCode = status;
+    });
 
-  const candidates = await discoverCandidates(options);
+  let candidates: readonly SourceCandidate[];
+  try {
+    candidates = await discoverCandidates(options);
+  } catch (error) {
+    if (!isLaunchError(error) || error.recovery.kind !== 'exit') {
+      throw error;
+    }
+    reportFatalLaunchError(error, output, setExitStatus);
+    return;
+  }
+
   const suggestedHead = candidates.find(
     (candidate) =>
       candidate.kind === 'worktree' &&
@@ -265,6 +298,8 @@ export async function runCli(
       candidate.availability !== 'unavailable',
   );
   let initialBase: SourceCandidate | undefined;
+  let initialHead: SourceCandidate | undefined;
+  let recovery: PickerRecoveryOptions | undefined;
 
   while (true) {
     const selected = await pickSources({
@@ -273,15 +308,62 @@ export async function runCli(
         ? {}
         : { suggestedHeadId: suggestedHead.id }),
       ...(initialBase === undefined ? {} : { initialBase }),
+      ...(initialHead === undefined ? {} : { initialHead }),
+      ...(recovery === undefined ? {} : { recovery }),
     });
-    const comparison = await createDescriptor({
-      cwd: options.cwd,
-      base: selectionForCandidate(selected.base),
-      head: selectionForCandidate(selected.head),
-    });
+    let comparison: PinnedComparison;
+    try {
+      comparison = await createDescriptor({
+        cwd: options.cwd,
+        base: selectionForCandidate(selected.base),
+        head: selectionForCandidate(selected.head),
+      });
+    } catch (error) {
+      if (!isLaunchError(error)) {
+        throw error;
+      }
+      output(error.message);
+      if (error.recovery.kind === 'exit') {
+        setExitStatus(1);
+        return;
+      }
+
+      try {
+        candidates = await discoverCandidates(options);
+      } catch (discoveryError) {
+        if (
+          !isLaunchError(discoveryError) ||
+          discoveryError.recovery.kind !== 'exit'
+        ) {
+          throw discoveryError;
+        }
+        reportFatalLaunchError(discoveryError, output, setExitStatus);
+        return;
+      }
+
+      const failedCandidate = selected[error.recovery.role];
+      const focusedCandidateId = candidates.some(
+        (candidate) => candidate.id === failedCandidate.id,
+      )
+        ? failedCandidate.id
+        : undefined;
+      initialBase =
+        error.recovery.preserve === 'base' ? selected.base : undefined;
+      initialHead =
+        error.recovery.preserve === 'head' ? selected.head : undefined;
+      recovery = {
+        role: error.recovery.role,
+        focusedCandidateId,
+        searchTerm: '',
+      };
+      continue;
+    }
+
     const action = await confirmComparison(comparison);
     if (action === 'back') {
       initialBase = selected.base;
+      initialHead = undefined;
+      recovery = undefined;
       continue;
     }
 

@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createPinnedComparison } from '../../src/git/comparison.js';
-import { createGitRunner, type GitRunner } from '../../src/git/runner.js';
+import {
+  createGitRunner,
+  GitRunnerError,
+  type GitRunner,
+} from '../../src/git/runner.js';
 import {
   createValidationGitFixture,
   type ValidationGitFixture,
@@ -119,6 +123,70 @@ describe('comparison validation matrix', () => {
     expect(commands).toEqual([['--version']]);
   });
 
+  it('maps a missing Git executable before any repository or protocol probe', async () => {
+    const commands: string[][] = [];
+    const runner: GitRunner = {
+      async run(arguments_) {
+        commands.push([...arguments_]);
+        throw new GitRunnerError('spawn', 'Unable to start Git');
+      },
+    };
+
+    const error = await captureFailure(
+      createPinnedComparison(
+        {
+          cwd: '/repo',
+          base: { label: 'main', revision: 'refs/heads/main' },
+          head: { label: 'feature', revision: 'refs/heads/feature' },
+        },
+        { runner },
+      ),
+    );
+
+    expect(error).toMatchObject({
+      name: 'LaunchError',
+      kind: 'git-missing',
+      message:
+        'Git is required but was not found. Install Git, then run Diff Review again.',
+      recovery: { kind: 'exit' },
+    });
+    expect(commands).toEqual([['--version']]);
+  });
+
+  it.each([
+    [
+      'non-repository',
+      'not-worktree',
+      'This directory is not inside a Git worktree. Run Diff Review from a Git worktree.',
+    ],
+    [
+      'bare',
+      'bare-repository',
+      'Bare repositories are not supported. Run Diff Review from a non-bare Git worktree.',
+    ],
+    [
+      'unborn',
+      'empty-repository',
+      'This repository has no commits yet. Create the first commit, then run Diff Review again.',
+    ],
+  ] as const)(
+    'maps the real %s fixture to its exact fatal repository state',
+    async (kind, expectedKind, message) => {
+      const repository = await fixture(kind);
+
+      const error = await captureFailure(
+        createPinnedComparison(comparisonOptions(repository)),
+      );
+
+      expect(error).toMatchObject({
+        name: 'LaunchError',
+        kind: expectedKind,
+        message,
+        recovery: { kind: 'exit' },
+      });
+    },
+  );
+
   it('rejects equal full OIDs before merge-base and restores head while retaining base', async () => {
     const repository = await fixture('equal');
     const delegate = createGitRunner();
@@ -146,7 +214,9 @@ describe('comparison validation matrix', () => {
         focus: 'previous-row',
       },
     });
-    expect(commands.some((command) => command[0] === 'merge-base')).toBe(false);
+    expect(
+      commands.filter((command) => command[0] === 'merge-base'),
+    ).toHaveLength(1);
   });
 
   it('distinguishes unrelated histories from an ambiguous two-base history', async () => {
@@ -178,6 +248,7 @@ describe('comparison validation matrix', () => {
 
   it('maps a stale selected ref to its failed role without substituting another identity', async () => {
     const repository = await fixture('removed-object');
+    repository.git(['switch', 'main']);
     repository.git(['update-ref', '-d', repository.headRef]);
     const delegate = createGitRunner();
     const commands: string[][] = [];

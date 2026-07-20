@@ -111,6 +111,7 @@ export type ValidationFixtureKind =
   | 'criss-cross'
   | 'equal'
   | 'independent'
+  | 'non-repository'
   | 'removed-object'
   | 'unborn';
 
@@ -142,21 +143,25 @@ export async function createValidationGitFixture(
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
-  execFileSync(
-    'git',
-    [
-      ...safeGitArguments,
-      'init',
-      ...(kind === 'bare' ? ['--bare'] : ['--initial-branch=main']),
-      repositoryRoot,
-    ],
-    {
-      encoding: 'buffer',
-      env: gitEnvironment,
-      maxBuffer: 4 * 1024 * 1024,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    },
-  );
+  if (kind === 'non-repository') {
+    await mkdir(repositoryRoot, { recursive: true });
+  } else {
+    execFileSync(
+      'git',
+      [
+        ...safeGitArguments,
+        'init',
+        ...(kind === 'bare' ? ['--bare'] : ['--initial-branch=main']),
+        repositoryRoot,
+      ],
+      {
+        encoding: 'buffer',
+        env: gitEnvironment,
+        maxBuffer: 4 * 1024 * 1024,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      },
+    );
+  }
 
   const nestedCwd = join(repositoryRoot, 'nested', 'deep');
   let baseRef = 'refs/heads/main';
@@ -164,13 +169,17 @@ export async function createValidationGitFixture(
   let baseOid: string | undefined;
   let headOid: string | undefined;
 
-  if (kind !== 'bare') {
+  if (kind !== 'bare' && kind !== 'non-repository') {
     invokeGit(['config', '--local', 'user.name', 'Diff Review Fixture']);
     invokeGit(['config', '--local', 'user.email', 'fixture@diff-review.invalid']);
     invokeGit(['config', '--local', 'commit.gpgSign', 'false']);
   }
 
-  if (kind !== 'bare' && kind !== 'unborn') {
+  if (
+    kind !== 'bare' &&
+    kind !== 'non-repository' &&
+    kind !== 'unborn'
+  ) {
     await writeFile(join(repositoryRoot, 'root.txt'), 'root\n');
     invokeGit(['add', '--', 'root.txt']);
     invokeGit(['commit', '-m', 'root']);
