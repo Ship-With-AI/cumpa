@@ -15,9 +15,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+  activate: [fileId: string];
   select: [fileId: string];
 }>();
 
+const headingElement = ref<HTMLHeadingElement>();
+const paneElement = ref<HTMLElement>();
 const treeElement = ref<HTMLElement>();
 const model = shallowRef<FileTreeModel>(createFileTreeModel(props.files));
 
@@ -56,6 +59,7 @@ function activateFile(fileId: string): void {
   );
   if (row !== undefined) {
     applyModel(model.value.focusRow(row.rowId));
+    emit('activate', fileId);
   }
 }
 
@@ -79,9 +83,50 @@ function handleKeydown(event: KeyboardEvent): void {
   }
 
   event.preventDefault();
+  const activatedRow =
+    event.key === 'Enter' || event.key === ' '
+      ? model.value.visibleRows.find(
+          (candidate) => candidate.rowId === model.value.focusedRowId,
+        )
+      : undefined;
   applyModel(model.value.handleKey(event.key as FileTreeNavigationKey));
+  if (activatedRow?.kind === 'file') {
+    emit('activate', activatedRow.fileId);
+  }
 }
 
+
+function focusHeading(): void {
+  headingElement.value?.focus({ preventScroll: true });
+}
+
+function focusSelectedFile(): void {
+  const selectedFileId = model.value.selectedFileId;
+  if (selectedFileId === null) {
+    focusHeading();
+    return;
+  }
+  treeElement.value
+    ?.querySelector<HTMLElement>(`[data-file-id="${selectedFileId}"]`)
+    ?.focus({ preventScroll: true });
+}
+
+function getScrollPosition(): number {
+  return paneElement.value?.scrollTop ?? 0;
+}
+
+function setScrollPosition(position: number): void {
+  if (paneElement.value !== undefined) {
+    paneElement.value.scrollTop = position;
+  }
+}
+
+defineExpose({
+  focusHeading,
+  focusSelectedFile,
+  getScrollPosition,
+  setScrollPosition,
+});
 
 onMounted(() => {
   if (model.value.selectedFileId !== null) {
@@ -101,8 +146,10 @@ watch(
 </script>
 
 <template>
-  <nav class="file-tree-pane" aria-label="Changed files">
-    <h2 id="changed-files-heading">Changed files ({{ files.length }})</h2>
+  <nav ref="paneElement" class="file-tree-pane" aria-label="Changed files">
+    <h2 id="changed-files-heading" ref="headingElement" tabindex="-1">
+      Changed files ({{ files.length }})
+    </h2>
     <ul
       ref="treeElement"
       class="file-tree"

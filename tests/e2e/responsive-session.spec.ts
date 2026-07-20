@@ -289,8 +289,8 @@ async function installPackagedSessionRoutes(
     }
     if (retryGate !== undefined) {
       const gate = retryGate;
-      retryGate = undefined;
       await gate.promise;
+      retryGate = undefined;
     }
     const response: FileMetadataResponse = {
       ...file!,
@@ -560,7 +560,7 @@ test('responsive keyboard and accessibility contract', async ({
       await page.keyboard.press('Home');
       await expect(filesTab).toBeFocused();
 
-      const betaRow = page.getByRole('treeitem').filter({ hasText: 'beta.ts' });
+      const betaRow = page.locator(`[data-file-id="${opaqueFileId(2)}"]`);
       routeControls.failNextDetail(opaqueFileId(2));
       await betaRow.click();
       const detailsHeading = page.getByRole('heading', {
@@ -592,8 +592,26 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(betaRow).toBeFocused();
       await expect(betaRow).toHaveAttribute('aria-selected', 'true');
 
-      const directory = page.getByRole('treeitem').filter({
-        hasText: '00-src/components',
+      const treePane = page.locator('.file-tree-pane');
+      await treePane.evaluate((element) => {
+        element.scrollTop = 120;
+      });
+      await detailsTab.click();
+      const detailsPane = page.locator('.file-metadata-pane');
+      await detailsPane.evaluate((element) => {
+        element.scrollTop = 96;
+      });
+      await filesTab.click();
+      expect(await treePane.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
+      await detailsTab.click();
+      expect(
+        await detailsPane.evaluate((element) => element.scrollTop),
+      ).toBeGreaterThan(0);
+      await filesTab.click();
+
+      const directory = page.getByRole('treeitem', {
+        name: '00-src/components',
+        exact: true,
       });
       await directory.click();
       await expect(directory).toHaveAttribute('aria-expanded', 'false');
@@ -605,7 +623,10 @@ test('responsive keyboard and accessibility contract', async ({
     });
 
     await test.step('narrow identity sheet traps focus and restores disclosure', async () => {
-      const disclosure = page.getByRole('button', { name: 'Comparison identities' });
+      const disclosure = page.getByRole('button', {
+        name: 'Comparison identities',
+        exact: true,
+      });
       await expectMinimumTarget(disclosure);
       await disclosure.click();
       const dialog = page.getByRole('dialog', { name: 'Comparison identities' });
@@ -629,6 +650,12 @@ test('responsive keyboard and accessibility contract', async ({
       await disclosure.click();
       await close.click();
       await expect(disclosure).toBeFocused();
+
+      await disclosure.click();
+      await expect(dialog).toBeVisible();
+      await disclosure.click();
+      await expect(dialog).toHaveCount(0);
+      await expect(disclosure).toBeFocused();
       await page.setViewportSize({ width: 1280, height: 560 });
       await disclosure.click();
       await expect(
@@ -645,7 +672,10 @@ test('responsive keyboard and accessibility contract', async ({
       const detailsTab = page.getByRole('tab', { name: 'Details', exact: true });
       await expectMinimumTarget(filesTab);
       await expectMinimumTarget(detailsTab);
-      const disclosure = page.getByRole('button', { name: 'Comparison identities' });
+      const disclosure = page.getByRole('button', {
+        name: 'Comparison identities',
+        exact: true,
+      });
       const initial = await readStyles(disclosure);
       expect(initial.backgroundColor).toBe('rgb(22, 27, 34)');
       expect(initial.borderColor).toBe('rgb(48, 54, 61)');
@@ -660,6 +690,7 @@ test('responsive keyboard and accessibility contract', async ({
       const pressed = await readStyles(disclosure);
       expect(pressed.backgroundColor).toBe('rgb(48, 54, 61)');
       expect(pressed.boxShadow).toContain('inset');
+      await page.mouse.move(0, 0);
       await page.mouse.up();
       await disclosure.focus();
       const focused = await readStyles(disclosure);
@@ -697,18 +728,19 @@ test('responsive keyboard and accessibility contract', async ({
         body.style.zoom = '';
       });
 
-      await page.addStyleTag({
-        content: `
-          * {
-            letter-spacing: 0.12em !important;
-            line-height: 1.5 !important;
-            word-spacing: 0.16em !important;
-          }
-        `,
+      await page.evaluate(() => {
+        for (const element of document.querySelectorAll<HTMLElement>('*')) {
+          element.style.letterSpacing = '0.12em';
+          element.style.lineHeight = '1.5';
+          element.style.wordSpacing = '0.16em';
+        }
       });
       await page.setViewportSize({ width: 320, height: 640 });
       await assertNoPageOverflow(page);
-      await page.getByRole('button', { name: 'Comparison identities' }).click();
+      await page.getByRole('button', {
+        name: 'Comparison identities',
+        exact: true,
+      }).click();
       const fullId = page.getByText(expectedHead, { exact: true });
       await expect(fullId).toBeVisible();
       const idDimensions = await fullId.evaluate((element) => ({
@@ -720,12 +752,12 @@ test('responsive keyboard and accessibility contract', async ({
 
       await page.setViewportSize({ width: 700, height: 360 });
       await expect(
-        page.getByRole('treeitem').filter({ hasText: 'beta.ts' }),
+        page.locator(`[data-file-id="${opaqueFileId(2)}"]`),
       ).toHaveAttribute('aria-selected', 'true');
       await page.setViewportSize({ width: 360, height: 700 });
       await expect(page.getByRole('tablist', { name: 'Comparison view' })).toBeVisible();
       await expect(
-        page.getByRole('treeitem').filter({ hasText: 'beta.ts' }),
+        page.locator(`[data-file-id="${opaqueFileId(2)}"]`),
       ).toHaveAttribute('aria-selected', 'true');
     });
   } finally {

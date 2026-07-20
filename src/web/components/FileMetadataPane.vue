@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import type {
   FileMetadataResponse,
@@ -18,6 +18,9 @@ const props = defineProps<{
   readonly loading: boolean;
   readonly errorMessage: string;
 }>();
+
+const headingElement = ref<HTMLHeadingElement>();
+const paneElement = ref<HTMLElement>();
 
 const emit = defineEmits<{
   retry: [];
@@ -143,11 +146,29 @@ const pathEntries = computed<readonly PathEntry[]>(() => {
   const path = effectivePath.value;
   return path === undefined ? [] : [createPathEntry(path, 'path')];
 });
+
+function focusHeading(): void {
+  headingElement.value?.focus({ preventScroll: true });
+}
+
+function getScrollPosition(): number {
+  return paneElement.value?.scrollTop ?? 0;
+}
+
+function setScrollPosition(position: number): void {
+  if (paneElement.value !== undefined) {
+    paneElement.value.scrollTop = position;
+  }
+}
+
+defineExpose({ focusHeading, getScrollPosition, setScrollPosition });
 </script>
 
 <template>
-  <main class="file-metadata-pane" aria-label="File details">
-    <h2>File details — {{ effectivePath?.display }}</h2>
+  <main ref="paneElement" class="file-metadata-pane" aria-label="File details">
+    <h2 ref="headingElement" tabindex="-1">
+      File details — {{ effectivePath?.display }}
+    </h2>
 
     <InlineNotice v-if="errorMessage !== ''" tone="error">
       <p role="alert">{{ errorMessage }}</p>
