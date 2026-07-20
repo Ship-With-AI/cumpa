@@ -288,6 +288,70 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
   }
 });
 
+test('fragment token protects loopback API', async ({ browser, page, request }, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  const repository = await createGitFixture();
+  const running = startGeneratedCli(repository);
+  const browserMessages: string[] = [];
+  page.on('console', (message) => browserMessages.push(message.text()));
+  try {
+    const launchUrl = await waitForLoopbackUrl(running);
+    const parsedLaunchUrl = new URL(launchUrl);
+    const token = parsedLaunchUrl.hash.slice('#token='.length);
+    const origin = parsedLaunchUrl.origin;
+    const apiRequestPromise = page.waitForRequest('**/api/session');
+    const apiResponsePromise = page.waitForResponse('**/api/session');
+
+    await page.goto(launchUrl, { waitUntil: 'domcontentloaded' });
+    const apiRequest = await apiRequestPromise;
+    const apiResponse = await apiResponsePromise;
+
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Diff Review: Base fixture',
+    );
+    expect(new URL(page.url()).hash).toBe('');
+    expect(apiRequest.url()).not.toContain(token);
+    expect(apiRequest.headers().authorization).toBe(`Bearer ${token}`);
+    expect(apiResponse.status()).toBe(200);
+    expect(apiResponse.headers()['cache-control']).toBe('no-store');
+    expect(apiResponse.headers()['referrer-policy']).toBe('no-referrer');
+    expect(apiResponse.headers()['x-content-type-options']).toBe('nosniff');
+    expect(apiResponse.headers()['content-security-policy']).toContain(
+      "frame-ancestors 'none'",
+    );
+    expect(apiResponse.headers()['access-control-allow-origin']).toBeUndefined();
+
+    const missingToken = await request.get(`${origin}/api/session`);
+    const wrongToken = await request.get(`${origin}/api/session`, {
+      headers: { authorization: `Bearer ${'x'.repeat(token.length)}` },
+    });
+    const hostileOrigin = await request.get(`${origin}/api/session`, {
+      headers: {
+        authorization: `Bearer ${token}`,
+        origin: 'https://attacker.example',
+      },
+    });
+    const staticResponse = await request.get(`${origin}/`);
+
+    expect(missingToken.status()).toBe(401);
+    expect(wrongToken.status()).toBe(401);
+    expect(hostileOrigin.status()).toBe(403);
+    expect(staticResponse.status()).toBe(200);
+    for (const response of [missingToken, wrongToken, hostileOrigin]) {
+      const body = await response.text();
+      expect(body).toContain(
+        'This request is not available in the current session. Relaunch Diff Review from the terminal.',
+      );
+      expect(body).not.toContain(token);
+      expect(body).not.toContain(repository.root);
+    }
+    expect(browserMessages.join('\n')).not.toContain(token);
+  } finally {
+    await stopGeneratedCli(running);
+    await repository.cleanup();
+  }
+});
+
 test('interrupt closes loopback session once', async ({ browser }, testInfo) => {
   assertChromiumPrerequisite(browser, testInfo);
 
