@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-10-PLAN.md
-last_updated: "2026-07-20T15:28:35.978Z"
+stopped_at: Completed 01-11-PLAN.md
+last_updated: "2026-07-20T16:03:42.057Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 10
-  percent: 29
+  completed_plans: 11
+  percent: 31
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 11 of 13
+Plan: 12 of 13
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 01 execution started
 
-Progress: ███░░░░░░░ 29%
+Progress: ███░░░░░░░ 31%
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: ███░░░░░░░ 29%
 | Phase 01-pinned-local-comparison P08 | 26min | 2 tasks | 12 files |
 | Phase 01-pinned-local-comparison P09 | 15min | 2 tasks | 3 files |
 | Phase 01-pinned-local-comparison P10 | 27min | 2 tasks | 10 files |
+| Phase 01 P11 | 20min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Render the hierarchy recursively with complete ARIA tree semantics while retaining the Plan 09 model as the only navigation state machine.
 - [Phase 01]: Treat safe display strings as presentation only; opaque file IDs drive keys, selection emissions, and the existing file-capability request.
 - [Phase 01]: Use platform-neutral Uint8Array and base64url operations so the shared exact-path tree projection executes in production browser assets without a Node Buffer polyfill.
+- [Phase 01]: Expose only selected worktree path and dirty state in the browser identity DTO — Preserves required identity context without exposing branch refs, source IDs, object capabilities, or diagnostics.
+- [Phase 01]: Classify a failed session fetch as a stopped local session — Keeps stopped recovery truthful while HTTP, validation, and security failures retain their fixed non-leaking copy.
+- [Phase 01]: Keep Plan 01-11 identity disclosure non-modal — Plan 01-13 owns narrow sheet modality, focus trapping, tabs, and final responsive acceptance.
 
 ### Pending Todos
 
@@ -123,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T15:28:35.974Z
-Stopped at: Completed 01-10-PLAN.md
+Last session: 2026-07-20T16:03:42.054Z
+Stopped at: Completed 01-11-PLAN.md
 Resume file: None
