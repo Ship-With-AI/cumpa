@@ -1,0 +1,47 @@
+{
+  "name": "diff-review",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-first review of pinned Git comparisons",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "bin": {
+    "diff-review": "dist/bin/diff-review.mjs"
+  },
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "build:bin": "node scripts/build-bin.mjs",
+    "build:node": "tsc --project tsconfig.json",
+    "build:runtime": "npm run build:bin && npm run build:node",
+    "build:web": "vite build",
+    "build": "npm run build:runtime && npm run build:web",
+    "prepack": "npm run build",
+    "verify:prerequisites": "node scripts/verify-prerequisites.mjs && npm run build:runtime",
+    "test:unit": "vitest run tests/unit",
+    "test:git": "vitest run tests/git",
+    "test:api": "vitest run tests/api",
+    "test:package": "playwright test"
+  },
+  "dependencies": {
+    "@fastify/static": "9.3.0",
+    "@inquirer/search": "4.2.1",
+    "commander": "15.0.0",
+    "fastify": "5.10.0",
+    "open": "11.0.0",
+    "vue": "3.5.39",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.61.1",
+    "@types/node": "24.11.1",
+    "@vitejs/plugin-vue": "6.0.7",
+    "typescript": "7.0.2",
+    "vite": "8.1.4",
+    "vitest": "4.1.10",
+    "vue-tsc": "3.3.7"
+  }
+}
