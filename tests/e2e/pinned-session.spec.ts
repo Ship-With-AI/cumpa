@@ -25,6 +25,7 @@ import {
   createGitFixture,
   type GitFixture,
 } from '../helpers/git-fixture.js';
+import { createShutdownController } from '../../src/server/lifecycle.js';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -269,9 +270,18 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
       `Diff Review: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
     );
     await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
-    await expect(page.getByText(expectedBase, { exact: true })).toBeVisible();
-    await expect(page.getByText(expectedHead, { exact: true })).toBeVisible();
-    await expect(page.getByText(expectedMergeBase, { exact: true })).toBeVisible();
+    await expect(
+      page.locator('.identity-row').nth(0).getByText(expectedBase, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.locator('.identity-row').nth(1).getByText(expectedHead, { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator('.identity-row')
+        .nth(2)
+        .getByText(expectedMergeBase, { exact: true }),
+    ).toBeVisible();
   } finally {
     await stopGeneratedCli(running);
     await repository.cleanup();
@@ -281,10 +291,6 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
 test('interrupt closes loopback session once', async ({ browser }, testInfo) => {
   assertChromiumPrerequisite(browser, testInfo);
 
-  // Dynamic loading is intentional only for RED: both named tests must run before this planned module exists.
-  const { createShutdownController } = await import(
-    '../../src/server/lifecycle.js'
-  );
   const signals = new EventEmitter();
   let abortCount = 0;
   let closeCount = 0;
