@@ -22,7 +22,7 @@
 - [x] **SEL-05**: User explicitly selects an ordered base followed by an ordered head.
 - [ ] **SEL-06**: User is prevented from starting a review when both selections resolve to the same commit.
 - [ ] **SEL-07**: User sees that dirty worktree state is ignored and that the worktree's committed `HEAD` will be reviewed.
-- [ ] **SEL-08**: User's default browser opens automatically after the server binds, while the terminal prints the URL and shutdown instructions.
+- [x] **SEL-08**: User's default browser opens automatically after the server binds, while the terminal prints the URL and shutdown instructions.
 
 ### Comparison
 
@@ -79,11 +79,11 @@
 
 ### Local Safety
 
-- [ ] **SAFE-01**: User's server listens only on `127.0.0.1` using an operating-system-assigned port.
+- [x] **SAFE-01**: User's server listens only on `127.0.0.1` using an operating-system-assigned port.
 - [ ] **SAFE-02**: API requests without the per-process session token or with an unexpected origin cannot read repository blobs or mutate review state.
 - [ ] **SAFE-03**: Browser requests cannot select arbitrary repositories, refs, Git objects, filesystem paths, or export paths after launch.
 - [ ] **SAFE-04**: `.diff-review/` is excluded from the reviewed change set and can be added to `.gitignore` without overwriting existing rules.
-- [ ] **SAFE-05**: User can stop the server with terminal interrupt without leaving an incomplete accepted draft or export.
+- [x] **SAFE-05**: User can stop the server with terminal interrupt without leaving an incomplete accepted draft or export.
 
 ## Acceptance Criteria
 
@@ -150,7 +150,7 @@ Each v1 requirement maps to exactly one roadmap phase.
 | SEL-05 | Phase 1 | Complete |
 | SEL-06 | Phase 1 | Pending |
 | SEL-07 | Phase 1 | Pending |
-| SEL-08 | Phase 1 | Pending |
+| SEL-08 | Phase 1 | Complete |
 | CMP-01 | Phase 1 | Complete |
 | CMP-02 | Phase 1 | Complete |
 | CMP-03 | Phase 1 | Pending |
@@ -162,10 +162,10 @@ Each v1 requirement maps to exactly one roadmap phase.
 | CMP-09 | Phase 1 | Pending |
 | DIFF-01 | Phase 1 | Pending |
 | DIFF-06 | Phase 1 | Pending |
-| SAFE-01 | Phase 1 | Pending |
+| SAFE-01 | Phase 1 | Complete |
 | SAFE-02 | Phase 1 | Pending |
 | SAFE-03 | Phase 1 | Pending |
-| SAFE-05 | Phase 1 | Pending |
+| SAFE-05 | Phase 1 | Complete |
 | DIFF-02 | Phase 2 | Pending |
 | DIFF-03 | Phase 2 | Pending |
 | DIFF-04 | Phase 2 | Pending |

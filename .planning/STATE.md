@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-07-20T09:58:20.406Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-07-20T10:52:19.930Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 2
-  percent: 6
+  completed_plans: 3
+  percent: 9
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 3 of 13
+Plan: 4 of 13
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 01 execution started
 
-Progress: █░░░░░░░░░ 6%
+Progress: █░░░░░░░░░ 9%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: █░░░░░░░░░ 6%
 *Updated after each plan completion*
 | Phase 01 P01 | 11 min | 3 tasks | 12 files |
 | Phase 01 P02 | 23 min | 2 tasks | 8 files |
+| Phase 01 P03 | 30 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,10 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Use hasCommittedChanges as the Plan 01-02 committed fact — Full file inventory remains Plan 01-06 scope.
 - [Phase 01]: Resolve ordered base and head refs exactly once, then use only full object IDs — Moving refs cannot alter the frozen comparison descriptor.
 - [Phase 01]: Suppress repository execution surfaces at the shared Git runner — Hooks, fsmonitor, external diffs, prompts, optional locks, and file transport are disabled.
+- [Phase 01]: Construct Fastify only after the frozen ordered comparison exists — Invalid or unresolved selections must not bind a port.
+- [Phase 01]: Treat browser opening as best effort — Print the actual loopback URL and exact fallback first, then keep serving if opener dispatch rejects.
+- [Phase 01]: Use one memoized shutdown promise for signals and programmatic cleanup — Git abort, listener close, handler removal, and the first exit status occur at most once.
+- [Phase 01]: Keep interactive selection out of Plan 01-03 — The packaged lifecycle uses ordered launch options; Plan 01-04 owns the Commander and Inquirer selector.
 
 ### Pending Todos
 
@@ -94,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T09:58:20.402Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-07-20T10:52:19.927Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
