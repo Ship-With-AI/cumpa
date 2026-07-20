@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-08-PLAN.md
-last_updated: "2026-07-20T14:27:37.190Z"
+stopped_at: Completed 01-09-PLAN.md
+last_updated: "2026-07-20T14:50:58.958Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 8
-  percent: 0
+  completed_plans: 9
+  percent: 26
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 9 of 13
+Plan: 10 of 13
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 01 execution started
 
-Progress: ██░░░░░░░░ 20%
+Progress: ███░░░░░░░ 26%
 
 ## Performance Metrics
 
@@ -62,6 +62,7 @@ Progress: ██░░░░░░░░ 20%
 | Phase 01 P06 | 32min | 2 tasks | 10 files |
 | Phase 01 P07 | 21min | 2 tasks | 8 files |
 | Phase 01-pinned-local-comparison P08 | 26min | 2 tasks | 12 files |
+| Phase 01-pinned-local-comparison P09 | 15min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01-pinned-local-comparison]: Bind exact loopback Host and Origin only after the ephemeral listener reports its actual authority; fail closed before binding.
 - [Phase 01-pinned-local-comparison]: Expose only strict metadata DTOs through frozen opaque file capabilities; repository roots and blob object IDs remain server-side.
 - [Phase 01-pinned-local-comparison]: Protect API requests with a per-process 256-bit fragment bearer erased from browser history and held only inside a fixed-method client closure.
+- [Phase 01]: Exact path bytes and opaque IDs drive tree authority — Status-specific effective paths, bytewise ordering, and selection never parse display strings
+- [Phase 01]: Compact only one-directory and zero-file chains — Mixed file-directory nodes and branched directories remain explicit while exact full prefixes survive compaction
+- [Phase 01]: Keep directory focus separate from file selection — Roving focus can traverse and collapse directories without replacing selectedFileId with path or directory authority
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T14:26:01.484Z
-Stopped at: Completed 01-08-PLAN.md
+Last session: 2026-07-20T14:50:58.954Z
+Stopped at: Completed 01-09-PLAN.md
 Resume file: None
