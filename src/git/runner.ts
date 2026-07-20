@@ -53,6 +53,7 @@ export interface GitRunResult {
 
 export interface GitRunOptions {
   readonly cwd: string;
+  readonly input?: Uint8Array;
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
   readonly maxStdoutBytes?: number;
@@ -149,8 +150,9 @@ export function createGitRunner(defaults: GitRunnerOptions = {}): GitRunner {
           },
           shell: false,
           signal: controller.signal,
-          stdio: ['ignore', 'pipe', 'pipe'],
+          stdio: ['pipe', 'pipe', 'pipe'],
         });
+        child.stdin.end(options.input);
 
         child.stdout.on('data', (chunk: Buffer) => {
           stdoutBytes += chunk.length;

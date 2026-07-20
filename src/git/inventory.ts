@@ -6,6 +6,9 @@ import type {
   ChangedFileStatusKind,
 } from '../contracts/comparison.js';
 import type { ExactPath } from '../domain/path-bytes.js';
+import { classifyAvailability } from './availability.js';
+import { createObjectReader } from './objects.js';
+import type { ObjectReader } from './objects.js';
 import { joinDiffStats, parseNumstat } from './numstat.js';
 import { parseRawDiff } from './raw-diff.js';
 import type { RawDiffRecord } from './raw-diff.js';
@@ -29,6 +32,7 @@ export interface CreateChangedFileInventoryOptions {
 
 export interface ChangedFileInventoryDependencies {
   readonly runner?: GitRunner;
+  readonly objectReader?: ObjectReader;
 }
 
 const processFileIdNamespace = randomBytes(32);
@@ -96,21 +100,6 @@ function validateObjectFormat(
   }
 }
 
-function unsupportedReason(record: RawDiffRecord): string | undefined {
-  const reasons: string[] = [];
-  if (statusKindByCode[record.status] === undefined) {
-    reasons.push(`status ${record.status}`);
-  }
-  if (knownModes[record.oldMode] !== true) {
-    reasons.push(`mode ${record.oldMode}`);
-  }
-  if (knownModes[record.newMode] !== true) {
-    reasons.push(`mode ${record.newMode}`);
-  }
-  return reasons.length === 0
-    ? undefined
-    : `Unsupported Git ${reasons.join(' and ')}`;
-}
 
 function inventoryPaths(record: RawDiffRecord): {
   readonly oldPath?: ExactPath;
@@ -167,27 +156,42 @@ export async function createChangedFileInventory(
     throw new RangeError('File ID namespace must not be empty');
   }
 
-  const files = joined.map(({ diff, stats }) => {
-    validateObjectFormat(diff, options.objectFormat);
-    const reason = unsupportedReason(diff);
-    return ChangedFileSchema.parse({
-      id: opaqueFileId(namespace, diff),
-      status: {
-        code: diff.status,
-        kind: reason === undefined
-          ? statusKindByCode[diff.status]
-          : 'unsupported',
-        similarity: diff.similarity,
-      },
-      oldMode: diff.oldMode,
-      newMode: diff.newMode,
-      oldBlobOid: diff.oldBlobOid,
-      newBlobOid: diff.newBlobOid,
-      ...inventoryPaths(diff),
-      additions: stats.additions,
-      deletions: stats.deletions,
-      ...(reason === undefined ? {} : { unsupportedReason: reason }),
-    });
-  });
+  const objectReader =
+    dependencies.objectReader ??
+    createObjectReader(options.repositoryRoot, { runner });
+  const files = await Promise.all(
+    joined.map(async ({ diff, stats }) => {
+      validateObjectFormat(diff, options.objectFormat);
+      const knownStatus = statusKindByCode[diff.status];
+      const hasUnsupportedMetadata =
+        knownStatus === undefined ||
+        knownModes[diff.oldMode] !== true ||
+        knownModes[diff.newMode] !== true;
+      const statusKind: ChangedFileStatusKind = hasUnsupportedMetadata
+        ? 'unsupported'
+        : knownStatus;
+      const file = {
+        id: opaqueFileId(namespace, diff),
+        status: {
+          code: diff.status,
+          kind: statusKind,
+          similarity: diff.similarity,
+        },
+        oldMode: diff.oldMode,
+        newMode: diff.newMode,
+        oldBlobOid: diff.oldBlobOid,
+        newBlobOid: diff.newBlobOid,
+        ...inventoryPaths(diff),
+        additions: stats.additions,
+        deletions: stats.deletions,
+      };
+      const availability = await classifyAvailability(
+        file,
+        objectReader,
+        options.signal,
+      );
+      return ChangedFileSchema.parse({ ...file, availability });
+    }),
+  );
   return Object.freeze(files);
 }

@@ -62,6 +62,29 @@ export const ChangedFileStatusSchema = z
   .readonly();
 
 export const GitModeSchema = z.string().regex(/^[0-7]{6}$/);
+export const UnsupportedAvailabilityReasonSchema = z.enum([
+  'binary',
+  'non-utf8',
+  'oversized',
+  'submodule',
+  'symlink',
+  'mode-or-type',
+]);
+
+export const AvailabilitySchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('text') }),
+    z.strictObject({
+      kind: z.literal('unsupported'),
+      reason: UnsupportedAvailabilityReasonSchema,
+    }),
+    z.strictObject({
+      kind: z.literal('unavailable'),
+      reason: z.literal('missing-object'),
+    }),
+  ])
+  .readonly();
+
 
 export const ChangedFileSchema = z
   .strictObject({
@@ -75,7 +98,7 @@ export const ChangedFileSchema = z
     newPath: ExactPathSchema.optional(),
     additions: z.number().int().nonnegative().nullable(),
     deletions: z.number().int().nonnegative().nullable(),
-    unsupportedReason: z.string().min(1).optional(),
+    availability: AvailabilitySchema,
   })
   .readonly();
 
@@ -92,6 +115,10 @@ export const PinnedComparisonSchema = z.strictObject({
 export type ComparisonSelection = z.infer<typeof ComparisonSelectionSchema>;
 export type PinnedComparison = z.infer<typeof PinnedComparisonSchema>;
 export type ExactPathDto = z.infer<typeof ExactPathSchema>;
+export type Availability = z.infer<typeof AvailabilitySchema>;
+export type UnsupportedAvailabilityReason = z.infer<
+  typeof UnsupportedAvailabilityReasonSchema
+>;
 export type ChangedFileStatusKind = z.infer<
   typeof ChangedFileStatusKindSchema
 >;

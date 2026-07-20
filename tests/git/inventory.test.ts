@@ -423,10 +423,8 @@ describe('native-Git changed-file inventory', () => {
       newBlobOid: newOid,
       additions: 0,
       deletions: 0,
+      availability: { kind: 'unsupported', reason: 'mode-or-type' },
     });
-    expect(file?.unsupportedReason).toContain('status X');
-    expect(file?.unsupportedReason).toContain('mode 100600');
-    expect(file?.unsupportedReason).toContain('mode 100700');
   });
 
   it('serializes exact paths through strict contracts without accepting path or object authority', async () => {
