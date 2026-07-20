@@ -43,7 +43,7 @@
 - [ ] **DIFF-03**: User sees syntax highlighting selected from the file path while preserving exact blob text.
 - [ ] **DIFF-04**: User can expand hidden unchanged regions and review any revealed context line.
 - [ ] **DIFF-05**: User can move to the previous or next file and previous or next change using documented keyboard controls.
-- [ ] **DIFF-06**: User sees an explicit placeholder rather than a broken editor for unsupported files.
+- [x] **DIFF-06**: User sees an explicit placeholder rather than a broken editor for unsupported files.
 - [ ] **DIFF-07**: User can switch files, resize the workspace, and expand context without inline comments moving to the wrong line or breaking side alignment.
 
 ### Comments and Summary
@@ -161,7 +161,7 @@ Each v1 requirement maps to exactly one roadmap phase.
 | CMP-08 | Phase 1 | Complete |
 | CMP-09 | Phase 1 | Complete |
 | DIFF-01 | Phase 1 | Complete |
-| DIFF-06 | Phase 1 | Pending |
+| DIFF-06 | Phase 1 | Complete |
 | SAFE-01 | Phase 1 | Complete |
 | SAFE-02 | Phase 1 | Complete |
 | SAFE-03 | Phase 1 | Complete |

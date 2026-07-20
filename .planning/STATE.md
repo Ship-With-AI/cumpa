@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-11-PLAN.md
-last_updated: "2026-07-20T16:03:42.057Z"
+stopped_at: Completed 01-12-PLAN.md
+last_updated: "2026-07-20T16:34:38.318Z"
 last_activity: 2026-07-20
-last_activity_desc: Phase 01 execution started
+last_activity_desc: Completed Plan 01-12 selected-file metadata and availability
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 11
-  percent: 31
+  completed_plans: 12
+  percent: 34
 ---
 
 # Project State
@@ -29,19 +29,19 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 12 of 13
+Plan: 13 of 13
 Status: Ready to execute
-Last activity: 2026-07-20 — Phase 01 execution started
+Last activity: 2026-07-20 — Completed Plan 01-12 selected-file metadata and availability
 
-Progress: ███░░░░░░░ 31%
+Progress: ███░░░░░░░ 34%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0.0 hours
+- Total plans completed: 12
+- Average duration: 23 min
+- Total execution time: 4.7 hours
 
 **By Phase:**
 
@@ -51,13 +51,14 @@ Progress: ███░░░░░░░ 31%
 
 **Recent Trend:**
 
-- Last 5 plans: —
-- Trend: —
+- Last 5 plans: 26min, 15min, 27min, 20min, 14min
+- Trend: Improving
 
 *Updated after each plan completion*
 | Phase 01 P01 | 11 min | 3 tasks | 12 files |
 | Phase 01 P02 | 23 min | 2 tasks | 8 files |
 | Phase 01 P03 | 30 min | 2 tasks | 7 files |
+| Phase 01 P04 | 31min | 2 tasks | 10 files |
 | Phase 01 P05 | 29min | 2 tasks | 10 files |
 | Phase 01 P06 | 32min | 2 tasks | 10 files |
 | Phase 01 P07 | 21min | 2 tasks | 8 files |
@@ -65,6 +66,7 @@ Progress: ███░░░░░░░ 31%
 | Phase 01-pinned-local-comparison P09 | 15min | 2 tasks | 3 files |
 | Phase 01-pinned-local-comparison P10 | 27min | 2 tasks | 10 files |
 | Phase 01 P11 | 20min | 2 tasks | 12 files |
+| Phase 01 P12 | 14min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -107,6 +109,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Expose only selected worktree path and dirty state in the browser identity DTO — Preserves required identity context without exposing branch refs, source IDs, object capabilities, or diagnostics.
 - [Phase 01]: Classify a failed session fetch as a stopped local session — Keeps stopped recovery truthful while HTTP, validation, and security failures retain their fixed non-leaking copy.
 - [Phase 01]: Keep Plan 01-11 identity disclosure non-modal — Plan 01-13 owns narrow sheet modality, focus trapping, tabs, and final responsive acceptance.
+- [Phase 01]: Keep safe display paths separate from exact UTF-8 or base64url copy payloads.
+- [Phase 01]: Render session status, paths, counts, and availability immediately; add modes only from matching opaque detail responses.
+- [Phase 01]: Require request-generation and response fileId equality before accepting selected-file details.
 
 ### Pending Todos
 
@@ -127,6 +132,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T16:03:42.054Z
-Stopped at: Completed 01-11-PLAN.md
+Last session: 2026-07-20T16:34:38.315Z
+Stopped at: Completed 01-12-PLAN.md
 Resume file: None
