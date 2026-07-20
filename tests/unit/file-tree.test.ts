@@ -96,6 +96,7 @@ describe('buildFileTree', () => {
     const copyOldPath = exactPath('templates/source.ts');
     const copyNewPath = exactPath('src/n-copied.ts');
     const modePath = exactPath('src/mode-only.sh');
+    const rootBeforeDirectoryPath = exactPath('src-early.ts');
 
     const input = Object.freeze([
       sessionFile(0, { kind: 'deleted', oldPath: deletedPath }),
@@ -117,12 +118,18 @@ describe('buildFileTree', () => {
         oldPath: modePath,
         newPath: modePath,
       }),
+      sessionFile(11, {
+        kind: 'modified',
+        oldPath: rootBeforeDirectoryPath,
+        newPath: rootBeforeDirectoryPath,
+      }),
     ]);
 
     const tree = buildFileTree(input);
     const projectedLeaves = leaves(tree);
 
     expect(projectedLeaves.map((leaf) => leaf.fileId)).toEqual([
+      fileId(11),
       fileId(1),
       fileId(2),
       fileId(4),
@@ -130,6 +137,7 @@ describe('buildFileTree', () => {
       fileId(0),
     ]);
     expect(projectedLeaves.map((leaf) => leaf.effectivePath)).toEqual([
+      rootBeforeDirectoryPath,
       addedPath,
       renameNewPath,
       modePath,
@@ -145,6 +153,7 @@ describe('buildFileTree', () => {
       fileId(2),
       fileId(3),
       fileId(4),
+      fileId(11),
     ]);
   });
 
@@ -365,11 +374,31 @@ describe('createFileTreeModel', () => {
     ).toBe('directory');
     expect(downToDirectory.selectedFileId).toBe(fileId(0));
 
+    const collapsedNestedDirectory = downToDirectory.handleKey('ArrowLeft');
+    expect(collapsedNestedDirectory.visibleRows).toHaveLength(4);
+    expect(collapsedNestedDirectory.selectedFileId).toBe(fileId(0));
+    const parentDirectory =
+      collapsedNestedDirectory.handleKey('ArrowLeft');
+    expect(
+      row(
+        parentDirectory,
+        (candidate) => candidate.rowId === parentDirectory.focusedRowId,
+      ).kind,
+    ).toBe('directory');
+    expect(parentDirectory.selectedFileId).toBe(fileId(0));
+    const reexpandedNestedDirectory =
+      collapsedNestedDirectory.handleKey('ArrowRight');
+    expect(reexpandedNestedDirectory.visibleRows).toHaveLength(5);
+    expect(reexpandedNestedDirectory.selectedFileId).toBe(fileId(0));
+
     const downToNestedFile = downToDirectory.handleKey('ArrowDown');
     expect(downToNestedFile.selectedFileId).toBe(fileId(1));
 
     const end = downToNestedFile.handleKey('End');
     expect(end.selectedFileId).toBe(fileId(2));
+
+    const up = end.handleKey('ArrowUp');
+    expect(up.selectedFileId).toBe(fileId(1));
 
     const home = end.handleKey('Home');
     expect(
