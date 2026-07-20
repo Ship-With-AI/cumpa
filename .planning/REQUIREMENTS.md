@@ -17,11 +17,11 @@
 
 - [x] **SEL-01**: User can run the CLI from any directory inside a non-bare Git worktree and have the repository root resolved automatically.
 - [ ] **SEL-02**: User receives a clear actionable error when Git is unavailable, the directory is not a reviewable repository, or the repository has no resolvable commit.
-- [ ] **SEL-03**: User can search one picker containing local branches and every registered worktree, including detached worktrees.
-- [ ] **SEL-04**: User can distinguish each picker entry by type, label, worktree path when applicable, short commit ID, and dirty-state indicator.
+- [x] **SEL-03**: User can search one picker containing local branches and every registered worktree, including detached worktrees.
+- [x] **SEL-04**: User can distinguish each picker entry by type, label, worktree path when applicable, short commit ID, and dirty-state indicator.
 - [x] **SEL-05**: User explicitly selects an ordered base followed by an ordered head.
 - [ ] **SEL-06**: User is prevented from starting a review when both selections resolve to the same commit.
-- [ ] **SEL-07**: User sees that dirty worktree state is ignored and that the worktree's committed `HEAD` will be reviewed.
+- [x] **SEL-07**: User sees that dirty worktree state is ignored and that the worktree's committed `HEAD` will be reviewed.
 - [x] **SEL-08**: User's default browser opens automatically after the server binds, while the terminal prints the URL and shutdown instructions.
 
 ### Comparison
@@ -145,11 +145,11 @@ Each v1 requirement maps to exactly one roadmap phase.
 |-------------|-------|--------|
 | SEL-01 | Phase 1 | Complete |
 | SEL-02 | Phase 1 | Pending |
-| SEL-03 | Phase 1 | Pending |
-| SEL-04 | Phase 1 | Pending |
+| SEL-03 | Phase 1 | Complete |
+| SEL-04 | Phase 1 | Complete |
 | SEL-05 | Phase 1 | Complete |
 | SEL-06 | Phase 1 | Pending |
-| SEL-07 | Phase 1 | Pending |
+| SEL-07 | Phase 1 | Complete |
 | SEL-08 | Phase 1 | Complete |
 | CMP-01 | Phase 1 | Complete |
 | CMP-02 | Phase 1 | Complete |
