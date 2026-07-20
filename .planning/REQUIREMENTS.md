@@ -80,8 +80,8 @@
 ### Local Safety
 
 - [x] **SAFE-01**: User's server listens only on `127.0.0.1` using an operating-system-assigned port.
-- [ ] **SAFE-02**: API requests without the per-process session token or with an unexpected origin cannot read repository blobs or mutate review state.
-- [ ] **SAFE-03**: Browser requests cannot select arbitrary repositories, refs, Git objects, filesystem paths, or export paths after launch.
+- [x] **SAFE-02**: API requests without the per-process session token or with an unexpected origin cannot read repository blobs or mutate review state.
+- [x] **SAFE-03**: Browser requests cannot select arbitrary repositories, refs, Git objects, filesystem paths, or export paths after launch.
 - [ ] **SAFE-04**: `.diff-review/` is excluded from the reviewed change set and can be added to `.gitignore` without overwriting existing rules.
 - [x] **SAFE-05**: User can stop the server with terminal interrupt without leaving an incomplete accepted draft or export.
 
@@ -163,8 +163,8 @@ Each v1 requirement maps to exactly one roadmap phase.
 | DIFF-01 | Phase 1 | Pending |
 | DIFF-06 | Phase 1 | Pending |
 | SAFE-01 | Phase 1 | Complete |
-| SAFE-02 | Phase 1 | Pending |
-| SAFE-03 | Phase 1 | Pending |
+| SAFE-02 | Phase 1 | Complete |
+| SAFE-03 | Phase 1 | Complete |
 | SAFE-05 | Phase 1 | Complete |
 | DIFF-02 | Phase 2 | Pending |
 | DIFF-03 | Phase 2 | Pending |

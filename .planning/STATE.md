@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-07-20T13:48:55.392Z"
+stopped_at: Completed 01-08-PLAN.md
+last_updated: "2026-07-20T14:27:37.190Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 7
-  percent: 20
+  completed_plans: 8
+  percent: 0
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 8 of 13
+Plan: 9 of 13
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 01 execution started
 
@@ -61,6 +61,7 @@ Progress: ██░░░░░░░░ 20%
 | Phase 01 P05 | 29min | 2 tasks | 10 files |
 | Phase 01 P06 | 32min | 2 tasks | 10 files |
 | Phase 01 P07 | 21min | 2 tasks | 8 files |
+| Phase 01-pinned-local-comparison P08 | 26min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Use NUL-framed cat-file commands with validated full object IDs as the sole content authority. — Machine framing stays byte-safe and forbids refs, paths, filters, textconv, and filesystem fallback.
 - [Phase 01]: Classify structural non-regular modes without object access, then inspect every regular side before reading bytes. — This prevents symlink traversal and makes missing, wrong-type, and oversized precedence deterministic.
 - [Phase 01]: Use one strict availability union per changed file and remove free-form unsupported reasons. — Downstream API and UI consumers receive exactly one synchronized machine reason while every record stays visible.
+- [Phase 01-pinned-local-comparison]: Bind exact loopback Host and Origin only after the ephemeral listener reports its actual authority; fail closed before binding.
+- [Phase 01-pinned-local-comparison]: Expose only strict metadata DTOs through frozen opaque file capabilities; repository roots and blob object IDs remain server-side.
+- [Phase 01-pinned-local-comparison]: Protect API requests with a per-process 256-bit fragment bearer erased from browser history and held only inside a fixed-method client closure.
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T13:48:55.388Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-07-20T14:26:01.484Z
+Stopped at: Completed 01-08-PLAN.md
 Resume file: None
