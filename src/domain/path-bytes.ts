@@ -19,7 +19,7 @@ export function encodeBase64url(bytes: Uint8Array): string {
     .replace(/=+$/, '');
 }
 
-function controlSafeDisplay(value: string): string {
+export function controlSafeDisplay(value: string): string {
   let display = '';
   for (const character of value) {
     const codePoint = character.codePointAt(0)!;

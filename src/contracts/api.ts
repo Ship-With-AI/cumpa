@@ -10,10 +10,18 @@ import {
 
 export const OpaqueFileIdSchema = z.string().regex(/^file_[A-Za-z0-9_-]{43}$/);
 
+const ApiWorktreeIdentitySchema = z
+  .strictObject({
+    path: z.string().min(1),
+    dirty: z.boolean(),
+  })
+  .readonly();
+
 const ApiPinnedEndpointSchema = z
   .strictObject({
     label: z.string().min(1),
     oid: GitObjectIdSchema,
+    worktree: ApiWorktreeIdentitySchema.optional(),
   })
   .readonly();
 

@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, shallowRef } from 'vue';
+import {
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  shallowRef,
+} from 'vue';
 
-import FileTree from './components/FileTree.vue';
 import type { SessionResponse } from '../contracts/api';
 import {
   createSessionClient,
@@ -9,16 +14,17 @@ import {
   SessionClientError,
 } from './api/client';
 import type { SessionClient } from './api/client';
+import EmptyState from './components/EmptyState.vue';
+import ErrorState from './components/ErrorState.vue';
+import FileTree from './components/FileTree.vue';
+import IdentityHeader from './components/IdentityHeader.vue';
+import IdentityPanel from './components/IdentityPanel.vue';
 
 const session = shallowRef<SessionResponse>();
-let sessionClient: SessionClient | undefined;
 const errorMessage = ref('');
-const loadedHeading = computed(() => {
-  if (session.value === undefined) {
-    return '';
-  }
-  return `Diff Review: ${session.value.base.label} · ${session.value.base.oid.slice(0, 7)} → ${session.value.head.label} · ${session.value.head.oid.slice(0, 7)}`;
-});
+const identityOpen = ref(false);
+const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
+let sessionClient: SessionClient | undefined;
 
 function selectFile(fileId: string): void {
   if (sessionClient !== undefined) {
@@ -26,23 +32,41 @@ function selectFile(fileId: string): void {
   }
 }
 
+function toggleIdentities(): void {
+  identityOpen.value = !identityOpen.value;
+}
+
+function handleEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || !identityOpen.value) {
+    return;
+  }
+  identityOpen.value = false;
+  void nextTick(() => identityHeader.value?.focusDisclosure());
+}
+
 onMounted(async () => {
+  document.addEventListener('keydown', handleEscape);
   try {
     sessionClient = createSessionClient();
     session.value = await sessionClient.getSession();
   } catch (error) {
     errorMessage.value =
-      error instanceof SessionClientError && error.kind === 'security'
-        ? SECURITY_FAILURE_MESSAGE
-        : error instanceof SessionClientError
-          ? error.message
-          : SECURITY_FAILURE_MESSAGE;
+      error instanceof SessionClientError
+        ? error.message
+        : SECURITY_FAILURE_MESSAGE;
   }
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleEscape);
 });
 </script>
 
 <template>
-  <main v-if="session === undefined && errorMessage === ''" class="loading-shell">
+  <main
+    v-if="session === undefined && errorMessage === ''"
+    class="loading-shell"
+  >
     <section class="state-card" aria-labelledby="loading-heading">
       <h1 id="loading-heading">Diff Review: loading pinned comparison</h1>
       <p role="status">Loading pinned comparison…</p>
@@ -50,51 +74,28 @@ onMounted(async () => {
   </main>
 
   <main v-else-if="errorMessage !== ''" class="unavailable-shell">
-    <section class="state-card" aria-labelledby="unavailable-heading">
-      <h1>Diff Review: pinned session unavailable</h1>
-      <h2 id="unavailable-heading">Pinned session unavailable</h2>
-      <p role="alert">{{ errorMessage }}</p>
-    </section>
+    <h1>Diff Review: pinned session unavailable</h1>
+    <ErrorState :message="errorMessage" />
   </main>
 
   <div v-else class="session-shell">
-    <header class="session-header">
-      <h1>{{ loadedHeading }}</h1>
-      <p class="pin-cue">Pinned to displayed commits</p>
-    </header>
+    <IdentityHeader
+      ref="identityHeader"
+      :session="session"
+      :expanded="identityOpen"
+      @toggle="toggleIdentities"
+    />
+    <IdentityPanel v-if="identityOpen" :session="session" />
 
     <div class="workspace-shell">
-      <FileTree :files="session.files" @select="selectFile" />
-
-      <main class="identity-main" aria-labelledby="identity-heading">
-        <h2 id="identity-heading">Comparison identities</h2>
-        <p class="identity-intro">
-          This session is pinned to these commits and does not follow moving refs.
-        </p>
-
-        <dl class="identity-list">
-          <div class="identity-row">
-            <dt>Base</dt>
-            <dd>
-              <span class="source-label">{{ session.base.label }}</span>
-              <code class="object-id">{{ session.base.oid }}</code>
-            </dd>
-          </div>
-          <div class="identity-row">
-            <dt>Head</dt>
-            <dd>
-              <span class="source-label">{{ session.head.label }}</span>
-              <code class="object-id">{{ session.head.oid }}</code>
-            </dd>
-          </div>
-          <div class="identity-row">
-            <dt>Merge base</dt>
-            <dd>
-              <code class="object-id">{{ session.mergeBaseOid }}</code>
-            </dd>
-          </div>
-        </dl>
+      <main v-if="session.files.length === 0" class="state-main">
+        <EmptyState />
       </main>
+      <FileTree
+        v-else
+        :files="session.files"
+        @select="selectFile"
+      />
     </div>
   </div>
 </template>

@@ -15,6 +15,21 @@ export type CapabilityRegistry = Readonly<{
   lookup: (fileId: string) => FileMetadataResponse | undefined;
 }>;
 
+function toSessionEndpoint(endpoint: PinnedComparison['base']) {
+  return {
+    label: endpoint.label,
+    oid: endpoint.oid,
+    ...(endpoint.source?.kind === 'worktree'
+      ? {
+          worktree: {
+            path: endpoint.source.path,
+            dirty: endpoint.source.dirty,
+          },
+        }
+      : {}),
+  };
+}
+
 export function createCapabilityRegistry(
   comparison: PinnedComparison,
   options: CapabilityRegistryOptions = {},
@@ -22,8 +37,8 @@ export function createCapabilityRegistry(
   const filesByCapability = new Map<string, FileMetadataResponse>();
 
   const session = SessionResponseSchema.parse({
-    base: comparison.base,
-    head: comparison.head,
+    base: toSessionEndpoint(comparison.base),
+    head: toSessionEndpoint(comparison.head),
     mergeBaseOid: comparison.mergeBaseOid,
     files: comparison.changedFiles.map((file) => {
       const status =

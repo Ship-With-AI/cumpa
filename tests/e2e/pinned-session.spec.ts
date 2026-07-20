@@ -281,6 +281,9 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
       `Diff Review: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
     );
     await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
+    await page
+      .getByRole('button', { name: 'Comparison identities' })
+      .click();
     await expect(
       page.locator('.identity-row').nth(0).getByText(expectedBase, { exact: true }),
     ).toBeVisible();
@@ -396,6 +399,9 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       'Copy failed. The full value remains available to select.',
     );
     await expect(identityRows.nth(1).getByText(expectedHead, { exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(panel).toHaveCount(0);
+    await expect(disclosure).toBeFocused();
 
     const securityPage = await context.newPage();
     await securityPage.route('**/api/session', async (route) => {
@@ -476,7 +482,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       },
     },
     head: {
-      label: 'Head worktree',
+      label: 'Head\nworktree',
       revision: dirtyRepository.headRef,
       source: {
         kind: 'worktree',
@@ -491,6 +497,9 @@ test('identity session and empty states', async ({ browser, context, page }, tes
   try {
     const dirtyUrl = await waitForLoopbackUrl(dirtyRunning);
     await dirtyPage.goto(dirtyUrl, { waitUntil: 'domcontentloaded' });
+    await expect(dirtyPage.getByRole('heading', { level: 1 })).toContainText(
+      'Head\\nworktree',
+    );
     const dirtyBadge = dirtyPage.getByText('Dirty bytes ignored', {
       exact: true,
     });

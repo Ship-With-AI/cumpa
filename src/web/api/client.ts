@@ -9,10 +9,16 @@ export const SECURITY_FAILURE_MESSAGE =
   'This request is not available in the current session. Relaunch Diff Review from the terminal.';
 export const SESSION_UNAVAILABLE_MESSAGE =
   'This pinned session is unavailable. Return to the terminal and launch Diff Review again. Diagnostic details are shown in the terminal.';
+export const SESSION_STOPPED_MESSAGE =
+  'This pinned session has stopped. Relaunch Diff Review from the terminal to continue.';
 export const FILE_UNAVAILABLE_MESSAGE =
   'File details could not be loaded. Retry this file. If the problem continues, check the terminal diagnostic.';
 
-export type SessionClientErrorKind = 'security' | 'session' | 'file';
+export type SessionClientErrorKind =
+  | 'security'
+  | 'session'
+  | 'stopped'
+  | 'file';
 
 export class SessionClientError extends Error {
   readonly kind: SessionClientErrorKind;
@@ -60,8 +66,10 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       });
     } catch {
       throw new SessionClientError(
-        failureKind,
-        failureKind === 'session' ? SESSION_UNAVAILABLE_MESSAGE : FILE_UNAVAILABLE_MESSAGE,
+        failureKind === 'session' ? 'stopped' : 'file',
+        failureKind === 'session'
+          ? SESSION_STOPPED_MESSAGE
+          : FILE_UNAVAILABLE_MESSAGE,
       );
     }
 
