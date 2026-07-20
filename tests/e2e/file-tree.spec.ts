@@ -300,6 +300,13 @@ test('packaged file tree preserves opaque selection and keyboard semantics', asy
   const repository = await createFileTreeFixture();
   const running = startGeneratedCli(repository);
   const fileRequests: FileRequestEvidence[] = [];
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      browserErrors.push(message.text());
+    }
+  });
   page.on('request', (request) => {
     const evidence = captureFileRequest(request);
     if (evidence !== undefined) {
@@ -309,6 +316,7 @@ test('packaged file tree preserves opaque selection and keyboard semantics', asy
 
   try {
     await page.goto(await waitForLoopbackUrl(running));
+    await expect.poll(() => browserErrors).toEqual([]);
 
     const navigation = page.getByRole('navigation', { name: 'Changed files' });
     const tree = navigation.getByRole('tree', { name: 'Changed files' });
@@ -341,9 +349,9 @@ test('packaged file tree preserves opaque selection and keyboard semantics', asy
       name: /Copied.*copied from copy-source\.ts to copy-target\.ts.*Text/i,
     });
     await expect(renamedRow).toContainText(
-      'src/deep/only/rename-source.ts → src/deep/only/renamed.ts',
+      'src/deep/only/rename-source.ts→src/deep/only/renamed.ts',
     );
-    await expect(copiedRow).toContainText('copy-source.ts → copy-target.ts');
+    await expect(copiedRow).toContainText('copy-source.ts→copy-target.ts');
 
     const escapedControlRow = tree.getByRole('treeitem', {
       name: /control\/line\\nbreak\.ts/,

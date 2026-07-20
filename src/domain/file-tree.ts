@@ -2,6 +2,8 @@ import type { SessionFile } from '../contracts/api.js';
 import {
   compareExactPaths,
   createExactPath,
+  decodeBase64url,
+  encodeBase64url,
   type ExactPath,
 } from './path-bytes.js';
 
@@ -113,9 +115,8 @@ function createMutableDirectory(
 }
 
 function insertProjectedFile(root: MutableRoot, projected: ProjectedFile): void {
-  const pathBytes = Buffer.from(
+  const pathBytes = decodeBase64url(
     projected.effectivePath.bytesBase64url,
-    'base64url',
   );
   let parent = root;
   let segmentStart = 0;
@@ -127,7 +128,7 @@ function insertProjectedFile(root: MutableRoot, projected: ProjectedFile): void 
 
     const segmentBytes = pathBytes.subarray(segmentStart, index);
     const pathPrefix = pathBytes.subarray(0, index);
-    const segmentKey = Buffer.from(segmentBytes).toString('base64url');
+    const segmentKey = encodeBase64url(segmentBytes);
     let child = parent.directories.get(segmentKey);
     if (child === undefined) {
       child = createMutableDirectory(segmentBytes, pathPrefix);

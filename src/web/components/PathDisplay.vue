@@ -1,0 +1,35 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+
+import type { SessionFile } from '../../contracts/api.js';
+
+const props = defineProps<{
+  file: SessionFile;
+}>();
+
+const isMove = computed(
+  () => props.file.status.kind === 'renamed' || props.file.status.kind === 'copied',
+);
+const effectivePath = computed(() => {
+  if (props.file.status.kind === 'deleted') {
+    return props.file.oldPath;
+  }
+  return props.file.newPath ?? props.file.oldPath;
+});
+const moveLabel = computed(() => {
+  if (!isMove.value || props.file.oldPath === undefined || props.file.newPath === undefined) {
+    return undefined;
+  }
+  const verb = props.file.status.kind === 'copied' ? 'copied' : 'renamed';
+  return `${verb} from ${props.file.oldPath.display} to ${props.file.newPath.display}`;
+});
+</script>
+
+<template>
+  <span v-if="isMove && file.oldPath !== undefined && file.newPath !== undefined" class="path-display" :aria-label="moveLabel">
+    <span aria-hidden="true" class="path-display__old">{{ file.oldPath.display }}</span>
+    <span aria-hidden="true" class="path-display__arrow">→</span>
+    <span aria-hidden="true" class="path-display__new">{{ file.newPath.display }}</span>
+  </span>
+  <span v-else class="path-display">{{ effectivePath?.display }}</span>
+</template>

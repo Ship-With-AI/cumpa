@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, shallowRef } from 'vue';
 
+import FileTree from './components/FileTree.vue';
 import type { SessionResponse } from '../contracts/api';
 import {
   createSessionClient,
   SECURITY_FAILURE_MESSAGE,
   SessionClientError,
 } from './api/client';
+import type { SessionClient } from './api/client';
 
 const session = shallowRef<SessionResponse>();
+let sessionClient: SessionClient | undefined;
 const errorMessage = ref('');
 const loadedHeading = computed(() => {
   if (session.value === undefined) {
@@ -17,9 +20,16 @@ const loadedHeading = computed(() => {
   return `Diff Review: ${session.value.base.label} · ${session.value.base.oid.slice(0, 7)} → ${session.value.head.label} · ${session.value.head.oid.slice(0, 7)}`;
 });
 
+function selectFile(fileId: string): void {
+  if (sessionClient !== undefined) {
+    void sessionClient.getFileMetadata(fileId).catch(() => undefined);
+  }
+}
+
 onMounted(async () => {
   try {
-    session.value = await createSessionClient().getSession();
+    sessionClient = createSessionClient();
+    session.value = await sessionClient.getSession();
   } catch (error) {
     errorMessage.value =
       error instanceof SessionClientError && error.kind === 'security'
@@ -53,35 +63,39 @@ onMounted(async () => {
       <p class="pin-cue">Pinned to displayed commits</p>
     </header>
 
-    <main class="identity-main" aria-labelledby="identity-heading">
-      <h2 id="identity-heading">Comparison identities</h2>
-      <p class="identity-intro">
-        This session is pinned to these commits and does not follow moving refs.
-      </p>
+    <div class="workspace-shell">
+      <FileTree :files="session.files" @select="selectFile" />
 
-      <dl class="identity-list">
-        <div class="identity-row">
-          <dt>Base</dt>
-          <dd>
-            <span class="source-label">{{ session.base.label }}</span>
-            <code class="object-id">{{ session.base.oid }}</code>
-          </dd>
-        </div>
-        <div class="identity-row">
-          <dt>Head</dt>
-          <dd>
-            <span class="source-label">{{ session.head.label }}</span>
-            <code class="object-id">{{ session.head.oid }}</code>
-          </dd>
-        </div>
-        <div class="identity-row">
-          <dt>Merge base</dt>
-          <dd>
-            <code class="object-id">{{ session.mergeBaseOid }}</code>
-          </dd>
-        </div>
-      </dl>
-    </main>
+      <main class="identity-main" aria-labelledby="identity-heading">
+        <h2 id="identity-heading">Comparison identities</h2>
+        <p class="identity-intro">
+          This session is pinned to these commits and does not follow moving refs.
+        </p>
+
+        <dl class="identity-list">
+          <div class="identity-row">
+            <dt>Base</dt>
+            <dd>
+              <span class="source-label">{{ session.base.label }}</span>
+              <code class="object-id">{{ session.base.oid }}</code>
+            </dd>
+          </div>
+          <div class="identity-row">
+            <dt>Head</dt>
+            <dd>
+              <span class="source-label">{{ session.head.label }}</span>
+              <code class="object-id">{{ session.head.oid }}</code>
+            </dd>
+          </div>
+          <div class="identity-row">
+            <dt>Merge base</dt>
+            <dd>
+              <code class="object-id">{{ session.mergeBaseOid }}</code>
+            </dd>
+          </div>
+        </dl>
+      </main>
+    </div>
   </div>
 </template>
 
