@@ -29,10 +29,10 @@
 - [x] **CMP-01**: User reviews the selected head against the merge base of the selected base and head.
 - [x] **CMP-02**: User sees selected labels plus full base, head, and merge-base commit identities.
 - [x] **CMP-03**: User receives a clear error for unrelated histories, multiple merge bases, or unavailable required Git objects.
-- [ ] **CMP-04**: User sees added, modified, deleted, renamed, copied, mode-only, binary, and unsupported changed-file statuses without path corruption.
-- [ ] **CMP-05**: User sees Git-derived addition/deletion counts when textual line counts are available.
+- [x] **CMP-04**: User sees added, modified, deleted, renamed, copied, mode-only, binary, and unsupported changed-file statuses without path corruption.
+- [x] **CMP-05**: User sees Git-derived addition/deletion counts when textual line counts are available.
 - [x] **CMP-06**: User reviews immutable blob contents from the pinned commits rather than staged, unstaged, or untracked filesystem content.
-- [ ] **CMP-07**: User can review repositories containing spaces, Unicode, tabs, newlines, or leading dashes in valid paths without selecting or displaying the wrong file.
+- [x] **CMP-07**: User can review repositories containing spaces, Unicode, tabs, newlines, or leading dashes in valid paths without selecting or displaying the wrong file.
 - [ ] **CMP-08**: User sees an explanatory empty state when the pinned comparison contains no PR-style changes.
 - [ ] **CMP-09**: User sees why a binary, non-UTF-8, oversized, submodule, or otherwise unsupported file cannot be rendered inline.
 
@@ -154,10 +154,10 @@ Each v1 requirement maps to exactly one roadmap phase.
 | CMP-01 | Phase 1 | Complete |
 | CMP-02 | Phase 1 | Complete |
 | CMP-03 | Phase 1 | Complete |
-| CMP-04 | Phase 1 | Pending |
-| CMP-05 | Phase 1 | Pending |
+| CMP-04 | Phase 1 | Complete |
+| CMP-05 | Phase 1 | Complete |
 | CMP-06 | Phase 1 | Complete |
-| CMP-07 | Phase 1 | Pending |
+| CMP-07 | Phase 1 | Complete |
 | CMP-08 | Phase 1 | Pending |
 | CMP-09 | Phase 1 | Pending |
 | DIFF-01 | Phase 1 | Pending |

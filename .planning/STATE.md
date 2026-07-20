@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-05-PLAN.md
-last_updated: "2026-07-20T12:35:08.805Z"
+stopped_at: Completed 01-06-PLAN.md
+last_updated: "2026-07-20T13:16:59.703Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 5
-  percent: 0
+  completed_plans: 6
+  percent: 17
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 6 of 13
+Plan: 7 of 13
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 01 execution started
 
-Progress: █░░░░░░░░░ 9%
+Progress: ██░░░░░░░░ 17%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: █░░░░░░░░░ 9%
 | Phase 01 P02 | 23 min | 2 tasks | 8 files |
 | Phase 01 P03 | 30 min | 2 tasks | 7 files |
 | Phase 01 P05 | 29min | 2 tasks | 10 files |
+| Phase 01 P06 | 32min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Require Git 2.43.0 and positive machine-protocol probes before selection — A version string alone cannot prove the native protocols needed for immutable comparison are available.
 - [Phase 01]: Encode fatal versus role-local recovery ownership in LaunchError — Environment failures must exit before launch while recoverable endpoint and graph failures preserve the opposite valid selection.
 - [Phase 01]: Require exactly one merge-base --all result and reverify pinned commit objects — Ambiguous ancestry or vanished objects must fail instead of choosing a base, re-resolving a ref, or reading worktree bytes.
+- [Phase 01]: Parse raw diff and numstat as separate byte and NUL grammars, joining only by exact path-byte tuples.
+- [Phase 01]: Derive opaque file IDs from a process namespace and exact raw-record identity; display paths never select records.
+- [Phase 01]: Use matching rename, copy, external-diff, and text-conversion controls with the same pinned merge-base and head OIDs for both inventory commands.
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T12:35:08.802Z
-Stopped at: Completed 01-05-PLAN.md
+Last session: 2026-07-20T13:16:59.699Z
+Stopped at: Completed 01-06-PLAN.md
 Resume file: None
