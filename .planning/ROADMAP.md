@@ -8,12 +8,12 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 
 | Phase | Name | Goal | Requirements | Plans |
 |-------|------|------|--------------|-------|
-| 1 | Pinned Local Comparison | Launch a secure browser session that accurately identifies and lists PR-style changes for any ordered branch/worktree pair | 23 | 3 |
-| 2 | Anchored Diff Review | Review text side by side and persist a precise line comment that resumes on the same comparison | 11 | 3 |
-| 3 | Complete Review Draft | Manage the full comment/summary lifecycle without silent overwrite, relocation, or selector drift | 8 | 2 |
-| 4 | Agent-Ready Export | Atomically export deterministic canonical JSON and derived Markdown without mutating source | 9 | 2 |
+| 1 | Pinned Local Comparison | Launch a secure browser session that accurately identifies and lists PR-style changes for any ordered branch/worktree pair | 23 | 13 |
+| 2 | Anchored Diff Review | Review text side by side and persist a precise line comment that resumes on the same comparison | 11 | 7 |
+| 3 | Complete Review Draft | Manage the full comment/summary lifecycle without silent overwrite, relocation, or selector drift | 8 | 7 |
+| 4 | Agent-Ready Export | Atomically export deterministic canonical JSON and derived Markdown without mutating source | 9 | 8 |
 
-**Total:** 4 phases, 51 v1 requirements, 10 projected plans.
+**Total:** 4 phases, 51 v1 requirements, 35 planned implementation units.
 
 ## Phase Details
 
@@ -24,7 +24,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 **UI hint**: yes
 **Requirements:** SEL-01–SEL-08, CMP-01–CMP-09, DIFF-01, DIFF-06, SAFE-01–SAFE-03, SAFE-05
 **Dependencies:** None
-**Projected plans:** 3
+**Planned implementation units:** 13
 
 **Success Criteria**:
 1. From any directory in a real Git worktree, the CLI offers searchable local branch and registered-worktree entries, makes base/head order explicit, warns that dirty bytes are ignored, resolves committed identities, binds an ephemeral loopback server, and opens the browser.
@@ -40,7 +40,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 **UI hint**: yes
 **Requirements:** DIFF-02–DIFF-05, DIFF-07, CMT-01, CMT-02, CMT-08, DRFT-01–DRFT-03
 **Dependencies:** Phase 1
-**Projected plans:** 3
+**Planned implementation units:** 7
 
 **Success Criteria**:
 1. Selecting a supported text file loads exact base/head blobs into a read-only, syntax-highlighted side-by-side diff with expandable unchanged context and documented file/change navigation.
@@ -56,7 +56,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 **UI hint**: yes
 **Requirements:** CMT-03–CMT-07, DRFT-04–DRFT-06
 **Dependencies:** Phase 2
-**Projected plans:** 2
+**Planned implementation units:** 7
 
 **Success Criteria**:
 1. A reviewer can edit, delete, resolve, and reopen comments; open/resolved counts update and each listed comment can navigate back to its anchored line.
@@ -72,7 +72,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 **UI hint**: yes
 **Requirements:** EXP-01–EXP-08, SAFE-04
 **Dependencies:** Phase 3
-**Projected plans:** 2
+**Planned implementation units:** 8
 
 **Success Criteria**:
 1. Export writes versioned, schema-valid `review.json` and derived `review.md` together beneath `.diff-review/exports/`, then shows repository-relative paths and content hashes.
@@ -97,10 +97,10 @@ Every v1 requirement maps to exactly one phase:
 
 | Phase | Status | Plans Complete | Requirements Complete |
 |-------|--------|----------------|-----------------------|
-| 1. Pinned Local Comparison | Not started | 0/3 | 0/23 |
-| 2. Anchored Diff Review | Not started | 0/3 | 0/11 |
-| 3. Complete Review Draft | Not started | 0/2 | 0/8 |
-| 4. Agent-Ready Export | Not started | 0/2 | 0/9 |
+| 1. Pinned Local Comparison | In progress | 0/13 | 0/23 |
+| 2. Anchored Diff Review | Not started | 0/7 | 0/11 |
+| 3. Complete Review Draft | Not started | 0/7 | 0/8 |
+| 4. Agent-Ready Export | Not started | 0/8 | 0/9 |
 
 ---
 *Roadmap created: 2026-07-11*
