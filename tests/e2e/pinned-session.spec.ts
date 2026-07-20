@@ -308,6 +308,329 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
   }
 });
 
+test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  const repository = await createGitFixture();
+  const baseWorktreePath = join(dirname(repository.root), 'base-worktree');
+  repository.git([
+    'worktree',
+    'add',
+    '--detach',
+    baseWorktreePath,
+    repository.baseRef,
+  ]);
+  await repository.write('at-limit.txt', 'a'.repeat(1_048_576));
+  await repository.write('over-limit.txt', 'b'.repeat(1_048_577));
+  repository.git(['add', '--', 'at-limit.txt', 'over-limit.txt']);
+  repository.git(['commit', '-m', 'add size boundary fixtures']);
+  await repository.write('dirty-head.txt', 'untracked head bytes must be ignored\n');
+  writeFileSync(
+    join(baseWorktreePath, 'dirty-base.txt'),
+    'untracked base bytes must be ignored\n',
+    'utf8',
+  );
+
+  const cases = [
+    {
+      name: 'branch-to-branch',
+      selections: {
+        base: {
+          label: 'Branch base',
+          revision: repository.baseRef,
+          source: {
+            kind: 'branch',
+            id: 'branch:matrix-base',
+            refName: repository.baseRef,
+          },
+        },
+        head: {
+          label: 'Branch head',
+          revision: repository.headRef,
+          source: {
+            kind: 'branch',
+            id: 'branch:matrix-head',
+            refName: repository.headRef,
+          },
+        },
+      },
+    },
+    {
+      name: 'branch-to-worktree',
+      selections: {
+        base: {
+          label: 'Branch base',
+          revision: repository.baseRef,
+          source: {
+            kind: 'branch',
+            id: 'branch:matrix-base',
+            refName: repository.baseRef,
+          },
+        },
+        head: {
+          label: 'Worktree head',
+          revision: repository.headRef,
+          source: {
+            kind: 'worktree',
+            id: 'worktree:matrix-head',
+            path: repository.root,
+            detached: false,
+            dirty: true,
+          },
+        },
+      },
+    },
+    {
+      name: 'worktree-to-branch',
+      selections: {
+        base: {
+          label: 'Worktree base',
+          revision: repository.baseRef,
+          source: {
+            kind: 'worktree',
+            id: 'worktree:matrix-base',
+            path: baseWorktreePath,
+            detached: true,
+            dirty: true,
+          },
+        },
+        head: {
+          label: 'Branch head',
+          revision: repository.headRef,
+          source: {
+            kind: 'branch',
+            id: 'branch:matrix-head',
+            refName: repository.headRef,
+          },
+        },
+      },
+    },
+    {
+      name: 'worktree-to-worktree',
+      selections: {
+        base: {
+          label: 'Worktree base',
+          revision: repository.baseRef,
+          source: {
+            kind: 'worktree',
+            id: 'worktree:matrix-base',
+            path: baseWorktreePath,
+            detached: true,
+            dirty: true,
+          },
+        },
+        head: {
+          label: 'Worktree head',
+          revision: repository.headRef,
+          source: {
+            kind: 'worktree',
+            id: 'worktree:matrix-head',
+            path: repository.root,
+            detached: false,
+            dirty: true,
+          },
+        },
+      },
+    },
+  ] as const satisfies readonly {
+    readonly name: string;
+    readonly selections: GeneratedCliSelections;
+  }[];
+
+  try {
+    for (const matrixCase of cases) {
+      const expectedBase = independentlyResolve(repository, [
+        'rev-parse',
+        '--verify',
+        repository.baseRef,
+      ]);
+      const expectedHead = independentlyResolve(repository, [
+        'rev-parse',
+        '--verify',
+        repository.headRef,
+      ]);
+      const expectedMergeBase = independentlyResolve(repository, [
+        'merge-base',
+        '--all',
+        expectedBase,
+        expectedHead,
+      ]);
+      const expectedPaths = repository
+        .git([
+          'diff',
+          '--name-only',
+          '-z',
+          expectedMergeBase,
+          expectedHead,
+        ])
+        .toString('utf8')
+        .split('\0')
+        .filter((path) => path.length > 0)
+        .sort();
+      expect(expectedPaths, `[behavioral] ${matrixCase.name} Git facts`).toEqual([
+        'at-limit.txt',
+        'committed.txt',
+        'over-limit.txt',
+      ]);
+
+      const running = startGeneratedCli(repository, matrixCase.selections);
+      const context = await browser.newContext();
+      const page = await context.newPage();
+      let headMoved = false;
+      try {
+        const launchUrl = await waitForLoopbackUrl(running);
+        const parsedLaunchUrl = new URL(launchUrl);
+        const token = parsedLaunchUrl.hash.slice('#token='.length);
+        repository.git([
+          'update-ref',
+          repository.headRef,
+          repository.futureHeadOid,
+          expectedHead,
+        ]);
+        headMoved = true;
+
+        const sessionResponse = await context.request.get(
+          `${parsedLaunchUrl.origin}/api/session`,
+          {
+            headers: { authorization: `Bearer ${token}` },
+          },
+        );
+        expect(
+          sessionResponse.status(),
+          `[behavioral] ${matrixCase.name} session API`,
+        ).toBe(200);
+        const session = (await sessionResponse.json()) as SessionResponse;
+        expect(session.base).toMatchObject({
+          label: matrixCase.selections.base.label,
+          oid: expectedBase,
+        });
+        expect(session.head).toMatchObject({
+          label: matrixCase.selections.head.label,
+          oid: expectedHead,
+        });
+        expect(session.mergeBaseOid).toBe(expectedMergeBase);
+        expect(
+          session.files
+            .map((file) => file.newPath?.utf8 ?? file.oldPath?.utf8)
+            .sort(),
+        ).toEqual(expectedPaths);
+
+        const atLimit = session.files.find(
+          (file) => file.newPath?.utf8 === 'at-limit.txt',
+        );
+        const overLimit = session.files.find(
+          (file) => file.newPath?.utf8 === 'over-limit.txt',
+        );
+        expect(atLimit).toMatchObject({
+          status: { kind: 'added' },
+          additions: 1,
+          deletions: 0,
+          availability: { kind: 'text' },
+        });
+        expect(overLimit).toMatchObject({
+          status: { kind: 'added' },
+          additions: 1,
+          deletions: 0,
+          availability: { kind: 'unsupported', reason: 'oversized' },
+        });
+
+        const atLimitMetadata = await context.request.get(
+          `${parsedLaunchUrl.origin}/api/files/${atLimit!.fileId}`,
+          {
+            headers: { authorization: `Bearer ${token}` },
+          },
+        );
+        const overLimitMetadata = await context.request.get(
+          `${parsedLaunchUrl.origin}/api/files/${overLimit!.fileId}`,
+          {
+            headers: { authorization: `Bearer ${token}` },
+          },
+        );
+        expect(atLimitMetadata.status()).toBe(200);
+        expect(await atLimitMetadata.json()).toMatchObject({
+          fileId: atLimit!.fileId,
+          availability: { kind: 'text' },
+        });
+        expect(overLimitMetadata.status()).toBe(200);
+        expect(await overLimitMetadata.json()).toMatchObject({
+          fileId: overLimit!.fileId,
+          availability: { kind: 'unsupported', reason: 'oversized' },
+        });
+
+        await page.goto(launchUrl, { waitUntil: 'domcontentloaded' });
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+          `Diff Review: ${matrixCase.selections.base.label} · ${expectedBase.slice(0, 7)} → ${matrixCase.selections.head.label} · ${expectedHead.slice(0, 7)}`,
+        );
+        await expect(
+          page.getByRole('heading', { name: 'Changed files (3)' }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole('tree', { name: 'Changed files' }),
+        ).toBeVisible();
+
+        const firstFile = session.files[0]!;
+        const laterFile = session.files.at(-1)!;
+        const firstRow = page.locator(
+          `[role="treeitem"][data-file-id="${firstFile.fileId}"]`,
+        );
+        const laterRow = page.locator(
+          `[role="treeitem"][data-file-id="${laterFile.fileId}"]`,
+        );
+        await expect(firstRow).toHaveAttribute('aria-selected', 'true');
+        await laterRow.click();
+        await expect(laterRow).toHaveAttribute('aria-selected', 'true');
+        await expect(
+          page.getByRole('main', { name: 'File details' }),
+        ).toContainText(
+          laterFile.newPath?.display ?? laterFile.oldPath?.display ?? '',
+        );
+
+        await page
+          .getByRole('button', { name: 'Comparison identities' })
+          .click();
+        const identities = page.getByRole('region', {
+          name: 'Comparison identities',
+        });
+        const identityRows = identities.locator('.identity-row');
+        await expect(
+          identityRows.nth(0).getByText(expectedBase, { exact: true }),
+        ).toBeVisible();
+        await expect(
+          identityRows.nth(1).getByText(expectedHead, { exact: true }),
+        ).toBeVisible();
+        await expect(
+          identityRows.nth(2).getByText(expectedMergeBase, { exact: true }),
+        ).toBeVisible();
+
+        const dirtyWorktreeCount =
+          Number(
+            matrixCase.selections.base.source?.kind === 'worktree' &&
+              matrixCase.selections.base.source.dirty,
+          ) +
+          Number(
+            matrixCase.selections.head.source?.kind === 'worktree' &&
+              matrixCase.selections.head.source.dirty,
+          );
+        await expect(
+          page.getByText('Dirty bytes ignored', { exact: true }),
+        ).toHaveCount(dirtyWorktreeCount);
+      } finally {
+        if (headMoved) {
+          repository.git([
+            'update-ref',
+            repository.headRef,
+            expectedHead,
+            repository.futureHeadOid,
+          ]);
+        }
+        await stopGeneratedCli(running);
+        await context.close();
+      }
+    }
+  } finally {
+    await repository.cleanup();
+  }
+});
+
 test('identity session and empty states', async ({ browser, context, page }, testInfo) => {
   assertChromiumPrerequisite(browser, testInfo);
   const repository = await createGitFixture();
@@ -998,13 +1321,44 @@ test('fragment token protects loopback API', async ({ browser, page, request }, 
         origin: 'https://attacker.example',
       },
     });
+    const hostileHost = await request.get(`${origin}/api/session`, {
+      headers: {
+        authorization: `Bearer ${token}`,
+        host: 'attacker.example',
+      },
+    });
+    const arbitraryCapability = await request.get(
+      `${origin}/api/files/file_${'A'.repeat(43)}`,
+      {
+        headers: { authorization: `Bearer ${token}` },
+      },
+    );
+    const arbitraryFields = await request.get(
+      `${origin}/api/session?repository=${encodeURIComponent('/etc')}&ref=${encodeURIComponent('refs/heads/hostile')}`,
+      {
+        headers: { authorization: `Bearer ${token}` },
+      },
+    );
     const staticResponse = await request.get(`${origin}/`);
 
     expect(missingToken.status()).toBe(401);
     expect(wrongToken.status()).toBe(401);
     expect(hostileOrigin.status()).toBe(403);
+    expect(hostileHost.status()).toBe(403);
+    expect(arbitraryCapability.status()).toBe(404);
+    expect(arbitraryFields.status()).toBe(400);
+    const arbitraryFieldsBody = await arbitraryFields.text();
+    expect(arbitraryFieldsBody).not.toContain('/etc');
+    expect(arbitraryFieldsBody).not.toContain('refs/heads/hostile');
     expect(staticResponse.status()).toBe(200);
-    for (const response of [missingToken, wrongToken, hostileOrigin]) {
+    for (const response of [
+      missingToken,
+      wrongToken,
+      hostileOrigin,
+      hostileHost,
+      arbitraryCapability,
+      arbitraryFields,
+    ]) {
       const body = await response.text();
       expect(body).toContain(
         'This request is not available in the current session. Relaunch Diff Review from the terminal.',
