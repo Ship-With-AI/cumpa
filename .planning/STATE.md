@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: Pinned Local Comparison
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-07-20T11:43:57.616Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-07-20T12:35:08.805Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 35
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 01 (Pinned Local Comparison) — EXECUTING
-Plan: 5 of 13
+Plan: 6 of 13
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 01 execution started
 
@@ -58,6 +58,7 @@ Progress: █░░░░░░░░░ 9%
 | Phase 01 P01 | 11 min | 3 tasks | 12 files |
 | Phase 01 P02 | 23 min | 2 tasks | 8 files |
 | Phase 01 P03 | 30 min | 2 tasks | 7 files |
+| Phase 01 P05 | 29min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Treat browser opening as best effort — Print the actual loopback URL and exact fallback first, then keep serving if opener dispatch rejects.
 - [Phase 01]: Use one memoized shutdown promise for signals and programmatic cleanup — Git abort, listener close, handler removal, and the first exit status occur at most once.
 - [Phase 01]: Keep interactive selection out of Plan 01-03 — The packaged lifecycle uses ordered launch options; Plan 01-04 owns the Commander and Inquirer selector.
+- [Phase 01]: Require Git 2.43.0 and positive machine-protocol probes before selection — A version string alone cannot prove the native protocols needed for immutable comparison are available.
+- [Phase 01]: Encode fatal versus role-local recovery ownership in LaunchError — Environment failures must exit before launch while recoverable endpoint and graph failures preserve the opposite valid selection.
+- [Phase 01]: Require exactly one merge-base --all result and reverify pinned commit objects — Ambiguous ancestry or vanished objects must fail instead of choosing a base, re-resolving a ref, or reading worktree bytes.
 
 ### Pending Todos
 
@@ -99,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T11:43:57.613Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-07-20T12:35:08.802Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
