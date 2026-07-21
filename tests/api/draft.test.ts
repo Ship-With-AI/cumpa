@@ -49,16 +49,28 @@ function comparison(root: string, baseOid = '1'.repeat(40), headOid = '2'.repeat
   };
 }
 
-function buildApp(root: string, baseOid?: string, headOid?: string, onLookup?: (file: string) => void) {
+function buildApp(
+  root: string,
+  baseOid?: string,
+  headOid?: string,
+  onLookup?: (file: string) => void,
+  headText = 'after\n',
+  missingHead = false,
+) {
   const app = createSessionApp(comparison(root, baseOid, headOid), {
     sessionToken: token,
     onCapabilityLookup: onLookup,
     objectReader: {
       inspect: async () => ({ kind: 'available' as const, objectType: 'blob', size: 12 }),
-      read: async (oid: string) => ({
-        kind: 'available' as const,
-        bytes: Buffer.from(oid === '4'.repeat(40) ? 'before\n' : 'after\n'),
-      }),
+      read: async (oid: string) => {
+        if (missingHead && oid === '5'.repeat(40)) {
+          return { kind: 'missing' as const };
+        }
+        return {
+          kind: 'available' as const,
+          bytes: Buffer.from(oid === '4'.repeat(40) ? 'before\n' : headText),
+        };
+      },
     },
   });
   apps.add(app);
@@ -145,8 +157,31 @@ describe('comparison-local draft routes', () => {
     expect(view.json()).toMatchObject({ revision: 1, comments: [expect.objectContaining({ body: 'Check the prior version.' })] });
   });
 
+  test('returns stale and orphaned presentation states without rewriting persisted anchors', async () => {
+    const repositoryRoot = await root();
+    const initial = buildApp(repositoryRoot);
+    const added = await initial.inject({
+      method: 'POST',
+      url: '/api/draft/comments',
+      headers,
+      payload: { fileId, side: 'head', line: 1, body: 'This anchor must remain exact.' },
+    });
+    expect(added.statusCode).toBe(201);
+
+    const stale = buildApp(repositoryRoot, undefined, undefined, undefined, 'changed text\n');
+    expect((await stale.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      comments: [{ verification: { state: 'stale', reason: 'anchor-mismatch' } }],
+    });
+
+    const orphaned = buildApp(repositoryRoot, undefined, undefined, undefined, 'after\n', true);
+    expect((await orphaned.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      comments: [{ verification: { state: 'orphaned', reason: 'anchor-unavailable' } }],
+    });
+  });
+
   test('denies unauthenticated draft work before lookup and preserves invalid existing bytes', async () => {
     const repositoryRoot = await root();
+
     const onLookup = vi.fn();
     const app = buildApp(repositoryRoot, undefined, undefined, onLookup);
     const denied = await app.inject({
