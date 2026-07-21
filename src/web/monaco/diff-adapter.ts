@@ -1,0 +1,406 @@
+import * as monaco from 'monaco-editor';
+
+import { counterpartBoundary, type DiffSide } from './line-mapping';
+
+export type { DiffSide } from './line-mapping';
+
+export type ImmutableDiffFile = Readonly<{
+  id: string;
+  base: Readonly<{ path: string; text: string }>;
+  head: Readonly<{ path: string; text: string }>;
+}>;
+
+export type Anchor = Readonly<{
+  fileId: string;
+  side: DiffSide;
+  line: number;
+}>;
+
+type ActiveComposer = Anchor & { text: string };
+type SavedFileState = {
+  viewState: monaco.editor.IDiffEditorViewState | null;
+  focused: { side: DiffSide; line: number } | undefined;
+  composer: ActiveComposer | undefined;
+  contextMode: 'collapsed' | 'all-revealed';
+};
+
+export type AdapterDiagnostics = Readonly<{
+  diffUpdates: number;
+  liveModels: number;
+  listenerCount: number;
+  pairedZoneCount: number;
+  activeComposerCount: number;
+  contextMode: 'collapsed' | 'all-revealed';
+}>;
+
+export type MonacoDiffAdapter = Readonly<{
+  activateAnchor: (side: DiffSide, line: number) => void;
+  dispose: () => void;
+  getDiagnostics: () => AdapterDiagnostics;
+  goToChange: (direction: 'next' | 'previous') => void;
+  layout: () => void;
+  revealAnchor: (anchor: Anchor) => void;
+  setFile: (file: ImmutableDiffFile) => Promise<void>;
+}>;
+
+const HIDE_UNCHANGED_REGIONS = {
+  enabled: true,
+  contextLineCount: 3,
+  minimumLineCount: 8,
+  revealLineCount: 10,
+} as const;
+
+
+class PublicMonacoDiffAdapter {
+  private readonly diffEditor: monaco.editor.IStandaloneDiffEditor;
+  private readonly originalEditor: monaco.editor.IStandaloneCodeEditor;
+  private readonly modifiedEditor: monaco.editor.IStandaloneCodeEditor;
+  private readonly stateByFileId = new Map<string, SavedFileState>();
+  private readonly staticDisposables: monaco.IDisposable[] = [];
+  private originalModel: monaco.editor.ITextModel | undefined;
+  private modifiedModel: monaco.editor.ITextModel | undefined;
+  private originalDecorations: monaco.editor.IEditorDecorationsCollection | undefined;
+  private modifiedDecorations: monaco.editor.IEditorDecorationsCollection | undefined;
+  private currentFile: ImmutableDiffFile | undefined;
+  private activeComposer: ActiveComposer | undefined;
+  private focused: { side: DiffSide; line: number } | undefined;
+  private contextMode: 'collapsed' | 'all-revealed' = 'collapsed';
+  private originalZone: { id: string; zone: monaco.editor.IViewZone } | undefined;
+  private modifiedZone: { id: string; zone: monaco.editor.IViewZone } | undefined;
+  private diffUpdates = 0;
+  private disposed = false;
+
+  constructor(
+    host: HTMLElement,
+    private readonly languageForPath: (path: string) => string,
+    private readonly onChange: () => void,
+  ) {
+    this.diffEditor = monaco.editor.createDiffEditor(host, {
+      ariaLabel: 'Immutable base and head side-by-side diff',
+      automaticLayout: false,
+      glyphMargin: true,
+      minimap: { enabled: false },
+      occurrencesHighlight: 'off',
+      originalEditable: false,
+      readOnly: true,
+      renderSideBySide: true,
+      hideUnchangedRegions: HIDE_UNCHANGED_REGIONS,
+    });
+    this.originalEditor = this.diffEditor.getOriginalEditor();
+    this.modifiedEditor = this.diffEditor.getModifiedEditor();
+    this.staticDisposables.push(
+      this.diffEditor.onDidUpdateDiff(() => {
+        this.diffUpdates += 1;
+        this.rebuildAnchoredLayout();
+        this.onChange();
+      }),
+      this.originalEditor.onDidFocusEditorText(() => this.captureFocusedSide('base')),
+      this.modifiedEditor.onDidFocusEditorText(() => this.captureFocusedSide('head')),
+      this.originalEditor.onDidChangeCursorPosition((event) => this.captureCursor('base', event.position.lineNumber)),
+      this.modifiedEditor.onDidChangeCursorPosition((event) => this.captureCursor('head', event.position.lineNumber)),
+      this.originalEditor.addAction({
+        id: 'diff-review.add-base-comment',
+        label: 'Add comment to base line',
+        keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Enter],
+        run: () => this.activateFocusedAnchor('base'),
+      }),
+      this.modifiedEditor.addAction({
+        id: 'diff-review.add-head-comment',
+        label: 'Add comment to head line',
+        keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Enter],
+        run: () => this.activateFocusedAnchor('head'),
+      }),
+    );
+  }
+
+  async setFile(file: ImmutableDiffFile): Promise<void> {
+    this.saveOutgoingState();
+    this.removeZones();
+    this.disposeModels();
+    this.currentFile = file;
+    const saved = this.stateByFileId.get(file.id);
+    this.contextMode = saved?.contextMode ?? 'collapsed';
+    this.diffEditor.updateOptions({
+      hideUnchangedRegions: this.contextMode === 'collapsed'
+        ? HIDE_UNCHANGED_REGIONS
+        : { enabled: false },
+    });
+    this.originalModel = monaco.editor.createModel(
+      file.base.text,
+      this.languageForPath(file.base.path),
+      monaco.Uri.parse(`inmemory://diff-review/${encodeURIComponent(file.id)}/base/${file.base.path.split('/').map(encodeURIComponent).join('/')}`),
+    );
+    this.modifiedModel = monaco.editor.createModel(
+      file.head.text,
+      this.languageForPath(file.head.path),
+      monaco.Uri.parse(`inmemory://diff-review/${encodeURIComponent(file.id)}/head/${file.head.path.split('/').map(encodeURIComponent).join('/')}`),
+    );
+    const ready = new Promise<void>((resolve) => {
+      const disposable = this.diffEditor.onDidUpdateDiff(() => {
+        disposable.dispose();
+        resolve();
+      });
+    });
+    this.diffEditor.setModel({ original: this.originalModel, modified: this.modifiedModel });
+    await ready;
+    this.diffEditor.restoreViewState(saved?.viewState ?? null);
+    this.focused = saved?.focused;
+    this.activeComposer = saved?.composer;
+    this.rebuildAnchoredLayout();
+    if (this.focused !== undefined) {
+      this.editorFor(this.focused.side).setPosition({ lineNumber: this.focused.line, column: 1 });
+      this.editorFor(this.focused.side).revealLineInCenter(this.focused.line);
+      this.editorFor(this.focused.side).focus();
+    }
+    this.layout();
+    this.onChange();
+  }
+
+  activateAnchor(side: DiffSide, line: number): void {
+    if (this.currentFile === undefined || !this.isValidLine(side, line)) {
+      return;
+    }
+    this.focused = { side, line };
+    this.activeComposer = {
+      fileId: this.currentFile.id,
+      side,
+      line,
+      text: this.activeComposer?.fileId === this.currentFile.id
+        && this.activeComposer.side === side
+        && this.activeComposer.line === line
+        ? this.activeComposer.text
+        : '',
+    };
+    this.editorFor(side).setPosition({ lineNumber: line, column: 1 });
+    this.editorFor(side).revealLineInCenter(line);
+    this.editorFor(side).focus();
+    this.rebuildAnchoredLayout();
+    this.onChange();
+  }
+
+  revealAnchor(anchor: Anchor): void {
+    if (this.currentFile?.id !== anchor.fileId) {
+      return;
+    }
+    // Monaco 0.55.1 exposes no public selective hidden-region expansion API.
+    this.contextMode = 'all-revealed';
+    this.diffEditor.updateOptions({ hideUnchangedRegions: { enabled: false } });
+    this.activateAnchor(anchor.side, anchor.line);
+  }
+
+  goToChange(direction: 'next' | 'previous'): void {
+    this.diffEditor.goToDiff(direction);
+  }
+
+  layout(): void {
+    this.diffEditor.layout();
+  }
+
+  getDiagnostics(): AdapterDiagnostics {
+    const liveModels = monaco.editor.getModels().filter((model) => model.uri.scheme === 'inmemory' && model.uri.authority === 'diff-review').length;
+    return {
+      diffUpdates: this.diffUpdates,
+      liveModels,
+      listenerCount: this.staticDisposables.length,
+      pairedZoneCount: (this.originalZone === undefined ? 0 : 1) + (this.modifiedZone === undefined ? 0 : 1),
+      activeComposerCount: this.activeComposer === undefined ? 0 : 1,
+      contextMode: this.contextMode,
+    };
+  }
+
+  dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
+    this.removeZones();
+    this.disposeModels();
+    for (const disposable of this.staticDisposables) {
+      disposable.dispose();
+    }
+    this.staticDisposables.length = 0;
+    this.diffEditor.dispose();
+  }
+
+  private captureFocusedSide(side: DiffSide): void {
+    const position = this.editorFor(side).getPosition();
+    if (position !== null) {
+      this.focused = { side, line: position.lineNumber };
+    }
+  }
+
+  private captureCursor(side: DiffSide, line: number): void {
+    this.focused = { side, line };
+  }
+
+  private activateFocusedAnchor(side: DiffSide): void {
+    const position = this.editorFor(side).getPosition();
+    if (position !== null) {
+      this.activateAnchor(side, position.lineNumber);
+    }
+  }
+
+  private saveOutgoingState(): void {
+    if (this.currentFile === undefined) {
+      return;
+    }
+    this.stateByFileId.set(this.currentFile.id, {
+      viewState: this.diffEditor.saveViewState(),
+      focused: this.focused,
+      composer: this.activeComposer,
+      contextMode: this.contextMode,
+    });
+  }
+
+  private editorFor(side: DiffSide): monaco.editor.IStandaloneCodeEditor {
+    return side === 'base' ? this.originalEditor : this.modifiedEditor;
+  }
+
+  private modelFor(side: DiffSide): monaco.editor.ITextModel | undefined {
+    return side === 'base' ? this.originalModel : this.modifiedModel;
+  }
+
+  private isValidLine(side: DiffSide, line: number): boolean {
+    const model = this.modelFor(side);
+    return model !== undefined && line > 0 && line <= model.getLineCount();
+  }
+
+  private disposeModels(): void {
+    this.originalDecorations?.clear();
+    this.modifiedDecorations?.clear();
+    this.originalDecorations = undefined;
+    this.modifiedDecorations = undefined;
+    this.diffEditor.setModel(null);
+    this.originalModel?.dispose();
+    this.modifiedModel?.dispose();
+    this.originalModel = undefined;
+    this.modifiedModel = undefined;
+  }
+
+  private removeZones(): void {
+    if (this.originalZone !== undefined) {
+      this.originalEditor.changeViewZones((accessor) => accessor.removeZone(this.originalZone?.id ?? ''));
+    }
+    if (this.modifiedZone !== undefined) {
+      this.modifiedEditor.changeViewZones((accessor) => accessor.removeZone(this.modifiedZone?.id ?? ''));
+    }
+    this.originalZone = undefined;
+    this.modifiedZone = undefined;
+  }
+
+  private rebuildAnchoredLayout(): void {
+    if (this.activeComposer === undefined || this.currentFile === undefined) {
+      this.removeZones();
+      this.originalDecorations?.clear();
+      this.modifiedDecorations?.clear();
+      return;
+    }
+    const anchor = this.activeComposer;
+    if (anchor.fileId !== this.currentFile.id || !this.isValidLine(anchor.side, anchor.line)) {
+      return;
+    }
+    this.removeZones();
+    this.originalDecorations?.clear();
+    this.modifiedDecorations?.clear();
+    const anchoredEditor = this.editorFor(anchor.side);
+    const counterpartSide: DiffSide = anchor.side === 'base' ? 'head' : 'base';
+    const counterpartEditor = this.editorFor(counterpartSide);
+    const counterpartModel = this.modelFor(counterpartSide);
+    if (counterpartModel === undefined) {
+      return;
+    }
+    const counterpartLine = counterpartBoundary(
+      this.diffEditor.getLineChanges(),
+      anchor.side,
+      anchor.line,
+      counterpartModel.getLineCount(),
+    );
+    const anchoredZone = this.createComposerZone(anchor);
+    const spacerZone = this.createSpacerZone(anchoredZone.heightInPx ?? 80);
+    const anchoredZoneId = this.addZone(anchoredEditor, anchoredZone);
+    const spacerZoneId = this.addZone(counterpartEditor, spacerZone);
+    if (anchor.side === 'base') {
+      this.originalZone = { id: anchoredZoneId, zone: anchoredZone };
+      this.modifiedZone = { id: spacerZoneId, zone: spacerZone };
+      this.positionZones(anchor.line, counterpartLine);
+      this.originalDecorations = anchoredEditor.createDecorationsCollection([this.anchorDecoration(anchor.line)]);
+    } else {
+      this.modifiedZone = { id: anchoredZoneId, zone: anchoredZone };
+      this.originalZone = { id: spacerZoneId, zone: spacerZone };
+      this.positionZones(counterpartLine, anchor.line);
+      this.modifiedDecorations = anchoredEditor.createDecorationsCollection([this.anchorDecoration(anchor.line)]);
+    }
+  }
+
+  private anchorDecoration(line: number): monaco.editor.IModelDeltaDecoration {
+    return {
+      range: new monaco.Range(line, 1, line, 1),
+      options: { isWholeLine: true, className: 'monaco-anchor-line' },
+    };
+  }
+
+  private createComposerZone(anchor: ActiveComposer): monaco.editor.IViewZone {
+    const container = document.createElement('section');
+    container.className = 'monaco-anchor-zone monaco-anchor-zone--composer';
+    container.setAttribute('aria-label', `Comment on ${anchor.side} line ${anchor.line}`);
+    const heading = document.createElement('strong');
+    heading.textContent = `${(anchor.side === 'base' ? this.currentFile?.base.path : this.currentFile?.head.path) ?? ''} · ${anchor.side === 'base' ? 'Base' : 'Head'} · line ${anchor.line}`;
+    const textarea = document.createElement('textarea');
+    textarea.setAttribute('aria-label', 'Comment');
+    textarea.placeholder = 'Describe the issue or requested change…';
+    textarea.value = anchor.text;
+    textarea.addEventListener('input', () => {
+      if (this.activeComposer === undefined) {
+        return;
+      }
+      this.activeComposer = { ...this.activeComposer, text: textarea.value };
+      this.growPairedZones(Math.max(80, textarea.scrollHeight + 44));
+      this.onChange();
+    });
+    container.append(heading, textarea);
+    return { afterLineNumber: anchor.line, domNode: container, heightInPx: 80, suppressMouseDown: false };
+  }
+
+  private createSpacerZone(heightInPx: number): monaco.editor.IViewZone {
+    const spacer = document.createElement('div');
+    spacer.className = 'monaco-anchor-zone monaco-anchor-zone--spacer';
+    spacer.setAttribute('aria-hidden', 'true');
+    return { afterLineNumber: 0, domNode: spacer, heightInPx, suppressMouseDown: true };
+  }
+
+  private addZone(editor: monaco.editor.IStandaloneCodeEditor, zone: monaco.editor.IViewZone): string {
+    let zoneId = '';
+    editor.changeViewZones((accessor) => {
+      zoneId = accessor.addZone(zone);
+    });
+    return zoneId;
+  }
+
+  private positionZones(originalAfterLine: number, modifiedAfterLine: number): void {
+    if (this.originalZone === undefined || this.modifiedZone === undefined) {
+      return;
+    }
+    this.originalZone.zone.afterLineNumber = originalAfterLine;
+    this.modifiedZone.zone.afterLineNumber = modifiedAfterLine;
+    this.originalEditor.changeViewZones((accessor) => accessor.layoutZone(this.originalZone?.id ?? ''));
+    this.modifiedEditor.changeViewZones((accessor) => accessor.layoutZone(this.modifiedZone?.id ?? ''));
+  }
+
+  private growPairedZones(heightInPx: number): void {
+    if (this.originalZone === undefined || this.modifiedZone === undefined) {
+      return;
+    }
+    this.originalZone.zone.heightInPx = heightInPx;
+    this.modifiedZone.zone.heightInPx = heightInPx;
+    this.originalEditor.changeViewZones((accessor) => accessor.layoutZone(this.originalZone?.id ?? ''));
+    this.modifiedEditor.changeViewZones((accessor) => accessor.layoutZone(this.modifiedZone?.id ?? ''));
+  }
+}
+
+export function createMonacoDiffAdapter(
+  host: HTMLElement,
+  languageForPath: (path: string) => string,
+  onChange: () => void,
+): MonacoDiffAdapter {
+  return new PublicMonacoDiffAdapter(host, languageForPath, onChange);
+}
