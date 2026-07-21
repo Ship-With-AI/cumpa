@@ -62,7 +62,10 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
     },
   );
 
-  app.get<{ Params: { fileId: string } }>(
+  app.get<{
+    Params: { fileId: string };
+    Querystring: Record<string, never>;
+  }>(
     '/api/files/:fileId/content',
     async (request, reply) => {
       if (Object.keys(request.query).length !== 0) {
@@ -87,7 +90,7 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
     },
   );
 
-  app.post(
+  app.post<{ Querystring: Record<string, never> }>(
     '/api/draft/comments',
     async (request, reply) => {
       if (Object.keys(request.query).length !== 0) {
