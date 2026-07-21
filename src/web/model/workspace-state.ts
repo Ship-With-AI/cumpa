@@ -27,6 +27,7 @@ export type WorkspaceComposer = Readonly<{
   line: number;
   text: string;
   status: ComposerStatus;
+  pendingMove?: Readonly<{ side: DiffSide; line: number }>;
   validation?: string;
   error?: string;
 }>;
@@ -76,7 +77,7 @@ export type WorkspaceEvent =
   | Readonly<{ type: 'cancel-composer' }>
   | Readonly<{ type: 'composer-text-changed'; text: string }>
   | Readonly<{ type: 'confirm-discard' }>
-  | Readonly<{ type: 'diff-ready'; fileId: string }>
+  | Readonly<{ type: 'confirm-move' }>
   | Readonly<{ type: 'escape' }>
   | Readonly<{ type: 'keep-writing' }>
   | Readonly<{ type: 'next-change' }>
@@ -163,10 +164,17 @@ function activateLine(state: WorkspaceState, side: DiffSide, line: number): Work
 
   const current = fileState(state);
   const composer = current.composer;
+  if (composer?.status === 'pending') {
+    return transition(state);
+  }
   if (composer !== undefined && (composer.side !== side || composer.line !== line) && composer.text.trim().length > 0) {
     const next = replaceFileState(state, state.activeFileId, {
       ...current,
-      composer: { ...composer, status: 'confirm-move' },
+      composer: {
+        ...composer,
+        status: 'confirm-move',
+        pendingMove: { side, line },
+      },
     });
     return transition(next, [{ type: 'rebuild-annotations', fileId: state.activeFileId }]);
   }
@@ -190,10 +198,13 @@ function cancelComposer(state: WorkspaceState): WorkspaceTransition {
   if (composer === undefined) {
     return transition(state);
   }
+  if (composer.status === 'pending') {
+    return transition(state);
+  }
   if (composer.text.trim().length > 0) {
     return transition(replaceFileState(state, state.activeFileId, {
       ...current,
-      composer: { ...composer, status: 'confirm-discard' },
+      composer: { ...composer, status: 'confirm-discard', pendingMove: undefined },
     }));
   }
   return transition(replaceFileState(state, state.activeFileId, { ...current, composer: undefined }), [{
@@ -294,16 +305,43 @@ function applyEvent(state: WorkspaceState, fileIds: readonly string[], event: Wo
     case 'composer-text-changed': {
       const current = fileState(state);
       const composer = current.composer;
-      return composer === undefined ? transition(state) : transition(replaceFileState(state, state.activeFileId, {
-        ...current,
-        composer: { ...composer, text: event.text, status: 'ready', validation: undefined, error: undefined },
-      }));
+      return composer === undefined || composer.status === 'pending'
+        ? transition(state)
+        : transition(replaceFileState(state, state.activeFileId, {
+          ...current,
+          composer: {
+            ...composer,
+            text: event.text,
+            status: 'ready',
+            pendingMove: undefined,
+            validation: undefined,
+            error: undefined,
+          },
+        }));
     }
     case 'confirm-discard': {
       const current = fileState(state);
       return current.composer?.status !== 'confirm-discard'
         ? transition(state)
         : transition(replaceFileState(state, state.activeFileId, { ...current, composer: undefined }));
+    }
+    case 'confirm-move': {
+      const current = fileState(state);
+      const composer = current.composer;
+      const target = composer?.pendingMove;
+      if (composer?.status !== 'confirm-move' || target === undefined) {
+        return transition(state);
+      }
+      return transition(replaceFileState(state, state.activeFileId, {
+        ...current,
+        focused: target,
+        composer: {
+          side: target.side,
+          line: target.line,
+          text: '',
+          status: 'ready',
+        },
+      }), [{ type: 'rebuild-annotations', fileId: state.activeFileId }]);
     }
     case 'diff-ready': {
       if (event.fileId !== state.activeFileId) {
@@ -330,17 +368,19 @@ function applyEvent(state: WorkspaceState, fileIds: readonly string[], event: Wo
       if (current.composer?.status === 'confirm-discard' || current.composer?.status === 'confirm-move') {
         return transition(replaceFileState(state, state.activeFileId, {
           ...current,
-          composer: { ...current.composer, status: 'ready' },
+          composer: { ...current.composer, status: 'ready', pendingMove: undefined },
         }));
       }
       return cancelComposer(state);
     }
     case 'keep-writing': {
       const current = fileState(state);
-      return current.composer === undefined ? transition(state) : transition(replaceFileState(state, state.activeFileId, {
-        ...current,
-        composer: { ...current.composer, status: 'ready' },
-      }));
+      return current.composer === undefined || current.composer.status === 'pending'
+        ? transition(state)
+        : transition(replaceFileState(state, state.activeFileId, {
+          ...current,
+          composer: { ...current.composer, status: 'ready', pendingMove: undefined },
+        }));
     }
     case 'next-change':
       return transition(state, [{ type: 'go-to-change', direction: 'next' }]);

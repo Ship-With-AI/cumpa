@@ -15,6 +15,7 @@ const emit = defineEmits<{
   add: [];
   cancel: [];
   confirmDiscard: [];
+  confirmMove: [];
   keepWriting: [];
   updateText: [text: string];
 }>();
@@ -43,7 +44,7 @@ const sideLabel = () => props.side === 'base' ? 'Base' : 'Head';
     <footer v-if="status === 'confirm-discard' || status === 'confirm-move'" class="inline-comment-composer__confirm">
       <p>Discard this comment draft? Your text hasn’t been saved.</p>
       <button type="button" class="ui-button" @click="emit('keepWriting')">Keep writing</button>
-      <button type="button" class="ui-button ui-button--destructive" @click="emit('confirmDiscard')">Discard draft</button>
+      <button type="button" class="ui-button ui-button--destructive" @click="status === 'confirm-move' ? emit('confirmMove') : emit('confirmDiscard')">Discard draft</button>
     </footer>
     <footer v-else>
       <button type="button" class="ui-button ui-button--primary" :disabled="status === 'pending'" @click="emit('add')">
