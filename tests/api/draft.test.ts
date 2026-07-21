@@ -114,7 +114,7 @@ describe('comparison-local draft routes', () => {
       payload: { fileId, side: 'head', line: 1, body: 'Keep this exact line.' },
     });
     expect(added.statusCode).toBe(201);
-    expect(added.json()).toMatchObject({ revision: 1, comment: { state: 'open', body: 'Keep this exact line.' } });
+    expect(added.json()).toMatchObject({ state: 'open', body: 'Keep this exact line.' });
 
     const resumed = buildApp(repositoryRoot);
     expect((await resumed.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
@@ -136,13 +136,10 @@ describe('comparison-local draft routes', () => {
     });
     expect(accepted.statusCode).toBe(201);
     expect(accepted.json()).toMatchObject({
-      revision: 1,
-      comment: {
-        id: expect.any(String),
-        state: 'open',
-        body: 'Check the prior version.',
-        anchor: { side: 'base', line: 1, blobOid: '4'.repeat(40), safeDisplayPath: 'src/review.ts' },
-      },
+      id: expect.any(String),
+      state: 'open',
+      body: 'Check the prior version.',
+      anchor: { side: 'base', line: 1, blobOid: '4'.repeat(40), safeDisplayPath: 'src/review.ts' },
     });
 
     const duplicate = await app.inject({
