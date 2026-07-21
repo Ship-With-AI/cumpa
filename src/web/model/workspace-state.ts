@@ -1,15 +1,25 @@
 import type { DiffSide } from '../monaco/line-mapping.js';
+import type { DurableAnchorV1Dto } from '../../contracts/draft.js';
+
 
 export type WorkspaceCommentStatus = 'verified' | 'stale' | 'orphaned';
 export type ComposerStatus = 'ready' | 'pending' | 'confirm-discard' | 'confirm-move';
 
+export type RecordedAnchorDetails = DurableAnchorV1Dto;
+
+export type ExactFileCapability =
+  | Readonly<{ kind: 'available'; fileId: string }>
+  | Readonly<{ kind: 'unavailable' }>;
+
 export type WorkspaceComment = Readonly<{
   id: string;
-  fileId: string;
+  fileId: string | null;
+  exactFile: ExactFileCapability;
   side: DiffSide;
   line: number;
   body: string;
   status: WorkspaceCommentStatus;
+  recordedAnchor: RecordedAnchorDetails;
 }>;
 
 export type WorkspaceComposer = Readonly<{
@@ -212,17 +222,18 @@ function completePendingComment(state: WorkspaceState, comment: WorkspaceComment
 
 function showComment(state: WorkspaceState, commentId: string): WorkspaceTransition {
   const comment = state.comments.find((candidate) => candidate.id === commentId);
-  if (comment === undefined || comment.status !== 'verified') {
+  if (comment === undefined || comment.status !== 'verified' || comment.fileId === null || comment.exactFile?.kind === 'unavailable') {
     return transition(state);
   }
-  if (comment.fileId !== state.activeFileId) {
-    const switching = switchFile({ ...state, pendingCommentId: comment.id }, comment.fileId);
+  const fileId = comment.exactFile?.kind === 'available' ? comment.exactFile.fileId : comment.fileId;
+  if (fileId !== state.activeFileId) {
+    const switching = switchFile({ ...state, pendingCommentId: comment.id }, fileId);
     return switching;
   }
   const commands: WorkspaceCommand[] = [
-    { type: 'reveal-comment-context', fileId: comment.fileId, side: comment.side, line: comment.line },
-    { type: 'rebuild-annotations', fileId: comment.fileId },
-    { type: 'reveal-line', fileId: comment.fileId, side: comment.side, line: comment.line, center: true },
+    { type: 'reveal-comment-context', fileId, side: comment.side, line: comment.line },
+    { type: 'rebuild-annotations', fileId },
+    { type: 'reveal-line', fileId, side: comment.side, line: comment.line, center: true },
     { type: 'focus-comment', commentId: comment.id },
     { type: 'announce', text: `Showing comment on ${comment.side} line ${comment.line}.` },
   ];

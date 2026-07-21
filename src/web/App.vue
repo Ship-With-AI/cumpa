@@ -19,6 +19,7 @@ import KeyboardHelp from './components/KeyboardHelp.vue';
 import ReviewToolbar from './components/ReviewToolbar.vue';
 import type { WorkspaceCommand, WorkspaceEvent } from './model/workspace-state.js';
 import { createWorkspaceState, type WorkspaceController } from './model/workspace-state.js';
+import { reconcileDraftComments } from './model/draft-reconciliation.js';
 import type { WorkspaceComment, WorkspaceState } from './model/workspace-state.js';
 
 const session = shallowRef<SessionResponse>();
@@ -87,30 +88,6 @@ async function loadFile(file: SessionFile): Promise<void> {
     }
   }
 }
-function draftComment(
-  comment: {
-    id: string;
-    body: string;
-    anchor: { safeDisplayPath: string; side: 'base' | 'head'; line: number };
-    verification: { state: 'verified' | 'stale' | 'orphaned' };
-  },
-  files: readonly SessionFile[],
-): WorkspaceComment {
-  const matchingFiles = files.filter((file) => {
-    const path = comment.anchor.side === 'base'
-      ? file.oldPath ?? file.newPath
-      : file.newPath ?? file.oldPath;
-    return path?.display === comment.anchor.safeDisplayPath;
-  });
-  return {
-    id: comment.id,
-    fileId: matchingFiles.length === 1 ? matchingFiles[0]!.fileId : `unavailable:${comment.id}`,
-    side: comment.anchor.side,
-    line: comment.anchor.line,
-    body: comment.body,
-    status: comment.verification.state,
-  };
-}
 
 function filePath(fileId: string): string {
   const file = session.value?.files.find((candidate) => candidate.fileId === fileId);
@@ -145,10 +122,12 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
             comment: {
               id: comment.id,
               fileId: command.fileId,
+              exactFile: { kind: 'available', fileId: command.fileId },
               side: comment.anchor.side,
               line: comment.anchor.line,
               body: comment.body,
               status: 'verified',
+              recordedAnchor: comment.anchor,
             },
           });
           announce(`Comment added and saved locally on ${command.side} line ${command.line}.`);
@@ -299,7 +278,7 @@ onMounted(async () => {
     session.value = loaded;
     const reviewable = loaded.files.filter((file) => file.availability.kind === 'text');
     const draft = await sessionClient.getDraft();
-    const comments = draft.comments.map((comment) => draftComment(comment, loaded.files));
+    const comments = reconcileDraftComments(draft.comments, loaded.files);
     if (reviewable.length > 0) {
       workspace = createWorkspaceState(reviewable.map((file) => file.fileId), comments);
       workspaceState.value = workspace.getState();
