@@ -127,18 +127,9 @@ async function activateMonacoLine(
     .locator(`.monaco-diff-editor .${editor.split(' ').join('.')}`)
     .locator('.view-line')
     .filter({ hasText: text });
-  let visibleIndex = -1;
-  await expect.poll(async () => {
-    visibleIndex = await line.evaluateAll((elements) =>
-      elements.findIndex((element) => {
-        const { height, width } = element.getBoundingClientRect();
-        return height > 0 && width > 0;
-      }),
-    );
-    return visibleIndex >= 0;
-  }).toBe(true);
-  await line.nth(visibleIndex).hover();
-  await line.nth(visibleIndex).click();
+  await expect(line).toBeVisible();
+  await line.hover();
+  await line.click();
   const affordance = page.getByRole('button', {
     name: `Add comment to ${side} line ${lineNumber}`,
   });
