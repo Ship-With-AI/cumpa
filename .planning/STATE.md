@@ -4,17 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 02
 current_phase_name: anchored-diff-review
-status: executing
-stopped_at: Completed 02-09-PLAN.md
-last_updated: "2026-07-21T18:41:27.295Z"
+status: verifying
+stopped_at: Completed 02-10-PLAN.md
+last_updated: "2026-07-21T21:36:35.115Z"
 last_activity: 2026-07-21
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 38
-  completed_plans: 22
-  percent: 25
+  completed_plans: 23
 ---
 
 # Project State
@@ -29,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 02 (anchored-diff-review) — EXECUTING
-Plan: 3 of 10
-Status: Ready to execute
+Plan: 10 of 10
+Status: Phase complete — ready for verification
 Last activity: 2026-07-21 — Phase 02 execution started
 
-Progress: ████░░░░░░ [██████░░░░] 55%
+Progress: ████░░░░░░ [██████░░░░] 61%
 
 ## Performance Metrics
 
@@ -80,6 +79,7 @@ Progress: ████░░░░░░ [██████░░░░] 55%
 |------|----------|-------|-------|
 | Phase 02 P08 | 20min | 3 tasks | 5 files |
 | Phase 02 P09 | current execution session | 3 tasks | 9 files |
+| Phase 02 P10 | current execution session | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -142,6 +142,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Index active comparison paths by side and exact bytesBase64url before reconciling comments.
 - [Phase 02]: Retain validated durable-anchor evidence even when the active comparison lacks an exact file capability.
 - [Phase 02]: Use a pending move target and explicit discard confirmation before replacing a non-empty composer anchor. — Prevents silent loss of locally unsaved review text when a user activates a different Monaco line.
+- [Phase 02]: Assert the canonical persisted comparison tuple, including mergeBaseOid. — Draft comparison validation requires the full immutable base, head, and merge-base identity.
+- [Phase 02]: Use a deleted head-side exact path for orphan package fixtures. — Recorded-file inspection remains unavailable unless the current immutable comparison grants an exact-file capability.
 
 ### Pending Todos
 
@@ -163,6 +165,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T18:41:06.568Z
-Stopped at: Completed 02-09-PLAN.md
+Last session: 2026-07-21T21:34:56.950Z
+Stopped at: Completed 02-10-PLAN.md
 Resume file: None
