@@ -9,6 +9,7 @@ import {
   mkdirSync,
   mkdtempSync,
   openSync,
+  readdirSync,
   readFileSync,
   rmSync,
   symlinkSync,
@@ -29,6 +30,8 @@ const packedRoot = mkdtempSync(join(tmpdir(), 'diff-review-anchored-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const executablePath = join(extractedPackageRoot, 'dist/bin/diff-review.mjs');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
+test.setTimeout(90_000);
+
 
 interface PackResult {
   readonly filename: string;
@@ -150,21 +153,84 @@ test('packaged anchored review persists exact real-Git comments across relaunch'
   expect(headRenamedText).toContain('new path');
   expect(featureOid).not.toBe(baseOid);
 
-  const running = startGeneratedCli(fixture);
+  const draftsPath = join(fixture.root, '.diff-review', 'drafts');
+  mkdirSync(draftsPath, { recursive: true });
+  chmodSync(draftsPath, 0o555);
+  const initial = startGeneratedCli(fixture);
   try {
-    await openGeneratedReview(page, await waitForLoopbackUrl(running));
+    await openGeneratedReview(page, await waitForLoopbackUrl(initial));
     await page.getByRole('treeitem', { name: /new-name\.ts/ }).click();
     await expect(page.getByRole('heading', { level: 1, name: /new-name\.ts/ })).toBeVisible();
     await page.getByRole('button', { name: 'Add comment to head line 1' }).click();
     const textarea = page.locator('.diff-workspace > section.inline-comment-composer textarea');
     await textarea.fill('Packaged comment on renamed head line.');
     await page.getByRole('button', { name: 'Add comment', exact: true }).click();
-    await expect(page.getByText('Packaged comment on renamed head line.')).toBeVisible();
+    await expect(
+      page.locator('.inline-comment-composer [role="alert"]').first(),
+    ).toContainText('Comment wasn’t added. Your text is still here.');
+    await expect(textarea).toHaveValue('Packaged comment on renamed head line.');
 
+    chmodSync(draftsPath, 0o755);
+    const addResponse = page.waitForResponse((response) =>
+      response.url().includes('/api/draft/comments'),
+    );
+    await page.getByRole('button', { name: 'Add comment', exact: true }).click();
+    expect((await addResponse).status()).toBe(201);
+    await expect(page.getByText('Packaged comment on renamed head line.')).toHaveCount(2);
+
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    await page.getByRole('button', { name: 'Add comment to base line 1' }).click();
+    const baseTextarea = page.locator('.diff-workspace > section.inline-comment-composer textarea');
+    await baseTextarea.fill('Packaged comment on unchanged base line.');
+    await page.getByRole('button', { name: 'Add comment', exact: true }).click();
+    await expect(page.getByText('Packaged comment on unchanged base line.')).toHaveCount(2);
     await page.setViewportSize({ width: 640, height: 700 });
     await page.getByRole('button', { name: 'Next change' }).click();
+    await expect(page.getByText('Unchanged regions begin collapsed.')).toBeVisible();
   } finally {
-    await stopGeneratedCli(running);
+    await stopGeneratedCli(initial);
+  }
+
+  const [draftFile] = readdirSync(draftsPath).filter((file) => file.endsWith('.json'));
+  expect(draftFile).toBeDefined();
+  const draftPath = join(draftsPath, draftFile!);
+  const draft = JSON.parse(readFileSync(draftPath, 'utf8')) as {
+    revision: number;
+    comments: Array<{ id: string; anchor: { line: number; selectedText: string; context: { target: { text: string } } } }>;
+  };
+  expect(draft.comments).toHaveLength(2);
+  const stale = JSON.parse(JSON.stringify(draft.comments[0])) as (typeof draft.comments)[number];
+  stale.id = `comment_${crypto.randomUUID()}`;
+  stale.anchor.selectedText = 'deliberately stale';
+  stale.anchor.context.target.text = 'deliberately stale';
+  const orphan = JSON.parse(JSON.stringify(draft.comments[1])) as (typeof draft.comments)[number];
+  orphan.id = `comment_${crypto.randomUUID()}`;
+  orphan.anchor.line = 999;
+  draft.comments.push(stale, orphan);
+  draft.revision = 4;
+  writeFileSync(draftPath, `${JSON.stringify(draft)}\n`);
+
+  const resumed = startGeneratedCli(fixture);
+  try {
+    await openGeneratedReview(page, await waitForLoopbackUrl(resumed));
+    await expect(page.getByText('Packaged comment on renamed head line.')).toHaveCount(2);
+    await expect(page.getByText('Packaged comment on unchanged base line.')).toHaveCount(2);
+    await expect(page.getByText('Stale anchor')).toBeVisible();
+    await expect(page.getByText('Anchor unavailable')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Add comment to head line 1' })).toBeVisible();
+  } finally {
+    await stopGeneratedCli(resumed);
+  }
+
+  const alternateHead = fixture.alternateHeadRef;
+  expect(alternateHead).toBeDefined();
+  const alternate = startGeneratedCli(fixture, alternateHead!);
+  try {
+    await openGeneratedReview(page, await waitForLoopbackUrl(alternate));
+    await expect(page.getByText('Packaged comment on renamed head line.')).not.toBeVisible();
+  } finally {
+    await stopGeneratedCli(alternate);
+    chmodSync(draftsPath, 0o755);
     await fixture.cleanup();
   }
 });

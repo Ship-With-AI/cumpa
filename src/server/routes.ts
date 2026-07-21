@@ -170,7 +170,7 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
           body: addRequest.data.body,
           anchor,
         });
-        return reply.code(201).send(accepted);
+        return reply.code(201).send(accepted.comment);
       } catch (error) {
         return unavailable(reply, error instanceof DraftConflictError ? 409 : 500);
       }

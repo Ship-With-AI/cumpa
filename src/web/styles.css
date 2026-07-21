@@ -1223,6 +1223,10 @@ body {
   font: inherit;
 }
 
+.diff-workspace__gutter-action--base {
+  right: calc(50% + 8px);
+}
+
 .inline-comment-composer,
 .inline-accepted-comment {
  position: relative;

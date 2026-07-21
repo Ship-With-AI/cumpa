@@ -115,8 +115,8 @@ function layout(): void {
   adapter?.layout();
 }
 
-function addHeadComment(): void {
-  adapter?.activateAnchor('head', 1);
+function addComment(side: DiffSide): void {
+  adapter?.activateAnchor(side, 1);
 }
 
 function focusComment(commentId: string): void {
@@ -168,10 +168,17 @@ onBeforeUnmount(() => {
     </div>
     <button
       type="button"
+      class="diff-workspace__gutter-action diff-workspace__gutter-action--base"
+      aria-label="Add comment to base line 1"
+      title="Add comment to base line 1 · Option+Enter"
+      @click="addComment('base')"
+    >+</button>
+    <button
+      type="button"
       class="diff-workspace__gutter-action"
       aria-label="Add comment to head line 1"
       title="Add comment to head line 1 · Option+Enter"
-      @click="addHeadComment"
+      @click="addComment('head')"
     >+</button>
     <div ref="host" class="diff-workspace__editor" />
     <CommentComposer
