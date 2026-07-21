@@ -324,7 +324,7 @@ function handleViewportChange(): void {
 onMounted(async () => {
   document.addEventListener('keydown', handleKeydown);
   filesDrawerMedia = window.matchMedia('(max-width: 1099px)');
-  commentsDrawerMedia = window.matchMedia('(max-width: 1439px)');
+  commentsDrawerMedia = window.matchMedia('(max-width: 1279px)');
   handleViewportChange();
   filesDrawerMedia.addEventListener('change', handleViewportChange);
   commentsDrawerMedia.addEventListener('change', handleViewportChange);
