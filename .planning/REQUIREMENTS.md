@@ -39,8 +39,8 @@
 ### Diff Workspace
 
 - [x] **DIFF-01**: User can navigate a changed-file tree showing path, status, and available line counts.
-- [ ] **DIFF-02**: User can open a supported text file as a read-only side-by-side base/head diff.
-- [ ] **DIFF-03**: User sees syntax highlighting selected from the file path while preserving exact blob text.
+- [x] **DIFF-02**: User can open a supported text file as a read-only side-by-side base/head diff.
+- [x] **DIFF-03**: User sees syntax highlighting selected from the file path while preserving exact blob text.
 - [ ] **DIFF-04**: User can expand hidden unchanged regions and review any revealed context line.
 - [ ] **DIFF-05**: User can move to the previous or next file and previous or next change using documented keyboard controls.
 - [x] **DIFF-06**: User sees an explicit placeholder rather than a broken editor for unsupported files.
@@ -48,14 +48,14 @@
 
 ### Comments and Summary
 
-- [ ] **CMT-01**: User can add one comment to any visible line on either the base or head side, including unchanged context.
-- [ ] **CMT-02**: Each accepted comment records the side-specific path, side, line, blob identity, exact selected text, nearby context, and context hash.
+- [x] **CMT-01**: User can add one comment to any visible line on either the base or head side, including unchanged context.
+- [x] **CMT-02**: Each accepted comment records the side-specific path, side, line, blob identity, exact selected text, nearby context, and context hash.
 - [ ] **CMT-03**: User can edit an existing comment.
 - [ ] **CMT-04**: User can delete an existing comment.
 - [ ] **CMT-05**: User can resolve and reopen an existing comment.
 - [ ] **CMT-06**: User can see open and resolved comment counts and jump from a comment list to its anchored line.
 - [ ] **CMT-07**: User can write and edit one overall review summary.
-- [ ] **CMT-08**: User sees a clear stale or orphaned state instead of a silently relocated comment when its recorded anchor cannot be verified.
+- [x] **CMT-08**: User sees a clear stale or orphaned state instead of a silently relocated comment when its recorded anchor cannot be verified.
 
 ### Drafts
 
@@ -166,14 +166,14 @@ Each v1 requirement maps to exactly one roadmap phase.
 | SAFE-02 | Phase 1 | Complete |
 | SAFE-03 | Phase 1 | Complete |
 | SAFE-05 | Phase 1 | Complete |
-| DIFF-02 | Phase 2 | Pending |
-| DIFF-03 | Phase 2 | Pending |
+| DIFF-02 | Phase 2 | Complete |
+| DIFF-03 | Phase 2 | Complete |
 | DIFF-04 | Phase 2 | Pending |
 | DIFF-05 | Phase 2 | Pending |
 | DIFF-07 | Phase 2 | Pending |
-| CMT-01 | Phase 2 | Pending |
-| CMT-02 | Phase 2 | Pending |
-| CMT-08 | Phase 2 | Pending |
+| CMT-01 | Phase 2 | Complete |
+| CMT-02 | Phase 2 | Complete |
+| CMT-08 | Phase 2 | Complete |
 | DRFT-01 | Phase 2 | Pending |
 | DRFT-02 | Phase 2 | Pending |
 | DRFT-03 | Phase 2 | Pending |

@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 03
-current_phase_name: complete-review-draft
+current_phase: 02
+current_phase_name: anchored-diff-review
 status: executing
-stopped_at: Completed 01-13-PLAN.md
-last_updated: "2026-07-21T09:05:30.449Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-07-21T11:08:48.317Z"
 last_activity: 2026-07-21
-last_activity_desc: Phase 03 execution started
+last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 35
-  completed_plans: 13
-  percent: 25
+  completed_plans: 15
+  percent: 43
 ---
 
 # Project State
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-11)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 03 — complete-review-draft
+**Current focus:** Phase 02 — anchored-diff-review
 
 ## Current Position
 
-Phase: 03 (complete-review-draft) — EXECUTING
-Plan: 1 of 7
-Status: Executing Phase 03
-Last activity: 2026-07-21 — Phase 03 execution started
+Phase: 02 (anchored-diff-review) — EXECUTING
+Plan: 2 of 7
+Status: Ready to execute
+Last activity: 2026-07-21 — Phase 02 execution started
 
-Progress: ███░░░░░░░ 34%
+Progress: ████░░░░░░ 43%
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: ███░░░░░░░ 34%
 | Phase 01 P11 | 20min | 2 tasks | 12 files |
 | Phase 01 P12 | 14min | 2 tasks | 6 files |
 | Phase 01 P13 | 26min | 3 tasks | 7 files |
+| Phase 02 P02 | 8min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -116,6 +117,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 01]: Keep the narrow comparison disclosure in the persistent header while the modal identity sheet occupies the workspace grid row.
 - [Phase 01]: Treat Enter and Space on directory treeitems as directory toggles only; emit file activation only for focused file rows.
 - [Phase 01]: Prove ref immutability by advancing the selected head ref after each packaged server listens and asserting the session remains pinned.
+- [Phase 02]: Derive every anchor field server-side from opaque fileId, side, and line after the session guard. — Clients cannot select repository, path, blob, or context authority.
+- [Phase 02]: Use domain-separated unsigned-64-bit-length-framed SHA-256 over lossless path bytes and immutable anchor facts. — Makes context and uniqueness identities deterministic across text, paths, and SHA-1 or SHA-256 OIDs.
+- [Phase 02]: Classify unavailable anchors as orphaned and exact mismatches as stale without search, relocation, or record rewrites. — Preserves drift-detectable review feedback.
 
 ### Pending Todos
 
@@ -137,6 +141,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-20T17:54:30.802Z
-Stopped at: Completed 01-13-PLAN.md
+Last session: 2026-07-21T11:08:48.313Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

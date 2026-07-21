@@ -1,5 +1,5 @@
 {
-  "model_profile": "adaptive",
+  "model_profile": "balanced",
   "commit_docs": true,
   "parallelization": true,
   "search_gitignored": false,
@@ -87,7 +87,7 @@
   "mode": "interactive",
   "granularity": "coarse",
   "intel": {
-    "enabled": false
+    "enabled": true
   },
   "graphify": {
     "enabled": true,
