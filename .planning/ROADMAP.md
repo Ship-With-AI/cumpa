@@ -9,7 +9,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 | Phase | Name | Goal | Requirements | Plans |
 |-------|------|------|--------------|-------|
 | 1 | Pinned Local Comparison | 13/13 | Complete    | 2026-07-20 |
-| 2 | Anchored Diff Review | 4/7 | In Progress|  |
+| 2 | Anchored Diff Review | 5/7 | In Progress|  |
 | 3 | Complete Review Draft | Manage the full comment/summary lifecycle without silent overwrite, relocation, or selector drift | 8 | 7 |
 | 4 | Agent-Ready Export | Atomically export deterministic canonical JSON and derived Markdown without mutating source | 9 | 8 |
 
