@@ -5,15 +5,16 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: anchored-diff-review
 status: executing
-stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-07-21T17:36:18.914Z"
+stopped_at: Completed 02-09-PLAN.md
+last_updated: "2026-07-21T18:41:27.295Z"
 last_activity: 2026-07-21
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 38
-  completed_plans: 21
+  completed_plans: 22
+  percent: 25
 ---
 
 # Project State
@@ -28,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 02 (anchored-diff-review) — EXECUTING
-Plan: 2 of 10
+Plan: 3 of 10
 Status: Ready to execute
 Last activity: 2026-07-21 — Phase 02 execution started
 
@@ -78,6 +79,7 @@ Progress: ████░░░░░░ [██████░░░░] 55%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 02 P08 | 20min | 3 tasks | 5 files |
+| Phase 02 P09 | current execution session | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -139,6 +141,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Use package-first Chromium acceptance against real Git rather than development seams. — The final Phase 2 contract requires generated CLI, loopback server, browser assets, and real Git objects end to end.
 - [Phase 02]: Index active comparison paths by side and exact bytesBase64url before reconciling comments.
 - [Phase 02]: Retain validated durable-anchor evidence even when the active comparison lacks an exact file capability.
+- [Phase 02]: Use a pending move target and explicit discard confirmation before replacing a non-empty composer anchor. — Prevents silent loss of locally unsaved review text when a user activates a different Monaco line.
 
 ### Pending Todos
 
@@ -160,6 +163,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T17:35:21.840Z
-Stopped at: Completed 02-07-PLAN.md
+Last session: 2026-07-21T18:41:06.568Z
+Stopped at: Completed 02-09-PLAN.md
 Resume file: None
