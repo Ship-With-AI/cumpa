@@ -261,8 +261,10 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
   const initial = startGeneratedCli(fixture);
 
   try {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await openGeneratedReview(page, await waitForLoopbackUrl(initial));
     await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    await expect(page.getByText(/Unchanged regions begin collapsed/)).toBeVisible();
     await activateMonacoLine(page, 'head', 'export const stableContext10 = 10;', 10);
     const composer = page.locator('.monaco-anchor-zone--composer textarea');
     await composer.fill('Canonical source for degraded records.');
