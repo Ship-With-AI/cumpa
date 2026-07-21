@@ -24,13 +24,15 @@
     "test:unit": "node scripts/run-focused-vitest.mjs tests/unit",
     "test:git": "node scripts/run-focused-vitest.mjs tests/git",
     "test:api": "vitest run tests/api",
-    "test:package": "playwright test"
+    "test:package": "playwright test",
+    "test:browser": "playwright test --config=tests"
   },
   "dependencies": {
     "@fastify/static": "9.3.0",
     "@inquirer/search": "4.2.1",
     "commander": "15.0.0",
     "fastify": "5.10.0",
+    "monaco-editor": "0.55.1",
     "open": "11.0.0",
     "vue": "3.5.39",
     "zod": "4.4.3"
