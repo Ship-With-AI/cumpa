@@ -140,8 +140,9 @@ async function startAppServer(): Promise<string> {
   return server.resolvedUrls?.local[0] ?? '';
 }
 
-async function openReview(page: Page, expectedPath = 'src/first.ts'): Promise<void> {
-  await page.goto(`${origin}#token=${token}`);
+async function openReview(page: Page, expectedPath = 'src/first.ts', resumeAttempt?: number): Promise<void> {
+  const resumeQuery = resumeAttempt === undefined ? '' : `?resume=${resumeAttempt}`;
+  await page.goto(`${origin}${resumeQuery}#token=${token}`);
   await expect(page.getByRole('heading', { level: 1, name: expectedPath })).toBeVisible();
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
 }
@@ -220,37 +221,40 @@ test('draft resume and anchor states', async ({ page }) => {
 test('exact-byte draft resume', async ({ page }) => {
   const firstPath = collisionPath(0xff);
   const secondPath = collisionPath(0xfe);
-  session = {
-    ...session,
-    files: [
-      { ...session.files[0]!, newPath: firstPath },
-      { ...session.files[1]!, newPath: secondPath },
-    ],
-  };
-  comments = [{
-    id: 'comment_123e4567-e89b-12d3-a456-426614174000',
-    state: 'open',
-    body: 'Restore the second exact-byte path.',
-    anchor: {
-      version: 'durable-anchor-v1',
-      path: secondPath,
-      safeDisplayPath: secondPath.display,
-      side: 'head',
-      line: 1,
-      blobOid: 'd'.repeat(40),
-      selectedText: 'const context1 = 1;',
-      context: { before: [], target: { line: 1, text: 'const context1 = 1;' }, after: [] },
-      contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
-      uniqueKey: 'e'.repeat(64),
-    },
-    createdAt: '2026-07-21T00:00:00.000Z',
-    updatedAt: '2026-07-21T00:00:00.000Z',
-    verification: { state: 'verified', reason: 'exact-match' },
-  }];
 
-  await openReview(page, 'src/�.ts');
-  await expect(page.getByText('Restore the second exact-byte path.')).toBeVisible();
-  contentRequests = [];
-  await page.getByRole('button', { name: 'Show comment' }).click();
-  await expect.poll(() => contentRequests).toEqual([secondFileId]);
+  let resumeAttempt = 0;
+  for (const { paths, anchorPath } of [
+    { paths: [firstPath, secondPath], anchorPath: secondPath },
+    { paths: [secondPath, firstPath], anchorPath: firstPath },
+  ] as const) {
+    session = {
+      ...session,
+      files: session.files.map((file, index) => ({ ...file, newPath: paths[index]! })),
+    };
+    comments = [{
+      id: 'comment_123e4567-e89b-12d3-a456-426614174000',
+      state: 'open',
+      body: 'Restore the second exact-byte path.',
+      anchor: {
+        version: 'durable-anchor-v1',
+        path: anchorPath,
+        safeDisplayPath: anchorPath.display,
+        side: 'head',
+        line: 1,
+        blobOid: 'd'.repeat(40),
+        selectedText: 'const context1 = 1;',
+        context: { before: [], target: { line: 1, text: 'const context1 = 1;' }, after: [] },
+        contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
+        uniqueKey: 'e'.repeat(64),
+      },
+      createdAt: '2026-07-21T00:00:00.000Z',
+      updatedAt: '2026-07-21T00:00:00.000Z',
+      verification: { state: 'verified', reason: 'exact-match' },
+    }];
+    await openReview(page, 'src/�.ts', resumeAttempt++);
+    await expect(page.getByText('Restore the second exact-byte path.')).toBeVisible();
+    contentRequests = [];
+    await page.getByRole('button', { name: 'Show comment' }).click();
+    await expect.poll(() => contentRequests).toEqual([secondFileId]);
+  }
 });
