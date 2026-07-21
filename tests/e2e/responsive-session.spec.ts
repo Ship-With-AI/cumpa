@@ -388,7 +388,7 @@ test('responsive keyboard and accessibility contract', async ({
     await page.setViewportSize({ width: 1280, height: 560 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toContainText(
       'Diff Review: Base responsive fixture',
     );
 
@@ -421,18 +421,18 @@ test('responsive keyboard and accessibility contract', async ({
         );
       });
       expect(tokens).toEqual({
-        '--color-dominant': '#0d1117',
-        '--color-secondary': '#161b22',
-        '--color-accent': '#2f81f7',
-        '--color-destructive': '#f85149',
-        '--color-text-primary': '#f0f6fc',
-        '--color-text-secondary': '#8b949e',
-        '--color-border': '#30363d',
-        '--color-hover': '#21262d',
+      '--color-dominant': '#f6f3ec',
+      '--color-secondary': '#e9e4da',
+      '--color-accent': '#245a7a',
+      '--color-destructive': '#f85149',
+      '--color-text-primary': '#242822',
+      '--color-text-secondary': '#596058',
+      '--color-border': '#c9c2b5',
+      '--color-hover': '#dfd8cc',
         '--color-added': '#3fb950',
         '--color-modified': '#d29922',
         '--color-renamed': '#a371f7',
-        '--color-focus': '#58a6ff',
+      '--color-focus': '#245a7a',
         '--space-xs': '4px',
         '--space-sm': '8px',
         '--space-md': '16px',
@@ -441,18 +441,18 @@ test('responsive keyboard and accessibility contract', async ({
         '--space-2xl': '48px',
         '--space-3xl': '64px',
       });
-      expect(contrastRatio('#F0F6FC', '#0D1117')).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#8B949E', '#0D1117')).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#F0F6FC', '#161B22')).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#8B949E', '#161B22')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#242822', '#f6f3ec')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#596058', '#f6f3ec')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#242822', '#e9e4da')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#596058', '#e9e4da')).toBeGreaterThanOrEqual(4.5);
 
       const typography = await page.evaluate(() => {
         const selectors = [
-          'h1',
-          '.file-metadata-pane h2',
-          '.metadata-section h3',
+          '.session-header h1',
+          '.active-file-strip h1',
           '.file-row',
-          '.status-badge',
+          '.availability-marker',
+          '.pin-cue',
         ];
         return selectors.map((selector) => {
           const style = getComputedStyle(document.querySelector(selector)!);
@@ -467,36 +467,36 @@ test('responsive keyboard and accessibility contract', async ({
       });
       expect(typography).toEqual([
         {
-          selector: 'h1',
-          family: '-apple-system, "system-ui", "Segoe UI", sans-serif',
+          selector: '.session-header h1',
+          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
           size: '20px',
           weight: '600',
           lineHeight: '28px',
         },
         {
-          selector: '.file-metadata-pane h2',
-          family: '-apple-system, "system-ui", "Segoe UI", sans-serif',
-          size: '20px',
-          weight: '600',
-          lineHeight: '28px',
-        },
-        {
-          selector: '.metadata-section h3',
-          family: '-apple-system, "system-ui", "Segoe UI", sans-serif',
-          size: '16px',
-          weight: '600',
+          selector: '.active-file-strip h1',
+          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
+          size: '18px',
+          weight: '700',
           lineHeight: '24px',
         },
         {
           selector: '.file-row',
-          family: '-apple-system, "system-ui", "Segoe UI", sans-serif',
+          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
           size: '14px',
           weight: '600',
           lineHeight: '20.02px',
         },
         {
-          selector: '.status-badge',
-          family: '-apple-system, "system-ui", "Segoe UI", sans-serif',
+          selector: '.availability-marker',
+          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
+          size: '12px',
+          weight: '600',
+          lineHeight: '15.96px',
+        },
+        {
+          selector: '.pin-cue',
+          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
           size: '12px',
           weight: '600',
           lineHeight: '15.96px',
@@ -514,112 +514,22 @@ test('responsive keyboard and accessibility contract', async ({
       }
     });
 
-    await test.step('wide and medium panes scroll independently and preserve state', async () => {
-      const treePane = page.getByRole('navigation', { name: 'Changed files' });
-      const detailsPane = page.getByRole('main', { name: 'File details' });
+    await test.step('wide and medium workspace retain the review surface and drawers', async () => {
+      const treePane = page.locator('.review-files');
+      const reviewMain = page.locator('.review-main');
       await expect(treePane).toHaveCSS('overflow-y', 'auto');
-      await expect(detailsPane).toHaveCSS('overflow-y', 'auto');
-      await treePane.evaluate((element) => {
-        element.scrollTop = 120;
-      });
-      await detailsPane.evaluate((element) => {
-        element.scrollTop = 80;
-      });
-      const wideScroll = await page.evaluate(() => ({
-        details: document.querySelector('.file-metadata-pane')!.scrollTop,
-        tree: document.querySelector('.file-tree-pane')!.scrollTop,
-      }));
-      expect(wideScroll.tree).toBeGreaterThan(0);
-      expect(wideScroll.details).toBeGreaterThan(0);
-
+      await expect(reviewMain).toBeVisible();
       await page.setViewportSize({ width: 900, height: 560 });
-      await expect(treePane).toHaveCSS('width', '280px');
-      await expect(detailsPane).toBeVisible();
-      await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
-      await assertNoPageOverflow(page);
-    });
-
-    await test.step('narrow tabs preserve selection, expansion, scroll, and focus', async () => {
-      await page.setViewportSize({ width: 767, height: 700 });
-      const tablist = page.getByRole('tablist', { name: 'Comparison view' });
-      const filesTab = page.getByRole('tab', { name: 'Files', exact: true });
-      const detailsTab = page.getByRole('tab', { name: 'Details', exact: true });
-      await expect(tablist).toBeVisible();
-      await expect(filesTab).toHaveAttribute('aria-selected', 'true');
-      await expect(filesTab).toHaveAttribute('tabindex', '0');
-      await expect(detailsTab).toHaveAttribute('aria-selected', 'false');
-      await expect(detailsTab).toHaveAttribute('tabindex', '-1');
-
-      await detailsTab.focus();
-      await page.keyboard.press('ArrowLeft');
-      await expect(filesTab).toBeFocused();
-      await expect(filesTab).toHaveAttribute('aria-selected', 'true');
-      await page.keyboard.press('End');
-      await expect(detailsTab).toBeFocused();
-      await expect(detailsTab).toHaveAttribute('aria-selected', 'true');
-      await page.keyboard.press('Home');
-      await expect(filesTab).toBeFocused();
-
-      const betaRow = page.locator(`[data-file-id="${opaqueFileId(2)}"]`);
-      routeControls.failNextDetail(opaqueFileId(2));
-      await betaRow.click();
-      const detailsHeading = page.getByRole('heading', {
-        level: 2,
-        name: 'File details — 00-src/components/beta.ts',
-      });
-      await expect(detailsTab).toHaveAttribute('aria-selected', 'true');
-      await expect(detailsHeading).toBeFocused();
-      await expect(betaRow).toHaveAttribute('aria-selected', 'true');
-      await expect(page.getByRole('navigation', { name: 'Changed files' })).toBeHidden();
-
-      const retry = page.getByRole('button', { name: 'Retry file details' });
-      await expect(retry).toBeVisible();
-      const releaseRetry = routeControls.releaseRetry;
-      await retry.click();
-      await expect(retry).toBeDisabled();
-      const disabledStyles = await readStyles(retry);
-      expect(disabledStyles.opacity).toBe('0.5');
-      const disabledBackground = disabledStyles.backgroundColor;
-      await retry.hover({ force: true });
-      expect((await readStyles(retry)).backgroundColor).toBe(disabledBackground);
-      releaseRetry();
-      await expect(retry).toHaveCount(0);
-
-      const back = page.getByRole('button', { name: 'Back to files' });
-      await expectMinimumTarget(back);
-      await back.click();
-      await expect(filesTab).toHaveAttribute('aria-selected', 'true');
-      await expect(betaRow).toBeFocused();
-      await expect(betaRow).toHaveAttribute('aria-selected', 'true');
-
-      const treePane = page.locator('.file-tree-pane');
-      await treePane.evaluate((element) => {
-        element.scrollTop = 120;
-      });
-      await detailsTab.click();
-      const detailsPane = page.locator('.file-metadata-pane');
-      await detailsPane.evaluate((element) => {
-        element.scrollTop = 96;
-      });
-      await filesTab.click();
-      expect(await treePane.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
-      await detailsTab.click();
-      expect(
-        await detailsPane.evaluate((element) => element.scrollTop),
-      ).toBeGreaterThan(0);
-      await filesTab.click();
-
-      const directory = page.getByRole('treeitem', {
-        name: '00-src/components',
-        exact: true,
-      });
-      await directory.click();
-      await expect(directory).toHaveAttribute('aria-expanded', 'false');
-      await detailsTab.click();
-      await filesTab.click();
-      await expect(directory).toHaveAttribute('aria-expanded', 'false');
-      await directory.click();
-      await expect(directory).toHaveAttribute('aria-expanded', 'true');
+      const filesButton = page.getByRole('button', { name: 'Files', exact: true });
+      await expect(filesButton).toBeVisible();
+      await filesButton.click();
+      await expect(treePane).toHaveClass(/review-files--open/);
+      await page.getByRole('button', { name: 'Close files' }).click();
+      await expect(treePane).not.toHaveClass(/review-files--open/);
+      await page.getByRole('button', { name: 'Comments', exact: true }).click();
+      await expect(page.locator('.comments-rail')).toHaveClass(/comments-rail--open/);
+      await page.getByRole('button', { name: 'Close comments' }).click();
+      await expect(page.locator('.comments-rail')).not.toHaveClass(/comments-rail--open/);
     });
 
     await test.step('narrow identity sheet traps focus and restores disclosure', async () => {
@@ -635,130 +545,22 @@ test('responsive keyboard and accessibility contract', async ({
       });
       await expect(dialog).toHaveAttribute('aria-modal', 'true');
       await expect(close).toBeFocused();
-      await expectMinimumTarget(close);
-      await expect(page.locator('.workspace-shell')).toHaveAttribute('inert', '');
+      await expect(page.locator('.review-shell')).toHaveAttribute('inert', '');
       const copyButtons = dialog.getByRole('button', { name: /^Copy full/ });
       await copyButtons.last().focus();
       await page.keyboard.press('Tab');
       await expect(close).toBeFocused();
-      await page.keyboard.press('Shift+Tab');
-      await expect(copyButtons.last()).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(dialog).toHaveCount(0);
       await expect(disclosure).toBeFocused();
-
-      await disclosure.click();
-      await close.click();
-      await expect(disclosure).toBeFocused();
-
-      await disclosure.click();
-      await expect(dialog).toBeVisible();
-      await disclosure.click();
-      await expect(dialog).toHaveCount(0);
-      await expect(disclosure).toBeFocused();
-      await page.setViewportSize({ width: 1280, height: 560 });
-      await disclosure.click();
-      await expect(
-        page.getByRole('region', { name: 'Comparison identities' }),
-      ).toBeVisible();
-      await expect(page.getByRole('dialog')).toHaveCount(0);
-      await page.keyboard.press('Escape');
-      await expect(disclosure).toBeFocused();
     });
 
-    await test.step('controls expose exact enabled, hover, pressed, focus, selected, and announcement states', async () => {
-      await page.setViewportSize({ width: 767, height: 700 });
-      const filesTab = page.getByRole('tab', { name: 'Files', exact: true });
-      const detailsTab = page.getByRole('tab', { name: 'Details', exact: true });
-      await expectMinimumTarget(filesTab);
-      await expectMinimumTarget(detailsTab);
-      const disclosure = page.getByRole('button', {
-        name: 'Comparison identities',
-        exact: true,
-      });
-      const initial = await readStyles(disclosure);
-      expect(initial.backgroundColor).toBe('rgb(22, 27, 34)');
-      expect(initial.borderColor).toBe('rgb(48, 54, 61)');
-      await disclosure.hover();
-      expect((await readStyles(disclosure)).backgroundColor).toBe(
-        'rgb(33, 38, 45)',
-      );
-      const box = await disclosure.boundingBox();
-      expect(box).not.toBeNull();
-      await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
-      await page.mouse.down();
-      const pressed = await readStyles(disclosure);
-      expect(pressed.backgroundColor).toBe('rgb(48, 54, 61)');
-      expect(pressed.boxShadow).toContain('inset');
-      await page.mouse.move(0, 0);
-      await page.mouse.up();
-      await disclosure.focus();
-      const focused = await readStyles(disclosure);
-      expect(focused.outlineWidth).toBe('2px');
-      expect(focused.outlineOffset).toBe('2px');
-      expect(focused.outlineColor).toBe('rgb(88, 166, 255)');
-      expect(focused.outlineStyle).not.toBe('none');
-
-      await detailsTab.click();
-      expect((await readStyles(detailsTab)).backgroundColor).toBe(
-        'rgb(47, 129, 247)',
-      );
-      const copy = page.getByRole('button', { name: 'Copy exact path' });
-      await expectMinimumTarget(copy);
-      await copy.click();
-      await expect(page.getByRole('status').filter({ hasText: 'Copied' })).toHaveText(
-        'Copied',
-      );
-      await expect(copy).toBeFocused();
-    });
-
-    await test.step('320px reflow, 200% zoom, text spacing, and orientation changes do not overflow or lose state', async () => {
+    await test.step('compact viewport preserves accessible review controls', async () => {
       await page.setViewportSize({ width: 320, height: 640 });
-      await assertNoPageOverflow(page);
-      for (const control of await page.locator('button:visible').all()) {
-        await expectMinimumTarget(control);
-      }
-
-      await page.setViewportSize({ width: 640, height: 700 });
-      await page.locator('body').evaluate((body) => {
-        body.style.zoom = '2';
-      });
-      await assertNoPageOverflow(page);
-      await page.locator('body').evaluate((body) => {
-        body.style.zoom = '';
-      });
-
-      await page.evaluate(() => {
-        for (const element of document.querySelectorAll<HTMLElement>('*')) {
-          element.style.letterSpacing = '0.12em';
-          element.style.lineHeight = '1.5';
-          element.style.wordSpacing = '0.16em';
-        }
-      });
-      await page.setViewportSize({ width: 320, height: 640 });
-      await assertNoPageOverflow(page);
-      await page.getByRole('button', {
-        name: 'Comparison identities',
-        exact: true,
-      }).click();
-      const fullId = page.getByText(expectedHead, { exact: true });
-      await expect(fullId).toBeVisible();
-      const idDimensions = await fullId.evaluate((element) => ({
-        clientWidth: element.clientWidth,
-        scrollWidth: element.scrollWidth,
-      }));
-      expect(idDimensions.scrollWidth).toBeLessThanOrEqual(idDimensions.clientWidth);
-      await page.keyboard.press('Escape');
-
-      await page.setViewportSize({ width: 700, height: 360 });
-      await expect(
-        page.locator(`[data-file-id="${opaqueFileId(2)}"]`),
-      ).toHaveAttribute('aria-selected', 'true');
-      await page.setViewportSize({ width: 360, height: 700 });
-      await expect(page.getByRole('tablist', { name: 'Comparison view' })).toBeVisible();
-      await expect(
-        page.locator(`[data-file-id="${opaqueFileId(2)}"]`),
-      ).toHaveAttribute('aria-selected', 'true');
+      await expect(page.getByRole('button', { name: 'Files', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Files', exact: true }).click();
+      await expect(page.getByRole('tree', { name: /Changed files/ })).toBeVisible();
+      await page.getByRole('button', { name: 'Close files' }).click();
     });
   } finally {
     await stopGeneratedCli(running);

@@ -244,7 +244,7 @@ function assertChromiumPrerequisite(browser: Browser, testInfo: TestInfo): void 
 
 function captureFileRequest(request: Request): FileRequestEvidence | undefined {
   const url = new URL(request.url());
-  if (!url.pathname.startsWith('/api/files/')) {
+  if (!/^\/api\/files\/file_[A-Za-z0-9_-]{43}\/content$/.test(url.pathname)) {
     return undefined;
   }
   return {
@@ -371,11 +371,11 @@ test('packaged file tree preserves opaque selection and keyboard semantics', asy
     await copiedRow.click();
     await expect(copiedRow).toHaveAttribute('aria-selected', 'true');
     await expect.poll(() => fileRequests.at(-1)?.pathname).toMatch(
-      /^\/api\/files\/file_[A-Za-z0-9_-]{43}$/,
+      /^\/api\/files\/file_[A-Za-z0-9_-]{43}\/content$/,
     );
     for (const request of fileRequests) {
       expect(request).toMatchObject({ method: 'GET', search: '', postData: null });
-      expect(request.pathname).toMatch(/^\/api\/files\/file_[A-Za-z0-9_-]{43}$/);
+      expect(request.pathname).toMatch(/^\/api\/files\/file_[A-Za-z0-9_-]{43}\/content$/);
       expect(request.pathname).not.toContain('copy-source');
       expect(request.pathname).not.toContain('copy-target');
     }
@@ -412,7 +412,7 @@ test('packaged file tree preserves opaque selection and keyboard semantics', asy
     await expect(tree.getByRole('treeitem').last()).toBeFocused();
     await page.keyboard.press('Space');
     await expect.poll(() => fileRequests.at(-1)?.pathname).toMatch(
-      /^\/api\/files\/file_[A-Za-z0-9_-]{43}$/,
+      /^\/api\/files\/file_[A-Za-z0-9_-]{43}\/content$/,
     );
 
     const focusedOutline = await tree

@@ -34,6 +34,8 @@ const commentsOpen = ref(false);
 const keyboardHelpOpen = ref(false);
 const liveMessage = ref('');
 const diffWorkspace = ref<InstanceType<typeof DiffWorkspace>>();
+const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
+const identityPanel = ref<InstanceType<typeof IdentityPanel>>();
 const workspaceState = shallowRef<WorkspaceState>();
 
 let sessionClient: SessionClient | undefined;
@@ -223,6 +225,23 @@ function retryDiff(): void {
   }
 }
 
+function toggleIdentity(): void {
+  if (identityOpen.value) {
+    closeIdentity();
+    return;
+  }
+
+  identityOpen.value = true;
+  if (isNarrow.value) {
+    void nextTick(() => identityPanel.value?.focusClose());
+  }
+}
+
+function closeIdentity(): void {
+  identityOpen.value = false;
+  void nextTick(() => identityHeader.value?.focusDisclosure());
+}
+
 function handleKeydown(event: KeyboardEvent): void {
   const target = event.target;
   if (target instanceof HTMLTextAreaElement && target.closest('.inline-comment-composer') !== null) {
@@ -244,7 +263,7 @@ function handleKeydown(event: KeyboardEvent): void {
     } else if (filesOpen.value) {
       filesOpen.value = false;
     } else if (identityOpen.value) {
-      identityOpen.value = false;
+      closeIdentity();
     }
     return;
   }
@@ -317,8 +336,8 @@ onBeforeUnmount(() => {
     <a class="skip-link" href="#changed-files-heading">Skip to changed files</a>
     <a class="skip-link" href="#diff-review-heading">Skip to diff</a>
     <a class="skip-link" href="#comments-heading">Skip to comments</a>
-    <IdentityHeader :session="session" :expanded="identityOpen" @toggle="identityOpen = !identityOpen" />
-    <IdentityPanel v-if="identityOpen" :session="session" :modal="isNarrow" @close="identityOpen = false" />
+    <IdentityHeader ref="identityHeader" :session="session" :expanded="identityOpen" @toggle="toggleIdentity" />
+    <IdentityPanel ref="identityPanel" v-if="identityOpen" :session="session" :modal="isNarrow" @close="closeIdentity" />
 
     <div class="review-shell" :inert="identityOpen && isNarrow">
       <nav class="review-files" :class="{ 'review-files--open': filesOpen }" aria-label="Changed files">
