@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: anchored-diff-review
 status: executing
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-07-21T12:30:47.521Z"
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-07-21T13:08:04.014Z"
 last_activity: 2026-07-21
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 35
-  completed_plans: 18
+  completed_plans: 19
   percent: 25
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 02 (anchored-diff-review) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 Status: Ready to execute
 Last activity: 2026-07-21 — Phase 02 execution started
 
@@ -72,6 +72,7 @@ Progress: ████░░░░░░ 43%
 | Phase 02 P04 | 7min | 3 tasks | 4 files |
 | Phase 02 P03 | 14min | 3 tasks | 9 files |
 | Phase 02 P05 | 27min | 1 tasks | 8 files |
+| Phase 02 P06 | 10min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -128,6 +129,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Key drafts only from framed ordered full selected endpoint OIDs. — Labels, refs, merge bases, paths, and short IDs cannot select a repository-local draft.
 - [Phase 02]: Reuse the public Monaco adapter for one active immutable side-by-side diff; keep opaque IDs as the only selection input. — Preserves Phase 1 authority and existing A→B→A editor restoration without a second lifecycle.
 - [Phase 02]: Treat visible file/change controls and documented keyboard shortcuts as accessible peers. — Boundary-disabled controls remain discoverable while narrow layouts retain the side-by-side diff plane.
+- [Phase 02]: Persist canonical server comment responses only — The server owns accepted anchor normalization; workspace state must not manufacture persisted comments.
+- [Phase 02]: Sort comments rail by file order, side, and line — Deterministic ordering makes review navigation stable across reloads.
 
 ### Pending Todos
 
@@ -149,6 +152,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T12:30:47.518Z
-Stopped at: Completed 02-05-PLAN.md
+Last session: 2026-07-21T13:08:04.008Z
+Stopped at: Completed 02-06-PLAN.md
 Resume file: None
