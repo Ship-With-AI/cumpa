@@ -1,6 +1,7 @@
 import * as monaco from 'monaco-editor';
 
 import { counterpartBoundary, type DiffSide } from './line-mapping';
+import type { WorkspaceCommand } from '../model/workspace-state.js';
 
 export type { DiffSide } from './line-mapping';
 
@@ -394,6 +395,30 @@ class PublicMonacoDiffAdapter {
     this.modifiedZone.zone.heightInPx = heightInPx;
     this.originalEditor.changeViewZones((accessor) => accessor.layoutZone(this.originalZone?.id ?? ''));
     this.modifiedEditor.changeViewZones((accessor) => accessor.layoutZone(this.modifiedZone?.id ?? ''));
+  }
+}
+
+/**
+ * Executes only commands that belong to the public Monaco adapter surface.
+ * State transitions, persistence, and DOM focus remain owned by workspace composition.
+ */
+export function applyMonacoWorkspaceCommand(
+  adapter: MonacoDiffAdapter,
+  command: WorkspaceCommand,
+): void {
+  switch (command.type) {
+    case 'go-to-change':
+      adapter.goToChange(command.direction);
+      return;
+    case 'layout':
+      adapter.layout();
+      return;
+    case 'reveal-comment-context':
+    case 'reveal-line':
+      adapter.revealAnchor(command);
+      return;
+    default:
+      return;
   }
 }
 
