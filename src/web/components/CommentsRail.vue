@@ -4,6 +4,7 @@ import type { WorkspaceComment } from '../model/workspace-state.js';
 const props = defineProps<{
   comments: readonly WorkspaceComment[];
   fileOrder: readonly string[];
+  filePath: (fileId: string) => string;
 }>();
 
 const emit = defineEmits<{
@@ -30,6 +31,7 @@ const badge = (comment: WorkspaceComment) => comment.status === 'verified'
   </section>
   <ol v-else class="comments-rail__list">
     <li v-for="comment in orderedComments()" :key="comment.id" class="comments-rail__comment">
+      <p class="comments-rail__metadata">{{ filePath(comment.fileId) }}</p>
       <p class="comments-rail__metadata">{{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p>
       <span class="comment-badge">{{ badge(comment) }}</span>
       <p class="comments-rail__body">{{ comment.body }}</p>

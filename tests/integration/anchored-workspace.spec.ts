@@ -191,3 +191,17 @@ test('inline comment persistence', async ({ page }) => {
   await page.getByRole('button', { name: 'Add comment', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Show comment' })).toBeVisible();
 });
+
+test('draft resume and anchor states', async ({ page }) => {
+  const pageErrors: Error[] = [];
+  const consoleErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error));
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  await openReview(page);
+  await expect(page.getByText('New local draft for this pinned comparison.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Start with a line' })).toBeVisible();
+  expect(pageErrors).toEqual([]);
+  expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);
+});

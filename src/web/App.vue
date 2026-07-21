@@ -85,20 +85,34 @@ async function loadFile(file: SessionFile): Promise<void> {
     }
   }
 }
-function draftComment(comment: {
-  id: string;
-  body: string;
-  anchor: { side: 'base' | 'head'; line: number };
-  verification: { state: 'verified' | 'stale' | 'orphaned' };
-}): WorkspaceComment {
+function draftComment(
+  comment: {
+    id: string;
+    body: string;
+    anchor: { safeDisplayPath: string; side: 'base' | 'head'; line: number };
+    verification: { state: 'verified' | 'stale' | 'orphaned' };
+  },
+  files: readonly SessionFile[],
+): WorkspaceComment {
+  const matchingFiles = files.filter((file) => {
+    const path = comment.anchor.side === 'base'
+      ? file.oldPath ?? file.newPath
+      : file.newPath ?? file.oldPath;
+    return path?.display === comment.anchor.safeDisplayPath;
+  });
   return {
     id: comment.id,
-    fileId: session.value?.files.find((file) => file.fileId === workspace?.getState().activeFileId)?.fileId ?? '',
+    fileId: matchingFiles.length === 1 ? matchingFiles[0]!.fileId : `unavailable:${comment.id}`,
     side: comment.anchor.side,
     line: comment.anchor.line,
     body: comment.body,
     status: comment.verification.state,
   };
+}
+
+function filePath(fileId: string): string {
+  const file = session.value?.files.find((candidate) => candidate.fileId === fileId);
+  return file?.newPath?.display ?? file?.oldPath?.display ?? 'Recorded file unavailable';
 }
 
 
@@ -266,10 +280,7 @@ onMounted(async () => {
     session.value = loaded;
     const reviewable = loaded.files.filter((file) => file.availability.kind === 'text');
     const draft = await sessionClient.getDraft();
-    const comments = draft.comments.flatMap((comment) => {
-      const file = loaded.files.find((candidate) => candidate.fileId === comment.anchor.uniqueKey);
-      return file === undefined ? [] : [draftComment(comment)];
-    });
+    const comments = draft.comments.map((comment) => draftComment(comment, loaded.files));
     if (reviewable.length > 0) {
       workspace = createWorkspaceState(reviewable.map((file) => file.fileId), comments);
       workspaceState.value = workspace.getState();
@@ -379,6 +390,7 @@ onBeforeUnmount(() => {
         <CommentsRail
           :comments="workspaceComments"
           :file-order="reviewableFiles.map((file) => file.fileId)"
+          :file-path="filePath"
           @inspect="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
           @show="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
         />

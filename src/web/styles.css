@@ -1189,6 +1189,7 @@ body {
   min-height: 0;
   grid-template-rows: 32px minmax(0, 1fr) auto;
   overflow: hidden;
+  position: relative;
 }
 
 .diff-workspace__side-labels {
@@ -1209,10 +1210,10 @@ body {
 }
 
 .diff-workspace__gutter-action {
-  position: absolute;
-  z-index: 2;
-  top: 40px;
-  right: 8px;
+ position: absolute;
+ z-index: 3;
+ top: 40px;
+ right: 8px;
   width: 24px;
   height: 24px;
   border: 1px solid var(--rule);
@@ -1224,9 +1225,10 @@ body {
 
 .inline-comment-composer,
 .inline-accepted-comment {
-  margin: 8px 16px;
-  padding: 8px;
-  border: 1px solid var(--rule);
+ position: relative;
+ z-index: 2;
+ margin: 8px 16px;
+ padding: 8px;
   border-left: 2px solid var(--accent);
   border-radius: 8px;
   background: var(--surface);
@@ -1260,7 +1262,9 @@ body {
   font-size: 12px;
 }
 .diff-workspace__editor {
-  min-height: 0;
+ position: relative;
+ z-index: 1;
+ min-height: 0;
 }
 
 .diff-workspace__context-help {
