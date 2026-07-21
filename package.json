@@ -21,6 +21,7 @@
     "build": "npm run build:runtime && npm run build:web",
     "prepack": "npm run build",
     "verify:prerequisites": "node scripts/verify-prerequisites.mjs && npm run build:runtime",
+    "verify:production-artifacts": "node scripts/verify-production-artifacts.mjs",
     "test:unit": "node scripts/run-focused-vitest.mjs tests/unit",
     "test:git": "node scripts/run-focused-vitest.mjs tests/git",
     "test:api": "vitest run tests/api",

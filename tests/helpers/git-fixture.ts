@@ -29,6 +29,7 @@ export interface GitFixture {
   readonly baseRef: 'refs/heads/main';
   readonly headRef: 'refs/heads/feature';
   readonly futureHeadOid: string;
+  readonly alternateHeadRef?: 'refs/heads/alternate';
   git(arguments_: readonly string[]): Buffer;
   write(relativePath: string, content: string): Promise<void>;
   cleanup(): Promise<void>;
@@ -36,6 +37,7 @@ export interface GitFixture {
 
 export interface GitFixtureOptions {
   readonly committedHeadChange?: boolean;
+  readonly anchoredReview?: boolean;
 }
 
 export async function createGitFixture(
@@ -68,11 +70,60 @@ export async function createGitFixture(
   invokeGit(['config', '--local', 'commit.gpgSign', 'false']);
 
   await writeFile(join(repositoryRoot, 'tracked.txt'), 'base\n');
-  invokeGit(['add', '--', 'tracked.txt']);
+  if (options.anchoredReview === true) {
+    await mkdir(join(repositoryRoot, 'src'), { recursive: true });
+    await writeFile(
+      join(repositoryRoot, 'src', 'old-name.ts'),
+      [
+        'export const renamed = "base";',
+        'export const baseOnly = "base path";',
+        '',
+      ].join('\n'),
+    );
+    await writeFile(
+      join(repositoryRoot, 'src', 'changed.ts'),
+      [
+        'export const before = "stable-before";',
+        'export const changed = "base value";',
+        'export const after = "stable-after";',
+        '',
+      ].join('\n'),
+    );
+    await writeFile(
+      join(repositoryRoot, 'src', 'context.ts'),
+      Array.from({ length: 16 }, (_, index) => `export const line${index + 1} = ${index + 1};`).join('\n') +
+        '\n',
+    );
+    await writeFile(join(repositoryRoot, 'src', 'deleted.ts'), 'export const deleted = true;\n');
+  }
+  invokeGit(['add', '-A']);
   invokeGit(['commit', '-m', 'base']);
   invokeGit(['switch', '-c', 'feature']);
 
-  if (options.committedHeadChange === false) {
+  if (options.anchoredReview === true) {
+    invokeGit(['mv', 'src/old-name.ts', 'src/new-name.ts']);
+    await writeFile(
+      join(repositoryRoot, 'src', 'new-name.ts'),
+      [
+        'export const renamed = "head";',
+        'export const headOnly = "new path";',
+        '',
+      ].join('\n'),
+    );
+    await writeFile(
+      join(repositoryRoot, 'src', 'changed.ts'),
+      [
+        'export const before = "stable-before";',
+        'export const changed = "head value";',
+        'export const after = "stable-after";',
+        '',
+      ].join('\n'),
+    );
+    await writeFile(join(repositoryRoot, 'src', 'added.ts'), 'export const added = true;\n');
+    invokeGit(['rm', '--', 'src/deleted.ts']);
+    invokeGit(['add', '-A']);
+    invokeGit(['commit', '-m', 'anchored review changes']);
+  } else if (options.committedHeadChange === false) {
     invokeGit(['commit', '--allow-empty', '-m', 'empty feature head']);
   } else {
     await writeFile(join(repositoryRoot, 'committed.txt'), 'committed\n');
@@ -85,6 +136,20 @@ export async function createGitFixture(
   const futureHeadOid = invokeGit(['rev-parse', 'HEAD']).toString('ascii').trim();
   invokeGit(['update-ref', 'refs/heads/feature', pinnedHeadOid]);
 
+  const alternateHeadRef =
+    options.anchoredReview === true ? 'refs/heads/alternate' : undefined;
+  if (alternateHeadRef !== undefined) {
+    invokeGit(['switch', 'main']);
+    invokeGit(['switch', '-c', 'alternate']);
+    await writeFile(
+      join(repositoryRoot, 'src', 'alternate.ts'),
+      'export const alternate = true;\n',
+    );
+    invokeGit(['add', '-A']);
+    invokeGit(['commit', '-m', 'alternate comparison']);
+    invokeGit(['switch', 'feature']);
+  }
+
   const nestedCwd = join(repositoryRoot, 'nested', 'deep');
   await mkdir(nestedCwd, { recursive: true });
 
@@ -93,6 +158,7 @@ export async function createGitFixture(
     nestedCwd,
     baseRef: 'refs/heads/main',
     headRef: 'refs/heads/feature',
+    alternateHeadRef,
     futureHeadOid,
     git: invokeGit,
     async write(relativePath, content) {

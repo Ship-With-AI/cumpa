@@ -10,6 +10,7 @@ const approvedDependencies = new Map([
   ['@vitejs/plugin-vue', '6.0.7'],
   ['commander', '15.0.0'],
   ['fastify', '5.10.0'],
+  ['monaco-editor', '0.55.1'],
   ['open', '11.0.0'],
   ['typescript', '7.0.2'],
   ['vite', '8.1.4'],
@@ -57,5 +58,5 @@ execFileSync(npmCommand, ['ls', '--depth=0'], {
 });
 
 console.log(
-  `Prerequisites verified: ${process.version}, Git available, and 14 approved exact releases installed.`,
+  `Prerequisites verified: ${process.version}, Git available, and 15 approved exact releases installed.`,
 );
