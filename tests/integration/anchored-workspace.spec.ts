@@ -55,19 +55,63 @@ function content(fileId: string) {
   };
 }
 
-function json(response: ServerResponse, body: unknown): void {
-  response.statusCode = 200;
+function json(response: ServerResponse, body: unknown, statusCode = 200): void {
+  response.statusCode = statusCode;
   response.setHeader('content-type', 'application/json');
   response.end(JSON.stringify(body));
 }
 
+function draftView(comments: readonly unknown[]) {
+  return {
+    schemaVersion: 1,
+    comparison: {
+      baseCommitOid: 'a'.repeat(40),
+      headCommitOid: 'b'.repeat(40),
+      mergeBaseOid: 'c'.repeat(40),
+    },
+    revision: comments.length,
+    summary: '',
+    comments,
+  };
+}
+
 async function startAppServer(): Promise<string> {
+  let comments: unknown[] = [];
   server = await createServer({
     configFile: resolve(repositoryRoot, 'vite.config.ts'),
     plugins: [{
       name: 'anchored-workspace-api',
       configureServer(viteServer) {
         viteServer.middlewares.use('/api/session', (_request, response) => json(response, session));
+        viteServer.middlewares.use('/api/draft/comments', (request, response) => {
+          let rawBody = '';
+          request.on('data', (chunk) => { rawBody += String(chunk); });
+          request.on('end', () => {
+            const add = JSON.parse(rawBody) as { fileId: string; side: 'base' | 'head'; line: number; body: string };
+            const accepted = {
+              id: 'comment_123e4567-e89b-12d3-a456-426614174000',
+              state: 'open',
+              body: add.body.trim(),
+              anchor: {
+                version: 'durable-anchor-v1',
+                path: path(add.fileId === firstFileId ? 'src/first.ts' : 'src/second.ts'),
+                safeDisplayPath: add.fileId === firstFileId ? 'src/first.ts' : 'src/second.ts',
+                side: add.side,
+                line: add.line,
+                blobOid: 'd'.repeat(40),
+                selectedText: 'const context1 = 1;',
+                context: { before: [], target: { line: add.line, text: 'const context1 = 1;' }, after: [] },
+                contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
+                uniqueKey: 'e'.repeat(64),
+              },
+              createdAt: '2026-07-21T00:00:00.000Z',
+              updatedAt: '2026-07-21T00:00:00.000Z',
+            };
+            comments = [accepted];
+            json(response, accepted, 201);
+          });
+        });
+        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, draftView(comments)));
         viteServer.middlewares.use('/api/files', (request, response) => {
           const fileId = request.url?.match(/^\/(file_[A-Za-z0-9_-]{43})\/content$/)?.[1];
           if (fileId !== firstFileId && fileId !== secondFileId) {
@@ -134,4 +178,16 @@ test('diff navigation and session state', async ({ page }) => {
 
   expect(pageErrors).toEqual([]);
   expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);
+});
+
+test('inline comment persistence', async ({ page }) => {
+  await openReview(page);
+  await page.getByRole('button', { name: 'Add comment to head line 1' }).click();
+  const textarea = page.locator('.diff-workspace > section.inline-comment-composer textarea');
+  await expect(textarea).toBeVisible();
+  await textarea.fill('Please explain this context.');
+  await textarea.blur();
+  await expect(textarea).toHaveValue('Please explain this context.');
+  await page.getByRole('button', { name: 'Add comment', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Show comment' })).toBeVisible();
 });

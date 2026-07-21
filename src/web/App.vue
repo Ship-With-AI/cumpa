@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 
 import type { FileContentResponse, SessionFile, SessionResponse } from '../contracts/api';
 import {
@@ -10,6 +10,7 @@ import {
 } from './api/client';
 import type { SessionClient } from './api/client';
 import DiffWorkspace from './components/DiffWorkspace.vue';
+import CommentsRail from './components/CommentsRail.vue';
 import ErrorState from './components/ErrorState.vue';
 import FileTree from './components/FileTree.vue';
 import IdentityHeader from './components/IdentityHeader.vue';
@@ -18,6 +19,7 @@ import KeyboardHelp from './components/KeyboardHelp.vue';
 import ReviewToolbar from './components/ReviewToolbar.vue';
 import type { WorkspaceCommand, WorkspaceEvent } from './model/workspace-state.js';
 import { createWorkspaceState, type WorkspaceController } from './model/workspace-state.js';
+import type { WorkspaceComment, WorkspaceState } from './model/workspace-state.js';
 
 const session = shallowRef<SessionResponse>();
 const errorMessage = ref('');
@@ -32,6 +34,7 @@ const commentsOpen = ref(false);
 const keyboardHelpOpen = ref(false);
 const liveMessage = ref('');
 const diffWorkspace = ref<InstanceType<typeof DiffWorkspace>>();
+const workspaceState = shallowRef<WorkspaceState>();
 
 let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
@@ -43,6 +46,9 @@ const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? sele
 const selectedIndex = computed(() => reviewableFiles.value.findIndex((file) => file.fileId === selectedFile.value?.fileId));
 const atFirstFile = computed(() => selectedIndex.value <= 0);
 const atLastFile = computed(() => selectedIndex.value === -1 || selectedIndex.value === reviewableFiles.value.length - 1);
+const activeWorkspaceFile = computed(() => workspaceState.value?.files[workspaceState.value.activeFileId]);
+const activeComposer = computed(() => activeWorkspaceFile.value?.composer);
+const workspaceComments = computed(() => workspaceState.value?.comments ?? []);
 
 function announce(message: string): void {
   liveMessage.value = message;
@@ -79,6 +85,22 @@ async function loadFile(file: SessionFile): Promise<void> {
     }
   }
 }
+function draftComment(comment: {
+  id: string;
+  body: string;
+  anchor: { side: 'base' | 'head'; line: number };
+  verification: { state: 'verified' | 'stale' | 'orphaned' };
+}): WorkspaceComment {
+  return {
+    id: comment.id,
+    fileId: session.value?.files.find((file) => file.fileId === workspace?.getState().activeFileId)?.fileId ?? '',
+    side: comment.anchor.side,
+    line: comment.anchor.line,
+    body: comment.body,
+    status: comment.verification.state,
+  };
+}
+
 
 function runCommands(commands: readonly WorkspaceCommand[]): void {
   for (const command of commands) {
@@ -86,17 +108,46 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
       case 'announce':
         announce(command.text);
         break;
+      case 'focus-comment':
+        void nextTick(() => diffWorkspace.value?.focusComment(command.commentId));
+        break;
       case 'go-to-change':
         command.direction === 'next' ? diffWorkspace.value?.nextChange() : diffWorkspace.value?.previousChange();
         break;
       case 'layout':
         diffWorkspace.value?.layout();
         break;
+      case 'persist-comment':
+        void sessionClient?.addComment({
+          fileId: command.fileId,
+          side: command.side,
+          line: command.line,
+          body: command.body,
+        }).then((comment) => {
+          dispatchWorkspace({
+            type: 'add-succeeded',
+            comment: {
+              id: comment.id,
+              fileId: command.fileId,
+              side: comment.anchor.side,
+              line: comment.anchor.line,
+              body: comment.body,
+              status: 'verified',
+            },
+          });
+          announce(`Comment added and saved locally on ${command.side} line ${command.line}.`);
+        }).catch(() => dispatchWorkspace({
+          type: 'add-failed',
+          message: 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.',
+        }));
+        break;
+      case 'reveal-comment-context':
+      case 'reveal-line':
+        diffWorkspace.value?.revealComment(command.side, command.line);
+        break;
       case 'load-file': {
         const file = activeFile(command.fileId);
-        if (file !== undefined) {
-          void loadFile(file);
-        }
+        if (file !== undefined) void loadFile(file);
         break;
       }
       default:
@@ -106,10 +157,10 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
 }
 
 function dispatchWorkspace(event: WorkspaceEvent): void {
-  if (workspace === undefined) {
-    return;
-  }
-  runCommands(workspace.dispatch(event).commands);
+  if (workspace === undefined) return;
+  const transition = workspace.dispatch(event);
+  workspaceState.value = transition.state;
+  runCommands(transition.commands);
 }
 
 function selectFile(fileId: string): void {
@@ -160,9 +211,17 @@ function retryDiff(): void {
 
 function handleKeydown(event: KeyboardEvent): void {
   const target = event.target;
-  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) {
+  if (target instanceof HTMLTextAreaElement && target.closest('.inline-comment-composer') !== null) {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault();
+      dispatchWorkspace({ type: 'add-comment' });
+    } else if (event.key === 'Escape') {
+      event.preventDefault();
+      dispatchWorkspace({ type: 'escape' });
+    }
     return;
   }
+  if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
   if (event.key === 'Escape') {
     if (keyboardHelpOpen.value) {
       keyboardHelpOpen.value = false;
@@ -205,10 +264,19 @@ onMounted(async () => {
     sessionClient = createSessionClient();
     const loaded = await sessionClient.getSession();
     session.value = loaded;
-    const firstReviewable = loaded.files.find((file) => file.availability.kind === 'text');
-    if (firstReviewable !== undefined) {
-      workspace = createWorkspaceState(loaded.files.filter((file) => file.availability.kind === 'text').map((file) => file.fileId));
-      await loadFile(firstReviewable);
+    const reviewable = loaded.files.filter((file) => file.availability.kind === 'text');
+    const draft = await sessionClient.getDraft();
+    const comments = draft.comments.flatMap((comment) => {
+      const file = loaded.files.find((candidate) => candidate.fileId === comment.anchor.uniqueKey);
+      return file === undefined ? [] : [draftComment(comment)];
+    });
+    if (reviewable.length > 0) {
+      workspace = createWorkspaceState(reviewable.map((file) => file.fileId), comments);
+      workspaceState.value = workspace.getState();
+      await loadFile(reviewable[0]!);
+      announce(draft.comments.length > 0
+        ? 'Local draft resumed. Accepted comments for this pinned comparison are ready.'
+        : 'New local draft for this pinned comparison.');
     }
   } catch (error) {
     errorMessage.value = error instanceof SessionClientError ? error.message : SECURITY_FAILURE_MESSAGE;
@@ -286,7 +354,21 @@ onBeforeUnmount(() => {
           <p>The pinned file content is unavailable. Try again, or relaunch Diff Review if the session ended.</p>
           <button type="button" class="ui-button" @click="retryDiff">Try loading diff again</button>
         </section>
-        <DiffWorkspace v-else-if="selectedContent !== undefined" ref="diffWorkspace" :content="selectedContent" :path="selectedPath" @ready="handleDiffReady" />
+        <DiffWorkspace
+          v-else-if="selectedContent !== undefined"
+          ref="diffWorkspace"
+          :comments="workspaceComments"
+          :composer="activeComposer"
+          :content="selectedContent"
+          :path="selectedPath"
+          @activate="(side, line) => dispatchWorkspace({ type: 'activate-line', side, line })"
+          @add="dispatchWorkspace({ type: 'add-comment' })"
+          @cancel="dispatchWorkspace({ type: 'cancel-composer' })"
+          @confirm-discard="dispatchWorkspace({ type: 'confirm-discard' })"
+          @keep-writing="dispatchWorkspace({ type: 'keep-writing' })"
+          @ready="handleDiffReady"
+          @update-text="(text) => dispatchWorkspace({ type: 'composer-text-changed', text })"
+        />
       </main>
 
       <aside class="comments-rail" :class="{ 'comments-rail--open': commentsOpen }" aria-labelledby="comments-heading">
@@ -294,8 +376,12 @@ onBeforeUnmount(() => {
           <h2 id="comments-heading">Comments</h2>
           <button v-if="isNarrow" type="button" class="drawer-close ui-button" @click="commentsOpen = false">Close comments</button>
         </div>
-        <h3>Start with a line</h3>
-        <p>Choose a line in the diff, then use the + gutter button or Option+Enter on macOS; Alt+Enter on Windows and Linux.</p>
+        <CommentsRail
+          :comments="workspaceComments"
+          :file-order="reviewableFiles.map((file) => file.fileId)"
+          @inspect="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
+          @show="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
+        />
       </aside>
     </div>
     <p class="sr-only" aria-live="polite">{{ liveMessage }}</p>

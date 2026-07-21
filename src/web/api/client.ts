@@ -1,9 +1,20 @@
+import { z } from 'zod';
+
 import {
+  AddCommentRequestSchema,
   FileContentResponseSchema,
   FileMetadataResponseSchema,
+  type AddCommentRequest,
   type FileContentResponse,
+  type FileMetadataResponse,
   SessionResponseSchema,
+  type SessionResponse,
 } from '../../contracts/api.js';
+import {
+  AnchorVerificationSchema,
+  DurableAnchorV1Schema,
+  type ReviewDraftCommentV1,
+} from '../../contracts/draft.js';
 
 export const SECURITY_FAILURE_MESSAGE =
   'This request is not available in the current session. Relaunch Diff Review from the terminal.';
@@ -13,12 +24,35 @@ export const SESSION_STOPPED_MESSAGE =
   'This pinned session has stopped. Relaunch Diff Review from the terminal to continue.';
 export const FILE_UNAVAILABLE_MESSAGE =
   'File details could not be loaded. Retry this file. If the problem continues, check the terminal diagnostic.';
+export const DRAFT_UNAVAILABLE_MESSAGE =
+  'Local draft couldn’t be opened. Existing review data was left unchanged. Relaunch Diff Review or check the terminal for details.';
+const AcceptedCommentSchema = z.strictObject({
+  id: z.string().regex(/^comment_[0-9a-f-]{36}$/u),
+  state: z.literal('open'),
+  body: z.string().trim().min(1).max(100_000),
+  anchor: DurableAnchorV1Schema,
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
 
-export type SessionClientErrorKind =
-  | 'security'
-  | 'session'
-  | 'stopped'
-  | 'file';
+const DraftCommentResponseSchema = AcceptedCommentSchema.extend({
+  verification: AnchorVerificationSchema,
+}).readonly();
+
+const DraftViewSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  comparison: z.strictObject({
+    baseCommitOid: z.string().regex(/^[0-9a-f]{40,64}$/),
+    headCommitOid: z.string().regex(/^[0-9a-f]{40,64}$/),
+    mergeBaseOid: z.string().regex(/^[0-9a-f]{40,64}$/),
+  }).readonly(),
+  revision: z.number().int().nonnegative(),
+  summary: z.literal(''),
+  comments: z.array(DraftCommentResponseSchema).max(10_000).readonly(),
+}).readonly();
+
+export type DraftView = z.infer<typeof DraftViewSchema>;
+export type SessionClientErrorKind = 'security' | 'session' | 'stopped' | 'file' | 'draft';
 
 export class SessionClientError extends Error {
   readonly kind: SessionClientErrorKind;
@@ -31,9 +65,11 @@ export class SessionClientError extends Error {
 }
 
 export interface SessionClient {
+  addComment(request: AddCommentRequest): Promise<ReviewDraftCommentV1>;
+  getDraft(): Promise<DraftView>;
   getFileContent(fileId: string): Promise<FileContentResponse>;
-  getSession(): Promise<SessionResponse>;
   getFileMetadata(fileId: string): Promise<FileMetadataResponse>;
+  getSession(): Promise<SessionResponse>;
 }
 
 export interface SessionClientEnvironment {
@@ -55,22 +91,31 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
     throw new SessionClientError('security', SECURITY_FAILURE_MESSAGE);
   }
 
-  const get = async (path: string, failureKind: 'session' | 'file'): Promise<unknown> => {
+  const requestJson = async (
+    path: string,
+    method: 'GET' | 'POST',
+    failureKind: 'session' | 'file' | 'draft',
+    body?: unknown,
+  ): Promise<unknown> => {
     let response: Response;
     try {
       response = await request(path, {
-        method: 'GET',
-        headers: { authorization: `Bearer ${token}` },
+        method,
+        headers: {
+          authorization: `Bearer ${token}`,
+          ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        },
         credentials: 'same-origin',
         cache: 'no-store',
         referrerPolicy: 'no-referrer',
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
     } catch {
       throw new SessionClientError(
-        failureKind === 'session' ? 'stopped' : 'file',
+        failureKind === 'session' ? 'stopped' : failureKind,
         failureKind === 'session'
           ? SESSION_STOPPED_MESSAGE
-          : FILE_UNAVAILABLE_MESSAGE,
+          : failureKind === 'draft' ? DRAFT_UNAVAILABLE_MESSAGE : FILE_UNAVAILABLE_MESSAGE,
       );
     }
 
@@ -81,7 +126,7 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
           ? SECURITY_FAILURE_MESSAGE
           : failureKind === 'session'
             ? SESSION_UNAVAILABLE_MESSAGE
-            : FILE_UNAVAILABLE_MESSAGE,
+            : failureKind === 'draft' ? DRAFT_UNAVAILABLE_MESSAGE : FILE_UNAVAILABLE_MESSAGE,
       );
     }
 
@@ -90,34 +135,56 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
     } catch {
       throw new SessionClientError(
         failureKind,
-        failureKind === 'session' ? SESSION_UNAVAILABLE_MESSAGE : FILE_UNAVAILABLE_MESSAGE,
+        failureKind === 'session'
+          ? SESSION_UNAVAILABLE_MESSAGE
+          : failureKind === 'draft' ? DRAFT_UNAVAILABLE_MESSAGE : FILE_UNAVAILABLE_MESSAGE,
       );
     }
   };
 
   return Object.freeze({
+    async addComment(comment) {
+      const payload = AddCommentRequestSchema.safeParse(comment);
+      if (!payload.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      const result = AcceptedCommentSchema.safeParse(
+        await requestJson('/api/draft/comments', 'POST', 'draft', payload.data),
+      );
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data as ReviewDraftCommentV1;
+    },
+    async getDraft() {
+      const result = DraftViewSchema.safeParse(await requestJson('/api/draft', 'GET', 'draft'));
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async getFileContent(fileId) {
+      const result = FileContentResponseSchema.safeParse(
+        await requestJson(`/api/files/${encodeURIComponent(fileId)}/content`, 'GET', 'file'),
+      );
+      if (!result.success) {
+        throw new SessionClientError('file', FILE_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async getFileMetadata(fileId) {
+      const result = FileMetadataResponseSchema.safeParse(
+        await requestJson(`/api/files/${encodeURIComponent(fileId)}`, 'GET', 'file'),
+      );
+      if (!result.success) {
+        throw new SessionClientError('file', FILE_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
     async getSession() {
-      const result = SessionResponseSchema.safeParse(await get('/api/session', 'session'));
+      const result = SessionResponseSchema.safeParse(await requestJson('/api/session', 'GET', 'session'));
       if (!result.success) {
         throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
-      }
-      return result.data;
-    },
-    async getFileMetadata(fileId: string) {
-      const result = FileMetadataResponseSchema.safeParse(
-        await get(`/api/files/${encodeURIComponent(fileId)}`, 'file'),
-      );
-      if (!result.success) {
-        throw new SessionClientError('file', FILE_UNAVAILABLE_MESSAGE);
-      }
-      return result.data;
-    },
-    async getFileContent(fileId: string) {
-      const result = FileContentResponseSchema.safeParse(
-        await get(`/api/files/${encodeURIComponent(fileId)}/content`, 'file'),
-      );
-      if (!result.success) {
-        throw new SessionClientError('file', FILE_UNAVAILABLE_MESSAGE);
       }
       return result.data;
     },

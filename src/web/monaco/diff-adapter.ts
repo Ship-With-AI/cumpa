@@ -36,7 +36,9 @@ export type AdapterDiagnostics = Readonly<{
 
 export type MonacoDiffAdapter = Readonly<{
   activateAnchor: (side: DiffSide, line: number) => void;
+  clearAnchor: () => void;
   dispose: () => void;
+  getActiveAnchor: () => Anchor | undefined;
   getDiagnostics: () => AdapterDiagnostics;
   goToChange: (direction: 'next' | 'previous') => void;
   layout: () => void;
@@ -177,6 +179,17 @@ class PublicMonacoDiffAdapter {
     this.editorFor(side).focus();
     this.rebuildAnchoredLayout();
     this.onChange();
+  }
+  clearAnchor(): void {
+    this.activeComposer = undefined;
+    this.rebuildAnchoredLayout();
+    this.onChange();
+  }
+
+  getActiveAnchor(): Anchor | undefined {
+    return this.activeComposer === undefined
+      ? undefined
+      : { fileId: this.activeComposer.fileId, side: this.activeComposer.side, line: this.activeComposer.line };
   }
 
   revealAnchor(anchor: Anchor): void {

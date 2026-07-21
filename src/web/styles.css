@@ -1208,6 +1208,57 @@ body {
   line-height: 16px;
 }
 
+.diff-workspace__gutter-action {
+  position: absolute;
+  z-index: 2;
+  top: 40px;
+  right: 8px;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--accent);
+  font: inherit;
+}
+
+.inline-comment-composer,
+.inline-accepted-comment {
+  margin: 8px 16px;
+  padding: 8px;
+  border: 1px solid var(--rule);
+  border-left: 2px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.inline-comment-composer__header,
+.inline-comment-composer footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inline-comment-composer label,
+.inline-comment-composer textarea {
+  display: block;
+  width: 100%;
+}
+
+.inline-comment-composer textarea {
+  min-height: 76px;
+  max-height: 240px;
+  margin-top: 4px;
+  resize: vertical;
+}
+
+.inline-comment-composer__support,
+.inline-comment-composer__confirm p {
+  margin: 8px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
 .diff-workspace__editor {
   min-height: 0;
 }
