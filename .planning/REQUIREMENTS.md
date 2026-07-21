@@ -59,9 +59,9 @@
 
 ### Drafts
 
-- [ ] **DRFT-01**: User's accepted comment and summary mutations are persisted atomically before the UI confirms success.
-- [ ] **DRFT-02**: User can relaunch the same pinned comparison and resume its repository-local draft.
-- [ ] **DRFT-03**: User gets a separate draft when either pinned comparison commit differs.
+- [x] **DRFT-01**: User's accepted comment and summary mutations are persisted atomically before the UI confirms success.
+- [x] **DRFT-02**: User can relaunch the same pinned comparison and resume its repository-local draft.
+- [x] **DRFT-03**: User gets a separate draft when either pinned comparison commit differs.
 - [ ] **DRFT-04**: User cannot unknowingly overwrite newer review state from another browser tab.
 - [ ] **DRFT-05**: User receives a recoverable error when a draft is corrupt or uses an unsupported schema; the existing file is preserved.
 - [ ] **DRFT-06**: User's open review remains pinned if a selected branch or worktree advances and visibly reports that selector drift.
@@ -174,9 +174,9 @@ Each v1 requirement maps to exactly one roadmap phase.
 | CMT-01 | Phase 2 | Complete |
 | CMT-02 | Phase 2 | Complete |
 | CMT-08 | Phase 2 | Complete |
-| DRFT-01 | Phase 2 | Pending |
-| DRFT-02 | Phase 2 | Pending |
-| DRFT-03 | Phase 2 | Pending |
+| DRFT-01 | Phase 2 | Complete |
+| DRFT-02 | Phase 2 | Complete |
+| DRFT-03 | Phase 2 | Complete |
 | CMT-03 | Phase 3 | Pending |
 | CMT-04 | Phase 3 | Pending |
 | CMT-05 | Phase 3 | Pending |

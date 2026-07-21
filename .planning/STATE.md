@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: anchored-diff-review
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-07-21T11:28:45.370Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-07-21T12:02:42.079Z"
 last_activity: 2026-07-21
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 35
-  completed_plans: 16
+  completed_plans: 17
   percent: 25
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 02 (anchored-diff-review) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Last activity: 2026-07-21 — Phase 02 execution started
 
@@ -70,6 +70,7 @@ Progress: ████░░░░░░ 43%
 | Phase 01 P13 | 26min | 3 tasks | 7 files |
 | Phase 02 P02 | 8min | 3 tasks | 8 files |
 | Phase 02 P04 | 7min | 3 tasks | 4 files |
+| Phase 02 P03 | 14min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -123,6 +124,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Classify unavailable anchors as orphaned and exact mismatches as stale without search, relocation, or record rewrites. — Preserves drift-detectable review feedback.
 - [Phase 02]: Keep workspace interaction state in an opaque fileId-keyed browser-memory map and emit pure ordered commands. — Preserves per-file interaction state without browser or repository persistence.
 - [Phase 02]: Separate workspace transitions from public Monaco effects; layout, diff navigation, and reveal are adapter commands. — Keeps tests bound to state and documented public Monaco behavior rather than editor internals.
+- [Phase 02]: Key drafts only from framed ordered full selected endpoint OIDs. — Labels, refs, merge bases, paths, and short IDs cannot select a repository-local draft.
 
 ### Pending Todos
 
@@ -144,6 +146,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T11:28:00.616Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-07-21T12:02:42.076Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
