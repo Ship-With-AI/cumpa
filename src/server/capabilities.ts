@@ -1,18 +1,63 @@
-import type { PinnedComparison } from '../contracts/comparison.js';
+import type { PinnedComparison, ChangedFile } from '../contracts/comparison.js';
 import {
+  FileContentResponseSchema,
   FileMetadataResponseSchema,
   SessionResponseSchema,
+  type FileContentResponse,
   type FileMetadataResponse,
   type SessionResponse,
 } from '../contracts/api.js';
+import type { DurableAnchorV1 } from '../domain/anchor.js';
+import { MAX_INLINE_TEXT_BYTES } from '../git/availability.js';
+import { createObjectReader } from '../git/objects.js';
+import type { ObjectReader } from '../git/objects.js';
+
+export type AnchorAddPort = (
+  input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
+) => Promise<unknown>;
+
+const LANGUAGE_BY_EXTENSION: Readonly<Record<string, string>> = {
+  c: 'c',
+  css: 'css',
+  go: 'go',
+  h: 'cpp',
+  htm: 'html',
+  html: 'html',
+  java: 'java',
+  js: 'javascript',
+  json: 'json',
+  jsx: 'javascript',
+  md: 'markdown',
+  mjs: 'javascript',
+  mts: 'typescript',
+  py: 'python',
+  rs: 'rust',
+  sh: 'shell',
+  sql: 'sql',
+  ts: 'typescript',
+  tsx: 'typescript',
+  vue: 'html',
+  xml: 'xml',
+  yml: 'yaml',
+  yaml: 'yaml',
+};
+const LANGUAGE_BY_BASENAME: Readonly<Record<string, string>> = {
+  dockerfile: 'dockerfile',
+  makefile: 'makefile',
+};
+const strictTextDecoder = new TextDecoder('utf-8', { fatal: true });
 
 export type CapabilityRegistryOptions = Readonly<{
-  onCapabilityLookup?: (fileId: string) => void;
+  readonly onCapabilityLookup?: (fileId: string) => void;
+  readonly objectReader?: ObjectReader;
+  readonly onAnchorAdd?: AnchorAddPort;
 }>;
 
 export type CapabilityRegistry = Readonly<{
-  session: SessionResponse;
-  lookup: (fileId: string) => FileMetadataResponse | undefined;
+  readonly session: SessionResponse;
+  readonly onAnchorAdd?: AnchorAddPort;
+  readonly lookup: (fileId: string) => FileMetadataResponse | undefined;
+  readonly readContent: (fileId: string) => Promise<FileContentResponse | undefined>;
 }>;
 
 function toSessionEndpoint(endpoint: PinnedComparison['base']) {
@@ -30,11 +75,52 @@ function toSessionEndpoint(endpoint: PinnedComparison['base']) {
   };
 }
 
+function languageForPath(path: string | undefined): string {
+  const filename = path?.split(/[\\/]/u).at(-1)?.toLowerCase() ?? '';
+  if (filename.length === 0) {
+    return 'plaintext';
+  }
+  const namedLanguage = LANGUAGE_BY_BASENAME[filename];
+  if (namedLanguage !== undefined) {
+    return namedLanguage;
+  }
+  const extension = filename.split('.').at(-1);
+  return extension === undefined ? 'plaintext' : LANGUAGE_BY_EXTENSION[extension] ?? 'plaintext';
+}
+
+async function readSide(
+  reader: ObjectReader,
+  path: ChangedFile['oldPath'],
+  blobOid: string,
+  mode: string,
+): Promise<FileContentResponse['base'] | undefined> {
+  if (mode === '000000' || path === undefined) {
+    return { exists: false };
+  }
+  const content = await reader.read(blobOid, { maxBytes: MAX_INLINE_TEXT_BYTES });
+  if (content.kind === 'missing') {
+    return undefined;
+  }
+  try {
+    return {
+      exists: true,
+      path,
+      language: languageForPath(path.utf8),
+      blobOid,
+      text: strictTextDecoder.decode(content.bytes),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
 export function createCapabilityRegistry(
   comparison: PinnedComparison,
   options: CapabilityRegistryOptions = {},
 ): CapabilityRegistry {
   const filesByCapability = new Map<string, FileMetadataResponse>();
+  const frozenFilesByCapability = new Map<string, ChangedFile>();
+  const reader = options.objectReader ?? createObjectReader(comparison.repositoryRoot);
 
   const session = SessionResponseSchema.parse({
     base: toSessionEndpoint(comparison.base),
@@ -61,15 +147,31 @@ export function createCapabilityRegistry(
       });
 
       filesByCapability.set(file.id, metadata);
+      frozenFilesByCapability.set(file.id, file);
       return sessionFile;
     }),
   });
 
   return Object.freeze({
     session,
+    onAnchorAdd: options.onAnchorAdd,
     lookup(fileId: string) {
       options.onCapabilityLookup?.(fileId);
       return filesByCapability.get(fileId);
+    },
+    async readContent(fileId: string) {
+      const file = frozenFilesByCapability.get(fileId);
+      if (file === undefined || file.availability.kind !== 'text') {
+        return undefined;
+      }
+      const [base, head] = await Promise.all([
+        readSide(reader, file.oldPath, file.oldBlobOid, file.oldMode),
+        readSide(reader, file.newPath, file.newBlobOid, file.newMode),
+      ]);
+      if (base === undefined || head === undefined) {
+        return undefined;
+      }
+      return FileContentResponseSchema.parse({ fileId, base, head });
     },
   });
 }

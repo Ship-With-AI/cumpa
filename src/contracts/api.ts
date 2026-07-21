@@ -10,6 +10,41 @@ import {
 
 export const OpaqueFileIdSchema = z.string().regex(/^file_[A-Za-z0-9_-]{43}$/);
 
+const AnchorSideSchema = z.enum(['base', 'head']);
+
+export const AddCommentRequestSchema = z
+  .strictObject({
+    fileId: OpaqueFileIdSchema,
+    side: AnchorSideSchema,
+    line: z.number().int().positive(),
+    body: z.string().trim().min(1).max(100_000),
+  })
+  .readonly();
+
+const ExistingFileContentSideSchema = z
+  .strictObject({
+    exists: z.literal(true),
+    path: ExactPathSchema,
+    language: z.string().min(1),
+    blobOid: GitObjectIdSchema,
+    text: z.string(),
+  })
+  .readonly();
+
+const MissingFileContentSideSchema = z
+  .strictObject({
+    exists: z.literal(false),
+  })
+  .readonly();
+
+export const FileContentResponseSchema = z
+  .strictObject({
+    fileId: OpaqueFileIdSchema,
+    base: z.union([ExistingFileContentSideSchema, MissingFileContentSideSchema]),
+    head: z.union([ExistingFileContentSideSchema, MissingFileContentSideSchema]),
+  })
+  .readonly();
+
 const ApiWorktreeIdentitySchema = z
   .strictObject({
     path: z.string().min(1),
@@ -79,4 +114,6 @@ export type SessionResponse = z.infer<typeof SessionResponseSchema>;
 export type FileMetadataResponse = z.infer<
   typeof FileMetadataResponseSchema
 >;
+export type AddCommentRequest = z.infer<typeof AddCommentRequestSchema>;
+export type FileContentResponse = z.infer<typeof FileContentResponseSchema>;
 export type ApiError = z.infer<typeof ApiErrorSchema>;

@@ -182,28 +182,34 @@ describe('closed capability content and anchor routes', () => {
   test('rejects invalid, smuggled, unknown, unsupported, and unauthorized requests before lookup or object work', async () => {
     const onLookup = vi.fn();
     const app = buildApp({ onCapabilityLookup: onLookup });
-    const invalidBodies: unknown[] = [
-      { fileId, side: 'base', line: 0, body: 'body' },
-      { fileId, side: 'base', line: 3, body: 'body' },
-      { fileId, side: 'base', line: 1, body: '   ' },
-      { fileId, side: 'base', line: 1, body: 'x'.repeat(100_001) },
-      { fileId, side: 'base', line: 1, body: 'body', path: 'src/forged.ts' },
+    const invalidBodies: ReadonlyArray<Readonly<{ readonly payload: unknown; readonly statusCode: number }>> = [
+      { payload: { fileId, side: 'base', line: 0, body: 'body' }, statusCode: 400 },
+      { payload: { fileId, side: 'base', line: 3, body: 'body' }, statusCode: 409 },
+      { payload: { fileId, side: 'base', line: 1, body: '   ' }, statusCode: 400 },
+      { payload: { fileId, side: 'base', line: 1, body: 'x'.repeat(100_001) }, statusCode: 400 },
       {
-        fileId,
-        side: 'base',
-        line: 1,
-        body: 'body',
-        repository: '/private/repository/must-not-leak',
-        ref: 'main',
-        commit: 'f'.repeat(40),
-        blobOid: 'f'.repeat(40),
-        contextHash: 'forged',
-        draftKey: 'forged',
+        payload: { fileId, side: 'base', line: 1, body: 'body', path: 'src/forged.ts' },
+        statusCode: 400,
+      },
+      {
+        payload: {
+          fileId,
+          side: 'base',
+          line: 1,
+          body: 'body',
+          repository: '/private/repository/must-not-leak',
+          ref: 'main',
+          commit: 'f'.repeat(40),
+          blobOid: 'f'.repeat(40),
+          contextHash: 'forged',
+          draftKey: 'forged',
+        },
+        statusCode: 400,
       },
     ];
-    for (const payload of invalidBodies) {
+    for (const { payload, statusCode } of invalidBodies) {
       const response = await app.inject({ method: 'POST', url: '/api/draft/comments', headers, payload });
-      expect(response.statusCode).toBe(400);
+      expect(response.statusCode).toBe(statusCode);
       expectGenericDenial(response);
     }
 
