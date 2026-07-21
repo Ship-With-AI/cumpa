@@ -10,6 +10,14 @@ const secondFileId = `file_${'b'.repeat(43)}`;
 const token = 't'.repeat(43);
 let server: ViteDevServer | undefined;
 let origin = '';
+let comments: unknown[] = [];
+let contentRequests: string[] = [];
+
+const collisionPath = (terminalByte: number) => ({
+  bytesBase64url: Buffer.from([0x73, 0x72, 0x63, 0x2f, terminalByte, 0x2e, 0x74, 0x73]).toString('base64url'),
+  display: 'src/�.ts',
+});
+
 
 const path = (display: string) => ({
   bytesBase64url: Buffer.from(display).toString('base64url'),
@@ -22,7 +30,7 @@ const firstText = Array.from({ length: 20 }, (_, index) =>
 ).join('\n');
 const changedFirstText = firstText.replace('export const changed = 2;', 'export const changed = 3;');
 
-const session = {
+let session = {
   base: { label: 'base', oid: 'a'.repeat(40) },
   head: { label: 'head', oid: 'b'.repeat(40) },
   mergeBaseOid: 'c'.repeat(40),
@@ -76,7 +84,6 @@ function draftView(comments: readonly unknown[]) {
 }
 
 async function startAppServer(): Promise<string> {
-  let comments: unknown[] = [];
   server = await createServer({
     configFile: resolve(repositoryRoot, 'vite.config.ts'),
     plugins: [{
@@ -122,6 +129,7 @@ async function startAppServer(): Promise<string> {
             response.end();
             return;
           }
+          contentRequests.push(fileId);
           json(response, content(fileId));
         });
       },
@@ -132,9 +140,9 @@ async function startAppServer(): Promise<string> {
   return server.resolvedUrls?.local[0] ?? '';
 }
 
-async function openReview(page: Page): Promise<void> {
+async function openReview(page: Page, expectedPath = 'src/first.ts'): Promise<void> {
   await page.goto(`${origin}#token=${token}`);
-  await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: expectedPath })).toBeVisible();
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
 }
 
@@ -207,4 +215,42 @@ test('draft resume and anchor states', async ({ page }) => {
   await expect(page.getByText('Please explain this context.')).toBeVisible();
   expect(pageErrors).toEqual([]);
   expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);
+});
+
+test('exact-byte draft resume', async ({ page }) => {
+  const firstPath = collisionPath(0xff);
+  const secondPath = collisionPath(0xfe);
+  session = {
+    ...session,
+    files: [
+      { ...session.files[0]!, newPath: firstPath },
+      { ...session.files[1]!, newPath: secondPath },
+    ],
+  };
+  comments = [{
+    id: 'comment_123e4567-e89b-12d3-a456-426614174000',
+    state: 'open',
+    body: 'Restore the second exact-byte path.',
+    anchor: {
+      version: 'durable-anchor-v1',
+      path: secondPath,
+      safeDisplayPath: secondPath.display,
+      side: 'head',
+      line: 1,
+      blobOid: 'd'.repeat(40),
+      selectedText: 'const context1 = 1;',
+      context: { before: [], target: { line: 1, text: 'const context1 = 1;' }, after: [] },
+      contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
+      uniqueKey: 'e'.repeat(64),
+    },
+    createdAt: '2026-07-21T00:00:00.000Z',
+    updatedAt: '2026-07-21T00:00:00.000Z',
+    verification: { state: 'verified', reason: 'exact-match' },
+  }];
+
+  await openReview(page, 'src/�.ts');
+  await expect(page.getByText('Restore the second exact-byte path.')).toBeVisible();
+  contentRequests = [];
+  await page.getByRole('button', { name: 'Show comment' }).click();
+  await expect.poll(() => contentRequests).toEqual([secondFileId]);
 });
