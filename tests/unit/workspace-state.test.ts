@@ -103,6 +103,55 @@ describe('workspace session state', () => {
     expect(blur.state).toEqual(keepWriting.state);
     expect(blur.commands).toEqual([]);
   });
+  it('preserves a requested move target until explicit confirmation and never lets ordinary discard move it', () => {
+    const workspace = createWorkspaceState(['file-a']);
+    workspace.dispatch({ type: 'diff-ready', fileId: 'file-a' });
+    workspace.dispatch({ type: 'activate-line', side: 'base', line: 11 });
+    workspace.dispatch({ type: 'composer-text-changed', text: 'Keep this draft unless I confirm the move' });
+
+    const requestedMove = workspace.dispatch({ type: 'activate-line', side: 'head', line: 17 });
+    expect(requestedMove.state.files['file-a'].composer).toMatchObject({
+      side: 'base',
+      line: 11,
+      text: 'Keep this draft unless I confirm the move',
+      status: 'confirm-move',
+      pendingMove: { side: 'head', line: 17 },
+    });
+
+    const ordinaryDiscard = workspace.dispatch({ type: 'confirm-discard' });
+    expect(ordinaryDiscard.state).toEqual(requestedMove.state);
+
+    const escaped = workspace.dispatch({ type: 'escape' });
+    expect(escaped.state.files['file-a'].composer).toMatchObject({
+      side: 'base',
+      line: 11,
+      text: 'Keep this draft unless I confirm the move',
+      status: 'ready',
+    });
+
+    workspace.dispatch({ type: 'activate-line', side: 'head', line: 17 });
+    const moved = workspace.dispatch({ type: 'confirm-move' });
+    expect(moved.state.files['file-a'].composer).toEqual({
+      side: 'head',
+      line: 17,
+      text: '',
+      status: 'ready',
+    });
+    expect(moved.state.files['file-a'].focused).toEqual({ side: 'head', line: 17 });
+    expect(moved.commands).toEqual([{ type: 'rebuild-annotations', fileId: 'file-a' }]);
+  });
+
+  it('does not move or discard a composer while persistence is pending', () => {
+    const workspace = createWorkspaceState(['file-a']);
+    workspace.dispatch({ type: 'diff-ready', fileId: 'file-a' });
+    workspace.dispatch({ type: 'activate-line', side: 'base', line: 13 });
+    workspace.dispatch({ type: 'composer-text-changed', text: 'Persisting draft' });
+    const pending = workspace.dispatch({ type: 'add-comment' });
+
+    expect(workspace.dispatch({ type: 'activate-line', side: 'head', line: 19 }).state).toEqual(pending.state);
+    expect(workspace.dispatch({ type: 'cancel-composer' }).state).toEqual(pending.state);
+    expect(workspace.dispatch({ type: 'confirm-move' }).state).toEqual(pending.state);
+  });
 
   it('only discards non-empty text after explicit confirmation and escapes confirmation into writing', () => {
     const workspace = createWorkspaceState(['file-a']);
