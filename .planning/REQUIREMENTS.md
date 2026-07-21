@@ -41,10 +41,10 @@
 - [x] **DIFF-01**: User can navigate a changed-file tree showing path, status, and available line counts.
 - [x] **DIFF-02**: User can open a supported text file as a read-only side-by-side base/head diff.
 - [x] **DIFF-03**: User sees syntax highlighting selected from the file path while preserving exact blob text.
-- [ ] **DIFF-04**: User can expand hidden unchanged regions and review any revealed context line.
-- [ ] **DIFF-05**: User can move to the previous or next file and previous or next change using documented keyboard controls.
+- [x] **DIFF-04**: User can expand hidden unchanged regions and review any revealed context line.
+- [x] **DIFF-05**: User can move to the previous or next file and previous or next change using documented keyboard controls.
 - [x] **DIFF-06**: User sees an explicit placeholder rather than a broken editor for unsupported files.
-- [ ] **DIFF-07**: User can switch files, resize the workspace, and expand context without inline comments moving to the wrong line or breaking side alignment.
+- [x] **DIFF-07**: User can switch files, resize the workspace, and expand context without inline comments moving to the wrong line or breaking side alignment.
 
 ### Comments and Summary
 
@@ -168,9 +168,9 @@ Each v1 requirement maps to exactly one roadmap phase.
 | SAFE-05 | Phase 1 | Complete |
 | DIFF-02 | Phase 2 | Complete |
 | DIFF-03 | Phase 2 | Complete |
-| DIFF-04 | Phase 2 | Pending |
-| DIFF-05 | Phase 2 | Pending |
-| DIFF-07 | Phase 2 | Pending |
+| DIFF-04 | Phase 2 | Complete |
+| DIFF-05 | Phase 2 | Complete |
+| DIFF-07 | Phase 2 | Complete |
 | CMT-01 | Phase 2 | Complete |
 | CMT-02 | Phase 2 | Complete |
 | CMT-08 | Phase 2 | Complete |
