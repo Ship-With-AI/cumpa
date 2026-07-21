@@ -1,8 +1,8 @@
 import {
+  FileContentResponseSchema,
   FileMetadataResponseSchema,
+  type FileContentResponse,
   SessionResponseSchema,
-  type FileMetadataResponse,
-  type SessionResponse,
 } from '../../contracts/api.js';
 
 export const SECURITY_FAILURE_MESSAGE =
@@ -31,6 +31,7 @@ export class SessionClientError extends Error {
 }
 
 export interface SessionClient {
+  getFileContent(fileId: string): Promise<FileContentResponse>;
   getSession(): Promise<SessionResponse>;
   getFileMetadata(fileId: string): Promise<FileMetadataResponse>;
 }
@@ -105,6 +106,15 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
     async getFileMetadata(fileId: string) {
       const result = FileMetadataResponseSchema.safeParse(
         await get(`/api/files/${encodeURIComponent(fileId)}`, 'file'),
+      );
+      if (!result.success) {
+        throw new SessionClientError('file', FILE_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async getFileContent(fileId: string) {
+      const result = FileContentResponseSchema.safeParse(
+        await get(`/api/files/${encodeURIComponent(fileId)}/content`, 'file'),
       );
       if (!result.success) {
         throw new SessionClientError('file', FILE_UNAVAILABLE_MESSAGE);

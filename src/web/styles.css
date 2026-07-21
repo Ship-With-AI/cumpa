@@ -964,3 +964,355 @@ body {
     animation-duration: 0s !important;
   }
 }
+
+/* Phase 2 review workbench: these overrides retain Phase 1's identity and tree
+   components while making the diff the primary review surface. */
+:root {
+  --canvas: #f6f3ec;
+  --panel: #e9e4da;
+  --accent: #245a7a;
+  --surface: #fcfaf5;
+  --text: #242822;
+  --text-muted: #596058;
+  --rule: #c9c2b5;
+  --color-dominant: var(--canvas);
+  --color-secondary: var(--panel);
+  --color-accent: var(--accent);
+  --color-text-primary: var(--text);
+  --color-text-secondary: var(--text-muted);
+  --color-border: var(--rule);
+  --color-hover: #dfd8cc;
+  --color-focus: var(--accent);
+  color: var(--text);
+  background: var(--canvas);
+  font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
+}
+
+body {
+  background: var(--canvas);
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 20;
+  top: 4px;
+  left: 4px;
+  transform: translateY(-150%);
+  padding: 8px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--surface);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+.review-shell {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: 288px minmax(640px, 1fr) 320px;
+  overflow: hidden;
+}
+
+.review-files,
+.comments-rail {
+  min-width: 0;
+  overflow: auto;
+  border-color: var(--rule);
+  background: var(--panel);
+}
+
+.review-files {
+  border-right: 1px solid var(--rule);
+}
+
+.comments-rail {
+  padding: 16px;
+  border-left: 1px solid var(--rule);
+}
+
+.comments-rail__heading,
+.keyboard-help__heading,
+.active-file-strip,
+.review-toolbar,
+.review-toolbar__group {
+  display: flex;
+  align-items: center;
+}
+
+.comments-rail__heading,
+.keyboard-help__heading,
+.active-file-strip {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.comments-rail h2,
+.comments-rail h3 {
+  margin: 0;
+  color: var(--text);
+}
+
+.comments-rail h3 {
+  margin-top: 24px;
+  font-size: 18px;
+  line-height: 24px;
+}
+
+.review-main {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: 48px 48px minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+.active-file-strip {
+  min-width: 0;
+  padding: 4px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--surface);
+}
+
+.active-file-strip__eyebrow {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.active-file-strip h1 {
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 24px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.review-toolbar {
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--panel);
+}
+
+.review-toolbar__group {
+  gap: 8px;
+}
+
+.review-toolbar__group + .review-toolbar__group {
+  padding-left: 8px;
+  border-left: 1px solid var(--rule);
+}
+
+.review-toolbar__group--actions {
+  margin-left: auto;
+}
+
+.ui-button {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  line-height: 20px;
+}
+
+.ui-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--canvas);
+}
+
+.ui-button:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.ui-tooltip {
+  position: relative;
+  display: inline-flex;
+}
+
+.ui-tooltip__content {
+  position: absolute;
+  z-index: 10;
+  bottom: calc(100% + 4px);
+  left: 0;
+  width: max-content;
+  max-width: 280px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: var(--text);
+  color: var(--surface);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.keyboard-help {
+  position: absolute;
+  z-index: 8;
+  top: 112px;
+  right: 16px;
+  width: min(440px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(36 40 34 / 16%);
+}
+
+.keyboard-help h2,
+.keyboard-help p {
+  margin: 0;
+}
+
+.keyboard-help ul {
+  display: grid;
+  gap: 4px;
+  margin: 16px 0;
+  padding-left: 20px;
+}
+
+.diff-workspace {
+  display: grid;
+  min-width: 640px;
+  min-height: 0;
+  grid-template-rows: 32px minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.diff-workspace__side-labels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--rule);
+}
+
+.diff-workspace__side-labels span {
+  padding: 8px 16px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.diff-workspace__editor {
+  min-height: 0;
+}
+
+.diff-workspace__context-help {
+  margin: 0;
+  padding: 4px 16px;
+  border-top: 1px solid var(--rule);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.diff-state,
+.review-main > .empty-state {
+  margin: 24px;
+  padding: 24px;
+  align-self: start;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.drawer-close {
+  margin: 8px;
+}
+
+@media (max-width: 1439px) {
+  .review-shell {
+    grid-template-columns: 256px minmax(640px, 1fr);
+  }
+
+  .comments-rail {
+    position: absolute;
+    z-index: 7;
+    top: 64px;
+    right: 0;
+    bottom: 0;
+    width: 320px;
+    transform: translateX(100%);
+    transition: transform 120ms ease-out;
+    box-shadow: 0 8px 24px rgb(36 40 34 / 16%);
+  }
+
+  .comments-rail--open {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 1099px) {
+  .review-shell {
+    display: block;
+    overflow: auto;
+  }
+
+  .review-main {
+    height: 100%;
+    min-width: 640px;
+  }
+
+  .review-files {
+    position: absolute;
+    z-index: 7;
+    top: 64px;
+    bottom: 0;
+    left: 0;
+    width: 288px;
+    transform: translateX(-100%);
+    transition: transform 120ms ease-out;
+    box-shadow: 0 8px 24px rgb(36 40 34 / 16%);
+  }
+
+  .review-files--open {
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 767px) {
+  .review-toolbar {
+    flex-wrap: wrap;
+    min-height: 48px;
+  }
+
+  .review-toolbar__group--actions {
+    margin-left: 0;
+  }
+
+  .review-main {
+    width: 640px;
+  }
+
+  .review-shell::after {
+    position: fixed;
+    z-index: 6;
+    right: 8px;
+    bottom: 8px;
+    max-width: 250px;
+    padding: 4px 8px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--surface);
+    color: var(--text-muted);
+    content: "Widen the window for the clearest side-by-side review.";
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
