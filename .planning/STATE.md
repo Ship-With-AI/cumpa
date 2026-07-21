@@ -6,15 +6,14 @@ current_phase: 02
 current_phase_name: anchored-diff-review
 status: executing
 stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-07-21T13:53:24.657Z"
+last_updated: "2026-07-21T17:36:18.914Z"
 last_activity: 2026-07-21
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 35
-  completed_plans: 20
-  percent: 50
+  completed_phases: 1
+  total_plans: 38
+  completed_plans: 21
 ---
 
 # Project State
@@ -29,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 02 (anchored-diff-review) — EXECUTING
-Plan: 7 of 7
+Plan: 2 of 10
 Status: Ready to execute
 Last activity: 2026-07-21 — Phase 02 execution started
 
-Progress: ████░░░░░░ 43%
+Progress: ████░░░░░░ [██████░░░░] 55%
 
 ## Performance Metrics
 
@@ -74,6 +73,11 @@ Progress: ████░░░░░░ 43%
 | Phase 02 P05 | 27min | 1 tasks | 8 files |
 | Phase 02 P06 | 10min | 2 tasks | 8 files |
 | Phase 02 P07 | 34min | 2 tasks | 8 files |
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 02 P08 | 20min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -133,6 +137,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Persist canonical server comment responses only — The server owns accepted anchor normalization; workspace state must not manufacture persisted comments.
 - [Phase 02]: Sort comments rail by file order, side, and line — Deterministic ordering makes review navigation stable across reloads.
 - [Phase 02]: Use package-first Chromium acceptance against real Git rather than development seams. — The final Phase 2 contract requires generated CLI, loopback server, browser assets, and real Git objects end to end.
+- [Phase 02]: Index active comparison paths by side and exact bytesBase64url before reconciling comments.
+- [Phase 02]: Retain validated durable-anchor evidence even when the active comparison lacks an exact file capability.
 
 ### Pending Todos
 
@@ -154,6 +160,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T13:52:58.885Z
+Last session: 2026-07-21T17:35:21.840Z
 Stopped at: Completed 02-07-PLAN.md
 Resume file: None
