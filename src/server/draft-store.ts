@@ -107,6 +107,30 @@ function validateDraft(bytes: Buffer, comparison: DraftComparison): ReviewDraftV
   return parsed.data;
 }
 
+function appendComment(
+  current: ReviewDraftV1,
+  input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
+  timestamp: string,
+): Readonly<{ readonly draft: ReviewDraftV1; readonly comment: ReviewDraftCommentV1 }> {
+  if (current.comments.some((comment) => comment.anchor.uniqueKey === input.anchor.uniqueKey)) {
+    throw new DraftConflictError('A comment already exists for this anchor.');
+  }
+  const comment: ReviewDraftCommentV1 = {
+    id: `comment_${randomUUID()}`,
+    state: 'open',
+    body: input.body,
+    anchor: input.anchor,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+  const draft = ReviewDraftV1Schema.parse({
+    ...current,
+    revision: current.revision + 1,
+    comments: [...current.comments, comment],
+  });
+  return Object.freeze({ draft, comment });
+}
+
 async function runSerialized<T>(key: string, operation: () => Promise<T>): Promise<T> {
   const prior = queues.get(key) ?? Promise.resolve();
   const current = prior.catch(() => undefined).then(operation);
@@ -194,25 +218,9 @@ export function createDraftStore(options: Readonly<{
     async add(input) {
       return runSerialized(queueKey, async () => {
         const current = await load();
-        if (current.comments.some((comment) => comment.anchor.uniqueKey === input.anchor.uniqueKey)) {
-          throw new DraftConflictError('A comment already exists for this anchor.');
-        }
-        const timestamp = new Date().toISOString();
-        const comment = {
-          id: `comment_${randomUUID()}`,
-          state: 'open' as const,
-          body: input.body,
-          anchor: input.anchor,
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        };
-        const next = ReviewDraftV1Schema.parse({
-          ...current,
-          revision: current.revision + 1,
-          comments: [...current.comments, comment],
-        });
-        await commit(next);
-        return Object.freeze({ comment, revision: next.revision });
+        const { draft, comment } = appendComment(current, input, new Date().toISOString());
+        await commit(draft);
+        return Object.freeze({ comment, revision: draft.revision });
       });
     },
   });
