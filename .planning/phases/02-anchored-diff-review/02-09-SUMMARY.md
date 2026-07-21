@@ -51,14 +51,15 @@ status: complete
 - **Duration:** Current execution session
 - **Started:** Not recorded
 - **Completed:** 2026-07-21
-- **Tasks:** 3 plan tasks plus one production-regression repair
-- **Files modified:** 9 plan files; 3 repair files
+- **Tasks:** 3 plan tasks plus two production-regression repairs
+- **Files modified:** 9 plan files; 4 repair files
 
 ## Accomplishments
 
 - Added loss-safe composer movement state, including pending move targets, explicit confirmation, keep-writing, and discard transitions.
 - Mounted one Vue composer inside a paired Monaco view zone at the actual model line, with responsive drawers and recorded-anchor detail actions.
 - Repaired the packaged non-line-1 move flow: the composer zone no longer suppresses its confirmation clicks, the pending target remains actionable after Keep writing, and focus is restored after the target composer mounts.
+- Repaired exact-byte draft-resume navigation at the standard desktop viewport by keeping the comments rail accessible at 1280px while retaining the tested drawer behavior at 1200px.
 
 ## Task Commits
 
@@ -68,6 +69,7 @@ Each task was committed atomically:
 2. **Task 2: Anchor the single composer to Monaco model lines** - `dccfa5e` (feature)
 3. **Task 3: Lock the end-to-end anchored interaction** - `c48e094` (test and stabilization)
 4. **Production repair: Restore anchored composer confirmation** - `826c109` (fix)
+5. **Production repair: Keep resumed comments accessible** - `e8f5eea` (fix)
 
 **Plan metadata:** `e4bd9f8` (docs: complete anchored composer gap closure plan)
 
@@ -77,7 +79,7 @@ Each task was committed atomically:
 - `src/web/components/DiffWorkspace.vue` - Synchronizes the model anchor, view-zone composer, targeted affordance, and post-mount textarea focus.
 - `src/web/monaco/diff-adapter.ts` - Forces side-by-side interaction, exposes a model-line affordance lookup, and permits mouse interaction in the composer zone.
 - `src/web/components/CommentsRail.vue` - Presents recorded stale/orphan anchor details and capability-gated inspection.
-- `src/web/App.vue` - Routes composer and rail events and manages responsive drawers.
+- `src/web/App.vue` - Routes composer and rail events, keeps resumed comment actions accessible at 1280px, and retains drawer behavior below 1280px.
 - `src/web/styles.css` - Positions Monaco-line actions without line-one assumptions.
 - `tests/unit/workspace-state.test.ts` - Covers movement confirmation state transitions.
 - `tests/integration/anchored-workspace.spec.ts` - Exercises the live Monaco composer, drawer behavior, and record actions.
@@ -88,6 +90,7 @@ Each task was committed atomically:
 - Keep one model-derived gutter action rather than adding static duplicated controls.
 - Keep a composer view zone interactive (`suppressMouseDown: false`); view-zone event suppression prevented the confirmation event from reaching Vue.
 - Restore focus from the mounted Vue annotation, rather than with timeout or animation-frame retries.
+- Keep the comments rail visible at the standard 1280px desktop viewport; reserve its drawer mode for widths at or below 1279px.
 
 ## Deviations from Plan
 
@@ -101,14 +104,25 @@ Each task was committed atomically:
 - **Verification:** The original package repro advanced through the former line-202 focus assertion and persisted the head-line-10 comment; focused unit and browser checks passed.
 - **Committed in:** `826c109` (production repair)
 
+### Auto-fixed Issues
+
+**2. [Rule 1 - Bug] Restored accessible Show comment controls after exact-byte draft resume**
+- **Found during:** Plan 02-10 Task 2 combined browser verification
+- **Issue:** The 1439px comments-drawer breakpoint made the resumed rail inert at Playwright's standard 1280px viewport, so its verified `Show comment` action was not in the accessibility tree.
+- **Fix:** Moved the comments-drawer breakpoint to 1279px. The rail remains directly accessible at 1280px; the existing responsive drawer behavior remains active at 1200px.
+- **Files modified:** `src/web/App.vue`
+- **Verification:** Both exact-byte draft-resume and anchored-gap browser scenarios pass together.
+- **Committed in:** `e8f5eea` (production repair)
+
 ---
 
-**Total deviations:** 1 auto-fixed (1 bug)
-**Impact on plan:** Required for the plan's explicit loss-safe movement and focus-restoration contract. No scope expansion.
+
+**Total deviations:** 2 auto-fixed (2 bugs)
+**Impact on plan:** Both repairs restore required interaction and accessibility contracts without scope expansion.
 
 ## Issues Encountered
 
-- The preserved Plan 02-10 package test now first fails at its later line-221 assertion because that test expects a persisted comparison without `mergeBaseOid`. The canonical draft comparison schema requires `mergeBaseOid`; this is a Plan 02-10-owned expectation issue, not a Plan 02-09 production regression. Its test and fixture remain byte-identical and uncommitted.
+None. The package exact-anchor scenario now passes after Plan 02-10 updated its own persisted-comparison expectation.
 
 ## User Setup Required
 
@@ -116,8 +130,8 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- Anchored composer movement, confirmation, focus restoration, and model-line interaction are verified by focused unit and browser coverage.
-- Plan 02-10 can update its own persisted-comparison expectation without changing this repair.
+- Anchored composer movement, confirmation, focus restoration, exact-byte resume navigation, and model-line interaction are verified by focused unit, browser, and packaged checks.
+- Plan 02-10 can resume from a verified Plan 02-09 production baseline.
 
 ---
 *Phase: 02-anchored-diff-review*
