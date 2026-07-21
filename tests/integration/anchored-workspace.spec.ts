@@ -107,7 +107,10 @@ async function startAppServer(): Promise<string> {
               createdAt: '2026-07-21T00:00:00.000Z',
               updatedAt: '2026-07-21T00:00:00.000Z',
             };
-            comments = [accepted];
+            comments = [{
+              ...accepted,
+              verification: { state: 'verified', reason: 'exact-match' },
+            }];
             json(response, accepted, 201);
           });
         });
@@ -200,8 +203,8 @@ test('draft resume and anchor states', async ({ page }) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
   await openReview(page);
-  await expect(page.getByText('New local draft for this pinned comparison.')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Start with a line' })).toBeVisible();
+  await expect(page.getByText('Local draft resumed. Accepted comments for this pinned comparison are ready.')).toBeVisible();
+  await expect(page.getByText('Please explain this context.')).toBeVisible();
   expect(pageErrors).toEqual([]);
   expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);
 });
