@@ -5,6 +5,7 @@ import type { FileContentResponse } from '../../contracts/api.js';
 import CommentComposer from './CommentComposer.vue';
 import {
   createMonacoDiffAdapter,
+  type AnchorAffordanceTarget,
   type DiffSide,
   type MonacoDiffAdapter,
 } from '../monaco/diff-adapter.js';
@@ -22,6 +23,7 @@ const emit = defineEmits<{
   add: [];
   cancel: [];
   confirmDiscard: [];
+  confirmMove: [];
   activate: [side: DiffSide, line: number];
   keepWriting: [];
   ready: [fileId: string];
@@ -29,11 +31,13 @@ const emit = defineEmits<{
 }>();
 
 const host = ref<HTMLElement>();
+const anchorAffordance = ref<AnchorAffordanceTarget>();
 let adapter: MonacoDiffAdapter | undefined;
 let resizeObserver: ResizeObserver | undefined;
-let annotationObserver: MutationObserver | undefined;
 let loadVersion = 0;
 let observedAnchor = '';
+let zoneRoot: HTMLElement | undefined;
+let focusComposerAfterRender = false;
 
 function immutableFile() {
   const fallbackPath = props.path;
@@ -56,11 +60,23 @@ function currentComment() {
       && comment.side === anchor.side && comment.line === anchor.line && comment.status === 'verified');
 }
 
+function unmountZone(): void {
+  if (zoneRoot !== undefined) {
+    render(null, zoneRoot);
+    zoneRoot = undefined;
+  }
+}
+
 function renderAnnotation(): void {
   const zone = host.value?.querySelector<HTMLElement>('.monaco-anchor-zone--composer');
   const anchor = adapter?.getActiveAnchor();
   if (zone === undefined || anchor === undefined || anchor.fileId !== props.content.fileId) {
+    unmountZone();
     return;
+  }
+  if (zoneRoot !== zone) {
+    unmountZone();
+    zoneRoot = zone;
   }
   const comment = currentComment();
   if (comment !== undefined) {
@@ -70,6 +86,7 @@ function renderAnnotation(): void {
     return;
   }
   if (props.composer === undefined || props.composer.side !== anchor.side || props.composer.line !== anchor.line) {
+    render(null, zone);
     return;
   }
   render(h(CommentComposer, {
@@ -78,12 +95,21 @@ function renderAnnotation(): void {
     onAdd: () => emit('add'),
     onCancel: () => emit('cancel'),
     onConfirmDiscard: () => emit('confirmDiscard'),
+    onConfirmMove: () => emit('confirmMove'),
     onKeepWriting: () => emit('keepWriting'),
     onUpdateText: (text: string) => emit('updateText', text),
   }), zone);
+  void nextTick(() => {
+    adapter?.setAnchorZoneHeight(Math.max(80, zone.scrollHeight));
+    if (focusComposerAfterRender) {
+      zone.querySelector<HTMLTextAreaElement>('textarea')?.focus();
+      focusComposerAfterRender = false;
+    }
+  });
 }
 
-function syncActiveAnchor(): void {
+function syncAdapterState(): void {
+  anchorAffordance.value = adapter?.getAnchorAffordance();
   const anchor = adapter?.getActiveAnchor();
   if (anchor === undefined || anchor.fileId !== props.content.fileId) {
     return;
@@ -91,6 +117,7 @@ function syncActiveAnchor(): void {
   const key = `${anchor.side}:${anchor.line}`;
   if (key !== observedAnchor) {
     observedAnchor = key;
+    focusComposerAfterRender = true;
     emit('activate', anchor.side, anchor.line);
   }
   void nextTick(renderAnnotation);
@@ -115,8 +142,8 @@ function layout(): void {
   adapter?.layout();
 }
 
-function addComment(side: DiffSide): void {
-  adapter?.activateAnchor(side, 1);
+function addComment(target: AnchorAffordanceTarget): void {
+  adapter?.activateAnchor(target.side, target.line);
 }
 
 function focusComment(commentId: string): void {
@@ -130,31 +157,41 @@ function revealComment(side: DiffSide, line: number): void {
 defineExpose({ focusComment, layout, nextChange, previousChange, revealComment });
 
 watch(() => [props.composer, props.comments] as const, () => {
-  const anchor = adapter?.getActiveAnchor();
-  if (props.composer === undefined && currentComment() === undefined && anchor !== undefined) {
-    adapter?.clearAnchor();
-  } else {
-    void nextTick(renderAnnotation);
+  if (props.composer !== undefined) {
+    const anchor = adapter?.getActiveAnchor();
+    if (anchor?.fileId !== props.content.fileId
+      || anchor.side !== props.composer.side || anchor.line !== props.composer.line) {
+      adapter?.setActiveAnchor({
+        fileId: props.content.fileId,
+        side: props.composer.side,
+        line: props.composer.line,
+      });
+      focusComposerAfterRender = true;
+    }
+  } else if (currentComment() === undefined && adapter?.getActiveAnchor() !== undefined) {
+    unmountZone();
+    adapter.clearAnchor();
   }
+  void nextTick(renderAnnotation);
 }, { deep: true });
 
 watch(() => props.content, () => {
   observedAnchor = '';
+  anchorAffordance.value = undefined;
+  unmountZone();
   void loadContent();
 });
 
 onMounted(() => {
   if (host.value === undefined) return;
   configureMonacoWorkers();
-  adapter = createMonacoDiffAdapter(host.value, languageForPath, syncActiveAnchor);
-  annotationObserver = new MutationObserver(() => void nextTick(renderAnnotation));
-  annotationObserver.observe(host.value, { childList: true, subtree: true });
+  adapter = createMonacoDiffAdapter(host.value, languageForPath, syncAdapterState);
   resizeObserver = new ResizeObserver(() => adapter?.layout());
   resizeObserver.observe(host.value);
   void loadContent();
 });
 onBeforeUnmount(() => {
-  annotationObserver?.disconnect();
+  unmountZone();
   resizeObserver?.disconnect();
   adapter?.dispose();
 });
@@ -167,35 +204,18 @@ onBeforeUnmount(() => {
       <span>HEAD</span>
     </div>
     <button
-      type="button"
-      class="diff-workspace__gutter-action diff-workspace__gutter-action--base"
-      aria-label="Add comment to base line 1"
-      title="Add comment to base line 1 · Option+Enter"
-      @click="addComment('base')"
-    >+</button>
-    <button
+      v-if="anchorAffordance"
       type="button"
       class="diff-workspace__gutter-action"
-      aria-label="Add comment to head line 1"
-      title="Add comment to head line 1 · Option+Enter"
-      @click="addComment('head')"
+      :class="{ 'diff-workspace__gutter-action--base': anchorAffordance.side === 'base' }"
+      :style="{ top: `${anchorAffordance.top}px` }"
+      :data-anchor-side="anchorAffordance.side"
+      :data-anchor-line="anchorAffordance.line"
+      :aria-label="`Add comment to ${anchorAffordance.side} line ${anchorAffordance.line}`"
+      :title="`Add comment to ${anchorAffordance.side} line ${anchorAffordance.line} · Option+Enter`"
+      @click="addComment(anchorAffordance)"
     >+</button>
     <div ref="host" class="diff-workspace__editor" />
-    <CommentComposer
-      v-if="composer"
-      :path="path"
-      :side="composer.side"
-      :line="composer.line"
-      :text="composer.text"
-      :status="composer.status"
-      :validation="composer.validation"
-      :error="composer.error"
-      @add="emit('add')"
-      @cancel="emit('cancel')"
-      @confirm-discard="emit('confirmDiscard')"
-      @keep-writing="emit('keepWriting')"
-      @update-text="(text) => emit('updateText', text)"
-    />
     <p class="diff-workspace__context-help">
       Unchanged regions begin collapsed. Use Monaco’s context controls to reveal bounded context or all remaining context.
     </p>

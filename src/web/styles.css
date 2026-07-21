@@ -1212,7 +1212,6 @@ body {
 .diff-workspace__gutter-action {
  position: absolute;
  z-index: 3;
- top: 40px;
  right: 8px;
   width: 24px;
   height: 24px;

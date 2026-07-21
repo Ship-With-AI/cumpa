@@ -17,6 +17,12 @@ export type Anchor = Readonly<{
   line: number;
 }>;
 
+export type AnchorAffordanceTarget = Readonly<{
+  side: DiffSide;
+  line: number;
+  top: number;
+}>;
+
 type ActiveComposer = Anchor & { text: string };
 type SavedFileState = {
   viewState: monaco.editor.IDiffEditorViewState | null;
@@ -39,10 +45,13 @@ export type MonacoDiffAdapter = Readonly<{
   clearAnchor: () => void;
   dispose: () => void;
   getActiveAnchor: () => Anchor | undefined;
+  getAnchorAffordance: () => AnchorAffordanceTarget | undefined;
   getDiagnostics: () => AdapterDiagnostics;
   goToChange: (direction: 'next' | 'previous') => void;
   layout: () => void;
   revealAnchor: (anchor: Anchor) => void;
+  setAnchorZoneHeight: (heightInPx: number) => void;
+  setActiveAnchor: (anchor: Anchor | undefined) => void;
   setFile: (file: ImmutableDiffFile) => Promise<void>;
 }>;
 
@@ -67,6 +76,7 @@ class PublicMonacoDiffAdapter {
   private currentFile: ImmutableDiffFile | undefined;
   private activeComposer: ActiveComposer | undefined;
   private focused: { side: DiffSide; line: number } | undefined;
+  private anchorAffordance: AnchorAffordanceTarget | undefined;
   private contextMode: 'collapsed' | 'all-revealed' = 'collapsed';
   private originalZone: { id: string; zone: monaco.editor.IViewZone } | undefined;
   private modifiedZone: { id: string; zone: monaco.editor.IViewZone } | undefined;
@@ -74,7 +84,7 @@ class PublicMonacoDiffAdapter {
   private disposed = false;
 
   constructor(
-    host: HTMLElement,
+    private readonly host: HTMLElement,
     private readonly languageForPath: (path: string) => string,
     private readonly onChange: () => void,
   ) {
@@ -95,12 +105,17 @@ class PublicMonacoDiffAdapter {
       this.diffEditor.onDidUpdateDiff(() => {
         this.diffUpdates += 1;
         this.rebuildAnchoredLayout();
+        this.refreshAnchorAffordance();
         this.onChange();
       }),
       this.originalEditor.onDidFocusEditorText(() => this.captureFocusedSide('base')),
       this.modifiedEditor.onDidFocusEditorText(() => this.captureFocusedSide('head')),
       this.originalEditor.onDidChangeCursorPosition((event) => this.captureCursor('base', event.position.lineNumber)),
       this.modifiedEditor.onDidChangeCursorPosition((event) => this.captureCursor('head', event.position.lineNumber)),
+      this.originalEditor.onMouseMove((event) => this.captureAffordance('base', event.target.position?.lineNumber)),
+      this.modifiedEditor.onMouseMove((event) => this.captureAffordance('head', event.target.position?.lineNumber)),
+      this.originalEditor.onDidScrollChange(() => this.refreshAnchorAffordance()),
+      this.modifiedEditor.onDidScrollChange(() => this.refreshAnchorAffordance()),
       this.originalEditor.addAction({
         id: 'diff-review.add-base-comment',
         label: 'Add comment to base line',
@@ -177,6 +192,7 @@ class PublicMonacoDiffAdapter {
     this.editorFor(side).setPosition({ lineNumber: line, column: 1 });
     this.editorFor(side).revealLineInCenter(line);
     this.editorFor(side).focus();
+    this.captureAffordance(side, line);
     this.rebuildAnchoredLayout();
     this.onChange();
   }
@@ -190,6 +206,29 @@ class PublicMonacoDiffAdapter {
     return this.activeComposer === undefined
       ? undefined
       : { fileId: this.activeComposer.fileId, side: this.activeComposer.side, line: this.activeComposer.line };
+  }
+
+  getAnchorAffordance(): AnchorAffordanceTarget | undefined {
+    return this.anchorAffordance;
+  }
+
+  setActiveAnchor(anchor: Anchor | undefined): void {
+    if (anchor === undefined || this.currentFile?.id !== anchor.fileId || !this.isValidLine(anchor.side, anchor.line)) {
+      this.activeComposer = undefined;
+      this.rebuildAnchoredLayout();
+      return;
+    }
+    this.activeComposer = {
+      fileId: anchor.fileId,
+      side: anchor.side,
+      line: anchor.line,
+      text: this.activeComposer?.fileId === anchor.fileId
+        && this.activeComposer.side === anchor.side
+        && this.activeComposer.line === anchor.line
+        ? this.activeComposer.text
+        : '',
+    };
+    this.rebuildAnchoredLayout();
   }
 
   revealAnchor(anchor: Anchor): void {
@@ -208,6 +247,11 @@ class PublicMonacoDiffAdapter {
 
   layout(): void {
     this.diffEditor.layout();
+    this.refreshAnchorAffordance();
+  }
+
+  setAnchorZoneHeight(heightInPx: number): void {
+    this.growPairedZones(heightInPx);
   }
 
   getDiagnostics(): AdapterDiagnostics {
@@ -240,11 +284,45 @@ class PublicMonacoDiffAdapter {
     const position = this.editorFor(side).getPosition();
     if (position !== null) {
       this.focused = { side, line: position.lineNumber };
+      this.captureAffordance(side, position.lineNumber);
     }
   }
 
   private captureCursor(side: DiffSide, line: number): void {
     this.focused = { side, line };
+    this.captureAffordance(side, line);
+  }
+
+  private captureAffordance(side: DiffSide, line: number | undefined): void {
+    if (line === undefined || !this.isValidLine(side, line)) {
+      this.clearAnchorAffordance();
+      return;
+    }
+    const editor = this.editorFor(side);
+    const visible = editor.getScrolledVisiblePosition({ lineNumber: line, column: 1 });
+    const top = this.host.offsetTop + (visible?.top ?? editor.getTopForLineNumber(line) - editor.getScrollTop());
+    const next = { side, line, top };
+    if (this.anchorAffordance?.side === next.side
+      && this.anchorAffordance.line === next.line
+      && this.anchorAffordance.top === next.top) {
+      return;
+    }
+    this.anchorAffordance = next;
+    this.onChange();
+  }
+
+  private clearAnchorAffordance(): void {
+    if (this.anchorAffordance === undefined) {
+      return;
+    }
+    this.anchorAffordance = undefined;
+    this.onChange();
+  }
+
+  private refreshAnchorAffordance(): void {
+    if (this.anchorAffordance !== undefined) {
+      this.captureAffordance(this.anchorAffordance.side, this.anchorAffordance.line);
+    }
   }
 
   private activateFocusedAnchor(side: DiffSide): void {
@@ -357,21 +435,6 @@ class PublicMonacoDiffAdapter {
     const container = document.createElement('section');
     container.className = 'monaco-anchor-zone monaco-anchor-zone--composer';
     container.setAttribute('aria-label', `Comment on ${anchor.side} line ${anchor.line}`);
-    const heading = document.createElement('strong');
-    heading.textContent = `${(anchor.side === 'base' ? this.currentFile?.base.path : this.currentFile?.head.path) ?? ''} · ${anchor.side === 'base' ? 'Base' : 'Head'} · line ${anchor.line}`;
-    const textarea = document.createElement('textarea');
-    textarea.setAttribute('aria-label', 'Comment');
-    textarea.placeholder = 'Describe the issue or requested change…';
-    textarea.value = anchor.text;
-    textarea.addEventListener('input', () => {
-      if (this.activeComposer === undefined) {
-        return;
-      }
-      this.activeComposer = { ...this.activeComposer, text: textarea.value };
-      this.growPairedZones(Math.max(80, textarea.scrollHeight + 44));
-      this.onChange();
-    });
-    container.append(heading, textarea);
     return { afterLineNumber: anchor.line, domNode: container, heightInPx: 80, suppressMouseDown: false };
   }
 

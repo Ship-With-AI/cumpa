@@ -30,6 +30,8 @@ const diffLoading = ref(false);
 const diffError = ref('');
 const identityOpen = ref(false);
 const isNarrow = ref(false);
+const isFilesDrawer = ref(false);
+const isCommentsDrawer = ref(false);
 const filesOpen = ref(false);
 const commentsOpen = ref(false);
 const keyboardHelpOpen = ref(false);
@@ -37,12 +39,17 @@ const liveMessage = ref('');
 const diffWorkspace = ref<InstanceType<typeof DiffWorkspace>>();
 const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
 const identityPanel = ref<InstanceType<typeof IdentityPanel>>();
+const filesDrawer = ref<HTMLElement>();
+const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
 
 let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
 let requestVersion = 0;
-let narrowMedia: MediaQueryList | undefined;
+let filesDrawerMedia: MediaQueryList | undefined;
+let commentsDrawerMedia: MediaQueryList | undefined;
+let filesOpener: HTMLElement | undefined;
+let commentsOpener: HTMLElement | undefined;
 
 const reviewableFiles = computed(() => session.value?.files.filter((file) => file.availability.kind === 'text') ?? []);
 const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? selectedFile.value?.oldPath?.display ?? 'Changed file');
@@ -55,6 +62,45 @@ const workspaceComments = computed(() => workspaceState.value?.comments ?? []);
 
 function announce(message: string): void {
   liveMessage.value = message;
+}
+
+function openFiles(): void {
+  filesOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+  filesOpen.value = true;
+  void nextTick(() => filesDrawer.value?.focus());
+}
+
+function closeFiles(): void {
+  filesOpen.value = false;
+  void nextTick(() => filesOpener?.focus());
+}
+
+function openComments(): void {
+  commentsOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+  commentsOpen.value = true;
+  void nextTick(() => commentsDrawer.value?.focus());
+}
+
+function closeComments(): void {
+  commentsOpen.value = false;
+  void nextTick(() => commentsOpener?.focus());
+}
+
+function inspectRecordedFile(commentId: string): void {
+  const comment = workspaceState.value?.comments.find((candidate) => candidate.id === commentId);
+  if (comment?.exactFile.kind === 'available') {
+    selectFile(comment.exactFile.fileId);
+  }
+}
+
+function copyRecordedAnchor(commentId: string): void {
+  const comment = workspaceState.value?.comments.find((candidate) => candidate.id === commentId);
+  if (comment === undefined) {
+    return;
+  }
+  void navigator.clipboard.writeText(JSON.stringify(comment.recordedAnchor, null, 2))
+    .then(() => announce('Recorded anchor details copied.'))
+    .catch(() => announce('Couldn’t copy anchor details. The recorded comment remains selected.'));
 }
 
 function activeFile(fileId: string): SessionFile | undefined {
@@ -238,9 +284,9 @@ function handleKeydown(event: KeyboardEvent): void {
     if (keyboardHelpOpen.value) {
       keyboardHelpOpen.value = false;
     } else if (commentsOpen.value) {
-      commentsOpen.value = false;
+      closeComments();
     } else if (filesOpen.value) {
-      filesOpen.value = false;
+      closeFiles();
     } else if (identityOpen.value) {
       closeIdentity();
     }
@@ -261,17 +307,27 @@ function handleKeydown(event: KeyboardEvent): void {
   }
 }
 
-function handleViewportChange(event: MediaQueryListEvent): void {
-  isNarrow.value = event.matches;
+function handleViewportChange(): void {
+  isFilesDrawer.value = filesDrawerMedia?.matches ?? false;
+  isCommentsDrawer.value = commentsDrawerMedia?.matches ?? false;
+  isNarrow.value = isFilesDrawer.value;
+  if (!isFilesDrawer.value) {
+    filesOpen.value = false;
+  }
+  if (!isCommentsDrawer.value) {
+    commentsOpen.value = false;
+  }
   dispatchWorkspace({ type: 'resize' });
   diffWorkspace.value?.layout();
 }
 
 onMounted(async () => {
   document.addEventListener('keydown', handleKeydown);
-  narrowMedia = window.matchMedia('(max-width: 1099px)');
-  isNarrow.value = narrowMedia.matches;
-  narrowMedia.addEventListener('change', handleViewportChange);
+  filesDrawerMedia = window.matchMedia('(max-width: 1099px)');
+  commentsDrawerMedia = window.matchMedia('(max-width: 1439px)');
+  handleViewportChange();
+  filesDrawerMedia.addEventListener('change', handleViewportChange);
+  commentsDrawerMedia.addEventListener('change', handleViewportChange);
   try {
     sessionClient = createSessionClient();
     const loaded = await sessionClient.getSession();
@@ -294,7 +350,8 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeydown);
-  narrowMedia?.removeEventListener('change', handleViewportChange);
+  filesDrawerMedia?.removeEventListener('change', handleViewportChange);
+  commentsDrawerMedia?.removeEventListener('change', handleViewportChange);
 });
 </script>
 
@@ -319,8 +376,16 @@ onBeforeUnmount(() => {
     <IdentityPanel ref="identityPanel" v-if="identityOpen" :session="session" :modal="isNarrow" @close="closeIdentity" />
 
     <div class="review-shell" :inert="identityOpen && isNarrow">
-      <nav class="review-files" :class="{ 'review-files--open': filesOpen }" aria-label="Changed files">
-        <button v-if="isNarrow" type="button" class="drawer-close ui-button" @click="filesOpen = false">Close files</button>
+      <nav
+        ref="filesDrawer"
+        class="review-files"
+        :class="{ 'review-files--open': filesOpen }"
+        :inert="isFilesDrawer && !filesOpen"
+        :aria-hidden="isFilesDrawer && !filesOpen ? 'true' : undefined"
+        aria-label="Changed files"
+        tabindex="-1"
+      >
+        <button v-if="isFilesDrawer" type="button" class="drawer-close ui-button" @click="closeFiles">Close files</button>
         <FileTree v-if="session.files.length > 0" :files="session.files" @select="selectFile" @activate="selectFile" />
         <section v-else class="empty-state">
           <h2 id="changed-files-heading">Changed files</h2>
@@ -334,7 +399,7 @@ onBeforeUnmount(() => {
             <p class="active-file-strip__eyebrow">Diff review</p>
             <h1 id="diff-review-heading">{{ selectedPath }}</h1>
           </div>
-          <button v-if="isNarrow" type="button" class="ui-button" @click="filesOpen = true">Files</button>
+          <button v-if="isFilesDrawer" type="button" class="ui-button" @click="openFiles">Files</button>
         </div>
         <ReviewToolbar
           :at-first-file="atFirstFile"
@@ -344,7 +409,7 @@ onBeforeUnmount(() => {
           @next-file="nextFile"
           @previous-change="previousChange"
           @next-change="nextChange"
-          @comments="commentsOpen = true"
+          @comments="openComments"
           @keyboard-help="keyboardHelpOpen = true"
         />
         <KeyboardHelp :open="keyboardHelpOpen" @close="keyboardHelpOpen = false" />
@@ -374,22 +439,32 @@ onBeforeUnmount(() => {
           @add="dispatchWorkspace({ type: 'add-comment' })"
           @cancel="dispatchWorkspace({ type: 'cancel-composer' })"
           @confirm-discard="dispatchWorkspace({ type: 'confirm-discard' })"
+          @confirm-move="dispatchWorkspace({ type: 'confirm-move' })"
           @keep-writing="dispatchWorkspace({ type: 'keep-writing' })"
           @ready="handleDiffReady"
           @update-text="(text) => dispatchWorkspace({ type: 'composer-text-changed', text })"
         />
-      </main>
 
-      <aside class="comments-rail" :class="{ 'comments-rail--open': commentsOpen }" aria-labelledby="comments-heading">
+      </main>
+      <aside
+        ref="commentsDrawer"
+        class="comments-rail"
+        :class="{ 'comments-rail--open': commentsOpen }"
+        :inert="isCommentsDrawer && !commentsOpen"
+        :aria-hidden="isCommentsDrawer && !commentsOpen ? 'true' : undefined"
+        aria-labelledby="comments-heading"
+        tabindex="-1"
+      >
         <div class="comments-rail__heading">
           <h2 id="comments-heading">Comments</h2>
-          <button v-if="isNarrow" type="button" class="drawer-close ui-button" @click="commentsOpen = false">Close comments</button>
+          <button v-if="isCommentsDrawer" type="button" class="drawer-close ui-button" @click="closeComments">Close comments</button>
         </div>
         <CommentsRail
           :comments="workspaceComments"
           :file-order="reviewableFiles.map((file) => file.fileId)"
           :file-path="filePath"
-          @inspect="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
+          @copy-recorded-anchor="copyRecordedAnchor"
+          @inspect-recorded-file="inspectRecordedFile"
           @show="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
         />
       </aside>

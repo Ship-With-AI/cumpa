@@ -258,3 +258,14 @@ test('exact-byte draft resume', async ({ page }) => {
     await expect.poll(() => contentRequests).toEqual([secondFileId]);
   }
 });
+
+test('anchored gap closure', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openReview(page);
+
+  const changedLine = page.locator('.monaco-diff-editor .modified .view-line').filter({ hasText: 'const changed = 2;' });
+  const bounds = await changedLine.boundingBox();
+  expect(bounds).not.toBeNull();
+  await page.mouse.move(bounds!.x + 20, bounds!.y + 9);
+  await expect(page.getByRole('button', { name: 'Add comment to head line 10' })).toBeVisible();
+});
