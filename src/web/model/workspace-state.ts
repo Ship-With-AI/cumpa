@@ -379,7 +379,7 @@ function applyEvent(state: WorkspaceState, fileIds: readonly string[], event: Wo
         ? transition(state)
         : transition(replaceFileState(state, state.activeFileId, {
           ...current,
-          composer: { ...current.composer, status: 'ready', pendingMove: undefined },
+          composer: { ...current.composer, status: 'ready' },
         }));
     }
     case 'next-change':

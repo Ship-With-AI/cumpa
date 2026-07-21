@@ -36,8 +36,9 @@ let adapter: MonacoDiffAdapter | undefined;
 let resizeObserver: ResizeObserver | undefined;
 let loadVersion = 0;
 let observedAnchor = '';
+let observedComposerAnchor = '';
 let zoneRoot: HTMLElement | undefined;
-let focusComposerAfterRender = false;
+let focusComposerAnchor: string | undefined;
 
 function immutableFile() {
   const fallbackPath = props.path;
@@ -59,6 +60,11 @@ function currentComment() {
     : props.comments.find((comment) => comment.fileId === anchor.fileId
       && comment.side === anchor.side && comment.line === anchor.line && comment.status === 'verified');
 }
+function composerAnchor(side: DiffSide, line: number): string {
+  return `${side}:${line}`;
+}
+
+
 
 function unmountZone(): void {
   if (zoneRoot !== undefined) {
@@ -89,42 +95,46 @@ function renderAnnotation(): void {
     render(null, zone);
     return;
   }
+  const shouldFocusComposer = focusComposerAnchor === composerAnchor(props.composer.side, props.composer.line);
   render(h(CommentComposer, {
     ...props.composer,
     path: props.path,
-    onAdd: () => emit('add'),
     onCancel: () => emit('cancel'),
+    onAdd: () => emit('add'),
     onConfirmDiscard: () => emit('confirmDiscard'),
     onConfirmMove: () => emit('confirmMove'),
     onKeepWriting: () => emit('keepWriting'),
     onUpdateText: (text: string) => emit('updateText', text),
   }), zone);
-  void nextTick(() => requestAnimationFrame(() => {
+  void nextTick(() => {
     const contentHeight = zone.firstElementChild?.scrollHeight ?? zone.scrollHeight;
     adapter?.setAnchorZoneHeight(Math.max(280, contentHeight + 16));
-    window.setTimeout(() => {
-      const textarea = host.value?.querySelector<HTMLTextAreaElement>('.monaco-anchor-zone--composer textarea');
-      if (focusComposerAfterRender && textarea !== undefined) {
-        textarea.focus();
-        focusComposerAfterRender = false;
-      }
-    });
-  }));
+    if (shouldFocusComposer) {
+      zone.querySelector<HTMLTextAreaElement>('textarea')?.focus();
+      focusComposerAnchor = undefined;
+    }
+  });
 }
 
 function syncAdapterState(): void {
-  anchorAffordance.value = adapter?.getAnchorAffordance();
+  const pendingMove = props.composer?.pendingMove;
+  anchorAffordance.value = pendingMove === undefined
+    ? adapter?.getAnchorAffordance()
+    : adapter?.getAnchorAffordanceAt(pendingMove.side, pendingMove.line);
+  if (pendingMove !== undefined) {
+    return;
+  }
   const anchor = adapter?.getActiveAnchor();
   if (anchor === undefined || anchor.fileId !== props.content.fileId) {
     return;
   }
-  const key = `${anchor.side}:${anchor.line}`;
-  if (key !== observedAnchor) {
-    observedAnchor = key;
-    focusComposerAfterRender = true;
-    emit('activate', anchor.side, anchor.line);
+  const key = composerAnchor(anchor.side, anchor.line);
+  if (key === observedAnchor) {
+    return;
   }
-  void nextTick(renderAnnotation);
+  observedAnchor = key;
+  focusComposerAnchor = key;
+  emit('activate', anchor.side, anchor.line);
 }
 
 async function loadContent(): Promise<void> {
@@ -147,15 +157,13 @@ function layout(): void {
 }
 
 function addComment(target: AnchorAffordanceTarget): void {
-  focusComposerAfterRender = true;
   emit('activate', target.side, target.line);
-  adapter?.activateAnchor(target.side, target.line);
-  void nextTick(() => requestAnimationFrame(renderAnnotation));
 }
 
 function focusComment(commentId: string): void {
   host.value?.querySelector<HTMLElement>(`[data-comment-id="${CSS.escape(commentId)}"] h3`)?.focus();
 }
+
 
 function revealComment(side: DiffSide, line: number): void {
   adapter?.revealAnchor({ fileId: props.content.fileId, side, line });
@@ -165,7 +173,12 @@ defineExpose({ focusComment, layout, nextChange, previousChange, revealComment }
 
 watch(() => [props.composer, props.comments] as const, () => {
   if (props.composer !== undefined) {
-      observedAnchor = `${props.composer.side}:${props.composer.line}`;
+    const activeComposerAnchor = composerAnchor(props.composer.side, props.composer.line);
+    if (activeComposerAnchor !== observedComposerAnchor) {
+      observedComposerAnchor = activeComposerAnchor;
+      focusComposerAnchor = activeComposerAnchor;
+    }
+    observedAnchor = activeComposerAnchor;
     const anchor = adapter?.getActiveAnchor();
     if (anchor?.fileId !== props.content.fileId
       || anchor.side !== props.composer.side || anchor.line !== props.composer.line) {
@@ -174,17 +187,23 @@ watch(() => [props.composer, props.comments] as const, () => {
         side: props.composer.side,
         line: props.composer.line,
       });
-      focusComposerAfterRender = true;
+      focusComposerAnchor = activeComposerAnchor;
     }
-  } else if (currentComment() === undefined && adapter?.getActiveAnchor() !== undefined) {
-    unmountZone();
-    adapter.clearAnchor();
+  } else {
+    observedComposerAnchor = '';
+    if (currentComment() === undefined && adapter?.getActiveAnchor() !== undefined) {
+      unmountZone();
+      adapter.clearAnchor();
+    }
   }
-  void nextTick(() => requestAnimationFrame(renderAnnotation));
+  anchorAffordance.value = adapter?.getAnchorAffordance();
+  void nextTick(renderAnnotation);
 }, { deep: true });
 
 watch(() => props.content, () => {
   observedAnchor = '';
+  observedComposerAnchor = '';
+  focusComposerAnchor = undefined;
   anchorAffordance.value = undefined;
   unmountZone();
   void loadContent();

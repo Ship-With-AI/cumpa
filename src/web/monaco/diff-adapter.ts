@@ -46,6 +46,7 @@ export type MonacoDiffAdapter = Readonly<{
   dispose: () => void;
   getActiveAnchor: () => Anchor | undefined;
   getAnchorAffordance: () => AnchorAffordanceTarget | undefined;
+  getAnchorAffordanceAt: (side: DiffSide, line: number) => AnchorAffordanceTarget | undefined;
   getDiagnostics: () => AdapterDiagnostics;
   goToChange: (direction: 'next' | 'previous') => void;
   layout: () => void;
@@ -97,6 +98,7 @@ class PublicMonacoDiffAdapter {
       originalEditable: false,
       readOnly: true,
       renderSideBySide: true,
+      renderSideBySideInlineBreakpoint: 0,
       hideUnchangedRegions: HIDE_UNCHANGED_REGIONS,
     });
     this.originalEditor = this.diffEditor.getOriginalEditor();
@@ -212,6 +214,18 @@ class PublicMonacoDiffAdapter {
 
   getAnchorAffordance(): AnchorAffordanceTarget | undefined {
     return this.anchorAffordance;
+  }
+  getAnchorAffordanceAt(side: DiffSide, line: number): AnchorAffordanceTarget | undefined {
+    if (!this.isValidLine(side, line)) {
+      return undefined;
+    }
+    const editor = this.editorFor(side);
+    const visible = editor.getScrolledVisiblePosition({ lineNumber: line, column: 1 });
+    return {
+      side,
+      line,
+      top: this.host.offsetTop + (visible?.top ?? editor.getTopForLineNumber(line) - editor.getScrollTop()),
+    };
   }
 
   setActiveAnchor(anchor: Anchor | undefined): void {
