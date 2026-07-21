@@ -29,7 +29,7 @@ key-files:
 
 key-decisions:
   - "Draft movement records a pending target and requires explicit discard before replacing the anchor."
-  - "The Monaco view-zone composer is sized from rendered content and focus is deferred until its textarea exists."
+  - "The composer view zone permits mouse events, while Vue restores focus only after its target textarea is mounted."
   - "Stale and orphaned comments expose immutable recorded-anchor metadata; inspect is available only for exact-file capabilities."
 
 patterns-established:
@@ -37,29 +37,28 @@ patterns-established:
   - "Drawer accessibility: closed non-modal panels are inert and closing restores focus to their opener."
 
 requirements-completed: [DIFF-07, CMT-01, CMT-08, DRFT-02]
-
 duration: current execution session
 completed: 2026-07-21
 status: complete
 ---
 
-# Phase 02: Anchored Diff Review Summary
+# Phase 02 Plan 09: Anchored Composer Summary
 
-**One Monaco-anchored review composer now preserves non-empty drafts through explicit move-or-discard confirmation, while stale records retain exact inspection metadata.**
+**One Monaco-anchored composer now preserves non-empty drafts through explicit move-or-discard confirmation, accepts confirmation clicks inside its view zone, and restores focus to the recreated target textarea.**
 
 ## Performance
 
 - **Duration:** Current execution session
 - **Started:** Not recorded
-- **Completed:** 2026-07-21T18:39:27Z
-- **Tasks:** 3
-- **Files modified:** 9
+- **Completed:** 2026-07-21
+- **Tasks:** 3 plan tasks plus one production-regression repair
+- **Files modified:** 9 plan files; 3 repair files
 
 ## Accomplishments
 
 - Added loss-safe composer movement state, including pending move targets, explicit confirmation, keep-writing, and discard transitions.
-- Replaced line-one-only and duplicate composer rendering with one Vue composer mounted inside a paired Monaco view zone at the actual model line.
-- Added responsive file/comments drawers and recorded-anchor copy/inspect actions with focused browser coverage for movement, drawers, and stale/orphaned records.
+- Mounted one Vue composer inside a paired Monaco view zone at the actual model line, with responsive drawers and recorded-anchor detail actions.
+- Repaired the packaged non-line-1 move flow: the composer zone no longer suppresses its confirmation clicks, the pending target remains actionable after Keep writing, and focus is restored after the target composer mounts.
 
 ## Task Commits
 
@@ -68,13 +67,15 @@ Each task was committed atomically:
 1. **Task 1: Add loss-safe composer movement state** - `242659c` (RED test), `6a73a1e` (feature)
 2. **Task 2: Anchor the single composer to Monaco model lines** - `dccfa5e` (feature)
 3. **Task 3: Lock the end-to-end anchored interaction** - `c48e094` (test and stabilization)
+4. **Production repair: Restore anchored composer confirmation** - `826c109` (fix)
+
+**Plan metadata:** `e4bd9f8` (docs: complete anchored composer gap closure plan)
 
 ## Files Created/Modified
 
-- `src/web/model/workspace-state.ts` - Models pending draft movement and confirmation transitions.
-- `src/web/components/CommentComposer.vue` - Emits move confirmation through existing destructive controls.
-- `src/web/components/DiffWorkspace.vue` - Mounts the single composer in Monaco zones and synchronizes focus/geometry.
-- `src/web/monaco/diff-adapter.ts` - Supplies focused-line affordances and paired zone sizing.
+- `src/web/model/workspace-state.ts` - Retains the pending move target after Keep writing so the intended target action remains available.
+- `src/web/components/DiffWorkspace.vue` - Synchronizes the model anchor, view-zone composer, targeted affordance, and post-mount textarea focus.
+- `src/web/monaco/diff-adapter.ts` - Forces side-by-side interaction, exposes a model-line affordance lookup, and permits mouse interaction in the composer zone.
 - `src/web/components/CommentsRail.vue` - Presents recorded stale/orphan anchor details and capability-gated inspection.
 - `src/web/App.vue` - Routes composer and rail events and manages responsive drawers.
 - `src/web/styles.css` - Positions Monaco-line actions without line-one assumptions.
@@ -85,29 +86,29 @@ Each task was committed atomically:
 
 - Preserve a draft at its existing anchor while presenting a move confirmation; only explicit discard recreates the composer at the requested target.
 - Keep one model-derived gutter action rather than adding static duplicated controls.
-- Treat `exactFile` as the only authority for inspection availability; recorded anchor text remains available even when navigation is not.
+- Keep a composer view zone interactive (`suppressMouseDown: false`); view-zone event suppression prevented the confirmation event from reaching Vue.
+- Restore focus from the mounted Vue annotation, rather than with timeout or animation-frame retries.
 
 ## Deviations from Plan
 
 ### Auto-fixed Issues
 
-**1. [Rule 1 - Bug] Sized and focused Monaco-hosted composer content after the real zone is mounted**
-- **Found during:** Task 3 browser verification
-- **Issue:** Monaco's initial view-zone height clipped composer actions and focus could occur before the mounted textarea existed.
-- **Fix:** Used a paired 280px baseline zone, measured rendered content, and deferred focus until the current Monaco-zone textarea exists.
-- **Files modified:** `src/web/components/DiffWorkspace.vue`, `src/web/monaco/diff-adapter.ts`
-- **Verification:** Anchored Playwright scenario passes including focus, confirmation, and move.
-- **Committed in:** `c48e094`
+**1. [Rule 1 - Bug] Repaired composer confirmation clicks swallowed by Monaco view-zone mouse suppression**
+- **Found during:** packaged Plan 02-10 regression reproduction
+- **Issue:** The composer remained in `confirm-move` after Discard draft because its Monaco view zone suppressed the mouse interaction. The recreated target textarea therefore could not receive focus.
+- **Fix:** Restored interactive view-zone mouse handling, preserved the pending target across Keep writing, derived its exact model-line affordance, and focused the mounted target textarea without timing retries.
+- **Files modified:** `src/web/model/workspace-state.ts`, `src/web/components/DiffWorkspace.vue`, `src/web/monaco/diff-adapter.ts`
+- **Verification:** The original package repro advanced through the former line-202 focus assertion and persisted the head-line-10 comment; focused unit and browser checks passed.
+- **Committed in:** `826c109` (production repair)
 
 ---
 
 **Total deviations:** 1 auto-fixed (1 bug)
-**Impact on plan:** Required for the planned model-line composer to be operable; no scope expansion.
+**Impact on plan:** Required for the plan's explicit loss-safe movement and focus-restoration contract. No scope expansion.
 
 ## Issues Encountered
 
-- Monaco view-zone descendants are not discoverable by page-level accessibility role queries in the browser fixture, so the browser test targets their DOM controls directly while retaining actual focus and visible-control assertions.
-- A programmatic adapter reset could re-emit an activation and overwrite a pending move; synchronization now records the observed anchor before resetting the adapter.
+- The preserved Plan 02-10 package test now first fails at its later line-221 assertion because that test expects a persisted comparison without `mergeBaseOid`. The canonical draft comparison schema requires `mergeBaseOid`; this is a Plan 02-10-owned expectation issue, not a Plan 02-09 production regression. Its test and fixture remain byte-identical and uncommitted.
 
 ## User Setup Required
 
@@ -115,8 +116,8 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- Anchored composer behavior is covered by focused unit and browser tests.
-- Exact record capabilities are exposed without restoring unsafe path or file fallbacks.
+- Anchored composer movement, confirmation, focus restoration, and model-line interaction are verified by focused unit and browser coverage.
+- Plan 02-10 can update its own persisted-comparison expectation without changing this repair.
 
 ---
 *Phase: 02-anchored-diff-review*
