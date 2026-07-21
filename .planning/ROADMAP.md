@@ -102,7 +102,7 @@ Every v1 requirement maps to exactly one phase:
 | Phase | Status | Plans Complete | Requirements Complete |
 |-------|--------|----------------|-----------------------|
 | 1. Pinned Local Comparison | In progress | 12/13 | 23/23 |
-| 2. Anchored Diff Review | Not started | 0/7 | 0/11 |
+| 2. Anchored Diff Review | In progress | 4/7 | 6/11 |
 | 3. Complete Review Draft | Not started | 0/7 | 0/8 |
 | 4. Agent-Ready Export | Not started | 0/8 | 0/9 |
 
