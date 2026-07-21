@@ -147,6 +147,22 @@ async function openReview(page: Page, expectedPath = 'src/first.ts', resumeAttem
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
 }
 
+async function hoverMonacoLine(page: Page, side: 'base' | 'head', text: string): Promise<void> {
+  const editor = side === 'base' ? 'original' : 'modified';
+  const line = page.locator(`.monaco-diff-editor .${editor} .view-line`).filter({ hasText: text });
+  let bounds: { height: number; width: number; x: number; y: number } | undefined;
+  await expect.poll(async () => {
+    bounds = await line.evaluateAll((elements) => elements
+      .map((element) => {
+        const { height, width, x, y } = element.getBoundingClientRect();
+        return { height, width, x, y };
+      })
+      .find(({ height, width }) => height > 0 && width > 0));
+    return bounds !== undefined;
+  }).toBe(true);
+  await page.mouse.move(bounds!.x + 20, bounds!.y + 9);
+}
+
 test.beforeAll(async () => {
   origin = await startAppServer();
 });
@@ -194,14 +210,15 @@ test('diff navigation and session state', async ({ page }) => {
 
 test('inline comment persistence', async ({ page }) => {
   await openReview(page);
-  await page.getByRole('button', { name: 'Add comment to head line 1' }).click();
-  const textarea = page.locator('.diff-workspace > section.inline-comment-composer textarea');
+  await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+  await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+  const textarea = page.locator('.monaco-anchor-zone--composer textarea');
   await expect(textarea).toBeVisible();
   await textarea.fill('Please explain this context.');
   await textarea.blur();
   await expect(textarea).toHaveValue('Please explain this context.');
-  await page.getByRole('button', { name: 'Add comment', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Show comment' })).toBeVisible();
+  await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+  await expect(page.locator('.comments-rail__comment[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]')).toBeVisible();
 });
 
 test('draft resume and anchor states', async ({ page }) => {
@@ -260,12 +277,114 @@ test('exact-byte draft resume', async ({ page }) => {
 });
 
 test('anchored gap closure', async ({ page }) => {
+  session = {
+    ...session,
+    files: session.files.map((file) => ({
+      ...file,
+      newPath: path(file.fileId === firstFileId ? 'src/first.ts' : 'src/second.ts'),
+    })),
+  };
+  comments = [
+    {
+      id: 'comment_11111111-1111-4111-8111-111111111111',
+      state: 'open',
+      body: 'Stale comment stays attached to its recorded anchor.',
+      anchor: {
+        version: 'durable-anchor-v1',
+        path: path('src/first.ts'),
+        safeDisplayPath: 'src/first.ts',
+        side: 'head',
+        line: 10,
+        blobOid: 'd'.repeat(40),
+        selectedText: 'export const changed = 2;',
+        context: { before: [], target: { line: 10, text: 'export const changed = 2;' }, after: [] },
+        contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
+        uniqueKey: 'e'.repeat(64),
+      },
+      createdAt: '2026-07-21T00:00:00.000Z',
+      updatedAt: '2026-07-21T00:00:00.000Z',
+      verification: { state: 'stale', reason: 'anchor-mismatch' },
+    },
+    {
+      id: 'comment_22222222-2222-4222-8222-222222222222',
+      state: 'open',
+      body: 'Orphan comment preserves its exact bytes.',
+      anchor: {
+        version: 'durable-anchor-v1',
+        path: path('src/deleted.ts'),
+        safeDisplayPath: 'src/deleted.ts',
+        side: 'head',
+        line: 8,
+        blobOid: '0'.repeat(40),
+        selectedText: 'const context8 = 8;',
+        context: { before: [], target: { line: 8, text: 'const context8 = 8;' }, after: [] },
+        contextHash: { algorithm: 'sha256-v1', value: 'a'.repeat(64) },
+        uniqueKey: 'b'.repeat(64),
+      },
+      createdAt: '2026-07-21T00:00:00.000Z',
+      updatedAt: '2026-07-21T00:00:00.000Z',
+      verification: { state: 'orphaned', reason: 'anchor-unavailable' },
+    },
+  ];
+
   await page.setViewportSize({ width: 1440, height: 900 });
   await openReview(page);
 
-  const changedLine = page.locator('.monaco-diff-editor .modified .view-line').filter({ hasText: 'const changed = 2;' });
-  const bounds = await changedLine.boundingBox();
-  expect(bounds).not.toBeNull();
-  await page.mouse.move(bounds!.x + 20, bounds!.y + 9);
-  await expect(page.getByRole('button', { name: 'Add comment to head line 10' })).toBeVisible();
+  await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+  await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+  const composer = page.locator('.monaco-anchor-zone--composer textarea');
+  await expect(composer).toBeFocused();
+  await composer.fill('Keep this draft while moving.');
+  await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Discard draft' }).click();
+  await expect(page.locator('.inline-comment-composer__confirm')).toBeVisible();
+  await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Keep writing' }).click();
+  await expect(composer).toHaveValue('Keep this draft while moving.');
+  await hoverMonacoLine(page, 'head', 'const context11 = 11;');
+  await page.getByRole('button', { name: 'Add comment to head line 11' }).click();
+  await expect(page.locator('.inline-comment-composer__confirm')).toBeVisible();
+  await expect(composer).toHaveValue('Keep this draft while moving.');
+  await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Keep writing' }).click();
+  await expect(composer).toHaveValue('Keep this draft while moving.');
+
+  await hoverMonacoLine(page, 'head', 'const context11 = 11;');
+  await page.getByRole('button', { name: 'Add comment to head line 11' }).click();
+  await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Discard draft' }).click();
+  const movedComposer = page.locator('.modified .monaco-anchor-zone--composer textarea');
+  await expect(movedComposer).toBeFocused();
+  await expect(movedComposer).toHaveValue('');
+
+  await page.setViewportSize({ width: 1200, height: 900 });
+  const commentsToggle = page.getByRole('button', { name: 'Comments', exact: true });
+  await commentsToggle.click();
+  await expect(page.getByRole('button', { name: 'Close comments' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close comments' }).click();
+  await expect(commentsToggle).toBeFocused();
+  await expect(page.locator('.comments-rail')).toHaveAttribute('inert', '');
+
+  await page.setViewportSize({ width: 900, height: 900 });
+  const filesToggle = page.getByRole('button', { name: 'Files', exact: true });
+  await filesToggle.click();
+  await expect(page.getByRole('button', { name: 'Close files' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close files' }).click();
+  await expect(filesToggle).toBeFocused();
+  await expect(page.locator('.review-files')).toHaveAttribute('inert', '');
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  const staleComment = page.locator('[data-comment-id="comment_11111111-1111-4111-8111-111111111111"]');
+  const orphanComment = page.locator('[data-comment-id="comment_22222222-2222-4222-8222-222222222222"]');
+  await expect(staleComment.getByText('Stale anchor')).toBeVisible();
+  await expect(staleComment.getByText('Exact path bytes')).toBeVisible();
+  await expect(staleComment.getByText('Blob OID')).toBeVisible();
+  await expect(staleComment.getByText('Selected text')).toBeVisible();
+  await expect(staleComment.getByText('Verification')).toBeVisible();
+  await expect(orphanComment.getByText('Anchor unavailable')).toBeVisible();
+  await expect(orphanComment.getByRole('button', { name: 'Inspect recorded file' })).toHaveCount(0);
+  await orphanComment.getByRole('button', { name: 'Copy anchor details' }).click();
+  await expect(page.getByText(/(Recorded anchor details copied|Couldn’t copy anchor details)/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Next file' }).click();
+  const inspectRecordedFile = staleComment.getByRole('button', { name: 'Inspect recorded file' });
+  await inspectRecordedFile.click();
+  await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
+  await expect(inspectRecordedFile).toBeFocused();
 });

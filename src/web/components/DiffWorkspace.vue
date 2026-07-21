@@ -99,13 +99,17 @@ function renderAnnotation(): void {
     onKeepWriting: () => emit('keepWriting'),
     onUpdateText: (text: string) => emit('updateText', text),
   }), zone);
-  void nextTick(() => {
-    adapter?.setAnchorZoneHeight(Math.max(80, zone.scrollHeight));
-    if (focusComposerAfterRender) {
-      zone.querySelector<HTMLTextAreaElement>('textarea')?.focus();
-      focusComposerAfterRender = false;
-    }
-  });
+  void nextTick(() => requestAnimationFrame(() => {
+    const contentHeight = zone.firstElementChild?.scrollHeight ?? zone.scrollHeight;
+    adapter?.setAnchorZoneHeight(Math.max(280, contentHeight + 16));
+    window.setTimeout(() => {
+      const textarea = host.value?.querySelector<HTMLTextAreaElement>('.monaco-anchor-zone--composer textarea');
+      if (focusComposerAfterRender && textarea !== undefined) {
+        textarea.focus();
+        focusComposerAfterRender = false;
+      }
+    });
+  }));
 }
 
 function syncAdapterState(): void {
@@ -143,7 +147,10 @@ function layout(): void {
 }
 
 function addComment(target: AnchorAffordanceTarget): void {
+  focusComposerAfterRender = true;
+  emit('activate', target.side, target.line);
   adapter?.activateAnchor(target.side, target.line);
+  void nextTick(() => requestAnimationFrame(renderAnnotation));
 }
 
 function focusComment(commentId: string): void {
@@ -158,6 +165,7 @@ defineExpose({ focusComment, layout, nextChange, previousChange, revealComment }
 
 watch(() => [props.composer, props.comments] as const, () => {
   if (props.composer !== undefined) {
+      observedAnchor = `${props.composer.side}:${props.composer.line}`;
     const anchor = adapter?.getActiveAnchor();
     if (anchor?.fileId !== props.content.fileId
       || anchor.side !== props.composer.side || anchor.line !== props.composer.line) {
@@ -172,7 +180,7 @@ watch(() => [props.composer, props.comments] as const, () => {
     unmountZone();
     adapter.clearAnchor();
   }
-  void nextTick(renderAnnotation);
+  void nextTick(() => requestAnimationFrame(renderAnnotation));
 }, { deep: true });
 
 watch(() => props.content, () => {

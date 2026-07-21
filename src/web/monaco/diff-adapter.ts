@@ -114,6 +114,8 @@ class PublicMonacoDiffAdapter {
       this.modifiedEditor.onDidChangeCursorPosition((event) => this.captureCursor('head', event.position.lineNumber)),
       this.originalEditor.onMouseMove((event) => this.captureAffordance('base', event.target.position?.lineNumber)),
       this.modifiedEditor.onMouseMove((event) => this.captureAffordance('head', event.target.position?.lineNumber)),
+      this.originalEditor.onMouseDown((event) => this.captureAffordance('base', event.target.position?.lineNumber)),
+      this.modifiedEditor.onMouseDown((event) => this.captureAffordance('head', event.target.position?.lineNumber)),
       this.originalEditor.onDidScrollChange(() => this.refreshAnchorAffordance()),
       this.modifiedEditor.onDidScrollChange(() => this.refreshAnchorAffordance()),
       this.originalEditor.addAction({
@@ -216,6 +218,7 @@ class PublicMonacoDiffAdapter {
     if (anchor === undefined || this.currentFile?.id !== anchor.fileId || !this.isValidLine(anchor.side, anchor.line)) {
       this.activeComposer = undefined;
       this.rebuildAnchoredLayout();
+      this.onChange();
       return;
     }
     this.activeComposer = {
@@ -229,6 +232,7 @@ class PublicMonacoDiffAdapter {
         : '',
     };
     this.rebuildAnchoredLayout();
+    this.onChange();
   }
 
   revealAnchor(anchor: Anchor): void {
@@ -408,11 +412,10 @@ class PublicMonacoDiffAdapter {
       counterpartModel.getLineCount(),
     );
     const anchoredZone = this.createComposerZone(anchor);
-    const spacerZone = this.createSpacerZone(anchoredZone.heightInPx ?? 80);
+    const spacerZone = this.createSpacerZone(anchoredZone.heightInPx ?? 280);
     const anchoredZoneId = this.addZone(anchoredEditor, anchoredZone);
     const spacerZoneId = this.addZone(counterpartEditor, spacerZone);
     if (anchor.side === 'base') {
-      this.originalZone = { id: anchoredZoneId, zone: anchoredZone };
       this.modifiedZone = { id: spacerZoneId, zone: spacerZone };
       this.positionZones(anchor.line, counterpartLine);
       this.originalDecorations = anchoredEditor.createDecorationsCollection([this.anchorDecoration(anchor.line)]);
@@ -435,9 +438,8 @@ class PublicMonacoDiffAdapter {
     const container = document.createElement('section');
     container.className = 'monaco-anchor-zone monaco-anchor-zone--composer';
     container.setAttribute('aria-label', `Comment on ${anchor.side} line ${anchor.line}`);
-    return { afterLineNumber: anchor.line, domNode: container, heightInPx: 80, suppressMouseDown: false };
+    return { afterLineNumber: anchor.line, domNode: container, heightInPx: 280, suppressMouseDown: false };
   }
-
   private createSpacerZone(heightInPx: number): monaco.editor.IViewZone {
     const spacer = document.createElement('div');
     spacer.className = 'monaco-anchor-zone monaco-anchor-zone--spacer';
