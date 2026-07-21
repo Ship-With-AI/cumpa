@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 
 import type { PinnedComparison } from '../contracts/comparison.js';
 import { createCapabilityRegistry, type CapabilityRegistryOptions } from './capabilities.js';
+import { createDraftStore } from './draft-store.js';
 import { registerSessionRoutes } from './routes.js';
 import {
   registerSessionSecurity,
@@ -32,7 +33,17 @@ export function createSessionApp(
     ajv: { customOptions: { removeAdditional: false } },
   }) as unknown as SessionApp;
   const webRoot = options.webRoot ?? resolve(import.meta.dirname, '../web');
-  const capabilities = createCapabilityRegistry(comparison, options);
+  const draftStore =
+    options.draftStore ??
+    createDraftStore({
+      repositoryRoot: comparison.repositoryRoot,
+      comparison: {
+        baseCommitOid: comparison.base.oid,
+        headCommitOid: comparison.head.oid,
+        mergeBaseOid: comparison.mergeBaseOid,
+      },
+    });
+  const capabilities = createCapabilityRegistry(comparison, { ...options, draftStore });
   const security = registerSessionSecurity(app, options);
 
   app.decorate('bindSessionSecurity', security.bind);

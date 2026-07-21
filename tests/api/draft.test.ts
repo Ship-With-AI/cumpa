@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import type { PinnedComparison } from '../../src/contracts/comparison.js';
+import { comparisonKey } from '../../src/domain/comparison-key.js';
 import { createSessionApp } from '../../src/server/app.js';
 
 const token = 'a'.repeat(43);
@@ -158,7 +159,10 @@ describe('comparison-local draft routes', () => {
 
     const directory = join(repositoryRoot, '.diff-review', 'drafts');
     await mkdir(directory, { recursive: true });
-    const file = join(directory, 'invalid.json');
+    const file = join(
+      directory,
+      `${comparisonKey('1'.repeat(40), '2'.repeat(40))}.json`,
+    );
     await writeFile(file, '{ invalid json');
     const invalid = await app.inject({ method: 'POST', url: '/api/draft/comments', headers, payload: { fileId, side: 'head', line: 1, body: 'do not overwrite' } });
     expect(invalid.statusCode).toBe(500);

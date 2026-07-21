@@ -7,10 +7,16 @@ import {
   type FileMetadataResponse,
   type SessionResponse,
 } from '../contracts/api.js';
-import type { DurableAnchorV1 } from '../domain/anchor.js';
+import {
+  buildDurableAnchor,
+  verifyDurableAnchor,
+  type AnchorVerification,
+  type DurableAnchorV1,
+} from '../domain/anchor.js';
 import { MAX_INLINE_TEXT_BYTES } from '../git/availability.js';
 import { createObjectReader } from '../git/objects.js';
 import type { ObjectReader } from '../git/objects.js';
+import { createDraftStore, type DraftStore } from './draft-store.js';
 
 export type AnchorAddPort = (
   input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
@@ -51,13 +57,16 @@ export type CapabilityRegistryOptions = Readonly<{
   readonly onCapabilityLookup?: (fileId: string) => void;
   readonly objectReader?: ObjectReader;
   readonly onAnchorAdd?: AnchorAddPort;
+  readonly draftStore?: DraftStore;
 }>;
 
 export type CapabilityRegistry = Readonly<{
   readonly session: SessionResponse;
   readonly onAnchorAdd?: AnchorAddPort;
+  readonly draftStore: DraftStore;
   readonly lookup: (fileId: string) => FileMetadataResponse | undefined;
   readonly readContent: (fileId: string) => Promise<FileContentResponse | undefined>;
+  readonly verifyAnchor: (anchor: DurableAnchorV1) => Promise<AnchorVerification>;
 }>;
 
 function toSessionEndpoint(endpoint: PinnedComparison['base']) {
@@ -121,6 +130,16 @@ export function createCapabilityRegistry(
   const filesByCapability = new Map<string, FileMetadataResponse>();
   const frozenFilesByCapability = new Map<string, ChangedFile>();
   const reader = options.objectReader ?? createObjectReader(comparison.repositoryRoot);
+  const draftStore =
+    options.draftStore ??
+    createDraftStore({
+      repositoryRoot: comparison.repositoryRoot,
+      comparison: {
+        baseCommitOid: comparison.base.oid,
+        headCommitOid: comparison.head.oid,
+        mergeBaseOid: comparison.mergeBaseOid,
+      },
+    });
 
   const session = SessionResponseSchema.parse({
     base: toSessionEndpoint(comparison.base),
@@ -155,6 +174,7 @@ export function createCapabilityRegistry(
   return Object.freeze({
     session,
     onAnchorAdd: options.onAnchorAdd,
+    draftStore,
     lookup(fileId: string) {
       options.onCapabilityLookup?.(fileId);
       return filesByCapability.get(fileId);
@@ -172,6 +192,41 @@ export function createCapabilityRegistry(
         return undefined;
       }
       return FileContentResponseSchema.parse({ fileId, base, head });
+    },
+    async verifyAnchor(anchor) {
+      for (const file of frozenFilesByCapability.values()) {
+        const path = anchor.side === 'base' ? file.oldPath : file.newPath;
+        const blobOid = anchor.side === 'base' ? file.oldBlobOid : file.newBlobOid;
+        const mode = anchor.side === 'base' ? file.oldMode : file.newMode;
+        if (
+          file.availability.kind !== 'text' ||
+          path === undefined ||
+          path.bytesBase64url !== anchor.path.bytesBase64url ||
+          blobOid !== anchor.blobOid
+        ) {
+          continue;
+        }
+        const side = await readSide(reader, path, blobOid, mode);
+        if (side === undefined || !side.exists) {
+          return { state: 'orphaned', reason: 'anchor-unavailable' };
+        }
+        try {
+          return verifyDurableAnchor(
+            anchor,
+            buildDurableAnchor({
+              path: side.path,
+              safeDisplayPath: side.path.display,
+              side: anchor.side,
+              blobOid: side.blobOid,
+              line: anchor.line,
+              text: side.text,
+            }),
+          );
+        } catch {
+          return { state: 'orphaned', reason: 'anchor-unavailable' };
+        }
+      }
+      return { state: 'orphaned', reason: 'anchor-unavailable' };
     },
   });
 }

@@ -28,13 +28,13 @@ const anchor = buildDurableAnchor({
 });
 
 async function root(): Promise<string> {
-  const value = await mkdtemp(join(tmpdir(), 'diff-review-atomic-'));
+  const value = await fs.mkdtemp(join(tmpdir(), 'diff-review-atomic-'));
   roots.push(value);
   return value;
 }
 
 afterEach(async () => {
-  await Promise.all(roots.splice(0).map(async (path) => rm(path, { recursive: true, force: true })));
+  await Promise.all(roots.splice(0).map(async (path) => fs.rm(path, { recursive: true, force: true })));
 });
 
 function failingFileSystem(

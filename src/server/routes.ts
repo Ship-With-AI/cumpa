@@ -7,6 +7,7 @@ import {
 import { DurableAnchorV1Schema } from '../contracts/draft.js';
 import { buildDurableAnchor } from '../domain/anchor.js';
 import type { CapabilityRegistry } from './capabilities.js';
+import { DraftConflictError } from './draft-store.js';
 import { REQUEST_UNAVAILABLE_ERROR } from './security.js';
 
 const EMPTY_QUERY_SCHEMA = {
@@ -90,6 +91,30 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
     },
   );
 
+  app.get<{ Querystring: Record<string, never> }>(
+    '/api/draft',
+    { schema: { querystring: EMPTY_QUERY_SCHEMA } },
+    async (request, reply) => {
+      if (Object.keys(request.query).length !== 0) {
+        return unavailable(reply, 400);
+      }
+      try {
+        const draft = await capabilities.draftStore.load();
+        return {
+          ...draft,
+          comments: await Promise.all(
+            draft.comments.map(async (comment) => ({
+              ...comment,
+              verification: await capabilities.verifyAnchor(comment.anchor),
+            })),
+          ),
+        };
+      } catch {
+        return unavailable(reply, 500);
+      }
+    },
+  );
+
   app.post<{ Querystring: Record<string, never> }>(
     '/api/draft/comments',
     async (request, reply) => {
@@ -115,6 +140,12 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       if (!selectedSide.exists) {
         return unavailable(reply, 409);
       }
+      if (
+        /(?:\r\n|\n)$/u.test(selectedSide.text) &&
+        addRequest.data.line === selectedSide.text.split(/\r\n|\n/u).length
+      ) {
+        return unavailable(reply, 409);
+      }
       let anchor;
       try {
         anchor = DurableAnchorV1Schema.parse(
@@ -130,15 +161,19 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       } catch {
         return unavailable(reply, 409);
       }
-      if (capabilities.onAnchorAdd === undefined) {
-        return unavailable(reply, 409);
-      }
       try {
-        await capabilities.onAnchorAdd({ body: addRequest.data.body, anchor });
-      } catch {
-        return unavailable(reply, 500);
+        if (capabilities.onAnchorAdd !== undefined) {
+          await capabilities.onAnchorAdd({ body: addRequest.data.body, anchor });
+          return reply.code(201).send({ anchor });
+        }
+        const accepted = await capabilities.draftStore.add({
+          body: addRequest.data.body,
+          anchor,
+        });
+        return reply.code(201).send(accepted);
+      } catch (error) {
+        return unavailable(reply, error instanceof DraftConflictError ? 409 : 500);
       }
-      return reply.code(201).send({ anchor });
     },
   );
 }

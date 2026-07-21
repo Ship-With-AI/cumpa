@@ -43,5 +43,37 @@ export const AnchorVerificationSchema = z
   })
   .readonly();
 
+const DraftComparisonSchema = z
+  .strictObject({
+    baseCommitOid: GitObjectIdSchema,
+    headCommitOid: GitObjectIdSchema,
+    mergeBaseOid: GitObjectIdSchema,
+  })
+  .readonly();
+
+const DraftCommentSchema = z
+  .strictObject({
+    id: z.string().regex(/^comment_[0-9a-f-]{36}$/u),
+    state: z.literal('open'),
+    body: z.string().trim().min(1).max(100_000),
+    anchor: DurableAnchorV1Schema,
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+  })
+  .readonly();
+
+export const ReviewDraftV1Schema = z
+  .strictObject({
+    schemaVersion: z.literal(1),
+    comparison: DraftComparisonSchema,
+    revision: z.number().int().nonnegative(),
+    summary: z.literal(''),
+    comments: z.array(DraftCommentSchema).max(10_000).readonly(),
+  })
+  .readonly();
+
+export type ReviewDraftV1 = z.infer<typeof ReviewDraftV1Schema>;
+export type ReviewDraftCommentV1 = z.infer<typeof DraftCommentSchema>;
+
 export type DurableAnchorV1Dto = z.infer<typeof DurableAnchorV1Schema>;
 export type AnchorVerificationDto = z.infer<typeof AnchorVerificationSchema>;
