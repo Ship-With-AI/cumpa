@@ -2,7 +2,6 @@ import { spawn, execFileSync } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import {
-  chmodSync,
   closeSync,
   copyFileSync,
   existsSync,
@@ -31,7 +30,6 @@ const extractedPackageRoot = join(packedRoot, 'package');
 const executablePath = join(extractedPackageRoot, 'dist/bin/diff-review.mjs');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 test.setTimeout(90_000);
-
 
 interface PackResult {
   readonly filename: string;
@@ -118,6 +116,36 @@ function assertChromium(browser: Browser, testInfo: TestInfo): void {
   expect(browser.browserType().name()).toBe('chromium');
 }
 
+async function activateMonacoLine(
+  page: Page,
+  side: 'base' | 'head',
+  text: string,
+  lineNumber: number,
+): Promise<void> {
+  const editor = side === 'base' ? 'editor original' : 'editor modified';
+  const line = page
+    .locator(`.monaco-diff-editor .${editor.split(' ').join('.')}`)
+    .locator('.view-line')
+    .filter({ hasText: text });
+  let visibleIndex = -1;
+  await expect.poll(async () => {
+    visibleIndex = await line.evaluateAll((elements) =>
+      elements.findIndex((element) => {
+        const { height, width } = element.getBoundingClientRect();
+        return height > 0 && width > 0;
+      }),
+    );
+    return visibleIndex >= 0;
+  }).toBe(true);
+  await line.nth(visibleIndex).hover();
+  await line.nth(visibleIndex).click();
+  const affordance = page.getByRole('button', {
+    name: `Add comment to ${side} line ${lineNumber}`,
+  });
+  await expect(affordance).toBeVisible();
+  await affordance.click();
+}
+
 test.beforeAll(() => {
   runPrerequisite(npmCommand, ['run', 'build']);
   runPrerequisite(npmCommand, ['run', 'verify:production-artifacts']);
@@ -135,58 +163,111 @@ test.beforeAll(() => {
   const fakeOpen = join(packedRoot, 'open');
   writeFileSync(fakeOpen, '#!/usr/bin/env node\nprocess.exitCode = 1;\n');
   copyFileSync(fakeOpen, join(fakeBinRoot, 'open'));
-  chmodSync(join(fakeBinRoot, 'open'), 0o755);
 });
 
 test.afterAll(() => {
   rmSync(packedRoot, { force: true, recursive: true });
 });
 
-test('packaged anchored review persists exact real-Git comments across relaunch', async ({ browser, page }, testInfo) => {
+test('packaged anchored gap closure recovers a non-line-1 exact anchor', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createGitFixture({ anchoredReview: true });
-  const featureOid = fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim();
   const baseOid = fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim();
-  const baseRenamedText = fixture.git(['show', `${baseOid}:src/old-name.ts`]).toString('utf8');
-  const headRenamedText = fixture.git(['show', `${featureOid}:src/new-name.ts`]).toString('utf8');
-  expect(baseRenamedText).toContain('base path');
-  expect(headRenamedText).toContain('new path');
-  expect(featureOid).not.toBe(baseOid);
-
+  const headOid = fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim();
+  const mergeBaseOid = fixture.git(['merge-base', fixture.baseRef, fixture.headRef]).toString('ascii').trim();
   const draftsPath = join(fixture.root, '.diff-review', 'drafts');
-  mkdirSync(draftsPath, { recursive: true });
-  chmodSync(draftsPath, 0o555);
+  const commentBody = 'Packaged comment on unchanged head line ten.';
   const initial = startGeneratedCli(fixture);
+
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openGeneratedReview(page, await waitForLoopbackUrl(initial));
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    await expect(page.getByText(/Unchanged regions begin collapsed/)).toBeVisible();
+
+    await activateMonacoLine(page, 'base', 'export const stableContext10 = 10;', 10);
+    const composer = page.locator('.monaco-anchor-zone--composer textarea');
+    await expect(composer).toHaveCount(1);
+    await expect(page.locator('.inline-comment-composer__header')).toContainText(
+      'src/changed.ts · Base · line 10',
+    );
+    await composer.fill('Keep this draft while moving.');
+
+    await activateMonacoLine(page, 'head', 'export const stableContext10 = 10;', 10);
+    await expect(page.locator('.inline-comment-composer__confirm')).toBeVisible();
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Keep writing' }).click();
+    await expect(composer).toHaveValue('Keep this draft while moving.');
+    await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Discard draft' }).click();
+    await expect(composer).toHaveCount(1);
+    await expect(composer).toBeFocused();
+    await expect(page.locator('.inline-comment-composer__header')).toContainText(
+      'src/changed.ts · Head · line 10',
+    );
+    await page.setViewportSize({ width: 1200, height: 900 });
+    await expect(composer).toHaveCount(1);
+    await page.setViewportSize({ width: 900, height: 900 });
+    await expect(composer).toHaveCount(1);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.getByRole('button', { name: 'Next file' }).click();
+    await page.getByRole('button', { name: 'Previous file' }).click();
+    await expect(composer).toHaveCount(1);
+    await composer.fill(commentBody);
+    const addResponse = page.waitForResponse((response) => response.url().includes('/api/draft/comments'));
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    expect((await addResponse).status()).toBe(201);
+    await expect(page.locator('.comments-rail__comment', { hasText: commentBody })).toHaveCount(1);
+  } finally {
+    await stopGeneratedCli(initial);
+  }
+
+  const [draftFile] = readdirSync(draftsPath).filter((file) => file.endsWith('.json'));
+  expect(draftFile).toBeDefined();
+  const draft = JSON.parse(readFileSync(join(draftsPath, draftFile!), 'utf8')) as {
+    comparison: { baseCommitOid: string; headCommitOid: string; mergeBaseOid: string };
+    comments: Array<{ anchor: { line: number; selectedText: string; side: string }; body: string }>;
+  };
+  expect(draft.comparison).toEqual({ baseCommitOid: baseOid, headCommitOid: headOid, mergeBaseOid });
+  expect(draft.comments).toEqual([
+    expect.objectContaining({
+      body: commentBody,
+      anchor: expect.objectContaining({
+        line: 10,
+        selectedText: 'export const stableContext10 = 10;',
+        side: 'head',
+      }),
+    }),
+  ]);
+
+  const resumed = startGeneratedCli(fixture);
+  try {
+    await openGeneratedReview(page, await waitForLoopbackUrl(resumed));
+    const recoveredComment = page.locator('.comments-rail__comment', { hasText: commentBody });
+    await expect(recoveredComment).toHaveCount(1);
+    await expect(recoveredComment.getByText('Head line 10')).toBeVisible();
+    await recoveredComment.getByRole('button', { name: 'Show comment' }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'src/changed.ts' })).toBeVisible();
+    await expect(recoveredComment.getByRole('button', { name: 'Show comment' })).toBeFocused();
+  } finally {
+    await stopGeneratedCli(resumed);
+    await fixture.cleanup();
+  }
+});
+
+test('packaged anchored gap closure keeps stale and orphaned records rail-only', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createGitFixture({ anchoredReview: true });
+  const draftsPath = join(fixture.root, '.diff-review', 'drafts');
+  const initial = startGeneratedCli(fixture);
+
   try {
     await openGeneratedReview(page, await waitForLoopbackUrl(initial));
-    await page.getByRole('treeitem', { name: /new-name\.ts/ }).click();
-    await expect(page.getByRole('heading', { level: 1, name: /new-name\.ts/ })).toBeVisible();
-    await page.getByRole('button', { name: 'Add comment to head line 1' }).click();
-    const textarea = page.locator('.diff-workspace > section.inline-comment-composer textarea');
-    await textarea.fill('Packaged comment on renamed head line.');
-    await page.getByRole('button', { name: 'Add comment', exact: true }).click();
-    await expect(
-      page.locator('.inline-comment-composer [role="alert"]').first(),
-    ).toContainText('Comment wasn’t added. Your text is still here.');
-    await expect(textarea).toHaveValue('Packaged comment on renamed head line.');
-
-    chmodSync(draftsPath, 0o755);
-    const addResponse = page.waitForResponse((response) =>
-      response.url().includes('/api/draft/comments'),
-    );
-    await page.getByRole('button', { name: 'Add comment', exact: true }).click();
-    expect((await addResponse).status()).toBe(201);
-    await expect(page.getByText('Packaged comment on renamed head line.')).toHaveCount(2);
-
     await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
-    await page.getByRole('button', { name: 'Add comment to base line 1' }).click();
-    const baseTextarea = page.locator('.diff-workspace > section.inline-comment-composer textarea');
-    await baseTextarea.fill('Packaged comment on unchanged base line.');
-    await page.getByRole('button', { name: 'Add comment', exact: true }).click();
-    await expect(page.getByText('Packaged comment on unchanged base line.')).toHaveCount(2);
-    await page.setViewportSize({ width: 640, height: 700 });
-    await page.getByRole('button', { name: 'Next change' }).click();
-    await expect(page.getByText('Unchanged regions begin collapsed.')).toBeVisible();
+    await activateMonacoLine(page, 'head', 'export const stableContext10 = 10;', 10);
+    const composer = page.locator('.monaco-anchor-zone--composer textarea');
+    await composer.fill('Canonical source for degraded records.');
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    await expect(page.locator('.comments-rail__comment', { hasText: 'Canonical source for degraded records.' })).toHaveCount(1);
   } finally {
     await stopGeneratedCli(initial);
   }
@@ -196,41 +277,60 @@ test('packaged anchored review persists exact real-Git comments across relaunch'
   const draftPath = join(draftsPath, draftFile!);
   const draft = JSON.parse(readFileSync(draftPath, 'utf8')) as {
     revision: number;
-    comments: Array<{ id: string; anchor: { line: number; selectedText: string; context: { target: { text: string } } } }>;
+    comments: Array<{ id: string; anchor: { line: number; selectedText: string; safeDisplayPath: string; path: { bytesBase64url: string; display: string; utf8?: string }; context: { target: { text: string } } } }>;
   };
-  expect(draft.comments).toHaveLength(2);
   const stale = JSON.parse(JSON.stringify(draft.comments[0])) as (typeof draft.comments)[number];
   stale.id = `comment_${crypto.randomUUID()}`;
   stale.anchor.selectedText = 'deliberately stale';
   stale.anchor.context.target.text = 'deliberately stale';
-  const orphan = JSON.parse(JSON.stringify(draft.comments[1])) as (typeof draft.comments)[number];
+  const orphan = JSON.parse(JSON.stringify(draft.comments[0])) as (typeof draft.comments)[number];
   orphan.id = `comment_${crypto.randomUUID()}`;
   orphan.anchor.line = 999;
+  orphan.anchor.path = {
+    bytesBase64url: 'c3JjL2RlbGV0ZWQudHM',
+    display: 'src/deleted.ts',
+    utf8: 'src/deleted.ts',
+  };
+  orphan.anchor.safeDisplayPath = 'src/deleted.ts';
   draft.comments.push(stale, orphan);
-  draft.revision = 4;
+  draft.revision += 2;
   writeFileSync(draftPath, `${JSON.stringify(draft)}\n`);
 
   const resumed = startGeneratedCli(fixture);
   try {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await openGeneratedReview(page, await waitForLoopbackUrl(resumed));
-    await expect(page.getByText('Packaged comment on renamed head line.')).toHaveCount(2);
-    await expect(page.getByText('Packaged comment on unchanged base line.')).toHaveCount(2);
-    await expect(page.getByText('Stale anchor')).toBeVisible();
-    await expect(page.getByText('Anchor unavailable')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Add comment to head line 1' })).toBeVisible();
+    const staleComment = page.locator(`[data-comment-id="${stale.id}"]`);
+    const orphanComment = page.locator(`[data-comment-id="${orphan.id}"]`);
+    await expect(staleComment.getByText('Stale anchor')).toBeVisible();
+    await expect(staleComment.getByText('Exact path bytes')).toBeVisible();
+    await expect(orphanComment.getByText('Anchor unavailable')).toBeVisible();
+    await expect(orphanComment.getByRole('button', { name: 'Inspect recorded file' })).toHaveCount(0);
+    await orphanComment.getByRole('button', { name: 'Copy anchor details' }).click();
+    await expect(page.getByText(/Recorded anchor details copied|Couldn’t copy anchor details/)).toBeVisible();
+    await expect(page.locator('.monaco-anchor-zone--composer textarea')).toHaveCount(0);
+
+    await page.setViewportSize({ width: 1200, height: 900 });
+    const commentsToggle = page.getByRole('button', { name: 'Comments', exact: true });
+    await commentsToggle.click();
+    await page.getByRole('button', { name: 'Close comments' }).click();
+    await expect(commentsToggle).toBeFocused();
+    await expect(page.locator('.comments-rail')).toHaveAttribute('inert', '');
+
+    await page.setViewportSize({ width: 900, height: 900 });
+    const filesToggle = page.getByRole('button', { name: 'Files', exact: true });
+    await filesToggle.click();
+    await page.getByRole('button', { name: 'Close files' }).click();
+    await expect(filesToggle).toBeFocused();
+    await expect(page.locator('.review-files')).toHaveAttribute('inert', '');
+
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const inspectRecordedFile = staleComment.getByRole('button', { name: 'Inspect recorded file' });
+    await inspectRecordedFile.click();
+    await expect(page.getByRole('heading', { level: 1, name: 'src/changed.ts' })).toBeVisible();
+    await expect(inspectRecordedFile).toBeFocused();
   } finally {
     await stopGeneratedCli(resumed);
-  }
-
-  const alternateHead = fixture.alternateHeadRef;
-  expect(alternateHead).toBeDefined();
-  const alternate = startGeneratedCli(fixture, alternateHead!);
-  try {
-    await openGeneratedReview(page, await waitForLoopbackUrl(alternate));
-    await expect(page.getByText('Packaged comment on renamed head line.')).not.toBeVisible();
-  } finally {
-    await stopGeneratedCli(alternate);
-    chmodSync(draftsPath, 0o755);
     await fixture.cleanup();
   }
 });

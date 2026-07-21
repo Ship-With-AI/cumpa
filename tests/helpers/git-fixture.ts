@@ -83,9 +83,15 @@ export async function createGitFixture(
     await writeFile(
       join(repositoryRoot, 'src', 'changed.ts'),
       [
-        'export const before = "stable-before";',
+        ...Array.from(
+          { length: 8 },
+          (_, index) => `export const stableContext${index + 1} = ${index + 1};`,
+        ),
         'export const changed = "base value";',
-        'export const after = "stable-after";',
+        ...Array.from(
+          { length: 8 },
+          (_, index) => `export const stableContext${index + 10} = ${index + 10};`,
+        ),
         '',
       ].join('\n'),
     );
@@ -113,9 +119,15 @@ export async function createGitFixture(
     await writeFile(
       join(repositoryRoot, 'src', 'changed.ts'),
       [
-        'export const before = "stable-before";',
+        ...Array.from(
+          { length: 8 },
+          (_, index) => `export const stableContext${index + 1} = ${index + 1};`,
+        ),
         'export const changed = "head value";',
-        'export const after = "stable-after";',
+        ...Array.from(
+          { length: 8 },
+          (_, index) => `export const stableContext${index + 10} = ${index + 10};`,
+        ),
         '',
       ].join('\n'),
     );
