@@ -111,7 +111,7 @@ async function recover(): Promise<void> {
       </div>
     </section>
 
-    <section v-else class="draft-recovery__card">
+    <section v-else class="draft-recovery__card" :role="isRecoverable ? undefined : 'alert'">
       <span class="draft-recovery__badge">Read only</span>
       <template v-if="isRecoverable">
         <h1 id="draft-recovery-heading">Local review draft needs recovery</h1>

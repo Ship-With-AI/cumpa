@@ -217,6 +217,13 @@ test('newer drafts are upgrade-only and expose only fixed reveal and safe copy a
   await expect(page.getByText(safeDraftPath, { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reveal draft file' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Copy draft path' })).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('This draft needs a newer Diff Review');
+  await page.locator('html').evaluate((element) => { element.style.zoom = '2'; });
+  const reveal = page.getByRole('button', { name: 'Reveal draft file' });
+  await reveal.focus();
+  await expect(reveal).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('button', { name: 'Copy draft path' })).toBeFocused();
   await expect(page.getByRole('button', { name: 'Back up and start new' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /reset|downgrade|migrat|preview/i })).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Comments' })).toHaveCount(0);
