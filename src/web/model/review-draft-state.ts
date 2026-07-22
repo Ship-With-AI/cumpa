@@ -1,3 +1,5 @@
+import type { DraftLoadResponse } from '../../contracts/api.js';
+
 import {
   projectCommentGroups,
   type ChangedFileInventoryEntry,
@@ -23,6 +25,28 @@ export type ReviewDraftSnapshot = Readonly<{
   conflict: Readonly<{ latest: ReviewCanonicalDraft; expectedRevision: number }> | null;
   retained: Readonly<{ summary: boolean; comments: ReadonlySet<string> }>;
 }>;
+
+export type ReadOnlyDraftLoad = Extract<
+  DraftLoadResponse,
+  { readonly kind: 'malformed' | 'schemaInvalid' | 'newerUnsupported' }
+>;
+
+export type ReviewPrimarySurface = 'loading' | 'workspace' | 'recovery' | 'upgrade';
+
+export function reviewPrimarySurface(load: DraftLoadResponse | undefined): ReviewPrimarySurface {
+  switch (load?.kind) {
+    case undefined:
+      return 'loading';
+    case 'missing':
+    case 'current':
+      return 'workspace';
+    case 'malformed':
+    case 'schemaInvalid':
+      return 'recovery';
+    case 'newerUnsupported':
+      return 'upgrade';
+  }
+}
 
 function freezeCanonical(draft: ReviewCanonicalDraft): ReviewCanonicalDraft {
   return Object.freeze({

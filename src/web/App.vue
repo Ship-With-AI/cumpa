@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
 
-import type { FileContentResponse, SessionFile, SessionResponse } from '../contracts/api';
+import type {
+  DraftLoadResponse,
+  DraftRecoveryResult,
+  DraftRevealResult,
+  FileContentResponse,
+  SessionFile,
+  SessionResponse,
+} from '../contracts/api';
 import {
   createSessionClient,
   DRAFT_UNAVAILABLE_MESSAGE,
@@ -11,6 +18,7 @@ import {
 } from './api/client';
 import type { DraftView, SessionClient } from './api/client';
 import DiffWorkspace from './components/DiffWorkspace.vue';
+import DraftRecovery from './components/DraftRecovery.vue';
 import CommentsRail from './components/CommentsRail.vue';
 import ErrorState from './components/ErrorState.vue';
 import FileTree from './components/FileTree.vue';
@@ -22,7 +30,13 @@ import type { WorkspaceCommand, WorkspaceEvent } from './model/workspace-state.j
 import { createWorkspaceState, type WorkspaceController } from './model/workspace-state.js';
 import { reconcileDraftComments } from './model/draft-reconciliation.js';
 import type { WorkspaceComment, WorkspaceState } from './model/workspace-state.js';
-import { createReviewDraftState, type ReviewDraftState, type ReviewDraftSnapshot } from './model/review-draft-state.js';
+import {
+  createReviewDraftState,
+  reviewPrimarySurface,
+  type ReadOnlyDraftLoad,
+  type ReviewDraftState,
+  type ReviewDraftSnapshot,
+} from './model/review-draft-state.js';
 import type { DraftMutationRequest } from '../contracts/api.js';
 
 type CanonicalReviewDraft = Readonly<{
@@ -59,6 +73,18 @@ const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
 const draftRevision = ref(0);
 const reviewDraft = shallowRef<ReviewDraftSnapshot>();
+const draftLoad = shallowRef<DraftLoadResponse>();
+const recoveredDraft = shallowRef<Extract<DraftRecoveryResult, { readonly kind: 'recovered' }>>();
+const recoveredDraftOpen = ref(false);
+const primarySurface = computed(() => recoveredDraftOpen.value
+  ? 'workspace'
+  : reviewPrimarySurface(draftLoad.value));
+const recoveryLoad = computed<ReadOnlyDraftLoad | undefined>(() => {
+  const load = draftLoad.value;
+  return load?.kind === 'malformed' || load?.kind === 'schemaInvalid' || load?.kind === 'newerUnsupported'
+    ? load
+    : undefined;
+});
 
 let reviewState: ReviewDraftState | undefined;
 
@@ -201,6 +227,48 @@ function acceptReviewDraft(
     workspaceState.value = transition.state;
     runCommands(transition.commands);
   }
+}
+
+function initializeReviewDraft(
+  draft: CanonicalReviewDraft,
+  comments: readonly WorkspaceComment[],
+): void {
+  draftRevision.value = draft.revision;
+  reviewState = createReviewDraftState(reviewCanonical(draft));
+  refreshReviewSnapshot();
+  const reviewable = session.value?.files.filter((file) => file.availability.kind === 'text') ?? [];
+  if (reviewable.length > 0) {
+    workspace = createWorkspaceState(reviewable.map((file) => file.fileId), comments);
+    workspaceState.value = workspace.getState();
+    void loadFile(reviewable[0]!);
+  }
+}
+
+async function revealDraftFile(): Promise<DraftRevealResult> {
+  if (sessionClient === undefined) {
+    throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+  }
+  return sessionClient.revealDraftFile();
+}
+
+async function recoverDraft(expectedFingerprint: string): Promise<DraftRecoveryResult> {
+  if (sessionClient === undefined) {
+    throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+  }
+  return sessionClient.recoverDraft(expectedFingerprint);
+}
+
+function acceptRecoveredDraft(result: Extract<DraftRecoveryResult, { readonly kind: 'recovered' }>): void {
+  recoveredDraft.value = result;
+  initializeReviewDraft(result.draft, []);
+}
+
+function openRecoveredDraft(): void {
+  if (recoveredDraft.value === undefined) {
+    return;
+  }
+  recoveredDraftOpen.value = true;
+  announce('New local draft for this pinned comparison.');
 }
 
 function mutateReview(request: DraftMutationRequest, successfulBuffer?: 'summary' | string): void {
@@ -458,22 +526,16 @@ onMounted(async () => {
     sessionClient = createSessionClient();
     const loaded = await sessionClient.getSession();
     session.value = loaded;
-    const reviewable = loaded.files.filter((file) => file.availability.kind === 'text');
-    const draftLoad = await sessionClient.getDraft();
-    if (draftLoad.kind !== 'current' && draftLoad.kind !== 'missing') {
-      throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
-    }
-    const draft = draftLoad.kind === 'current'
-      ? draftLoad.draft
-      : { revision: 0, summary: '', comments: [] as const };
-    draftRevision.value = draft.revision;
-    reviewState = createReviewDraftState(reviewCanonical(draft));
-    refreshReviewSnapshot();
-    const comments = reconcileDraftComments(draft.comments, loaded.files);
-    if (reviewable.length > 0) {
-      workspace = createWorkspaceState(reviewable.map((file) => file.fileId), comments);
-      workspaceState.value = workspace.getState();
-      await loadFile(reviewable[0]!);
+    const loadedDraft = await sessionClient.getDraft();
+    draftLoad.value = loadedDraft;
+    if (loadedDraft.kind === 'current' || loadedDraft.kind === 'missing') {
+      const draft = loadedDraft.kind === 'current'
+        ? loadedDraft.draft
+        : { revision: 0, summary: '', comments: [] as const };
+      initializeReviewDraft(
+        draft,
+        loadedDraft.kind === 'current' ? reconcileDraftComments(draft.comments, loaded.files) : [],
+      );
       announce(draft.comments.length > 0
         ? 'Local draft resumed. Accepted comments for this pinned comparison are ready.'
         : 'New local draft for this pinned comparison.');
@@ -491,10 +553,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main v-if="session === undefined && errorMessage === ''" class="loading-shell">
+  <main v-if="primarySurface === 'loading' && errorMessage === ''" class="loading-shell">
     <section class="state-card" aria-labelledby="loading-heading">
       <h1 id="loading-heading">Diff Review: loading pinned comparison</h1>
-      <p role="status">Opening pinned comparison…</p>
+      <p role="status">Opening local draft…</p>
     </section>
   </main>
 
@@ -510,7 +572,15 @@ onBeforeUnmount(() => {
     <IdentityHeader ref="identityHeader" :session="session" :expanded="identityOpen" @toggle="toggleIdentity" />
     <IdentityPanel ref="identityPanel" v-if="identityOpen" :session="session" :modal="isNarrow" @close="closeIdentity" />
 
-    <div class="review-shell" :inert="identityOpen && isNarrow">
+    <DraftRecovery
+      v-if="recoveryLoad !== undefined && primarySurface !== 'workspace'"
+      :load="recoveryLoad"
+      :reveal-draft-file="revealDraftFile"
+      :recover-draft="recoverDraft"
+      @recovered="acceptRecoveredDraft"
+      @open-new-draft="openRecoveredDraft"
+    />
+    <div v-else class="review-shell" :inert="identityOpen && isNarrow">
       <nav
         ref="filesDrawer"
         class="review-files"

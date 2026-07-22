@@ -90,7 +90,6 @@ async function startAppServer(): Promise<string> {
       name: 'draft-recovery-ui-api',
       configureServer(viteServer) {
         viteServer.middlewares.use('/api/session', (_request, response) => json(response, session));
-        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, draftLoad));
         viteServer.middlewares.use('/api/draft/reveal', async (request, response) => {
           revealBodies.push(await readBody(request));
           json(response, DraftRevealResultSchema.parse({ kind: 'revealed' }));
@@ -103,6 +102,7 @@ async function startAppServer(): Promise<string> {
           }
           json(response, recoveryResult, recoveryResult.kind === 'recovered' ? 201 : 500);
         });
+        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, draftLoad));
       },
     }],
     server: { host: '127.0.0.1', port: 0 },
@@ -113,7 +113,6 @@ async function startAppServer(): Promise<string> {
 
 async function openDraft(page: Page): Promise<void> {
   await page.goto(`${origin}#token=${token}`);
-  await expect(page.getByRole('heading', { level: 1, name: /Diff Review/ })).toBeVisible();
 }
 
 test.beforeAll(async () => {
@@ -193,6 +192,8 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   releaseRecovery = undefined;
   await startNew.click();
   await page.getByRole('button', { name: 'Back up and start new' }).last().click();
+  await expect(page.getByText('Backing up existing draft…', { exact: true })).toBeVisible();
+  releaseRecovery?.();
   await expect(page.getByRole('heading', { name: 'New draft started' })).toBeVisible();
   await expect(page.getByText(safeBackupPath, { exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Comments' })).toHaveCount(0);

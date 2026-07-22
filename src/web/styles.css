@@ -1419,3 +1419,116 @@ body {
   overflow-x: auto;
   overflow-wrap: anywhere;
 }
+
+.draft-recovery {
+  min-height: 0;
+  padding: var(--space-xl);
+}
+
+.draft-recovery__card {
+  display: grid;
+  width: min(100%, 720px);
+  gap: var(--space-md);
+  margin: 0 auto;
+  padding: var(--space-lg);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-secondary);
+}
+
+.draft-recovery__card h1,
+.draft-recovery__card h2,
+.draft-recovery__card p {
+  margin: 0;
+}
+
+.draft-recovery__card p {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+.draft-recovery__badge {
+  width: max-content;
+  padding: 4px 8px;
+  border: 1px solid var(--color-modified);
+  border-radius: 999px;
+  color: var(--color-modified);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.draft-recovery__details {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+}
+
+.draft-recovery__details > div {
+  display: grid;
+  grid-template-columns: minmax(120px, max-content) minmax(0, 1fr);
+  gap: var(--space-md);
+}
+
+.draft-recovery__details dt {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.draft-recovery__details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.draft-recovery__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.ui-button--primary {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.ui-button--destructive {
+  border-color: var(--color-destructive);
+  color: var(--color-destructive);
+}
+
+.draft-recovery__confirmation {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--color-destructive);
+  border-radius: 6px;
+}
+
+.draft-recovery__notice {
+  padding: var(--space-sm);
+  border-left: 3px solid var(--color-accent);
+}
+
+.draft-recovery__notice--error {
+  border-left-color: var(--color-destructive);
+}
+
+@media (max-width: 767px) {
+  .draft-recovery {
+    padding: var(--space-md);
+  }
+
+  .draft-recovery__card {
+    padding: var(--space-md);
+  }
+
+  .draft-recovery__details > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-xs);
+  }
+
+  .draft-recovery__actions > .ui-button {
+    min-height: 44px;
+  }
+}
