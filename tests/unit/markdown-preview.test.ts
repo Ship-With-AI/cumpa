@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { renderMarkdownPreview } from '../../src/web/markdown/preview.js';
+import { renderMarkdownPreview } from '../../src/web/model/markdown-preview.js';
 
 describe('renderMarkdownPreview', () => {
   test('renders the exact local Markdown buffer and treats hostile content as inert', () => {

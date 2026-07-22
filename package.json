@@ -33,6 +33,7 @@
     "@inquirer/search": "4.2.1",
     "commander": "15.0.0",
     "fastify": "5.10.0",
+    "markdown-it": "14.3.0",
     "monaco-editor": "0.55.1",
     "open": "11.0.0",
     "vue": "3.5.39",
@@ -40,6 +41,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
+    "@types/markdown-it": "14.1.2",
     "@types/node": "24.11.1",
     "@vitejs/plugin-vue": "6.0.7",
     "typescript": "7.0.2",
