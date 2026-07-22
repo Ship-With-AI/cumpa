@@ -63,7 +63,7 @@
 - [x] **DRFT-02**: User can relaunch the same pinned comparison and resume its repository-local draft.
 - [x] **DRFT-03**: User gets a separate draft when either pinned comparison commit differs.
 - [ ] **DRFT-04**: User cannot unknowingly overwrite newer review state from another browser tab.
-- [ ] **DRFT-05**: User receives a recoverable error when a draft is corrupt or uses an unsupported schema; the existing file is preserved.
+- [x] **DRFT-05**: User receives a recoverable error when a draft is corrupt or uses an unsupported schema; the existing file is preserved.
 - [ ] **DRFT-06**: User's open review remains pinned if a selected branch or worktree advances and visibly reports that selector drift.
 
 ### Export
@@ -183,7 +183,7 @@ Each v1 requirement maps to exactly one roadmap phase.
 | CMT-06 | Phase 3 | Pending |
 | CMT-07 | Phase 3 | Pending |
 | DRFT-04 | Phase 3 | Pending |
-| DRFT-05 | Phase 3 | Pending |
+| DRFT-05 | Phase 3 | Complete |
 | DRFT-06 | Phase 3 | Pending |
 | EXP-01 | Phase 4 | Pending |
 | EXP-02 | Phase 4 | Pending |
