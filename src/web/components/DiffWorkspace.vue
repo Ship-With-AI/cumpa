@@ -176,12 +176,15 @@ function addComment(target: AnchorAffordanceTarget): void {
 }
 
 function focusComment(commentId: string): void {
-  host.value?.querySelector<HTMLElement>(`[data-comment-id="${CSS.escape(commentId)}"] h3`)?.focus();
+  void nextTick(() => {
+    host.value?.querySelector<HTMLElement>(`[data-comment-id="${CSS.escape(commentId)}"] h3`)?.focus();
+  });
 }
 
 
 function revealComment(side: DiffSide, line: number): void {
   adapter?.revealAnchor({ fileId: props.content.fileId, side, line });
+  void nextTick(renderAnnotation);
 }
 
 defineExpose({ focusComment, layout, nextChange, previousChange, revealComment });

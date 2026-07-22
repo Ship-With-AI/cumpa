@@ -115,9 +115,30 @@ function assertChromium(browser: Browser, testInfo: TestInfo): void {
   expect(browser.browserType().name()).toBe('chromium');
 }
 
+async function activateMonacoLine(
+  page: Page,
+  side: 'base' | 'head',
+  text: string,
+  lineNumber: number,
+): Promise<void> {
+  const editor = side === 'base' ? 'editor original' : 'editor modified';
+  const line = page
+    .locator(`.monaco-diff-editor .${editor.split(' ').join('.')}`)
+    .locator('.view-line')
+    .filter({ hasText: text });
+  await expect(line).toBeVisible();
+  await line.hover();
+  await line.click();
+  const affordance = page.getByRole('button', {
+    name: `Add comment to ${side} line ${lineNumber}`,
+  });
+  await expect(affordance).toBeVisible();
+  await affordance.click();
+}
 test.beforeAll(() => {
   runPrerequisite(npmCommand, ['run', 'build']);
   runPrerequisite(npmCommand, ['run', 'verify:production-artifacts']);
+
   const packOutput = runPrerequisite(npmCommand, [
     'pack',
     '--json',
@@ -138,18 +159,105 @@ test.afterAll(() => {
   rmSync(packedRoot, { force: true, recursive: true });
 });
 
-test('complete draft lifecycle exposes the required Review summary-first surface', async ({ browser, page }, testInfo) => {
+test('complete draft lifecycle edits, resolves, reopens, deletes, and groups comments through the packaged Review', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createGitFixture({ anchoredReview: true });
-  const running = startGeneratedCli(fixture);
+  const commentBody = 'Packaged lifecycle comment.';
+  const editedBody = 'Packaged lifecycle comment, edited.';
+  const summary = '## Review outcome\n\nKeep **this** review.';
+  let running = startGeneratedCli(fixture);
 
   try {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openGeneratedReview(page, await waitForLoopbackUrl(running));
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    await activateMonacoLine(page, 'head', 'export const stableContext10 = 10;', 10);
+    const composer = page.locator('.monaco-anchor-zone--composer textarea');
+    await composer.fill(commentBody);
+    const added = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    expect((await added).status()).toBe(201);
+
     await page.getByRole('button', { name: /^Review/ }).click();
-    await expect(page.getByRole('heading', { name: 'Review' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Summary' })).toBeVisible();
+    await expect(page.locator('#comments-heading')).toHaveText('Review');
+    await expect(page.locator('#review-summary-heading')).toBeVisible();
     await expect(page.getByText('No summary yet', { exact: true })).toBeVisible();
+
+
+    const initialRecord = page.locator('.comments-rail__comment', { hasText: commentBody });
+    await expect(initialRecord).toHaveCount(1);
+    const commentId = await initialRecord.getAttribute('data-comment-id');
+    expect(commentId).not.toBeNull();
+    const record = page.locator(`.comments-rail__comment[data-comment-id="${commentId}"]`);
+    await expect(page.getByRole('heading', { name: 'Open comments (1)' })).toBeVisible();
+    await record.getByRole('button', { name: 'Show comment' }).click();
+    const inlineHeading = page.locator('.inline-accepted-comment h3');
+    await expect(inlineHeading).toBeVisible();
+    await expect(inlineHeading).toBeFocused();
+    await record.getByRole('button', { name: 'Edit' }).click();
+    const editor = record.getByRole('textbox');
+    await editor.fill('discarded local edit');
+    await record.getByRole('button', { name: 'Cancel edit' }).click();
+    await expect(record).toContainText(commentBody);
+    await record.getByRole('button', { name: 'Edit' }).click();
+    await editor.fill(editedBody);
+    await record.getByRole('button', { name: 'Save comment' }).click();
+    await expect(record).toContainText(editedBody);
+    await record.getByRole('button', { name: 'Resolve' }).click();
+    await expect(page.getByRole('heading', { name: 'Open comments (0)' })).toBeVisible();
+    await page.getByRole('button', { name: /Resolved comments/ }).click();
+    const resolvedRecord = page.locator('.comments-rail__comment', { hasText: editedBody });
+    await resolvedRecord.getByRole('button', { name: 'Reopen' }).click();
+    await expect(page.getByRole('heading', { name: 'Open comments (1)' })).toBeVisible();
+
+  } finally {
+    await stopGeneratedCli(running);
+  }
+
+  running = startGeneratedCli(fixture);
+  try {
+    await openGeneratedReview(page, await waitForLoopbackUrl(running));
+    const record = page.locator('.comments-rail__comment', { hasText: editedBody });
+    await record.getByRole('button', { name: 'Delete' }).click();
+    await expect(record.getByText('Delete comment?')).toBeVisible();
+    await record.getByRole('button', { name: 'Delete comment' }).click();
+    await expect(page.getByRole('heading', { name: 'Open comments (0)' })).toBeVisible();
+  } finally {
+    await stopGeneratedCli(running);
+    await fixture.cleanup();
+  }
+});
+
+test('complete draft lifecycle saves a safe summary and relaunches it through the packaged Review', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createGitFixture({ anchoredReview: true });
+  const summary = '## Review outcome\n\nKeep **this** review.';
+  let running = startGeneratedCli(fixture);
+
+  try {
+    await openGeneratedReview(page, await waitForLoopbackUrl(running));
+    await page.getByRole('button', { name: /^Review/ }).click();
+    await page.getByRole('button', { name: 'Write summary' }).click();
+    const summaryEditor = page.getByLabel('Review summary (Markdown)');
+    await summaryEditor.fill('<script>window.bad = true</script>\n\n' + summary);
+    await page.getByRole('tab', { name: 'Preview' }).click();
+    await expect(page.locator('.review-summary__preview script')).toHaveCount(0);
+    await expect(page.locator('.review-summary__preview')).toContainText('Review outcome');
+    await page.getByRole('tab', { name: 'Edit' }).click();
+    await summaryEditor.fill(summary);
+    await expect(page.getByRole('button', { name: 'Save summary' })).toBeEnabled();
+    const savedResponse = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
+    await page.getByRole('button', { name: 'Save summary' }).click();
+    expect((await savedResponse).status()).toBe(200);
+    await expect(page.getByText('Saved', { exact: true })).toBeVisible();
+  } finally {
+    await stopGeneratedCli(running);
+  }
+
+  running = startGeneratedCli(fixture);
+  try {
+    await openGeneratedReview(page, await waitForLoopbackUrl(running));
+    await expect(page.locator('.review-summary__preview')).toContainText('Review outcome');
   } finally {
     await stopGeneratedCli(running);
     await fixture.cleanup();

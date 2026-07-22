@@ -50,6 +50,7 @@ function forwardCommentBuffer(commentId: string, value: string): void {
     @reopen="emit('reopen', $event)"
     @resolve="emit('resolve', $event)"
     @save-comment="emit('saveComment', $event)"
+    @save-summary="emit('saveSummary')"
     @reload-latest="emit('reloadLatest')"
     @show="emit('show', $event)"
     @update:comment-buffer="forwardCommentBuffer"

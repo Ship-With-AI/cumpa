@@ -112,6 +112,12 @@ const atLastFile = computed(() => selectedIndex.value === -1 || selectedIndex.va
 const activeWorkspaceFile = computed(() => workspaceState.value?.files[workspaceState.value.activeFileId]);
 const activeComposer = computed(() => activeWorkspaceFile.value?.composer);
 const workspaceComments = computed(() => workspaceState.value?.comments ?? []);
+const openCommentCount = computed(
+  () => workspaceComments.value.filter((comment) => comment.state === 'open').length,
+);
+const resolvedCommentCount = computed(
+  () => workspaceComments.value.filter((comment) => comment.state === 'resolved').length,
+);
 
 function announce(message: string): void {
   liveMessage.value = message;
@@ -622,6 +628,8 @@ onBeforeUnmount(() => {
           :at-first-file="atFirstFile"
           :at-last-file="atLastFile"
           :has-active-file="selectedFile?.availability.kind === 'text'"
+          :open-comment-count="openCommentCount"
+          :resolved-comment-count="resolvedCommentCount"
           @previous-file="previousFile"
           @next-file="nextFile"
           @previous-change="previousChange"
@@ -673,8 +681,8 @@ onBeforeUnmount(() => {
         tabindex="-1"
       >
         <div class="comments-rail__heading">
-          <h2 id="comments-heading">Comments</h2>
-          <button v-if="isCommentsDrawer" type="button" class="drawer-close ui-button" @click="closeComments">Close comments</button>
+        <h2 id="comments-heading">Review</h2>
+        <button v-if="isCommentsDrawer" type="button" class="drawer-close ui-button" @click="closeComments">Close review</button>
         </div>
         <CommentsRail
           v-if="reviewDraft !== undefined"

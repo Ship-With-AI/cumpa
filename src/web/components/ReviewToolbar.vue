@@ -5,6 +5,8 @@ defineProps<{
   atFirstFile: boolean;
   atLastFile: boolean;
   hasActiveFile: boolean;
+  openCommentCount: number;
+  resolvedCommentCount: number;
 }>();
 
 const emit = defineEmits<{
@@ -44,8 +46,18 @@ const emit = defineEmits<{
       </UiTooltip>
     </div>
     <div class="review-toolbar__group review-toolbar__group--actions">
-      <UiTooltip text="Comments">
-        <button type="button" class="ui-button" @click="emit('comments')">Comments</button>
+      <span id="review-description" class="sr-only">
+        {{ openCommentCount }} open comments, {{ resolvedCommentCount }} resolved comments
+      </span>
+      <UiTooltip text="Review">
+        <button
+          type="button"
+          class="ui-button"
+          aria-describedby="review-description"
+          @click="emit('comments')"
+        >
+          Review
+        </button>
       </UiTooltip>
       <UiTooltip text="Keyboard help · ?">
         <button type="button" class="ui-button" @click="emit('keyboardHelp')">Keyboard help</button>

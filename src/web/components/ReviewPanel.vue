@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import { projectCommentGroups } from '../model/comment-groups.js';
@@ -61,6 +61,18 @@ const groups = computed(() => {
 function buffer(comment: WorkspaceComment): string {
   return props.commentBuffers.get(comment.id) ?? comment.body;
 }
+
+watch(
+  () => props.comments,
+  () => {
+    const commentId = editing.value;
+    if (commentId === null) return;
+    const comment = props.comments.find((candidate) => candidate.id === commentId);
+    if (comment !== undefined && buffer(comment) === comment.body) {
+      editing.value = null;
+    }
+  },
+);
 </script>
 
 <template>
@@ -112,7 +124,7 @@ function buffer(comment: WorkspaceComment): string {
             <button type="button" :disabled="pending || conflict" @click="confirmingDelete = comment.id">Delete</button>
           </template>
           <div v-if="confirmingDelete === comment.id" class="review-panel__confirm" role="alert">
-            <h4>Delete comment?</h4><p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p><p>This permanently removes comment local draft. Diff Review has no undo history.</p>
+      <h4>Delete comment?</h4><p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p><p>{{ comment.body }}</p><p>This permanently removes comment local draft. Diff Review has no undo history.</p>
             <button type="button" :disabled="pending" @click="confirmingDelete = null">Keep comment</button>
             <button type="button" :disabled="pending || conflict" @click="emit('delete', comment.id); confirmingDelete = null">Delete comment</button>
           </div>
@@ -120,7 +132,7 @@ function buffer(comment: WorkspaceComment): string {
       </template>
     </section>
     <section aria-labelledby="resolved-comments-heading">
-      <button id="resolved-comments-heading" type="button" :aria-expanded="resolvedOpen" @click="resolvedOpen = !resolvedOpen">Resolved ({{ comments.filter((comment) => comment.state === 'resolved').length }})</button>
+    <button id="resolved-comments-heading" type="button" :aria-expanded="resolvedOpen" @click="resolvedOpen = !resolvedOpen">Resolved comments ({{ comments.filter((comment) => comment.state === 'resolved').length }})</button>
       <template v-if="resolvedOpen">
         <template v-for="group in groups.resolved" :key="group.path.bytesBase64url">
           <h4>{{ group.path.display }}</h4>
