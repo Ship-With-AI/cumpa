@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 02
-current_phase_name: anchored-diff-review
-status: verifying
-stopped_at: Completed 02-10-PLAN.md
-last_updated: "2026-07-21T21:36:35.115Z"
-last_activity: 2026-07-21
-last_activity_desc: Phase 02 execution started
+current_phase: 03
+current_phase_name: complete-review-draft
+status: executing
+stopped_at: Completed 03-06-PLAN.md
+last_updated: "2026-07-22T10:28:14.731Z"
+last_activity: 2026-07-22
+last_activity_desc: Completed Phase 03 plan 03-06 retained selector drift observation
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 38
-  completed_plans: 23
+  completed_plans: 26
 ---
 
 # Project State
@@ -23,16 +23,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-11)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 02 — anchored-diff-review
+**Current focus:** Phase 03 — complete-review-draft
 
 ## Current Position
 
-Phase: 02 (anchored-diff-review) — EXECUTING
-Plan: 10 of 10
-Status: Phase complete — ready for verification
-Last activity: 2026-07-21 — Phase 02 execution started
+Phase: 03 (complete-review-draft) — EXECUTING
+Plan: 4 of 7
+Status: 03-06 complete; Phase 03 remains in progress
+Last activity: 2026-07-22 — Completed Phase 03 plan 03-06 retained selector drift observation
 
-Progress: ████░░░░░░ [██████░░░░] 61%
+Progress: ████░░░░░░ [███████░░░] 68%
 
 ## Performance Metrics
 
@@ -80,6 +80,9 @@ Progress: ████░░░░░░ [██████░░░░] 61%
 | Phase 02 P08 | 20min | 3 tasks | 5 files |
 | Phase 02 P09 | current execution session | 3 tasks | 9 files |
 | Phase 02 P10 | current execution session | 2 tasks | 2 files |
+| Phase 03 P01 | 22min | 2 tasks | 2 files |
+| Phase 03 P02 | 33min | 3 tasks | 13 files |
+| Phase 03 P03 | 24min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -144,6 +147,10 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Use a pending move target and explicit discard confirmation before replacing a non-empty composer anchor. — Prevents silent loss of locally unsaved review text when a user activates a different Monaco line.
 - [Phase 02]: Assert the canonical persisted comparison tuple, including mergeBaseOid. — Draft comparison validation requires the full immutable base, head, and merge-base identity.
 - [Phase 02]: Use a deleted head-side exact path for orphan package fixtures. — Recorded-file inspection remains unavailable unless the current immutable comparison grants an exact-file capability.
+- [Phase 03]: Draft load begins from untouched raw bytes; corrupt bytes remain server-only until a verified backup-first recovery.
+- [Phase 03]: Recovery rechecks the SHA-256 inside the aggregate store queue and never takes client-selected filesystem authority.
+- [Phase 03]: Draft reveal is a fixed launch-owned capability with no body, query, or path input.
+- [Phase 03]: Re-resolve only server-retained selectors through fixed native-Git argument arrays; selector drift is visible-only and never mutates the pinned comparison, draft, anchors, Monaco, or local buffers.
 
 ### Pending Todos
 
@@ -153,7 +160,7 @@ None yet.
 
 - Phase 2: Prove Monaco inline comment view zones preserve side alignment through context expansion, resize, file switching, and diff recomputation; use `@pierre/diffs` only if the prototype fails.
 - Product: PRless already covers generic local agent review; preserve committed branch/worktree parity, merge-base semantics, comparison-specific drafts, and canonical anchored JSON.
-- Phase 03 Plan 03-01 is blocked before Task 1: mandatory read_first requires all .planning/phases/02-anchored-diff-review/*-SUMMARY.md, but none exist because Phase 02 is at its own blocking human-approval checkpoint. No Phase 03 source or reconciliation artifacts were created; resume only after all Phase 02 prerequisite summaries exist and their checkpoint permits continuation.
+- Phase 03 plan 03-06 completed retained selector drift observation and pinned warning; continue remaining Phase 03 work.
 
 ## Deferred Items
 
@@ -165,6 +172,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-21T21:34:56.950Z
-Stopped at: Completed 02-10-PLAN.md
+Last session: 2026-07-22
+Stopped at: Completed 03-06-PLAN.md
 Resume file: None
