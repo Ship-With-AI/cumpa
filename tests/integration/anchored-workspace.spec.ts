@@ -90,7 +90,9 @@ function draftView(comments: readonly object[]) {
     ...draft,
     comments: draft.comments.map((comment) => ({
       ...comment,
-      verification: { state: 'verified', reason: 'exact-match' },
+      verification: 'verification' in comment
+        ? comment.verification
+        : { state: 'verified', reason: 'exact-match' },
     })),
   };
 }
