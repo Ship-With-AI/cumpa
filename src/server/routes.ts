@@ -7,6 +7,7 @@ import {
   DraftRecoveryRequestSchema,
   DraftRecoveryResultSchema,
   DraftRevealResultSchema,
+  SelectorDriftResponseSchema,
   OpaqueFileIdSchema,
   type DraftMutationResult as ApiDraftMutationResult,
   type DraftRecoveryResult as ApiDraftRecoveryResult,
@@ -115,6 +116,27 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       },
     },
     async () => capabilities.session,
+  );
+
+  app.get<{ Querystring: Record<string, never> }>(
+    '/api/selector-drift',
+    {
+      schema: {
+        querystring: EMPTY_QUERY_SCHEMA,
+      },
+    },
+    async (request, reply) => {
+      if (
+        Object.keys(request.query).length !== 0 ||
+        request.body !== undefined ||
+        request.headers['content-length'] !== undefined
+      ) {
+        return unavailable(reply, 400);
+      }
+      return SelectorDriftResponseSchema.parse(
+        await capabilities.selectorDriftObserver.observe(),
+      );
+    },
   );
 
   app.get<{ Params: { fileId: string } }>(

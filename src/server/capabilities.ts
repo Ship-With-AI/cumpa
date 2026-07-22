@@ -16,6 +16,10 @@ import {
 import { MAX_INLINE_TEXT_BYTES } from '../git/availability.js';
 import { createObjectReader } from '../git/objects.js';
 import type { ObjectReader } from '../git/objects.js';
+import {
+  createSelectorDriftObserver,
+  type SelectorDriftObserver,
+} from '../git/selector-drift.js';
 import { createDraftStore, type DraftStore } from './draft-store.js';
 
 export type AnchorAddPort = (
@@ -61,12 +65,14 @@ export type CapabilityRegistryOptions = Readonly<{
   readonly onAnchorAdd?: AnchorAddPort;
   readonly draftStore?: DraftStore;
   readonly revealDraftFile?: DraftRevealPort;
+  readonly selectorDriftObserver?: SelectorDriftObserver;
 }>;
 
 export type CapabilityRegistry = Readonly<{
   readonly session: SessionResponse;
   readonly onAnchorAdd?: AnchorAddPort;
   readonly draftStore: DraftStore;
+  readonly selectorDriftObserver: SelectorDriftObserver;
   readonly lookup: (fileId: string) => FileMetadataResponse | undefined;
   readonly readContent: (fileId: string) => Promise<FileContentResponse | undefined>;
   readonly verifyAnchor: (anchor: DurableAnchorV1) => Promise<AnchorVerification>;
@@ -144,6 +150,9 @@ export function createCapabilityRegistry(
         mergeBaseOid: comparison.mergeBaseOid,
       },
     });
+  const selectorDriftObserver =
+    options.selectorDriftObserver ?? createSelectorDriftObserver(comparison);
+
 
   const session = SessionResponseSchema.parse({
     base: toSessionEndpoint(comparison.base),
@@ -179,6 +188,7 @@ export function createCapabilityRegistry(
     session,
     onAnchorAdd: options.onAnchorAdd,
     draftStore,
+    selectorDriftObserver,
     async revealDraftFile() {
       if (options.revealDraftFile === undefined) {
         throw new Error('Draft reveal adapter is unavailable.');

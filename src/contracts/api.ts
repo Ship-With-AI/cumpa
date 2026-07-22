@@ -275,6 +275,48 @@ export const SessionResponseSchema = z
   })
   .readonly();
 
+export const SelectorDriftRoleSchema = z.enum(['base', 'head']);
+export const SelectorTypeSchema = z.enum(['branch', 'worktree']);
+export const SelectorUnavailableReasonSchema = z.literal('source-unavailable');
+
+export const SelectorDriftStatusSchema = z
+  .discriminatedUnion('kind', [
+    z
+      .strictObject({
+        kind: z.literal('unchanged'),
+        role: SelectorDriftRoleSchema,
+      })
+      .readonly(),
+    z
+      .strictObject({
+        kind: z.literal('moved'),
+        role: SelectorDriftRoleSchema,
+        label: z.string().min(1),
+        selectorType: SelectorTypeSchema,
+        oldOid: GitObjectIdSchema,
+        newOid: GitObjectIdSchema,
+      })
+      .readonly(),
+    z
+      .strictObject({
+        kind: z.literal('unavailable'),
+        role: SelectorDriftRoleSchema,
+        label: z.string().min(1),
+        selectorType: SelectorTypeSchema,
+        oldOid: GitObjectIdSchema,
+        reason: SelectorUnavailableReasonSchema,
+      })
+      .readonly(),
+  ])
+  .readonly();
+
+export const SelectorDriftResponseSchema = z
+  .strictObject({
+    base: SelectorDriftStatusSchema,
+    head: SelectorDriftStatusSchema,
+  })
+  .readonly();
+
 export const FileMetadataResponseSchema = z
   .strictObject({
     fileId: OpaqueFileIdSchema,
@@ -309,4 +351,6 @@ export type DraftRecoveryRequest = z.infer<typeof DraftRecoveryRequestSchema>;
 export type DraftRecoveryResult = z.infer<typeof DraftRecoveryResultSchema>;
 export type DraftRevealResult = z.infer<typeof DraftRevealResultSchema>;
 export type FileContentResponse = z.infer<typeof FileContentResponseSchema>;
+export type SelectorDriftStatus = z.infer<typeof SelectorDriftStatusSchema>;
+export type SelectorDriftResponse = z.infer<typeof SelectorDriftResponseSchema>;
 export type ApiError = z.infer<typeof ApiErrorSchema>;

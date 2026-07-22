@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -66,7 +66,7 @@ async function detachedWorktree(git: GitFixture, revision: string): Promise<stri
   const path = await mkdtemp(join(tmpdir(), 'diff-review-selector-worktree-'));
   temporaryRoots.push(path);
   git.git(['worktree', 'add', '--detach', path, revision]);
-  return path;
+  return await realpath(path);
 }
 
 describe('server-retained selector drift observation', () => {
@@ -165,25 +165,20 @@ describe('server-retained selector drift observation', () => {
       return { stdout: Buffer.from(`${currentOid}\n`, 'ascii'), stderr: Buffer.alloc(0) };
     });
     const pinned = comparison(git.root, { oid: baseOid, source: branch('refs/heads/main') }, { oid: headOid, source: branch('refs/heads/feature') });
-    const immutableSnapshot = structuredClone({
+    const pinnedState = {
       pinned,
       comparisonKey: `${baseOid}:${headOid}`,
       draft: { revision: 7, raw: Buffer.from('{"summary":"local"}', 'utf8') },
       inventory: [{ id: 'file_a', blob: Buffer.from('immutable blob', 'utf8') }],
       anchors: [{ line: 4, blobOid: headOid }],
-    });
+    };
+    const immutableSnapshot = JSON.stringify(pinnedState);
 
     const observer = createSelectorDriftObserver(pinned, { runner: { run } });
     const result = await observer.observe();
 
     expect(result.head).toEqual({ kind: 'unchanged', role: 'head' });
     expect(run).toHaveBeenCalledTimes(2);
-    expect(immutableSnapshot).toEqual({
-      pinned,
-      comparisonKey: `${baseOid}:${headOid}`,
-      draft: { revision: 7, raw: Buffer.from('{"summary":"local"}', 'utf8') },
-      inventory: [{ id: 'file_a', blob: Buffer.from('immutable blob', 'utf8') }],
-      anchors: [{ line: 4, blobOid: headOid }],
-    });
+    expect(JSON.stringify(pinnedState)).toBe(immutableSnapshot);
   });
 });

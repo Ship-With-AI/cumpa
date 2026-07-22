@@ -70,14 +70,15 @@ describe('fixed selector drift API', () => {
       },
     }));
     const { app, repositoryRoot } = await buildApp({ observe });
-    const immutableSnapshot = structuredClone({
+    const pinnedState = {
       pinned: comparison(repositoryRoot),
       comparisonKey: `${baseOid}:${headOid}`,
       draft: { revision: 3, raw: Buffer.from('draft bytes', 'utf8') },
       blobs: [Buffer.from('base'), Buffer.from('head')],
       inventory: [{ id: 'file_a' }],
       anchors: [{ line: 8, blobOid: headOid }],
-    });
+    };
+    const immutableSnapshot = JSON.stringify(pinnedState);
 
     const response = await app.inject({ method: 'GET', url: '/api/selector-drift', headers });
 
@@ -95,14 +96,7 @@ describe('fixed selector drift API', () => {
     });
     expect(observe).toHaveBeenCalledOnce();
     expect(JSON.stringify(response.json())).not.toContain(repositoryRoot);
-    expect(immutableSnapshot).toEqual({
-      pinned: comparison(repositoryRoot),
-      comparisonKey: `${baseOid}:${headOid}`,
-      draft: { revision: 3, raw: Buffer.from('draft bytes', 'utf8') },
-      blobs: [Buffer.from('base'), Buffer.from('head')],
-      inventory: [{ id: 'file_a' }],
-      anchors: [{ line: 8, blobOid: headOid }],
-    });
+    expect(JSON.stringify(pinnedState)).toBe(immutableSnapshot);
   });
 
   test('denies token, Host, Origin, body, and query authority before selector observation', async () => {
