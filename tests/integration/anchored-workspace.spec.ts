@@ -285,7 +285,7 @@ test('exact-byte draft resume', async ({ page }) => {
       ...session,
       files: session.files.map((file, index) => ({ ...file, newPath: paths[index]! })),
     };
-    comments = [{
+    canonicalComments = [{
       id: 'comment_123e4567-e89b-12d3-a456-426614174000',
       state: 'open',
       body: 'Restore the second exact-byte path.',
@@ -321,7 +321,7 @@ test('anchored gap closure', async ({ page }) => {
       newPath: path(file.fileId === firstFileId ? 'src/first.ts' : 'src/second.ts'),
     })),
   };
-  comments = [
+  canonicalComments = [
     {
       id: 'comment_11111111-1111-4111-8111-111111111111',
       state: 'open',
