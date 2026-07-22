@@ -18,6 +18,8 @@ export type WorkspaceComment = Readonly<{
   side: DiffSide;
   line: number;
   body: string;
+  state: 'open' | 'resolved';
+  createdAt: string;
   status: WorkspaceCommentStatus;
   recordedAnchor: RecordedAnchorDetails;
 }>;
@@ -96,6 +98,7 @@ export type RepositoryDraftPayload = Readonly<{
 export interface WorkspaceController {
   dispatch(event: WorkspaceEvent): WorkspaceTransition;
   getState(): WorkspaceState;
+  replaceComments(comments: readonly WorkspaceComment[]): WorkspaceTransition;
   toRepositoryDraft(): RepositoryDraftPayload;
 }
 
@@ -226,7 +229,7 @@ function completePendingComment(state: WorkspaceState, comment: WorkspaceComment
   }
   const next = replaceFileState({
     ...state,
-    comments: [...state.comments, comment],
+    comments: state.comments.some((existing) => existing.id === comment.id) ? state.comments : [...state.comments, comment],
   }, state.activeFileId, { ...current, composer: undefined });
   return transition(next, [{ type: 'focus-comment', commentId: comment.id }]);
 }
@@ -436,6 +439,10 @@ export function createWorkspaceState(
     },
     getState() {
       return state;
+    },
+    replaceComments(comments) {
+      state = { ...state, comments: [...comments] };
+      return transition(state, [{ type: 'rebuild-annotations', fileId: state.activeFileId }]);
     },
     toRepositoryDraft() {
       return { comments: state.comments };

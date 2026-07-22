@@ -45,6 +45,8 @@ function reconcile(comment: DraftComment, index: ExactFileIndex): WorkspaceComme
     side: comment.anchor.side,
     line: comment.anchor.line,
     body: comment.body,
+    state: comment.state,
+    createdAt: comment.createdAt,
     status: comment.verification.state,
     recordedAnchor: comment.anchor,
   };

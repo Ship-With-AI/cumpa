@@ -9,7 +9,7 @@ import {
   SECURITY_FAILURE_MESSAGE,
   SessionClientError,
 } from './api/client';
-import type { SessionClient } from './api/client';
+import type { DraftView, SessionClient } from './api/client';
 import DiffWorkspace from './components/DiffWorkspace.vue';
 import CommentsRail from './components/CommentsRail.vue';
 import ErrorState from './components/ErrorState.vue';
@@ -22,6 +22,8 @@ import type { WorkspaceCommand, WorkspaceEvent } from './model/workspace-state.j
 import { createWorkspaceState, type WorkspaceController } from './model/workspace-state.js';
 import { reconcileDraftComments } from './model/draft-reconciliation.js';
 import type { WorkspaceComment, WorkspaceState } from './model/workspace-state.js';
+import { createReviewDraftState, type ReviewDraftState, type ReviewDraftSnapshot } from './model/review-draft-state.js';
+import type { DraftMutationRequest } from '../contracts/api.js';
 
 const session = shallowRef<SessionResponse>();
 const errorMessage = ref('');
@@ -44,6 +46,9 @@ const filesDrawer = ref<HTMLElement>();
 const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
 const draftRevision = ref(0);
+const reviewDraft = shallowRef<ReviewDraftSnapshot>();
+
+let reviewState: ReviewDraftState | undefined;
 
 let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
@@ -137,6 +142,83 @@ async function loadFile(file: SessionFile): Promise<void> {
   }
 }
 
+function reviewCanonical(draft: Pick<DraftView, 'revision' | 'summary' | 'comments'>) {
+  return {
+    revision: draft.revision,
+    summary: draft.summary,
+    comments: draft.comments.map((comment) => ({
+      id: comment.id,
+      state: comment.state,
+      body: comment.body,
+      side: comment.anchor.side,
+      line: comment.anchor.line,
+      createdAt: comment.createdAt,
+      path: comment.anchor.path,
+    })),
+  };
+}
+
+function refreshReviewSnapshot(): void {
+  if (reviewState !== undefined) reviewDraft.value = reviewState.snapshot();
+}
+
+function acceptReviewDraft(draft: DraftView, successfulBuffer?: 'summary' | string): void {
+  reviewState?.accept(reviewCanonical(draft), successfulBuffer);
+  refreshReviewSnapshot();
+  draftRevision.value = draft.revision;
+  if (workspace !== undefined && session.value !== undefined) {
+    const transition = workspace.replaceComments(reconcileDraftComments(draft.comments, session.value.files));
+    workspaceState.value = transition.state;
+    runCommands(transition.commands);
+  }
+}
+
+function mutateReview(request: DraftMutationRequest, successfulBuffer?: 'summary' | string): void {
+  if (reviewState === undefined || sessionClient === undefined || !reviewState.start(request.type === 'setSummary' ? 'summary' : request.type === 'editComment' ? 'comment' : request.type === 'deleteComment' ? 'delete' : request.type === 'resolveComment' ? 'resolve' : request.type === 'reopenComment' ? 'reopen' : 'add')) return;
+  refreshReviewSnapshot();
+  void sessionClient.mutate(request).then((result) => {
+    if (result.kind === 'accepted') {
+      acceptReviewDraft(result.draft, successfulBuffer);
+      announce(request.type === 'setSummary' ? 'Summary saved locally.' : 'Comment saved locally.');
+      return;
+    }
+    if (result.kind === 'conflict') {
+      reviewState?.conflict(reviewCanonical(result.latest), request.expectedRevision);
+      refreshReviewSnapshot();
+      return;
+    }
+    reviewState?.fail();
+    refreshReviewSnapshot();
+  }).catch(() => {
+    reviewState?.fail();
+    refreshReviewSnapshot();
+  });
+}
+
+function saveSummary(): void {
+  const current = reviewDraft.value;
+  if (current === undefined || current.summaryBuffer === current.canonical.summary) return;
+  mutateReview({ type: 'setSummary', expectedRevision: current.canonical.revision, markdown: current.summaryBuffer }, 'summary');
+}
+
+function saveComment(commentId: string): void {
+  const current = reviewDraft.value;
+  const body = current?.commentBuffers.get(commentId);
+  if (current === undefined || body === undefined || body.trim() === '') return;
+  mutateReview({ type: 'editComment', expectedRevision: current.canonical.revision, commentId, body }, commentId);
+}
+
+function mutateComment(commentId: string, type: 'deleteComment' | 'resolveComment' | 'reopenComment'): void {
+  const current = reviewDraft.value;
+  if (current === undefined) return;
+  mutateReview({ type, expectedRevision: current.canonical.revision, commentId });
+}
+
+function reloadLatestReview(): void {
+  reviewState?.reloadLatest();
+  refreshReviewSnapshot();
+}
+
 function filePath(fileId: string): string {
   const file = session.value?.files.find((candidate) => candidate.fileId === fileId);
   return file?.newPath?.display ?? file?.oldPath?.display ?? 'Recorded file unavailable';
@@ -174,7 +256,7 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
           if (comment === undefined) {
             throw new SessionClientError('draft', 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.');
           }
-          draftRevision.value = result.draft.revision;
+          acceptReviewDraft(result.draft);
           dispatchWorkspace({
             type: 'add-succeeded',
             comment: {
@@ -184,7 +266,9 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
               side: comment.anchor.side,
               line: comment.anchor.line,
               body: comment.body,
-              status: 'verified',
+              state: comment.state,
+              createdAt: comment.createdAt,
+              status: comment.verification.state,
               recordedAnchor: comment.anchor,
             },
           });
@@ -351,8 +435,10 @@ onMounted(async () => {
     }
     const draft = draftLoad.kind === 'current'
       ? draftLoad.draft
-      : { revision: 0, comments: [] as const };
+      : { revision: 0, summary: '', comments: [] as const };
     draftRevision.value = draft.revision;
+    reviewState = createReviewDraftState(reviewCanonical(draft));
+    refreshReviewSnapshot();
     const comments = reconcileDraftComments(draft.comments, loaded.files);
     if (reviewable.length > 0) {
       workspace = createWorkspaceState(reviewable.map((file) => file.fileId), comments);
@@ -479,12 +565,24 @@ onBeforeUnmount(() => {
           <button v-if="isCommentsDrawer" type="button" class="drawer-close ui-button" @click="closeComments">Close comments</button>
         </div>
         <CommentsRail
+          v-if="reviewDraft !== undefined"
           :comments="workspaceComments"
-          :file-order="reviewableFiles.map((file) => file.fileId)"
-          :file-path="filePath"
-          @copy-recorded-anchor="copyRecordedAnchor"
-          @inspect-recorded-file="inspectRecordedFile"
+          :inventory="reviewableFiles.map((file) => ({ identity: file.newPath?.bytesBase64url ?? file.oldPath?.bytesBase64url ?? file.fileId, display: file.newPath?.display ?? file.oldPath?.display ?? 'Changed file' }))"
+          :summary="reviewDraft.canonical.summary"
+          :summary-buffer="reviewDraft.summaryBuffer"
+          :comment-buffers="reviewDraft.commentBuffers"
+          :pending="reviewDraft.pending !== null"
+          :conflict="reviewDraft.conflict !== null"
+          @cancel-summary="reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot()"
+          @delete="mutateComment($event, 'deleteComment')"
+          @reopen="mutateComment($event, 'reopenComment')"
+          @resolve="mutateComment($event, 'resolveComment')"
+          @reload-latest="reloadLatestReview"
+          @save-comment="saveComment"
+          @save-summary="saveSummary"
           @show="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
+          @update:comment-buffer="(commentId, value) => { reviewState?.setCommentBuffer(commentId, value); refreshReviewSnapshot(); }"
+          @update:summary-buffer="(value) => { reviewState?.setSummaryBuffer(value); refreshReviewSnapshot(); }"
         />
       </aside>
     </div>
