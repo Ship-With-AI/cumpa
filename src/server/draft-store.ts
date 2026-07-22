@@ -282,7 +282,12 @@ export function createDraftStore(options: Readonly<{
     },
     async recover(input) {
       return runSerialized(queueKey, async () => {
-        const load = await loader.load();
+        let load: DraftLoadState;
+        try {
+          load = await loader.load();
+        } catch {
+          return Object.freeze({ kind: 'persistenceFailure' as const });
+        }
         if (load.kind !== 'malformed' && load.kind !== 'schemaInvalid') {
           return Object.freeze({ kind: 'recoveryUnavailable' as const, load });
         }
@@ -301,7 +306,13 @@ export function createDraftStore(options: Readonly<{
         } catch {
           // A post-rename directory sync can report failure after the replacement is visible.
           // Do not claim a failed recovery while leaving callers to retry against new canonical bytes.
-          if ((await loader.load()).kind !== 'current') {
+          let visible: DraftLoadState;
+          try {
+            visible = await loader.load();
+          } catch {
+            return Object.freeze({ kind: 'persistenceFailure' as const });
+          }
+          if (visible.kind !== 'current') {
             return Object.freeze({ kind: 'persistenceFailure' as const });
           }
         }

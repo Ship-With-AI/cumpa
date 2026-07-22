@@ -12,6 +12,7 @@ const comparison = {
 };
 
 type Fault =
+  | 'canonicalRead'
   | 'backupOpen'
   | 'backupWrite'
   | 'backupSync'
@@ -52,6 +53,9 @@ function createMemoryFileSystem(options: Readonly<{ fault?: Fault; holdBackupOpe
 
   const fileSystem: DraftFileSystem = {
     async readFile(path) {
+      if (options.fault === 'canonicalRead' && path.endsWith('.json')) {
+        throw failure();
+      }
       if (options.fault === 'backupVerificationRead' && path.endsWith('.bak')) {
         throw failure();
       }
@@ -149,6 +153,7 @@ function fingerprint(raw: Buffer): string {
 }
 
 const preRenameFaults: readonly Fault[] = [
+  'canonicalRead',
   'backupOpen',
   'backupWrite',
   'backupSync',
@@ -232,6 +237,21 @@ describe('backup-first recovery fault boundaries', () => {
     expect(backups).toHaveLength(1);
     expect(backups[0]?.[1]).toEqual(raw);
     expect(JSON.parse(memory.files.get(store.canonicalPath)?.toString('utf8') ?? '')).toMatchObject({ revision: 0 });
+  });
+
+  test('reuses an existing backup only after fresh byte equality verification', async () => {
+    const raw = Buffer.from('{"schemaVersion":1,"invalid":true}', 'utf8');
+    const memory = createMemoryFileSystem();
+    const store = createCorruptStore(memory, raw);
+    const backup = `${store.canonicalPath.slice(0, -'.json'.length)}.corrupt.${fingerprint(raw)}.bak`;
+    memory.files.set(backup, Buffer.from(raw));
+
+    await expect(store.recover({ expectedFingerprint: fingerprint(raw) })).resolves.toMatchObject({
+      kind: 'recovered',
+      backupPath: expect.stringMatching(/\.bak$/),
+    });
+    expect([...memory.files.keys()].filter((path) => path.endsWith('.bak'))).toEqual([backup]);
+    expect(memory.files.get(backup)).toEqual(raw);
   });
 
   test('reuses only a byte-identical existing backup and allocates a suffix for mismatched bytes', async () => {
