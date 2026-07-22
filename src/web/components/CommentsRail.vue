@@ -19,7 +19,7 @@ const emit = defineEmits<{
   edit: [commentId: string];
   reopen: [commentId: string];
   inspectRecordedFile: [commentId: string];
-  reloadLatest: [];
+  'reload-latest': [];
   resolve: [commentId: string];
   saveComment: [commentId: string];
   saveSummary: [];
@@ -51,7 +51,7 @@ function forwardCommentBuffer(commentId: string, value: string): void {
     @resolve="emit('resolve', $event)"
     @save-comment="emit('saveComment', $event)"
     @save-summary="emit('saveSummary')"
-    @reload-latest="emit('reloadLatest')"
+    @reload-latest="emit('reload-latest')"
     @show="emit('show', $event)"
     @update:comment-buffer="forwardCommentBuffer"
     @update:summary-buffer="emit('update:summaryBuffer', $event)"

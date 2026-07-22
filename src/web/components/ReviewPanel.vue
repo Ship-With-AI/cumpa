@@ -20,7 +20,7 @@ const emit = defineEmits<{
   copyRecordedAnchor: [commentId: string];
   delete: [commentId: string];
   edit: [commentId: string];
-  reloadLatest: [];
+  'reload-latest': [];
   reopen: [commentId: string];
   inspectRecordedFile: [commentId: string];
   resolve: [commentId: string];
@@ -89,7 +89,7 @@ watch(
     />
     <div v-if="conflict" class="review-panel__conflict" role="alert">
       <p>Review changed in another tab. Your change was not saved because newer draft revision exists.</p>
-      <button type="button" @click="emit('reloadLatest')">Reload latest</button>
+      <button type="button" @click="emit('reload-latest')">Reload latest</button>
     </div>
     <section aria-labelledby="open-comments-heading">
       <h3 id="open-comments-heading">Open comments ({{ comments.filter((comment) => comment.state === 'open').length }})</h3>

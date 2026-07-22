@@ -103,6 +103,7 @@ let filesDrawerMedia: MediaQueryList | undefined;
 let commentsDrawerMedia: MediaQueryList | undefined;
 let filesOpener: HTMLElement | undefined;
 let commentsOpener: HTMLElement | undefined;
+let latestConflictDraft: CanonicalReviewDraft | undefined;
 
 const reviewableFiles = computed(() => session.value?.files.filter((file) => file.availability.kind === 'text') ?? []);
 const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? selectedFile.value?.oldPath?.display ?? 'Changed file');
@@ -294,7 +295,8 @@ function mutateReview(request: DraftMutationRequest, successfulBuffer?: 'summary
       announce(request.type === 'setSummary' ? 'Summary saved locally.' : 'Comment saved locally.');
       return;
     }
-    if (result.kind === 'conflict') {
+    if (result.kind === 'revisionConflict') {
+      latestConflictDraft = result.latest;
       reviewState?.conflict(reviewCanonical(result.latest), request.expectedRevision);
       refreshReviewSnapshot();
       return;
@@ -328,6 +330,17 @@ function mutateComment(commentId: string, type: 'deleteComment' | 'resolveCommen
 
 function reloadLatestReview(): void {
   reviewState?.reloadLatest();
+  const latest = latestConflictDraft;
+  if (latest !== undefined) {
+    reviewState?.accept(reviewCanonical(latest));
+    draftRevision.value = latest.revision;
+    if (workspace !== undefined) {
+      const transition = workspace.replaceComments(acceptedWorkspaceComments(latest));
+      workspaceState.value = transition.state;
+      runCommands(transition.commands);
+    }
+    latestConflictDraft = undefined;
+  }
   refreshReviewSnapshot();
 }
 
@@ -361,6 +374,16 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
           line: command.line,
           body: command.body,
         }).then((result) => {
+          if (result.kind === 'revisionConflict') {
+            latestConflictDraft = result.latest;
+            reviewState?.conflict(reviewCanonical(result.latest), draftRevision.value);
+            refreshReviewSnapshot();
+            dispatchWorkspace({
+              type: 'add-failed',
+              message: 'Comment wasn’t added. Your text is still here. Reload the latest draft before trying again.',
+            });
+            return;
+          }
           if (result.kind !== 'accepted') {
             throw new SessionClientError('draft', 'Comment wasn’t added. Your text is still here. Reload the latest draft before trying again.');
           }

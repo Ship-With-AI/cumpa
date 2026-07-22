@@ -1,5 +1,6 @@
 import { spawn, execFileSync } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import {
   closeSync,
@@ -11,6 +12,7 @@ import {
   openSync,
   readFileSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -131,6 +133,11 @@ async function activateMonacoLine(
   lineNumber: number,
 ): Promise<void> {
   const editor = side === 'base' ? 'editor original' : 'editor modified';
+  const editorSurface = page.locator(`.monaco-diff-editor .${editor.split(' ').join('.')} .monaco-scrollable-element.editor-scrollable`).first();
+  await editorSurface.click({ position: { x: 16, y: 16 } });
+  await page.keyboard.press('Meta+g');
+  await page.keyboard.insertText(String(lineNumber));
+  await page.keyboard.press('Enter');
   const line = page
     .locator(`.monaco-diff-editor .${editor.split(' ').join('.')}`)
     .locator('.view-line')
@@ -269,6 +276,203 @@ test('complete draft lifecycle saves a safe summary and relaunches it through th
     await expect(page.locator('.review-summary__preview')).toContainText('Review outcome');
   } finally {
     await stopGeneratedCli(running);
+    await fixture.cleanup();
+  }
+});
+
+test('two-tab conflict retains every local buffer and requires fresh explicit CAS after reload', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createGitFixture({ anchoredReview: true });
+  const otherTab = await browser.newPage();
+  const seedBody = 'Shared comment before two tabs.';
+  const firstCanonicalSummary = 'Summary accepted by tab A.';
+  const attemptedSummary = 'Summary attempted by tab B.';
+  const attemptedEdit = 'Edit attempted by tab B.';
+  const attemptedAdd = 'Add attempted by tab B.';
+  let running: RunningCli | undefined;
+
+  try {
+    running = startGeneratedCli(fixture);
+    const url = await waitForLoopbackUrl(running);
+    const accessToken = new URL(url).hash.replace(/^#token=/, '');
+    expect(accessToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openGeneratedReview(page, url);
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    await activateMonacoLine(page, 'head', 'export const stableContext10 = 10;', 10);
+    await page.locator('.monaco-anchor-zone--composer textarea').fill(seedBody);
+    const seeded = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    expect((await seeded).status()).toBe(201);
+
+    await page.getByRole('button', { name: /^Review/ }).click();
+    const seedRecord = page.locator('.comments-rail__comment', { hasText: seedBody });
+    await expect(seedRecord).toHaveCount(1);
+    const seedId = await seedRecord.getAttribute('data-comment-id');
+    expect(seedId).not.toBeNull();
+
+    await otherTab.setViewportSize({ width: 1440, height: 900 });
+    await openGeneratedReview(otherTab, url);
+    await otherTab.getByRole('button', { name: /^Review/ }).click();
+    const otherSeedRecord = otherTab.locator(`[data-comment-id="${seedId}"]`);
+    await otherSeedRecord.getByRole('button', { name: 'Edit' }).click();
+    const otherEdit = otherSeedRecord.getByLabel('Comment');
+    await otherEdit.fill(attemptedEdit);
+    await otherTab.getByRole('button', { name: 'Write summary' }).click();
+    const otherSummary = otherTab.getByLabel('Review summary (Markdown)');
+    await otherSummary.fill(attemptedSummary);
+
+    await page.getByRole('button', { name: 'Write summary' }).click();
+    const canonicalSummary = page.getByLabel('Review summary (Markdown)');
+    await canonicalSummary.fill(firstCanonicalSummary);
+    const accepted = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
+    await page.getByRole('button', { name: 'Save summary' }).click();
+    expect((await accepted).status()).toBe(200);
+
+    const draftsDirectory = join(fixture.root, '.diff-review', 'drafts');
+    const draftFilename = readdirSync(draftsDirectory).find((candidate) => candidate.endsWith('.json'));
+    expect(draftFilename).toBeDefined();
+    const draftPath = join(draftsDirectory, draftFilename!);
+    const acceptedBytes = readFileSync(draftPath);
+    const acceptedHash = createHash('sha256').update(acceptedBytes).digest('hex');
+    const acceptedRevision = JSON.parse(acceptedBytes.toString('utf8')).revision;
+    const acceptedStat = statSync(draftPath);
+    const acceptedEntries = readdirSync(draftsDirectory).sort();
+
+    const conflict = otherTab.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
+    await otherTab.getByRole('button', { name: 'Save summary' }).click();
+    const conflictResponse = await conflict;
+    expect(conflictResponse.status()).toBe(409);
+    await expect(otherTab.getByText('Conflict — unsaved text retained', { exact: true })).toBeVisible();
+    expect(await conflictResponse.json()).toMatchObject({
+      kind: 'revisionConflict',
+      expectedRevision: acceptedRevision - 1,
+      actualRevision: acceptedRevision,
+      latest: { revision: acceptedRevision, summary: firstCanonicalSummary },
+    });
+    expect(readFileSync(draftPath)).toEqual(acceptedBytes);
+    expect(createHash('sha256').update(readFileSync(draftPath)).digest('hex')).toBe(acceptedHash);
+    expect(statSync(draftPath).mtimeMs).toBe(acceptedStat.mtimeMs);
+    expect(readdirSync(draftsDirectory).sort()).toEqual(acceptedEntries);
+    await expect(otherSummary).toHaveValue(attemptedSummary);
+    await expect(otherEdit).toHaveValue(attemptedEdit);
+
+    await otherTab.getByRole('button', { name: 'Reload latest' }).click();
+    await expect(otherTab.getByText('Conflict — unsaved text retained', { exact: true })).toHaveCount(0);
+    await expect(otherSummary).toHaveValue(attemptedSummary);
+    await expect(otherEdit).toHaveValue(attemptedEdit);
+
+    await seedRecord.getByRole('button', { name: 'Delete' }).click();
+    await expect(seedRecord.getByText('Delete comment?')).toBeVisible();
+    const deleted = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
+    await seedRecord.getByRole('button', { name: 'Delete comment' }).click();
+    expect((await deleted).status()).toBe(200);
+    const afterDeleteBytes = readFileSync(draftPath);
+    const afterDeleteHash = createHash('sha256').update(afterDeleteBytes).digest('hex');
+    const afterDeleteRevision = JSON.parse(afterDeleteBytes.toString('utf8')).revision;
+    const deletedTargetConflict = otherTab.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
+    await otherSeedRecord.getByRole('button', { name: 'Save comment' }).click();
+    expect((await deletedTargetConflict).status()).toBe(409);
+    expect(readFileSync(draftPath)).toEqual(afterDeleteBytes);
+    expect(createHash('sha256').update(readFileSync(draftPath)).digest('hex')).toBe(afterDeleteHash);
+    await otherTab.getByRole('button', { name: 'Reload latest' }).click();
+    await expect(otherTab.locator(`[data-comment-id="${seedId}"]`)).toHaveCount(0);
+
+    const occupiedResult = await page.evaluate(async ({ token, expectedRevision }) => {
+      const headers = { authorization: `Bearer ${token}` };
+      const sessionResponse = await fetch('/api/session', { headers });
+      const session = await sessionResponse.json() as { readonly files: readonly { readonly fileId: string; readonly newPath?: { readonly display: string } }[] };
+      const file = session.files.find((candidate) => candidate.newPath?.display === 'src/changed.ts');
+      if (file === undefined) throw new Error('changed fixture file is unavailable');
+      const response = await fetch('/api/draft/mutations', {
+        method: 'POST',
+        headers: { ...headers, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          type: 'addComment',
+          expectedRevision,
+          fileId: file.fileId,
+          side: 'head',
+          line: 9,
+          body: 'Tab A owns this anchor.',
+        }),
+      });
+      return { status: response.status, body: await response.json() };
+    }, { token: accessToken, expectedRevision: afterDeleteRevision });
+    expect(occupiedResult).toMatchObject({
+      status: 201,
+      body: { kind: 'accepted', draft: { revision: afterDeleteRevision + 1 } },
+    });
+    const occupiedBytes = readFileSync(draftPath);
+    const occupiedHash = createHash('sha256').update(occupiedBytes).digest('hex');
+    const occupiedStat = statSync(draftPath);
+    const occupiedEntries = readdirSync(draftsDirectory).sort();
+
+    const staleAddResult = await otherTab.evaluate(async ({ token, expectedRevision }) => {
+      const headers = { authorization: `Bearer ${token}` };
+      const sessionResponse = await fetch('/api/session', { headers });
+      const session = await sessionResponse.json() as { readonly files: readonly { readonly fileId: string; readonly newPath?: { readonly display: string } }[] };
+      const file = session.files.find((candidate) => candidate.newPath?.display === 'src/changed.ts');
+      if (file === undefined) throw new Error('changed fixture file is unavailable');
+      const response = await fetch('/api/draft/mutations', {
+        method: 'POST',
+        headers: { ...headers, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          type: 'addComment',
+          expectedRevision,
+          fileId: file.fileId,
+          side: 'head',
+          line: 9,
+          body: 'Add attempted by tab B.',
+        }),
+      });
+      return { status: response.status, body: await response.json() };
+    }, { token: accessToken, expectedRevision: afterDeleteRevision });
+    expect(staleAddResult).toMatchObject({
+      status: 409,
+      body: {
+        kind: 'revisionConflict',
+        expectedRevision: afterDeleteRevision,
+        actualRevision: afterDeleteRevision + 1,
+      },
+    });
+    expect(readFileSync(draftPath)).toEqual(occupiedBytes);
+    expect(createHash('sha256').update(readFileSync(draftPath)).digest('hex')).toBe(occupiedHash);
+    expect(statSync(draftPath).mtimeMs).toBe(occupiedStat.mtimeMs);
+    expect(readdirSync(draftsDirectory).sort()).toEqual(occupiedEntries);
+
+    const freshAddResult = await otherTab.evaluate(async ({ token, expectedRevision }) => {
+      const headers = { authorization: `Bearer ${token}` };
+      const sessionResponse = await fetch('/api/session', { headers });
+      const session = await sessionResponse.json() as { readonly files: readonly { readonly fileId: string; readonly newPath?: { readonly display: string } }[] };
+      const file = session.files.find((candidate) => candidate.newPath?.display === 'src/changed.ts');
+      if (file === undefined) throw new Error('changed fixture file is unavailable');
+      const response = await fetch('/api/draft/mutations', {
+        method: 'POST',
+        headers: { ...headers, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          type: 'addComment',
+          expectedRevision,
+          fileId: file.fileId,
+          side: 'head',
+          line: 9,
+          body: 'Add attempted by tab B.',
+        }),
+      });
+      return { status: response.status, body: await response.json() };
+    }, { token: accessToken, expectedRevision: afterDeleteRevision + 1 });
+    expect(freshAddResult).toMatchObject({
+      status: 404,
+      body: { kind: 'invalidTarget' },
+    });
+    expect(readFileSync(draftPath)).toEqual(occupiedBytes);
+    expect(JSON.parse(readFileSync(draftPath, 'utf8'))).toMatchObject({
+      revision: afterDeleteRevision + 1,
+      summary: firstCanonicalSummary,
+      comments: [expect.objectContaining({ body: 'Tab A owns this anchor.' })],
+    });
+  } finally {
+    if (running !== undefined) await stopGeneratedCli(running);
+    await otherTab.close();
     await fixture.cleanup();
   }
 });
