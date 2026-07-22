@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 
 import { expect, test, type Page } from '@playwright/test';
+import { DraftMutationRequestSchema, DraftMutationResultSchema } from '../../src/contracts/api.js';
 import { createServer, type ViteDevServer } from 'vite';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
@@ -10,7 +11,7 @@ const secondFileId = `file_${'b'.repeat(43)}`;
 const token = 't'.repeat(43);
 let server: ViteDevServer | undefined;
 let origin = '';
-let comments: unknown[] = [];
+let canonicalComments: unknown[] = [];
 let contentRequests: string[] = [];
 
 const collisionPath = (terminalByte: number) => ({
@@ -69,7 +70,7 @@ function json(response: ServerResponse, body: unknown, statusCode = 200): void {
   response.end(JSON.stringify(body));
 }
 
-function draftView(comments: readonly unknown[]) {
+function draftSnapshot(comments: readonly unknown[]) {
   return {
     schemaVersion: 1,
     comparison: {
@@ -83,6 +84,17 @@ function draftView(comments: readonly unknown[]) {
   };
 }
 
+function draftView(comments: readonly object[]) {
+  const draft = draftSnapshot(comments);
+  return {
+    ...draft,
+    comments: draft.comments.map((comment) => ({
+      ...comment,
+      verification: { state: 'verified', reason: 'exact-match' },
+    })),
+  };
+}
+
 async function startAppServer(): Promise<string> {
   server = await createServer({
     configFile: resolve(repositoryRoot, 'vite.config.ts'),
@@ -90,38 +102,63 @@ async function startAppServer(): Promise<string> {
       name: 'anchored-workspace-api',
       configureServer(viteServer) {
         viteServer.middlewares.use('/api/session', (_request, response) => json(response, session));
-        viteServer.middlewares.use('/api/draft/comments', (request, response) => {
+        viteServer.middlewares.use('/api/draft/mutations', (request, response) => {
           let rawBody = '';
           request.on('data', (chunk) => { rawBody += String(chunk); });
           request.on('end', () => {
-            const add = JSON.parse(rawBody) as { fileId: string; side: 'base' | 'head'; line: number; body: string };
+            let input: unknown;
+            try {
+              input = JSON.parse(rawBody);
+            } catch {
+              response.statusCode = 400;
+              response.end();
+              return;
+            }
+            const mutation = DraftMutationRequestSchema.safeParse(input);
+            if (!mutation.success || mutation.data.type !== 'addComment') {
+              response.statusCode = 400;
+              response.end();
+              return;
+            }
+
+            const latest = draftSnapshot(canonicalComments);
+            if (mutation.data.expectedRevision !== latest.revision) {
+              json(response, DraftMutationResultSchema.parse({
+                kind: 'revisionConflict',
+                expectedRevision: mutation.data.expectedRevision,
+                actualRevision: latest.revision,
+                latest,
+              }), 409);
+              return;
+            }
+
             const accepted = {
               id: 'comment_123e4567-e89b-12d3-a456-426614174000',
-              state: 'open',
-              body: add.body.trim(),
+              state: 'open' as const,
+              body: mutation.data.body,
               anchor: {
-                version: 'durable-anchor-v1',
-                path: path(add.fileId === firstFileId ? 'src/first.ts' : 'src/second.ts'),
-                safeDisplayPath: add.fileId === firstFileId ? 'src/first.ts' : 'src/second.ts',
-                side: add.side,
-                line: add.line,
+                version: 'durable-anchor-v1' as const,
+                path: path(mutation.data.fileId === firstFileId ? 'src/first.ts' : 'src/second.ts'),
+                safeDisplayPath: mutation.data.fileId === firstFileId ? 'src/first.ts' : 'src/second.ts',
+                side: mutation.data.side,
+                line: mutation.data.line,
                 blobOid: 'd'.repeat(40),
                 selectedText: 'const context1 = 1;',
-                context: { before: [], target: { line: add.line, text: 'const context1 = 1;' }, after: [] },
-                contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
+                context: { before: [], target: { line: mutation.data.line, text: 'const context1 = 1;' }, after: [] },
+                contextHash: { algorithm: 'sha256-v1' as const, value: 'f'.repeat(64) },
                 uniqueKey: 'e'.repeat(64),
               },
               createdAt: '2026-07-21T00:00:00.000Z',
               updatedAt: '2026-07-21T00:00:00.000Z',
             };
-            comments = [{
-              ...accepted,
-              verification: { state: 'verified', reason: 'exact-match' },
-            }];
-            json(response, accepted, 201);
+            canonicalComments = [...canonicalComments, accepted];
+            json(response, DraftMutationResultSchema.parse({
+              kind: 'accepted',
+              draft: draftSnapshot(canonicalComments),
+            }), 201);
           });
         });
-        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, draftView(comments)));
+        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, draftView(canonicalComments)));
         viteServer.middlewares.use('/api/files', (request, response) => {
           const fileId = request.url?.match(/^\/(file_[A-Za-z0-9_-]{43})\/content$/)?.[1];
           if (fileId !== firstFileId && fileId !== secondFileId) {
