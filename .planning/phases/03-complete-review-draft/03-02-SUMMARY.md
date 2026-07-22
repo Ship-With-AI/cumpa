@@ -35,7 +35,7 @@ patterns-established:
   - Draft writes use POST /api/draft/mutations with a strict type discriminant and expectedRevision.
   - Reducer operations preserve every non-owned field, including durable anchors and creation timestamps.
 requirements-completed: [CMT-03, CMT-04, CMT-05, CMT-07, DRFT-04]
-duration: 2h 28m
+duration: 33m
 completed: 2026-07-22
 ---
 
@@ -45,9 +45,9 @@ completed: 2026-07-22
 
 ## Performance
 
-- **Duration:** 2h 28m
+- **Duration:** 33m
 - **Started:** 2026-07-22T08:30:33Z
-- **Completed:** 2026-07-22T10:58:24Z
+- **Completed:** 2026-07-22T09:03:56Z
 - **Tasks:** 3/3
 - **Files changed:** 13 implementation and focused-test files, plus this summary
 - **Commits:** `7c65254`, `d943141`, `2942065`
