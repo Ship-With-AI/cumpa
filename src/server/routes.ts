@@ -148,10 +148,10 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       let mutation: DraftStoreMutation;
       if (requestMutation.data.type === 'addComment') {
         const content = await capabilities.readContent(requestMutation.data.fileId);
-        if (content === undefined || content[requestMutation.data.side].exists === false) {
+        const selectedSide = content?.[requestMutation.data.side];
+        if (selectedSide === undefined || selectedSide.exists === false) {
           return unavailable(reply, 409);
         }
-        const selectedSide = content[requestMutation.data.side];
         if (
           /(?:\r\n|\n)$/u.test(selectedSide.text) &&
           requestMutation.data.line === selectedSide.text.split(/\r\n|\n/u).length
