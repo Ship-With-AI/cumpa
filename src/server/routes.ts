@@ -3,6 +3,7 @@ import type { FastifyInstance } from 'fastify';
 import {
   DraftMutationRequestSchema,
   OpaqueFileIdSchema,
+  type DraftMutationResult,
 } from '../contracts/api.js';
 import { DurableAnchorV1Schema } from '../contracts/draft.js';
 import { buildDurableAnchor } from '../domain/anchor.js';
@@ -27,6 +28,25 @@ const FILE_PARAMS_SCHEMA = {
 
 function unavailable(reply: { code(statusCode: number): { send(payload: unknown): unknown } }, statusCode: number) {
   return reply.code(statusCode).send(REQUEST_UNAVAILABLE_ERROR);
+}
+
+function mutationResponse(
+  reply: { code(statusCode: number): { send(payload: unknown): unknown } },
+  result: DraftMutationResult,
+  acceptedStatus: 200 | 201,
+) {
+  switch (result.kind) {
+    case 'accepted':
+      return reply.code(acceptedStatus).send(result);
+    case 'revisionConflict':
+      return reply.code(409).send(result);
+    case 'invalidTarget':
+      return reply.code(404).send(result);
+    case 'illegalTransition':
+      return reply.code(409).send(result);
+    case 'persistenceFailure':
+      return reply.code(500).send(result);
+  }
 }
 
 export function registerSessionRoutes(app: FastifyInstance, capabilities: CapabilityRegistry): void {
@@ -170,18 +190,11 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       }
 
       const result = await capabilities.draftStore.mutate({ expectedRevision, mutation });
-      switch (result.kind) {
-        case 'accepted':
-          return reply.code(requestMutation.data.type === 'addComment' ? 201 : 200).send(result);
-        case 'revisionConflict':
-          return reply.code(409).send(result);
-        case 'invalidTarget':
-          return reply.code(404).send(result);
-        case 'illegalTransition':
-          return reply.code(409).send(result);
-        case 'persistenceFailure':
-          return reply.code(500).send(result);
-      }
+      return mutationResponse(
+        reply,
+        result,
+        requestMutation.data.type === 'addComment' ? 201 : 200,
+      );
     },
   );
 }
