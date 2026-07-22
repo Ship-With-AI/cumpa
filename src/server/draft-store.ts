@@ -299,7 +299,11 @@ export function createDraftStore(options: Readonly<{
         try {
           await commit(draft);
         } catch {
-          return Object.freeze({ kind: 'persistenceFailure' as const });
+          // A post-rename directory sync can report failure after the replacement is visible.
+          // Do not claim a failed recovery while leaving callers to retry against new canonical bytes.
+          if ((await loader.load()).kind !== 'current') {
+            return Object.freeze({ kind: 'persistenceFailure' as const });
+          }
         }
         return Object.freeze({ kind: 'recovered' as const, backupPath, draft });
       });
