@@ -12,6 +12,7 @@ import FileRow from './FileRow.vue';
 
 const props = defineProps<{
   files: readonly SessionFile[];
+  initialSelectedFileId?: string;
 }>();
 
 const emit = defineEmits<{
@@ -129,10 +130,11 @@ defineExpose({
 });
 
 onMounted(() => {
-  if (model.value.selectedFileId !== null) {
+  if (props.initialSelectedFileId === undefined && model.value.selectedFileId !== null) {
     emit('select', model.value.selectedFileId);
   }
 });
+
 
 watch(
   () => props.files,

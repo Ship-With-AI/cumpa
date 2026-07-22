@@ -16,7 +16,7 @@ tech-stack:
   patterns: [load-kind-primary-surface, fingerprint-only-recovery, safe-relative-path-presentation]
 key-files:
   created: [src/web/components/DraftRecovery.vue, tests/integration/draft-recovery-ui.spec.ts]
-  modified: [src/web/App.vue, src/web/model/review-draft-state.ts, src/web/styles.css]
+  modified: [src/web/App.vue, src/web/components/FileTree.vue, src/web/model/review-draft-state.ts, src/web/styles.css]
 key-decisions:
   - "App owns the sole SessionClient and canonical recovery adoption; DraftRecovery receives only fixed no-argument reveal and fingerprint-bound recovery closures."
   - "Recovered canonical state is initialized only from a recovered response, while the success screen remains visible until Open new draft is explicitly activated."
@@ -90,6 +90,13 @@ No selector-drift, export, packaged E2E, backend reinterpretation, new dependenc
 ### Reconciliation-command correction
 
 The plan named two nonexistent command keys, while the approved ledger supplies one authoritative recovery UI command covering both task behaviors. The executor used that sole command rather than inventing a command or test path. No production scope changed.
+
+### Post-plan exact-byte resume repair
+
+- **Root cause:** The 03-05 load-primary-surface gate delayed `FileTree` mounting until after `App` had initialized the workspace. `FileTree` then emitted its own initial presentation-tree selection. For visually identical non-UTF-8 paths, its bytewise tree order selected the recorded second opaque file capability while App's workspace still considered the first file initial. `Show comment` correctly found that recorded file already active, so it emitted reveal commands rather than a new `/api/files/:fileId/content` request.
+- **Fix:** App now passes its canonical initial opaque `selectedFile.fileId` to `FileTree`. The tree retains its standalone initial-selection behavior but does not emit a presentation-derived initial selection when App already owns one. The recorded comment remains reconciled by immutable exact bytes and keeps `file_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb`; Show now switches from App's initial first file and requests that exact capability.
+- **Regression evidence:** Before the repair, `npm run test:browser -- tests/integration/anchored-workspace.spec.ts --grep "exact-byte draft resume"` failed with expected `file_b…` versus received `[]`. After the repair it passed: `1 passed (3.0s)`.
+- **Combined evidence:** `npm run test:browser -- tests/integration/draft-recovery-ui.spec.ts tests/integration/complete-review-panel.spec.ts tests/integration/anchored-workspace.spec.ts` passed: `9 passed (9.7s)`. This retains corrupt/schema-invalid recovery lockout and the newer-schema no-mutation surface.
 
 ## Next Phase Readiness
 

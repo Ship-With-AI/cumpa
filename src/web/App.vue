@@ -591,7 +591,7 @@ onBeforeUnmount(() => {
         tabindex="-1"
       >
         <button v-if="isFilesDrawer" type="button" class="drawer-close ui-button" @click="closeFiles">Close files</button>
-        <FileTree v-if="session.files.length > 0" :files="session.files" @select="selectFile" @activate="selectFile" />
+        <FileTree v-if="session.files.length > 0" :files="session.files" :initial-selected-file-id="selectedFile?.fileId" @select="selectFile" @activate="selectFile" />
         <section v-else class="empty-state">
           <h2 id="changed-files-heading">Changed files</h2>
           <p>0 changed files</p>
