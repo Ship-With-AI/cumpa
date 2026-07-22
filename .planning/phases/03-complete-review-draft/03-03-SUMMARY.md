@@ -52,8 +52,8 @@ completed: 2026-07-22
 
 - **Completed:** 2026-07-22T10:22:40Z
 - **Tasks:** 3/3
-- **Focused verification:** 10 unit files / 80 tests; 10 API files / 71 tests
-- **Commits:** `7a69753`, `d2fb9b4`, `63b2471`, `aef3f96`
+- **Focused verification:** 10 unit files / 80 tests; 10 API files / 73 tests
+- **Commits:** `7a69753`, `d2fb9b4`, `63b2471`, `aef3f96`, `c02ed49`
 
 ## Completed Tasks
 
@@ -67,9 +67,9 @@ completed: 2026-07-22
    - Extended the existing serialized aggregate store rather than creating parallel persistence. Recovery rereads state in the same queue, requires the caller's SHA-256 fingerprint, creates a `wx` backup, syncs and verifies its exact Buffer/length before replacing the canonical file.
    - Migrated directly coupled legacy draft API fixtures to the classified GET response and read-only corrupt response; the reconciled API script executes the whole API directory.
 
-3. **REFACTOR — interruption and race hardening** — `63b2471` (`refactor(03-03): harden draft recovery persistence`) and `aef3f96` (`test(03-03): serialize concurrent recoveries`)
-   - Added a deterministic injected-filesystem matrix for every backup and replacement boundary plus stale-fingerprint, mutation/recovery serialization, backup-collision, and concurrent-recovery cases.
-   - A directory-sync error after successful rename is resolved by rereading canonical state: recovery reports success only when the empty valid draft is already visible, avoiding a false retryable failure after replacement.
+3. **REFACTOR — interruption and race hardening** — `63b2471` (`refactor(03-03): harden draft recovery persistence`), `aef3f96` (`test(03-03): serialize concurrent recoveries`), and `c02ed49` (`fix(03-03): contain canonical reread failures`)
+   - Added a deterministic injected-filesystem matrix for canonical reread, every backup and replacement boundary, stale fingerprints, mutation/recovery serialization, backup collisions, and concurrent recovery.
+   - A canonical reread fault is a typed `persistenceFailure` that preserves corrupt canonical bytes. A directory-sync error after successful rename is instead resolved by rereading canonical state: recovery reports success only when the empty valid draft is already visible, avoiding a false retryable failure after replacement.
 
 ## Load, Mutation, and Security Matrix
 
@@ -96,6 +96,7 @@ The injected filesystem matrix records the following original/backup/canonical e
 
 | Interruption point | Result | Original canonical | Backup expectation | Replacement canonical |
 |---|---|---|---|---|
+| Canonical reread | `persistenceFailure` | exact original Buffer retained | no backup created | no replacement |
 | Backup open/write/sync/close | `persistenceFailure` | exact original Buffer retained | no acknowledged backup | no replacement |
 | Backup directory sync or verification reread | `persistenceFailure` | exact original Buffer retained | candidate is never accepted without successful reread/length/byte equality | no replacement |
 | Temporary open/write/sync/close or rename | `persistenceFailure` | exact original Buffer retained | verified byte-identical backup exists | no replacement |
@@ -111,7 +112,7 @@ The reconciliation artifact contains one approved Phase 03-03 command entry, `03
 
 - **RED:** resolved `node -e "const{spawnSync}=require('node:child_process');for(const a of [['run','test:unit','--','tests/unit/draft-load.test.ts'],['run','test:api','--','tests/api/draft-recovery.test.ts','tests/api/draft-recovery-faults.test.ts','tests/api/draft-reveal.test.ts']]){const r=spawnSync('npm',a,{stdio:'inherit'});if(r.status!==0)process.exit(r.status??1)}"` — expected exit 1 from the missing loader import.
 - **GREEN:** same resolved command — passed 10 unit files / 80 tests and 10 API files / 56 tests.
-- **REFACTOR:** same resolved command — passed 10 unit files / 80 tests and 10 API files / 71 tests.
+- **REFACTOR:** same resolved command — passed 10 unit files / 80 tests and 10 API files / 73 tests.
 
 ## Deviations
 
