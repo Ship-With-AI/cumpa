@@ -217,6 +217,23 @@ describe('backup-first recovery fault boundaries', () => {
     expect(memory.openPaths).toEqual([]);
   });
 
+  test('serializes concurrent recovery requests to one replacement and verified backup', async () => {
+    const raw = Buffer.from('{"schemaVersion":1,"invalid":true}', 'utf8');
+    const memory = createMemoryFileSystem();
+    const store = createCorruptStore(memory, raw);
+    const expectedFingerprint = fingerprint(raw);
+
+    const first = store.recover({ expectedFingerprint });
+    const second = store.recover({ expectedFingerprint });
+
+    await expect(first).resolves.toMatchObject({ kind: 'recovered' });
+    await expect(second).resolves.toMatchObject({ kind: 'recoveryUnavailable', load: { kind: 'current' } });
+    const backups = [...memory.files.entries()].filter(([path]) => path.endsWith('.bak'));
+    expect(backups).toHaveLength(1);
+    expect(backups[0]?.[1]).toEqual(raw);
+    expect(JSON.parse(memory.files.get(store.canonicalPath)?.toString('utf8') ?? '')).toMatchObject({ revision: 0 });
+  });
+
   test('reuses only a byte-identical existing backup and allocates a suffix for mismatched bytes', async () => {
     const raw = Buffer.from('{"schemaVersion":1,"invalid":true}', 'utf8');
     const memory = createMemoryFileSystem();
