@@ -157,6 +157,10 @@ function layout(): void {
 }
 
 function addComment(target: AnchorAffordanceTarget): void {
+  if (props.composer === undefined || props.composer.text.trim().length === 0) {
+    adapter?.activateAnchor(target.side, target.line);
+    return;
+  }
   emit('activate', target.side, target.line);
 }
 
