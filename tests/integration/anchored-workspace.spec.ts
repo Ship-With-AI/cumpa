@@ -2,7 +2,11 @@ import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
 
 import { expect, test, type Page } from '@playwright/test';
-import { DraftMutationRequestSchema, DraftMutationResultSchema } from '../../src/contracts/api.js';
+import {
+  DraftLoadResponseSchema,
+  DraftMutationRequestSchema,
+  DraftMutationResultSchema,
+} from '../../src/contracts/api.js';
 import { createServer, type ViteDevServer } from 'vite';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
@@ -97,6 +101,14 @@ function draftView(comments: readonly object[]) {
   };
 }
 
+function draftLoad(comments: readonly object[]) {
+  return DraftLoadResponseSchema.parse({
+    kind: 'current',
+    path: '.diff-review/drafts/anchored-workspace.json',
+    draft: draftView(comments),
+  });
+}
+
 async function startAppServer(): Promise<string> {
   server = await createServer({
     configFile: resolve(repositoryRoot, 'vite.config.ts'),
@@ -160,7 +172,7 @@ async function startAppServer(): Promise<string> {
             }), 201);
           });
         });
-        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, draftView(canonicalComments)));
+        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, draftLoad(canonicalComments)));
         viteServer.middlewares.use('/api/files', (request, response) => {
           const fileId = request.url?.match(/^\/(file_[A-Za-z0-9_-]{43})\/content$/)?.[1];
           if (fileId !== firstFileId && fileId !== secondFileId) {
