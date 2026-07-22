@@ -93,7 +93,7 @@ describe('atomic draft persistence', () => {
     async (failAt) => {
       const repositoryRoot = await root();
       const initialStore = createDraftStore({ repositoryRoot, comparison });
-      await initialStore.add({ body: 'already persisted', anchor });
+      expect(await initialStore.mutate({ expectedRevision: 0, mutation: { type: 'addComment', body: 'already persisted', anchor } })).toMatchObject({ kind: 'accepted' });
       const canonicalPath = join(
         repositoryRoot,
         '.diff-review',
@@ -109,8 +109,8 @@ describe('atomic draft persistence', () => {
       });
 
       await expect(
-        store.add({ body: 'This must not claim acceptance.', anchor: nextAnchor }),
-      ).rejects.toThrow();
+        store.mutate({ expectedRevision: 1, mutation: { type: 'addComment', body: 'This must not claim acceptance.', anchor: nextAnchor } }),
+      ).resolves.toMatchObject({ kind: 'persistenceFailure' });
       const finalBytes = await fs.readFile(canonicalPath, 'utf8');
       if (failAt === 'directory-sync') {
         expect(JSON.parse(finalBytes)).toMatchObject({ revision: 2, comments: [{ body: 'already persisted' }, { body: 'This must not claim acceptance.' }] });
@@ -120,17 +120,18 @@ describe('atomic draft persistence', () => {
     },
   );
 
-  test('serializes simultaneous distinct comments without losing either accepted record', async () => {
+  test('serializes same-revision additions so exactly one is accepted and the other receives the latest draft', async () => {
     const repositoryRoot = await root();
     const store = createDraftStore({ repositoryRoot, comparison });
     const anotherAnchor = { ...anchor, side: 'base' as const, uniqueKey: `${anchor.uniqueKey.slice(0, -1)}0` };
 
-    await Promise.all([
-      store.add({ body: 'first', anchor }),
-      store.add({ body: 'second', anchor: anotherAnchor }),
+    const results = await Promise.all([
+      store.mutate({ expectedRevision: 0, mutation: { type: 'addComment', body: 'first', anchor } }),
+      store.mutate({ expectedRevision: 0, mutation: { type: 'addComment', body: 'second', anchor: anotherAnchor } }),
     ]);
 
+    expect(results.map((result) => result.kind).sort()).toEqual(['accepted', 'revisionConflict']);
     const document = await store.load();
-    expect(document).toMatchObject({ revision: 2, comments: [{ body: 'first' }, { body: 'second' }] });
+    expect(document).toMatchObject({ revision: 1, comments: [{ body: expect.any(String) }] });
   });
 });

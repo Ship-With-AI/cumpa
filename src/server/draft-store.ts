@@ -3,11 +3,13 @@ import * as fs from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import {
+  DraftMutationSchema,
   ReviewDraftV1Schema,
-  type ReviewDraftCommentV1,
+  RevisionSchema,
+  type DraftMutation,
   type ReviewDraftV1,
 } from '../contracts/draft.js';
-import type { DurableAnchorV1 } from '../domain/anchor.js';
+import { applyDraftMutation } from '../draft/mutate-draft.js';
 import { comparisonKey } from '../domain/comparison-key.js';
 
 export type DraftComparison = Readonly<{
@@ -32,7 +34,6 @@ export type DraftFileSystem = Readonly<{
 }>;
 
 export class DraftStoreError extends Error {}
-export class DraftConflictError extends DraftStoreError {}
 
 const queues = new Map<string, Promise<unknown>>();
 const draftsDirectory = '.diff-review/drafts';
@@ -107,30 +108,6 @@ function validateDraft(bytes: Buffer, comparison: DraftComparison): ReviewDraftV
   return parsed.data;
 }
 
-function appendComment(
-  current: ReviewDraftV1,
-  input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
-  timestamp: string,
-): Readonly<{ readonly draft: ReviewDraftV1; readonly comment: ReviewDraftCommentV1 }> {
-  if (current.comments.some((comment) => comment.anchor.uniqueKey === input.anchor.uniqueKey)) {
-    throw new DraftConflictError('A comment already exists for this anchor.');
-  }
-  const comment: ReviewDraftCommentV1 = {
-    id: `comment_${randomUUID()}`,
-    state: 'open',
-    body: input.body,
-    anchor: input.anchor,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-  };
-  const draft = ReviewDraftV1Schema.parse({
-    ...current,
-    revision: current.revision + 1,
-    comments: [...current.comments, comment],
-  });
-  return Object.freeze({ draft, comment });
-}
-
 async function runSerialized<T>(key: string, operation: () => Promise<T>): Promise<T> {
   const prior = queues.get(key) ?? Promise.resolve();
   const current = prior.catch(() => undefined).then(operation);
@@ -144,11 +121,24 @@ async function runSerialized<T>(key: string, operation: () => Promise<T>): Promi
   }
 }
 
+type AddDraftMutation = Omit<Extract<DraftMutation, { readonly type: 'addComment' }>, 'commentId'>;
+export type DraftStoreMutation = AddDraftMutation | Exclude<DraftMutation, { readonly type: 'addComment' }>;
+
+export type DraftMutationResult =
+  | Readonly<{ readonly kind: 'accepted'; readonly draft: ReviewDraftV1 }>
+  | Readonly<{
+      readonly kind: 'revisionConflict';
+      readonly expectedRevision: number;
+      readonly actualRevision: number;
+      readonly latest: ReviewDraftV1;
+    }>
+  | Readonly<{ readonly kind: 'invalidTarget' }>
+  | Readonly<{ readonly kind: 'illegalTransition' }>
+  | Readonly<{ readonly kind: 'persistenceFailure' }>;
+
 export type DraftStore = Readonly<{
   load(): Promise<ReviewDraftV1>;
-  add(input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>): Promise<
-    Readonly<{ readonly comment: ReviewDraftCommentV1; readonly revision: number }>
-  >;
+  mutate(input: Readonly<{ readonly expectedRevision: number; readonly mutation: DraftStoreMutation }>): Promise<DraftMutationResult>;
 }>;
 
 export function createDraftStore(options: Readonly<{
@@ -194,7 +184,7 @@ export function createDraftStore(options: Readonly<{
           throw error;
         }
       }
-    } catch (error) {
+    } catch {
       if (handle !== undefined) {
         try {
           await handle.close();
@@ -215,12 +205,34 @@ export function createDraftStore(options: Readonly<{
 
   return Object.freeze({
     load,
-    async add(input) {
+    async mutate(input) {
       return runSerialized(queueKey, async () => {
+        const expectedRevision = RevisionSchema.parse(input.expectedRevision);
         const current = await load();
-        const { draft, comment } = appendComment(current, input, new Date().toISOString());
-        await commit(draft);
-        return Object.freeze({ comment, revision: draft.revision });
+        if (expectedRevision !== current.revision) {
+          return Object.freeze({
+            kind: 'revisionConflict' as const,
+            expectedRevision,
+            actualRevision: current.revision,
+            latest: current,
+          });
+        }
+        const mutation = DraftMutationSchema.parse(
+          input.mutation.type === 'addComment'
+            ? { ...input.mutation, commentId: `comment_${randomUUID()}` }
+            : input.mutation,
+        );
+        const applied = applyDraftMutation(current, mutation, new Date().toISOString());
+        if (applied.kind !== 'applied') {
+          return applied;
+        }
+        const next = ReviewDraftV1Schema.parse({ ...applied.draft, revision: current.revision + 1 });
+        try {
+          await commit(next);
+        } catch {
+          return Object.freeze({ kind: 'persistenceFailure' as const });
+        }
+        return Object.freeze({ kind: 'accepted' as const, draft: next });
       });
     },
   });

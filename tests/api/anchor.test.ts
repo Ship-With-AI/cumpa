@@ -148,9 +148,9 @@ describe('closed capability content and anchor routes', () => {
     for (const side of ['base', 'head'] as const) {
       const response = await app.inject({
         method: 'POST',
-        url: '/api/draft/comments',
+        url: '/api/draft/mutations',
         headers,
-        payload: { fileId, side, line: 1, body: 'Please revise this.' },
+        payload: { type: 'addComment', expectedRevision: 0, fileId, side, line: 1, body: 'Please revise this.' },
       });
       expect(response.statusCode).toBe(201);
     }
@@ -208,7 +208,12 @@ describe('closed capability content and anchor routes', () => {
       },
     ];
     for (const { payload, statusCode } of invalidBodies) {
-      const response = await app.inject({ method: 'POST', url: '/api/draft/comments', headers, payload });
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/draft/mutations',
+        headers,
+        payload: { type: 'addComment', expectedRevision: 0, ...(payload as object) },
+      });
       expect(response.statusCode).toBe(statusCode);
       expectGenericDenial(response);
     }
@@ -226,9 +231,9 @@ describe('closed capability content and anchor routes', () => {
     onLookup.mockClear();
     const denied = await app.inject({
       method: 'POST',
-      url: '/api/draft/comments',
+      url: '/api/draft/mutations',
       headers: { ...headers, authorization: `Bearer ${'x'.repeat(43)}` },
-      payload: { fileId, side: 'base', line: 1, body: 'body' },
+      payload: { type: 'addComment', expectedRevision: 0, fileId, side: 'base', line: 1, body: 'body' },
     });
     expect(denied.statusCode).toBe(401);
     expectGenericDenial(denied);

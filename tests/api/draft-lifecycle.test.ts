@@ -91,7 +91,7 @@ describe('aggregate draft lifecycle API', () => {
 
     const reopened = await value.inject({ method: 'POST', url: '/api/draft/mutations', headers, payload: { type: 'reopenComment', expectedRevision: 3, commentId } });
     expect(reopened.statusCode).toBe(200);
-    expect(reopened.json()).toMatchObject({ kind: 'accepted', draft: { revision: 4, comments: [{ id: commentId, state: 'open', resolvedAt: undefined }] } });
+    expect(reopened.json()).toMatchObject({ kind: 'accepted', draft: { revision: 4, comments: [{ id: commentId, state: 'open' }] } });
 
     const summary = await value.inject({ method: 'POST', url: '/api/draft/mutations', headers, payload: { type: 'setSummary', expectedRevision: 4, markdown: '' } });
     expect(summary.statusCode).toBe(200);

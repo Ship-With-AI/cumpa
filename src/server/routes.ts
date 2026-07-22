@@ -1,13 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
-  AddCommentRequestSchema,
+  DraftMutationRequestSchema,
   OpaqueFileIdSchema,
 } from '../contracts/api.js';
 import { DurableAnchorV1Schema } from '../contracts/draft.js';
 import { buildDurableAnchor } from '../domain/anchor.js';
 import type { CapabilityRegistry } from './capabilities.js';
-import { DraftConflictError } from './draft-store.js';
+import type { DraftStoreMutation } from './draft-store.js';
 import { REQUEST_UNAVAILABLE_ERROR } from './security.js';
 
 const EMPTY_QUERY_SCHEMA = {
@@ -115,64 +115,72 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
     },
   );
 
-  app.post<{ Querystring: Record<string, never> }>(
-    '/api/draft/comments',
+  app.post<{ Querystring: Record<string, never>; Body: unknown }>(
+    '/api/draft/mutations',
+    { schema: { querystring: EMPTY_QUERY_SCHEMA } },
     async (request, reply) => {
-      if (Object.keys(request.query).length !== 0) {
+      const requestMutation = DraftMutationRequestSchema.safeParse(request.body);
+      if (!requestMutation.success) {
         return unavailable(reply, 400);
       }
-      const addRequest = AddCommentRequestSchema.safeParse(request.body);
-      if (!addRequest.success) {
-        return unavailable(reply, 400);
-      }
-      const metadata = capabilities.lookup(addRequest.data.fileId);
-      if (metadata === undefined) {
-        return unavailable(reply, 404);
-      }
-      if (metadata.availability.kind !== 'text') {
-        return unavailable(reply, 409);
-      }
-      const content = await capabilities.readContent(addRequest.data.fileId);
-      if (content === undefined) {
-        return unavailable(reply, 409);
-      }
-      const selectedSide = content[addRequest.data.side];
-      if (!selectedSide.exists) {
-        return unavailable(reply, 409);
-      }
-      if (
-        /(?:\r\n|\n)$/u.test(selectedSide.text) &&
-        addRequest.data.line === selectedSide.text.split(/\r\n|\n/u).length
-      ) {
-        return unavailable(reply, 409);
-      }
-      let anchor;
-      try {
-        anchor = DurableAnchorV1Schema.parse(
-          buildDurableAnchor({
-            path: selectedSide.path,
-            safeDisplayPath: selectedSide.path.display,
-            side: addRequest.data.side,
-            blobOid: selectedSide.blobOid,
-            line: addRequest.data.line,
-            text: selectedSide.text,
-          }),
-        );
-      } catch {
-        return unavailable(reply, 409);
-      }
-      try {
-        if (capabilities.onAnchorAdd !== undefined) {
-          await capabilities.onAnchorAdd({ body: addRequest.data.body, anchor });
-          return reply.code(201).send({ anchor });
+
+      const { expectedRevision } = requestMutation.data;
+      let mutation: DraftStoreMutation;
+      if (requestMutation.data.type === 'addComment') {
+        const content = await capabilities.readContent(requestMutation.data.fileId);
+        if (content === undefined || content[requestMutation.data.side].exists === false) {
+          return unavailable(reply, 409);
         }
-        const accepted = await capabilities.draftStore.add({
-          body: addRequest.data.body,
-          anchor,
-        });
-        return reply.code(201).send(accepted.comment);
-      } catch (error) {
-        return unavailable(reply, error instanceof DraftConflictError ? 409 : 500);
+        const selectedSide = content[requestMutation.data.side];
+        if (
+          /(?:\r\n|\n)$/u.test(selectedSide.text) &&
+          requestMutation.data.line === selectedSide.text.split(/\r\n|\n/u).length
+        ) {
+          return unavailable(reply, 409);
+        }
+        try {
+          mutation = {
+            type: 'addComment',
+            body: requestMutation.data.body,
+            anchor: DurableAnchorV1Schema.parse(
+              buildDurableAnchor({
+                path: selectedSide.path,
+                safeDisplayPath: selectedSide.path.display,
+                side: requestMutation.data.side,
+                blobOid: selectedSide.blobOid,
+                line: requestMutation.data.line,
+                text: selectedSide.text,
+              }),
+            ),
+          };
+        } catch {
+          return unavailable(reply, 409);
+        }
+        if (capabilities.onAnchorAdd !== undefined) {
+          try {
+            await capabilities.onAnchorAdd({ body: requestMutation.data.body, anchor: mutation.anchor });
+            return reply.code(201).send({ kind: 'accepted', draft: await capabilities.draftStore.load() });
+          } catch {
+            return unavailable(reply, 500);
+          }
+        }
+      } else {
+        const { expectedRevision: _expectedRevision, ...operation } = requestMutation.data;
+        mutation = operation;
+      }
+
+      const result = await capabilities.draftStore.mutate({ expectedRevision, mutation });
+      switch (result.kind) {
+        case 'accepted':
+          return reply.code(requestMutation.data.type === 'addComment' ? 201 : 200).send(result);
+        case 'revisionConflict':
+          return reply.code(409).send(result);
+        case 'invalidTarget':
+          return reply.code(404).send(result);
+        case 'illegalTransition':
+          return reply.code(409).send(result);
+        case 'persistenceFailure':
+          return reply.code(500).send(result);
       }
     },
   );

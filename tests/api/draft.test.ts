@@ -109,12 +109,12 @@ describe('comparison-local draft routes', () => {
 
     const added = await first.inject({
       method: 'POST',
-      url: '/api/draft/comments',
+      url: '/api/draft/mutations',
       headers,
-      payload: { fileId, side: 'head', line: 1, body: 'Keep this exact line.' },
+      payload: { type: 'addComment', expectedRevision: 0, fileId, side: 'head', line: 1, body: 'Keep this exact line.' },
     });
     expect(added.statusCode).toBe(201);
-    expect(added.json()).toMatchObject({ state: 'open', body: 'Keep this exact line.' });
+    expect(added.json()).toMatchObject({ kind: 'accepted', draft: { comments: [{ state: 'open', body: 'Keep this exact line.' }] } });
 
     const resumed = buildApp(repositoryRoot);
     expect((await resumed.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
@@ -130,25 +130,30 @@ describe('comparison-local draft routes', () => {
     const app = buildApp(await root());
     const accepted = await app.inject({
       method: 'POST',
-      url: '/api/draft/comments',
+      url: '/api/draft/mutations',
       headers,
-      payload: { fileId, side: 'base', line: 1, body: 'Check the prior version.' },
+      payload: { type: 'addComment', expectedRevision: 0, fileId, side: 'base', line: 1, body: 'Check the prior version.' },
     });
     expect(accepted.statusCode).toBe(201);
     expect(accepted.json()).toMatchObject({
-      id: expect.any(String),
-      state: 'open',
-      body: 'Check the prior version.',
-      anchor: { side: 'base', line: 1, blobOid: '4'.repeat(40), safeDisplayPath: 'src/review.ts' },
+      kind: 'accepted',
+      draft: {
+        comments: [{
+          id: expect.any(String),
+          state: 'open',
+          body: 'Check the prior version.',
+          anchor: { side: 'base', line: 1, blobOid: '4'.repeat(40), safeDisplayPath: 'src/review.ts' },
+        }],
+      },
     });
 
     const duplicate = await app.inject({
       method: 'POST',
-      url: '/api/draft/comments',
+      url: '/api/draft/mutations',
       headers,
-      payload: { fileId, side: 'base', line: 1, body: 'A different body cannot duplicate the anchor.' },
+      payload: { type: 'addComment', expectedRevision: 1, fileId, side: 'base', line: 1, body: 'A different body cannot duplicate the anchor.' },
     });
-    expect(duplicate.statusCode).toBe(409);
+    expect(duplicate.statusCode).toBe(404);
 
     const view = await app.inject({ method: 'GET', url: '/api/draft', headers });
     expect(view.json()).toMatchObject({ revision: 1, comments: [expect.objectContaining({ body: 'Check the prior version.' })] });
@@ -159,9 +164,9 @@ describe('comparison-local draft routes', () => {
     const initial = buildApp(repositoryRoot);
     const added = await initial.inject({
       method: 'POST',
-      url: '/api/draft/comments',
+      url: '/api/draft/mutations',
       headers,
-      payload: { fileId, side: 'head', line: 1, body: 'This anchor must remain exact.' },
+      payload: { type: 'addComment', expectedRevision: 0, fileId, side: 'head', line: 1, body: 'This anchor must remain exact.' },
     });
     expect(added.statusCode).toBe(201);
 
@@ -196,7 +201,7 @@ describe('comparison-local draft routes', () => {
       `${comparisonKey('1'.repeat(40), '2'.repeat(40))}.json`,
     );
     await writeFile(file, '{ invalid json');
-    const invalid = await app.inject({ method: 'POST', url: '/api/draft/comments', headers, payload: { fileId, side: 'head', line: 1, body: 'do not overwrite' } });
+    const invalid = await app.inject({ method: 'POST', url: '/api/draft/mutations', headers, payload: { type: 'addComment', expectedRevision: 0, fileId, side: 'head', line: 1, body: 'do not overwrite' } });
     expect(invalid.statusCode).toBe(500);
     expect(await readFile(file, 'utf8')).toBe('{ invalid json');
   });

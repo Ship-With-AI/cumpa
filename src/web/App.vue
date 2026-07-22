@@ -42,6 +42,7 @@ const identityPanel = ref<InstanceType<typeof IdentityPanel>>();
 const filesDrawer = ref<HTMLElement>();
 const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
+const draftRevision = ref(0);
 
 let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
@@ -157,12 +158,22 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
         diffWorkspace.value?.layout();
         break;
       case 'persist-comment':
-        void sessionClient?.addComment({
+        void sessionClient?.mutate({
+          type: 'addComment',
+          expectedRevision: draftRevision.value,
           fileId: command.fileId,
           side: command.side,
           line: command.line,
           body: command.body,
-        }).then((comment) => {
+        }).then((result) => {
+          if (result.kind !== 'accepted') {
+            throw new SessionClientError('draft', 'Comment wasn’t added. Your text is still here. Reload the latest draft before trying again.');
+          }
+          const comment = result.draft.comments.at(-1);
+          if (comment === undefined) {
+            throw new SessionClientError('draft', 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.');
+          }
+          draftRevision.value = result.draft.revision;
           dispatchWorkspace({
             type: 'add-succeeded',
             comment: {
@@ -334,6 +345,7 @@ onMounted(async () => {
     session.value = loaded;
     const reviewable = loaded.files.filter((file) => file.availability.kind === 'text');
     const draft = await sessionClient.getDraft();
+    draftRevision.value = draft.revision;
     const comments = reconcileDraftComments(draft.comments, loaded.files);
     if (reviewable.length > 0) {
       workspace = createWorkspaceState(reviewable.map((file) => file.fileId), comments);
