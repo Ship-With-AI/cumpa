@@ -5,6 +5,7 @@ import {
   closeSync,
   copyFileSync,
   existsSync,
+  readdirSync,
   mkdirSync,
   mkdtempSync,
   openSync,
@@ -82,8 +83,16 @@ function startGeneratedCli(repository: GitFixture, head = repository.headRef): R
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
       DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({
         cwd: repository.nestedCwd,
-        base: { label: 'main', revision: repository.baseRef },
-        head: { label: head.slice('refs/heads/'.length), revision: head },
+        base: {
+          label: 'main',
+          revision: repository.baseRef,
+          source: { kind: 'branch', id: 'fixture-base', refName: repository.baseRef },
+        },
+        head: {
+          label: head.slice('refs/heads/'.length),
+          revision: head,
+          source: { kind: 'branch', id: 'fixture-head', refName: head },
+        },
       }),
     },
     stdio: ['ignore', outputDescriptor, outputDescriptor],
@@ -258,6 +267,122 @@ test('complete draft lifecycle saves a safe summary and relaunches it through th
   try {
     await openGeneratedReview(page, await waitForLoopbackUrl(running));
     await expect(page.locator('.review-summary__preview')).toContainText('Review outcome');
+  } finally {
+    await stopGeneratedCli(running);
+    await fixture.cleanup();
+  }
+});
+
+async function createPersistedDraft(page: Page, fixture: GitFixture): Promise<string> {
+  const running = startGeneratedCli(fixture);
+  try {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openGeneratedReview(page, await waitForLoopbackUrl(running));
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    await activateMonacoLine(page, 'head', 'export const changed = "head value";', 9);
+    await page.locator('.monaco-anchor-zone--composer textarea').fill('Recovery seed comment.');
+    const response = page.waitForResponse((candidate) => candidate.url().includes('/api/draft/mutations'));
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    expect((await response).status()).toBe(201);
+  } finally {
+    await stopGeneratedCli(running);
+  }
+
+  const directory = join(fixture.root, '.diff-review', 'drafts');
+  const filename = readdirSync(directory).find((candidate) => candidate.endsWith('.json') && !candidate.includes('.bak'));
+  expect(filename).toBeDefined();
+  return join(directory, filename!);
+}
+
+test('corrupt draft recovery backs up exact bytes before starting a fresh packaged review', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createGitFixture({ anchoredReview: true });
+  let running: RunningCli | undefined;
+
+  try {
+    const draftPath = await createPersistedDraft(page, fixture);
+    const corrupted = Buffer.from('{ not a valid review draft', 'utf8');
+    writeFileSync(draftPath, corrupted);
+
+    running = startGeneratedCli(fixture);
+    await page.goto(await waitForLoopbackUrl(running), { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: 'Local review draft needs recovery' })).toBeVisible();
+    await expect(page.getByText('Read only', { exact: true })).toBeVisible();
+    await expect(page.locator('body')).not.toContainText(fixture.root);
+    await page.getByRole('button', { name: 'Back up and start new' }).click();
+    await page.getByRole('button', { name: 'Back up and start new' }).last().click();
+    await expect(page.getByRole('heading', { name: 'New draft started' })).toBeVisible();
+
+    const backup = readdirSync(join(fixture.root, '.diff-review', 'drafts'))
+      .find((candidate) => candidate.endsWith('.bak'));
+    expect(backup).toBeDefined();
+    expect(readFileSync(join(fixture.root, '.diff-review', 'drafts', backup!))).toEqual(corrupted);
+    expect(readFileSync(draftPath)).not.toEqual(corrupted);
+  } finally {
+    if (running !== undefined) await stopGeneratedCli(running);
+    await fixture.cleanup();
+  }
+});
+
+test('newer draft remains immutable while reveal keeps browser authority fixed and denies unauthenticated access', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createGitFixture({ anchoredReview: true });
+  let running: RunningCli | undefined;
+
+  try {
+    const draftPath = await createPersistedDraft(page, fixture);
+    const newer = {
+      ...JSON.parse(readFileSync(draftPath, 'utf8')) as Record<string, unknown>,
+      schemaVersion: 2,
+    };
+    writeFileSync(draftPath, JSON.stringify(newer));
+    const original = readFileSync(draftPath);
+
+    running = startGeneratedCli(fixture);
+    const url = await waitForLoopbackUrl(running);
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: 'This draft needs a newer Diff Review' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Back up and start new' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /reset|downgrade|migrat/i })).toHaveCount(0);
+    await expect(page.locator('body')).not.toContainText(fixture.root);
+
+    expect(await page.evaluate(async () => (await fetch('/api/draft/reveal')).status)).toBe(401);
+    await page.getByRole('button', { name: 'Reveal draft file' }).click();
+    await expect(page.locator('body')).not.toContainText(fixture.root);
+    expect(readFileSync(draftPath)).toEqual(original);
+  } finally {
+    if (running !== undefined) await stopGeneratedCli(running);
+    await fixture.cleanup();
+  }
+});
+
+test('selector drift reports complete OIDs while the packaged comparison stays pinned', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createGitFixture({ anchoredReview: true });
+  const pinnedHead = fixture.git(['rev-parse', fixture.headRef]).toString('utf8').trim();
+  const running = startGeneratedCli(fixture);
+
+  try {
+    await openGeneratedReview(page, await waitForLoopbackUrl(running));
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    await expect(page.getByText('head value', { exact: false })).toBeVisible();
+    fixture.git(['update-ref', fixture.headRef, fixture.futureHeadOid]);
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+    await page.waitForTimeout(50);
+    await page.evaluate(() => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    });
+
+    const notice = page.getByRole('heading', { name: 'Selected source changed — open review remains pinned' });
+    await expect(notice).toBeVisible({ timeout: 10_000 });
+    const drift = page.locator('.selector-drift-notice');
+    await expect(drift).toContainText(pinnedHead);
+    await expect(drift).toContainText(fixture.futureHeadOid);
+    await expect(page.getByText('head value', { exact: false })).toBeVisible();
   } finally {
     await stopGeneratedCli(running);
     await fixture.cleanup();
