@@ -44,7 +44,7 @@ async function buildApp(repositoryRoot: string) {
   const app = createSessionApp(comparison(repositoryRoot), {
     sessionToken: token,
     objectReader: {
-      read: async () => Buffer.from('after\n', 'utf8'),
+      read: async () => ({ kind: 'available' as const, bytes: Buffer.from('after\n', 'utf8') }),
     },
   });
   app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });

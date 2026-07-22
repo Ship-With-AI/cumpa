@@ -95,16 +95,9 @@ describe('comparison-local draft routes', () => {
     const repositoryRoot = await root();
     const first = buildApp(repositoryRoot);
 
-    expect((await first.inject({ method: 'GET', url: '/api/draft', headers })).json()).toEqual({
-      schemaVersion: 1,
-      comparison: {
-        baseCommitOid: '1'.repeat(40),
-        headCommitOid: '2'.repeat(40),
-        mergeBaseOid: '3'.repeat(40),
-      },
-      revision: 0,
-      summary: '',
-      comments: [],
+    expect((await first.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      kind: 'missing',
+      path: '.diff-review/drafts/' + comparisonKey('1'.repeat(40), '2'.repeat(40)) + '.json',
     });
 
     const added = await first.inject({
@@ -118,12 +111,15 @@ describe('comparison-local draft routes', () => {
 
     const resumed = buildApp(repositoryRoot);
     expect((await resumed.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
-      revision: 1,
-      comments: [{ state: 'open', body: 'Keep this exact line.', verification: { state: 'verified', reason: 'exact-match' } }],
+      kind: 'current',
+      draft: {
+        revision: 1,
+        comments: [{ state: 'open', body: 'Keep this exact line.', verification: { state: 'verified', reason: 'exact-match' } }],
+      },
     });
 
     const isolated = buildApp(repositoryRoot, '6'.repeat(40));
-    expect((await isolated.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({ revision: 0, comments: [] });
+    expect((await isolated.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({ kind: 'missing' });
   });
 
   test('stores only server-derived canonical records and rejects the exact side-specific duplicate', async () => {
@@ -156,7 +152,10 @@ describe('comparison-local draft routes', () => {
     expect(duplicate.statusCode).toBe(404);
 
     const view = await app.inject({ method: 'GET', url: '/api/draft', headers });
-    expect(view.json()).toMatchObject({ revision: 1, comments: [expect.objectContaining({ body: 'Check the prior version.' })] });
+    expect(view.json()).toMatchObject({
+      kind: 'current',
+      draft: { revision: 1, comments: [expect.objectContaining({ body: 'Check the prior version.' })] },
+    });
   });
 
   test('returns stale and orphaned presentation states without rewriting persisted anchors', async () => {
@@ -172,12 +171,14 @@ describe('comparison-local draft routes', () => {
 
     const stale = buildApp(repositoryRoot, undefined, undefined, undefined, 'changed text\n');
     expect((await stale.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
-      comments: [{ verification: { state: 'stale', reason: 'anchor-mismatch' } }],
+      kind: 'current',
+      draft: { comments: [{ verification: { state: 'stale', reason: 'anchor-mismatch' } }] },
     });
 
     const orphaned = buildApp(repositoryRoot, undefined, undefined, undefined, 'after\n', true);
     expect((await orphaned.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
-      comments: [{ verification: { state: 'orphaned', reason: 'anchor-unavailable' } }],
+      kind: 'current',
+      draft: { comments: [{ verification: { state: 'orphaned', reason: 'anchor-unavailable' } }] },
     });
   });
 
@@ -202,7 +203,7 @@ describe('comparison-local draft routes', () => {
     );
     await writeFile(file, '{ invalid json');
     const invalid = await app.inject({ method: 'POST', url: '/api/draft/mutations', headers, payload: { type: 'addComment', expectedRevision: 0, fileId, side: 'head', line: 1, body: 'do not overwrite' } });
-    expect(invalid.statusCode).toBe(500);
+    expect(invalid.statusCode).toBe(409);
     expect(await readFile(file, 'utf8')).toBe('{ invalid json');
   });
 });

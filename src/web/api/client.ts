@@ -1,23 +1,22 @@
-import { z } from 'zod';
-
 import {
+  DraftLoadResponseSchema,
   DraftMutationResultSchema,
   DraftMutationRequestSchema,
+  DraftRecoveryRequestSchema,
+  DraftRecoveryResultSchema,
+  DraftRevealResultSchema,
   FileContentResponseSchema,
   FileMetadataResponseSchema,
+  type DraftLoadResponse,
   type DraftMutationRequest,
   type DraftMutationResult,
+  type DraftRecoveryResult,
+  type DraftRevealResult,
   type FileContentResponse,
   type FileMetadataResponse,
   SessionResponseSchema,
   type SessionResponse,
 } from '../../contracts/api.js';
-import {
-  AnchorVerificationSchema,
-  CommentBodySchema,
-  DurableAnchorV1Schema,
-  SummaryMarkdownSchema,
-} from '../../contracts/draft.js';
 
 export const SECURITY_FAILURE_MESSAGE =
   'This request is not available in the current session. Relaunch Diff Review from the terminal.';
@@ -29,47 +28,7 @@ export const FILE_UNAVAILABLE_MESSAGE =
   'File details could not be loaded. Retry this file. If the problem continues, check the terminal diagnostic.';
 export const DRAFT_UNAVAILABLE_MESSAGE =
   'Local draft couldn’t be opened. Existing review data was left unchanged. Relaunch Diff Review or check the terminal for details.';
-const DraftCommentResponseSchema = z
-  .discriminatedUnion('state', [
-    z.strictObject({
-      id: z.string().regex(/^comment_[0-9a-f-]{36}$/u),
-      state: z.literal('open'),
-      body: CommentBodySchema,
-      anchor: DurableAnchorV1Schema,
-      createdAt: z.string().datetime(),
-      updatedAt: z.string().datetime(),
-      verification: AnchorVerificationSchema,
-    }),
-    z.strictObject({
-      id: z.string().regex(/^comment_[0-9a-f-]{36}$/u),
-      state: z.literal('resolved'),
-      body: CommentBodySchema,
-      anchor: DurableAnchorV1Schema,
-      createdAt: z.string().datetime(),
-      updatedAt: z.string().datetime(),
-      resolvedAt: z.string().datetime(),
-      verification: AnchorVerificationSchema,
-    }),
-  ])
-  .readonly();
-
-const DraftViewSchema = z
-  .strictObject({
-    schemaVersion: z.literal(1),
-    comparison: z
-      .strictObject({
-        baseCommitOid: z.string().regex(/^[0-9a-f]{40,64}$/),
-        headCommitOid: z.string().regex(/^[0-9a-f]{40,64}$/),
-        mergeBaseOid: z.string().regex(/^[0-9a-f]{40,64}$/),
-      })
-      .readonly(),
-    revision: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
-    summary: SummaryMarkdownSchema,
-    comments: z.array(DraftCommentResponseSchema).max(10_000).readonly(),
-  })
-  .readonly();
-
-export type DraftView = z.infer<typeof DraftViewSchema>;
+export type DraftView = Extract<DraftLoadResponse, { readonly kind: 'current' }>['draft'];
 export type SessionClientErrorKind = 'security' | 'session' | 'stopped' | 'file' | 'draft';
 
 export class SessionClientError extends Error {
@@ -84,7 +43,9 @@ export class SessionClientError extends Error {
 
 export interface SessionClient {
   mutate(request: DraftMutationRequest): Promise<DraftMutationResult>;
-  getDraft(): Promise<DraftView>;
+  getDraft(): Promise<DraftLoadResponse>;
+  recoverDraft(expectedFingerprint: string): Promise<DraftRecoveryResult>;
+  revealDraftFile(): Promise<DraftRevealResult>;
   getFileContent(fileId: string): Promise<FileContentResponse>;
   getFileMetadata(fileId: string): Promise<FileMetadataResponse>;
   getSession(): Promise<SessionResponse>;
@@ -176,7 +137,29 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       return result.data;
     },
     async getDraft() {
-      const result = DraftViewSchema.safeParse(await requestJson('/api/draft', 'GET', 'draft'));
+      const result = DraftLoadResponseSchema.safeParse(await requestJson('/api/draft', 'GET', 'draft'));
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async recoverDraft(expectedFingerprint) {
+      const payload = DraftRecoveryRequestSchema.safeParse({ expectedFingerprint });
+      if (!payload.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      const result = DraftRecoveryResultSchema.safeParse(
+        await requestJson('/api/draft/recovery', 'POST', 'draft', payload.data, [409, 500]),
+      );
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async revealDraftFile() {
+      const result = DraftRevealResultSchema.safeParse(
+        await requestJson('/api/draft/reveal', 'POST', 'draft', undefined, [500]),
+      );
       if (!result.success) {
         throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
       }

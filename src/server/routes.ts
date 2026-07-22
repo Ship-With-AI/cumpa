@@ -1,14 +1,21 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
+  DraftLoadResponseSchema,
   DraftMutationRequestSchema,
+  DraftMutationResultSchema,
+  DraftRecoveryRequestSchema,
+  DraftRecoveryResultSchema,
+  DraftRevealResultSchema,
   OpaqueFileIdSchema,
-  type DraftMutationResult,
+  type DraftMutationResult as ApiDraftMutationResult,
+  type DraftRecoveryResult as ApiDraftRecoveryResult,
 } from '../contracts/api.js';
 import { DurableAnchorV1Schema } from '../contracts/draft.js';
 import { buildDurableAnchor } from '../domain/anchor.js';
 import type { CapabilityRegistry } from './capabilities.js';
-import type { DraftStoreMutation } from './draft-store.js';
+import type { DraftLoadState } from './draft-loader.js';
+import type { DraftMutationResult as StoreDraftMutationResult, DraftStoreMutation } from './draft-store.js';
 import { REQUEST_UNAVAILABLE_ERROR } from './security.js';
 
 const EMPTY_QUERY_SCHEMA = {
@@ -30,22 +37,72 @@ function unavailable(reply: { code(statusCode: number): { send(payload: unknown)
   return reply.code(statusCode).send(REQUEST_UNAVAILABLE_ERROR);
 }
 
+function publicLoad(load: DraftLoadState, draft?: unknown): unknown {
+  switch (load.kind) {
+    case 'missing':
+      return DraftLoadResponseSchema.parse({ kind: load.kind, path: load.path });
+    case 'current':
+      return DraftLoadResponseSchema.parse({ kind: load.kind, path: load.path, draft });
+    case 'malformed':
+      return DraftLoadResponseSchema.parse({
+        kind: load.kind,
+        path: load.path,
+        fingerprint: load.fingerprint,
+        detail: load.detail,
+      });
+    case 'schemaInvalid':
+      return DraftLoadResponseSchema.parse({
+        kind: load.kind,
+        path: load.path,
+        fingerprint: load.fingerprint,
+        details: load.details,
+      });
+    case 'newerUnsupported':
+      return DraftLoadResponseSchema.parse({
+        kind: load.kind,
+        path: load.path,
+        foundVersion: load.foundVersion,
+        supportedVersion: load.supportedVersion,
+      });
+  }
+}
+
+async function draftView(capabilities: CapabilityRegistry, load: Extract<DraftLoadState, { readonly kind: 'current' }>): Promise<unknown> {
+  return {
+    ...load.draft,
+    comments: await Promise.all(
+      load.draft.comments.map(async (comment) => ({
+        ...comment,
+        verification: await capabilities.verifyAnchor(comment.anchor),
+      })),
+    ),
+  };
+}
+
+function publicMutationResult(result: StoreDraftMutationResult): ApiDraftMutationResult {
+  if (result.kind === 'readOnly') {
+    return DraftMutationResultSchema.parse({ kind: result.kind, load: publicLoad(result.load) });
+  }
+  return DraftMutationResultSchema.parse(result);
+}
+
 function mutationResponse(
   reply: { code(statusCode: number): { send(payload: unknown): unknown } },
-  result: DraftMutationResult,
+  result: StoreDraftMutationResult,
   acceptedStatus: 200 | 201,
 ) {
-  switch (result.kind) {
+  const response = publicMutationResult(result);
+  switch (response.kind) {
     case 'accepted':
-      return reply.code(acceptedStatus).send(result);
+      return reply.code(acceptedStatus).send(response);
     case 'revisionConflict':
-      return reply.code(409).send(result);
-    case 'invalidTarget':
-      return reply.code(404).send(result);
     case 'illegalTransition':
-      return reply.code(409).send(result);
+    case 'readOnly':
+      return reply.code(409).send(response);
+    case 'invalidTarget':
+      return reply.code(404).send(response);
     case 'persistenceFailure':
-      return reply.code(500).send(result);
+      return reply.code(500).send(response);
   }
 }
 
@@ -119,16 +176,8 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
         return unavailable(reply, 400);
       }
       try {
-        const draft = await capabilities.draftStore.load();
-        return {
-          ...draft,
-          comments: await Promise.all(
-            draft.comments.map(async (comment) => ({
-              ...comment,
-              verification: await capabilities.verifyAnchor(comment.anchor),
-            })),
-          ),
-        };
+        const load = await capabilities.draftStore.loadState();
+        return publicLoad(load, load.kind === 'current' ? await draftView(capabilities, load) : undefined);
       } catch {
         return unavailable(reply, 500);
       }
@@ -142,6 +191,10 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       const requestMutation = DraftMutationRequestSchema.safeParse(request.body);
       if (!requestMutation.success) {
         return unavailable(reply, 400);
+      }
+      const initialLoad = await capabilities.draftStore.loadState();
+      if (initialLoad.kind === 'malformed' || initialLoad.kind === 'schemaInvalid' || initialLoad.kind === 'newerUnsupported') {
+        return mutationResponse(reply, { kind: 'readOnly', load: initialLoad }, requestMutation.data.type === 'addComment' ? 201 : 200);
       }
 
       const { expectedRevision } = requestMutation.data;
@@ -179,10 +232,12 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
         if (capabilities.onAnchorAdd !== undefined) {
           try {
             await capabilities.onAnchorAdd({ body: requestMutation.data.body, anchor: mutation.anchor });
-            return reply.code(201).send({ kind: 'accepted', draft: await capabilities.draftStore.load() });
           } catch {
             return unavailable(reply, 500);
           }
+        }
+        if (capabilities.onAnchorAdd !== undefined) {
+          return reply.code(201).send({ kind: 'accepted' });
         }
       } else {
         const { expectedRevision: _expectedRevision, ...operation } = requestMutation.data;
@@ -190,11 +245,42 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       }
 
       const result = await capabilities.draftStore.mutate({ expectedRevision, mutation });
-      return mutationResponse(
-        reply,
-        result,
-        requestMutation.data.type === 'addComment' ? 201 : 200,
-      );
+      return mutationResponse(reply, result, requestMutation.data.type === 'addComment' ? 201 : 200);
+    },
+  );
+
+  app.post<{ Querystring: Record<string, never>; Body: unknown }>(
+    '/api/draft/recovery',
+    { schema: { querystring: EMPTY_QUERY_SCHEMA } },
+    async (request, reply) => {
+      const input = DraftRecoveryRequestSchema.safeParse(request.body);
+      if (!input.success) {
+        return unavailable(reply, 400);
+      }
+      const result = await capabilities.draftStore.recover(input.data);
+      let response: ApiDraftRecoveryResult;
+      if (result.kind === 'recoveryUnavailable') {
+        response = DraftRecoveryResultSchema.parse({ kind: result.kind, load: publicLoad(result.load) });
+      } else {
+        response = DraftRecoveryResultSchema.parse(result);
+      }
+      return reply.code(response.kind === 'recovered' ? 201 : response.kind === 'persistenceFailure' ? 500 : 409).send(response);
+    },
+  );
+
+  app.post<{ Querystring: Record<string, never>; Body: unknown }>(
+    '/api/draft/reveal',
+    { schema: { querystring: EMPTY_QUERY_SCHEMA } },
+    async (request, reply) => {
+      if (Object.keys(request.query).length !== 0 || request.body !== undefined) {
+        return unavailable(reply, 400);
+      }
+      try {
+        await capabilities.revealDraftFile();
+        return reply.code(200).send(DraftRevealResultSchema.parse({ kind: 'revealed' }));
+      } catch {
+        return reply.code(500).send(DraftRevealResultSchema.parse({ kind: 'revealFailed' }));
+      }
     },
   );
 }

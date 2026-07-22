@@ -4,6 +4,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 
 import type { FileContentResponse, SessionFile, SessionResponse } from '../contracts/api';
 import {
   createSessionClient,
+  DRAFT_UNAVAILABLE_MESSAGE,
   FILE_UNAVAILABLE_MESSAGE,
   SECURITY_FAILURE_MESSAGE,
   SessionClientError,
@@ -344,7 +345,13 @@ onMounted(async () => {
     const loaded = await sessionClient.getSession();
     session.value = loaded;
     const reviewable = loaded.files.filter((file) => file.availability.kind === 'text');
-    const draft = await sessionClient.getDraft();
+    const draftLoad = await sessionClient.getDraft();
+    if (draftLoad.kind !== 'current' && draftLoad.kind !== 'missing') {
+      throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+    }
+    const draft = draftLoad.kind === 'current'
+      ? draftLoad.draft
+      : { revision: 0, comments: [] as const };
     draftRevision.value = draft.revision;
     const comments = reconcileDraftComments(draft.comments, loaded.files);
     if (reviewable.length > 0) {

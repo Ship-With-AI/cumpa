@@ -3,6 +3,7 @@ import * as fs from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import {
+  CURRENT_DRAFT_SCHEMA_VERSION,
   DraftMutationSchema,
   ReviewDraftV1Schema,
   RevisionSchema,
@@ -10,7 +11,7 @@ import {
   type ReviewDraftV1,
 } from '../contracts/draft.js';
 import { applyDraftMutation } from '../draft/mutate-draft.js';
-import { comparisonKey } from '../domain/comparison-key.js';
+import { createDraftLoader, type DraftLoadState } from './draft-loader.js';
 
 export type DraftComparison = Readonly<{
   readonly baseCommitOid: string;
@@ -36,7 +37,6 @@ export type DraftFileSystem = Readonly<{
 export class DraftStoreError extends Error {}
 
 const queues = new Map<string, Promise<unknown>>();
-const draftsDirectory = '.diff-review/drafts';
 
 const nodeFileSystem: DraftFileSystem = {
   readFile: async (path) => fs.readFile(path),
@@ -63,49 +63,22 @@ const nodeFileSystem: DraftFileSystem = {
   },
 };
 
-function isMissing(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
+function hasCode(error: unknown, code: string): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === code;
 }
 
 function isUnsupportedDirectorySync(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error.code === 'EINVAL' || error.code === 'ENOTSUP' || error.code === 'EISDIR')
-  );
-}
-
-function sameComparison(left: DraftComparison, right: DraftComparison): boolean {
-  return (
-    left.baseCommitOid === right.baseCommitOid &&
-    left.headCommitOid === right.headCommitOid &&
-    left.mergeBaseOid === right.mergeBaseOid
-  );
+  return hasCode(error, 'EINVAL') || hasCode(error, 'ENOTSUP') || hasCode(error, 'EISDIR');
 }
 
 function initialDraft(comparison: DraftComparison): ReviewDraftV1 {
   return ReviewDraftV1Schema.parse({
-    schemaVersion: 1,
+    schemaVersion: CURRENT_DRAFT_SCHEMA_VERSION,
     comparison,
     revision: 0,
     summary: '',
     comments: [],
   });
-}
-
-function validateDraft(bytes: Buffer, comparison: DraftComparison): ReviewDraftV1 {
-  let value: unknown;
-  try {
-    value = JSON.parse(bytes.toString('utf8'));
-  } catch {
-    throw new DraftStoreError('Existing draft is invalid.');
-  }
-  const parsed = ReviewDraftV1Schema.safeParse(value);
-  if (!parsed.success || !sameComparison(parsed.data.comparison, comparison)) {
-    throw new DraftStoreError('Existing draft cannot be used for this comparison.');
-  }
-  return parsed.data;
 }
 
 async function runSerialized<T>(key: string, operation: () => Promise<T>): Promise<T> {
@@ -134,11 +107,21 @@ export type DraftMutationResult =
     }>
   | Readonly<{ readonly kind: 'invalidTarget' }>
   | Readonly<{ readonly kind: 'illegalTransition' }>
+  | Readonly<{ readonly kind: 'persistenceFailure' }>
+  | Readonly<{ readonly kind: 'readOnly'; readonly load: Exclude<DraftLoadState, { readonly kind: 'missing' | 'current' }> }>;
+
+export type DraftRecoveryResult =
+  | Readonly<{ readonly kind: 'recovered'; readonly backupPath: string; readonly draft: ReviewDraftV1 }>
+  | Readonly<{ readonly kind: 'fingerprintChanged' }>
+  | Readonly<{ readonly kind: 'recoveryUnavailable'; readonly load: DraftLoadState }>
   | Readonly<{ readonly kind: 'persistenceFailure' }>;
 
 export type DraftStore = Readonly<{
+  readonly canonicalPath: string;
   load(): Promise<ReviewDraftV1>;
+  loadState(): Promise<DraftLoadState>;
   mutate(input: Readonly<{ readonly expectedRevision: number; readonly mutation: DraftStoreMutation }>): Promise<DraftMutationResult>;
+  recover(input: Readonly<{ readonly expectedFingerprint: string }>): Promise<DraftRecoveryResult>;
 }>;
 
 export function createDraftStore(options: Readonly<{
@@ -147,24 +130,12 @@ export function createDraftStore(options: Readonly<{
   readonly fileSystem?: DraftFileSystem;
 }>): DraftStore {
   const fileSystem = options.fileSystem ?? nodeFileSystem;
-  const key = comparisonKey(options.comparison.baseCommitOid, options.comparison.headCommitOid);
-  const directory = join(options.repositoryRoot, draftsDirectory);
-  const canonicalPath = join(directory, `${key}.json`);
+  const loader = createDraftLoader({ repositoryRoot: options.repositoryRoot, comparison: options.comparison, fileSystem });
+  const { canonicalPath, directory, key, relativePath } = loader.paths;
   const queueKey = `${options.repositoryRoot}\u0000${key}`;
 
-  const load = async (): Promise<ReviewDraftV1> => {
-    try {
-      return validateDraft(await fileSystem.readFile(canonicalPath), options.comparison);
-    } catch (error) {
-      if (isMissing(error)) {
-        return initialDraft(options.comparison);
-      }
-      throw error;
-    }
-  };
-
   const commit = async (draft: ReviewDraftV1): Promise<void> => {
-    const bytes = Buffer.from(`${JSON.stringify(draft)}\n`, 'utf8');
+    const bytes = Buffer.from(`${JSON.stringify(ReviewDraftV1Schema.parse(draft))}\n`, 'utf8');
     const temporaryPath = join(directory, `.${key}.${randomUUID()}.tmp`);
     let handle: DraftFileHandle | undefined;
     let renamed = false;
@@ -189,26 +160,100 @@ export function createDraftStore(options: Readonly<{
         try {
           await handle.close();
         } catch {
-          // The only cleanup candidate is the temp sibling; the canonical file remains untouched.
+          // Canonical bytes are untouched until rename succeeds.
         }
       }
       if (!renamed) {
         try {
           await fileSystem.unlink(temporaryPath);
         } catch {
-          // Cleanup failure cannot justify touching the canonical file.
+          // A cleanup failure cannot justify touching canonical bytes.
         }
       }
       throw new DraftStoreError('Draft persistence failed.');
     }
   };
 
+  const backupRaw = async (raw: Buffer, expectedFingerprint: string): Promise<string> => {
+    await fileSystem.mkdir(directory);
+    for (let suffix = 0; ; suffix += 1) {
+      const name = suffix === 0
+        ? `${key}.corrupt.${expectedFingerprint}.bak`
+        : `${key}.corrupt.${expectedFingerprint}.${suffix}.bak`;
+      const absolutePath = join(directory, name);
+      let handle: DraftFileHandle | undefined;
+      let created = false;
+      try {
+        handle = await fileSystem.open(absolutePath, 'wx', 0o600);
+        created = true;
+        await handle.writeFile(raw);
+        await handle.sync();
+        await handle.close();
+        handle = undefined;
+        try {
+          await fileSystem.syncDirectory(directory);
+        } catch (error) {
+          if (!isUnsupportedDirectorySync(error)) {
+            throw error;
+          }
+        }
+        const verified = await fileSystem.readFile(absolutePath);
+        if (verified.length !== raw.length || !verified.equals(raw)) {
+          throw new DraftStoreError('Draft backup verification failed.');
+        }
+        return `${relativePath.slice(0, -'.json'.length)}.corrupt.${expectedFingerprint}${suffix === 0 ? '' : `.${suffix}`}.bak`;
+      } catch (error) {
+        if (handle !== undefined) {
+          try {
+            await handle.close();
+          } catch {
+            // The exclusively-created candidate must not be treated as a backup after an incomplete close.
+          }
+        }
+        if (hasCode(error, 'EEXIST')) {
+          try {
+            const existing = await fileSystem.readFile(absolutePath);
+            if (existing.length === raw.length && existing.equals(raw)) {
+              return `${relativePath.slice(0, -'.json'.length)}.corrupt.${expectedFingerprint}${suffix === 0 ? '' : `.${suffix}`}.bak`;
+            }
+          } catch {
+            // Never overwrite an existing backup whose bytes cannot be proven identical.
+          }
+          continue;
+        }
+        if (created) {
+          try {
+            await fileSystem.unlink(absolutePath);
+          } catch {
+            // Failed candidate cleanup does not affect the canonical draft.
+          }
+        }
+        throw error;
+      }
+    }
+  };
+
   return Object.freeze({
-    load,
+    canonicalPath,
+    async load() {
+      const load = await loader.load();
+      if (load.kind === 'missing') {
+        return initialDraft(options.comparison);
+      }
+      if (load.kind === 'current') {
+        return load.draft;
+      }
+      throw new DraftStoreError('Existing draft cannot be used for this comparison.');
+    },
+    loadState: async () => loader.load(),
     async mutate(input) {
       return runSerialized(queueKey, async () => {
         const expectedRevision = RevisionSchema.parse(input.expectedRevision);
-        const current = await load();
+        const load = await loader.load();
+        if (load.kind === 'malformed' || load.kind === 'schemaInvalid' || load.kind === 'newerUnsupported') {
+          return Object.freeze({ kind: 'readOnly' as const, load });
+        }
+        const current = load.kind === 'missing' ? initialDraft(options.comparison) : load.draft;
         if (expectedRevision !== current.revision) {
           return Object.freeze({
             kind: 'revisionConflict' as const,
@@ -233,6 +278,30 @@ export function createDraftStore(options: Readonly<{
           return Object.freeze({ kind: 'persistenceFailure' as const });
         }
         return Object.freeze({ kind: 'accepted' as const, draft: next });
+      });
+    },
+    async recover(input) {
+      return runSerialized(queueKey, async () => {
+        const load = await loader.load();
+        if (load.kind !== 'malformed' && load.kind !== 'schemaInvalid') {
+          return Object.freeze({ kind: 'recoveryUnavailable' as const, load });
+        }
+        if (load.fingerprint !== input.expectedFingerprint) {
+          return Object.freeze({ kind: 'fingerprintChanged' as const });
+        }
+        let backupPath: string;
+        try {
+          backupPath = await backupRaw(load.raw, load.fingerprint);
+        } catch {
+          return Object.freeze({ kind: 'persistenceFailure' as const });
+        }
+        const draft = initialDraft(options.comparison);
+        try {
+          await commit(draft);
+        } catch {
+          return Object.freeze({ kind: 'persistenceFailure' as const });
+        }
+        return Object.freeze({ kind: 'recovered' as const, backupPath, draft });
       });
     },
   });

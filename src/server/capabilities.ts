@@ -53,11 +53,14 @@ const LANGUAGE_BY_BASENAME: Readonly<Record<string, string>> = {
 };
 const strictTextDecoder = new TextDecoder('utf-8', { fatal: true });
 
+export type DraftRevealPort = (canonicalPath: string) => Promise<void>;
+
 export type CapabilityRegistryOptions = Readonly<{
   readonly onCapabilityLookup?: (fileId: string) => void;
   readonly objectReader?: ObjectReader;
   readonly onAnchorAdd?: AnchorAddPort;
   readonly draftStore?: DraftStore;
+  readonly revealDraftFile?: DraftRevealPort;
 }>;
 
 export type CapabilityRegistry = Readonly<{
@@ -67,6 +70,7 @@ export type CapabilityRegistry = Readonly<{
   readonly lookup: (fileId: string) => FileMetadataResponse | undefined;
   readonly readContent: (fileId: string) => Promise<FileContentResponse | undefined>;
   readonly verifyAnchor: (anchor: DurableAnchorV1) => Promise<AnchorVerification>;
+  readonly revealDraftFile: () => Promise<void>;
 }>;
 
 function toSessionEndpoint(endpoint: PinnedComparison['base']) {
@@ -175,6 +179,12 @@ export function createCapabilityRegistry(
     session,
     onAnchorAdd: options.onAnchorAdd,
     draftStore,
+    async revealDraftFile() {
+      if (options.revealDraftFile === undefined) {
+        throw new Error('Draft reveal adapter is unavailable.');
+      }
+      await options.revealDraftFile(draftStore.canonicalPath);
+    },
     lookup(fileId: string) {
       options.onCapabilityLookup?.(fileId);
       return filesByCapability.get(fileId);

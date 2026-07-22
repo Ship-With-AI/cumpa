@@ -81,9 +81,16 @@ const DraftCommentSchema = z
   ])
   .readonly();
 
+export const CURRENT_DRAFT_SCHEMA_VERSION = 1;
+
+export const DraftVersionEnvelopeSchema = z
+  .object({ schemaVersion: z.number().int().positive() })
+  .passthrough()
+  .readonly();
+
 export const ReviewDraftV1Schema = z
   .strictObject({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(CURRENT_DRAFT_SCHEMA_VERSION),
     comparison: DraftComparisonSchema,
     revision: RevisionSchema,
     summary: SummaryMarkdownSchema,

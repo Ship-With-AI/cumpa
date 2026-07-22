@@ -8,8 +8,10 @@ import {
   GitObjectIdSchema,
 } from './comparison.js';
 import {
+  AnchorVerificationSchema,
   CommentBodySchema,
   CommentIdSchema,
+  DurableAnchorV1Schema,
   RevisionSchema,
   ReviewDraftV1Schema,
   SummaryMarkdownSchema,
@@ -62,6 +64,97 @@ export const DraftMutationRequestSchema = z
   ])
   .readonly();
 
+const DraftCommentViewSchema = z
+  .discriminatedUnion('state', [
+    z.strictObject({
+      id: CommentIdSchema,
+      state: z.literal('open'),
+      body: CommentBodySchema,
+      anchor: DurableAnchorV1Schema,
+      createdAt: z.string().datetime(),
+      updatedAt: z.string().datetime(),
+      verification: AnchorVerificationSchema,
+    }),
+    z.strictObject({
+      id: CommentIdSchema,
+      state: z.literal('resolved'),
+      body: CommentBodySchema,
+      anchor: DurableAnchorV1Schema,
+      createdAt: z.string().datetime(),
+      updatedAt: z.string().datetime(),
+      resolvedAt: z.string().datetime(),
+      verification: AnchorVerificationSchema,
+    }),
+  ])
+  .readonly();
+
+export const DraftViewSchema = z
+  .strictObject({
+    schemaVersion: z.literal(1),
+    comparison: z
+      .strictObject({
+        baseCommitOid: GitObjectIdSchema,
+        headCommitOid: GitObjectIdSchema,
+        mergeBaseOid: GitObjectIdSchema,
+      })
+      .readonly(),
+    revision: RevisionSchema,
+    summary: SummaryMarkdownSchema,
+    comments: z.array(DraftCommentViewSchema).max(10_000).readonly(),
+  })
+  .readonly();
+
+export const SafeDraftPathSchema = z
+  .string()
+  .regex(/^\.diff-review\/drafts\/[A-Za-z0-9._-]+$/u);
+
+const DraftMalformedLoadSchema = z
+  .strictObject({
+    kind: z.literal('malformed'),
+    path: SafeDraftPathSchema,
+    fingerprint: z.string().regex(/^[0-9a-f]{64}$/u),
+    detail: z.strictObject({ message: z.string().min(1).max(160) }).readonly(),
+  })
+  .readonly();
+
+const DraftSchemaInvalidLoadSchema = z
+  .strictObject({
+    kind: z.literal('schemaInvalid'),
+    path: SafeDraftPathSchema,
+    fingerprint: z.string().regex(/^[0-9a-f]{64}$/u),
+    details: z
+      .array(z.strictObject({ path: z.string().max(160), message: z.string().min(1).max(160) }).readonly())
+      .min(1)
+      .max(8)
+      .readonly(),
+  })
+  .readonly();
+
+const DraftNewerUnsupportedLoadSchema = z
+  .strictObject({
+    kind: z.literal('newerUnsupported'),
+    path: SafeDraftPathSchema,
+    foundVersion: z.number().int().positive(),
+    supportedVersion: z.literal(1),
+  })
+  .readonly();
+
+export const DraftLoadResponseSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('missing'), path: SafeDraftPathSchema }).readonly(),
+    z.strictObject({ kind: z.literal('current'), path: SafeDraftPathSchema, draft: DraftViewSchema }).readonly(),
+    DraftMalformedLoadSchema,
+    DraftSchemaInvalidLoadSchema,
+    DraftNewerUnsupportedLoadSchema,
+  ])
+  .readonly();
+
+const DraftReadOnlyLoadSchema = z.union([
+  DraftMalformedLoadSchema,
+  DraftSchemaInvalidLoadSchema,
+  DraftNewerUnsupportedLoadSchema,
+]);
+
 export const DraftMutationAcceptedSchema = z
   .strictObject({
     kind: z.literal('accepted'),
@@ -83,11 +176,36 @@ export const DraftMutationFailureSchema = z
     z.strictObject({ kind: z.literal('invalidTarget') }),
     z.strictObject({ kind: z.literal('illegalTransition') }),
     z.strictObject({ kind: z.literal('persistenceFailure') }),
+    z.strictObject({ kind: z.literal('readOnly'), load: DraftReadOnlyLoadSchema }),
   ])
   .readonly();
 
 export const DraftMutationResultSchema = z
   .union([DraftMutationAcceptedSchema, DraftMutationConflictSchema, DraftMutationFailureSchema])
+  .readonly();
+
+export const DraftRecoveryRequestSchema = z
+  .strictObject({ expectedFingerprint: z.string().regex(/^[0-9a-f]{64}$/u) })
+  .readonly();
+
+export const DraftRecoveryResultSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({
+      kind: z.literal('recovered'),
+      backupPath: SafeDraftPathSchema,
+      draft: ReviewDraftV1Schema,
+    }).readonly(),
+    z.strictObject({ kind: z.literal('fingerprintChanged') }).readonly(),
+    z.strictObject({ kind: z.literal('recoveryUnavailable'), load: DraftLoadResponseSchema }).readonly(),
+    z.strictObject({ kind: z.literal('persistenceFailure') }).readonly(),
+  ])
+  .readonly();
+
+export const DraftRevealResultSchema = z
+  .union([
+    z.strictObject({ kind: z.literal('revealed') }).readonly(),
+    z.strictObject({ kind: z.literal('revealFailed') }).readonly(),
+  ])
   .readonly();
 
 const ExistingFileContentSideSchema = z
@@ -186,5 +304,9 @@ export type FileMetadataResponse = z.infer<
 export type AddCommentRequest = z.infer<typeof AddCommentRequestSchema>;
 export type DraftMutationRequest = z.infer<typeof DraftMutationRequestSchema>;
 export type DraftMutationResult = z.infer<typeof DraftMutationResultSchema>;
+export type DraftLoadResponse = z.infer<typeof DraftLoadResponseSchema>;
+export type DraftRecoveryRequest = z.infer<typeof DraftRecoveryRequestSchema>;
+export type DraftRecoveryResult = z.infer<typeof DraftRecoveryResultSchema>;
+export type DraftRevealResult = z.infer<typeof DraftRevealResultSchema>;
 export type FileContentResponse = z.infer<typeof FileContentResponseSchema>;
 export type ApiError = z.infer<typeof ApiErrorSchema>;
