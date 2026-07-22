@@ -15,8 +15,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   cancelSummary: [];
   delete: [commentId: string];
+  copyRecordedAnchor: [commentId: string];
   edit: [commentId: string];
   reopen: [commentId: string];
+  inspectRecordedFile: [commentId: string];
   reloadLatest: [];
   resolve: [commentId: string];
   saveComment: [commentId: string];
@@ -33,8 +35,16 @@ function forwardCommentBuffer(commentId: string, value: string): void {
 
 <template>
   <ReviewPanel
-    v-bind="props"
+    :comments="comments"
+    :inventory="inventory"
+    :summary="summary"
+    :summary-buffer="summaryBuffer"
+    :comment-buffers="commentBuffers"
+    :pending="pending"
+    :conflict="conflict"
     @cancel-summary="emit('cancelSummary')"
+    @copy-recorded-anchor="emit('copyRecordedAnchor', $event)"
+    @inspect-recorded-file="emit('inspectRecordedFile', $event)"
     @delete="emit('delete', $event)"
     @edit="emit('edit', $event)"
     @reopen="emit('reopen', $event)"

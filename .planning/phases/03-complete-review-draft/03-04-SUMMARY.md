@@ -110,6 +110,18 @@ Passed:
 
 **Total deviations:** 2 auto-fixed (1 missing critical wiring, 1 regression).
 
+### Post-wave Regression Repair
+
+**3. [Rule 1 - Regression] Restored anchored-workspace behavior without changing the Review panel contract.**
+- **Found during:** Phase 03 post-wave browser feedback loop.
+- **Issue:** Accepted mutation responses carry `ReviewDraftV1` canonical records without verification metadata. Passing those records through load-time reconciliation discarded accepted comments; the Review panel also projected full workspace records into reduced group records, losing immutable anchor diagnostics. An asynchronous Monaco file load could clear a just-activated composer anchor.
+- **Fix:** Merge accepted canonical lifecycle fields into existing immutable verified records, add the new verified record only after its accepted response, restore full workspace records after deterministic grouping, and reapply the active composer anchor after the current Monaco load completes. The legacy `Comments` locator now uses an exact accessible name because the intentional nested `Open comments` heading is also present.
+- **Files modified:** `src/web/App.vue`, `src/web/components/DiffWorkspace.vue`, `src/web/components/CommentsRail.vue`, `src/web/components/ReviewPanel.vue`, `tests/integration/anchored-workspace.spec.ts`.
+- **Verification:** `npm run test:browser -- tests/integration/anchored-workspace.spec.ts tests/integration/complete-review-panel.spec.ts` — 6 passed.
+- **Committed in:** this commit.
+
+**Total deviations:** 3 auto-fixed (1 missing critical wiring, 2 regressions).
+
 ## Exclusion Audit
 
 No soft delete/undo, reply/thread model, optimistic canonical replacement, fuzzy anchor relocation, force overwrite, source mutation, alternate HTTP client, extra Monaco adapter, Phase 4 export control, package version substitution, formatter, linter, build, or project-wide suite was introduced or run.

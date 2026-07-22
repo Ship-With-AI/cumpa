@@ -253,7 +253,7 @@ test('diff navigation and session state', async ({ page }) => {
   await expect.poll(() => page.locator('.review-main').evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(640);
   await expect(page.getByRole('button', { name: 'Files', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Comments', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Comments' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Comments', exact: true })).toBeVisible();
 
   expect(pageErrors).toEqual([]);
   expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);

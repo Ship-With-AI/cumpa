@@ -141,7 +141,18 @@ async function loadContent(): Promise<void> {
   if (adapter === undefined) return;
   const version = ++loadVersion;
   await adapter.setFile(immutableFile());
-  if (version === loadVersion) emit('ready', props.content.fileId);
+  if (version !== loadVersion) return;
+
+  const composer = props.composer;
+  if (composer !== undefined && composer.side !== undefined && composer.line !== undefined) {
+    const anchor = composerAnchor(composer.side, composer.line);
+    observedAnchor = anchor;
+    focusComposerAnchor = anchor;
+    adapter.setActiveAnchor({ fileId: props.content.fileId, side: composer.side, line: composer.line });
+    void nextTick(renderAnnotation);
+  }
+
+  emit('ready', props.content.fileId);
 }
 
 function previousChange(): void {

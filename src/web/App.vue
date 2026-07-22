@@ -25,6 +25,18 @@ import type { WorkspaceComment, WorkspaceState } from './model/workspace-state.j
 import { createReviewDraftState, type ReviewDraftState, type ReviewDraftSnapshot } from './model/review-draft-state.js';
 import type { DraftMutationRequest } from '../contracts/api.js';
 
+type CanonicalReviewDraft = Readonly<{
+  revision: number;
+  summary: string;
+  comments: readonly Readonly<{
+    id: string;
+    state: WorkspaceComment['state'];
+    body: string;
+    anchor: WorkspaceComment['recordedAnchor'];
+    createdAt: string;
+  }>[];
+}>;
+
 const session = shallowRef<SessionResponse>();
 const errorMessage = ref('');
 const selectedFile = shallowRef<SessionFile>();
@@ -142,7 +154,7 @@ async function loadFile(file: SessionFile): Promise<void> {
   }
 }
 
-function reviewCanonical(draft: Pick<DraftView, 'revision' | 'summary' | 'comments'>) {
+function reviewCanonical(draft: CanonicalReviewDraft) {
   return {
     revision: draft.revision,
     summary: draft.summary,
@@ -158,16 +170,34 @@ function reviewCanonical(draft: Pick<DraftView, 'revision' | 'summary' | 'commen
   };
 }
 
+function acceptedWorkspaceComments(
+  draft: CanonicalReviewDraft,
+  addedComment?: WorkspaceComment,
+): readonly WorkspaceComment[] {
+  const existing = new Map(workspace?.getState().comments.map((comment) => [comment.id, comment]));
+  return draft.comments.flatMap((comment) => {
+    const previous = existing.get(comment.id);
+    if (previous !== undefined) {
+      return [{ ...previous, state: comment.state, body: comment.body }];
+    }
+    return addedComment?.id === comment.id ? [addedComment] : [];
+  });
+}
+
 function refreshReviewSnapshot(): void {
   if (reviewState !== undefined) reviewDraft.value = reviewState.snapshot();
 }
 
-function acceptReviewDraft(draft: DraftView, successfulBuffer?: 'summary' | string): void {
+function acceptReviewDraft(
+  draft: CanonicalReviewDraft,
+  successfulBuffer?: 'summary' | string,
+  addedComment?: WorkspaceComment,
+): void {
   reviewState?.accept(reviewCanonical(draft), successfulBuffer);
   refreshReviewSnapshot();
   draftRevision.value = draft.revision;
-  if (workspace !== undefined && session.value !== undefined) {
-    const transition = workspace.replaceComments(reconcileDraftComments(draft.comments, session.value.files));
+  if (workspace !== undefined) {
+    const transition = workspace.replaceComments(acceptedWorkspaceComments(draft, addedComment));
     workspaceState.value = transition.state;
     runCommands(transition.commands);
   }
@@ -256,27 +286,27 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
           if (comment === undefined) {
             throw new SessionClientError('draft', 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.');
           }
-          acceptReviewDraft(result.draft);
-          dispatchWorkspace({
-            type: 'add-succeeded',
-            comment: {
-              id: comment.id,
-              fileId: command.fileId,
-              exactFile: { kind: 'available', fileId: command.fileId },
-              side: comment.anchor.side,
-              line: comment.anchor.line,
-              body: comment.body,
-              state: comment.state,
-              createdAt: comment.createdAt,
-              status: comment.verification.state,
-              recordedAnchor: comment.anchor,
-            },
-          });
+          const workspaceComment: WorkspaceComment = {
+            id: comment.id,
+            fileId: command.fileId,
+            exactFile: { kind: 'available', fileId: command.fileId },
+            side: comment.anchor.side,
+            line: comment.anchor.line,
+            body: comment.body,
+            state: comment.state,
+            createdAt: comment.createdAt,
+            status: 'verified',
+            recordedAnchor: comment.anchor,
+          };
+          acceptReviewDraft(result.draft, undefined, workspaceComment);
+          dispatchWorkspace({ type: 'add-succeeded', comment: workspaceComment });
           announce(`Comment added and saved locally on ${command.side} line ${command.line}.`);
-        }).catch(() => dispatchWorkspace({
-          type: 'add-failed',
-          message: 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.',
-        }));
+        }).catch(() => {
+          dispatchWorkspace({
+            type: 'add-failed',
+            message: 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.',
+          });
+        });
         break;
       case 'reveal-comment-context':
       case 'reveal-line':
@@ -575,8 +605,10 @@ onBeforeUnmount(() => {
           :conflict="reviewDraft.conflict !== null"
           @cancel-summary="reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot()"
           @delete="mutateComment($event, 'deleteComment')"
+          @copy-recorded-anchor="copyRecordedAnchor"
           @reopen="mutateComment($event, 'reopenComment')"
           @resolve="mutateComment($event, 'resolveComment')"
+          @inspect-recorded-file="inspectRecordedFile"
           @reload-latest="reloadLatestReview"
           @save-comment="saveComment"
           @save-summary="saveSummary"
