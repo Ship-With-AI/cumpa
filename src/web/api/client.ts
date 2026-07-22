@@ -14,6 +14,8 @@ import {
   type DraftRevealResult,
   type FileContentResponse,
   type FileMetadataResponse,
+  SelectorDriftResponseSchema,
+  type SelectorDriftResponse,
   SessionResponseSchema,
   type SessionResponse,
 } from '../../contracts/api.js';
@@ -49,6 +51,7 @@ export interface SessionClient {
   getFileContent(fileId: string): Promise<FileContentResponse>;
   getFileMetadata(fileId: string): Promise<FileMetadataResponse>;
   getSession(): Promise<SessionResponse>;
+  getSelectorDrift(): Promise<SelectorDriftResponse>;
 }
 
 export interface SessionClientEnvironment {
@@ -180,6 +183,15 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       );
       if (!result.success) {
         throw new SessionClientError('file', FILE_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async getSelectorDrift() {
+      const result = SelectorDriftResponseSchema.safeParse(
+        await requestJson('/api/selector-drift', 'GET', 'session'),
+      );
+      if (!result.success) {
+        throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
       }
       return result.data;
     },

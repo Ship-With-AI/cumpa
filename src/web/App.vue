@@ -8,6 +8,7 @@ import type {
   FileContentResponse,
   SessionFile,
   SessionResponse,
+  SelectorDriftResponse,
 } from '../contracts/api';
 import {
   createSessionClient,
@@ -24,6 +25,7 @@ import ErrorState from './components/ErrorState.vue';
 import FileTree from './components/FileTree.vue';
 import IdentityHeader from './components/IdentityHeader.vue';
 import IdentityPanel from './components/IdentityPanel.vue';
+import SelectorDriftNotice from './components/SelectorDriftNotice.vue';
 import KeyboardHelp from './components/KeyboardHelp.vue';
 import ReviewToolbar from './components/ReviewToolbar.vue';
 import type { WorkspaceCommand, WorkspaceEvent } from './model/workspace-state.js';
@@ -37,6 +39,10 @@ import {
   type ReviewDraftState,
   type ReviewDraftSnapshot,
 } from './model/review-draft-state.js';
+import {
+  createSelectorDriftState,
+  type SelectorDriftState,
+} from './model/selector-drift-state.js';
 import type { DraftMutationRequest } from '../contracts/api.js';
 
 type CanonicalReviewDraft = Readonly<{
@@ -76,6 +82,7 @@ const reviewDraft = shallowRef<ReviewDraftSnapshot>();
 const draftLoad = shallowRef<DraftLoadResponse>();
 const recoveredDraft = shallowRef<Extract<DraftRecoveryResult, { readonly kind: 'recovered' }>>();
 const recoveredDraftOpen = ref(false);
+const selectorDriftStatus = shallowRef<SelectorDriftResponse>();
 const primarySurface = computed(() => recoveredDraftOpen.value
   ? 'workspace'
   : reviewPrimarySurface(draftLoad.value));
@@ -87,6 +94,7 @@ const recoveryLoad = computed<ReadOnlyDraftLoad | undefined>(() => {
 });
 
 let reviewState: ReviewDraftState | undefined;
+let selectorDriftState: SelectorDriftState | undefined;
 
 let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
@@ -526,6 +534,8 @@ onMounted(async () => {
     sessionClient = createSessionClient();
     const loaded = await sessionClient.getSession();
     session.value = loaded;
+    selectorDriftState = createSelectorDriftState(sessionClient, announce, { status: selectorDriftStatus });
+    selectorDriftState.start();
     const loadedDraft = await sessionClient.getDraft();
     draftLoad.value = loadedDraft;
     if (loadedDraft.kind === 'current' || loadedDraft.kind === 'missing') {
@@ -549,6 +559,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeydown);
   filesDrawerMedia?.removeEventListener('change', handleViewportChange);
   commentsDrawerMedia?.removeEventListener('change', handleViewportChange);
+  selectorDriftState?.stop();
 });
 </script>
 
@@ -570,6 +581,7 @@ onBeforeUnmount(() => {
     <a class="skip-link" href="#diff-review-heading">Skip to diff</a>
     <a class="skip-link" href="#comments-heading">Skip to comments</a>
     <IdentityHeader ref="identityHeader" :session="session" :expanded="identityOpen" @toggle="toggleIdentity" />
+    <SelectorDriftNotice :drift="selectorDriftStatus" />
     <IdentityPanel ref="identityPanel" v-if="identityOpen" :session="session" :modal="isNarrow" @close="closeIdentity" />
 
     <DraftRecovery

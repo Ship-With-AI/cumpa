@@ -49,6 +49,20 @@ function movedBase(): SelectorDriftResponse {
   });
 }
 
+function unavailableHead(): SelectorDriftResponse {
+  return SelectorDriftResponseSchema.parse({
+    base: { kind: 'unchanged', role: 'base' },
+    head: {
+      kind: 'unavailable',
+      role: 'head',
+      label: 'head worktree',
+      selectorType: 'worktree',
+      oldOid: headOid,
+      reason: 'source-unavailable',
+    },
+  });
+}
+
 function json(response: ServerResponse, body: unknown): void {
   response.statusCode = 200;
   response.setHeader('content-type', 'application/json');
@@ -62,6 +76,12 @@ function readBody(request: IncomingMessage): Promise<string> {
   request.on('end', () => resolveBody(body));
   return promise;
 }
+function flush(): Promise<void> {
+  const { promise, resolve } = Promise.withResolvers<void>();
+  setTimeout(resolve, 0);
+  return promise;
+}
+
 
 async function startAppServer(): Promise<string> {
   server = await createServer({
@@ -70,7 +90,7 @@ async function startAppServer(): Promise<string> {
       name: 'selector-drift-ui-api',
       configureServer(viteServer) {
         viteServer.middlewares.use('/api/session', (_request, response) => json(response, session));
-        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, { kind: 'missing' }));
+        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, { kind: 'missing', path: '.diff-review/drafts/active-review.json' }));
         viteServer.middlewares.use('/api/selector-drift', async (request, response) => {
           driftRequests.push({ body: await readBody(request), method: request.method ?? '', url: request.url ?? '' });
           json(response, driftResponse);
@@ -125,7 +145,7 @@ test('visible-only polling coalesces overlap and announces each selector transit
       },
       setInterval(callback) {
         interval = callback as () => void;
-        return 1 as unknown as ReturnType<typeof setInterval>;
+        return 1;
       },
       clearInterval() { intervalCleared = true; },
     },
@@ -138,23 +158,23 @@ test('visible-only polling coalesces overlap and announces each selector transit
 
   first.resolve(movedBase());
   await first.promise;
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   expect(requestCount).toBe(2);
   expect(announcements).toEqual(['Selected source changed. The open review remains pinned.']);
 
   interval?.();
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   expect(announcements).toHaveLength(1);
 
   visibilityState = 'hidden';
   listeners.get('visibilitychange')?.();
   interval?.();
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   expect(requestCount).toBe(3);
 
   visibilityState = 'visible';
   listeners.get('visibilitychange')?.();
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await flush();
   expect(requestCount).toBe(4);
 
   drift.stop();
@@ -163,6 +183,12 @@ test('visible-only polling coalesces overlap and announces each selector transit
 
 test('selector drift uses the fixed endpoint and leaves the pinned review and focused draft buffer intact', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
+  const browserRequests: { body: string | null; method: string; url: string }[] = [];
+  page.on('request', (request) => {
+    if (request.url().includes('/api/selector-drift')) {
+      browserRequests.push({ body: request.postData(), method: request.method(), url: request.url() });
+    }
+  });
   await openReview(page);
   expect(driftRequests).toHaveLength(1);
 
@@ -185,6 +211,7 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   await expect(notice).toContainText(baseOid);
   await expect(notice).toContainText(movedBaseOid);
 
+  await page.getByRole('button', { name: 'Write summary' }).click();
   const summary = page.getByLabel('Review summary (Markdown)');
   await summary.fill('Unsaved review buffer');
   await summary.focus();
@@ -195,12 +222,21 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
 
   await page.getByRole('button', { name: `Copy pinned Base commit ${baseOid}` }).click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(baseOid);
+
+  driftResponse = unavailableHead();
+  await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+  await expect(notice).toContainText('Head source unavailable');
+  await expect(notice).toContainText(headOid);
+  await expect(notice).toContainText('This source is no longer available.');
   await page.getByRole('button', { name: 'Launch new comparison' }).click();
   await expect(notice).toContainText('Return to the terminal and launch Diff Review again, then choose the current sources. This open review will remain pinned.');
 
-  for (const request of driftRequests) {
+  for (const request of browserRequests) {
     expect(request.method).toBe('GET');
-    expect(request.url).toBe('/');
+    expect(request.url).toBe(`${origin}api/selector-drift`);
+    expect(request.body).toBeNull();
+  }
+  for (const request of driftRequests) {
     expect(request.body).toBe('');
   }
 });
