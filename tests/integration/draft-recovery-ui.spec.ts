@@ -201,6 +201,24 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   await expect(page.getByRole('heading', { name: 'No PR-style changes in this pinned comparison' })).toBeVisible();
 });
 
+test('schema-invalid drafts remain read only while exposing only bounded validation details', async ({ page }) => {
+  draftLoad = DraftLoadResponseSchema.parse({
+    kind: 'schemaInvalid',
+    path: safeDraftPath,
+    fingerprint,
+    details: [{ path: 'comments.0.body', message: 'Required' }],
+  });
+
+  await openDraft(page);
+  await expect(page.getByRole('heading', { name: 'Local review draft needs recovery' })).toBeVisible();
+  await expect(page.getByText('Draft data does not match the supported schema', { exact: true })).toBeVisible();
+  await expect(page.getByText('comments.0.body', { exact: true })).toBeVisible();
+  await expect(page.getByText('Required', { exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Back up and start new' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Comments' })).toHaveCount(0);
+  await expect(page.locator('body')).not.toContainText(absolutePath);
+});
+
 test('newer drafts are upgrade-only and expose only fixed reveal and safe copy actions', async ({ page }) => {
   draftLoad = newerLoad();
   const revealRequests: { url: string; postData: string | null }[] = [];
