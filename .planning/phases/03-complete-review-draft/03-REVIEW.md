@@ -1,91 +1,82 @@
 ---
 phase: 03-complete-review-draft
-reviewed: 2026-07-23T08:37:07Z
-depth: standard
-files_reviewed: 29
+reviewed: 2026-07-23T08:59:46Z
+depth: deep
+files_reviewed: 6
 files_reviewed_list:
-  - package.json
-  - src/cli/run.ts
-  - src/contracts/api.ts
-  - src/contracts/draft.ts
-  - src/draft/mutate-draft.ts
   - src/git/selector-drift.ts
-  - src/server/app.ts
-  - src/server/capabilities.ts
-  - src/server/draft-loader.ts
-  - src/server/draft-recovery.ts
-  - src/server/draft-store.ts
-  - src/server/routes.ts
   - src/web/App.vue
-  - src/web/api/client.ts
-  - src/web/components/CommentsRail.vue
-  - src/web/components/DiffWorkspace.vue
-  - src/web/components/DraftRecovery.vue
-  - src/web/components/FileTree.vue
   - src/web/components/ReviewPanel.vue
-  - src/web/components/ReviewToolbar.vue
-  - src/web/components/SelectorDriftNotice.vue
-  - src/web/components/SummarySection.vue
-  - src/web/model/comment-groups.ts
-  - src/web/model/draft-reconciliation.ts
-  - src/web/model/markdown-preview.ts
-  - src/web/model/review-draft-state.ts
-  - src/web/model/selector-drift-state.ts
-  - src/web/model/workspace-state.ts
-  - src/web/styles.css
+  - tests/git/selector-drift.test.ts
+  - tests/e2e/complete-review-draft.spec.ts
+  - tests/e2e/review-panel-resolved.spec.ts
 findings:
-  critical: 4
+  critical: 0
   warning: 0
   info: 0
-  total: 4
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 03: Code Review Report
 
-**Reviewed:** 2026-07-23T08:37:07Z  
-**Depth:** standard  
-**Files Reviewed:** 29  
-**Status:** issues_found
+**Reviewed:** 2026-07-23T08:59:46Z  
+**Depth:** deep  
+**Files Reviewed:** 6  
+**Status:** clean
 
 ## Summary
 
-Reviewed exactly the Phase 3 scope listed in the frontmatter against CMT-03–CMT-07 and DRFT-04–DRFT-06. The CAS/recovery boundaries and fixed-authority routes are generally structured around the intended contracts, but four confirmed lifecycle defects block the phase: worktree drift becomes permanently stale after the first poll; reloading a conflict hides comments added by another tab; and resolved comments expose non-functional edit and delete controls.
+Re-reviewed fix commit `0c6ccdf` against the four former critical findings and traced the repaired seams through the persistent selector-drift observer, the authenticated draft client and workspace reconciliation path, and the resolved-comment action handlers. All four former critical findings are resolved. No new blocker, warning, or info-level defect was found in the supplied scope.
+
+The review specifically verified that a worktree listing is fresh for each observation while shared only within that observation; reload obtains a schema-validated server draft before adopting comments, preserves unsaved local text buffers, and does not make browser state authoritative; and resolved verified comments expose working edit and confirmed-delete flows.
+
+## Former Critical Findings — Resolution Verification
+
+### CR-01: Stale worktree state across selector-drift observations — **RESOLVED**
+
+**Former location:** `src/git/selector-drift.ts:186-193, 212-213`  
+**Current evidence:** `createSelectorDriftObserver()` now defines `listWorktrees()` without an observer-lifetime promise cache (`src/git/selector-drift.ts:185-197`). Each `observe()` invocation loads one fresh `git worktree list --porcelain -z` result when either retained endpoint is a worktree, then passes that same observation-local record set to both endpoints (`src/git/selector-drift.ts:239-246`). Thus a move or unregister between polls is re-resolved without producing inconsistent base/head results within one poll.
+
+`tests/git/selector-drift.test.ts:150-221` uses one persistent observer, changes one selected worktree, removes and prunes another, and asserts the second and third observations report the new moved/unavailable states. It also verifies exactly three `worktree list` invocations for three observations.
+
+### CR-02: Reload latest discarded remote comments — **RESOLVED**
+
+**Former location:** `src/web/App.vue:214-225, 338`  
+**Current evidence:** `reloadLatestReview()` first obtains the current draft from `sessionClient.getDraft()` and accepts only a `kind === 'current'` response (`src/web/App.vue:341-360`). It uses that loaded server draft as the review state's latest canonical draft, then replaces workspace comments with `reconciledWorkspaceComments(loaded.draft)`.
+
+`reconciledWorkspaceComments()` derives every displayed comment from server-supplied draft comments through `reconcileDraftComments()` and pinned session inventory (`src/web/App.vue:228-235`; `src/web/model/draft-reconciliation.ts:59-62`). Existing workspace records contribute only local presentation/capability fields; the server's `state` and `body` overwrite them. The browser neither submits a comment collection during reload nor bypasses the existing revision-CAS mutation path. `SessionClient.getDraft()` fetches `/api/draft` with the session bearer token, validates the response with `DraftLoadResponseSchema`, and requests `cache: 'no-store'` (`src/web/api/client.ts:144-150, 162-168`).
+
+`tests/e2e/complete-review-draft.spec.ts:407-505` creates an unsaved summary and edit in tab B, adds a distinct remote comment in tab A, causes B's save conflict, reloads B from the server, and asserts both local buffers remain while the remote record is present and actionable. The same scenario checks the server draft's revision and on-disk bytes remain authoritative through stale and fresh CAS attempts (`tests/e2e/complete-review-draft.spec.ts:517-606`).
+
+### CR-03: Resolved comments could enter edit mode without editable controls — **RESOLVED**
+
+**Former location:** `src/web/components/ReviewPanel.vue:97-131, 139-145`  
+**Current evidence:** Resolved comments now render the `editing === comment.id` branch with the fixed-anchor context, textarea, save, and cancel controls (`src/web/components/ReviewPanel.vue:141-146`). The Edit control is enabled only for verified, non-pending, non-conflicted comments (`src/web/components/ReviewPanel.vue:149-152`), matching the action's capability constraint.
+
+`tests/e2e/review-panel-resolved.spec.ts:103-136` drives the mounted component through edit, cancel, edit again, save, and verifies the emitted saved ID and rendered body.
+
+### CR-04: Resolved comments could not complete confirmed deletion — **RESOLVED**
+
+**Former location:** `src/web/components/ReviewPanel.vue:124-129, 139-145`  
+**Current evidence:** The resolved loop renders its own confirmation panel when `confirmingDelete` matches the resolved comment (`src/web/components/ReviewPanel.vue:154-161`). The confirm action emits that comment ID through the existing delete event and clears the confirmation state; keep preserves the comment and clears only the confirmation state.
+
+`tests/e2e/review-panel-resolved.spec.ts:127-136` verifies that Delete first shows the second confirmation without emitting deletion, then that Delete comment emits the resolved comment ID and removes the rendered record.
 
 ## Narrative Findings (AI reviewer)
 
-## Critical Issues
+None. The repaired flows preserve the server/pinned-Git authority boundaries and the focused regression tests cover plausible reintroductions of each former critical behavior.
 
-### CR-01: Worktree selector drift is cached forever after the first observation
+## Verification
 
-**File:** `src/git/selector-drift.ts:186-193, 212-213`  
-**Issue:** `listWorktrees()` memoizes the first `git worktree list --porcelain -z` Promise in `worktreeRecords` and never clears or refreshes it. Every subsequent `/api/selector-drift` poll therefore evaluates a worktree descriptor against the launch-time snapshot. A selected worktree can advance, detach to a new commit, or become unavailable after the initial poll without a visible drift notice, violating DRFT-06's retained-source re-resolution requirement.
+Focused checks executed successfully:
 
-**Fix:** Obtain a fresh worktree listing for each observer `observe()` invocation (it may be shared between base and head during that one invocation), rather than retaining it across polls. For example, remove the outer `worktreeRecords` cache and have `listWorktrees()` run and parse the Git command on every call, returning `[]` only for that failed observation.
-
-### CR-02: Reloading the latest draft discards comments added by another tab from the workspace
-
-**File:** `src/web/App.vue:214-225, 241, 338`  
-**Issue:** `acceptedWorkspaceComments()` preserves a canonical comment only when it already exists in the local workspace, or is the one locally-added comment supplied as `addedComment`. On a revision conflict, `reloadLatestReview()` calls it with the server's latest draft and no `addedComment`; every comment another tab added is mapped to `[]`. `reviewDraft` receives the latest canonical aggregate, but the Review panel and Monaco annotations are driven by `workspaceComments`, so those accepted remote comments disappear from the visible review and cannot be shown, edited, resolved, or deleted. This contradicts DRFT-04's authoritative latest-draft recovery and CMT-03–CMT-06 lifecycle behavior.
-
-**Fix:** Reconcile every canonical comment that lacks a local record into a complete `WorkspaceComment` before `workspace.replaceComments()`. The reconciliation must preserve an existing record's local verification/view metadata when available and create a deterministic exact-file/anchor record for comments returned by another tab. Prefer returning a comment view with verification from the route, or explicitly reconstruct the verified pinned-anchor projection through the existing reconciliation path, rather than silently omitting unknown IDs.
-
-### CR-03: Resolved comments' Edit button cannot enter an edit UI
-
-**File:** `src/web/components/ReviewPanel.vue:97-131, 139-145`  
-**Issue:** The editable textarea/save/cancel branch (`v-if="editing === comment.id"`) exists only inside the open-comment loop. The resolved-comment loop still renders an enabled Edit button at line 142 which sets `editing`, but it has no branch that reads that state. Clicking Edit on a verified resolved comment produces no editable control and cannot issue the supported `editComment` mutation, violating CMT-03 for an existing comment.
-
-**Fix:** Render the same explicit edit/save/cancel state for resolved comments (or extract a shared comment-card component used by both open and resolved loops). Keep the existing pending/conflict disabling and preserve the draft-state buffer until an accepted mutation response.
-
-### CR-04: Resolved comments' Delete button only sets hidden confirmation state
-
-**File:** `src/web/components/ReviewPanel.vue:124-129, 139-145`  
-**Issue:** The contextual delete confirmation and its `emit('delete', comment.id)` action are rendered only in the open-comment loop. The resolved-comment Delete button at line 144 merely sets `confirmingDelete`; no resolved-loop confirmation observes that state, so a resolved comment cannot be deleted at all. This leaves the UI advertising an action it cannot perform and violates CMT-04's hard-delete lifecycle.
-
-**Fix:** Render the same contextual second-confirmation control for resolved comments, or centralize the confirmation outside both loops and bind it to the selected comment. The confirming action must emit the resolved comment's ID and clear `confirmingDelete` only after dispatching the existing delete request.
+- `node scripts/run-focused-vitest.mjs tests/git/selector-drift.test.ts` — 3 tests passed.
+- `npx playwright test tests/e2e/complete-review-draft.spec.ts --grep "two-tab conflict retains every local buffer"` — 1 Chromium test passed.
+- `npx playwright test tests/e2e/review-panel-resolved.spec.ts` — 1 Chromium test passed.
 
 ---
 
-_Reviewed: 2026-07-23T08:37:07Z_  
+_Reviewed: 2026-07-23T08:59:46Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
-_Depth: standard_
+_Depth: deep_
