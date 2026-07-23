@@ -133,6 +133,21 @@ The contract asserts that the client request is exactly `{ expectedRevision: 7 }
 
    The server now emits receipt drift identities from the exact accepted observation and retained pinned comparison. `recoveryRequired` is distinct from ordinary publication failure only when post-publication recovery cannot determine a safe complete pair; it propagates through the route, client result union, App announcement, and canonical review state without adding receipt rendering.
 
+9. UI-audit server-confirmed receipt comparison:
+
+   ```text
+   node_modules/.bin/vitest run tests/api/export.test.ts tests/api/export-publication.test.ts tests/unit/agent-ready-export-state.test.ts
+   3 files passed; 19 tests passed
+
+   npm run build
+   passed
+   ```
+
+   Every confirmed receipt now includes the server-retained pinned Base/Head OIDs with their server-confirmed labels and, where available, selector types. The drift union remains separate; the browser neither derives comparison identity from paths nor reconstructs it locally.
+
+   **RED commit:** `2f8c4e4` — `test(04-05): add failing receipt comparison contract`  
+   **GREEN commit:** `478a950` — `feat(04-05): expose confirmed receipt comparison`
+
 ## Deviations
 
 - **[Rule 3 — blocking verification wiring]** The plan names `tests/integration/agent-ready-export-states.spec.ts`, but the immutable reconciliation command only discovers `tests/unit/**`; direct Vitest/Playwright attempts do not discover that integration path under the configured roots. The required integration artifact is present, and its behavior is mirrored in `tests/unit/agent-ready-export-state.test.ts` so the prescribed ledger proves the contract. No runner, config, dependency, or reconciliation ledger was changed.
@@ -173,3 +188,4 @@ Plan 04-06 can add only receipt, copy, reveal, and ignore-consent UI to the now-
 - The anchored workspace Playwright spec passes after restoring the existing copy-recorded-anchor binding.
 - The complete review lifecycle Playwright spec completes after restoring delete/reopen bindings.
 - No dependencies were installed and no formatter, linter, broad browser matrix, or project-wide suite was run; `npm run build` was explicitly required by the UI-audit remediation and passed.
+- Confirmed receipts expose retained server-pinned Base/Head comparison identity independently of the drift acknowledgement union; no component or styling surface changed.
