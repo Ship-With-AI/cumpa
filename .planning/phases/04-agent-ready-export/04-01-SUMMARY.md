@@ -145,6 +145,12 @@ The receipt-contract RED/GREEN commits `2f8c4e4` and `478a950` extended the decl
 
 Both required Node-core checks passed after the hash refresh: the mutation self-test proved 34 rejection branches and real-ledger validation regenerated `04-01-RECONCILIATION.md` successfully. Every strict validator rule, declared seam, substitution, command, package/no-install fact, UI state, and pending native-exchange policy remains unchanged.
 
+## Final Plan 05/06 Reconciliation
+
+After the final source, test, and documentation commits — Plan 05 `3d054fb` and `349f6ad`; Plan 06 `7436482`, `292b9b5`, and `e0b7b05` — every declared ledger source, command runner, manifest, lockfile, toolchain, and packaging hash remained current. The changes did not alter a declared owner range or create a test-hash evidence class; therefore the strict ledger required no speculative seam, substitution, metadata, or policy change.
+
+The final Node-core proof completed at this source boundary: `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs --self-test` returned `mutation self-test passed (34 rejection branches)`, and real validation returned `reconciliation ledger valid: 04-01-RECONCILIATION.json` while regenerating the report. The immutable evidence contract remains fail-closed.
+
 ## User Setup Required
 
 None - no external service configuration required.
