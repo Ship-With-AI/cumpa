@@ -146,9 +146,17 @@ No declared packaged runner exists for an interruption reader probe. The target-
 - **Verification:** Chromium anchored-review acceptance passed 6/6 with `--repeat-each=3`; `agent-ready-export-safety.spec.ts` followed by anchored-review passed 3/3 in the full-suite ordering.
 - **Committed in:** post-wave focused integration commit
 
+**4. [Rule 1 - Security] Managed export parent symlinks could escape repository-local authority.**
+- **Found during:** Post-wave CR-01 code-review remediation.
+- **Issue:** Lexical `resolve()` containment did not prevent publication, recovery, cleanup, or fixed reveal from following repository-controlled `.diff-review` or `exports` symlinks.
+- **Fix:** Added `ensureManagedExportsRoot()` no-follow `lstat` validation for each literal managed parent, rejected symlink/non-directory components, used it before publication, recovery, and reveal, and revalidated it before cleanup.
+- **Files modified:** `src/server/export-store.ts`, `src/server/capabilities.ts`, `tests/api/export-publication.test.ts`, `tests/api/export.test.ts`, `tests/package/agent-ready-export-safety.test.ts`, `04-REVIEW.md`, `04-03-SUMMARY.md`.
+- **Verification:** RED source API tests failed 4/4 and compiled-package safety tests failed 2/2 before enforcement. GREEN focused API tests passed 11/11; after `npm run build`, package safety passed 8/8.
+- **Committed in:** `65effe4`, `7875e35`, `b3df9a3`.
+
 ---
 
-**Total deviations:** 3 auto-fixed correctness/integration issues.
+**Total deviations:** 4 auto-fixed correctness/security/integration issues.
 **Impact on plan:** The acceptance helper remains behaviorally strict and deterministic; no timeout increase, hidden-region disablement, sleep, or assertion weakening was introduced.
 
 ## Issues Encountered
