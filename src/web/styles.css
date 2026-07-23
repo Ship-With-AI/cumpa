@@ -1599,7 +1599,8 @@ body {
 .export-section__content,
 .export-readiness,
 .export-drift,
-.export-progress {
+  .export-progress,
+  .gitignore-status {
   display: grid;
   gap: var(--space-sm);
 }
@@ -1618,6 +1619,25 @@ body {
   justify-content: space-between;
   gap: var(--space-sm);
 }
+
+.gitignore-status__confirmation {
+  display: grid;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.gitignore-status__confirmation h5 {
+  margin: 0;
+}
+
+.gitignore-status__message {
+  margin: 0;
+}
+
 
 .export-section__state {
   color: var(--text-muted);

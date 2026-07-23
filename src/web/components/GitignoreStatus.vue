@@ -1,0 +1,103 @@
+<script setup lang="ts">
+import { nextTick, ref } from 'vue';
+
+import type { AppendDiffReviewIgnoreResult, DiffReviewIgnoreStatus } from '../../contracts/api.js';
+
+const props = defineProps<{
+  status: DiffReviewIgnoreStatus | null;
+  appendIgnoreRule: () => Promise<AppendDiffReviewIgnoreResult>;
+  refreshIgnoreStatus: () => Promise<void>;
+}>();
+
+const confirming = ref(false);
+const appending = ref(false);
+const appendFailed = ref(false);
+const statusMessage = ref('');
+const addButton = ref<HTMLButtonElement>();
+const keepButton = ref<HTMLButtonElement>();
+
+function beginAppendConfirmation(): void {
+  appendFailed.value = false;
+  statusMessage.value = '';
+  confirming.value = true;
+  void nextTick(() => keepButton.value?.focus());
+}
+
+function keepUnchanged(): void {
+  confirming.value = false;
+  appendFailed.value = false;
+  void nextTick(() => addButton.value?.focus());
+}
+
+async function appendRule(): Promise<void> {
+  appending.value = true;
+  appendFailed.value = false;
+  statusMessage.value = '';
+  try {
+    const result = await props.appendIgnoreRule();
+    if (result.kind === 'unconfirmed') {
+      appendFailed.value = true;
+      return;
+    }
+    await props.refreshIgnoreStatus();
+    confirming.value = false;
+    statusMessage.value = result.kind === 'appended'
+      ? 'Added /.diff-review/ to .gitignore.'
+      : 'Export directory is already ignored.';
+  } catch {
+    appendFailed.value = true;
+  } finally {
+    appending.value = false;
+  }
+}
+</script>
+
+<template>
+  <section class="gitignore-status" aria-labelledby="gitignore-status-heading">
+    <p v-if="statusMessage" role="status" class="gitignore-status__message">{{ statusMessage }}</p>
+
+    <section v-if="status === null" class="inline-notice" role="status" aria-labelledby="gitignore-status-heading">
+      <h4 id="gitignore-status-heading">Checking export directory ignore status</h4>
+      <p>Export can continue while Diff Review checks whether Git ignores <code>/.diff-review/</code>.</p>
+    </section>
+
+    <section v-else-if="status.kind === 'ignored'" class="inline-notice" aria-labelledby="gitignore-status-heading">
+      <h4 id="gitignore-status-heading">Export directory ignored</h4>
+      <p>Git already ignores <code>/.diff-review/</code>.</p>
+    </section>
+
+    <section v-else-if="status.kind === 'unavailable'" class="inline-notice inline-notice--error" role="alert" aria-labelledby="gitignore-status-heading">
+      <h4 id="gitignore-status-heading">Ignore status unavailable</h4>
+      <p>Diff Review could not check whether Git ignores <code>/.diff-review/</code>. Export can continue without changing <code>.gitignore</code>.</p>
+    </section>
+
+    <section v-else class="inline-notice inline-notice--warning" aria-labelledby="gitignore-status-heading">
+      <h4 id="gitignore-status-heading">Export directory is not ignored</h4>
+      <p>Export can continue. Diff Review always excludes <code>.diff-review/</code> from this review, but Git may show the generated files as untracked.</p>
+      <div v-if="!confirming" class="export-actions">
+        <button ref="addButton" type="button" class="ui-button" @click="beginAppendConfirmation">Add to .gitignore</button>
+        <button type="button" class="ui-button" @click="keepUnchanged">Keep .gitignore unchanged</button>
+      </div>
+
+      <section
+        v-else
+        class="gitignore-status__confirmation"
+        role="region"
+        aria-labelledby="gitignore-confirm-heading"
+        @keydown.escape.prevent="keepUnchanged"
+      >
+        <h5 id="gitignore-confirm-heading">Add export directory to .gitignore?</h5>
+        <p>Diff Review will append exactly <code>/.diff-review/</code> to the repository-root <code>.gitignore</code>. Existing bytes and rules will be preserved.</p>
+        <p v-if="appending" role="status">Appending one ignore rule…</p>
+        <section v-if="appendFailed" class="inline-notice inline-notice--error" role="alert" aria-labelledby="gitignore-failed-heading">
+          <h6 id="gitignore-failed-heading">.gitignore was not changed</h6>
+          <p>The ignore rule could not be appended safely. Export can continue; existing .gitignore content was not replaced.</p>
+        </section>
+        <div class="export-actions">
+          <button ref="keepButton" type="button" class="ui-button" :disabled="appending" @click="keepUnchanged">Keep .gitignore unchanged</button>
+          <button type="button" class="ui-button" :disabled="appending" @click="appendRule">{{ appendFailed ? 'Try append again' : 'Append ignore rule' }}</button>
+        </div>
+      </section>
+    </section>
+  </section>
+</template>

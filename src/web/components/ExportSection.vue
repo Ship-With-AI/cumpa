@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 
+import type { AppendDiffReviewIgnoreResult } from '../../contracts/api.js';
 import type { ReviewExportState } from '../model/review-draft-state.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import ExportReadinessSummary from './ExportReadinessSummary.vue';
 import DriftExportAcknowledgement from './DriftExportAcknowledgement.vue';
 import ExportProgress from './ExportProgress.vue';
+import GitignoreStatus from './GitignoreStatus.vue';
 
 const props = defineProps<{
   revision: number;
@@ -16,6 +18,8 @@ const props = defineProps<{
   pinnedHead: Readonly<{ label: string; oid: string }>;
   commentBuffers: ReadonlyMap<string, string>;
   exportState: ReviewExportState;
+  appendIgnoreRule: () => Promise<AppendDiffReviewIgnoreResult>;
+  refreshIgnoreStatus: () => Promise<void>;
 }>();
 
 const emit = defineEmits<{
@@ -92,14 +96,19 @@ watch(() => props.exportState.phase, (phase) => {
       <ExportProgress v-else-if="exportState.phase === 'pending'" :revision="revision" :stage="exportState.progress ?? 'preparing'" />
 
       <template v-else-if="exportState.phase === 'unavailable'">
-        <section class="inline-notice inline-notice--error" aria-labelledby="export-unavailable-heading">
-          <h4 id="export-unavailable-heading">Export unavailable</h4>
-          <p>A readable accepted draft is required before export.</p>
+        <section class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-unavailable-heading">
+          <h4 id="export-unavailable-heading">Export is unavailable</h4>
+          <p>Export is unavailable on this runtime.</p>
         </section>
       </template>
 
       <template v-else>
-        <ExportReadinessSummary :revision="revision" :summary="summary" :comments="comments" :ignore-status="exportState.ignoreStatus" />
+        <ExportReadinessSummary
+          :revision="revision"
+          :summary="summary"
+          :comments="comments"
+          :ignore-status="exportState.ignoreStatus"
+        />
         <section v-if="hasUnsavedText" class="inline-notice inline-notice--warning" aria-labelledby="export-unsaved-heading">
           <h4 id="export-unsaved-heading">Unsaved text is excluded</h4>
           <p>Unsaved text in this tab is not included. Export uses accepted revision {{ revision }}.</p>
@@ -108,6 +117,12 @@ watch(() => props.exportState.phase, (phase) => {
         <button type="button" class="ui-button ui-button--primary" :disabled="exportState.pending" @click="emit('export')">{{ exportState.phase === 'exported' ? 'Export review again' : 'Export review' }}</button>
         <p class="export-section__support">Creates <code>review.json</code> and <code>review.md</code> together from accepted revision {{ revision }}. This does not apply, stage, commit, or push changes.</p>
       </template>
+
+      <GitignoreStatus
+        :status="exportState.ignoreStatus"
+        :append-ignore-rule="appendIgnoreRule"
+        :refresh-ignore-status="refreshIgnoreStatus"
+      />
     </div>
   </section>
 </template>

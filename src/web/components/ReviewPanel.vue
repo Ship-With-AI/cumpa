@@ -3,6 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 
 import type { ReviewPendingOperation } from '../model/review-draft-state.js';
 import type { ReviewExportState } from '../model/review-draft-state.js';
+import type { AppendDiffReviewIgnoreResult } from '../../contracts/api.js';
 import { projectCommentGroups } from '../model/comment-groups.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import SummarySection from './SummarySection.vue';
@@ -27,6 +28,8 @@ const props = defineProps<{
   failure: ReviewFailure | null;
   retainedSummary: boolean;
   exportState: ReviewExportState;
+  appendIgnoreRule: () => Promise<AppendDiffReviewIgnoreResult>;
+  refreshIgnoreStatus: () => Promise<void>;
 }>();
 
 const emit = defineEmits<{
@@ -520,6 +523,8 @@ watch(reviewFailure, (failed) => {
       :comments="comments"
       :comment-buffers="commentBuffers"
       :export-state="exportState"
+      :append-ignore-rule="appendIgnoreRule"
+      :refresh-ignore-status="refreshIgnoreStatus"
       @cancel="emit('cancelExport')"
       @export="emit('export')"
       @reload-latest="emit('reload-latest')"

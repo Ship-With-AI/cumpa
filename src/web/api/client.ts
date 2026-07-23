@@ -2,6 +2,8 @@ import {
   DraftLoadResponseSchema,
   DraftMutationResultSchema,
   DraftMutationRequestSchema,
+  AppendDiffReviewIgnoreResultSchema,
+  ExportDirectoryRevealResultSchema,
   DraftRecoveryRequestSchema,
   DiffReviewIgnoreStatusSchema,
   DraftRecoveryResultSchema,
@@ -11,11 +13,13 @@ import {
   FileContentResponseSchema,
   FileMetadataResponseSchema,
   type DraftLoadResponse,
+  type AppendDiffReviewIgnoreResult,
   type DraftMutationRequest,
   type DraftMutationResult,
   type DraftRecoveryResult,
   type DraftRevealResult,
   type DiffReviewIgnoreStatus,
+  type ExportDirectoryRevealResult,
   type ExportReviewRequest,
   type ExportReviewResult,
   type FileContentResponse,
@@ -53,9 +57,11 @@ export interface SessionClient {
   mutate(request: DraftMutationRequest): Promise<DraftMutationResult>;
   exportReview(request: ExportReviewRequest): Promise<ExportReviewResult>;
   getDraft(): Promise<DraftLoadResponse>;
+  appendDiffReviewIgnoreRule(): Promise<AppendDiffReviewIgnoreResult>;
   getDiffReviewIgnoreStatus(): Promise<DiffReviewIgnoreStatus>;
   recoverDraft(expectedFingerprint: string): Promise<DraftRecoveryResult>;
   revealDraftFile(): Promise<DraftRevealResult>;
+  revealExportDirectory(): Promise<ExportDirectoryRevealResult>;
   getFileContent(fileId: string): Promise<FileContentResponse>;
   getFileMetadata(fileId: string): Promise<FileMetadataResponse>;
   getSession(): Promise<SessionResponse>;
@@ -160,6 +166,15 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       }
       return result.data;
     },
+    async appendDiffReviewIgnoreRule() {
+      const result = AppendDiffReviewIgnoreResultSchema.safeParse(
+        await requestJson('/api/export/gitignore', 'POST', 'draft'),
+      );
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
     async getDiffReviewIgnoreStatus() {
       const result = DiffReviewIgnoreStatusSchema.safeParse(
         await requestJson('/api/export/gitignore', 'GET', 'draft'),
@@ -192,6 +207,15 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
     async revealDraftFile() {
       const result = DraftRevealResultSchema.safeParse(
         await requestJson('/api/draft/reveal', 'POST', 'draft', undefined, [500]),
+      );
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async revealExportDirectory() {
+      const result = ExportDirectoryRevealResultSchema.safeParse(
+        await requestJson('/api/export/reveal', 'POST', 'draft', undefined, [500]),
       );
       if (!result.success) {
         throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);

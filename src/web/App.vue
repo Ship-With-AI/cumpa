@@ -419,6 +419,20 @@ function cancelExport(): void {
   refreshReviewSnapshot();
 }
 
+async function refreshIgnoreStatus(): Promise<void> {
+  if (sessionClient === undefined) return;
+  const status = await sessionClient.getDiffReviewIgnoreStatus();
+  reviewState?.setIgnoreStatus(status);
+  refreshReviewSnapshot();
+}
+
+async function appendDiffReviewIgnoreRule() {
+  if (sessionClient === undefined) {
+    throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+  }
+  return sessionClient.appendDiffReviewIgnoreRule();
+}
+
 function reviewUnsavedText(): void {
   document.querySelector<HTMLButtonElement>('.review-summary button')?.focus();
 }
@@ -686,10 +700,7 @@ onMounted(async () => {
         draft,
         loadedDraft.kind === 'current' ? reconcileDraftComments(draft.comments, loaded.files) : [],
       );
-      void sessionClient.getDiffReviewIgnoreStatus().then((status) => {
-        reviewState?.setIgnoreStatus(status);
-        refreshReviewSnapshot();
-      }).catch(() => undefined);
+    void refreshIgnoreStatus().catch(() => undefined);
       announce(draft.comments.length > 0
         ? 'Local draft resumed. Accepted comments for this pinned comparison are ready.'
         : 'New local draft for this pinned comparison.');
@@ -837,9 +848,8 @@ onBeforeUnmount(() => {
           @cancel-summary="reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot()"
           @close="closeComments"
           :export-state="reviewDraft.export"
-          @delete="mutateComment($event, 'deleteComment')"
-          @copy-recorded-anchor="copyRecordedAnchor"
-          @reopen="mutateComment($event, 'reopenComment')"
+          :append-ignore-rule="appendDiffReviewIgnoreRule"
+          :refresh-ignore-status="refreshIgnoreStatus"
           @resolve="mutateComment($event, 'resolveComment')"
           @inspect-recorded-file="inspectRecordedFile"
           @reload-latest="reloadLatestReview"
