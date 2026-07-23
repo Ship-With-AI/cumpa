@@ -14,14 +14,18 @@ A developer can accurately review committed changes between any two local branch
 
 - [x] User can launch the application from a Git repository through a CLI that opens a loopback-only browser session.
 - [x] User can interactively select an ordered base and head from local branches and registered worktrees.
+- [x] User can review merge-base-to-head changes in a GitHub-like side-by-side text diff with changed-file navigation and expandable context.
+- [x] User can create, edit, delete, and resolve comments on any visible line on either side of a diff.
+- [x] User can write an overall review summary while the review remains an editable repository-local draft.
 
 Validated in Phase 01: Pinned Local Comparison.
 
+Validated in Phase 02: Anchored Diff Review.
+
+Validated in Phase 03: Complete Review Draft.
+
 ### Active
 
-- [ ] User can review merge-base-to-head changes in a GitHub-like side-by-side text diff with changed-file navigation and expandable context.
-- [ ] User can create, edit, delete, and resolve comments on any visible line on either side of a diff.
-- [ ] User can write an overall review summary while the review remains an editable repository-local draft.
 - [ ] User can export a completed review as readable Markdown and versioned JSON containing stable Git identities and context anchors for an applying agent.
 
 ### Out of Scope
@@ -85,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-20 after Phase 01 completion*
+*Last updated: 2026-07-23 after Phase 03 completion*
