@@ -357,30 +357,34 @@ export async function createValidationGitFixture(
   };
 }
 
+export async function createDirtyGitFixture(
+  selectorKind: DirtySelectorKind = 'branch-to-branch',
+  index = 0,
+): Promise<DirtyGitFixture> {
+  const fixture = await createGitFixture({ anchoredReview: true, registeredWorktree: true });
+  const gitignorePath = join(fixture.root, '.gitignore');
+  await writeFile(gitignorePath, `# safety fixture ${index}\n`);
+  await fixture.write(`unusual safe ${index}/space name.ts`, `export const unusual${index} = true;\n`);
+  await fixture.write(`dirty/staged-${index}.txt`, `staged ${index}\n`);
+  fixture.git(['add', '--', `dirty/staged-${index}.txt`]);
+  await fixture.write(`dirty/unstaged-${index}.txt`, `unstaged ${index}\n`);
+  await fixture.write(`dirty/untracked-${index}.bin`, `untracked ${index}\u0000bytes`);
+  await chmod(join(fixture.root, 'tracked.txt'), 0o755);
+  return Object.freeze({
+    ...fixture,
+    selectorKind,
+    gitignorePath,
+    path(relativePath: string) {
+      return join(fixture.root, relativePath);
+    },
+  });
+}
+
 export async function createDirtyGitFixtureMatrix(): Promise<readonly DirtyGitFixture[]> {
-  const selectorKinds: readonly DirtySelectorKind[] = [
-    'branch-to-branch',
-    'branch-to-worktree',
-    'worktree-to-branch',
-    'worktree-to-worktree',
-  ];
-  return Promise.all(selectorKinds.map(async (selectorKind, index) => {
-    const fixture = await createGitFixture({ anchoredReview: true, registeredWorktree: true });
-    const gitignorePath = join(fixture.root, '.gitignore');
-    await writeFile(gitignorePath, `# safety fixture ${index}\n`);
-    await fixture.write(`unusual safe ${index}/space name.ts`, `export const unusual${index} = true;\n`);
-    await fixture.write(`dirty/staged-${index}.txt`, `staged ${index}\n`);
-    fixture.git(['add', '--', `dirty/staged-${index}.txt`]);
-    await fixture.write(`dirty/unstaged-${index}.txt`, `unstaged ${index}\n`);
-    await fixture.write(`dirty/untracked-${index}.bin`, `untracked ${index}\u0000bytes`);
-    await chmod(join(fixture.root, 'tracked.txt'), 0o755);
-    return Object.freeze({
-      ...fixture,
-      selectorKind,
-      gitignorePath,
-      path(relativePath: string) {
-        return join(fixture.root, relativePath);
-      },
-    });
-  }));
+  return Promise.all([
+    createDirtyGitFixture('branch-to-branch', 0),
+    createDirtyGitFixture('branch-to-worktree', 1),
+    createDirtyGitFixture('worktree-to-branch', 2),
+    createDirtyGitFixture('worktree-to-worktree', 3),
+  ]);
 }
