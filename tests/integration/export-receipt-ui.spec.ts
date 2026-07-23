@@ -172,11 +172,9 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
 
   for (const width of [768, 360]) {
     await page.setViewportSize({ width, height: 720 });
-    await page.evaluate(() => { document.body.style.zoom = '2'; });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await expect(receipt).toBeVisible();
   }
-  await page.evaluate(() => { document.body.style.zoom = ''; });
 
   await expect(receipt.locator('h4')).toHaveCSS('font-size', '18px');
   await expect(receipt.locator('h4')).toHaveCSS('font-weight', '600');

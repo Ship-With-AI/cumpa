@@ -21,7 +21,17 @@ const revealFailed = ref(false);
 const revealAlert = ref<HTMLElement>();
 
 const headingText = computed(() => props.previous ? 'Previous confirmed export' : 'Review export complete');
-const driftText = computed(() => props.receipt.driftAcknowledged ? 'Acknowledged for this export' : 'None observed');
+const driftText = computed(() => props.receipt.drift.kind === 'acknowledged' ? 'Acknowledged for this export' : 'None observed');
+const acknowledgedIdentitiesOpen = ref(false);
+const acknowledgedIdentities = computed(() => props.receipt.drift.kind === 'acknowledged'
+  ? props.receipt.drift.identities
+  : []);
+const acknowledgedIdentityDetails = computed(() => acknowledgedIdentities.value.map((identity) => [
+  `${identity.role === 'base' ? 'Base' : 'Head'} pinned: ${identity.pinned.oid}`,
+  identity.current.kind === 'available'
+    ? `${identity.role === 'base' ? 'Base' : 'Head'} current: ${identity.current.oid}`
+    : `${identity.role === 'base' ? 'Base' : 'Head'} current unavailable: ${identity.current.reason}`,
+].join('\n')).join('\n'));
 const receiptDetails = computed(() => [
   `Accepted revision: ${props.receipt.draftRevision}`,
   `Exported at: ${props.receipt.exportedAt}`,
@@ -42,9 +52,19 @@ async function copyDetails(): Promise<void> {
   copyMessage.value = '';
   try {
     await navigator.clipboard.writeText(receiptDetails.value);
-    copyMessage.value = 'Receipt details copied';
+    copyMessage.value = 'Copied export receipt details.';
   } catch {
     copyMessage.value = 'Could not copy receipt details. Select and copy the visible values manually.';
+  }
+}
+
+async function copyAcknowledgedIdentities(): Promise<void> {
+  copyMessage.value = '';
+  try {
+    await navigator.clipboard.writeText(acknowledgedIdentityDetails.value);
+    copyMessage.value = 'Acknowledged identities copied.';
+  } catch {
+    copyMessage.value = 'Could not copy acknowledged identities. Select and copy the visible values manually.';
   }
 }
 
@@ -82,6 +102,24 @@ async function revealDirectory(): Promise<void> {
       <div><dt>Exported at</dt><dd><time :datetime="receipt.exportedAt">{{ receipt.exportedAt }}</time></dd></div>
       <div><dt>Drift</dt><dd>{{ driftText }}</dd></div>
     </dl>
+    <section v-if="acknowledgedIdentities.length > 0" class="export-receipt__drift-disclosure">
+      <button
+        type="button"
+        class="ui-button"
+        :aria-expanded="acknowledgedIdentitiesOpen"
+        aria-controls="acknowledged-identities"
+        @click="acknowledgedIdentitiesOpen = !acknowledgedIdentitiesOpen"
+      >View acknowledged identities</button>
+      <div v-if="acknowledgedIdentitiesOpen" id="acknowledged-identities" class="export-receipt__acknowledged-identities">
+        <dl v-for="identity in acknowledgedIdentities" :key="identity.role">
+          <dt>{{ identity.role === 'base' ? 'Base' : 'Head' }}</dt>
+          <dd>Pinned {{ identity.role === 'base' ? 'Base' : 'Head' }}: <code>{{ identity.pinned.oid }}</code></dd>
+          <dd v-if="identity.current.kind === 'available'">Current {{ identity.role === 'base' ? 'Base' : 'Head' }}: <code>{{ identity.current.oid }}</code></dd>
+          <dd v-else>Current {{ identity.role === 'base' ? 'Base' : 'Head' }} unavailable: {{ identity.current.reason }}</dd>
+        </dl>
+        <button type="button" class="ui-button" @click="copyAcknowledgedIdentities">Copy acknowledged identities</button>
+      </div>
+    </section>
     <div class="export-receipt__files" aria-label="Published files">
       <ReceiptFileRow :file="receipt.files[0]" file-name="review.json" />
       <ReceiptFileRow :file="receipt.files[1]" file-name="review.md" />

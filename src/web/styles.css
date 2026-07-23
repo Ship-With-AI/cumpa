@@ -1601,8 +1601,10 @@ body {
 .export-drift,
   .export-progress,
   .gitignore-status,
-  .export-receipt,
-  .export-receipt__files {
+ .export-receipt,
+ .export-receipt__files,
+ .export-receipt__drift-disclosure,
+ .export-receipt__acknowledged-identities {
   display: grid;
   gap: var(--space-sm);
 }
@@ -1611,6 +1613,36 @@ body {
   margin-top: var(--space-lg);
   padding-top: var(--space-md);
   border-top: 1px solid var(--rule);
+}
+
+.export-section,
+.export-section__content,
+.export-receipt,
+.receipt-file-row {
+  min-width: 0;
+}
+
+.export-section h3,
+.export-section h4 {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.export-section h5,
+.export-section dt {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+}
+
+.export-section p,
+.export-section .ui-button,
+.export-section dd,
+.export-section code {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
 }
 
 .export-section__heading,
@@ -1649,6 +1681,24 @@ body {
 
 .export-receipt--previous {
   border-style: dashed;
+}
+
+.export-receipt__drift-disclosure,
+.export-receipt__acknowledged-identities {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.export-receipt__acknowledged-identities dl {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+}
+
+.export-receipt__acknowledged-identities dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .export-receipt__heading,
@@ -1711,6 +1761,7 @@ body {
   color: var(--text-muted);
   font-size: 12px;
   font-weight: 400;
+  line-height: 16px;
 }
 
 .export-section__support,
@@ -1788,6 +1839,13 @@ body {
 
 @keyframes export-spinner {
   to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1099px) {
+  .export-receipt__metadata > div,
+  .receipt-file-row__metadata > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 767px) {

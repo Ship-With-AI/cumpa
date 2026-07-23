@@ -67,7 +67,7 @@ watch(() => props.exportState.phase, (phase) => {
     </header>
 
     <div v-if="open" id="export-section-content" class="export-section__content">
-      <section v-if="exportState.phase === 'conflict' && exportState.conflict !== null" class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-conflict-heading">
+      <section v-if="exportState.phase === 'conflict' && exportState.conflict !== null" class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-conflict-heading" @keydown.escape.stop>
         <h4 id="export-conflict-heading" ref="conflictHeading" tabindex="-1">Review changed before export</h4>
         <p>Accepted revision {{ exportState.conflict.expectedRevision }} is no longer current. Nothing from this export attempt was published.</p>
         <p>Latest revision {{ exportState.conflict.actualRevision }}</p>
@@ -85,9 +85,9 @@ watch(() => props.exportState.phase, (phase) => {
         @confirm="emit('export')"
       />
 
-      <section v-else-if="exportState.phase === 'failed'" class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-failure-heading">
-        <h4 id="export-failure-heading" ref="failureHeading" tabindex="-1">Export was not published</h4>
-        <p>{{ exportState.failure === 'reExportUnsupported' ? 'This export cannot replace a previous pair safely on this runtime.' : 'The export pair could not be validated.' }}</p>
+      <section v-else-if="exportState.phase === 'failed'" class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-failure-heading" @keydown.escape.stop>
+        <h4 id="export-failure-heading" ref="failureHeading" tabindex="-1">{{ exportState.failure === 'recoveryRequired' ? 'Export needs recovery' : 'Export was not published' }}</h4>
+        <p>{{ exportState.failure === 'recoveryRequired' ? 'Diff Review could not confirm a complete new export pair. No success receipt is available. Check terminal details, then try again after recovery.' : exportState.failure === 'reExportUnsupported' ? 'This export cannot replace a previous pair safely on this runtime.' : 'The export pair could not be validated.' }}</p>
         <ExportReceipt
           v-if="exportState.previousConfirmedReceipt !== null"
           :receipt="exportState.previousConfirmedReceipt"
@@ -104,7 +104,7 @@ watch(() => props.exportState.phase, (phase) => {
       <ExportProgress v-else-if="exportState.phase === 'pending'" :revision="revision" :stage="exportState.progress ?? 'preparing'" />
 
       <template v-else-if="exportState.phase === 'unavailable'">
-        <section class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-unavailable-heading">
+        <section class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-unavailable-heading" @keydown.escape.stop>
           <h4 id="export-unavailable-heading">Export is unavailable</h4>
           <p>Export is unavailable on this runtime.</p>
         </section>
