@@ -20,7 +20,7 @@ async function copyPath(): Promise<void> {
     await navigator.clipboard.writeText(props.file.path);
     copyMessage.value = `Copied relative path for ${props.fileName}.`;
   } catch {
-    copyMessage.value = `Could not copy the ${props.fileName} path. Select and copy it manually.`;
+    copyMessage.value = 'Could not copy. Select the value and copy it manually.';
   }
 }
 </script>

@@ -23,14 +23,29 @@ const revealAlert = ref<HTMLElement>();
 const headingText = computed(() => props.previous ? 'Previous confirmed export' : 'Review export complete');
 const driftText = computed(() => props.receipt.drift.kind === 'acknowledged' ? 'Acknowledged for this export' : 'None observed');
 const acknowledgedIdentitiesOpen = ref(false);
+const comparisonOpen = ref(false);
+const comparisonEndpoints = computed(() => [
+  { role: 'Base', identity: props.receipt.comparison.base },
+  { role: 'Head', identity: props.receipt.comparison.head },
+]);
 const acknowledgedIdentities = computed(() => props.receipt.drift.kind === 'acknowledged'
   ? props.receipt.drift.identities
   : []);
 const acknowledgedIdentityDetails = computed(() => acknowledgedIdentities.value.map((identity) => [
+  `${identity.role === 'base' ? 'Base' : 'Head'} pinned label: ${identity.pinned.label}`,
+  `${identity.role === 'base' ? 'Base' : 'Head'} pinned type: ${identity.pinned.selectorType}`,
   `${identity.role === 'base' ? 'Base' : 'Head'} pinned: ${identity.pinned.oid}`,
   identity.current.kind === 'available'
-    ? `${identity.role === 'base' ? 'Base' : 'Head'} current: ${identity.current.oid}`
-    : `${identity.role === 'base' ? 'Base' : 'Head'} current unavailable: ${identity.current.reason}`,
+    ? [
+      `${identity.role === 'base' ? 'Base' : 'Head'} current label: ${identity.current.label}`,
+      `${identity.role === 'base' ? 'Base' : 'Head'} current type: ${identity.current.selectorType}`,
+      `${identity.role === 'base' ? 'Base' : 'Head'} current: ${identity.current.oid}`,
+    ].join('\n')
+    : [
+      `${identity.role === 'base' ? 'Base' : 'Head'} current label: ${identity.current.label}`,
+      `${identity.role === 'base' ? 'Base' : 'Head'} current type: ${identity.current.selectorType}`,
+      `${identity.role === 'base' ? 'Base' : 'Head'} current unavailable: ${identity.current.reason}`,
+    ].join('\n'),
 ].join('\n')).join('\n'));
 const receiptDetails = computed(() => [
   `Accepted revision: ${props.receipt.draftRevision}`,
@@ -54,7 +69,7 @@ async function copyDetails(): Promise<void> {
     await navigator.clipboard.writeText(receiptDetails.value);
     copyMessage.value = 'Copied export receipt details.';
   } catch {
-    copyMessage.value = 'Could not copy receipt details. Select and copy the visible values manually.';
+    copyMessage.value = 'Could not copy. Select the value and copy it manually.';
   }
 }
 
@@ -81,7 +96,7 @@ async function revealDirectory(): Promise<void> {
     // The fixed capability reports no path or OS diagnostic to the browser.
   }
   revealFailed.value = true;
-  revealMessage.value = 'Reveal failed; copy a displayed relative path and open it from the repository root.';
+  revealMessage.value = 'Could not reveal the export directory. Copy the relative path and open it from the repository root.';
   await nextTick();
   revealAlert.value?.focus();
 }
@@ -91,17 +106,31 @@ async function revealDirectory(): Promise<void> {
   <section class="export-receipt" :class="{ 'export-receipt--previous': previous }" :aria-labelledby="previous ? 'previous-export-heading' : 'export-receipt-heading'">
     <header class="export-receipt__heading">
       <h4 :id="previous ? 'previous-export-heading' : 'export-receipt-heading'" ref="heading" tabindex="-1">{{ headingText }}</h4>
-      <div v-if="!previous" class="export-actions">
-        <button type="button" class="ui-button" @click="copyDetails">Copy receipt details</button>
-        <button type="button" class="ui-button" @click="revealDirectory">Reveal export directory</button>
-      </div>
     </header>
+    <p v-if="!previous" class="export-receipt__body">Both files were published together from accepted revision {{ receipt.draftRevision }}.</p>
     <p v-if="previous" class="export-receipt__previous-note">This last confirmed pair remains available; the later export attempt was not published.</p>
     <dl class="export-receipt__metadata">
       <div><dt>Accepted revision</dt><dd>{{ receipt.draftRevision }}</dd></div>
       <div><dt>Exported at</dt><dd><time :datetime="receipt.exportedAt">{{ receipt.exportedAt }}</time></dd></div>
       <div><dt>Drift</dt><dd>{{ driftText }}</dd></div>
     </dl>
+    <section class="export-receipt__drift-disclosure">
+      <button
+        type="button"
+        class="ui-button"
+        :aria-expanded="comparisonOpen"
+        aria-controls="receipt-comparison"
+        @click="comparisonOpen = !comparisonOpen"
+      >Comparison</button>
+      <div v-if="comparisonOpen" id="receipt-comparison" class="export-receipt__acknowledged-identities">
+        <dl v-for="endpoint in comparisonEndpoints" :key="endpoint.role">
+          <dt>{{ endpoint.role }}</dt>
+          <dd>Pinned {{ endpoint.role }}: <code>{{ endpoint.identity.oid }}</code></dd>
+          <dd>Label: {{ endpoint.identity.label }}</dd>
+          <dd>Type: {{ endpoint.identity.selectorType ?? 'not reported' }}</dd>
+        </dl>
+      </div>
+    </section>
     <section v-if="acknowledgedIdentities.length > 0" class="export-receipt__drift-disclosure">
       <button
         type="button"
@@ -114,8 +143,18 @@ async function revealDirectory(): Promise<void> {
         <dl v-for="identity in acknowledgedIdentities" :key="identity.role">
           <dt>{{ identity.role === 'base' ? 'Base' : 'Head' }}</dt>
           <dd>Pinned {{ identity.role === 'base' ? 'Base' : 'Head' }}: <code>{{ identity.pinned.oid }}</code></dd>
-          <dd v-if="identity.current.kind === 'available'">Current {{ identity.role === 'base' ? 'Base' : 'Head' }}: <code>{{ identity.current.oid }}</code></dd>
-          <dd v-else>Current {{ identity.role === 'base' ? 'Base' : 'Head' }} unavailable: {{ identity.current.reason }}</dd>
+          <dd>Pinned label: {{ identity.pinned.label }}</dd>
+          <dd>Pinned type: {{ identity.pinned.selectorType }}</dd>
+          <template v-if="identity.current.kind === 'available'">
+            <dd>Current {{ identity.role === 'base' ? 'Base' : 'Head' }}: <code>{{ identity.current.oid }}</code></dd>
+            <dd>Current label: {{ identity.current.label }}</dd>
+            <dd>Current type: {{ identity.current.selectorType }}</dd>
+          </template>
+          <template v-else>
+            <dd>Current {{ identity.role === 'base' ? 'Base' : 'Head' }} unavailable: {{ identity.current.reason }}</dd>
+            <dd>Current label: {{ identity.current.label }}</dd>
+            <dd>Current type: {{ identity.current.selectorType }}</dd>
+          </template>
         </dl>
         <button type="button" class="ui-button" @click="copyAcknowledgedIdentities">Copy acknowledged identities</button>
       </div>
@@ -123,6 +162,10 @@ async function revealDirectory(): Promise<void> {
     <div class="export-receipt__files" aria-label="Published files">
       <ReceiptFileRow :file="receipt.files[0]" file-name="review.json" />
       <ReceiptFileRow :file="receipt.files[1]" file-name="review.md" />
+    </div>
+    <div v-if="!previous" class="export-actions">
+      <button type="button" class="ui-button" @click="copyDetails">Copy all receipt details</button>
+      <button type="button" class="ui-button" @click="revealDirectory">Reveal export directory</button>
     </div>
     <p v-if="copyMessage !== ''" class="export-receipt__message" :class="{ 'inline-notice inline-notice--error': copyMessage.startsWith('Could not') }" :role="copyMessage.startsWith('Could not') ? 'alert' : 'status'">{{ copyMessage }}</p>
     <p v-if="revealMessage !== ''" ref="revealAlert" class="export-receipt__message" :class="{ 'inline-notice inline-notice--error': revealFailed }" :role="revealFailed ? 'alert' : 'status'" tabindex="-1">{{ revealMessage }}</p>
