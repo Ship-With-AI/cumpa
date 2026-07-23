@@ -145,6 +145,8 @@ The contract asserts that the client request is exactly `{ expectedRevision: 7 }
 
    Every confirmed receipt now includes the server-retained pinned Base/Head OIDs with their server-confirmed labels and, where available, selector types. The drift union remains separate; the browser neither derives comparison identity from paths nor reconstructs it locally.
 
+The API export contract asserts that a real confirmed response exposes those identities from the retained server comparison, while the schema contract rejects a receipt that omits them.
+
    **RED commit:** `2f8c4e4` — `test(04-05): add failing receipt comparison contract`  
    **GREEN commit:** `478a950` — `feat(04-05): expose confirmed receipt comparison`
 
