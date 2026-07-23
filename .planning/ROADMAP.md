@@ -11,7 +11,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 | 1 | Pinned Local Comparison | 13/13 | Complete    | 2026-07-20 |
 | 2 | Anchored Diff Review | 10/10 | Complete | 2026-07-21 |
 | 3 | Complete Review Draft | 7/7 | Complete    | 2026-07-23 |
-| 4 | Agent-Ready Export | 6/8 | In Progress|  |
+| 4 | Agent-Ready Export | 9/9 | Complete | 2026-07-23 |
 
 **Total:** 4 phases, 51 v1 requirements, 35 planned implementation units.
 
@@ -104,7 +104,7 @@ Every v1 requirement maps to exactly one phase:
 | 1. Pinned Local Comparison | In progress | 12/13 | 23/23 |
 | 2. Anchored Diff Review | Complete | 10/10 | 11/11 |
 | 3. Complete Review Draft | In Progress| 4/7 | 7/8 |
-| 4. Agent-Ready Export | In Progress| 7/8 | 4/9 |
+| 4. Agent-Ready Export | Complete | 8/8 | 9/9 |
 
 ---
 *Roadmap created: 2026-07-11*

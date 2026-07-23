@@ -4,16 +4,16 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 04
 current_phase_name: agent-ready-export
-status: executing
-stopped_at: Completed 04-07-PLAN.md
-last_updated: "2026-07-23T16:50:51.960Z"
+status: verifying
+stopped_at: Completed 04-08-PLAN.md
+last_updated: "2026-07-23T20:02:23+02:00"
 last_activity: 2026-07-23
-last_activity_desc: Completed 04-05 accepted-revision export UI states
+last_activity_desc: Completed 04-08 generated-package export acceptance
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 38
-  completed_plans: 37
+  completed_plans: 38
 ---
 
 # Project State
@@ -27,12 +27,12 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 
 ## Current Position
 
-Phase: 04 (agent-ready-export) — EXECUTING
+Phase: 04 (agent-ready-export) — VERIFYING
 Plan: 8 of 8
-Status: Ready to execute
-Last activity: 2026-07-23 — Completed 04-05 accepted-revision export UI states
+Status: Phase complete — ready for verification
+Last activity: 2026-07-23 — Completed 04-08 generated-package export acceptance
 
-Progress: ██████░░░░ [██████████] 97%
+Progress: ██████████ [██████████] 100%
 
 ## Performance Metrics
 
@@ -90,6 +90,7 @@ Progress: ██████░░░░ [██████████] 97%
 | Phase 04 P04 | execution session | 2 tasks | 10 files |
 | Phase 04 P06 | 60min | 2 tasks | 11 files |
 | Phase 04 P07 | 35min | 2 tasks | 6 files |
+| Phase 04 P08 | 25 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -167,6 +168,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 04]: Keep ignore consent as a fixed append-only capability with reread and safe-probe confirmation. — A review client must not receive generic Git or filesystem authority.
 - [Phase 04]: Re-export remains refusal-first until a packaged target supplies observed native exchange evidence. — The reconciled package declares no native exchange target, so continuous old-or-new exchange evidence cannot be claimed.
 - [Phase 04]: Safety snapshots allow only generated .diff-review output and an exact approved ignore append. — D-17 and D-18 require narrow, independently checked filesystem exceptions.
+- [Phase 04]: Keep final acceptance at the generated package boundary. — A fresh CLI/server/browser process, real Monaco, and independently reread export bytes are the authority.
+- [Phase 04]: Record the roadmap resume criterion only against the named close/relaunch/recover/export journey. — It proves different ordered-pair isolation together with exact recovered persisted state.
 
 ### Pending Todos
 
@@ -195,6 +198,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T16:50:51.956Z
-Stopped at: Completed 04-07-PLAN.md
+Last session: 2026-07-23T18:06:56.782Z
+Stopped at: Completed 04-08-PLAN.md
 Resume file: None
