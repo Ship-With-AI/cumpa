@@ -437,6 +437,21 @@ const ExportReceiptDriftSchema = z
   ])
   .readonly();
 
+const ExportReceiptComparisonEndpointSchema = z
+  .strictObject({
+    label: z.string().min(1),
+    selectorType: SelectorTypeSchema.optional(),
+    oid: GitObjectIdSchema,
+  })
+  .readonly();
+
+const ExportReceiptComparisonSchema = z
+  .strictObject({
+    base: ExportReceiptComparisonEndpointSchema,
+    head: ExportReceiptComparisonEndpointSchema,
+  })
+  .readonly();
+
 export const ExportReviewResultSchema = z
   .discriminatedUnion('kind', [
     z.strictObject({
@@ -445,6 +460,7 @@ export const ExportReviewResultSchema = z
       exportedAt: z.string().datetime(),
       driftAcknowledged: z.boolean(),
       drift: ExportReceiptDriftSchema,
+      comparison: ExportReceiptComparisonSchema,
       files: ExportReceiptFilesSchema,
     }).readonly(),
     z.strictObject({

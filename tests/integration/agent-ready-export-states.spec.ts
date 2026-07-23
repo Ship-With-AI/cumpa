@@ -62,6 +62,11 @@ test('rejects malformed exported receipt ordering and pairing in the browser cli
         draftRevision: 1,
         exportedAt: '2026-07-23T12:34:56.000Z',
         driftAcknowledged: false,
+          drift: { kind: 'noneObserved' },
+          comparison: {
+            base: { label: 'base', selectorType: 'branch', oid: '1'.repeat(40) },
+            head: { label: 'head', selectorType: 'branch', oid: '2'.repeat(40) },
+          },
         files,
       }), { status: 201 }),
     });

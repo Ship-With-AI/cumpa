@@ -94,6 +94,10 @@ async function startAppServer(): Promise<string> {
                   },
                 ],
               },
+        comparison: {
+          base: { label: 'base', selectorType: 'branch', oid: '1'.repeat(40) },
+          head: { label: 'head', selectorType: 'branch', oid: '2'.repeat(40) },
+        },
               files: [
                 { path: `${exportDirectory}/review.json`, algorithm: 'sha256', sha256: '1'.repeat(64), bytes: 128 },
                 { path: `${exportDirectory}/review.md`, algorithm: 'sha256', sha256: '2'.repeat(64), bytes: 256 },

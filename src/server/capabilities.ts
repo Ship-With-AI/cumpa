@@ -119,6 +119,14 @@ function toSessionEndpoint(endpoint: PinnedComparison['base']) {
   };
 }
 
+function receiptComparisonEndpoint(endpoint: PinnedComparison['base']) {
+  return {
+    label: endpoint.label,
+    oid: endpoint.oid,
+    ...(endpoint.source === undefined ? {} : { selectorType: endpoint.source.kind }),
+  };
+}
+
 type ReceiptDrift = Extract<ExportReviewResult, { readonly kind: 'exported' }>['drift'];
 type AcknowledgedReceiptDrift = Extract<ReceiptDrift, { readonly kind: 'acknowledged' }>;
 type ReceiptDriftIdentity = AcknowledgedReceiptDrift['identities'][number];
@@ -418,6 +426,10 @@ export function createCapabilityRegistry(
         exportedAt,
         driftAcknowledged: drifted,
         drift: receiptDrift(comparison, observation),
+        comparison: {
+          base: receiptComparisonEndpoint(comparison.base),
+          head: receiptComparisonEndpoint(comparison.head),
+        },
         files: published.receipt.files,
       });
     },
