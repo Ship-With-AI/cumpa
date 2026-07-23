@@ -154,9 +154,17 @@ No declared packaged runner exists for an interruption reader probe. The target-
 - **Verification:** RED source API tests failed 4/4 and compiled-package safety tests failed 2/2 before enforcement. GREEN focused API tests passed 11/11; after `npm run build`, package safety passed 8/8.
 - **Committed in:** `65effe4`, `7875e35`, `b3df9a3`.
 
+**5. [Rule 1 - Correctness] Receipt parsing allowed positional JSON/Markdown labels to diverge from the receipt paths.**
+- **Found during:** Post-wave WR-03 code-review remediation.
+- **Issue:** Two individually valid receipt records could be reversed, duplicated, or drawn from different comparison OID directories, while the UI rendered them positionally.
+- **Fix:** Added distinct ordered `review.json`/`review.md` Zod schemas and a common comparison-directory refinement at the API boundary; browser client continues positional rendering only after parsing that invariant.
+- **Files modified:** `src/contracts/api.ts`, `tests/api/export.test.ts`, `tests/integration/agent-ready-export-states.spec.ts`, `04-REVIEW.md`, `04-03-SUMMARY.md`.
+- **Verification:** RED API receipt contract and browser-client tests accepted malformed pairs before enforcement. GREEN API contract passed 7/7, browser-client integration passed 4/4, and `npm run build` passed.
+- **Committed in:** `df767bc`, `9a2d18b`.
+
 ---
 
-**Total deviations:** 4 auto-fixed correctness/security/integration issues.
+**Total deviations:** 5 auto-fixed correctness/security/integration issues.
 **Impact on plan:** The acceptance helper remains behaviorally strict and deterministic; no timeout increase, hidden-region disablement, sleep, or assertion weakening was introduced.
 
 ## Issues Encountered

@@ -126,6 +126,8 @@ Reviewed the complete Phase 04 export surface: shared schemas and deterministic 
 
 **Fix:** Use distinct receipt schemas for the first JSON and second Markdown entry, capture their common `<base>..<head>` directory segment, and refine that both entries share it. Keep the renderer positional only after this invariant is enforced; add client-schema tests for reversed, duplicate, and mixed-pair receipts.
 
+**Remediation evidence (2026-07-23):** Resolved by `df767bc` and `9a2d18b`. The exported result now has distinct first `review.json` and second `review.md` schemas; each captures an OID-pair directory segment and the tuple refinement requires equality. API contract and browser-client regressions cover reversed, duplicate, and mixed-directory pairs. The new contract rejects all malformed cases before positional rendering, while the valid exact pair continues to parse. Focused API tests passed 7/7, browser-client integration passed 4/4, and `npm run build` passed.
+
 ### WR-04: Reveal failure omits the required usable recovery path
 
 **File:** `src/web/components/ExportReceipt.vue:54-57`  
