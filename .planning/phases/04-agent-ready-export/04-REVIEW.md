@@ -1,8 +1,8 @@
 ---
 phase: 04-agent-ready-export
-reviewed: 2026-07-23T22:06:20Z
+reviewed: 2026-07-23T22:23:01Z
 depth: deep
-files_reviewed: 17
+files_reviewed: 18
 files_reviewed_list:
   - package.json
   - playwright.config.ts
@@ -15,6 +15,7 @@ files_reviewed_list:
   - src/server/native-exchange-capability.ts
   - tests/e2e/agent-ready-export-safety.spec.ts
   - tests/e2e/agent-ready-export.spec.ts
+  - tests/helpers/agent-ready-export-target.ts
   - tests/helpers/export-fault-runner.ts
   - tests/package/agent-ready-export-safety.test.ts
   - tests/package/agent-ready-export.test.ts
@@ -23,24 +24,26 @@ files_reviewed_list:
   - tests/unit/native-exchange-capability.test.ts
 findings:
   critical: 0
-  warning: 2
+  warning: 1
   info: 0
-  total: 2
+  total: 1
 status: issues_found
 ---
 
 # Phase 04: Code Review Report
 
-**Reviewed:** 2026-07-23T22:06:20Z
+**Reviewed:** 2026-07-23T22:23:01Z
 **Depth:** deep
-**Files Reviewed:** 17
+**Files Reviewed:** 18
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the production native-exchange capability path from add-on build/load/probe through publication, the packed tarball re-export journey, and the scripts that build shared `dist/` artifacts. The observer correctly loads and probes the add-on only after probe-directory creation and fails closed on setup and cleanup errors. The serialized safety runner builds before its read-only safety suite, and the packed Darwin/arm64 journey exercises the add-on from the tarball.
+Reviewed the production native-exchange capability path from add-on build/load/probe through publication, the packed tarball re-export journey, and the scripts that build shared `dist/` artifacts. The observer correctly loads and probes the add-on only after probe-directory creation and fails closed on setup and cleanup errors. The serialized safety runner builds before its read-only safety suite.
 
-However, the declared native target is only `darwin-arm64`; two unguarded tests still make that target-specific compiler/re-export proof a mandatory cross-platform default. On every other host the production build deliberately removes the add-on and the capability correctly returns `reExportUnsupported`, so the default suite fails instead of proving that refusal contract.
+The target-aware packed remediation closes the prior cross-platform package finding. `hasObservedNativeReExport()` encodes the ledger's sole Darwin/arm64 target; the packed journey requires `201` and an exported receipt only there. On every other host it now proves the actual packed runtime returns `409` with typed `reExportUnsupported`, preserves the first stable pair byte-for-byte, and emits evidence that records the observed target and outcome.
+
+One real compiler test remains unguarded, so the review cannot yet be clean.
 
 ## Warnings
 
@@ -52,22 +55,15 @@ However, the declared native target is only `darwin-arm64`; two unguarded tests 
 
 **Fix:** Gate this real add-on compile/probe test with `test.runIf(process.platform === 'darwin' && process.arch === 'arm64')` (or an equivalent `describe.runIf`). Keep all-host coverage in the existing build-target and capability/refusal tests; do not try to compile a Darwin dynamic library on unsupported hosts.
 
-### WR-02: Packed default test requires native re-export on targets intentionally marked unsupported
-
-**File:** `tests/e2e/agent-ready-export.spec.ts:193-196, 214, 271-275`; `tests/package/agent-ready-export.test.ts:12, 78`
-
-**Issue:** The E2E `beforeAll` builds and packs on every host, but its sole packaged acceptance test unconditionally rejects `reExportUnsupported` and requires an exported native receipt. The package evidence test unconditionally launches that E2E suite. Outside the ledger's sole `darwin-arm64` target, `scripts/build-native-addon.mjs` correctly omits the add-on and the production observer correctly fails closed, so `npm run test:package` and the package evidence test fail by demanding a capability the policy explicitly disallows.
-
-**Fix:** Make the packed re-export-success journey and its success-only evidence target-aware: run the native complete-pair re-export assertion only on Darwin/arm64. On every other host, retain a packed-package journey that performs first export, expects typed `reExportUnsupported` for the second export, and verifies the old stable pair remains unchanged. The package evidence runner must select and validate the matching target-specific result instead of requiring a native-success report everywhere.
-
 ## Verification
 
 - `npm exec vitest run tests/unit/build-native-addon.test.ts tests/unit/native-exchange-capability.test.ts` — passed: 2 files, 4 tests.
+- `node_modules/.bin/vitest run tests/package/agent-ready-export.test.ts -t "runs packed re-export as"` — passed: 1 file, 3 target-policy cases; the full package-evidence test was intentionally skipped.
 - Static target-policy inspection: reconciliation declares only `darwin-arm64` with `observedNativeExchange`; `scripts/build-native-addon.mjs` removes the add-on on all other targets.
-- Traced `getObservedNativeExchangeCapability()` through `src/server/capabilities.ts` and `src/server/export-store.ts`: setup, add-on load/probe, and cleanup failures return typed `reExportUnsupported` before a stable re-export exchange.
+- Static re-review of `8179e3b`: target-aware E2E assertions cover exported native re-export on Darwin/arm64 and typed refusal plus stable-byte preservation elsewhere; package evidence validates the corresponding target and result algebra.
 
 ---
 
-_Reviewed: 2026-07-23T22:06:20Z_
+_Reviewed: 2026-07-23T22:23:01Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: deep_
