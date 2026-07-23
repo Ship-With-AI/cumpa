@@ -112,8 +112,17 @@ export const ReviewDraftV1Schema = z
   })
   .readonly();
 
+function containsLoneSurrogate(value: unknown): boolean {
+  if (typeof value === 'string') {
+    return /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(value);
+  }
+  if (Array.isArray(value)) return value.some(containsLoneSurrogate);
+  if (value !== null && typeof value === 'object') return Object.values(value).some(containsLoneSurrogate);
+  return false;
+}
+
 const ExportStringSchema = z.string().refine(
-  (value) => !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(value),
+  (value) => !containsLoneSurrogate(value),
   'Strings must not contain lone UTF-16 surrogate code units.',
 );
 
@@ -224,6 +233,9 @@ export const ReviewExportV1Schema = z
     counts: ExportCountsSchema,
   })
   .superRefine((document, context) => {
+    if (containsLoneSurrogate(document)) {
+      context.addIssue({ code: 'custom', message: 'Export strings must not contain lone UTF-16 surrogate code units.' });
+    }
     const comments = document.files.flatMap((file) => file.comments);
     const ids = new Set<string>();
     for (const [index, comment] of comments.entries()) {

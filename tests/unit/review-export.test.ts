@@ -146,6 +146,10 @@ describe('ReviewExportV1 canonical contract', () => {
     expect(() => ReviewExportV1Schema.parse({ ...document, summary: { markdown: '\uD800' } })).toThrow();
     expect(() => ReviewExportV1Schema.parse({
       ...document,
+      files: [{ ...document.files[0]!, comments: [{ ...exportedComment, body: '\uD800' }] }],
+    })).toThrow();
+    expect(() => ReviewExportV1Schema.parse({
+      ...document,
       files: [{ ...document.files[0]!, comments: [{ ...exportedComment, resolvedAt: '2026-07-23T08:04:00.000Z' }] }],
     })).toThrow();
     expect(() => canonicalizeReviewExport({ number: Number.NaN })).toThrow();
