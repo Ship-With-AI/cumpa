@@ -4,6 +4,7 @@ import { EventEmitter } from 'node:events';
 import {
   closeSync,
   copyFileSync,
+  chmodSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -37,6 +38,7 @@ interface PackResult {
 
 interface RunningCli {
   readonly child: ChildProcess;
+  readonly browserMarkerPath: string;
   readonly outputPath: string;
   readonly outputDescriptor: number;
 }
@@ -55,6 +57,21 @@ function runPrerequisite(command: string, arguments_: readonly string[]): string
   }
 }
 
+function fakeOpenerInterceptedUrl(running: RunningCli, url: string): boolean {
+  if (!existsSync(running.browserMarkerPath)) return false;
+  return readFileSync(running.browserMarkerPath, 'utf8')
+    .split('\n')
+    .filter((line) => line !== '')
+    .some((line) => {
+      const arguments_ = JSON.parse(line) as unknown;
+      return (
+        Array.isArray(arguments_) &&
+        arguments_.length === 1 &&
+        arguments_[0] === url
+      );
+    });
+}
+
 async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
   const deadline = Date.now() + 10_000;
   while (Date.now() < deadline) {
@@ -62,7 +79,9 @@ async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
       ? readFileSync(running.outputPath, 'utf8')
       : '';
     const match = output.match(/http:\/\/127\.0\.0\.1:\d+\/#token=[A-Za-z0-9_-]{43,}/);
-    if (match !== null) return match[0];
+    if (match !== null && fakeOpenerInterceptedUrl(running, match[0])) {
+      return match[0];
+    }
     if (running.child.exitCode !== null || running.child.signalCode !== null) {
       throw new Error(`[behavioral] generated CLI exited before publishing a loopback URL:\n${output}`);
     }
@@ -70,17 +89,26 @@ async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
     setTimeout(resolveWait, 25);
     await promise;
   }
-  throw new Error('[behavioral] timed out waiting for generated CLI loopback URL');
+  throw new Error(
+    '[behavioral] timed out waiting for generated CLI loopback URL and fake opener interception',
+  );
 }
 
 function startGeneratedCli(repository: GitFixture, head = repository.headRef): RunningCli {
   const outputPath = join(packedRoot, `terminal-${crypto.randomUUID()}.log`);
+  const browserMarkerPath = join(
+    packedRoot,
+    `browser-open-${crypto.randomUUID()}.log`,
+  );
   const outputDescriptor = openSync(outputPath, 'w');
+  const environment = { ...process.env };
+  delete environment.CMUX_WORKSPACE_ID;
   const child = spawn(process.execPath, [executablePath], {
     cwd: repository.nestedCwd,
     env: {
-      ...process.env,
+      ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
+      DIFF_REVIEW_BROWSER_OPEN_MARKER: browserMarkerPath,
       DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({
         cwd: repository.nestedCwd,
         base: { label: 'main', revision: repository.baseRef },
@@ -89,7 +117,7 @@ function startGeneratedCli(repository: GitFixture, head = repository.headRef): R
     },
     stdio: ['ignore', outputDescriptor, outputDescriptor],
   });
-  return { child, outputPath, outputDescriptor };
+  return { child, browserMarkerPath, outputPath, outputDescriptor };
 }
 
 async function stopGeneratedCli(running: RunningCli): Promise<void> {
@@ -169,8 +197,20 @@ test.beforeAll(() => {
   symlinkSync(join(repositoryRoot, 'node_modules'), join(extractedPackageRoot, 'node_modules'), 'dir');
   mkdirSync(fakeBinRoot, { recursive: true });
   const fakeOpen = join(packedRoot, 'open');
-  writeFileSync(fakeOpen, '#!/usr/bin/env node\nprocess.exitCode = 1;\n');
-  copyFileSync(fakeOpen, join(fakeBinRoot, 'open'));
+  writeFileSync(
+    fakeOpen,
+    [
+      '#!/usr/bin/env node',
+      "const { appendFileSync } = require('node:fs');",
+      "const markerPath = process.env.DIFF_REVIEW_BROWSER_OPEN_MARKER;",
+      "if (markerPath !== undefined) appendFileSync(markerPath, `${JSON.stringify(process.argv.slice(2))}\\n`);",
+      'process.exitCode = 1;',
+      '',
+    ].join('\n'),
+  );
+  const fakeOpenTarget = join(fakeBinRoot, 'open');
+  copyFileSync(fakeOpen, fakeOpenTarget);
+  chmodSync(fakeOpenTarget, 0o755);
 });
 
 test.afterAll(() => {
