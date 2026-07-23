@@ -458,7 +458,6 @@ export const ExportReviewResultSchema = z
       kind: z.literal('exported'),
       draftRevision: RevisionSchema,
       exportedAt: z.string().datetime(),
-      driftAcknowledged: z.boolean(),
       drift: ExportReceiptDriftSchema,
       comparison: ExportReceiptComparisonSchema,
       files: ExportReceiptFilesSchema,
@@ -483,6 +482,37 @@ export const ExportReviewResultSchema = z
     z.strictObject({ kind: z.literal('publicationFailed') }).readonly(),
     z.strictObject({ kind: z.literal('recoveryRequired') }).readonly(),
   ])
+  .superRefine((result, context) => {
+    if (result.kind !== 'exported' || result.drift.kind !== 'acknowledged') {
+      return;
+    }
+
+    for (const role of ['base', 'head'] as const) {
+      const identities = result.drift.identities.filter((identity) => identity.role === role);
+      if (identities.length !== 1) {
+        context.addIssue({
+          code: 'custom',
+          message: `Acknowledged drift requires exactly one ${role} identity.`,
+          path: ['drift', 'identities'],
+        });
+        continue;
+      }
+
+      const [identity] = identities;
+      const endpoint = result.comparison[role];
+      if (
+        identity.pinned.label !== endpoint.label ||
+        identity.pinned.selectorType !== endpoint.selectorType ||
+        identity.pinned.oid !== endpoint.oid
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: `Acknowledged ${role} drift must match the pinned comparison endpoint.`,
+          path: ['drift', 'identities', result.drift.identities.indexOf(identity), 'pinned'],
+        });
+      }
+    }
+  })
   .readonly();
 
 export type ExportReviewResult = z.infer<typeof ExportReviewResultSchema>;

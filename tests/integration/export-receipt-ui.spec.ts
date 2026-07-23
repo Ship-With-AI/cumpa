@@ -79,7 +79,6 @@ async function startAppServer(): Promise<string> {
               kind: 'exported',
               draftRevision: 3,
               exportedAt: '2026-07-23T12:34:56.000Z',
-              driftAcknowledged: receiptHasAcknowledgedDrift,
               drift: receiptHasAcknowledgedDrift ? {
                 kind: 'acknowledged',
                 identities: [

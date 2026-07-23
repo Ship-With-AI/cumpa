@@ -424,7 +424,6 @@ export function createCapabilityRegistry(
         kind: 'exported',
         draftRevision: acceptedDraft.revision,
         exportedAt,
-        driftAcknowledged: drifted,
         drift: receiptDrift(comparison, observation),
         comparison: {
           base: receiptComparisonEndpoint(comparison.base),
