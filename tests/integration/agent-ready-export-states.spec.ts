@@ -73,3 +73,34 @@ test('requires the latest drift acknowledgement before showing accepted-pair exp
   expect(review.startExport('first-token')).toBe(true);
   expect(review.snapshot().export.progress).toBe('preparing');
 });
+
+test('uses no-field fixed capabilities for ignore consent and export-directory reveal', async () => {
+  const requests: Array<{ readonly path: string; readonly method: string; readonly body: unknown }> = [];
+  const client = createSessionClient({
+    location: { hash: `#token=${token}`, pathname: '/', search: '' },
+    history: { state: null, replaceState() {} },
+    fetch: async (path, init) => {
+      requests.push({
+        path: String(path),
+        method: String(init?.method),
+        body: init?.body === undefined ? undefined : JSON.parse(String(init.body)),
+      });
+      const result = String(path) === '/api/export/reveal'
+        ? { kind: 'revealed' }
+        : String(path) === '/api/export/gitignore' && init?.method === 'POST'
+          ? { kind: 'appended' }
+          : { kind: 'ignored' };
+      return new Response(JSON.stringify(result));
+    },
+  });
+
+  await expect(client.revealExportDirectory()).resolves.toEqual({ kind: 'revealed' });
+  await expect(client.appendDiffReviewIgnoreRule()).resolves.toEqual({ kind: 'appended' });
+  await expect(client.getDiffReviewIgnoreStatus()).resolves.toEqual({ kind: 'ignored' });
+
+  expect(requests).toEqual([
+    { path: '/api/export/reveal', method: 'POST', body: undefined },
+    { path: '/api/export/gitignore', method: 'POST', body: undefined },
+    { path: '/api/export/gitignore', method: 'GET', body: undefined },
+  ]);
+});
