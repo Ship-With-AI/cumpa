@@ -34,7 +34,7 @@ function pair(summary: string): Readonly<{ readonly json: Buffer; readonly markd
   return Object.freeze({ json, markdown: Buffer.from(renderReviewMarkdown(json), 'utf8') });
 }
 
-test('generated-process restart keeps the complete old stable pair when this packaged target refuses native re-export', async () => {
+test('forced unavailable capability refuses re-export before touching the complete old stable pair', async () => {
   const fixture = await createDirtyGitFixture();
   try {
     const before = await captureSourceControlSnapshot(fixture.root);

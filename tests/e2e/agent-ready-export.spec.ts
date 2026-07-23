@@ -26,6 +26,7 @@ import type { Browser, Page, TestInfo } from '@playwright/test';
 import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
 import { parseCanonicalReviewExport } from '../../src/export/review-export.js';
 import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js';
+import { ExportReviewResultSchema } from '../../src/contracts/api.js';
 import { createDirtyGitFixture, type DirtyGitFixture } from '../helpers/git-fixture.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
 
@@ -210,7 +211,7 @@ test.beforeAll(() => {
 
 test.afterAll(() => rmSync(packedRoot, { recursive: true, force: true }));
 
-test('packaged-resume-after-relaunch preserves accepted review state, separates ordered pairs, and exports exact recovered bytes', async ({ browser, page }, testInfo) => {
+test('packaged-resume-after-relaunch preserves accepted review state, atomically re-exports the pinned pair, and recovers exact bytes', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
   const before = await captureSourceControlSnapshot(fixture.root);
@@ -248,11 +249,39 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
     await expect(resumedPage.locator('.review-summary__preview')).toContainText(summary);
     await expect(resumedPage.locator('.comments-rail__comment')).toContainText(body);
     expect(readOnlyDraft(fixture).bytes).toEqual(accepted.bytes);
-
     const exported = resumedPage.waitForResponse((response) => response.url().includes('/api/export'));
     await resumedPage.getByRole('button', { name: 'Export review', exact: true }).click();
-    expect((await exported).status()).toBe(201);
+
+    const firstExportResponse = await exported;
+    expect(firstExportResponse.status()).toBe(201);
+    const firstExportResult = ExportReviewResultSchema.parse(await firstExportResponse.json());
+    expect(firstExportResult.kind).toBe('exported');
     await expect(resumedPage.getByRole('heading', { name: 'Review export complete' })).toBeVisible();
+
+    const reExported = resumedPage.waitForResponse((response) => response.url().includes('/api/export'));
+    await resumedPage.getByRole('button', { name: 'Export review again', exact: true }).click();
+    const reExportResponse = await reExported;
+    expect(reExportResponse.status()).toBe(201);
+    const reExportResult = ExportReviewResultSchema.parse(await reExportResponse.json());
+    expect(reExportResult.kind).toBe('exported');
+    expect(reExportResult).not.toMatchObject({ kind: 'reExportUnsupported' });
+
+    const stablePairDirectory = join(
+      fixture.root,
+      '.diff-review',
+      'exports',
+      `${fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim()}..${fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim()}`,
+    );
+    const [secondJson, secondMarkdown] = [
+      readFileSync(join(stablePairDirectory, 'review.json')),
+      readFileSync(join(stablePairDirectory, 'review.md')),
+    ];
+    expect(readdirSync(stablePairDirectory).sort()).toEqual(['review.json', 'review.md']);
+    expect(ReviewExportV1Schema.parse(parseCanonicalReviewExport(secondJson))).toMatchObject({
+      acceptedDraftRevision: accepted.draft.revision,
+      summary: { markdown: summary },
+    });
+    expect(Buffer.from(renderReviewMarkdown(secondJson), 'utf8')).toEqual(secondMarkdown);
   } finally {
     await resumedPage.close();
     closedBrowserPages += 1;
