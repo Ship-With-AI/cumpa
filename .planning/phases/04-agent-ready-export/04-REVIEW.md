@@ -1,111 +1,73 @@
 ---
 phase: 04-agent-ready-export
-reviewed: 2026-07-23T21:40:28Z
-depth: standard
-files_reviewed: 54
+reviewed: 2026-07-23T22:06:20Z
+depth: deep
+files_reviewed: 17
 files_reviewed_list:
-  - binding.gyp
   - package.json
   - playwright.config.ts
   - scripts/build-native-addon.mjs
-  - src/contracts/api.ts
-  - src/contracts/draft.ts
-  - src/export/render-review-markdown.ts
-  - src/export/review-export.ts
-  - src/git/comparison.ts
-  - src/git/ignore-status.ts
-  - src/git/inventory.ts
+  - scripts/run-package-export-safety.mjs
+  - scripts/verify-production-artifacts.mjs
   - src/native/directory-exchange.cc
-  - src/server/app.ts
   - src/server/capabilities.ts
   - src/server/export-store.ts
-  - src/server/gitignore-capability.ts
   - src/server/native-exchange-capability.ts
-  - src/server/routes.ts
-  - src/web/App.vue
-  - src/web/api/client.ts
-  - src/web/components/DriftExportAcknowledgement.vue
-  - src/web/components/ExportProgress.vue
-  - src/web/components/ExportReadinessSummary.vue
-  - src/web/components/ExportReceipt.vue
-  - src/web/components/ExportSection.vue
-  - src/web/components/GitignoreStatus.vue
-  - src/web/components/ReceiptFileRow.vue
-  - src/web/components/ReviewPanel.vue
-  - src/web/model/review-draft-state.ts
-  - src/web/styles.css
-  - tests/api/export-publication.test.ts
-  - tests/api/export.test.ts
-  - tests/api/gitignore.test.ts
   - tests/e2e/agent-ready-export-safety.spec.ts
   - tests/e2e/agent-ready-export.spec.ts
-  - tests/e2e/anchored-review.spec.ts
-  - tests/e2e/complete-review-draft.spec.ts
-  - tests/e2e/review-panel-resolved.spec.ts
-  - tests/git/ignore-status.test.ts
-  - tests/git/inventory.test.ts
   - tests/helpers/export-fault-runner.ts
-  - tests/helpers/git-fixture.ts
-  - tests/helpers/source-control-snapshot.ts
-  - tests/integration/agent-ready-export-states.spec.ts
-  - tests/integration/export-receipt-ui.spec.ts
   - tests/package/agent-ready-export-safety.test.ts
   - tests/package/agent-ready-export.test.ts
-  - tests/unit/agent-ready-export-state.test.ts
   - tests/unit/build-native-addon.test.ts
   - tests/unit/directory-exchange.test.ts
   - tests/unit/native-exchange-capability.test.ts
-  - tests/unit/review-export.test.ts
-  - tests/unit/review-markdown.test.ts
-  - vitest.config.ts
 findings:
   critical: 0
-  warning: 0
+  warning: 2
   info: 0
-  total: 0
-status: passed
+  total: 2
+status: issues_found
 ---
 
 # Phase 04: Code Review Report
 
-## Scope
-
-Reviewed all Phase 04 source, configuration, and test changes, including the
-native verifier-gap remediation commits `6e2f3a9`, `fd6b700`, `29d8d07`, and
-`44d9e75`. This re-review checked the platform gate, stale-artifact removal,
-typed probe fallback, evidence-title binding, capability wiring, and focused
-regression coverage.
+**Reviewed:** 2026-07-23T22:06:20Z
+**Depth:** deep
+**Files Reviewed:** 17
+**Status:** issues_found
 
 ## Summary
 
-The prior native findings are resolved in production code. The build script now
-removes a stale add-on and exits before compiling on targets outside the
-declared Darwin/arm64 gate. The observer converts both probe setup and cleanup
-errors to `reExportUnsupported`. Receipt evidence is bound to the current
-packed re-export test title and asserts both first-export and re-export receipt
-paths.
+Reviewed the production native-exchange capability path from add-on build/load/probe through publication, the packed tarball re-export journey, and the scripts that build shared `dist/` artifacts. The observer correctly loads and probes the add-on only after probe-directory creation and fails closed on setup and cleanup errors. The serialized safety runner builds before its read-only safety suite, and the packed Darwin/arm64 journey exercises the add-on from the tarball.
 
-The cross-platform test robustness issue is resolved: the real compiler assertion now runs only on a Darwin/arm64 test host, while every host retains the injected unsupported-target stale-artifact-removal test.
+However, the declared native target is only `darwin-arm64`; two unguarded tests still make that target-specific compiler/re-export proof a mandatory cross-platform default. On every other host the production build deliberately removes the add-on and the capability correctly returns `reExportUnsupported`, so the default suite fails instead of proving that refusal contract.
 
-## Narrative Findings (AI reviewer)
+## Warnings
 
-The direct `process.platform`/`process.arch` guard eliminates the stale native
-artifact on an unsupported runtime build target before invoking the Darwin
-compiler. The capability observer has explicit dependencies, so its setup and
-cleanup failure paths are now unit-tested and return the typed unsupported
-capability rather than rejecting an export request. The focused remediation
-suite passed on the reviewed Darwin/arm64 host.
+### WR-01: Native compiler probe is not gated to its declared target
 
-`b36fe78` moves generated-output creation out of concurrent package-test hooks into serialized `npm run test:package-export-safety`; its build-then-safety command passed 8/8 and the two-file package regression passed 9/9, with generated child stderr retained on a real failure.
+**File:** `tests/unit/directory-exchange.test.ts:22-31, 43-51`
 
-## Accepted Residual / Threat-Boundary Note
+**Issue:** `buildAddon()` always invokes `/usr/bin/c++` with Darwin-only `-dynamiclib` and `-undefined dynamic_lookup` flags, before the test's `process.platform` branch can assert an unsupported result. Therefore a non-Darwin unit-suite run fails at compilation rather than exercising a supported skip/refusal path. It also runs on Darwin/x64 despite the ledger declaring only Darwin/arm64 as an observed native target. This contradicts the portable real-compiler-test contract.
 
-The completed export publication sequence revalidates its path-based identity
-at the defined checkpoints. As explicitly accepted for this phase, it does not
-attempt descriptor-level protection against a malicious same-UID process
-replacing a destination between those checks; the packaged release has no
-native target providing that stronger guarantee.
+**Fix:** Gate this real add-on compile/probe test with `test.runIf(process.platform === 'darwin' && process.arch === 'arm64')` (or an equivalent `describe.runIf`). Keep all-host coverage in the existing build-target and capability/refusal tests; do not try to compile a Darwin dynamic library on unsupported hosts.
+
+### WR-02: Packed default test requires native re-export on targets intentionally marked unsupported
+
+**File:** `tests/e2e/agent-ready-export.spec.ts:193-196, 214, 271-275`; `tests/package/agent-ready-export.test.ts:12, 78`
+
+**Issue:** The E2E `beforeAll` builds and packs on every host, but its sole packaged acceptance test unconditionally rejects `reExportUnsupported` and requires an exported native receipt. The package evidence test unconditionally launches that E2E suite. Outside the ledger's sole `darwin-arm64` target, `scripts/build-native-addon.mjs` correctly omits the add-on and the production observer correctly fails closed, so `npm run test:package` and the package evidence test fail by demanding a capability the policy explicitly disallows.
+
+**Fix:** Make the packed re-export-success journey and its success-only evidence target-aware: run the native complete-pair re-export assertion only on Darwin/arm64. On every other host, retain a packed-package journey that performs first export, expects typed `reExportUnsupported` for the second export, and verifies the old stable pair remains unchanged. The package evidence runner must select and validate the matching target-specific result instead of requiring a native-success report everywhere.
 
 ## Verification
 
 - `npm exec vitest run tests/unit/build-native-addon.test.ts tests/unit/native-exchange-capability.test.ts` — passed: 2 files, 4 tests.
+- Static target-policy inspection: reconciliation declares only `darwin-arm64` with `observedNativeExchange`; `scripts/build-native-addon.mjs` removes the add-on on all other targets.
+- Traced `getObservedNativeExchangeCapability()` through `src/server/capabilities.ts` and `src/server/export-store.ts`: setup, add-on load/probe, and cleanup failures return typed `reExportUnsupported` before a stable re-export exchange.
+
+---
+
+_Reviewed: 2026-07-23T22:06:20Z_
+_Reviewer: the agent (gsd-code-reviewer)_
+_Depth: deep_
