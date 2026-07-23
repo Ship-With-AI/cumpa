@@ -6,14 +6,14 @@ current_phase: 04
 current_phase_name: agent-ready-export
 status: executing
 stopped_at: Completed 04-05-PLAN.md
-last_updated: "2026-07-23T15:18:31Z"
+last_updated: "2026-07-23T16:09:32.962Z"
 last_activity: 2026-07-23
-last_activity_desc: "Completed quick task 260723-nnr: Prevent every packaged E2E CLI child from inheriting cmux browser routing"
+last_activity_desc: Completed 04-05 accepted-revision export UI states
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 38
-  completed_plans: 35
+  completed_plans: 36
   percent: 75
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 04 (agent-ready-export) — EXECUTING
-Plan: 6 of 8
+Plan: 7 of 8
 Status: Ready to execute
 Last activity: 2026-07-23 — Completed 04-05 accepted-revision export UI states
 
@@ -89,6 +89,7 @@ Progress: ██████░░░░ [██████░░░░] 63%
 | Phase 04 P02 | 1min | 2 tasks | 5 files |
 | Phase 04 P03 | execution session | 3 tasks | 9 files |
 | Phase 04 P04 | execution session | 2 tasks | 10 files |
+| Phase 04 P06 | 60min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
