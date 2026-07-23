@@ -92,6 +92,15 @@ describe('ReviewExportV1 canonical contract', () => {
         files: [{ ...document.files[0], path: path('/private/source.ts') }],
       }),
     ).toThrow();
+    expect(() =>
+      ReviewExportV1Schema.parse({
+        ...document,
+        files: [{
+          ...document.files[0]!,
+          path: { bytesBase64url: path('/private/source.ts').bytesBase64url, display: 'safe-name', utf8: undefined },
+        }],
+      }),
+    ).toThrow();
     expect(() => ReviewExportV1Schema.parse({ ...document, counts: { ...document.counts, all: 9 } })).toThrow();
   });
 

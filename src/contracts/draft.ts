@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { ExactPathSchema, GitObjectIdSchema } from './comparison.js';
+import { decodeBase64url } from '../domain/path-bytes.js';
 
 export const RevisionSchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 export const CommentIdSchema = z.string().regex(/^comment_[0-9a-f-]{36}$/u);
@@ -126,12 +127,25 @@ const ExportStringSchema = z.string().refine(
   'Strings must not contain lone UTF-16 surrogate code units.',
 );
 
-function hasRepositoryRelativePath(path: { readonly display: string; readonly utf8?: string }): boolean {
-  const value = path.utf8 ?? path.display;
+function hasRepositoryRelativePath(path: { readonly bytesBase64url: string; readonly display: string; readonly utf8?: string }): boolean {
+  let bytes: Uint8Array;
+  try {
+    bytes = decodeBase64url(path.bytesBase64url);
+  } catch {
+    return false;
+  }
+
+  const values = [path.display, ...(path.utf8 === undefined ? [] : [path.utf8])];
   return (
-    value.length > 0 &&
-    !/^(?:[\\/]|[A-Za-z]:[\\/])/u.test(value) &&
-    !value.split('/').some((segment) => segment === '.' || segment === '..')
+    bytes.length > 0 &&
+    bytes[0] !== 0x2f &&
+    bytes[0] !== 0x5c &&
+    values.every(
+      (value) =>
+        value.length > 0 &&
+        !/^(?:[\\/]|[A-Za-z]:[\\/])/u.test(value) &&
+        !value.split('/').some((segment) => segment === '.' || segment === '..'),
+    )
   );
 }
 
