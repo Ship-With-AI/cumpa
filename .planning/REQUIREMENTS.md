@@ -68,13 +68,13 @@
 
 ### Export
 
-- [ ] **EXP-01**: User can explicitly export the current review to `review.json` and `review.md` under a repository-local export directory.
-- [ ] **EXP-02**: User receives a versioned, schema-valid canonical JSON document containing comparison identities, summary, all comments, states, timestamps, and stable anchors.
-- [ ] **EXP-03**: User receives Markdown derived from the canonical document, grouping open actionable comments by file and excluding resolved comments from requested work.
-- [ ] **EXP-04**: An applying agent is instructed to verify commit, blob, and context identity and report ambiguous anchors rather than editing by line number alone.
-- [ ] **EXP-05**: User sees repository-relative output paths and content hashes after export.
-- [ ] **EXP-06**: User never receives one new export format without the other when an export write fails.
-- [ ] **EXP-07**: Re-exporting unchanged review state produces deterministic content apart from the explicit export timestamp.
+- [x] **EXP-01**: User can explicitly export the current review to `review.json` and `review.md` under a repository-local export directory.
+- [x] **EXP-02**: User receives a versioned, schema-valid canonical JSON document containing comparison identities, summary, all comments, states, timestamps, and stable anchors.
+- [x] **EXP-03**: User receives Markdown derived from the canonical document, grouping open actionable comments by file and excluding resolved comments from requested work.
+- [x] **EXP-04**: An applying agent is instructed to verify commit, blob, and context identity and report ambiguous anchors rather than editing by line number alone.
+- [x] **EXP-05**: User sees repository-relative output paths and content hashes after export.
+- [x] **EXP-06**: User never receives one new export format without the other when an export write fails.
+- [x] **EXP-07**: Re-exporting unchanged review state produces deterministic content apart from the explicit export timestamp.
 - [ ] **EXP-08**: Export never applies, stages, commits, or pushes repository changes.
 
 ### Local Safety
@@ -82,7 +82,7 @@
 - [x] **SAFE-01**: User's server listens only on `127.0.0.1` using an operating-system-assigned port.
 - [x] **SAFE-02**: API requests without the per-process session token or with an unexpected origin cannot read repository blobs or mutate review state.
 - [x] **SAFE-03**: Browser requests cannot select arbitrary repositories, refs, Git objects, filesystem paths, or export paths after launch.
-- [ ] **SAFE-04**: `.diff-review/` is excluded from the reviewed change set and can be added to `.gitignore` without overwriting existing rules.
+- [x] **SAFE-04**: `.diff-review/` is excluded from the reviewed change set and can be added to `.gitignore` without overwriting existing rules.
 - [x] **SAFE-05**: User can stop the server with terminal interrupt without leaving an incomplete accepted draft or export.
 
 ## Acceptance Criteria
@@ -185,15 +185,15 @@ Each v1 requirement maps to exactly one roadmap phase.
 | DRFT-04 | Phase 3 | Pending |
 | DRFT-05 | Phase 3 | Complete |
 | DRFT-06 | Phase 3 | Pending |
-| EXP-01 | Phase 4 | Pending |
-| EXP-02 | Phase 4 | Pending |
-| EXP-03 | Phase 4 | Pending |
-| EXP-04 | Phase 4 | Pending |
-| EXP-05 | Phase 4 | Pending |
-| EXP-06 | Phase 4 | Pending |
-| EXP-07 | Phase 4 | Pending |
+| EXP-01 | Phase 4 | Complete |
+| EXP-02 | Phase 4 | Complete |
+| EXP-03 | Phase 4 | Complete |
+| EXP-04 | Phase 4 | Complete |
+| EXP-05 | Phase 4 | Complete |
+| EXP-06 | Phase 4 | Complete |
+| EXP-07 | Phase 4 | Complete |
 | EXP-08 | Phase 4 | Pending |
-| SAFE-04 | Phase 4 | Pending |
+| SAFE-04 | Phase 4 | Complete |
 
 **Coverage:**
 

@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 04
-current_phase_name: Agent-Ready Export
+current_phase_name: agent-ready-export
 status: executing
-stopped_at: Completed 03-06-PLAN.md
-last_updated: "2026-07-23T11:40:05.696Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-07-23T12:28:48.168Z"
 last_activity: 2026-07-23
-last_activity_desc: Phase 03 complete, transitioned to Phase 04
+last_activity_desc: Phase 04 execution started
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 38
-  completed_plans: 30
+  completed_plans: 31
   percent: 75
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-11)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 03 — complete-review-draft
+**Current focus:** Phase 04 — agent-ready-export
 
 ## Current Position
 
-Phase: 04 — Agent-Ready Export
-Plan: Not started
-Status: 03-06 complete; Phase 03 remains in progress
-Last activity: 2026-07-23 — Phase 03 complete, transitioned to Phase 04
+Phase: 04 (agent-ready-export) — EXECUTING
+Plan: 2 of 8
+Status: Ready to execute
+Last activity: 2026-07-23 — Phase 04 execution started
 
 Progress: ████░░░░░░ [███████░░░] 68%
 
@@ -85,6 +85,7 @@ Progress: ████░░░░░░ [███████░░░] 68%
 | Phase 03 P01 | 22min | 2 tasks | 2 files |
 | Phase 03 P02 | 33min | 3 tasks | 13 files |
 | Phase 03 P03 | 24min | 3 tasks | 13 files |
+| Phase 04 P01 | 15min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 03]: Recovery rechecks the SHA-256 inside the aggregate store queue and never takes client-selected filesystem authority.
 - [Phase 03]: Draft reveal is a fixed launch-owned capability with no body, query, or path input.
 - [Phase 03]: Re-resolve only server-retained selectors through fixed native-Git argument arrays; selector drift is visible-only and never mutates the pinned comparison, draft, anchors, Monaco, or local buffers.
+- [Phase 04]: 04-01 enforces export ownership and evidence integrity through a strict reconciliation ledger. — A deterministic preflight gate makes handoff contract coverage auditable before agent-ready export work begins.
+- [Phase 04]: Reconciliation evidence hashes source-inclusive line ranges, preserving trailing newlines. — The validator must prove the ledger addresses the exact reviewed source bytes, including a final newline when present.
 
 ### Pending Todos
 
@@ -174,6 +177,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-22
-Stopped at: Completed 03-06-PLAN.md
+Last session: 2026-07-23T12:28:40.603Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
