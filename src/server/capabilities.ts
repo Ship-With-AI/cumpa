@@ -39,6 +39,7 @@ import {
   canonicalizeReviewExport,
 } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
+import { getObservedNativeExchangeCapability } from './native-exchange-capability.js';
 import { assertManagedExportsRoot, ensureManagedExportsRoot, publishReviewExport } from './export-store.js';
 import { inspectDiffReviewIgnore } from '../git/ignore-status.js';
 import { appendDiffReviewIgnoreRule } from './gitignore-capability.js';
@@ -404,7 +405,7 @@ export function createCapabilityRegistry(
         headOid: comparison.head.oid,
         json,
         markdown,
-        reExportCapability: { kind: 'reExportUnsupported' },
+        reExportCapability: await getObservedNativeExchangeCapability(),
         revalidate: async () => {
           const current = await draftStore.loadState();
           if (

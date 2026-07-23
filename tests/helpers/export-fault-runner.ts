@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-export type GeneratedExportMode = 'unsupported';
+export type GeneratedExportMode = 'unsupported' | 'observed';
 
 type ExportPair = Readonly<{ readonly json: Buffer; readonly markdown: Buffer }>;
 type GeneratedExportResult = Readonly<{ readonly kind: 'exported' | 'reExportUnsupported' | 'publicationFailed' }>;
@@ -48,6 +48,7 @@ export async function runGeneratedExport(
     await writeFile(runnerPath, `
       import { readFile, writeFile } from 'node:fs/promises';
       import { publishReviewExport } from ${JSON.stringify(exportStoreUrl)};
+      import { createRequire } from 'node:module';
       const input = JSON.parse(await readFile(process.argv[2], 'utf8'));
       const result = await publishReviewExport({
         repositoryRoot: input.repositoryRoot,
@@ -55,7 +56,12 @@ export async function runGeneratedExport(
         headOid: input.headOid,
         json: Buffer.from(input.json, 'base64'),
         markdown: Buffer.from(input.markdown, 'base64'),
-        reExportCapability: { kind: 'reExportUnsupported' },
+        reExportCapability: input.mode === 'observed'
+          ? (() => {
+              const addon = createRequire(import.meta.url)(${JSON.stringify(join(projectRoot, 'dist', 'native', 'directory_exchange.node'))});
+              return { kind: 'observedNativeExchange', exchangeDirectories: addon.exchangeDirectories };
+            })()
+          : { kind: 'reExportUnsupported' },
       });
       await writeFile(process.argv[3], JSON.stringify(result));
     `);
