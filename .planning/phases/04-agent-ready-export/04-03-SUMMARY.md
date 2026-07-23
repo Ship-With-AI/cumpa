@@ -17,7 +17,7 @@ tech-stack:
   patterns: [server-held export authority, canonical JSON to Markdown projection, candidate-only publication]
 key-files:
   created: [src/native/directory-exchange.cc, binding.gyp, src/server/export-store.ts]
-  modified: [src/contracts/api.ts, src/server/routes.ts, src/server/capabilities.ts, tests/api/export.test.ts, tests/api/export-publication.test.ts, tests/unit/directory-exchange.test.ts]
+  modified: [src/contracts/api.ts, src/server/routes.ts, src/server/capabilities.ts, tests/api/export.test.ts, tests/api/export-publication.test.ts, tests/unit/directory-exchange.test.ts, tests/e2e/anchored-review.spec.ts]
 key-decisions:
   - "No declared packaged target means re-export remains typed reExportUnsupported; a local Darwin primitive observation does not promote a runtime target."
   - "The server derives export directory identity only from pinned full launch OIDs and validates JSON/Markdown as one canonical pair before publishing."
@@ -39,7 +39,7 @@ status: complete
 - **Duration:** execution session
 - **Completed:** 2026-07-23T13:36:29Z
 - **Tasks:** 3
-- **Files modified:** 9
+- **Files modified:** 10
 
 ## Accomplishments
 
@@ -138,10 +138,18 @@ No declared packaged runner exists for an interruption reader probe. The target-
 - **Verification:** Focused API runner passed 13 files / 83 tests.
 - **Committed in:** `b6796f1`, `32b6371`
 
+**3. [Post-wave integration - Deterministic acceptance] Monaco virtualized unchanged context hid the requested side line before the helper could activate it.**
+- **Found during:** Post-wave full package gate
+- **Issue:** `activateMonacoLine` selected the first matching Monaco line regardless of visibility; a hidden virtualized row intermittently failed the anchored review acceptance flow.
+- **Fix:** Scope matching to the requested original/modified editor, wait for the model row to attach, scroll that row into view, select only a visible matching row, and, if it remains hidden by unchanged-region collapsing, click Monaco's public `Show Unchanged Region` control until visible.
+- **Files modified:** `tests/e2e/anchored-review.spec.ts`, `04-03-SUMMARY.md`
+- **Verification:** Chromium anchored-review acceptance passed 6/6 with `--repeat-each=3`; `npm run build` passed.
+- **Committed in:** post-wave integration commit
+
 ---
 
-**Total deviations:** 2 auto-fixed correctness issues.
-**Impact on plan:** Required for the plan's canonical candidate and server-side export contract; no expanded authority or dependencies.
+**Total deviations:** 3 auto-fixed correctness/integration issues.
+**Impact on plan:** The acceptance helper remains behaviorally strict and deterministic; no timeout increase, hidden-region disablement, sleep, or assertion weakening was introduced.
 
 ## Issues Encountered
 

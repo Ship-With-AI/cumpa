@@ -133,11 +133,17 @@ async function activateMonacoLine(
   text: string,
   lineNumber: number,
 ): Promise<void> {
-  const editor = side === 'base' ? 'editor original' : 'editor modified';
-  const line = page
-    .locator(`.monaco-diff-editor .${editor.split(' ').join('.')}`)
-    .locator('.view-line')
-    .filter({ hasText: text });
+  const diffEditor = page.locator('.monaco-diff-editor');
+  const editor = diffEditor.locator(`.${side === 'base' ? 'editor.original' : 'editor.modified'}`);
+  const matchingLine = editor.locator('.view-line').filter({ hasText: text }).first();
+  const line = editor.locator('.view-line:visible').filter({ hasText: text }).first();
+  await expect(matchingLine).toBeAttached();
+  await matchingLine.scrollIntoViewIfNeeded();
+  for (let expansion = 0; expansion < 32 && (await line.count()) === 0; expansion += 1) {
+    const control = page.getByRole('button', { name: 'Show Unchanged Region', exact: true }).first();
+    await expect(control).toBeVisible();
+    await control.click();
+  }
   await expect(line).toBeVisible();
   await line.hover();
   await line.click();
