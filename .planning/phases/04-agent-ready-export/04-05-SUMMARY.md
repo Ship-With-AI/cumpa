@@ -150,6 +150,21 @@ The API export contract asserts that a real confirmed response exposes those ide
    **RED commit:** `2f8c4e4` — `test(04-05): add failing receipt comparison contract`  
    **GREEN commit:** `478a950` — `feat(04-05): expose confirmed receipt comparison`
 
+10. Final review WR-01 receipt provenance remediation:
+
+    ```text
+    node_modules/.bin/vitest run tests/api/export.test.ts tests/api/export-publication.test.ts tests/unit/agent-ready-export-state.test.ts
+    3 files passed; 20 tests passed
+
+    npm run build
+    passed
+    ```
+
+    Removed the redundant `driftAcknowledged` receipt boolean. Acknowledged drift now validates exactly one Base and one Head identity, and each pinned identity must equal the corresponding server-confirmed receipt comparison endpoint.
+
+    **RED commit:** `ff3034a` — `test(04-05): reject incoherent receipt drift`  
+    **GREEN commit:** `fd9dedb` — `fix(04-05): bind receipt drift to comparison`
+
 ## Deviations
 
 - **[Rule 3 — blocking verification wiring]** The plan names `tests/integration/agent-ready-export-states.spec.ts`, but the immutable reconciliation command only discovers `tests/unit/**`; direct Vitest/Playwright attempts do not discover that integration path under the configured roots. The required integration artifact is present, and its behavior is mirrored in `tests/unit/agent-ready-export-state.test.ts` so the prescribed ledger proves the contract. No runner, config, dependency, or reconciliation ledger was changed.
@@ -191,3 +206,4 @@ Plan 04-06 can add only receipt, copy, reveal, and ignore-consent UI to the now-
 - The complete review lifecycle Playwright spec completes after restoring delete/reopen bindings.
 - No dependencies were installed and no formatter, linter, broad browser matrix, or project-wide suite was run; `npm run build` was explicitly required by the UI-audit remediation and passed.
 - Confirmed receipts expose retained server-pinned Base/Head comparison identity independently of the drift acknowledgement union; no component or styling surface changed.
+- Receipt drift provenance has one authority (`drift.kind`) and schema-valid acknowledged identities are one-to-one with the confirmed receipt comparison.
