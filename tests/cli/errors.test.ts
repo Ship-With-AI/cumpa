@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  createBrowserUrlOpener,
   launchPinnedComparison,
   runCli,
   type RunCliDependencies,
@@ -433,5 +434,40 @@ describe('pre-session terminal failure ownership', () => {
     } finally {
       await launched?.shutdown.shutdown();
     }
+  });
+});
+
+describe('browser URL opener routing', () => {
+  const url =
+    'http://127.0.0.1:4242/#token=abcdefghijklmnopqrstuvwxyzABCDEFG';
+
+  it('uses the system opener outside cmux', async () => {
+    const openSystemBrowser = vi.fn(async () => undefined);
+    const runCmux = vi.fn(async () => undefined);
+    const openBrowser = createBrowserUrlOpener({
+      environment: {},
+      openSystemBrowser,
+      runCmux,
+    });
+
+    await openBrowser(url);
+
+    expect(openSystemBrowser).toHaveBeenCalledExactlyOnceWith(url);
+    expect(runCmux).not.toHaveBeenCalled();
+  });
+
+  it('uses cmux with exact shell-free arguments whenever its workspace key is present', async () => {
+    const openSystemBrowser = vi.fn(async () => undefined);
+    const runCmux = vi.fn(async () => undefined);
+    const openBrowser = createBrowserUrlOpener({
+      environment: { CMUX_WORKSPACE_ID: '' },
+      openSystemBrowser,
+      runCmux,
+    });
+
+    await openBrowser(url);
+
+    expect(openSystemBrowser).not.toHaveBeenCalled();
+    expect(runCmux).toHaveBeenCalledExactlyOnceWith('cmux', ['open', url]);
   });
 });

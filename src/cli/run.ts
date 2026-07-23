@@ -1,3 +1,4 @@
+import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 
 import open from 'open';
@@ -40,6 +41,54 @@ const packagedLaunchOptionsSchema = z.strictObject({
 
 const browserFallback =
   'Open the URL above if the browser did not open. Press Ctrl+C to stop.';
+
+type CmuxCommandRunner = (
+  executable: 'cmux',
+  arguments_: readonly ['open', string],
+) => Promise<unknown>;
+
+export interface BrowserUrlOpenerDependencies {
+  readonly environment?: NodeJS.ProcessEnv;
+  readonly openSystemBrowser?: (url: string) => Promise<unknown>;
+  readonly runCmux?: CmuxCommandRunner;
+}
+
+function runCmux(
+  executable: 'cmux',
+  arguments_: readonly ['open', string],
+): Promise<void> {
+  const { promise, reject, resolve } = Promise.withResolvers<void>();
+  const child = spawn(executable, arguments_, { shell: false, stdio: 'ignore' });
+  child.once('error', reject);
+  child.once('close', (code) => {
+    if (code === 0) {
+      resolve();
+      return;
+    }
+    reject(new Error('cmux could not open the browser URL'));
+  });
+  return promise;
+}
+
+export function createBrowserUrlOpener(
+  dependencies: BrowserUrlOpenerDependencies = {},
+): (url: string) => Promise<unknown> {
+  const environment = dependencies.environment ?? process.env;
+  const openSystemBrowser =
+    dependencies.openSystemBrowser ??
+    (async (url: string) => {
+      await open(url);
+    });
+  const runCmuxCommand = dependencies.runCmux ?? runCmux;
+
+  return async (url: string) => {
+    if (environment.CMUX_WORKSPACE_ID !== undefined) {
+      await runCmuxCommand('cmux', ['open', url]);
+      return;
+    }
+    await openSystemBrowser(url);
+  };
+}
 
 export interface LaunchPinnedSessionDependencies {
   readonly openBrowser?: (url: string) => Promise<unknown>;
@@ -105,11 +154,7 @@ function createLaunchRuntime(
 ): LaunchRuntime {
   const activeGit = new AbortController();
   const output = dependencies.output ?? console.log;
-  const openBrowser =
-    dependencies.openBrowser ??
-    (async (url: string) => {
-      await open(url);
-    });
+  const openBrowser = dependencies.openBrowser ?? createBrowserUrlOpener();
   const revealDraftFile =
     dependencies.revealDraftFile ??
     (async (canonicalPath: string) => {
