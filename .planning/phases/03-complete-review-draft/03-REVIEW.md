@@ -1,15 +1,25 @@
 ---
 phase: 03-complete-review-draft
-reviewed: 2026-07-23T08:59:46Z
-depth: deep
-files_reviewed: 6
+reviewed: 2026-07-23T11:25:21Z
+depth: standard
+files_reviewed: 16
 files_reviewed_list:
-  - src/git/selector-drift.ts
   - src/web/App.vue
+  - src/web/components/CommentComposer.vue
+  - src/web/components/DiffWorkspace.vue
   - src/web/components/ReviewPanel.vue
-  - tests/git/selector-drift.test.ts
+  - src/web/components/ReviewToolbar.vue
+  - src/web/components/SummarySection.vue
+  - src/web/monaco/diff-adapter.ts
+  - src/web/prototypes/MonacoStabilityPrototype.vue
+  - src/web/styles.css
+  - tests/e2e/anchored-review.spec.ts
   - tests/e2e/complete-review-draft.spec.ts
+  - tests/e2e/responsive-session.spec.ts
   - tests/e2e/review-panel-resolved.spec.ts
+  - tests/integration/anchored-workspace.spec.ts
+  - tests/integration/monaco-anchor.spec.ts
+  - tests/integration/selector-drift-ui.spec.ts
 findings:
   critical: 0
   warning: 0
@@ -20,63 +30,37 @@ status: clean
 
 # Phase 03: Code Review Report
 
-**Reviewed:** 2026-07-23T08:59:46Z  
-**Depth:** deep  
-**Files Reviewed:** 6  
+**Reviewed:** 2026-07-23T11:25:21Z  
+**Depth:** standard  
+**Files Reviewed:** 16  
 **Status:** clean
 
 ## Summary
 
-Re-reviewed fix commit `0c6ccdf` against the four former critical findings and traced the repaired seams through the persistent selector-drift observer, the authenticated draft client and workspace reconciliation path, and the resolved-comment action handlers. All four former critical findings are resolved. No new blocker, warning, or info-level defect was found in the supplied scope.
+Re-reviewed the final Phase 3 UI-audit remediation commit `53d011e` and the current source state. The bounded review traced the review panel and summary CAS paths, inline-composer discard/move transitions, responsive drawer state, and Monaco adapter/view-zone ownership through the affected browser specifications.
 
-The review specifically verified that a worktree listing is fresh for each observation while shared only within that observation; reload obtains a schema-validated server draft before adopting comments, preserves unsaved local text buffers, and does not make browser state authoritative; and resolved verified comments expose working edit and confirmed-delete flows.
+No confirmed correctness, security, data-loss, or lifecycle defect was found in the supplied scope:
 
-## Former Critical Findings — Resolution Verification
+- `App.vue` retains local summary/comment buffers across revision conflicts, adopts canonical state only after accepted mutations or an explicit fresh reload, and does not let responsive drawer changes replace workspace/draft state.
+- `ReviewPanel.vue`, `SummarySection.vue`, and `CommentComposer.vue` preserve destructive-action confirmation and scoped keyboard/focus behavior without bypassing pending or conflict guards.
+- `DiffWorkspace.vue` owns the mounted Vue annotation root and unmounts it before a zone is replaced or the workspace is destroyed. `diff-adapter.ts` removes both paired Monaco zones before rebuilding, disposes models/listeners/editor exactly through its adapter lifecycle, and preserves per-file view/composer/context state without creating an additional active composer.
+- Markdown preview remains safe for the `v-html` sink: raw HTML is disabled, links are allowlisted to `http:`, `https:`, or `mailto:`, and opened links receive `noopener noreferrer`.
+- The changed browser specifications exercise the repaired contracts rather than merely asserting markup: CAS-buffer retention, confirmed discard/move, Monaco paired-zone recomputation and resource bounds, focus restoration, responsive drawer geometry, and pinned selector-drift behavior.
 
-### CR-01: Stale worktree state across selector-drift observations — **RESOLVED**
-
-**Former location:** `src/git/selector-drift.ts:186-193, 212-213`  
-**Current evidence:** `createSelectorDriftObserver()` now defines `listWorktrees()` without an observer-lifetime promise cache (`src/git/selector-drift.ts:185-197`). Each `observe()` invocation loads one fresh `git worktree list --porcelain -z` result when either retained endpoint is a worktree, then passes that same observation-local record set to both endpoints (`src/git/selector-drift.ts:239-246`). Thus a move or unregister between polls is re-resolved without producing inconsistent base/head results within one poll.
-
-`tests/git/selector-drift.test.ts:150-221` uses one persistent observer, changes one selected worktree, removes and prunes another, and asserts the second and third observations report the new moved/unavailable states. It also verifies exactly three `worktree list` invocations for three observations.
-
-### CR-02: Reload latest discarded remote comments — **RESOLVED**
-
-**Former location:** `src/web/App.vue:214-225, 338`  
-**Current evidence:** `reloadLatestReview()` first obtains the current draft from `sessionClient.getDraft()` and accepts only a `kind === 'current'` response (`src/web/App.vue:341-360`). It uses that loaded server draft as the review state's latest canonical draft, then replaces workspace comments with `reconciledWorkspaceComments(loaded.draft)`.
-
-`reconciledWorkspaceComments()` derives every displayed comment from server-supplied draft comments through `reconcileDraftComments()` and pinned session inventory (`src/web/App.vue:228-235`; `src/web/model/draft-reconciliation.ts:59-62`). Existing workspace records contribute only local presentation/capability fields; the server's `state` and `body` overwrite them. The browser neither submits a comment collection during reload nor bypasses the existing revision-CAS mutation path. `SessionClient.getDraft()` fetches `/api/draft` with the session bearer token, validates the response with `DraftLoadResponseSchema`, and requests `cache: 'no-store'` (`src/web/api/client.ts:144-150, 162-168`).
-
-`tests/e2e/complete-review-draft.spec.ts:407-505` creates an unsaved summary and edit in tab B, adds a distinct remote comment in tab A, causes B's save conflict, reloads B from the server, and asserts both local buffers remain while the remote record is present and actionable. The same scenario checks the server draft's revision and on-disk bytes remain authoritative through stale and fresh CAS attempts (`tests/e2e/complete-review-draft.spec.ts:517-606`).
-
-### CR-03: Resolved comments could enter edit mode without editable controls — **RESOLVED**
-
-**Former location:** `src/web/components/ReviewPanel.vue:97-131, 139-145`  
-**Current evidence:** Resolved comments now render the `editing === comment.id` branch with the fixed-anchor context, textarea, save, and cancel controls (`src/web/components/ReviewPanel.vue:141-146`). The Edit control is enabled only for verified, non-pending, non-conflicted comments (`src/web/components/ReviewPanel.vue:149-152`), matching the action's capability constraint.
-
-`tests/e2e/review-panel-resolved.spec.ts:103-136` drives the mounted component through edit, cancel, edit again, save, and verifies the emitted saved ID and rendered body.
-
-### CR-04: Resolved comments could not complete confirmed deletion — **RESOLVED**
-
-**Former location:** `src/web/components/ReviewPanel.vue:124-129, 139-145`  
-**Current evidence:** The resolved loop renders its own confirmation panel when `confirmingDelete` matches the resolved comment (`src/web/components/ReviewPanel.vue:154-161`). The confirm action emits that comment ID through the existing delete event and clears the confirmation state; keep preserves the comment and clears only the confirmation state.
-
-`tests/e2e/review-panel-resolved.spec.ts:127-136` verifies that Delete first shows the second confirmation without emitting deletion, then that Delete comment emits the resolved comment ID and removes the rendered record.
+The post-remediation UI re-audit records zero blockers. Its remaining warnings are explicitly non-blocking copy, interaction-contract, or visual-polish observations; none demonstrates a correctness, security, data-loss, or lifecycle defect, so they are not reclassified as code-review findings.
 
 ## Narrative Findings (AI reviewer)
 
-None. The repaired flows preserve the server/pinned-Git authority boundaries and the focused regression tests cover plausible reintroductions of each former critical behavior.
+None. All reviewed files meet the requested correctness, security, data-preservation, and lifecycle criteria.
 
-## Verification
+## Evidence
 
-Focused checks executed successfully:
-
-- `node scripts/run-focused-vitest.mjs tests/git/selector-drift.test.ts` — 3 tests passed.
-- `npx playwright test tests/e2e/complete-review-draft.spec.ts --grep "two-tab conflict retains every local buffer"` — 1 Chromium test passed.
-- `npx playwright test tests/e2e/review-panel-resolved.spec.ts` — 1 Chromium test passed.
+- Supplied final verification evidence: build passed; unit **85/85**, Git **31/31**, API **76/76**, serialized integration Chromium **21/21**, and packaged Chromium **20/20** passed.
+- `npx playwright test tests/e2e/review-panel-resolved.spec.ts --workers=1 --reporter=dot` — **1/1 Chromium test passed** during this review.
+- `npx playwright test --config=tests tests/integration/monaco-anchor.spec.ts --workers=1 --reporter=dot` — **10/10 Chromium tests passed** during this review, including repeated recomputation, paired-zone alignment, file-state restoration, and model/listener/composer bounds.
 
 ---
 
-_Reviewed: 2026-07-23T08:59:46Z_  
+_Reviewed: 2026-07-23T11:25:21Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
-_Depth: deep_
+_Depth: standard_
