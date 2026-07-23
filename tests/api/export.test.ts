@@ -200,6 +200,20 @@ describe('secured export and fixed export-directory reveal APIs', () => {
     expect(ExportReviewResultSchema.safeParse({ kind: 'recoveryRequired' }).success).toBe(true);
   });
 
+  test('requires server-confirmed pinned comparison identities on every receipt', () => {
+    const directory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
+    expect(ExportReviewResultSchema.safeParse({
+      ...exportedReceipt([
+        { path: `${directory}/review.json`, sha256: 'a'.repeat(64), bytes: 128 },
+        { path: `${directory}/review.md`, sha256: 'b'.repeat(64), bytes: 256 },
+      ]),
+      comparison: {
+        base: { label: 'base', selectorType: 'branch', oid: '1'.repeat(40) },
+        head: { label: 'head', selectorType: 'worktree', oid: '2'.repeat(40) },
+      },
+    }).success).toBe(true);
+  });
+
   test.each(['.diff-review', 'exports'] as const)(
     'refuses reveal through an externally directed %s parent symlink',
     async (managedParent) => {
