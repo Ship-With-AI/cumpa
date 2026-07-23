@@ -138,7 +138,7 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
   await expect(page.evaluate(() => navigator.clipboard.readText())).resolves.toContain(`${exportDirectory}/review.json`);
 
   await receipt.getByRole('button', { name: 'Reveal export directory' }).click();
-  await expect(receipt.getByRole('alert')).toContainText('Could not reveal the export directory');
+  await expect(receipt.getByRole('alert')).toContainText('Reveal failed; copy a displayed relative path and open it from the repository root.');
   expect(revealBodies).toEqual(['']);
 
   await page.getByRole('button', { name: 'Export review again' }).click();
