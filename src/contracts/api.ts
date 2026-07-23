@@ -225,6 +225,7 @@ export const ExportDirectoryRevealResultSchema = z
 export type ExportReviewRequest = z.infer<typeof ExportReviewRequestSchema>;
 export type ExportDirectoryRevealResult = z.infer<typeof ExportDirectoryRevealResultSchema>;
 
+
 const ExistingFileContentSideSchema = z
   .strictObject({
     exists: z.literal(true),
@@ -333,6 +334,47 @@ export const SelectorDriftResponseSchema = z
     head: SelectorDriftStatusSchema,
   })
   .readonly();
+
+const ExportReceiptFileSchema = z
+  .strictObject({
+    path: z.string().regex(/^\.diff-review\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.(?:json|md)$/u),
+    algorithm: z.literal('sha256'),
+    sha256: z.string().regex(/^[0-9a-f]{64}$/u),
+    bytes: z.number().int().nonnegative(),
+  })
+  .readonly();
+
+export const ExportReviewResultSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({
+      kind: z.literal('exported'),
+      draftRevision: RevisionSchema,
+      exportedAt: z.string().datetime(),
+      driftAcknowledged: z.boolean(),
+      files: z.tuple([ExportReceiptFileSchema, ExportReceiptFileSchema]).readonly(),
+    }).readonly(),
+    z.strictObject({
+      kind: z.literal('revisionConflict'),
+      expectedRevision: RevisionSchema,
+      actualRevision: RevisionSchema,
+    }).readonly(),
+    z.strictObject({
+      kind: z.literal('driftAcknowledgementRequired'),
+      acknowledgementToken: z.string().regex(/^[A-Za-z0-9_-]{43,128}$/u),
+      observation: SelectorDriftResponseSchema,
+    }).readonly(),
+    z.strictObject({
+      kind: z.literal('driftAcknowledgementStale'),
+      acknowledgementToken: z.string().regex(/^[A-Za-z0-9_-]{43,128}$/u),
+      observation: SelectorDriftResponseSchema,
+    }).readonly(),
+    z.strictObject({ kind: z.literal('draftReadOnly') }).readonly(),
+    z.strictObject({ kind: z.literal('reExportUnsupported') }).readonly(),
+    z.strictObject({ kind: z.literal('publicationFailed') }).readonly(),
+  ])
+  .readonly();
+
+export type ExportReviewResult = z.infer<typeof ExportReviewResultSchema>;
 
 export const FileMetadataResponseSchema = z
   .strictObject({

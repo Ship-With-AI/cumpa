@@ -9,6 +9,7 @@ import {
   DraftRevealResultSchema,
   ExportDirectoryRevealResultSchema,
   ExportReviewRequestSchema,
+  ExportReviewResultSchema,
   SelectorDriftResponseSchema,
   OpaqueFileIdSchema,
   type DraftMutationResult as ApiDraftMutationResult,
@@ -287,7 +288,23 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       if (!input.success) {
         return unavailable(reply, 400);
       }
-      return unavailable(reply, 503);
+    try {
+      const response = ExportReviewResultSchema.parse(await capabilities.exportReview(input.data));
+      switch (response.kind) {
+        case 'exported':
+          return reply.code(201).send(response);
+        case 'publicationFailed':
+          return reply.code(500).send(response);
+        case 'revisionConflict':
+        case 'driftAcknowledgementRequired':
+        case 'driftAcknowledgementStale':
+        case 'draftReadOnly':
+        case 'reExportUnsupported':
+          return reply.code(409).send(response);
+      }
+    } catch {
+      return unavailable(reply, 500);
+    }
     },
   );
 

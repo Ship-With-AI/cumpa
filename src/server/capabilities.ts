@@ -1,11 +1,15 @@
+import { createHash, randomBytes } from 'node:crypto';
 import { lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 import type { PinnedComparison, ChangedFile } from '../contracts/comparison.js';
 import {
+  ExportReviewResultSchema,
   FileContentResponseSchema,
   FileMetadataResponseSchema,
   SessionResponseSchema,
+  type ExportReviewRequest,
+  type ExportReviewResult,
   type FileContentResponse,
   type FileMetadataResponse,
   type SessionResponse,
@@ -16,6 +20,7 @@ import {
   type AnchorVerification,
   type DurableAnchorV1,
 } from '../domain/anchor.js';
+import { comparisonKey } from '../domain/comparison-key.js';
 import { MAX_INLINE_TEXT_BYTES } from '../git/availability.js';
 import { createObjectReader } from '../git/objects.js';
 import type { ObjectReader } from '../git/objects.js';
@@ -24,6 +29,13 @@ import {
   type SelectorDriftObserver,
 } from '../git/selector-drift.js';
 import { createDraftStore, type DraftStore } from './draft-store.js';
+import {
+  buildReviewExportV1,
+  canonicalizeReviewExport,
+  parseCanonicalReviewExport,
+} from '../export/review-export.js';
+import { renderReviewMarkdown } from '../export/render-review-markdown.js';
+import { publishReviewExport } from './export-store.js';
 
 export type AnchorAddPort = (
   input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
@@ -81,6 +93,7 @@ export type CapabilityRegistry = Readonly<{
   readonly verifyAnchor: (anchor: DurableAnchorV1) => Promise<AnchorVerification>;
   readonly revealDraftFile: () => Promise<void>;
   readonly revealExportDirectory: () => Promise<void>;
+  readonly exportReview: (input: ExportReviewRequest) => Promise<ExportReviewResult>;
 }>;
 
 function toSessionEndpoint(endpoint: PinnedComparison['base']) {
@@ -179,6 +192,7 @@ export function createCapabilityRegistry(
     'exports',
     `${comparison.base.oid}..${comparison.head.oid}`,
   );
+  const acknowledgements = new Map<string, string>();
 
 
 
@@ -232,6 +246,99 @@ export function createCapabilityRegistry(
         throw new Error('Export reveal adapter is unavailable.');
       }
       await options.revealDraftFile(exportDirectory);
+    },
+    async exportReview(input: ExportReviewRequest): Promise<ExportReviewResult> {
+      const initial = await draftStore.loadState();
+      if (initial.kind !== 'current') {
+        return ExportReviewResultSchema.parse({ kind: 'draftReadOnly' });
+      }
+      if (initial.draft.revision !== input.expectedRevision) {
+        return ExportReviewResultSchema.parse({
+          kind: 'revisionConflict',
+          expectedRevision: input.expectedRevision,
+          actualRevision: initial.draft.revision,
+        });
+      }
+
+      const observation = await selectorDriftObserver.observe();
+      const observationFingerprint = createHash('sha256').update(JSON.stringify(observation)).digest('base64url');
+      const drifted = observation.base.kind !== 'unchanged' || observation.head.kind !== 'unchanged';
+      if (drifted && acknowledgements.get(input.driftAcknowledgementToken ?? '') !== observationFingerprint) {
+        const acknowledgementToken = randomBytes(32).toString('base64url');
+        acknowledgements.set(acknowledgementToken, observationFingerprint);
+        return ExportReviewResultSchema.parse({
+          kind: input.driftAcknowledgementToken === undefined ? 'driftAcknowledgementRequired' : 'driftAcknowledgementStale',
+          acknowledgementToken,
+          observation,
+        });
+      }
+
+      const acceptedDraft = structuredClone(initial.draft);
+      const draftFingerprint = createHash('sha256').update(initial.raw).digest('hex');
+      const exportedAt = new Date().toISOString();
+      const commentVerification = Object.fromEntries(
+        await Promise.all(
+          acceptedDraft.comments.map(async (comment) => [comment.id, await this.verifyAnchor(comment.anchor)] as const),
+        ),
+      );
+      const document = buildReviewExportV1(
+        {
+          acceptedDraft,
+          commentVerification,
+          comparison: {
+            selectedBase: { label: comparison.base.label, launchOid: comparison.base.oid },
+            selectedHead: { label: comparison.head.label, launchOid: comparison.head.oid },
+            mergeBaseOid: comparison.mergeBaseOid,
+            comparisonKey: comparisonKey(comparison.base.oid, comparison.head.oid),
+          },
+          drift: {
+            observedAt: exportedAt,
+            acknowledged: drifted,
+            base: {
+              launchOid: comparison.base.oid,
+              currentOid: observation.base.kind === 'moved' ? observation.base.newOid : observation.base.kind === 'unchanged' ? comparison.base.oid : null,
+              status: observation.base.kind,
+            },
+            head: {
+              launchOid: comparison.head.oid,
+              currentOid: observation.head.kind === 'moved' ? observation.head.newOid : observation.head.kind === 'unchanged' ? comparison.head.oid : null,
+              status: observation.head.kind,
+            },
+          },
+        },
+        exportedAt,
+      );
+      const json = canonicalizeReviewExport(document);
+      const markdown = Buffer.from(renderReviewMarkdown(parseCanonicalReviewExport(json)), 'utf8');
+      const published = await publishReviewExport({
+        repositoryRoot: comparison.repositoryRoot,
+        baseOid: comparison.base.oid,
+        headOid: comparison.head.oid,
+        json,
+        markdown,
+        reExportCapability: { kind: 'reExportUnsupported' },
+        revalidate: async () => {
+          const current = await draftStore.loadState();
+          if (
+            current.kind !== 'current' ||
+            current.draft.revision !== acceptedDraft.revision ||
+            createHash('sha256').update(current.raw).digest('hex') !== draftFingerprint
+          ) {
+            return false;
+          }
+          return createHash('sha256').update(JSON.stringify(await selectorDriftObserver.observe())).digest('base64url') === observationFingerprint;
+        },
+      });
+      if (published.kind !== 'exported') {
+        return ExportReviewResultSchema.parse({ kind: published.kind });
+      }
+      return ExportReviewResultSchema.parse({
+        kind: 'exported',
+        draftRevision: acceptedDraft.revision,
+        exportedAt,
+        driftAcknowledged: drifted,
+        files: published.receipt.files,
+      });
     },
     async readContent(fileId: string) {
       const file = frozenFilesByCapability.get(fileId);
