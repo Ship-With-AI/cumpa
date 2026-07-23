@@ -157,6 +157,12 @@ The final Plan 05 schema-remediation commits `ff3034a` (RED), `fd9dedb` (GREEN),
 
 At the final source boundary, `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs --self-test` passed all 34 rejection branches, and real validation returned `reconciliation ledger valid: 04-01-RECONCILIATION.json` while regenerating the report. All strict validation rules and declared Phase 04 evidence contracts remain intact.
 
+## Final Acknowledged-Drift Reconciliation
+
+The final acknowledged-drift commits `9e6f741` (RED), `f4f7b1d` (GREEN), and `25821be` (documentation) changed contract/test behavior without changing any declared reconciliation owner, command runner, package record, toolchain declaration, or evidence range. Full stale-evidence comparison found no hash or metadata drift, so the ledger remained unchanged rather than inventing a new owner or test-evidence class.
+
+The final fail-closed proof passed: the Node-core mutation self-test reported 34 rejection branches, and real validation returned `reconciliation ledger valid: 04-01-RECONCILIATION.json` after regenerating the report. All declared strict evidence rules remain intact.
+
 ## User Setup Required
 
 None - no external service configuration required.
