@@ -6,6 +6,7 @@ import { describe, expect, test } from 'vitest';
 
 const projectRoot = resolve(import.meta.dirname, '../..');
 const packagedCli = join(projectRoot, 'dist', 'bin', 'diff-review.mjs');
+const scenarioReportPath = join(projectRoot, 'test-results', 'agent-ready-export-scenario-report.json');
 
 const requirements = [
   'EXP-01', 'EXP-02', 'EXP-03', 'EXP-04', 'EXP-05', 'EXP-06', 'EXP-07', 'EXP-08', 'SAFE-04',
@@ -45,6 +46,7 @@ function assertUniqueExecutedCoverage(records: readonly EvidenceRecord[]): void 
 
 describe('agent-ready generated-package acceptance evidence', () => {
   test('emits complete executed requirement, decision, UI, and threat coverage with a unique packaged relaunch proof', () => {
+    expect(existsSync(scenarioReportPath)).toBe(true);
     expect(existsSync(packagedCli)).toBe(true);
     const resumeTest = 'packaged-resume-after-relaunch preserves accepted review state, separates ordered pairs, and exports exact recovered bytes';
     const result = Object.freeze({
