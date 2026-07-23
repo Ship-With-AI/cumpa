@@ -7,6 +7,8 @@ import {
   DraftRecoveryRequestSchema,
   DraftRecoveryResultSchema,
   DraftRevealResultSchema,
+  ExportDirectoryRevealResultSchema,
+  ExportReviewRequestSchema,
   SelectorDriftResponseSchema,
   OpaqueFileIdSchema,
   type DraftMutationResult as ApiDraftMutationResult,
@@ -268,6 +270,44 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
 
       const result = await capabilities.draftStore.mutate({ expectedRevision, mutation });
       return mutationResponse(reply, result, requestMutation.data.type === 'addComment' ? 201 : 200);
+    },
+  );
+
+  app.post<{ Querystring: Record<string, never>; Body: unknown }>(
+    '/api/export',
+    { schema: { querystring: EMPTY_QUERY_SCHEMA }, bodyLimit: 256 },
+    async (request, reply) => {
+      if (
+        Object.keys(request.query).length !== 0 ||
+        request.headers['content-type']?.split(';', 1)[0] !== 'application/json'
+      ) {
+        return unavailable(reply, 400);
+      }
+      const input = ExportReviewRequestSchema.safeParse(request.body);
+      if (!input.success) {
+        return unavailable(reply, 400);
+      }
+      return unavailable(reply, 503);
+    },
+  );
+
+  app.post<{ Querystring: Record<string, never>; Body: unknown }>(
+    '/api/export/reveal',
+    { schema: { querystring: EMPTY_QUERY_SCHEMA } },
+    async (request, reply) => {
+      if (
+        Object.keys(request.query).length !== 0 ||
+        request.body !== undefined ||
+        request.headers['content-length'] !== undefined
+      ) {
+        return unavailable(reply, 400);
+      }
+      try {
+        await capabilities.revealExportDirectory();
+        return reply.code(200).send(ExportDirectoryRevealResultSchema.parse({ kind: 'revealed' }));
+      } catch {
+        return reply.code(500).send(ExportDirectoryRevealResultSchema.parse({ kind: 'revealFailed' }));
+      }
     },
   );
 

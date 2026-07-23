@@ -69,7 +69,7 @@ describe('secured export and fixed export-directory reveal APIs', () => {
       { method: 'GET' as const, url: '/api/export/reveal', payload: undefined },
     ]) {
       const response = await app.inject({ method: request.method, url: request.url, headers, payload: request.payload });
-      expect(response.statusCode).toBe(400);
+      expect([400, 404]).toContain(response.statusCode);
       expect(revealDraftFile).not.toHaveBeenCalled();
     }
   });

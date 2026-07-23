@@ -1,3 +1,6 @@
+import { lstat, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
+
 import type { PinnedComparison, ChangedFile } from '../contracts/comparison.js';
 import {
   FileContentResponseSchema,
@@ -77,6 +80,7 @@ export type CapabilityRegistry = Readonly<{
   readonly readContent: (fileId: string) => Promise<FileContentResponse | undefined>;
   readonly verifyAnchor: (anchor: DurableAnchorV1) => Promise<AnchorVerification>;
   readonly revealDraftFile: () => Promise<void>;
+  readonly revealExportDirectory: () => Promise<void>;
 }>;
 
 function toSessionEndpoint(endpoint: PinnedComparison['base']) {
@@ -133,6 +137,23 @@ async function readSide(
   }
 }
 
+async function isCompleteExportDirectory(path: string): Promise<boolean> {
+  try {
+    const directory = await lstat(path);
+    if (!directory.isDirectory() || directory.isSymbolicLink()) {
+      return false;
+    }
+    const names = await readdir(path);
+    if (names.length !== 2 || !names.includes('review.json') || !names.includes('review.md')) {
+      return false;
+    }
+    const files = await Promise.all(names.map(async (name) => lstat(join(path, name))));
+    return files.every((file) => file.isFile() && !file.isSymbolicLink());
+  } catch {
+    return false;
+  }
+}
+
 export function createCapabilityRegistry(
   comparison: PinnedComparison,
   options: CapabilityRegistryOptions = {},
@@ -152,6 +173,13 @@ export function createCapabilityRegistry(
     });
   const selectorDriftObserver =
     options.selectorDriftObserver ?? createSelectorDriftObserver(comparison);
+  const exportDirectory = join(
+    comparison.repositoryRoot,
+    '.diff-review',
+    'exports',
+    `${comparison.base.oid}..${comparison.head.oid}`,
+  );
+
 
 
   const session = SessionResponseSchema.parse({
@@ -198,6 +226,12 @@ export function createCapabilityRegistry(
     lookup(fileId: string) {
       options.onCapabilityLookup?.(fileId);
       return filesByCapability.get(fileId);
+    },
+    async revealExportDirectory() {
+      if (options.revealDraftFile === undefined || !(await isCompleteExportDirectory(exportDirectory))) {
+        throw new Error('Export reveal adapter is unavailable.');
+      }
+      await options.revealDraftFile(exportDirectory);
     },
     async readContent(fileId: string) {
       const file = frozenFilesByCapability.get(fileId);

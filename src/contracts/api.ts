@@ -208,6 +208,23 @@ export const DraftRevealResultSchema = z
   ])
   .readonly();
 
+export const ExportReviewRequestSchema = z
+  .strictObject({
+    expectedRevision: RevisionSchema,
+    driftAcknowledgementToken: z.string().regex(/^[A-Za-z0-9_-]{43,128}$/u).optional(),
+  })
+  .readonly();
+
+export const ExportDirectoryRevealResultSchema = z
+  .union([
+    z.strictObject({ kind: z.literal('revealed') }).readonly(),
+    z.strictObject({ kind: z.literal('revealFailed') }).readonly(),
+  ])
+  .readonly();
+
+export type ExportReviewRequest = z.infer<typeof ExportReviewRequestSchema>;
+export type ExportDirectoryRevealResult = z.infer<typeof ExportDirectoryRevealResultSchema>;
+
 const ExistingFileContentSideSchema = z
   .strictObject({
     exists: z.literal(true),
