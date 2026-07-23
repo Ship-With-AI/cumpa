@@ -132,15 +132,21 @@ async function stopGeneratedCli(running: RunningCli): Promise<void> {
   closeSync(running.outputDescriptor);
 }
 
-async function openReview(page: Page, url: string): Promise<void> {
+async function openSession(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+}
+
+async function ensureReviewOpen(page: Page): Promise<void> {
   const review = page.getByRole('button', { name: 'Review', exact: true });
   if (await review.getAttribute('aria-expanded') === 'false') await review.click();
   await expect(review).toHaveAttribute('aria-expanded', 'true');
 }
 
 async function addHeadComment(page: Page, body: string): Promise<void> {
+  const review = page.getByRole('button', { name: 'Review', exact: true });
+  if (await review.getAttribute('aria-expanded') === 'true') await review.click();
+  await expect(review).toHaveAttribute('aria-expanded', 'false');
   await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
   const surface = page.locator('.monaco-diff-editor .editor.modified .monaco-scrollable-element.editor-scrollable').first();
   await surface.click({ position: { x: 16, y: 16 } });
@@ -155,6 +161,8 @@ async function addHeadComment(page: Page, body: string): Promise<void> {
   const accepted = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
   await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
   expect((await accepted).status()).toBe(201);
+  if (await review.getAttribute('aria-expanded') === 'false') await review.click();
+  await expect(review).toHaveAttribute('aria-expanded', 'true');
 }
 
 async function saveSummary(page: Page, summary: string): Promise<void> {
@@ -173,9 +181,6 @@ function readOnlyDraft(fixture: DirtyGitFixture): Readonly<{ readonly bytes: Buf
   return Object.freeze({ bytes, draft: Object.freeze(raw) });
 }
 
-function hash(bytes: Buffer): string {
-  return createHash('sha256').update(bytes).digest('hex');
-}
 
 function assertChromium(browser: Browser, testInfo: TestInfo): void {
   expect(testInfo.project.name).toBe('chromium');
@@ -208,13 +213,13 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
   const before = await captureSourceControlSnapshot(fixture.root);
   const original = Object.freeze({ base: fixture.baseRef, head: fixture.headRef });
-  const reversed = Object.freeze({ base: fixture.headRef, head: fixture.baseRef });
+  const different = Object.freeze({ base: fixture.baseRef, head: fixture.alternateHeadRef! });
   const summary = 'Accepted summary survives a fully new packaged process.';
   const body = 'Verified anchor survives a fully new packaged process.';
   let running = startGeneratedCli(fixture, original);
 
   try {
-    await openReview(page, await waitForLoopbackUrl(running));
+    await openSession(page, await waitForLoopbackUrl(running));
     await addHeadComment(page, body);
     await saveSummary(page, summary);
   } finally {
@@ -230,7 +235,8 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
   const resumedPage = await browser.newPage();
   running = startGeneratedCli(fixture, original);
   try {
-    await openReview(resumedPage, await waitForLoopbackUrl(running));
+    await openSession(resumedPage, await waitForLoopbackUrl(running));
+    await ensureReviewOpen(resumedPage);
     await expect(resumedPage.locator('.review-summary__preview')).toContainText(summary);
     await expect(resumedPage.locator('.comments-rail__comment')).toContainText(body);
     expect(readOnlyDraft(fixture).bytes).toEqual(accepted.bytes);
@@ -245,9 +251,10 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
   }
 
   const differentPage = await browser.newPage();
-  running = startGeneratedCli(fixture, reversed);
+  running = startGeneratedCli(fixture, different);
   try {
-    await openReview(differentPage, await waitForLoopbackUrl(running));
+    await openSession(differentPage, await waitForLoopbackUrl(running));
+    await ensureReviewOpen(differentPage);
     await expect(differentPage.getByText(summary, { exact: true })).toHaveCount(0);
     await expect(differentPage.locator('.comments-rail__comment', { hasText: body })).toHaveCount(0);
   } finally {
@@ -267,8 +274,8 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
   expect(document.acceptedDraftRevision).toBe(accepted.draft.revision);
   expect(document.summary.markdown).toBe(summary);
   expect(document.files.flatMap((file) => file.comments).map((comment) => comment.body)).toContain(body);
-  expect(hash(json)).toMatch(/^[a-f0-9]{64}$/);
-  expect(hash(markdown)).toMatch(/^[a-f0-9]{64}$/);
+  expect(createHash('sha256').update(json).digest('hex')).toMatch(/^[a-f0-9]{64}$/);
+  expect(createHash('sha256').update(markdown).digest('hex')).toMatch(/^[a-f0-9]{64}$/);
   await expect(assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root))).resolves.toBeUndefined();
   await fixture.cleanup();
 });
