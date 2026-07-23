@@ -112,6 +112,15 @@ The contract asserts that the client request is exactly `{ expectedRevision: 7 }
 
    Restored the existing `copyRecordedAnchor` event at the sole App-to-ReviewPanel authority boundary; clipboard behavior and assertions were unchanged.
 
+7. Wave-gate complete review lifecycle:
+
+   ```text
+   playwright test tests/e2e/complete-review-draft.spec.ts
+   8 cases completed successfully
+   ```
+
+   Restored the established `deleteComment` and `reopenComment` mutation bindings at the App-to-ReviewPanel authority boundary; no lifecycle behavior, assertions, or timing changed.
+
 ## Deviations
 
 - **[Rule 3 — blocking verification wiring]** The plan names `tests/integration/agent-ready-export-states.spec.ts`, but the immutable reconciliation command only discovers `tests/unit/**`; direct Vitest/Playwright attempts do not discover that integration path under the configured roots. The required integration artifact is present, and its behavior is mirrored in `tests/unit/agent-ready-export-state.test.ts` so the prescribed ledger proves the contract. No runner, config, dependency, or reconciliation ledger was changed.
@@ -143,4 +152,5 @@ Plan 04-06 can add only receipt, copy, reveal, and ignore-consent UI to the now-
 - Reconciliation preflight and the final required focused command passed.
 - The focused direct ReviewPanel Playwright mount passes with the required export fixture.
 - The anchored workspace Playwright spec passes after restoring the existing copy-recorded-anchor binding.
+- The complete review lifecycle Playwright spec completes after restoring delete/reopen bindings.
 - No dependencies were installed and no formatter, linter, build, broad browser matrix, or project-wide suite was run.
