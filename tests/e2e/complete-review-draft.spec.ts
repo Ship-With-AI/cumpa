@@ -409,6 +409,7 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
   const fixture = await createGitFixture({ anchoredReview: true });
   const otherTab = await browser.newPage();
   const seedBody = 'Shared comment before two tabs.';
+  const remoteBody = 'Comment added by tab A after tab B loaded.';
   const firstCanonicalSummary = 'Summary accepted by tab A.';
   const attemptedSummary = 'Summary attempted by tab B.';
   const attemptedEdit = 'Edit attempted by tab B.';
@@ -446,6 +447,12 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     const otherSummary = otherTab.getByLabel('Review summary (Markdown)');
     await otherSummary.fill(attemptedSummary);
 
+    await activateMonacoLine(page, 'head', 'export const stableContext8 = 8;', 8);
+    await page.locator('.monaco-anchor-zone--composer textarea').fill(remoteBody);
+    const remoteAdded = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    expect((await remoteAdded).status()).toBe(201);
+
     await page.getByRole('button', { name: 'Write summary' }).click();
     const canonicalSummary = page.getByLabel('Review summary (Markdown)');
     await canonicalSummary.fill(firstCanonicalSummary);
@@ -470,7 +477,7 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     await expect(otherTab.getByText('Conflict — unsaved text retained', { exact: true })).toBeVisible();
     expect(await conflictResponse.json()).toMatchObject({
       kind: 'revisionConflict',
-      expectedRevision: acceptedRevision - 1,
+      expectedRevision: acceptedRevision - 2,
       actualRevision: acceptedRevision,
       latest: { revision: acceptedRevision, summary: firstCanonicalSummary },
     });
@@ -485,6 +492,9 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     await expect(otherTab.getByText('Conflict — unsaved text retained', { exact: true })).toHaveCount(0);
     await expect(otherSummary).toHaveValue(attemptedSummary);
     await expect(otherEdit).toHaveValue(attemptedEdit);
+    const remoteRecord = otherTab.locator('.comments-rail__comment', { hasText: remoteBody });
+    await expect(remoteRecord).toHaveCount(1);
+    await expect(remoteRecord.getByRole('button', { name: 'Resolve' })).toBeEnabled();
 
     await seedRecord.getByRole('button', { name: 'Delete' }).click();
     await expect(seedRecord.getByText('Delete comment?')).toBeVisible();
@@ -592,7 +602,10 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     expect(JSON.parse(readFileSync(draftPath, 'utf8'))).toMatchObject({
       revision: afterDeleteRevision + 1,
       summary: firstCanonicalSummary,
-      comments: [expect.objectContaining({ body: 'Tab A owns this anchor.' })],
+      comments: expect.arrayContaining([
+        expect.objectContaining({ body: remoteBody }),
+        expect.objectContaining({ body: 'Tab A owns this anchor.' }),
+      ]),
     });
   } finally {
     if (running !== undefined) await stopGeneratedCli(running);

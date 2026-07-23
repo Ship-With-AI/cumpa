@@ -136,13 +136,30 @@ watch(
       <template v-if="resolvedOpen">
         <template v-for="group in groups.resolved" :key="group.path.bytesBase64url">
           <h4>{{ group.path.display }}</h4>
-          <article v-for="comment in group.comments" :key="comment.id" :data-comment-id="comment.id" class="review-panel__comment comments-rail__comment">
-            <p>{{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }} · Resolved</p><p>{{ comment.body }}</p>
+        <article v-for="comment in group.comments" :key="comment.id" :data-comment-id="comment.id" class="review-panel__comment comments-rail__comment">
+          <p>{{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }} · Resolved</p>
+          <template v-if="editing === comment.id">
+            <p>{{ comment.recordedAnchor.safeDisplayPath }} · Anchor fields are fixed for this comment.</p>
+            <label>Comment <textarea :value="buffer(comment)" :disabled="pending || conflict" @input="emit('update:commentBuffer', comment.id, ($event.target as HTMLTextAreaElement).value)" /></label>
+            <button type="button" :disabled="pending || conflict || buffer(comment).trim() === ''" @click="emit('saveComment', comment.id)">Save comment</button>
+            <button type="button" :disabled="pending" @click="editing = null">Cancel edit</button>
+          </template>
+          <template v-else>
+            <p>{{ comment.body }}</p>
             <button v-if="comment.status === 'verified'" type="button" @click="emit('show', comment.id)">Show comment</button>
             <button type="button" :disabled="comment.status !== 'verified' || pending || conflict" @click="editing = comment.id">Edit</button>
             <button type="button" :disabled="pending || conflict" @click="emit('reopen', comment.id)">Reopen</button>
             <button type="button" :disabled="pending || conflict" @click="confirmingDelete = comment.id">Delete</button>
-          </article>
+          </template>
+          <div v-if="confirmingDelete === comment.id" class="review-panel__confirm" role="alert">
+            <h4>Delete comment?</h4>
+            <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p>
+            <p>{{ comment.body }}</p>
+            <p>This permanently removes the comment from the local draft. Diff Review has no undo history.</p>
+            <button type="button" :disabled="pending" @click="confirmingDelete = null">Keep comment</button>
+            <button type="button" :disabled="pending || conflict" @click="emit('delete', comment.id); confirmingDelete = null">Delete comment</button>
+          </div>
+        </article>
         </template>
       </template>
     </section>

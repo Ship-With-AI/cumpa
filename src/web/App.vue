@@ -225,6 +225,16 @@ function acceptedWorkspaceComments(
   });
 }
 
+function reconciledWorkspaceComments(draft: DraftView): readonly WorkspaceComment[] {
+  const existing = new Map(workspace?.getState().comments.map((comment) => [comment.id, comment]));
+  return reconcileDraftComments(draft.comments, session.value?.files ?? []).map((comment) => {
+    const previous = existing.get(comment.id);
+    return previous === undefined
+      ? comment
+      : { ...previous, state: comment.state, body: comment.body };
+  });
+}
+
 function refreshReviewSnapshot(): void {
   if (reviewState !== undefined) reviewDraft.value = reviewState.snapshot();
 }
@@ -328,20 +338,34 @@ function mutateComment(commentId: string, type: 'deleteComment' | 'resolveCommen
   mutateReview({ type, expectedRevision: current.canonical.revision, commentId });
 }
 
-function reloadLatestReview(): void {
-  reviewState?.reloadLatest();
-  const latest = latestConflictDraft;
-  if (latest !== undefined) {
-    reviewState?.accept(reviewCanonical(latest));
-    draftRevision.value = latest.revision;
+async function reloadLatestReview(): Promise<void> {
+  if (latestConflictDraft === undefined || sessionClient === undefined) {
+    return;
+  }
+
+  try {
+    const loaded = await sessionClient.getDraft();
+    if (loaded.kind !== 'current') {
+      return;
+    }
+
+    reviewState?.conflict(
+      reviewCanonical(loaded.draft),
+      reviewDraft.value?.conflict?.expectedRevision ?? loaded.draft.revision,
+    );
+    reviewState?.reloadLatest();
+    draftRevision.value = loaded.draft.revision;
     if (workspace !== undefined) {
-      const transition = workspace.replaceComments(acceptedWorkspaceComments(latest));
+      const transition = workspace.replaceComments(reconciledWorkspaceComments(loaded.draft));
       workspaceState.value = transition.state;
       runCommands(transition.commands);
     }
     latestConflictDraft = undefined;
+  } catch {
+    announce('Latest draft couldn’t be reloaded. Your unsaved text is still here.');
+  } finally {
+    refreshReviewSnapshot();
   }
-  refreshReviewSnapshot();
 }
 
 function filePath(fileId: string): string {

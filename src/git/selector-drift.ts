@@ -183,14 +183,13 @@ export function createSelectorDriftObserver(
     base: retainDescriptor('base', comparison.base),
     head: retainDescriptor('head', comparison.head),
   });
-  let worktreeRecords: Promise<readonly WorktreeRecord[]> | undefined;
-
   const listWorktrees = async (): Promise<readonly WorktreeRecord[]> => {
-    worktreeRecords ??= runner
-      .run(['worktree', 'list', '--porcelain', '-z'], { cwd: repositoryRoot })
-      .then((result) => parseWorktreeRecords(result.stdout));
     try {
-      return await worktreeRecords;
+      const result = await runner.run(
+        ['worktree', 'list', '--porcelain', '-z'],
+        { cwd: repositoryRoot },
+      );
+      return parseWorktreeRecords(result.stdout);
     } catch {
       return [];
     }
@@ -209,8 +208,10 @@ export function createSelectorDriftObserver(
     }
   };
 
-  const observeWorktree = async (descriptor: WorktreeDescriptor): Promise<SelectorDriftStatus> => {
-    const records = await listWorktrees();
+  const observeWorktree = async (
+    descriptor: WorktreeDescriptor,
+    records: readonly WorktreeRecord[],
+  ): Promise<SelectorDriftStatus> => {
     const record = records.find(
       (candidate) =>
         candidate.path === descriptor.path && !candidate.prunable && !candidate.bare,
@@ -225,20 +226,24 @@ export function createSelectorDriftObserver(
   const observe = async (
     descriptor: RetainedSelectorDescriptor | undefined,
     role: SelectorRole,
+    worktreeRecords: readonly WorktreeRecord[] | undefined,
   ): Promise<SelectorDriftStatus> => {
     if (descriptor === undefined) {
       return unchanged(role);
     }
     return descriptor.kind === 'branch'
       ? await observeBranch(descriptor)
-      : await observeWorktree(descriptor);
+      : await observeWorktree(descriptor, worktreeRecords ?? []);
   };
 
   return Object.freeze({
     async observe(): Promise<SelectorDriftResponse> {
+      const hasWorktreeDescriptor =
+        descriptors.base?.kind === 'worktree' || descriptors.head?.kind === 'worktree';
+      const worktreeRecords = hasWorktreeDescriptor ? await listWorktrees() : undefined;
       return SelectorDriftResponseSchema.parse({
-        base: await observe(descriptors.base, 'base'),
-        head: await observe(descriptors.head, 'head'),
+        base: await observe(descriptors.base, 'base', worktreeRecords),
+        head: await observe(descriptors.head, 'head', worktreeRecords),
       });
     },
   });

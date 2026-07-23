@@ -6,6 +6,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import type { PinnedComparison } from '../../src/contracts/comparison.js';
 import { createSelectorDriftObserver } from '../../src/git/selector-drift.js';
+import { createGitRunner } from '../../src/git/runner.js';
 import type { GitRunner } from '../../src/git/runner.js';
 import { createGitFixture, type GitFixture } from '../helpers/git-fixture.js';
 
@@ -147,6 +148,76 @@ describe('server-retained selector drift observation', () => {
       reason: 'source-unavailable',
     });
     expect(JSON.stringify(unavailable)).not.toContain(firstWorktree);
+  });
+
+  test('refreshes the shared worktree listing for every observation after selected worktrees move or unregister', async () => {
+    const git = await fixture();
+    const baseOid = oid(git, 'refs/heads/main');
+    const headOid = oid(git, 'refs/heads/feature');
+    const firstWorktree = await detachedWorktree(git, headOid);
+    const secondWorktree = await detachedWorktree(git, baseOid);
+    const nativeRunner = createGitRunner();
+    const run = vi.fn<GitRunner['run']>(
+      async (arguments_, options) => await nativeRunner.run(arguments_, options),
+    );
+    const observer = createSelectorDriftObserver(
+      comparison(
+        git.root,
+        { oid: baseOid, source: worktree(secondWorktree) },
+        { oid: headOid, source: worktree(firstWorktree) },
+      ),
+      { runner: { run } },
+    );
+
+    await expect(observer.observe()).resolves.toEqual({
+      base: { kind: 'unchanged', role: 'base' },
+      head: { kind: 'unchanged', role: 'head' },
+    });
+
+    git.git(['-C', firstWorktree, 'checkout', '--detach', git.futureHeadOid]);
+
+    const moved = await observer.observe();
+    expect(moved).toEqual({
+      base: { kind: 'unchanged', role: 'base' },
+      head: {
+        kind: 'moved',
+        role: 'head',
+        label: 'head selection',
+        selectorType: 'worktree',
+        oldOid: headOid,
+        newOid: git.futureHeadOid,
+      },
+    });
+
+    await rm(secondWorktree, { recursive: true, force: true });
+    git.git(['worktree', 'prune']);
+
+    const unavailable = await observer.observe();
+    expect(unavailable).toEqual({
+      base: {
+        kind: 'unavailable',
+        role: 'base',
+        label: 'base selection',
+        selectorType: 'worktree',
+        oldOid: baseOid,
+        reason: 'source-unavailable',
+      },
+      head: {
+        kind: 'moved',
+        role: 'head',
+        label: 'head selection',
+        selectorType: 'worktree',
+        oldOid: headOid,
+        newOid: git.futureHeadOid,
+      },
+    });
+    expect(JSON.stringify(unavailable)).not.toContain(firstWorktree);
+    expect(JSON.stringify(unavailable)).not.toContain(secondWorktree);
+    expect(
+      run.mock.calls.filter(
+        ([arguments_]) => arguments_[0] === 'worktree' && arguments_[1] === 'list',
+      ),
+    ).toHaveLength(3);
   });
 
   test('uses option-terminated native argument arrays and leaves pinned comparison, draft, blobs, inventory, and anchors unchanged', async () => {
