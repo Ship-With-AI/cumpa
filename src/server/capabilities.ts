@@ -38,7 +38,7 @@ import {
   canonicalizeReviewExport,
 } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
-import { publishReviewExport } from './export-store.js';
+import { ensureManagedExportsRoot, publishReviewExport } from './export-store.js';
 import { inspectDiffReviewIgnore } from '../git/ignore-status.js';
 import { appendDiffReviewIgnoreRule } from './gitignore-capability.js';
 
@@ -193,12 +193,6 @@ export function createCapabilityRegistry(
     });
   const selectorDriftObserver =
     options.selectorDriftObserver ?? createSelectorDriftObserver(comparison);
-  const exportDirectory = join(
-    comparison.repositoryRoot,
-    '.diff-review',
-    'exports',
-    `${comparison.base.oid}..${comparison.head.oid}`,
-  );
   const acknowledgements = new Map<string, string>();
 
 
@@ -249,7 +243,15 @@ export function createCapabilityRegistry(
       return filesByCapability.get(fileId);
     },
     async revealExportDirectory() {
-      if (options.revealDraftFile === undefined || !(await isCompleteExportDirectory(exportDirectory))) {
+      const exportsRoot = await ensureManagedExportsRoot(comparison.repositoryRoot, false);
+      const exportDirectory = exportsRoot === undefined
+        ? undefined
+        : join(exportsRoot, `${comparison.base.oid}..${comparison.head.oid}`);
+      if (
+        options.revealDraftFile === undefined
+        || exportDirectory === undefined
+        || !(await isCompleteExportDirectory(exportDirectory))
+      ) {
         throw new Error('Export reveal adapter is unavailable.');
       }
       await options.revealDraftFile(exportDirectory);

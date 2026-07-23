@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { lstat, mkdir, open, readdir, readFile, rename, rm } from 'node:fs/promises';
-import { dirname, join, relative, resolve } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 
 import { hashExportBytes, parseCanonicalReviewExport, type ExportHash } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
@@ -113,32 +113,50 @@ function receipt(exportsRoot: string, stable: string, pair: CompletePair): Expor
   return Object.freeze({ files: Object.freeze(files) as ExportReceipt['files'] });
 }
 
+export async function ensureManagedExportsRoot(
+  repositoryRoot: string,
+  create: boolean,
+): Promise<string | undefined> {
+  const root = resolve(repositoryRoot);
+  const diffReviewRoot = join(root, '.diff-review');
+  const exportsRoot = join(diffReviewRoot, 'exports');
+  for (const component of [diffReviewRoot, exportsRoot]) {
+    let info;
+    try {
+      info = await lstat(component);
+    } catch (error) {
+      if (!isMissing(error) || !create) {
+        if (isMissing(error)) return undefined;
+        throw error;
+      }
+      await mkdir(component, { mode: 0o700 });
+      info = await lstat(component);
+    }
+    if (!info.isDirectory() || info.isSymbolicLink()) {
+      throw new Error('Managed export directory is not a real directory.');
+    }
+  }
+  return exportsRoot;
+}
+
 export async function publishReviewExport(input: PublishReviewExportInput): Promise<PublishReviewExportResult> {
   const repositoryRoot = resolve(input.repositoryRoot);
-  const exportsRoot = resolve(repositoryRoot, '.diff-review', 'exports');
   const stableName = `${input.baseOid}..${input.headOid}`;
-  const stable = resolve(exportsRoot, stableName);
-  if (dirname(stable) !== exportsRoot) {
-    return Object.freeze({ kind: 'publicationFailed' });
-  }
-
-  let stablePresent: boolean;
+  let exportsRoot: string | undefined;
+  let candidate: string | undefined;
   try {
-    stablePresent = await stableExists(stable);
-  } catch {
-    return Object.freeze({ kind: 'publicationFailed' });
-  }
-  if (stablePresent && input.reExportCapability.kind === 'reExportUnsupported') {
-    return Object.freeze({ kind: 'reExportUnsupported' });
-  }
+    exportsRoot = await ensureManagedExportsRoot(repositoryRoot, true);
+    if (exportsRoot === undefined) {
+      return Object.freeze({ kind: 'publicationFailed' });
+    }
+    const stable = join(exportsRoot, stableName);
+    let stablePresent = await stableExists(stable);
+    if (stablePresent && input.reExportCapability.kind === 'reExportUnsupported') {
+      return Object.freeze({ kind: 'reExportUnsupported' });
+    }
 
-  const candidate = resolve(exportsRoot, `.${stableName}.candidate-${randomUUID()}`);
-  if (dirname(candidate) !== exportsRoot) {
-    return Object.freeze({ kind: 'publicationFailed' });
-  }
-
-  try {
-    await mkdir(exportsRoot, { recursive: true, mode: 0o700 });
+    const candidateName = `.${stableName}.candidate-${randomUUID()}`;
+    candidate = join(exportsRoot, candidateName);
     await mkdir(candidate, { mode: 0o700 });
     await writeFileExactly(join(candidate, 'review.json'), input.json);
     await writeFileExactly(join(candidate, 'review.md'), input.markdown);
@@ -164,7 +182,7 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
       if (input.reExportCapability.kind !== 'observedNativeExchange') {
         throw new ReExportUnsupported();
       }
-      const exchanged = input.reExportCapability.exchangeDirectories(exportsRoot, stableName, candidate.slice(exportsRoot.length + 1));
+      const exchanged = input.reExportCapability.exchangeDirectories(exportsRoot, stableName, candidateName);
       if (exchanged.kind === 'unsupported') {
         throw new ReExportUnsupported();
       }
@@ -189,16 +207,22 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
     }
     return Object.freeze({ kind: 'publicationFailed' });
   } finally {
-    try {
-      await rm(candidate, { force: true, recursive: true });
-    } catch {
-      // A failed cleanup never changes the complete stable generation.
+    if (candidate !== undefined && exportsRoot !== undefined) {
+      try {
+        if (await ensureManagedExportsRoot(repositoryRoot, false) === exportsRoot) {
+          await rm(candidate, { force: true, recursive: true });
+        }
+      } catch {
+        // A failed cleanup never changes the complete stable generation.
+      }
     }
   }
 }
 
 export async function recoverReviewExport(repositoryRoot: string, baseOid: string, headOid: string): Promise<CompletePair | undefined> {
-  const stable = join(resolve(repositoryRoot), '.diff-review', 'exports', `${baseOid}..${headOid}`);
+  const exportsRoot = await ensureManagedExportsRoot(repositoryRoot, false);
+  if (exportsRoot === undefined) return undefined;
+  const stable = join(exportsRoot, `${baseOid}..${headOid}`);
   try {
     return await completePair(stable);
   } catch (error) {
