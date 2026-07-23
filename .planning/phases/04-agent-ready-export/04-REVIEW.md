@@ -139,7 +139,9 @@ Reviewed the complete Phase 04 export surface: shared schemas and deterministic 
 **File:** `src/web/components/ExportReceipt.vue:54-57`  
 **Issue:** On reveal failure the receipt tells users only to “Check the terminal details.” The server intentionally does not expose a local path or terminal diagnostic, and the UI specification requires directing the user to copy the already-selectable relative path and open it from the repository root. The current message leaves a successful export harder to recover when the OS file-browser invocation fails.
 
-**Fix:** Replace the failure copy with: “Could not reveal the export directory. Copy the relative path and open it from the repository root.” Preserve the receipt values and focus the adjacent alert after invocation; assert that wording in the receipt UI test.
+**Fix:** Replace the terminal-only copy with bounded recovery guidance that preserves only relative-path authority, retain the successful receipt, and focus the adjacent alert after invocation. Assert the wording, retained values, and focus in the receipt UI test.
+
+**Remediation evidence (2026-07-23):** Resolved by `abb4bc8`. `ExportReceipt` now reports: “Reveal failed; copy a displayed relative path and open it from the repository root.” The fixed no-argument reveal request still exposes no absolute path or terminal diagnostic. The server-confirmed receipt and full selectable relative values remain visible, while the adjacent error alert receives focus. Focused Chromium receipt coverage passed 3/3 and `npm run build` passed.
 
 ---
 

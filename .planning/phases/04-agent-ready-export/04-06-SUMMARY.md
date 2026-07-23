@@ -87,6 +87,7 @@ The focused browser result test covers all three rendered outcomes after the exi
 5. The prescribed integration command ran after implementation. It passed **25/26**; the sole failure is the pre-existing, repeatedly reproduced `tests/integration/anchored-workspace.spec.ts:458` clipboard-status assertion, unrelated to 04-06. It failed before 04-06 source edits on two runs and after implementation on the final run.
 6. Discovery repair verification: `npm run test:package` collected only the 47 browser `*.spec.ts` suites—no Vitest `*.test.ts` files were handed to Playwright. It completed with 44 passes and three non-04-06 E2E failures: `anchored-review.spec.ts:222`, plus `complete-review-draft.spec.ts:315` and `:425`. The 04-06 focused browser command still passed **5/5** after this repair.
 7. Direct `ReviewPanel` fixture repair: supplied fixed typed capability callbacks (`alreadyIgnored`, `revealed`, and status refresh) only at the E2E harness boundary. `node_modules/.bin/playwright test tests/e2e/review-panel-resolved.spec.ts` passed **1/1** with no Vue missing-prop warnings.
+8. **WR-04 RED/GREEN:** `e6ac613` first proved the old terminal-only reveal failure copy; `abb4bc8` now preserves the full receipt, moves focus to its adjacent alert, and says: “Reveal failed; copy a displayed relative path and open it from the repository root.” Focused receipt browser coverage passed **3/3** and `npm run build` passed.
 
 ## Reconciliation and deviation
 
