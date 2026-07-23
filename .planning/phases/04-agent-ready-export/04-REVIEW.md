@@ -92,6 +92,8 @@ Reviewed the complete Phase 04 export surface: shared schemas and deterministic 
 
 **Fix:** On every write, sync, and close failure, reopen the same no-follow inode and inspect its bytes. Distinguish untouched, exactly-appended-but-unconfirmed, and changed/partial states in the result algebra; never claim unchanged for either changed state and do not attempt an unsafe rewrite rollback. Exercise injected partial-write, sync, and close failures, including the UI message for each outcome.
 
+**Remediation evidence (2026-07-23):** Resolved by `d887b03` and `0e7341f`. Failed write, sync, and close paths now close/reopen the same `.gitignore` with `O_NOFOLLOW`, require the original device/inode and regular-file type, then compare exact bytes to the original and fixed append. They return `unchanged`, `appendUnconfirmed`, or `ambiguous`; no recovery path rewrites or rolls back the file. The secured API schema, client, draft state, and UI preserve the typed result. Focused API tests passed 5/5, the Chromium result-message scenario passed 1/1, and `npm run build` passed. The browser test confirms exact-appended durability uncertainty, ambiguous partial mutation, and untouched retry copy never make a false unchanged claim.
+
 ### CR-03: Package acceptance fabricates “executed” requirement and threat coverage
 
 **File:** `tests/package/agent-ready-export.test.ts:27-40, 53-83`  

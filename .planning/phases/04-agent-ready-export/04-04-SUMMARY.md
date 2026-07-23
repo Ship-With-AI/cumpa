@@ -97,6 +97,13 @@ status: complete
 **Total deviations:** 1 auto-fixed (1 correctness)
 **Impact on plan:** The route remains no-payload and grants no broader authority.
 
+## CR-02 Remediation
+
+- `d887b03` added RED coverage for injected partial-write, sync, and close failures, plus browser assertions for each bounded outcome.
+- `0e7341f` changed failed mutation handling to reread the same regular no-follow inode. The result algebra now distinguishes `unchanged`, exact `appendUnconfirmed`, and `ambiguous` partial or foreign bytes; prior pre-mutation uncertainty remains `unconfirmed`.
+- The UI never claims `.gitignore` was unchanged for `appendUnconfirmed`, `ambiguous`, or `unconfirmed`, and does not roll back or rewrite bytes.
+- Focused API, browser, and build verification passed.
+
 ## Issues Encountered
 
 - The initial denial matrix incorrectly treated the intended `GET /api/export/gitignore` status endpoint as a rejected method; it now tests an unsupported `PUT` method while status behavior is asserted separately.

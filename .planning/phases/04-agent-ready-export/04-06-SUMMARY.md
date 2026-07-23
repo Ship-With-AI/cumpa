@@ -62,6 +62,18 @@ Implemented the browser receipt and consent surface without creating a second ex
 | append failure | No further authority | Warning, retry, and decline remain available; export is never blocked |
 | `unavailable` | None | Bounded error explaining export can continue without `.gitignore` changes |
 
+### CR-02 bounded append outcomes
+
+Review remediation `0e7341f` extends the fixed no-argument consent result algebra without granting any new browser authority:
+
+| Failure inspection result | UI copy | Retry safety |
+|---|---|---|
+| `unchanged` | `.gitignore was not changed. You can retry the append.` | Retry can request the same fixed rule. |
+| `appendUnconfirmed` | Exact rule is present, but durability could not be confirmed. | No rollback or duplicate rule is attempted; status can be refreshed. |
+| `ambiguous` or `unconfirmed` | `.gitignore may have changed` or state could not be confirmed. | User must inspect before retrying; no unchanged claim is made. |
+
+The focused browser result test covers all three rendered outcomes after the existing second confirmation.
+
 ## TDD and verification
 
 1. **RED** `349f3f2`: added fixed-capability client coverage; it failed because `revealExportDirectory` did not exist.
