@@ -12,8 +12,8 @@ const props = defineProps<{
   summary: string;
   summaryBuffer: string;
   comments: readonly WorkspaceComment[];
-  pinnedBase?: Readonly<{ label: string; oid: string }>;
-  pinnedHead?: Readonly<{ label: string; oid: string }>;
+  pinnedBase: Readonly<{ label: string; oid: string }>;
+  pinnedHead: Readonly<{ label: string; oid: string }>;
   commentBuffers: ReadonlyMap<string, string>;
   exportState: ReviewExportState;
 }>();
@@ -69,7 +69,7 @@ watch(() => props.exportState.phase, (phase) => {
         <p>Reloading adopts the latest accepted review. It does not export automatically.</p>
       </section>
       <DriftExportAcknowledgement
-        v-else-if="exportState.phase === 'drift' && exportState.driftObservation !== null && pinnedBase !== undefined && pinnedHead !== undefined"
+        v-else-if="exportState.phase === 'drift' && exportState.driftObservation !== null"
         :observation="exportState.driftObservation"
         :stale="exportState.driftStale"
         :pinned-base="pinnedBase"

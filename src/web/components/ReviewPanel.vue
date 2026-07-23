@@ -18,8 +18,8 @@ const props = defineProps<{
   inventory: readonly { identity: string; display: string }[];
   summary: string;
   revision: number;
-  pinnedBase?: Readonly<{ label: string; oid: string }>;
-  pinnedHead?: Readonly<{ label: string; oid: string }>;
+  pinnedBase: Readonly<{ label: string; oid: string }>;
+  pinnedHead: Readonly<{ label: string; oid: string }>;
   summaryBuffer: string;
   commentBuffers: ReadonlyMap<string, string>;
   pending: ReviewPendingOperation | null;

@@ -821,14 +821,14 @@ onBeforeUnmount(() => {
         aria-labelledby="review-heading"
       >
         <ReviewPanel
-          v-if="reviewDraft !== undefined"
+          v-if="reviewDraft !== undefined && session !== undefined"
           :comments="workspaceComments"
           :inventory="reviewableFiles.map((file) => ({ identity: file.newPath?.bytesBase64url ?? file.oldPath?.bytesBase64url ?? file.fileId, display: file.newPath?.display ?? file.oldPath?.display ?? 'Changed file' }))"
           :summary="reviewDraft.canonical.summary"
           :summary-buffer="reviewDraft.summaryBuffer"
           :revision="reviewDraft.canonical.revision"
-          :pinned-base="session?.base"
-          :pinned-head="session?.head"
+          :pinned-base="session.base"
+          :pinned-head="session.head"
           :comment-buffers="reviewDraft.commentBuffers"
           :pending="reviewDraft.pending"
           :conflict="reviewDraft.conflict === null ? null : { expectedRevision: reviewDraft.conflict.expectedRevision, actualRevision: reviewDraft.conflict.latest.revision }"

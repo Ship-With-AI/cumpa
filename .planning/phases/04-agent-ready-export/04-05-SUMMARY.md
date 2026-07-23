@@ -94,6 +94,15 @@ The contract asserts that the client request is exactly `{ expectedRevision: 7 }
    node -e "const{readFileSync}=require('node:fs'),{spawnSync}=require('node:child_process'),x=JSON.parse(readFileSync('.planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json','utf8')),c=x.commands['04-05-export-ui-states'];if(!c)throw Error('missing 04-05-export-ui-states');const r=spawnSync(c.executable,c.argv,{cwd:c.cwd,stdio:'inherit'});process.exit(r.status??1)"
    ```
 
+5. Wave-gate direct ReviewPanel mount:
+
+   ```text
+   npm run test:package -- tests/e2e/review-panel-resolved.spec.ts
+   1 passed (1.5s)
+   ```
+
+   The harness now supplies the required accepted revision, canonical ready export state, pinned Base/Head identities, and no-op export event handlers. Production props remain required.
+
 ## Deviations
 
 - **[Rule 3 — blocking verification wiring]** The plan names `tests/integration/agent-ready-export-states.spec.ts`, but the immutable reconciliation command only discovers `tests/unit/**`; direct Vitest/Playwright attempts do not discover that integration path under the configured roots. The required integration artifact is present, and its behavior is mirrored in `tests/unit/agent-ready-export-state.test.ts` so the prescribed ledger proves the contract. No runner, config, dependency, or reconciliation ledger was changed.
@@ -112,6 +121,7 @@ The contract asserts that the client request is exactly `{ expectedRevision: 7 }
 - `src/web/styles.css`
 - `tests/integration/agent-ready-export-states.spec.ts`
 - `tests/unit/agent-ready-export-state.test.ts`
+- `tests/e2e/review-panel-resolved.spec.ts`
 
 ## Next Plan Readiness
 
@@ -122,4 +132,5 @@ Plan 04-06 can add only receipt, copy, reveal, and ignore-consent UI to the now-
 - All requested core export states are implemented without receipt/copy/reveal/ignore-consent UI.
 - RED and GREEN commits exist for both tasks.
 - Reconciliation preflight and the final required focused command passed.
+- The focused direct ReviewPanel Playwright mount passes with the required export fixture.
 - No dependencies were installed and no formatter, linter, build, broad browser matrix, or project-wide suite was run.
