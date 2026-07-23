@@ -404,6 +404,8 @@ function exportReview(): void {
       announce('Selected sources changed again. Review the latest identities.');
     } else if (result.kind === 'exported') {
       announce('Review export complete. Both files were published together.');
+    } else if (result.kind === 'recoveryRequired') {
+      announce('Export needs recovery. No success receipt is available.');
     } else if (result.kind === 'publicationFailed' || result.kind === 'reExportUnsupported') {
       announce('Export was not published. No new export pair is available.');
     }

@@ -121,6 +121,18 @@ The contract asserts that the client request is exactly `{ expectedRevision: 7 }
 
    Restored the established `deleteComment` and `reopenComment` mutation bindings at the App-to-ReviewPanel authority boundary; no lifecycle behavior, assertions, or timing changed.
 
+8. UI-audit receipt/recovery contract remediation:
+
+   ```text
+   node_modules/.bin/vitest run tests/api/export.test.ts tests/api/export-publication.test.ts tests/unit/agent-ready-export-state.test.ts
+   3 files passed; 18 tests passed
+
+   npm run build
+   passed
+   ```
+
+   The server now emits receipt drift identities from the exact accepted observation and retained pinned comparison. `recoveryRequired` is distinct from ordinary publication failure only when post-publication recovery cannot determine a safe complete pair; it propagates through the route, client result union, App announcement, and canonical review state without adding receipt rendering.
+
 ## Deviations
 
 - **[Rule 3 — blocking verification wiring]** The plan names `tests/integration/agent-ready-export-states.spec.ts`, but the immutable reconciliation command only discovers `tests/unit/**`; direct Vitest/Playwright attempts do not discover that integration path under the configured roots. The required integration artifact is present, and its behavior is mirrored in `tests/unit/agent-ready-export-state.test.ts` so the prescribed ledger proves the contract. No runner, config, dependency, or reconciliation ledger was changed.
@@ -129,6 +141,10 @@ The contract asserts that the client request is exactly `{ expectedRevision: 7 }
 ## Files Created or Changed
 
 - `src/web/api/client.ts`
+- `src/contracts/api.ts`
+- `src/server/capabilities.ts`
+- `src/server/export-store.ts`
+- `src/server/routes.ts`
 - `src/web/model/review-draft-state.ts`
 - `src/web/App.vue`
 - `src/web/components/ReviewPanel.vue`
@@ -141,6 +157,9 @@ The contract asserts that the client request is exactly `{ expectedRevision: 7 }
 - `tests/unit/agent-ready-export-state.test.ts`
 - `tests/e2e/review-panel-resolved.spec.ts`
 
+- `tests/api/export.test.ts`
+- `tests/api/export-publication.test.ts`
+- `tests/integration/export-receipt-ui.spec.ts`
 ## Next Plan Readiness
 
 Plan 04-06 can add only receipt, copy, reveal, and ignore-consent UI to the now-stable core export surface. It must not replace the Review-panel client/state owner or change the accepted-revision and latest-token boundaries.
@@ -153,4 +172,4 @@ Plan 04-06 can add only receipt, copy, reveal, and ignore-consent UI to the now-
 - The focused direct ReviewPanel Playwright mount passes with the required export fixture.
 - The anchored workspace Playwright spec passes after restoring the existing copy-recorded-anchor binding.
 - The complete review lifecycle Playwright spec completes after restoring delete/reopen bindings.
-- No dependencies were installed and no formatter, linter, build, broad browser matrix, or project-wide suite was run.
+- No dependencies were installed and no formatter, linter, broad browser matrix, or project-wide suite was run; `npm run build` was explicitly required by the UI-audit remediation and passed.

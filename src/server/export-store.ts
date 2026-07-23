@@ -29,7 +29,8 @@ export type ExportReceipt = Readonly<{
 export type PublishReviewExportResult =
   | Readonly<{ readonly kind: 'exported'; readonly receipt: ExportReceipt }>
   | Readonly<{ readonly kind: 'reExportUnsupported' }>
-  | Readonly<{ readonly kind: 'publicationFailed' }>;
+  | Readonly<{ readonly kind: 'publicationFailed' }>
+  | Readonly<{ readonly kind: 'recoveryRequired' }>;
 
 export type PublishReviewExportInput = Readonly<{
   readonly revalidate?: () => Promise<boolean>;
@@ -183,13 +184,16 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
   const stableName = `${input.baseOid}..${input.headOid}`;
   let managedRoot: ManagedExportsRoot | undefined;
   let candidate: string | undefined;
+  let exportsRoot: string | undefined;
+  let stable: string | undefined;
+  let publicationMayHaveChanged = false;
   try {
     managedRoot = await ensureManagedExportsRoot(repositoryRoot, true);
     if (managedRoot === undefined) {
       return Object.freeze({ kind: 'publicationFailed' });
     }
-    const exportsRoot = managedRoot.exportsRoot;
-    const stable = join(exportsRoot, stableName);
+    exportsRoot = managedRoot.exportsRoot;
+    stable = join(exportsRoot, stableName);
     await assertManagedExportsRoot(managedRoot);
     const stablePresent = await stableExists(stable);
     if (stablePresent && input.reExportCapability.kind === 'reExportUnsupported') {
@@ -225,7 +229,7 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
       if (await stableExists(stable)) {
         return Object.freeze({ kind: 'publicationFailed' });
       }
-      await assertManagedExportsRoot(managedRoot);
+      publicationMayHaveChanged = true;
       await rename(candidate, stable);
     } else {
       if (input.reExportCapability.kind !== 'observedNativeExchange') {
@@ -235,8 +239,9 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
       if (exchanged.kind === 'unsupported') {
         throw new ReExportUnsupported();
       }
+      publicationMayHaveChanged = true;
       if (exchanged.kind !== 'supported') {
-        return Object.freeze({ kind: 'publicationFailed' });
+        throw new Error('Native exchange did not confirm publication.');
       }
     }
 
@@ -253,7 +258,19 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
     if (error instanceof ReExportUnsupported) {
       return Object.freeze({ kind: 'reExportUnsupported' });
     }
-    return Object.freeze({ kind: 'publicationFailed' });
+    if (!publicationMayHaveChanged || managedRoot === undefined || exportsRoot === undefined || stable === undefined) {
+      return Object.freeze({ kind: 'publicationFailed' });
+    }
+    try {
+      await assertManagedExportsRoot(managedRoot);
+      const recovered = await completePair(stable);
+      if (!recovered.json.equals(input.json) || !recovered.markdown.equals(input.markdown)) {
+        return Object.freeze({ kind: 'recoveryRequired' });
+      }
+      return Object.freeze({ kind: 'exported', receipt: receipt(exportsRoot, stable, recovered) });
+    } catch (recoveryError) {
+      return Object.freeze({ kind: isMissing(recoveryError) ? 'publicationFailed' : 'recoveryRequired' });
+    }
   } finally {
     if (candidate !== undefined && managedRoot !== undefined) {
       try {

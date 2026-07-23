@@ -21,7 +21,7 @@ export type ReviewExportState = Readonly<{
   pending: boolean;
   progress: 'preparing' | 'validating' | 'publishing' | null;
   phase: 'ready' | 'pending' | 'drift' | 'conflict' | 'failed' | 'exported' | 'unavailable';
-  failure: 'publicationFailed' | 'reExportUnsupported' | null;
+  failure: 'publicationFailed' | 'reExportUnsupported' | 'recoveryRequired' | null;
   conflict: Readonly<{ expectedRevision: number; actualRevision: number }> | null;
   receipt: Extract<ExportReviewResult, { readonly kind: 'exported' }> | null;
   previousConfirmedReceipt: Extract<ExportReviewResult, { readonly kind: 'exported' }> | null;
@@ -193,7 +193,7 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
           driftObservation: result.observation,
           driftStale: result.kind === 'driftAcknowledgementStale',
         };
-      } else if (result.kind === 'publicationFailed' || result.kind === 'reExportUnsupported') {
+      } else if (result.kind === 'publicationFailed' || result.kind === 'reExportUnsupported' || result.kind === 'recoveryRequired') {
         exportState = {
           ...exportState,
           phase: 'failed',

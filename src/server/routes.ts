@@ -296,6 +296,7 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
         case 'exported':
           return reply.code(201).send(response);
         case 'publicationFailed':
+        case 'recoveryRequired':
           return reply.code(500).send(response);
         case 'revisionConflict':
         case 'driftAcknowledgementRequired':

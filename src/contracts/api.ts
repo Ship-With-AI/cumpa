@@ -394,6 +394,49 @@ const ExportReceiptFilesSchema = z
   })
   .readonly();
 
+const ExportReceiptPinnedIdentitySchema = z
+  .strictObject({
+    label: z.string().min(1),
+    selectorType: SelectorTypeSchema,
+    oid: GitObjectIdSchema,
+  })
+  .readonly();
+
+const ExportReceiptCurrentIdentitySchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({
+      kind: z.literal('available'),
+      label: z.string().min(1),
+      selectorType: SelectorTypeSchema,
+      oid: GitObjectIdSchema,
+    }).readonly(),
+    z.strictObject({
+      kind: z.literal('unavailable'),
+      label: z.string().min(1),
+      selectorType: SelectorTypeSchema,
+      reason: SelectorUnavailableReasonSchema,
+    }).readonly(),
+  ])
+  .readonly();
+
+const ExportReceiptDriftIdentitySchema = z
+  .strictObject({
+    role: SelectorDriftRoleSchema,
+    pinned: ExportReceiptPinnedIdentitySchema,
+    current: ExportReceiptCurrentIdentitySchema,
+  })
+  .readonly();
+
+const ExportReceiptDriftSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('noneObserved') }).readonly(),
+    z.strictObject({
+      kind: z.literal('acknowledged'),
+      identities: z.tuple([ExportReceiptDriftIdentitySchema, ExportReceiptDriftIdentitySchema]).readonly(),
+    }).readonly(),
+  ])
+  .readonly();
+
 export const ExportReviewResultSchema = z
   .discriminatedUnion('kind', [
     z.strictObject({
@@ -401,6 +444,7 @@ export const ExportReviewResultSchema = z
       draftRevision: RevisionSchema,
       exportedAt: z.string().datetime(),
       driftAcknowledged: z.boolean(),
+      drift: ExportReceiptDriftSchema,
       files: ExportReceiptFilesSchema,
     }).readonly(),
     z.strictObject({
@@ -421,6 +465,7 @@ export const ExportReviewResultSchema = z
     z.strictObject({ kind: z.literal('draftReadOnly') }).readonly(),
     z.strictObject({ kind: z.literal('reExportUnsupported') }).readonly(),
     z.strictObject({ kind: z.literal('publicationFailed') }).readonly(),
+    z.strictObject({ kind: z.literal('recoveryRequired') }).readonly(),
   ])
   .readonly();
 

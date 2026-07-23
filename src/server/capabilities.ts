@@ -17,6 +17,7 @@ import {
   type SessionResponse,
   type AppendDiffReviewIgnoreResult,
   type DiffReviewIgnoreStatus,
+  type SelectorDriftResponse,
 } from '../contracts/api.js';
 import {
   buildDurableAnchor,
@@ -116,6 +117,56 @@ function toSessionEndpoint(endpoint: PinnedComparison['base']) {
         }
       : {}),
   };
+}
+
+type ReceiptDrift = Extract<ExportReviewResult, { readonly kind: 'exported' }>['drift'];
+type AcknowledgedReceiptDrift = Extract<ReceiptDrift, { readonly kind: 'acknowledged' }>;
+type ReceiptDriftIdentity = AcknowledgedReceiptDrift['identities'][number];
+
+function receiptDriftIdentity(
+  endpoint: PinnedComparison['base'],
+  status: SelectorDriftResponse['base'],
+): ReceiptDriftIdentity {
+  const selectorType = endpoint.source?.kind ?? 'branch';
+  const pinned = { label: endpoint.label, selectorType, oid: endpoint.oid };
+  if (status.kind === 'unavailable') {
+    return {
+      role: status.role,
+      pinned,
+      current: {
+        kind: 'unavailable',
+        label: status.label,
+        selectorType: status.selectorType,
+        reason: status.reason,
+      },
+    };
+  }
+  return {
+    role: status.role,
+    pinned,
+    current: {
+      kind: 'available',
+      label: status.kind === 'moved' ? status.label : endpoint.label,
+      selectorType: status.kind === 'moved' ? status.selectorType : selectorType,
+      oid: status.kind === 'moved' ? status.newOid : endpoint.oid,
+    },
+  };
+}
+
+function receiptDrift(
+  comparison: PinnedComparison,
+  observation: SelectorDriftResponse,
+): ReceiptDrift {
+  const drifted = observation.base.kind !== 'unchanged' || observation.head.kind !== 'unchanged';
+  return drifted
+    ? {
+        kind: 'acknowledged',
+        identities: [
+          receiptDriftIdentity(comparison.base, observation.base),
+          receiptDriftIdentity(comparison.head, observation.head),
+        ],
+      }
+    : { kind: 'noneObserved' };
 }
 
 function languageForPath(path: string | undefined): string {
@@ -366,6 +417,7 @@ export function createCapabilityRegistry(
         draftRevision: acceptedDraft.revision,
         exportedAt,
         driftAcknowledged: drifted,
+        drift: receiptDrift(comparison, observation),
         files: published.receipt.files,
       });
     },

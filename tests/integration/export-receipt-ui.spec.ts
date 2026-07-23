@@ -78,6 +78,21 @@ async function startAppServer(): Promise<string> {
               draftRevision: 3,
               exportedAt: '2026-07-23T12:34:56.000Z',
               driftAcknowledged: true,
+              drift: {
+                kind: 'acknowledged',
+                identities: [
+                  {
+                    role: 'base',
+                    pinned: { label: 'base', selectorType: 'branch', oid: '1'.repeat(40) },
+                    current: { kind: 'available', label: 'base', selectorType: 'branch', oid: '1'.repeat(40) },
+                  },
+                  {
+                    role: 'head',
+                    pinned: { label: 'head', selectorType: 'branch', oid: '2'.repeat(40) },
+                    current: { kind: 'available', label: 'head', selectorType: 'branch', oid: '3'.repeat(40) },
+                  },
+                ],
+              },
               files: [
                 { path: `${exportDirectory}/review.json`, algorithm: 'sha256', sha256: '1'.repeat(64), bytes: 128 },
                 { path: `${exportDirectory}/review.md`, algorithm: 'sha256', sha256: '2'.repeat(64), bytes: 256 },

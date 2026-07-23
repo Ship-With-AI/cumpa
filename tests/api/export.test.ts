@@ -64,6 +64,7 @@ function exportedReceipt(files: readonly Readonly<{ readonly path: string; reado
     draftRevision: 1,
     exportedAt: '2026-07-23T12:34:56.000Z',
     driftAcknowledged: false,
+    drift: { kind: 'noneObserved' },
     files: files.map((file) => ({ algorithm: 'sha256', ...file })),
   };
 }
