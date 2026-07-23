@@ -103,6 +103,10 @@ The initial ledger used newline-count rather than inclusive source-line evidence
 
 After Phase 04-02 extended `src/contracts/draft.ts`, its previous whole-file evidence hash correctly failed closed. This repair refreshed the two affected source-inclusive ranges (`ReviewDraftV1Schema` and `DurableAnchorV1Schema`) to lines 1–294 and SHA-256 `21622237b75cda0fc542f5d02f0fba45131fd9278f1a9b9e126ee8c38d8b453a`; no validator rule or production source changed. The required mutation self-test and real-ledger validation passed afterward.
 
+## Post-04-03 Evidence Refresh
+
+Phase 04-03 intentionally extended the secured route registry and capability registry. This repair refreshed only those source-inclusive owner claims: `registerSessionRoutes` now covers lines 1–366 with SHA-256 `6e6a5330942ba8a4324dfb1f17fe0ca612fd89616f384e2941893784b4e82e1d`, and `createCapabilityRegistry` now covers lines 1–393 with SHA-256 `c10c41b77cba8a9db7c35e397e73f4fd5f24f017396be27c69e616d70fc98aff`. The validator remained strict and production source was unchanged by the refresh.
+
 ## User Setup Required
 
 None - no external service configuration required.
