@@ -66,6 +66,7 @@ status: complete
 - `npx playwright test tests/e2e/agent-ready-export-safety.spec.ts --grep "forced unavailable capability"` — passed: 1 explicit forced-unavailable refusal test, retained only as a lower-level fallback proof.
 - `npx vitest run tests/package/agent-ready-export.test.ts tests/package/agent-ready-export-safety.test.ts` — passed: 2 files / 9 tests; the coverage harness executed a fresh 22/22 packaged Chromium suite and binds both first-export and native re-export receipt paths to the same full-OID directory.
 - `npx vitest run tests/unit/native-exchange-capability.test.ts tests/unit/build-native-addon.test.ts` — passed: 2 files / 4 tests; setup, cleanup, unsupported-target stale-addon removal, and declared-target build failure paths are explicitly fail-closed.
+- `633369b` host-gates the native compiler assertion, retains portable stale-addon coverage, and rebuilds generated output in the isolated package-safety suite; that direct command passed 8/8.
 
 ## Task Commits
 

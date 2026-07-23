@@ -206,6 +206,7 @@ None - no external service configuration required.
 - `createNativeExchangeCapabilityObserver` now returns typed `reExportUnsupported` when temporary probe-directory creation, addon loading, primitive probing, or final cleanup fails. A supported capability is returned only after all four complete; cleanup failure downgrades an otherwise-supported probe instead of rejecting the export caller.
 - `scripts/build-native-addon.mjs` builds only the declared `darwin-arm64` target. For every other injected or actual platform/architecture it removes a stale `dist/native/directory_exchange.node` and exits successfully, so an unsupported target reaches the runtime's typed fallback rather than a Darwin compiler failure or stale packaged binary.
 - RED: `6e2f3a9`; GREEN: `fd6b700`. `npx vitest run tests/unit/native-exchange-capability.test.ts tests/unit/build-native-addon.test.ts` passed 4/4; `npm run build` passed the real Darwin addon build.
+- `633369b` gates the real compiler assertion to an actual `darwin-arm64` host while retaining portable injected stale-addon removal coverage. The standalone package-safety suite builds generated runtime output before its eight tests and preserves child stderr in failure messages; `npx vitest run tests/package/agent-ready-export-safety.test.ts` passed 8/8 from that self-contained path.
 
 ## Self-Check: PASSED
 
