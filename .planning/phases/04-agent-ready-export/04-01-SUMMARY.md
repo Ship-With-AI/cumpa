@@ -119,6 +119,10 @@ Wave Four intentionally extended the browser API client, canonical browser state
 
 Phase 04-06 extended `createSessionClient` (lines 1–260, SHA-256 `d8e483860ba4485da35589fc3686c95fe3e4774611fe6ebefe8fe4971b74fae5`) and the review panel (lines 1–537, SHA-256 `bb1bff7864f1fe98fc710e0fcbd78963a17b82025e7e97ed7bb2f82503a9a67f`), and changed Playwright discovery (`playwright.config.ts`, SHA-256 `6704c21c7308a61fc71407f8b9fc8f169048af2bd779d24c9c3a5782952069a2`). This repair refreshed every affected claim and command evidence without weakening validation or changing production source.
 
+## Wave-Five Evidence Refresh
+
+Wave Five changed Playwright discovery and safety harness configuration. This repair refreshed the browser-runner claim to lines 1–23 and SHA-256 `42770db1a998d659f6d2635fa3faa572fe593712fae4e653745ed90eaeed0d85`, including every command owner that grounds `playwright.config.ts`; strict validation and production source remain unchanged.
+
 ## User Setup Required
 
 None - no external service configuration required.
