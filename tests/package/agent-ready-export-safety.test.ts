@@ -1,5 +1,6 @@
-import { chmod, lstat, mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
@@ -22,10 +23,12 @@ import {
 } from '../helpers/source-control-snapshot.js';
 
 const fixtures: DirtyGitFixture[] = [];
+const outsideRoots: string[] = [];
 
 afterEach(async () => {
   await Promise.all(fixtures.splice(0).map((fixture) => fixture.cleanup()));
 });
+  await Promise.all(outsideRoots.splice(0).map((outside) => rm(outside, { recursive: true, force: true })));
 
 describe('agent-ready export source-control safety evidence', () => {
   test('records four dirty real-Git selector fixtures and permits only the exact export and consent outputs', async () => {
@@ -177,5 +180,38 @@ describe('generated publication and recovery safety evidence', () => {
     await expect(runGeneratedRecovery(fixture.root)).resolves.toBeUndefined();
     await expect(readFile(join(remnant, 'preserve-me'), 'utf8')).resolves.toBe('ambiguous restart evidence\n');
   }, 30_000);
+
+  test.each(['.diff-review', 'exports'] as const)(
+    'generated publisher and recovery reject externally directed %s parent symlink',
+    async (managedParent) => {
+      const fixture = await createDirtyGitFixture();
+      fixtures.push(fixture);
+      const outside = await mkdtemp(join(tmpdir(), 'diff-review-export-outside-'));
+      outsideRoots.push(outside);
+      const stableName = `${'1'.repeat(40)}..${'2'.repeat(40)}`;
+      const oldPair = candidatePair(`outside ${managedParent}`);
+      const outsideExportsRoot = managedParent === '.diff-review' ? join(outside, 'exports') : outside;
+      const outsideStable = join(outsideExportsRoot, stableName);
+      await mkdir(outsideStable, { recursive: true });
+      await writeFile(join(outsideStable, 'review.json'), oldPair.json);
+      await writeFile(join(outsideStable, 'review.md'), oldPair.markdown);
+      if (managedParent === '.diff-review') {
+        await symlink(outside, join(fixture.root, '.diff-review'), 'dir');
+      } else {
+        await mkdir(join(fixture.root, '.diff-review'));
+        await symlink(outside, join(fixture.root, '.diff-review', 'exports'), 'dir');
+      }
+
+      await expect(runGeneratedExport(fixture.root, candidatePair('new'), 'unsupported')).resolves.toEqual({
+        kind: 'publicationFailed',
+      });
+      await expect(runGeneratedRecovery(fixture.root)).rejects.toThrow('Generated export child exited');
+      await expect(Promise.all([
+        readFile(join(outsideStable, 'review.json')),
+        readFile(join(outsideStable, 'review.md')),
+      ])).resolves.toEqual([oldPair.json, oldPair.markdown]);
+    },
+    30_000,
+  );
 });
 

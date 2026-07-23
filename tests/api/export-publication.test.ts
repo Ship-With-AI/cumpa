@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -7,7 +7,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
 import { canonicalizeReviewExport } from '../../src/export/review-export.js';
 import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js';
-import { publishReviewExport } from '../../src/server/export-store.js';
+import { publishReviewExport, recoverReviewExport } from '../../src/server/export-store.js';
 
 const roots: string[] = [];
 const baseOid = '1'.repeat(40);
@@ -121,4 +121,41 @@ describe('literal export publication state machine', () => {
     expect(result).toEqual({ kind: 'reExportUnsupported' });
     expect(await readStable(repositoryRoot)).toEqual([oldPair.json.toString('utf8'), oldPair.markdown.toString('utf8')]);
   });
+
+  test.each(['.diff-review', 'exports'] as const)(
+    'rejects %s symlink parent for publication and recovery without touching its target',
+    async (managedParent) => {
+      const repositoryRoot = await root();
+      const outside = await root();
+      const oldPair = candidatePair(`outside ${managedParent}`);
+      const stableName = `${baseOid}..${headOid}`;
+      const outsideExportsRoot = managedParent === '.diff-review' ? join(outside, 'exports') : outside;
+      const outsideStable = join(outsideExportsRoot, stableName);
+      await mkdir(outsideStable, { recursive: true });
+      await writeFile(join(outsideStable, 'review.json'), oldPair.json);
+      await writeFile(join(outsideStable, 'review.md'), oldPair.markdown);
+      if (managedParent === '.diff-review') {
+        await symlink(outside, join(repositoryRoot, '.diff-review'), 'dir');
+      } else {
+        await mkdir(join(repositoryRoot, '.diff-review'));
+        await symlink(outside, join(repositoryRoot, '.diff-review', 'exports'), 'dir');
+      }
+
+      await expect(publishReviewExport({
+        repositoryRoot,
+        baseOid,
+        headOid,
+        json: candidatePair('new').json,
+        markdown: candidatePair('new').markdown,
+        reExportCapability: { kind: 'reExportUnsupported' },
+      })).resolves.toEqual({ kind: 'publicationFailed' });
+      await expect(recoverReviewExport(repositoryRoot, baseOid, headOid)).rejects.toThrow(
+        'Managed export directory is not a real directory.',
+      );
+      await expect(Promise.all([
+        readFile(join(outsideStable, 'review.json')),
+        readFile(join(outsideStable, 'review.md')),
+      ])).resolves.toEqual([oldPair.json, oldPair.markdown]);
+    },
+  );
 });

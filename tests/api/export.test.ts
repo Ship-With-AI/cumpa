@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -142,4 +142,30 @@ describe('secured export and fixed export-directory reveal APIs', () => {
     expect(revealDraftFile).toHaveBeenCalledWith(join(repositoryRoot, '.diff-review', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`));
     expect(JSON.stringify(response.json())).not.toContain(repositoryRoot);
   });
+
+  test.each(['.diff-review', 'exports'] as const)(
+    'refuses reveal through an externally directed %s parent symlink',
+    async (managedParent) => {
+      const { app, repositoryRoot, revealDraftFile } = await buildApp();
+      const outside = await mkdtemp(join(tmpdir(), 'diff-review-export-reveal-outside-'));
+      roots.push(outside);
+      const stableName = `${'1'.repeat(40)}..${'2'.repeat(40)}`;
+      const outsideExportsRoot = managedParent === '.diff-review' ? join(outside, 'exports') : outside;
+      const outsideStable = join(outsideExportsRoot, stableName);
+      await mkdir(outsideStable, { recursive: true });
+      await writeFile(join(outsideStable, 'review.json'), '{}');
+      await writeFile(join(outsideStable, 'review.md'), 'review\n');
+      if (managedParent === '.diff-review') {
+        await symlink(outside, join(repositoryRoot, '.diff-review'), 'dir');
+      } else {
+        await mkdir(join(repositoryRoot, '.diff-review'));
+        await symlink(outside, join(repositoryRoot, '.diff-review', 'exports'), 'dir');
+      }
+
+      const response = await app.inject({ method: 'POST', url: '/api/export/reveal', headers });
+
+      expect(response.statusCode).toBe(500);
+      expect(revealDraftFile).not.toHaveBeenCalled();
+    },
+  );
 });
