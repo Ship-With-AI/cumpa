@@ -23,9 +23,28 @@ async function buildApp() {
     base: { label: 'base', oid: '1'.repeat(40) },
     head: { label: 'head', oid: '2'.repeat(40) },
     mergeBaseOid: '3'.repeat(40),
-    changedFiles: [],
+    changedFiles: [{
+      id: `file_${'b'.repeat(43)}`,
+      status: { code: 'M', kind: 'modified', similarity: null },
+      oldMode: '100644',
+      newMode: '100644',
+      oldBlobOid: '4'.repeat(40),
+      newBlobOid: '5'.repeat(40),
+      oldPath: { utf8: 'review.ts', display: 'review.ts', bytesBase64url: Buffer.from('review.ts').toString('base64url') },
+      newPath: { utf8: 'review.ts', display: 'review.ts', bytesBase64url: Buffer.from('review.ts').toString('base64url') },
+      additions: 1,
+      deletions: 1,
+      availability: { kind: 'text' },
+    }],
     hasCommittedChanges: true,
-  }, { sessionToken: token, revealDraftFile });
+  }, {
+    sessionToken: token,
+    revealDraftFile,
+    objectReader: {
+      inspect: async () => ({ kind: 'available' as const, objectType: 'blob' as const, size: 11 }),
+      read: async () => ({ kind: 'available' as const, bytes: Buffer.from('review line\n') }),
+    },
+  });
   app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
   apps.add(app);
   return { app, repositoryRoot, revealDraftFile };
@@ -54,8 +73,46 @@ describe('secured export and fixed export-directory reveal APIs', () => {
     ]) {
       const response = await app.inject({ method: 'POST', url: '/api/export/reveal', headers: deniedHeaders });
       expect([401, 403]).toContain(response.statusCode);
+
       expect(revealDraftFile).not.toHaveBeenCalled();
     }
+  });
+
+  test('exports one accepted revision only after server-side snapshot validation and returns final bounded receipts', async () => {
+    const { app, repositoryRoot } = await buildApp();
+    const draft = await app.inject({
+      method: 'POST',
+      url: '/api/draft/mutations',
+      headers,
+      payload: {
+        type: 'addComment',
+        expectedRevision: 0,
+        fileId: `file_${'b'.repeat(43)}`,
+        side: 'head',
+        line: 1,
+        body: 'Keep this exact line.',
+      },
+    });
+    expect(draft.statusCode).toBe(201);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/export',
+      headers,
+      payload: { expectedRevision: 1 },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({
+      kind: 'exported',
+      draftRevision: 1,
+      driftAcknowledged: false,
+      files: [
+        { path: `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}/review.json` },
+        { path: `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}/review.md` },
+      ],
+    });
+    expect(JSON.stringify(response.json())).not.toContain(repositoryRoot);
   });
 
   test('rejects export replacement authority and fixed reveal body, query, and wrong methods', async () => {
