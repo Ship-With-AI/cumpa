@@ -216,7 +216,7 @@ test.beforeAll(() => {
 
 test.afterAll(() => rmSync(packedRoot, { recursive: true, force: true }));
 
-test('packaged-resume-after-relaunch preserves accepted review state, atomically re-exports the pinned pair, and recovers exact bytes', async ({ browser, page }, testInfo) => {
+test('packaged-resume-after-relaunch preserves accepted review state, completes target-aware second export, and recovers exact bytes', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
   const before = await captureSourceControlSnapshot(fixture.root);

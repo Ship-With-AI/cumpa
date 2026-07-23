@@ -12,7 +12,7 @@ const projectRoot = resolve(import.meta.dirname, '../..');
 const packagedCli = join(projectRoot, 'dist', 'bin', 'diff-review.mjs');
 const playwrightExecutable = join(projectRoot, 'node_modules', '.bin', 'playwright');
 const scenarioCommand = ['test', 'tests/e2e'] as const;
-const resumeTest = 'packaged-resume-after-relaunch preserves accepted review state, atomically re-exports the pinned pair, and recovers exact bytes';
+const resumeTest = 'packaged-resume-after-relaunch preserves accepted review state, completes target-aware second export, and recovers exact bytes';
 
 const requirements = [
   'EXP-01', 'EXP-02', 'EXP-03', 'EXP-04', 'EXP-05', 'EXP-06', 'EXP-07', 'EXP-08', 'SAFE-04',
