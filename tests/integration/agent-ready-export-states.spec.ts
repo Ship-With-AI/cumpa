@@ -44,6 +44,32 @@ test('exports only the accepted revision and preserves unsaved buffers through a
   expect(review.snapshot().export).toMatchObject({ pending: false, failure: 'publicationFailed' });
 });
 
+test('rejects malformed exported receipt ordering and pairing in the browser client', async () => {
+  const firstDirectory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
+  const secondDirectory = `.diff-review/exports/${'3'.repeat(40)}..${'4'.repeat(40)}`;
+  const json = { path: `${firstDirectory}/review.json`, algorithm: 'sha256', sha256: 'a'.repeat(64), bytes: 128 };
+  const markdown = { path: `${firstDirectory}/review.md`, algorithm: 'sha256', sha256: 'b'.repeat(64), bytes: 256 };
+  for (const files of [
+    [markdown, json],
+    [json, { ...json, sha256: 'c'.repeat(64) }],
+    [json, { ...markdown, path: `${secondDirectory}/review.md` }],
+  ]) {
+    const client = createSessionClient({
+      location: { hash: `#token=${token}`, pathname: '/', search: '' },
+      history: { state: null, replaceState() {} },
+      fetch: async () => new Response(JSON.stringify({
+        kind: 'exported',
+        draftRevision: 1,
+        exportedAt: '2026-07-23T12:34:56.000Z',
+        driftAcknowledged: false,
+        files,
+      }), { status: 201 }),
+    });
+
+    await expect(client.exportReview({ expectedRevision: 1 })).rejects.toMatchObject({ kind: 'draft' });
+  }
+});
+
 test('requires the latest drift acknowledgement before showing accepted-pair export progress', () => {
   const review = createReviewDraftState({ revision: 7, summary: '', comments: [] });
   const observation = {

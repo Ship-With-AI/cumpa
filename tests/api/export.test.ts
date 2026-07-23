@@ -6,6 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import { createSessionApp } from '../../src/server/app.js';
+import { ExportReviewResultSchema } from '../../src/contracts/api.js';
 
 const token = 'a'.repeat(43);
 const host = '127.0.0.1:43130';
@@ -55,6 +56,16 @@ async function writeCompleteExport(repositoryRoot: string): Promise<void> {
   await mkdir(directory, { recursive: true });
   await writeFile(join(directory, 'review.json'), '{}');
   await writeFile(join(directory, 'review.md'), 'review\n');
+}
+
+function exportedReceipt(files: readonly Readonly<{ readonly path: string; readonly sha256: string; readonly bytes: number }>[]) {
+  return {
+    kind: 'exported',
+    draftRevision: 1,
+    exportedAt: '2026-07-23T12:34:56.000Z',
+    driftAcknowledged: false,
+    files: files.map((file) => ({ algorithm: 'sha256', ...file })),
+  };
 }
 
 afterEach(async () => {
@@ -141,6 +152,22 @@ describe('secured export and fixed export-directory reveal APIs', () => {
     expect(response.json()).toEqual({ kind: 'revealed' });
     expect(revealDraftFile).toHaveBeenCalledWith(join(repositoryRoot, '.diff-review', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`));
     expect(JSON.stringify(response.json())).not.toContain(repositoryRoot);
+  });
+
+  test('rejects malformed confirmed receipts before API clients can mislabel the pair', () => {
+    const firstDirectory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
+    const secondDirectory = `.diff-review/exports/${'3'.repeat(40)}..${'4'.repeat(40)}`;
+    const json = { path: `${firstDirectory}/review.json`, sha256: 'a'.repeat(64), bytes: 128 };
+    const markdown = { path: `${firstDirectory}/review.md`, sha256: 'b'.repeat(64), bytes: 256 };
+
+    expect(ExportReviewResultSchema.safeParse(exportedReceipt([json, markdown])).success).toBe(true);
+    for (const files of [
+      [markdown, json],
+      [json, { ...json, sha256: 'c'.repeat(64) }],
+      [json, { ...markdown, path: `${secondDirectory}/review.md` }],
+    ]) {
+      expect(ExportReviewResultSchema.safeParse(exportedReceipt(files)).success).toBe(false);
+    }
   });
 
   test.each(['.diff-review', 'exports'] as const)(
