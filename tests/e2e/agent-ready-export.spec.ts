@@ -223,6 +223,8 @@ test('packaged-resume-after-relaunch preserves accepted review state, atomically
   let terminatedGeneratedProcesses = 0;
   let closedBrowserPages = 0;
   let running = startGeneratedCli(fixture, original);
+  let firstExportReceiptPaths: readonly string[] = [];
+  let reExportReceiptPaths: readonly string[] = [];
 
   try {
     await openSession(page, await waitForLoopbackUrl(running));
@@ -255,7 +257,10 @@ test('packaged-resume-after-relaunch preserves accepted review state, atomically
     const firstExportResponse = await exported;
     expect(firstExportResponse.status()).toBe(201);
     const firstExportResult = ExportReviewResultSchema.parse(await firstExportResponse.json());
-    expect(firstExportResult.kind).toBe('exported');
+    if (firstExportResult.kind !== 'exported') {
+      throw new Error(`Expected first export receipt, received ${firstExportResult.kind}.`);
+    }
+    firstExportReceiptPaths = firstExportResult.files.map((file) => file.path);
     await expect(resumedPage.getByRole('heading', { name: 'Review export complete' })).toBeVisible();
 
     const reExported = resumedPage.waitForResponse((response) => response.url().includes('/api/export'));
@@ -263,7 +268,10 @@ test('packaged-resume-after-relaunch preserves accepted review state, atomically
     const reExportResponse = await reExported;
     expect(reExportResponse.status()).toBe(201);
     const reExportResult = ExportReviewResultSchema.parse(await reExportResponse.json());
-    expect(reExportResult.kind).toBe('exported');
+    if (reExportResult.kind !== 'exported') {
+      throw new Error(`Expected native re-export receipt, received ${reExportResult.kind}.`);
+    }
+    reExportReceiptPaths = reExportResult.files.map((file) => file.path);
     expect(reExportResult).not.toMatchObject({ kind: 'reExportUnsupported' });
 
     const stablePairDirectory = join(
@@ -355,6 +363,8 @@ test('packaged-resume-after-relaunch preserves accepted review state, atomically
         differentOrderedPair: { baseOid, headOid: alternateHeadOid },
         export: {
           receiptPaths: ['review.json', 'review.md'],
+          firstReceiptPaths: firstExportReceiptPaths,
+          reExportReceiptPaths,
           acceptedDraftRevision: document.acceptedDraftRevision,
           jsonSha256,
           markdownSha256,

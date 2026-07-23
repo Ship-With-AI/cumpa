@@ -10,7 +10,7 @@ const projectRoot = resolve(import.meta.dirname, '../..');
 const packagedCli = join(projectRoot, 'dist', 'bin', 'diff-review.mjs');
 const playwrightExecutable = join(projectRoot, 'node_modules', '.bin', 'playwright');
 const scenarioCommand = ['test', 'tests/e2e'] as const;
-const resumeTest = 'packaged-resume-after-relaunch preserves accepted review state, separates ordered pairs, and exports exact recovered bytes';
+const resumeTest = 'packaged-resume-after-relaunch preserves accepted review state, atomically re-exports the pinned pair, and recovers exact bytes';
 
 const requirements = [
   'EXP-01', 'EXP-02', 'EXP-03', 'EXP-04', 'EXP-05', 'EXP-06', 'EXP-07', 'EXP-08', 'SAFE-04',
@@ -57,6 +57,8 @@ interface ScenarioEvidenceReport {
     readonly differentOrderedPair: { readonly baseOid: string; readonly headOid: string };
     readonly export: {
       readonly receiptPaths: readonly string[];
+      readonly firstReceiptPaths: readonly string[];
+      readonly reExportReceiptPaths: readonly string[];
       readonly acceptedDraftRevision: number;
       readonly jsonSha256: string;
       readonly markdownSha256: string;
@@ -96,6 +98,12 @@ function runPackagedScenario(): ScenarioEvidenceReport {
     assertSha256(report.packageArtifact.packedSha256);
     expect(report.packageArtifact.packedSha256).toBe(report.packageArtifact.sourceSha256);
     expect(report.execution.selectorKind).toBe('branch-to-worktree');
+  const expectedReceiptPaths = [
+    `.diff-review/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.json`,
+    `.diff-review/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.md`,
+  ];
+  expect(report.execution.export.firstReceiptPaths).toEqual(expectedReceiptPaths);
+  expect(report.execution.export.reExportReceiptPaths).toEqual(expectedReceiptPaths);
     expect(report.execution.originalOrderedFullOidPair).toMatchObject({
       baseOid: expect.stringMatching(/^[a-f0-9]{40,64}$/),
       headOid: expect.stringMatching(/^[a-f0-9]{40,64}$/),
