@@ -93,3 +93,16 @@ test('requires the latest drift acknowledgement before showing the accepted-pair
   });
   expect(review.startExport('first-token')).toBe(false);
 });
+
+test('keeps recovery-required export state distinct from ordinary publication failure', () => {
+  const review = createReviewDraftState({ revision: 7, summary: '', comments: [] });
+
+  expect(review.startExport()).toBe(true);
+  review.completeExport({ kind: 'recoveryRequired' });
+
+  expect(review.snapshot().export).toMatchObject({
+    pending: false,
+    phase: 'failed',
+    failure: 'recoveryRequired',
+  });
+});

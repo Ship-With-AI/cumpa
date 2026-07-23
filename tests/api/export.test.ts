@@ -170,6 +170,35 @@ describe('secured export and fixed export-directory reveal APIs', () => {
     }
   });
 
+  test('accepts only server-confirmed receipt drift identities and the distinct recovery-required result', () => {
+    const directory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
+    const receipt = exportedReceipt([
+      { path: `${directory}/review.json`, sha256: 'a'.repeat(64), bytes: 128 },
+      { path: `${directory}/review.md`, sha256: 'b'.repeat(64), bytes: 256 },
+    ]);
+
+    expect(ExportReviewResultSchema.safeParse({
+      ...receipt,
+      driftAcknowledged: true,
+      drift: {
+        kind: 'acknowledged',
+        identities: [
+          {
+            role: 'base',
+            pinned: { label: 'base', selectorType: 'branch', oid: '1'.repeat(40) },
+            current: { kind: 'available', label: 'base', selectorType: 'branch', oid: '3'.repeat(40) },
+          },
+          {
+            role: 'head',
+            pinned: { label: 'head', selectorType: 'worktree', oid: '2'.repeat(40) },
+            current: { kind: 'unavailable', label: 'head', selectorType: 'worktree', reason: 'source-unavailable' },
+          },
+        ],
+      },
+    }).success).toBe(true);
+    expect(ExportReviewResultSchema.safeParse({ kind: 'recoveryRequired' }).success).toBe(true);
+  });
+
   test.each(['.diff-review', 'exports'] as const)(
     'refuses reveal through an externally directed %s parent symlink',
     async (managedParent) => {
