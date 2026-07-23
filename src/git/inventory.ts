@@ -6,6 +6,7 @@ import type {
   ChangedFileStatusKind,
 } from '../contracts/comparison.js';
 import type { ExactPath } from '../domain/path-bytes.js';
+import { decodeBase64url } from '../domain/path-bytes.js';
 import { classifyAvailability } from './availability.js';
 import { createObjectReader } from './objects.js';
 import type { ObjectReader } from './objects.js';
@@ -63,6 +64,24 @@ const sharedDiffOptions = [
   '--no-ext-diff',
   '--no-textconv',
 ] as const;
+
+const diffReviewPath = Buffer.from('.diff-review', 'ascii');
+const diffReviewPathPrefix = Buffer.from('.diff-review/', 'ascii');
+
+function isDiffReviewInternalPath(path: ExactPath | undefined): boolean {
+  if (path === undefined) {
+    return false;
+  }
+
+  const bytes = decodeBase64url(path.bytesBase64url);
+  if (bytes.byteLength === diffReviewPath.byteLength) {
+    return bytes.every((byte, index) => byte === diffReviewPath[index]);
+  }
+  return (
+    bytes.byteLength > diffReviewPathPrefix.byteLength &&
+    diffReviewPathPrefix.every((byte, index) => byte === bytes[index])
+  );
+}
 
 function recordIdentity(record: RawDiffRecord): string {
   return JSON.stringify([
@@ -151,6 +170,10 @@ export async function createChangedFileInventory(
     parseRawDiff(rawResult.stdout),
     parseNumstat(numstatResult.stdout),
   );
+  const reviewable = joined.filter(({ diff }) => {
+    const { oldPath, newPath } = inventoryPaths(diff);
+    return !isDiffReviewInternalPath(oldPath) && !isDiffReviewInternalPath(newPath);
+  });
   const namespace = options.fileIdNamespace ?? processFileIdNamespace;
   if (namespace.byteLength === 0) {
     throw new RangeError('File ID namespace must not be empty');
@@ -160,7 +183,7 @@ export async function createChangedFileInventory(
     dependencies.objectReader ??
     createObjectReader(options.repositoryRoot, { runner });
   const files = await Promise.all(
-    joined.map(async ({ diff, stats }) => {
+    reviewable.map(async ({ diff, stats }) => {
       validateObjectFormat(diff, options.objectFormat);
       const knownStatus = statusKindByCode[diff.status];
       const hasUnsupportedMetadata =
