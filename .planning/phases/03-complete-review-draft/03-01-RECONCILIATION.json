@@ -1,0 +1,320 @@
+{
+  "schemaVersion": 1,
+  "status": "complete",
+  "approval": {
+    "status": "approved",
+    "response": "approved",
+    "recordedOn": "2026-07-22",
+    "covers": [
+      "Phase 1/2 prerequisite source and actual extension owners",
+      "executable and argument-array command matrix",
+      "Markdown compiler/declaration decision procedure",
+      "revealDraftFile MUST_IMPLEMENT_03_03 disposition",
+      "selectorRelaunch CLI_RELAUNCH disposition",
+      "below-15 actual-file recount",
+      "prohibition on parallel schemas, stores, apps, clients, canonical indexes, and Monaco adapters"
+    ],
+    "downstreamPlansUnblocked": ["03-02", "03-03", "03-04", "03-05", "03-06", "03-07"]
+  },
+  "plan": "03-01",
+  "scope": {
+    "inspectionOnly": true,
+    "createdOutputs": [
+      ".planning/phases/03-complete-review-draft/03-01-SUMMARY.md",
+      ".planning/phases/03-complete-review-draft/03-01-RECONCILIATION.json"
+    ],
+    "forbiddenChanges": [
+      "product source",
+      "tests",
+      "package.json",
+      "package-lock.json",
+      "existing planning artifacts",
+      "ROADMAP.md",
+      "STATE.md"
+    ]
+  },
+  "versions": {
+    "nodeEngine": ">=24",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10",
+    "playwright": "1.61.1",
+    "fastify": "5.10.0",
+    "zod": "4.4.3",
+    "vue": "3.5.39",
+    "monacoEditor": "0.55.1",
+    "markdownParser": "not installed"
+  },
+  "paths": {
+    "draftContract": {
+      "owner": "src/contracts/draft.ts",
+      "currentSchema": "ReviewDraftV1Schema",
+      "currentVersion": 1,
+      "extensionRule": "Extend this single strict Zod owner; do not create a parallel draft schema/versioned store.",
+      "facts": [
+        "schemaVersion literal 1",
+        "comparison tuple base/head/merge-base",
+        "revision nonnegative integer",
+        "summary currently literal empty string",
+        "comments maximum 10000",
+        "comment body trim/minimum-1/maximum-100000",
+        "existing comments are open only"
+      ]
+    },
+    "apiContract": {
+      "owner": "src/contracts/api.ts",
+      "extensionRule": "Extend the shared API Zod owner alongside draft.ts; browser request/response types remain derived here."
+    },
+    "draftIdentity": {
+      "keyOwner": "src/domain/comparison-key.ts",
+      "keyFunction": "comparisonKey(baseCommitOid, headCommitOid)",
+      "draftPathOwner": "src/server/draft-store.ts",
+      "pathRule": ".diff-review/drafts/<server-computed comparisonKey>.json",
+      "identityRule": "Ordered selected base/head full OIDs determine the draft; merge-base is recorded but not key authority."
+    },
+    "persistence": {
+      "owner": "src/server/draft-store.ts",
+      "publicStore": "createDraftStore({ repositoryRoot, comparison, fileSystem? })",
+      "serialization": "one in-process queue per repository root plus comparison key",
+      "atomicWrite": "strict whole-document validation; restrictive sibling wx temp; write/sync/close; rename over canonical; sync directory where supported; cleanup temp on failure",
+      "extensionRule": "Put all six Phase 3 mutation operations and expected-revision CAS in this owner. Do not add a second store, queue, writer, or draft pathname.",
+      "existingInvariant": "appendComment rejects an occupied exact anchor through DraftConflictError, preserving one accepted comment per anchor."
+    },
+    "draftLoading": {
+      "currentOwner": "src/server/draft-store.ts",
+      "neededOwner": "src/server/draft-loader.ts",
+      "disposition": "MUST_CREATE_03_03",
+      "rule": "A raw-byte loader/recovery classifier must sit ahead of normal store mutation; malformed/schema-invalid bytes remain untouched and newer versions remain read-only."
+    },
+    "fastify": {
+      "appOwner": "src/server/app.ts#createSessionApp",
+      "routeOwner": "src/server/routes.ts#registerSessionRoutes",
+      "securityOwner": "src/server/security.ts#registerSessionSecurity",
+      "order": "createSessionApp registers session security before registerSessionRoutes and static assets",
+      "extensionRule": "Add every draft/reveal/drift route to this one registry and inherit token, Host, and Origin hooks; do not construct another Fastify app or unguarded route plugin."
+    },
+    "capabilities": {
+      "owner": "src/server/capabilities.ts#createCapabilityRegistry",
+      "facts": [
+        "frozen opaque file IDs",
+        "fixed object reader",
+        "server-owned draftStore",
+        "server-owned verifyAnchor",
+        "optional server-side onAnchorAdd"
+      ],
+      "rule": "Browser never supplies repository, path, ref, object, comparison key, draft path, anchor facts, or selector authority."
+    },
+    "client": {
+      "owner": "src/web/api/client.ts#createSessionClient",
+      "facts": [
+        "fragment token captured then removed",
+        "fixed GET/POST request closure",
+        "Bearer header",
+        "same-origin credentials",
+        "no-store",
+        "strict Zod response parsing"
+      ],
+      "extensionRule": "Add fixed no-body mutation/reveal/drift client calls here; no alternate HTTP client or URL authority surface."
+    },
+    "vueCanonicalState": {
+      "owner": "src/web/model/workspace-state.ts#createWorkspaceState",
+      "facts": [
+        "canonical accepted comment collection",
+        "per-file session-only view/focus/context",
+        "independent composer body/pending/error buffer",
+        "typed command stream"
+      ],
+      "extensionRule": "Evolve this canonical state owner or make an explicitly replacing successor only; never maintain competing comment indices. Every attempted edit/summary buffer remains local across failure/conflict."
+    },
+    "reviewSurface": {
+      "appOwner": "src/web/App.vue",
+      "workspaceOwner": "src/web/components/DiffWorkspace.vue",
+      "railOwner": "src/web/components/CommentsRail.vue",
+      "composerOwner": "src/web/components/CommentComposer.vue",
+      "primitiveOwner": "src/web/components/ui/UiPrimitives.vue",
+      "rule": "Extend the existing rail/workspace/composer and local primitives; preserve exact-show navigation through workspace commands."
+    },
+    "monaco": {
+      "singleAdapter": "src/web/monaco/diff-adapter.ts#createMonacoDiffAdapter",
+      "commandBridge": "src/web/monaco/diff-adapter.ts#applyMonacoWorkspaceCommand",
+      "exactVerifier": "src/domain/anchor.ts#verifyDurableAnchor",
+      "lifecycle": "Adapter owns immutable models, decorations, zones, listeners, hidden-context reveal, and disposal; Vue owns persistence and DOM focus.",
+      "rule": "Use show-comment/reveal commands and this adapter only; no second editor adapter, direct Monaco private state, fuzzy relocation, or duplicate zone lifecycle."
+    },
+    "git": {
+      "runner": "src/git/runner.ts#createGitRunner",
+      "sourceSeams": ["src/git/candidates.ts", "src/domain/source.ts", "src/git/comparison.ts"],
+      "rule": "Use installed Git through fixed argument arrays and the server-retained launch descriptor. No shell interpolation, browser selector input, or current-session comparison refresh."
+    },
+    "testHarnesses": {
+      "filesystemFault": ["src/server/draft-store.ts DraftFileSystem injection", "tests/api/draft-atomicity.test.ts"],
+      "fastifyInject": "tests/api/*.test.ts",
+      "realGit": ["tests/helpers/git-fixture.ts", "tests/git/*.test.ts"],
+      "realMonaco": ["tests/integration/monaco-anchor.spec.ts", "tests/integration/anchored-workspace.spec.ts"],
+      "packagedPlaywright": "tests/e2e/anchored-review.spec.ts"
+    }
+  },
+  "commands": {
+    "03-02-task-1-red": {
+      "executable": "npm",
+      "args": ["run", "test:unit", "--", "tests/unit/draft-mutations.test.ts"],
+      "resolvedTestPaths": ["tests/unit/draft-mutations.test.ts"],
+      "responsibility": "RED pure draft mutation/revision/transition contract."
+    },
+    "03-02-task-2-green": {
+      "executable": "node",
+      "args": ["-e", "const{spawnSync}=require('node:child_process');for(const a of [['run','test:unit','--','tests/unit/draft-mutations.test.ts'],['run','test:api','--','tests/api/draft-lifecycle.test.ts','tests/api/draft-conflict.test.ts']]){const r=spawnSync('npm',a,{stdio:'inherit'});if(r.status!==0)process.exit(r.status??1)}"],
+      "resolvedTestPaths": ["tests/unit/draft-mutations.test.ts", "tests/api/draft-lifecycle.test.ts", "tests/api/draft-conflict.test.ts"],
+      "responsibility": "GREEN aggregate draft lifecycle and expected-revision CAS boundary."
+    },
+    "03-02-task-3-refactor": {
+      "executable": "node",
+      "args": ["-e", "const{spawnSync}=require('node:child_process');for(const a of [['run','test:unit','--','tests/unit/draft-mutations.test.ts'],['run','test:api','--','tests/api/draft-lifecycle.test.ts','tests/api/draft-conflict.test.ts']]){const r=spawnSync('npm',a,{stdio:'inherit'});if(r.status!==0)process.exit(r.status??1)}"],
+      "resolvedTestPaths": ["tests/unit/draft-mutations.test.ts", "tests/api/draft-lifecycle.test.ts", "tests/api/draft-conflict.test.ts"],
+      "responsibility": "Focused post-refactor regression for the same contract."
+    },
+    "03-03-task-1-load-recovery": {
+      "executable": "node",
+      "args": ["-e", "const{spawnSync}=require('node:child_process');for(const a of [['run','test:unit','--','tests/unit/draft-load.test.ts'],['run','test:api','--','tests/api/draft-recovery.test.ts','tests/api/draft-recovery-faults.test.ts','tests/api/draft-reveal.test.ts']]){const r=spawnSync('npm',a,{stdio:'inherit'});if(r.status!==0)process.exit(r.status??1)}"],
+      "resolvedTestPaths": ["tests/unit/draft-load.test.ts", "tests/api/draft-recovery.test.ts", "tests/api/draft-recovery-faults.test.ts", "tests/api/draft-reveal.test.ts"],
+      "responsibility": "Raw-byte classification, backup-first recovery, newer-version immutability, and fixed reveal API."
+    },
+    "03-04-task-1-markdown-registry": {
+      "executable": "node",
+      "args": ["-e", "const fs=require('node:fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));const l=JSON.parse(fs.readFileSync('package-lock.json','utf8'));if(p.dependencies?.['markdown-it']||p.devDependencies?.['markdown-it']||l.packages?.['node_modules/markdown-it'])throw Error('Markdown parser was not approval-gated');if(!p.devDependencies?.typescript)throw Error('TypeScript compiler missing');console.log('registry/import decision remains approval-gated')"],
+      "resolvedTestPaths": [],
+      "responsibility": "Pre-install registry gate; after human approval, inspect the approved locked parser package declaration metadata, then run npm exec tsc -- --noEmit --project tsconfig.json against the planned importer. Add external declarations only if that actual compiler/import check reports missing declarations."
+    },
+    "03-04-task-2-review-panel": {
+      "executable": "node",
+      "args": ["-e", "const{spawnSync}=require('node:child_process');for(const a of [['run','test:unit','--','tests/unit/comment-groups.test.ts','tests/unit/markdown-preview.test.ts'],['run','test:browser','--','tests/integration/complete-review-panel.spec.ts']]){const r=spawnSync('npm',a,{stdio:'inherit'});if(r.status!==0)process.exit(r.status??1)}"],
+      "resolvedTestPaths": ["tests/unit/comment-groups.test.ts", "tests/unit/markdown-preview.test.ts", "tests/integration/complete-review-panel.spec.ts"],
+      "responsibility": "Derived groups/counts, safe Markdown preview, edit/delete/resolve/reopen/summary panel behavior."
+    },
+    "03-04-task-3-review-panel-refactor": {
+      "executable": "node",
+      "args": ["-e", "const{spawnSync}=require('node:child_process');for(const a of [['run','test:unit','--','tests/unit/comment-groups.test.ts','tests/unit/markdown-preview.test.ts'],['run','test:browser','--','tests/integration/complete-review-panel.spec.ts']]){const r=spawnSync('npm',a,{stdio:'inherit'});if(r.status!==0)process.exit(r.status??1)}"],
+      "resolvedTestPaths": ["tests/unit/comment-groups.test.ts", "tests/unit/markdown-preview.test.ts", "tests/integration/complete-review-panel.spec.ts"],
+      "responsibility": "Focused post-refactor review panel regression."
+    },
+    "03-05-task-1-recovery-ui": {
+      "executable": "npm",
+      "args": ["run", "test:browser", "--", "tests/integration/draft-recovery-ui.spec.ts"],
+      "resolvedTestPaths": ["tests/integration/draft-recovery-ui.spec.ts"],
+      "responsibility": "Malformed/schema-invalid recovery, backup confirmation, and newer-schema upgrade-only UI."
+    },
+    "03-06-task-1-git-api": {
+      "executable": "node",
+      "args": ["-e", "const{spawnSync}=require('node:child_process');for(const a of [['run','test:git','--','tests/git/selector-drift.test.ts'],['run','test:api','--','tests/api/selector-drift.test.ts']]){const r=spawnSync('npm',a,{stdio:'inherit'});if(r.status!==0)process.exit(r.status??1)}"],
+      "resolvedTestPaths": ["tests/git/selector-drift.test.ts", "tests/api/selector-drift.test.ts"],
+      "responsibility": "Server-retained descriptor, real Git full-OID observation, security-before-Git, and immutable pinned state."
+    },
+    "03-06-task-2-drift-ui": {
+      "executable": "npm",
+      "args": ["run", "test:browser", "--", "tests/integration/selector-drift-ui.spec.ts"],
+      "resolvedTestPaths": ["tests/integration/selector-drift-ui.spec.ts"],
+      "responsibility": "Visible-only coalesced polling and read-only pinned warning UI."
+    },
+    "03-07-task-1-packaged-lifecycle": {
+      "executable": "npm",
+      "args": ["run", "test:package", "--", "tests/e2e/complete-review-draft.spec.ts", "--grep", "complete draft lifecycle|two-tab conflict"],
+      "resolvedTestPaths": ["tests/e2e/complete-review-draft.spec.ts"],
+      "responsibility": "Packaged real-Git/real-Monaco lifecycle, canonical CAS, and retained local buffers."
+    },
+    "03-07-task-2-packaged-safety": {
+      "executable": "npm",
+      "args": ["run", "test:package", "--", "tests/e2e/complete-review-draft.spec.ts", "--grep", "corrupt|newer|drift|security|reveal"],
+      "resolvedTestPaths": ["tests/e2e/complete-review-draft.spec.ts"],
+      "responsibility": "Packaged recovery/newer/drift/security/reveal exclusion acceptance."
+    }
+  },
+  "markdownDeclarations": {
+    "currentState": "No Markdown parser or declaration package is currently present in package.json or package-lock.json.",
+    "decision": "DEFERRED_UNTIL_03_04_APPROVED_REGISTRY_ARTIFACT",
+    "procedure": [
+      "Obtain the human-approved parser name, version, registry evidence, and lockfile update in 03-04 Task 1.",
+      "Inspect the installed approved package metadata for bundled types or typings.",
+      "Run npm exec tsc -- --noEmit --project tsconfig.json after the planned importer is introduced.",
+      "Add an external declaration package only when that actual compiler/import check reports missing declarations."
+    ],
+    "prohibition": "Do not assume markdown-it or @types/markdown-it before the approved artifact and compiler evidence."
+  },
+  "revealDraftFile": {
+    "disposition": "MUST_IMPLEMENT_03_03",
+    "evidence": "Current src routes/client/capability surfaces contain no fixed no-body active-draft reveal action; source search finds only Monaco comment/context reveal operations.",
+    "requiredBoundary": "Fixed active launch-owned draft only, standard token/Host/Origin checks before platform adapter work, no body/query/path authority, safe relative display only."
+  },
+  "selectorRelaunch": {
+    "disposition": "CLI_RELAUNCH",
+    "evidence": "No existing authorized fixed no-body new-comparison capability is present in the current app/routes/client. Current Phase 1 session guidance already requires terminal relaunch.",
+    "requiredUI": "03-06 must display CLI relaunch guidance and must not invent a callable current-session refresh action."
+  },
+  "fileCounts": {
+    "03-02": {
+      "actualFiles": ["src/contracts/draft.ts", "src/contracts/api.ts", "src/draft/mutate-draft.ts", "src/server/draft-store.ts", "src/server/routes.ts", "src/web/api/client.ts", "tests/unit/draft-mutations.test.ts", "tests/api/draft-lifecycle.test.ts", "tests/api/draft-conflict.test.ts"],
+      "uniqueCount": 9,
+      "disposition": "UNDER_15"
+    },
+    "03-03": {
+      "actualFiles": ["src/contracts/draft.ts", "src/contracts/api.ts", "src/server/draft-loader.ts", "src/server/draft-recovery.ts", "src/server/draft-store.ts", "src/server/capabilities.ts", "src/server/routes.ts", "src/web/api/client.ts", "tests/unit/draft-load.test.ts", "tests/api/draft-recovery.test.ts", "tests/api/draft-recovery-faults.test.ts", "tests/api/draft-reveal.test.ts"],
+      "uniqueCount": 12,
+      "disposition": "UNDER_15"
+    },
+    "03-04": {
+      "actualFiles": ["package.json", "package-lock.json", "src/web/api/client.ts", "src/web/model/workspace-state.ts", "src/web/model/comment-groups.ts", "src/web/model/markdown-preview.ts", "src/web/components/CommentsRail.vue", "src/web/components/ReviewPanel.vue", "src/web/components/SummarySection.vue", "src/web/components/CommentComposer.vue", "src/web/styles.css", "tests/unit/comment-groups.test.ts", "tests/unit/markdown-preview.test.ts", "tests/integration/complete-review-panel.spec.ts"],
+      "uniqueCount": 14,
+      "disposition": "UNDER_15"
+    },
+    "03-05": {
+      "actualFiles": ["src/web/App.vue", "src/web/model/workspace-state.ts", "src/web/components/DraftRecovery.vue", "src/web/styles.css", "tests/integration/draft-recovery-ui.spec.ts"],
+      "uniqueCount": 5,
+      "disposition": "UNDER_15"
+    },
+    "03-06": {
+      "actualFiles": ["src/contracts/api.ts", "src/server/capabilities.ts", "src/git/selector-drift.ts", "src/server/routes.ts", "src/web/api/client.ts", "src/web/model/selector-drift-state.ts", "src/web/components/SelectorDriftNotice.vue", "src/web/App.vue", "tests/git/selector-drift.test.ts", "tests/api/selector-drift.test.ts", "tests/integration/selector-drift-ui.spec.ts"],
+      "uniqueCount": 11,
+      "disposition": "UNDER_15"
+    },
+    "03-07": {
+      "actualFiles": ["tests/helpers/git-fixture.ts", "tests/e2e/complete-review-draft.spec.ts", "src/server/app.ts", "src/web/App.vue"],
+      "uniqueCount": 4,
+      "disposition": "UNDER_15"
+    }
+  },
+  "coverage": {
+    "decisions": {
+      "D-01": "Open-first exact-path groups and collapsed resolved group: workspace-state + CommentGroups + CommentsRail.",
+      "D-02": "Show comment uses workspace command sequence and single Monaco adapter exact reveal/focus; never relocates.",
+      "D-03": "Inline edit uses independent workspace composer buffer and explicit save through contract/store/client.",
+      "D-04": "Hard delete confirmation plus deterministic successor focus belongs in mutation reducer, workspace state, panel, and rail.",
+      "D-05": "No tombstones, undo, threads, or replies; mutations remove the canonical record.",
+      "D-06": "Resolve/reopen are legal atomic transitions through one store/CAS path.",
+      "D-07": "Summary is a persistent top-of-review surface in draft contract, state, API, and SummarySection.",
+      "D-08": "One canonical Markdown edit/preview representation; safe preview decision is approval-gated.",
+      "D-09": "Explicit save or Cmd/Ctrl+Enter writes the whole draft with expected revision.",
+      "D-10": "Every failure retains attempted local buffers; never optimistically replace canonical state.",
+      "D-11": "Empty summary is valid canonical state.",
+      "D-12": "One whole-draft monotonic revision is owned by contracts and draft-store serialization.",
+      "D-13": "Expected-revision CAS returns conflict/latest and writes zero bytes when stale.",
+      "D-14": "Reload latest retains attempts; no automatic merge, force write, or retry.",
+      "D-15": "Raw malformed/schema-invalid bytes are preserved and read-only until verified backup-first recovery.",
+      "D-16": "Recovery makes an identical verified backup before start-fresh replacement.",
+      "D-17": "Newer schema bytes remain immutable and expose upgrade guidance only."
+    },
+    "requirements": {
+      "CMT-03": "Edit: contract/store/routes/client/workspace composer/panel packaged acceptance.",
+      "CMT-04": "Delete: contract/store/routes/client/workspace state/panel deterministic focus packaged acceptance.",
+      "CMT-05": "Resolve/reopen: legal transition reducer/store/CAS/client/grouped UI packaged acceptance.",
+      "CMT-06": "Counts/groups/jump: pure grouping, rail, workspace commands, exact Monaco adapter navigation.",
+      "CMT-07": "One summary: contract/store/routes/client/canonical state/SummarySection safe preview and CAS.",
+      "DRFT-04": "Serialized whole-draft expected-revision CAS with conflict/latest and no stale write.",
+      "DRFT-05": "Raw loader/classifier, backup-first recovery, newer read-only state, fixed reveal action.",
+      "DRFT-06": "Server-retained selector descriptor, fixed Git runner, secured observation route, read-only warning state."
+    }
+  },
+  "nonNegotiableProhibitions": [
+    "No parallel schema/store/app/client/canonical comment index/Monaco adapter.",
+    "No browser draft path, repository, selector, OID, ref, worktree, blob, anchor, or comparison authority.",
+    "No fuzzy anchor relocation, source mutation, silent comparison refresh, soft delete/undo, threads/replies, automatic merge, or force overwrite.",
+    "No Phase 4 export behavior."
+  ]
+}
