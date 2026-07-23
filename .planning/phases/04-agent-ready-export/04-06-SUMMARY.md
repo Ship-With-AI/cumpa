@@ -91,6 +91,8 @@ The focused browser result test covers all three rendered outcomes after the exi
 
 9. **UI audit remediation RED/GREEN:** `53145bb` first required all seven receipt/export UI audit contracts; it failed on old copy confirmation wording and the missing recovery-required surface. `b760f0c` renders the server-confirmed `receipt.drift` union only (never reconstructed selector data), exposes full pinned/current identities in a neutral disclosure with selectable/copyable values, distinguishes **Export needs recovery**, retains a failed re-export’s receipt as **Previous confirmed export**, uses exact copy confirmations, isolates Escape in conflict/error/recovery surfaces, gives each file row one complete accessible description, applies explicit 12/14/18px typography roles, and proves no document-level horizontal scroll at 768px and 360px responsive widths. `node_modules/.bin/playwright test tests/integration/export-receipt-ui.spec.ts` passed **4/4**; `npm run build` passed.
 
+10. **Final UI-01/UI-03 RED/GREEN:** after Plan 05 added the server-confirmed receipt comparison union, `7436482` proved the missing required receipt body and universal no-drift `Comparison` disclosure (2 focused failures). `292b9b5` renders every receipt’s non-mutating comparison disclosure from `receipt.comparison` with the full Base/Head OIDs and server labels/types; acknowledged drift adds full pinned/current label/type/OID details, including the unavailable representation. It also uses the exact receipt body, drift label, post-row `Copy all receipt details` action, generic adjacent copy recovery, and exact reveal recovery. The focused receipt suite passed **5/5** and `npm run build` passed.
+
 ## Reconciliation and deviation
 
 - Pre-edit reconciliation preflight passed:
