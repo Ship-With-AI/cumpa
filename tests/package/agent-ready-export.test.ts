@@ -43,6 +43,11 @@ interface ScenarioEvidenceReport {
     readonly packedSha256: string;
   };
   readonly execution: {
+    readonly target: {
+      readonly platform: string;
+      readonly arch: string;
+      readonly observedNativeReExport: boolean;
+    };
     readonly selectorKind: string;
     readonly originalOrderedFullOidPair: { readonly baseOid: string; readonly headOid: string };
     readonly acceptedState: {
@@ -58,13 +63,19 @@ interface ScenarioEvidenceReport {
     readonly export: {
       readonly receiptPaths: readonly string[];
       readonly firstReceiptPaths: readonly string[];
-      readonly reExportReceiptPaths: readonly string[];
+      readonly firstStablePairSha256: { readonly json: string; readonly markdown: string };
+      readonly reExport:
+        | Readonly<{ readonly kind: 'exported'; readonly receiptPaths: readonly string[]; readonly stablePairSha256: { readonly json: string; readonly markdown: string } }>
+        | Readonly<{ readonly kind: 'reExportUnsupported'; readonly stablePairSha256: { readonly json: string; readonly markdown: string } }>;
       readonly acceptedDraftRevision: number;
       readonly jsonSha256: string;
       readonly markdownSha256: string;
     };
   };
 }
+ 
+const observedNativeReExport = process.platform === 'darwin' && process.arch === 'arm64';
+ 
 
 function assertSha256(value: string): void {
   expect(value).toMatch(/^[a-f0-9]{64}$/);
@@ -97,13 +108,27 @@ function runPackagedScenario(): ScenarioEvidenceReport {
     assertSha256(report.packageArtifact.sourceSha256);
     assertSha256(report.packageArtifact.packedSha256);
     expect(report.packageArtifact.packedSha256).toBe(report.packageArtifact.sourceSha256);
+    expect(report.execution.target).toEqual({
+      platform: process.platform,
+      arch: process.arch,
+      observedNativeReExport,
+    });
     expect(report.execution.selectorKind).toBe('branch-to-worktree');
-  const expectedReceiptPaths = [
-    `.diff-review/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.json`,
-    `.diff-review/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.md`,
-  ];
-  expect(report.execution.export.firstReceiptPaths).toEqual(expectedReceiptPaths);
-  expect(report.execution.export.reExportReceiptPaths).toEqual(expectedReceiptPaths);
+    const expectedReceiptPaths = [
+      `.diff-review/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.json`,
+      `.diff-review/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.md`,
+    ];
+    expect(report.execution.export.firstReceiptPaths).toEqual(expectedReceiptPaths);
+    assertSha256(report.execution.export.firstStablePairSha256.json);
+    assertSha256(report.execution.export.firstStablePairSha256.markdown);
+    if (observedNativeReExport) {
+      expect(report.execution.export.reExport.kind).toBe('exported');
+      if (report.execution.export.reExport.kind !== 'exported') throw new Error('Expected a native re-export receipt on darwin-arm64.');
+      expect(report.execution.export.reExport.receiptPaths).toEqual(expectedReceiptPaths);
+    } else {
+      expect(report.execution.export.reExport.kind).toBe('reExportUnsupported');
+      expect(report.execution.export.reExport.stablePairSha256).toEqual(report.execution.export.firstStablePairSha256);
+    }
     expect(report.execution.originalOrderedFullOidPair).toMatchObject({
       baseOid: expect.stringMatching(/^[a-f0-9]{40,64}$/),
       headOid: expect.stringMatching(/^[a-f0-9]{40,64}$/),
@@ -128,6 +153,10 @@ function runPackagedScenario(): ScenarioEvidenceReport {
     expect(report.execution.export.acceptedDraftRevision).toBe(report.execution.acceptedState.revision);
     assertSha256(report.execution.export.jsonSha256);
     assertSha256(report.execution.export.markdownSha256);
+    expect(report.execution.export.reExport.stablePairSha256).toEqual({
+      json: report.execution.export.jsonSha256,
+      markdown: report.execution.export.markdownSha256,
+    });
     return report;
   } finally {
     rmSync(reportDirectory, { recursive: true, force: true });
