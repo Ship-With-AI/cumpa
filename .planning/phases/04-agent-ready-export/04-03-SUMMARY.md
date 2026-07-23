@@ -201,6 +201,12 @@ None - no external service configuration required.
 - `npx playwright test tests/e2e/agent-ready-export.spec.ts --grep "atomically re-exports"` — passed: the acceptance harness builds, `npm pack`s, unpacks, and launches the generated `dist/bin/diff-review.mjs`; the browser completes a first export, clicks **Export review again**, receives a second `201` `exported` receipt rather than `reExportUnsupported`, and independently rereads the resulting two-file stable directory as canonical JSON plus byte-identical generated Markdown.
 - `npx playwright test tests/e2e/agent-ready-export-safety.spec.ts --grep "forced unavailable capability"` — passed: the explicit forced-unavailable lower-level seam still refuses before touching the old complete stable pair; it no longer asserts that the declared `darwin-arm64` package target is unavailable.
 
+## Native Failure-Closed Runtime Evidence
+
+- `createNativeExchangeCapabilityObserver` now returns typed `reExportUnsupported` when temporary probe-directory creation, addon loading, primitive probing, or final cleanup fails. A supported capability is returned only after all four complete; cleanup failure downgrades an otherwise-supported probe instead of rejecting the export caller.
+- `scripts/build-native-addon.mjs` builds only the declared `darwin-arm64` target. For every other injected or actual platform/architecture it removes a stale `dist/native/directory_exchange.node` and exits successfully, so an unsupported target reaches the runtime's typed fallback rather than a Darwin compiler failure or stale packaged binary.
+- RED: `6e2f3a9`; GREEN: `fd6b700`. `npx vitest run tests/unit/native-exchange-capability.test.ts tests/unit/build-native-addon.test.ts` passed 4/4; `npm run build` passed the real Darwin addon build.
+
 ## Self-Check: PASSED
 
 ---

@@ -64,6 +64,8 @@ status: complete
 - `node_modules/.bin/vitest run tests/package/agent-ready-export.test.ts` — 1 test passed after running the exact 22-test packaged Chromium suite; its fresh random-run-ID report matched both packed and generated package SHA-256 values (`3114aef65e9db770828c4e882439b51c187a1ceabd32bb732bbcc469372f2341`).
 - `npx playwright test tests/e2e/agent-ready-export.spec.ts --grep "atomically re-exports"` — passed: 1 packed-tarball/generated-CLI Chromium journey; both export responses were `201`, the second parsed as `exported`, and the on-disk pair was independently reread after re-export.
 - `npx playwright test tests/e2e/agent-ready-export-safety.spec.ts --grep "forced unavailable capability"` — passed: 1 explicit forced-unavailable refusal test, retained only as a lower-level fallback proof.
+- `npx vitest run tests/package/agent-ready-export.test.ts tests/package/agent-ready-export-safety.test.ts` — passed: 2 files / 9 tests; the coverage harness executed a fresh 22/22 packaged Chromium suite and binds both first-export and native re-export receipt paths to the same full-OID directory.
+- `npx vitest run tests/unit/native-exchange-capability.test.ts tests/unit/build-native-addon.test.ts` — passed: 2 files / 4 tests; setup, cleanup, unsupported-target stale-addon removal, and declared-target build failure paths are explicitly fail-closed.
 
 ## Task Commits
 

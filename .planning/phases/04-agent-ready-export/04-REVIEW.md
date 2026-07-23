@@ -1,11 +1,13 @@
 ---
 phase: 04-agent-ready-export
-reviewed: 2026-07-23T20:42:40Z
+reviewed: 2026-07-23T21:29:52Z
 depth: standard
-files_reviewed: 49
+files_reviewed: 52
 files_reviewed_list:
   - binding.gyp
+  - package.json
   - playwright.config.ts
+  - scripts/build-native-addon.mjs
   - src/contracts/api.ts
   - src/contracts/draft.ts
   - src/export/render-review-markdown.ts
@@ -18,6 +20,7 @@ files_reviewed_list:
   - src/server/capabilities.ts
   - src/server/export-store.ts
   - src/server/gitignore-capability.ts
+  - src/server/native-exchange-capability.ts
   - src/server/routes.ts
   - src/web/App.vue
   - src/web/api/client.ts
@@ -54,11 +57,11 @@ files_reviewed_list:
   - tests/unit/review-markdown.test.ts
   - vitest.config.ts
 findings:
-  critical: 0
-  warning: 0
+  critical: 1
+  warning: 1
   info: 0
-  total: 0
-status: passed
+  total: 2
+status: issues_found
 ---
 
 # Phase 04: Code Review Report
@@ -66,59 +69,73 @@ status: passed
 ## Scope
 
 Reviewed all Phase 04 source, configuration, and test changes, including the
-latest receipt-contract remediation commits `ff3034a`, `fd9dedb`, `9e6f741`,
-and `f4f7b1d`. The final receipt pass checked server-authoritative comparison/drift
-data, recovery classification, unsafe identity/path disclosure, schema/client
-consistency, and receipt UI use.
+verifier-gap remediation commits `4023bdf`, `be3148e`, `e11f2eb`, and
+`cf06c75`. This pass traced the native build/package path, packaged-relative
+loader, behavioural probe, capability wiring, failure fallback, directory
+exchange flow, and packed CLI/browser re-export evidence.
 
 ## Summary
 
-The latest remediation resolves the previous contradictory-provenance finding:
-`driftAcknowledged` is removed, and acknowledged receipts now require one base
-and one head identity whose pinned label, selector type, and object ID match
-their server-authoritative comparison endpoints. The capability producer and
-receipt UI remain consistent with that contract. The recovery result remains
-distinct from a successful receipt, and reviewed receipt fields do not disclose
-worktree or absolute filesystem paths.
+The remediation wires the packaged server to an add-on located relative to the
+compiled server module, probes it once before publishing, and passes the
+observed capability into the established directory-exchange publication path.
+The focused packed CLI/browser test exercises an actual re-export and passed.
 
-One semantic receipt-contract gap remains: an `acknowledged` drift payload can
-claim drift even when neither identity has changed or become unavailable.
+Two failures remain in the native capability boundary: the build is not gated
+for platforms on which the native operation is intentionally unsupported, and
+probe setup/cleanup failures escape rather than producing the documented
+fail-closed capability.
 
 ## Narrative Findings (AI reviewer)
 
-The latest UI contract correctly renders the always-present server comparison
-and only renders acknowledged identity details when the server response's
-`drift.kind` is `acknowledged`. No browser-derived comparison facts, raw
-worktree paths, or stale `driftAcknowledged` field remain.
+The native add-on's `exchangeDirectories` interface limits stable and candidate
+to child names, opens the root with `O_NOFOLLOW`, and returns a typed outcome.
+The server-side loader is correctly relative to `dist/server`, so
+`../native/directory_exchange.node` resolves to the packaged `dist/native`
+artifact. A successful packed Chromium run proves that the supported Darwin
+path can rebuild, package, load, probe, atomically re-export, and recover the
+new pair.
 
-The schema refinement now blocks duplicate roles, pinned-endpoint mismatches,
-and acknowledged payloads without an observed moved or unavailable endpoint.
+That success path does not establish the required unsupported-platform or
+operational-failure fallback paths, which contain the following defects.
 
-## Resolved Findings
+## Critical Issues
 
-### WR-01: `acknowledged` receipt can contain no actual drift — Resolved
+### CR-01: Native build prevents the intended unsupported-platform fallback
 
-**Resolved by:** `f4f7b1d` on 2026-07-23
+**File:** `scripts/build-native-addon.mjs:7-21`; `package.json:1`
 
-The exported receipt refinement requires at least one acknowledged identity
-either to be unavailable or to be available with a `current.oid` different from
-its `pinned.oid`. Structurally coherent identities that both still point at
-their pinned OIDs are rejected, so the receipt's acknowledgement cannot assert
-nonexistent drift.
+`build:runtime` always invokes `/usr/bin/c++` with the Darwin linker arguments
+`-dynamiclib` and `-undefined dynamic_lookup`. There is no
+`process.platform`/architecture gate. [INFERENCE] On a non-Darwin build host,
+these Darwin-only options fail the package build before the add-on's
+non-Apple `unsupported` result or the JavaScript loader's fallback can run.
+This makes the npm package unbuildable on platforms that the native source and
+capability model otherwise describe as fail-closed unsupported.
 
-Focused evidence:
+Gate the add-on build to its supported platform and architecture; on unsupported
+build hosts, remove or avoid packaging an incompatible stale `.node` artifact
+and allow the JavaScript loader to return `reExportUnsupported`. Add a
+non-Darwin build/package coverage path, or make the build script's platform
+branch directly testable.
 
-```text
-node_modules/.bin/vitest run tests/api/export.test.ts tests/api/export-publication.test.ts tests/unit/agent-ready-export-state.test.ts
-3 files passed; 20 tests passed
+## Warnings
 
-npm run build
-passed
-```
+### WR-01: Probe filesystem failures reject export instead of failing closed
 
-The API contract includes an invalid parse case for both current identities
-unchanged from their pinned identities. The client continues to use
-`drift.kind` as the sole acknowledgement authority.
+**File:** `src/server/native-exchange-capability.ts:20-35`
+
+`mkdtemp()` executes before the `try`, and `rm()` in `finally` is awaited
+without its own error handling. If either operation fails, the cached
+`getObservedNativeExchangeCapability()` promise rejects. The caller awaits that
+promise inside `exportReview`, so the export request rejects rather than
+returning the declared `reExportUnsupported` capability result. This also
+blocks a first export, which does not need native exchange at all.
+
+Place probe-root creation inside the failure-to-unsupported boundary and ensure
+cleanup errors cannot override the probe outcome. The function should resolve
+`{ kind: 'reExportUnsupported' }` for every probe setup, load, invocation, or
+cleanup failure. Add focused mocks for failed `mkdtemp` and `rm`.
 
 ## Accepted Residual / Threat-Boundary Note
 
@@ -128,8 +145,9 @@ attempt descriptor-level protection against a malicious same-UID process
 replacing a destination between those checks; the packaged release has no
 native target providing that stronger guarantee.
 
+**Remediation update (native runtime):** The declared `darwin-arm64` package target now builds and packages the narrow addon, and `createNativeExchangeCapabilityObserver` returns `reExportUnsupported` rather than rejecting or granting capability if temporary-directory setup, load, probe, or cleanup fails. The build script removes a stale addon and exits successfully for any non-declared platform/architecture. These corrections provide exchange capability and fail-closed fallback; they do not change the accepted descriptor-level parent-replacement residual described above.
+
 ## Verification
 
-Focused check after the latest receipt-contract remediation:
-
-- `npm exec vitest run tests/api/export.test.ts` — passed: 1 file, 10 tests.
+- `npm exec playwright test tests/e2e/agent-ready-export.spec.ts` — passed:
+  1 packed Chromium CLI/browser re-export test.

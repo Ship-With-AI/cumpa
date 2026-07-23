@@ -29,6 +29,15 @@ Focused generated-package evidence now exercises the actual product boundary:
 
 Accordingly, the prior “always `reExportUnsupported`” data-flow block and its three dependent failed truths are resolved for the declared `darwin-arm64` target. Unobserved, unsupported, unavailable, or probe-failed targets remain fail-closed.
 
+
+## Native Setup, Cleanup, and Build-Gate Remediation
+
+`fd6b700` closes the follow-up review warnings. The observed capability factory now treats probe-root setup and cleanup errors as `reExportUnsupported`; it cannot resolve a supported capability until load, primitive probe, and cleanup all succeed. The project-owned build script now compiles only `darwin-arm64` and removes any stale `dist/native/directory_exchange.node` on every other target before exiting successfully.
+
+- RED `6e2f3a9`: four injected tests demonstrated missing failure containment and stale-addon retention.
+- GREEN: `npx vitest run tests/unit/native-exchange-capability.test.ts tests/unit/build-native-addon.test.ts` — 2 files / 4 tests passed.
+- Real target: `npm run build` — passed, compiling the declared Darwin arm64 addon.
+- Package boundary: `npx playwright test tests/e2e` — 22/22 passed after the build-gate fix.
 ## Goal Achievement
 
 ### Roadmap Success Criteria
