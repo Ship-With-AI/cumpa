@@ -2,6 +2,7 @@ import { execFileSync } from 'node:child_process';
 import {
   chmod,
   copyFile,
+  mkdir,
   mkdtemp,
   rename,
   rm,
@@ -54,7 +55,13 @@ interface InventoryFixture {
 
 const fixtures: InventoryFixture[] = [];
 
-async function createInventoryFixture(): Promise<InventoryFixture> {
+interface InventoryFixtureOptions {
+  readonly includeInternalPaths?: boolean;
+}
+
+async function createInventoryFixture(
+  options: InventoryFixtureOptions = {},
+): Promise<InventoryFixture> {
   const root = await mkdtemp(join(tmpdir(), 'diff-review-inventory-'));
   const git = (arguments_: readonly string[]): Buffer =>
     execFileSync('git', [...safeGitArguments, ...arguments_], {
@@ -70,6 +77,17 @@ async function createInventoryFixture(): Promise<InventoryFixture> {
   git(['config', '--local', 'user.email', 'inventory@diff-review.invalid']);
   git(['config', '--local', 'commit.gpgSign', 'false']);
 
+
+  if (options.includeInternalPaths === true) {
+    await mkdir(join(root, '.diff-review'));
+    await Promise.all([
+      writeFile(join(root, '.diff-review', 'deleted.txt'), 'deleted internal\n'),
+      writeFile(join(root, '.diff-review', 'rename-out.txt'), 'rename internal\n'),
+      writeFile(join(root, '.diff-review', 'copy-out.txt'), 'copy internal\n'),
+      writeFile(join(root, 'rename-in.txt'), 'rename public\n'),
+      writeFile(join(root, 'copy-in.txt'), 'copy public\n'),
+    ]);
+  }
   await Promise.all([
     writeFile(join(root, 'modified.txt'), 'before\n'),
     writeFile(join(root, 'deleted.txt'), 'deleted\n'),
@@ -91,6 +109,7 @@ async function createInventoryFixture(): Promise<InventoryFixture> {
   await unlink(join(root, 'type-change.txt'));
   await symlink('symlink-target', join(root, 'type-change.txt'));
   await Promise.all([
+
     writeFile(join(root, 'binary.dat'), Buffer.from([0, 1, 2, 3])),
     writeFile(join(root, 'space name.txt'), 'space\n'),
     writeFile(join(root, 'caf\u00e9.txt'), 'composed\n'),
@@ -99,6 +118,35 @@ async function createInventoryFixture(): Promise<InventoryFixture> {
     writeFile(join(root, 'line\nname.txt'), 'newline\n'),
     writeFile(join(root, '-leading.txt'), 'leading\n'),
   ]);
+
+  if (options.includeInternalPaths === true) {
+    await Promise.all([
+      rm(join(root, '.diff-review', 'deleted.txt')),
+      rename(
+        join(root, '.diff-review', 'rename-out.txt'),
+        join(root, 'rename-out.txt'),
+      ),
+      copyFile(
+        join(root, '.diff-review', 'copy-out.txt'),
+        join(root, 'copy-out.txt'),
+      ),
+      rename(
+        join(root, 'rename-in.txt'),
+        join(root, '.diff-review', 'rename-in.txt'),
+      ),
+      copyFile(
+        join(root, 'copy-in.txt'),
+        join(root, '.diff-review', 'copy-in.txt'),
+      ),
+      writeFile(join(root, '.diff-review', 'added.txt'), 'added internal\n'),
+      writeFile(join(root, '.diff-reviewish.txt'), 'near internal name\n'),
+      writeFile(join(root, 'diff-review.txt'), 'missing dot\n'),
+      mkdir(join(root, 'src', '.diff-review'), { recursive: true }),
+    ]);
+    await Promise.all([
+      writeFile(join(root, 'src', '.diff-review', 'nested.txt'), 'nested\n'),
+    ]);
+  }
   const [composedStat, decomposedStat] = await Promise.all([
     stat(join(root, 'caf\u00e9.txt')),
     stat(join(root, 'cafe\u0301.txt')),
@@ -335,6 +383,33 @@ describe('native-Git changed-file inventory', () => {
       );
       expect(invalidPaths[0]!.id).not.toBe(invalidPaths[1]!.id);
     }
+  });
+
+  it('excludes only exact internal root identities on either side of a real Git change record', async () => {
+    const repository = await createInventoryFixture({ includeInternalPaths: true });
+    const files = await createChangedFileInventory({
+      repositoryRoot: repository.root,
+      mergeBaseOid: repository.baseOid,
+      headOid: repository.headOid,
+      objectFormat: 'sha1',
+      fileIdNamespace: Buffer.from('internal path exclusion namespace'),
+    });
+
+    const isInternalPath = (path: ChangedFile['oldPath']): boolean =>
+      path?.utf8 === '.diff-review' || path?.utf8?.startsWith('.diff-review/') === true;
+
+    expect(
+      files.some(
+        (file) => isInternalPath(file.oldPath) || isInternalPath(file.newPath),
+      ),
+    ).toBe(false);
+    expect(pathText(fileByPath(files, '.diff-reviewish.txt'))).toBe(
+      '.diff-reviewish.txt',
+    );
+    expect(pathText(fileByPath(files, 'diff-review.txt'))).toBe('diff-review.txt');
+    expect(pathText(fileByPath(files, 'src/.diff-review/nested.txt'))).toBe(
+      'src/.diff-review/nested.txt',
+    );
   });
 
   it('wires the inventory into one frozen comparison and ignores moving refs and dirty files', async () => {
