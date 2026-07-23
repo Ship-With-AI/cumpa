@@ -8,6 +8,7 @@ export default defineConfig({
       'tests/git/**/*.test.ts',
       'tests/api/**/*.test.ts',
       'tests/cli/**/*.test.ts',
+      'tests/package/**/*.test.ts',
     ],
     testTimeout: 10_000,
     hookTimeout: 10_000,
