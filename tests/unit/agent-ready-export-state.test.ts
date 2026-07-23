@@ -43,3 +43,53 @@ test('exports only the accepted revision and preserves unsaved buffers through a
   expect(review.snapshot().commentBuffers.get(commentId)).toBe('Unsaved comment');
   expect(review.snapshot().export).toMatchObject({ pending: false, failure: 'publicationFailed' });
 });
+
+test('requires the latest drift acknowledgement before showing the accepted-pair export progress', () => {
+  const review = createReviewDraftState({ revision: 7, summary: '', comments: [] });
+  const firstObservation = {
+    base: {
+      kind: 'moved' as const,
+      role: 'base' as const,
+      label: 'main',
+      selectorType: 'branch' as const,
+      oldOid: '1'.repeat(40),
+      newOid: '2'.repeat(40),
+    },
+    head: {
+      kind: 'unchanged' as const,
+      role: 'head' as const,
+      label: 'feature/export',
+      selectorType: 'branch' as const,
+    },
+  };
+
+  review.completeExport({
+    kind: 'driftAcknowledgementRequired',
+    acknowledgementToken: 'first-token',
+    observation: firstObservation,
+  });
+
+  expect(review.startExport('old-token')).toBe(false);
+  expect(review.startExport('first-token')).toBe(true);
+  expect(review.snapshot().export.progress).toBe('preparing');
+
+  review.completeExport({
+    kind: 'driftAcknowledgementStale',
+    acknowledgementToken: 'latest-token',
+    observation: {
+      ...firstObservation,
+      base: {
+        ...firstObservation.base,
+        newOid: '3'.repeat(40),
+      },
+    },
+  });
+
+  expect(review.snapshot().export).toMatchObject({
+    pending: false,
+    phase: 'drift',
+    driftStale: true,
+    driftAcknowledgementToken: 'latest-token',
+  });
+  expect(review.startExport('first-token')).toBe(false);
+});
