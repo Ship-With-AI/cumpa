@@ -2,7 +2,12 @@ import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { afterEach, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+
+vi.mock('node:crypto', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, randomUUID: () => 'race' };
+});
 
 import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
 import { canonicalizeReviewExport } from '../../src/export/review-export.js';
@@ -121,6 +126,49 @@ describe('literal export publication state machine', () => {
     expect(result).toEqual({ kind: 'reExportUnsupported' });
     expect(await readStable(repositoryRoot)).toEqual([oldPair.json.toString('utf8'), oldPair.markdown.toString('utf8')]);
   });
+
+  test.each(['.diff-review', 'exports'] as const)(
+    'detects %s parent replacement after candidate validation before it can rename an external candidate',
+    async (managedParent) => {
+      const repositoryRoot = await root();
+      const outside = await root();
+      const pair = candidatePair(`race ${managedParent}`);
+      const stableName = `${baseOid}..${headOid}`;
+      const candidateName = `.${stableName}.candidate-race`;
+      const outsideExportsRoot = managedParent === '.diff-review' ? join(outside, 'exports') : outside;
+      const outsideCandidate = join(outsideExportsRoot, candidateName);
+      const outsideStable = join(outsideExportsRoot, stableName);
+      await mkdir(outsideCandidate, { recursive: true });
+      await writeFile(join(outsideCandidate, 'review.json'), pair.json);
+      await writeFile(join(outsideCandidate, 'review.md'), pair.markdown);
+
+      const result = await publishReviewExport({
+        repositoryRoot,
+        baseOid,
+        headOid,
+        json: pair.json,
+        markdown: pair.markdown,
+        reExportCapability: { kind: 'reExportUnsupported' },
+        revalidate: async () => {
+          if (managedParent === '.diff-review') {
+            await rm(join(repositoryRoot, '.diff-review'), { recursive: true });
+            await symlink(outside, join(repositoryRoot, '.diff-review'), 'dir');
+          } else {
+            await rm(join(repositoryRoot, '.diff-review', 'exports'), { recursive: true });
+            await symlink(outside, join(repositoryRoot, '.diff-review', 'exports'), 'dir');
+          }
+          return true;
+        },
+      });
+
+      expect(result).toEqual({ kind: 'publicationFailed' });
+      await expect(readFile(join(outsideStable, 'review.json'))).rejects.toMatchObject({ code: 'ENOENT' });
+      await expect(Promise.all([
+        readFile(join(outsideCandidate, 'review.json')),
+        readFile(join(outsideCandidate, 'review.md')),
+      ])).resolves.toEqual([pair.json, pair.markdown]);
+    },
+  );
 
   test.each(['.diff-review', 'exports'] as const)(
     'rejects %s symlink parent for publication and recovery without touching its target',
