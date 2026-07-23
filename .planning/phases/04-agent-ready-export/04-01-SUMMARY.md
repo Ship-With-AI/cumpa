@@ -151,6 +151,12 @@ After the final source, test, and documentation commits — Plan 05 `3d054fb` an
 
 The final Node-core proof completed at this source boundary: `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs --self-test` returned `mutation self-test passed (34 rejection branches)`, and real validation returned `reconciliation ledger valid: 04-01-RECONCILIATION.json` while regenerating the report. The immutable evidence contract remains fail-closed.
 
+## Final Capability Schema Reconciliation
+
+The final Plan 05 schema-remediation commits `ff3034a` (RED), `fd9dedb` (GREEN), and `bc7d4b3` (documentation) removed redundant drift acknowledgement state and refined acknowledged provenance in the declared capability owner. The ledger now binds `createCapabilityRegistry` in `src/server/capabilities.ts` through inclusive lines 1–486 with SHA-256 `904faaf8be46bfa640fd4880ecd981d28101a8c8e521f78b6024d06fbff25e9c`; no second owner, test-hash evidence class, or validator exception was introduced.
+
+At the final source boundary, `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs --self-test` passed all 34 rejection branches, and real validation returned `reconciliation ledger valid: 04-01-RECONCILIATION.json` while regenerating the report. All strict validation rules and declared Phase 04 evidence contracts remain intact.
+
 ## User Setup Required
 
 None - no external service configuration required.
