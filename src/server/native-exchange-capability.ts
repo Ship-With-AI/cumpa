@@ -14,26 +14,53 @@ type DirectoryExchangeAddon = Readonly<{
   readonly probeDirectoryExchange: (root: string) => Readonly<{ readonly kind: 'supported' | 'unsupported' | 'failed' }>;
 }>;
 
-const require = createRequire(import.meta.url);
-let observedCapability: Promise<ReExportCapability> | undefined;
+export type NativeExchangeCapabilityDependencies = Readonly<{
+  readonly mkdtemp: (prefix: string) => Promise<string>;
+  readonly rm: (path: string, options: Readonly<{ readonly recursive: boolean; readonly force: boolean }>) => Promise<void>;
+  readonly loadAddon: () => DirectoryExchangeAddon;
+}>;
 
-async function observeNativeExchangeCapability(): Promise<ReExportCapability> {
-  const probeRoot = await mkdtemp(join(tmpdir(), 'diff-review-native-exchange-probe-'));
-  try {
-    const addon = require('../native/directory_exchange.node') as DirectoryExchangeAddon;
-    if (addon.probeDirectoryExchange(probeRoot).kind !== 'supported') {
-      return Object.freeze({ kind: 'reExportUnsupported' });
+const require = createRequire(import.meta.url);
+const unsupportedCapability: ReExportCapability = Object.freeze({ kind: 'reExportUnsupported' });
+
+export function createNativeExchangeCapabilityObserver(
+  dependencies: NativeExchangeCapabilityDependencies,
+): () => Promise<ReExportCapability> {
+  return async () => {
+    let probeRoot: string | undefined;
+    let capability = unsupportedCapability;
+
+    try {
+      probeRoot = await dependencies.mkdtemp(join(tmpdir(), 'diff-review-native-exchange-probe-'));
+      const addon = dependencies.loadAddon();
+      if (addon.probeDirectoryExchange(probeRoot).kind === 'supported') {
+        capability = Object.freeze({
+          kind: 'observedNativeExchange',
+          exchangeDirectories: addon.exchangeDirectories,
+        });
+      }
+    } catch {
+      capability = unsupportedCapability;
     }
-    return Object.freeze({
-      kind: 'observedNativeExchange',
-      exchangeDirectories: addon.exchangeDirectories,
-    });
-  } catch {
-    return Object.freeze({ kind: 'reExportUnsupported' });
-  } finally {
-    await rm(probeRoot, { recursive: true, force: true });
-  }
+
+    if (probeRoot !== undefined) {
+      try {
+        await dependencies.rm(probeRoot, { recursive: true, force: true });
+      } catch {
+        return unsupportedCapability;
+      }
+    }
+
+    return capability;
+  };
 }
+
+const observeNativeExchangeCapability = createNativeExchangeCapabilityObserver({
+  mkdtemp,
+  rm,
+  loadAddon: () => require('../native/directory_exchange.node') as DirectoryExchangeAddon,
+});
+let observedCapability: Promise<ReExportCapability> | undefined;
 
 export function getObservedNativeExchangeCapability(): Promise<ReExportCapability> {
   observedCapability ??= observeNativeExchangeCapability();
