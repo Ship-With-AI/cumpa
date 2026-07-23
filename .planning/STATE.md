@@ -5,16 +5,15 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: agent-ready-export
 status: executing
-stopped_at: Completed 04-05-PLAN.md
-last_updated: "2026-07-23T16:09:32.962Z"
+stopped_at: Completed 04-07-PLAN.md
+last_updated: "2026-07-23T16:50:51.960Z"
 last_activity: 2026-07-23
 last_activity_desc: Completed 04-05 accepted-revision export UI states
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 38
-  completed_plans: 36
-  percent: 75
+  completed_plans: 37
 ---
 
 # Project State
@@ -29,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 04 (agent-ready-export) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-07-23 — Completed 04-05 accepted-revision export UI states
 
-Progress: ██████░░░░ [██████░░░░] 63%
+Progress: ██████░░░░ [██████████] 97%
 
 ## Performance Metrics
 
@@ -90,6 +89,7 @@ Progress: ██████░░░░ [██████░░░░] 63%
 | Phase 04 P03 | execution session | 3 tasks | 9 files |
 | Phase 04 P04 | execution session | 2 tasks | 10 files |
 | Phase 04 P06 | 60min | 2 tasks | 11 files |
+| Phase 04 P07 | 35min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -165,6 +165,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 04]: Publish only an exact canonical JSON and derived Markdown pair after accepted draft revision/fingerprint and retained-selector drift revalidation. — Final receipts are from stable reread SHA-256/byte evidence.
 - [Phase 04]: Exclude exact root .diff-review path bytes from inventory independently of user ignore configuration. — Internal application state must never enter review output.
 - [Phase 04]: Keep ignore consent as a fixed append-only capability with reread and safe-probe confirmation. — A review client must not receive generic Git or filesystem authority.
+- [Phase 04]: Re-export remains refusal-first until a packaged target supplies observed native exchange evidence. — The reconciled package declares no native exchange target, so continuous old-or-new exchange evidence cannot be claimed.
+- [Phase 04]: Safety snapshots allow only generated .diff-review output and an exact approved ignore append. — D-17 and D-18 require narrow, independently checked filesystem exceptions.
 
 ### Pending Todos
 
@@ -193,6 +195,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T15:07:10Z
-Stopped at: Completed 04-05-PLAN.md
+Last session: 2026-07-23T16:50:51.956Z
+Stopped at: Completed 04-07-PLAN.md
 Resume file: None

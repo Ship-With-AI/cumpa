@@ -104,7 +104,7 @@ Every v1 requirement maps to exactly one phase:
 | 1. Pinned Local Comparison | In progress | 12/13 | 23/23 |
 | 2. Anchored Diff Review | Complete | 10/10 | 11/11 |
 | 3. Complete Review Draft | In Progress| 4/7 | 7/8 |
-| 4. Agent-Ready Export | In Progress | 5/8 | 4/9 |
+| 4. Agent-Ready Export | In Progress| 7/8 | 4/9 |
 
 ---
 *Roadmap created: 2026-07-11*
