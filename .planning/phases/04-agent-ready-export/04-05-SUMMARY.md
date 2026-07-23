@@ -165,6 +165,21 @@ The API export contract asserts that a real confirmed response exposes those ide
     **RED commit:** `ff3034a` — `test(04-05): reject incoherent receipt drift`  
     **GREEN commit:** `fd9dedb` — `fix(04-05): bind receipt drift to comparison`
 
+11. Final review acknowledged-drift observation remediation:
+
+    ```text
+    node_modules/.bin/vitest run tests/api/export.test.ts tests/api/export-publication.test.ts tests/unit/agent-ready-export-state.test.ts
+    3 files passed; 20 tests passed
+
+    npm run build
+    passed
+    ```
+
+    Acknowledged drift now additionally requires evidence of an actual moved or unavailable endpoint. A receipt with both current endpoints available at their pinned OIDs is rejected.
+
+    **RED commit:** `9e6f741` — `test(04-05): reject unchanged acknowledged drift`  
+    **GREEN commit:** `f4f7b1d` — `fix(04-05): require observed acknowledged drift`
+
 ## Deviations
 
 - **[Rule 3 — blocking verification wiring]** The plan names `tests/integration/agent-ready-export-states.spec.ts`, but the immutable reconciliation command only discovers `tests/unit/**`; direct Vitest/Playwright attempts do not discover that integration path under the configured roots. The required integration artifact is present, and its behavior is mirrored in `tests/unit/agent-ready-export-state.test.ts` so the prescribed ledger proves the contract. No runner, config, dependency, or reconciliation ledger was changed.

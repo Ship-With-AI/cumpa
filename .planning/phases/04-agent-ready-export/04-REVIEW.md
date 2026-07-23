@@ -1,6 +1,6 @@
 ---
 phase: 04-agent-ready-export
-reviewed: 2026-07-23T20:33:39Z
+reviewed: 2026-07-23T20:42:40Z
 depth: standard
 files_reviewed: 49
 files_reviewed_list:
@@ -55,10 +55,10 @@ files_reviewed_list:
   - vitest.config.ts
 findings:
   critical: 0
-  warning: 1
+  warning: 0
   info: 0
-  total: 1
-status: issues_found
+  total: 0
+status: passed
 ---
 
 # Phase 04: Code Review Report
@@ -66,37 +66,45 @@ status: issues_found
 ## Scope
 
 Reviewed all Phase 04 source, configuration, and test changes, including the
-receipt-contract/UI commits `2f8c4e4..e0b7b05` and the preceding repair and
-reconciliation work. The final receipt pass specifically checked
-server-authoritative comparison/drift data, recovery classification, unsafe
-identity/path disclosure, schema/client consistency, and receipt UI use.
+latest receipt-contract remediation commits `ff3034a`, `fd9dedb`, `9e6f741`,
+and `f4f7b1d`. The final receipt pass checked server-authoritative comparison/drift
+data, recovery classification, unsafe identity/path disclosure, schema/client
+consistency, and receipt UI use.
 
 ## Summary
 
-The receipt is assembled from the pinned server comparison and the server's
-drift observation. Its public comparison endpoint intentionally includes only
-label, selector type, and object ID; the receipt UI consumes that server result
-rather than deriving comparison or drift facts in the browser. The recovery
-path remains classified distinctly from a successful receipt, and the reviewed
-receipt fields do not disclose worktree or absolute filesystem paths.
+The latest remediation resolves the previous contradictory-provenance finding:
+`driftAcknowledged` is removed, and acknowledged receipts now require one base
+and one head identity whose pinned label, selector type, and object ID match
+their server-authoritative comparison endpoints. The capability producer and
+receipt UI remain consistent with that contract. The recovery result remains
+distinct from a successful receipt, and reviewed receipt fields do not disclose
+worktree or absolute filesystem paths.
 
-One warning remains: the public receipt schema permits contradictory drift
-provenance even though the current server producer emits a coherent result.
+One semantic receipt-contract gap remains: an `acknowledged` drift payload can
+claim drift even when neither identity has changed or become unavailable.
 
 ## Narrative Findings (AI reviewer)
 
-The latest UI contract correctly distinguishes the always-present comparison
-from optional acknowledged-drift details. The no-drift and acknowledged-drift
-states render from the response's `comparison` and `drift` fields, respectively.
-The focused API and receipt-UI checks passed.
+The latest UI contract correctly renders the always-present server comparison
+and only renders acknowledged identity details when the server response's
+`drift.kind` is `acknowledged`. No browser-derived comparison facts, raw
+worktree paths, or stale `driftAcknowledged` field remain.
+
+The schema refinement now blocks duplicate roles, pinned-endpoint mismatches,
+and acknowledged payloads without an observed moved or unavailable endpoint.
 
 ## Resolved Findings
 
-### WR-01: Receipt schema accepts internally contradictory drift provenance — Resolved
+### WR-01: `acknowledged` receipt can contain no actual drift — Resolved
 
-**Resolved by:** `fd9dedb` on 2026-07-23
+**Resolved by:** `f4f7b1d` on 2026-07-23
 
-The exported receipt no longer carries the duplicate `driftAcknowledged` boolean; `drift.kind` is its sole acknowledgement authority. The exported-result schema now rejects acknowledged drift unless it has exactly one `base` and one `head` identity, with each pinned label, selector type, and OID equal to the matching server-confirmed `comparison` endpoint.
+The exported receipt refinement requires at least one acknowledged identity
+either to be unavailable or to be available with a `current.oid` different from
+its `pinned.oid`. Structurally coherent identities that both still point at
+their pinned OIDs are rejected, so the receipt's acknowledgement cannot assert
+nonexistent drift.
 
 Focused evidence:
 
@@ -108,7 +116,9 @@ npm run build
 passed
 ```
 
-The API contract includes invalid parse coverage for duplicate roles and mismatched pinned comparison identity, plus a real confirmed export-response assertion. The client continues to select disclosure solely by `drift.kind`.
+The API contract includes an invalid parse case for both current identities
+unchanged from their pinned identities. The client continues to use
+`drift.kind` as the sole acknowledgement authority.
 
 ## Accepted Residual / Threat-Boundary Note
 
@@ -120,8 +130,6 @@ native target providing that stronger guarantee.
 
 ## Verification
 
-Focused checks run after the receipt-contract/UI changes:
+Focused check after the latest receipt-contract remediation:
 
-- `npm exec vitest run tests/api/export.test.ts` — passed: 1 file, 9 tests.
-- `npm exec playwright test tests/integration/export-receipt-ui.spec.ts` —
-  passed: 5 tests.
+- `npm exec vitest run tests/api/export.test.ts` — passed: 1 file, 10 tests.
