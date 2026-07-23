@@ -133,6 +133,12 @@ The completed CR/WR remediation commits `f02b48f`, `3ddbeeb`, `87b6b77`, `1355c6
 
 The refresh also rehashed every declared source, runner, manifest, lockfile, toolchain, and packaging evidence record against the current tree. It preserved every seam, substitution, focused command, package/no-install fact, publication disposition, and validator rule. `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs --self-test` passed all 34 rejection branches, and real-ledger validation regenerated the report and exited successfully.
 
+## Final UI Remediation Reconciliation
+
+The final UI remediation commits `53145bb` (RED), `b760f0c` (GREEN), and `429ee9d` (documentation) changed `ExportReceipt`, `ExportSection`, `ReceiptFileRow`, shared styles, and `tests/integration/export-receipt-ui.spec.ts`. None is a declared reconciliation seam owner, command owner, package/toolchain record, or test-hash record in the strict ledger; no new owner was inferred and no existing source/test claim was broadened. All declared current source, runner, manifest, lockfile, toolchain, and packaging hashes still matched the final tree.
+
+The final validator run was exact: `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs --self-test` reported `mutation self-test passed (34 rejection branches)`, and `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs .planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json` reported `reconciliation ledger valid: 04-01-RECONCILIATION.json` and regenerated the report. Strict rules, declared seams, requirements, decisions, UI states, commands, and publication policy remain unchanged.
+
 ## User Setup Required
 
 None - no external service configuration required.
