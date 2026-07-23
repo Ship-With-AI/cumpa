@@ -15,14 +15,19 @@ const gitignoreCapabilityUrl = pathToFileURL(join(projectRoot, 'dist', 'server',
 
 function childProcess(command: string, arguments_: readonly string[]): Promise<void> {
   const { promise, reject, resolve: resolveChild } = Promise.withResolvers<void>();
-  const process = spawn(command, arguments_, { stdio: 'ignore' });
+  const process = spawn(command, arguments_, { stdio: ['ignore', 'ignore', 'pipe'] });
+  let stderr = '';
+  process.stderr.setEncoding('utf8');
+  process.stderr.on('data', (chunk: string) => {
+    stderr += chunk;
+  });
   process.once('error', reject);
   process.once('exit', (code, signal) => {
     if (code === 0) {
       resolveChild();
       return;
     }
-    reject(new Error(`Generated export child exited ${code ?? 'null'} (${signal ?? 'no signal'}).`));
+    reject(new Error(`Generated export child exited ${code ?? 'null'} (${signal ?? 'no signal'}): ${stderr}`));
   });
   return promise;
 }

@@ -48,7 +48,7 @@ describe('native addon build target gate', () => {
     await expect(readFile(output)).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
-  test('builds the declared darwin-arm64 addon target', async () => {
+  test.runIf(process.platform === 'darwin' && process.arch === 'arm64')('builds the declared darwin-arm64 addon target', async () => {
     const root = await fixtureRoot();
     const output = join(root, 'dist', 'native', 'directory_exchange.node');
 
