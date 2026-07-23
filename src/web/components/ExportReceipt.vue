@@ -17,6 +17,8 @@ const props = withDefaults(defineProps<{
 const heading = ref<HTMLElement>();
 const copyMessage = ref('');
 const revealMessage = ref('');
+const revealFailed = ref(false);
+const revealAlert = ref<HTMLElement>();
 
 const headingText = computed(() => props.previous ? 'Previous confirmed export' : 'Review export complete');
 const driftText = computed(() => props.receipt.driftAcknowledged ? 'Acknowledged for this export' : 'None observed');
@@ -48,14 +50,20 @@ async function copyDetails(): Promise<void> {
 
 async function revealDirectory(): Promise<void> {
   revealMessage.value = '';
+  revealFailed.value = false;
   try {
     const result = await props.revealExportDirectory();
-    revealMessage.value = result.kind === 'revealed'
-      ? 'Export directory revealed in the system file browser.'
-      : 'Could not reveal the export directory. Check the terminal details.';
+    if (result.kind === 'revealed') {
+      revealMessage.value = 'Export directory revealed in the system file browser.';
+      return;
+    }
   } catch {
-    revealMessage.value = 'Could not reveal the export directory. Check the terminal details.';
+    // The fixed capability reports no path or OS diagnostic to the browser.
   }
+  revealFailed.value = true;
+  revealMessage.value = 'Reveal failed; copy a displayed relative path and open it from the repository root.';
+  await nextTick();
+  revealAlert.value?.focus();
 }
 </script>
 
@@ -79,6 +87,6 @@ async function revealDirectory(): Promise<void> {
       <ReceiptFileRow :file="receipt.files[1]" file-name="review.md" />
     </div>
     <p v-if="copyMessage !== ''" class="export-receipt__message" :class="{ 'inline-notice inline-notice--error': copyMessage.startsWith('Could not') }" :role="copyMessage.startsWith('Could not') ? 'alert' : 'status'">{{ copyMessage }}</p>
-    <p v-if="revealMessage !== ''" class="export-receipt__message" :class="{ 'inline-notice inline-notice--error': revealMessage.startsWith('Could not') }" :role="revealMessage.startsWith('Could not') ? 'alert' : 'status'">{{ revealMessage }}</p>
+    <p v-if="revealMessage !== ''" ref="revealAlert" class="export-receipt__message" :class="{ 'inline-notice inline-notice--error': revealFailed }" :role="revealFailed ? 'alert' : 'status'" tabindex="-1">{{ revealMessage }}</p>
   </section>
 </template>
