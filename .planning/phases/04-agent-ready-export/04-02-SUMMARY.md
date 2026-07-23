@@ -76,6 +76,11 @@ status: complete
    - `1c8b373` (`test`) RED Markdown projection contract
    - `b9b4698` (`feat`) GREEN canonical-byte Markdown projector
 
+## Post-Plan Integration Fix
+
+- Re-exported the named `ReviewExportV1` type through `review-export.ts`, preserving `render-review-markdown.ts` as a consumer of the canonical export module rather than its internal contracts dependency.
+- Verified the public type boundary with `npm run build:node` and the focused unit suite.
+
 ## Files Created/Modified
 
 - `src/contracts/draft.ts` — strict composed `ReviewExportV1Schema` and named export DTO.
@@ -102,7 +107,8 @@ Empty summaries render `No summary provided`; zero-actionable and no-comment art
 ## Verification
 
 - `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs .planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json` — passed before all source edits, as required by the plan's fail-closed preflight.
-- `node scripts/run-focused-vitest.mjs tests/unit` — passed: 14 files, 94 tests.
+- `npm run build:node` — passed after the named type re-export.
+- `node scripts/run-focused-vitest.mjs tests/unit` — passed: 15 files, 95 tests.
 - RED runs failed as required before each implementation: missing `review-export.ts`, then missing `render-review-markdown.ts`.
 
 ## Deviations from Plan
@@ -125,7 +131,7 @@ Plans 04-03 onward can consume `ReviewExportV1Schema`, `buildReviewExportV1`, `c
 
 - All five plan-owned source/test artifacts exist.
 - RED and GREEN commits are present in sequence.
-- The focused ledger-resolved Vitest command passes all 94 tests.
+- `npm run build:node` and the focused ledger-resolved Vitest command pass: 15 files, 95 tests.
 
 ---
 *Phase: 04-agent-ready-export*

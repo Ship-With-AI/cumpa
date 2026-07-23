@@ -8,6 +8,7 @@ import {
   type ReviewDraftV1,
   type ReviewExportV1,
 } from '../contracts/draft.js';
+export type { ReviewExportV1 } from '../contracts/draft.js';
 import { compareExactPaths } from '../domain/path-bytes.js';
 
 
