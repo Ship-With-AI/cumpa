@@ -18,7 +18,7 @@ affects: [04-02, 04-03, 04-04, 04-05, 04-06, 04-07, 04-08]
 
 tech-stack:
   added: []
-  patterns: [hash-bound repository evidence, exact-one seam ownership, pending native publication policy]
+ patterns: [hash-bound repository evidence, exact-one seam ownership, observed native publication target]
 
 key-files:
   created:
@@ -29,7 +29,7 @@ key-files:
 
 key-decisions:
   - "Treat the existing launch-owned fixed draft reveal adapter as reusable evidence; do not invent an export-directory reveal endpoint."
-  - "Keep native directory exchange as native-exchange-probe-pending because no native target, adapter, or runtime probe is implemented."
+ - "Promote only the declared darwin-arm64 target after its exact compile/load/probe and packaged continuous complete-pair evidence passes; all other targets remain reExportUnsupported."
 
 patterns-established:
   - "Later Phase 4 plans use only validated ledger substitutions and stop on a seam-specific prerequisite error."
@@ -163,11 +163,13 @@ The final acknowledged-drift commits `9e6f741` (RED), `f4f7b1d` (GREEN), and `25
 
 The final fail-closed proof passed: the Node-core mutation self-test reported 34 rejection branches, and real validation returned `reconciliation ledger valid: 04-01-RECONCILIATION.json` after regenerating the report. All declared strict evidence rules remain intact.
 
-## Darwin ARM64 Native Target Declaration
+## Darwin ARM64 Native Target Observation
 
-The reconciliation ledger now declares the executable packaged-workstation target `darwin-arm64` for Node 24/N-API. Its `04-03-native-exchange` matrix invokes the focused unit runner with `tests/unit/directory-exchange.test.ts`; evidence binds the N-API adapter source, `binding.gyp` C++20 target declaration, `/usr/bin/c++` compiler/linker invocation with Node headers, and npm package/runner declarations. The generated report records one declared packaging target.
+The ledger binds the executable packaged-workstation target `darwin-arm64` for Node 24/N-API to `binding.gyp`, the N-API adapter, the focused compiler/load/probe test, the native build script, and the package-safety continuous-pair test. Its `04-03-native-exchange` matrix passed **1/1**: it compiled and loaded the actual adapter and proved a Darwin one-call complete sibling-pair swap.
 
-The target remains `pending`: no probe observation promotes it to production re-export capability. Unexecuted, failed, or undeclared targets remain fail-closed as `reExportUnsupported`. The mutation self-test proved all 34 rejection branches and real-ledger validation regenerated the report successfully without weakening any rule.
+After the final production commits `4023bdf`, `e11f2eb`, `cf06c75`, `6e2f3a9`, `fd6b700`, `29d8d07`, and `44d9e75`, the packed-tarball/generated-CLI Chromium proof `npx playwright test tests/e2e/agent-ready-export.spec.ts --grep "atomically re-exports"` passed **1/1**. Both export requests returned `201`; the second parsed as `exported`, and the stable pair was independently reread after native re-export. Following `npm run build`, `node scripts/run-focused-vitest.mjs tests/package/agent-ready-export-safety.test.ts` passed **8/8** generated packaged-pair safety tests. The forced-unavailable regression proof `npx playwright test tests/e2e/agent-ready-export-safety.spec.ts --grep "forced unavailable capability"` also passed **1/1**, proving refusal before any complete old stable-pair touch.
+
+`publicationPolicy.kind` is now `native-exchange-probe-observed` and its sole `darwin-arm64` target has `reExportCapability: observedNativeExchange`. The validator accepts this only for its exact declared target/evidence facts and requires the package declaration to mirror that status. Other, unexecuted, unsupported, failed, or undeclared targets remain fail-closed as `reExportUnsupported`; the 34-branch mutation self-test still rejects unsupported claims.
 
 ## User Setup Required
 
@@ -175,7 +177,7 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-Plans 04-02 through 04-08 can consume the validated substitution authority. They must stop on the validator's focused prerequisite error if any owner, command, package fact, or publication policy drifts. Plan 04-03 alone may build and probe a narrow native exchange adapter; unsupported, failed, or unexecuted targets remain `reExportUnsupported`.
+Plans 04-02 through 04-08 can consume the validated substitution authority. They must stop on the validator's focused prerequisite error if any owner, command, package fact, or publication policy drifts. The observed `darwin-arm64` target may use only its tested native exchange path; unsupported, failed, unavailable, or unexecuted targets remain `reExportUnsupported`.
 
 ## Self-Check: PASSED
 

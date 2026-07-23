@@ -2,7 +2,7 @@
 
 ## Status
 
-**Approved for Phase 4 source planning only.** Native exchange remains unbuilt and unapproved.
+**Approved reconciliation evidence.** The declared darwin-arm64 target is observed supported by its grounded compile/load/probe and packaged continuous complete-pair evidence.
 
 ## Grounded seam owners
 
@@ -45,7 +45,7 @@
 - Package manager: npm; required installs: none.
 - Manifest: `package.json`; lockfile: `package-lock.json`.
 - Declared packaging targets: 1.
-- Publication policy: `native-exchange-probe-pending`; every target capability is pending.
+- Publication policy: `native-exchange-probe-observed`; target capabilities: darwin-arm64=observedNativeExchange.
 - Reusable reveal adapter: `src/cli/run.ts`; no export-directory reveal route is asserted.
 
 ## Failures

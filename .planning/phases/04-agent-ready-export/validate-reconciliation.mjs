@@ -300,17 +300,28 @@ function targetKey(target) {
   return `${target.os}/${target.architecture}/${target.triple}`;
 }
 
+function observedDarwinArm64Target(target) {
+  return target.os === 'darwin'
+    && target.architecture === 'arm64'
+    && target.triple === 'darwin-arm64'
+    && target.commandKey === '04-03-native-exchange'
+    && target.toolchainEvidence === 'binding.gyp declares C++20 N-API directory_exchange compiled linked by /usr/bin/c++ with Node 24 headers and tests prove compile/load/probe.'
+    && target.packagingEvidence === 'package.json build:runtime packages dist/native/directory_exchange.node; focused package safety runner loads it and proves continuous complete-pair re-export.';
+}
+
 function validateTarget(target, label) {
   exactKeys(target, ['os', 'architecture', 'triple', 'commandKey', 'toolchainEvidence', 'packagingEvidence', 'reExportCapability'], label);
   for (const key of ['os', 'architecture', 'triple', 'commandKey', 'toolchainEvidence', 'packagingEvidence', 'reExportCapability']) text(target[key], `${label}.${key}`);
   if (!requiredCommandKeys.includes(target.commandKey)) fail('publication', `${label} references an undeclared command`);
-  if (target.reExportCapability !== 'pending') fail('publication', `${label} cannot claim re-export capability before the Plan 04-03 probe`);
+  if (target.reExportCapability !== 'pending' && !(target.reExportCapability === 'observedNativeExchange' && observedDarwinArm64Target(target))) {
+    fail('publication', `${label} cannot claim an unobserved re-export capability`);
+  }
 }
 
 function validatePublicationPolicy(ledger) {
   const policy = object(ledger.publicationPolicy, 'publicationPolicy');
   exactKeys(policy, ['kind', 'stablePath', 'fallbackKind', 'promotionRequirement', 'targets'], 'publicationPolicy');
-  if (policy.kind !== 'native-exchange-probe-pending') fail('publication', 'unknown or preapproved publication policy kind');
+  if (!['native-exchange-probe-pending', 'native-exchange-probe-observed'].includes(policy.kind)) fail('publication', 'unknown publication policy kind');
   if (policy.stablePath !== '.diff-review/exports/<fullBaseOid>..<fullHeadOid>') fail('publication', 'stable export path is absent or not comparison-specific');
   if (policy.fallbackKind !== 'reExportUnsupported') fail('publication', 'portable or stable-to-backup fallback is forbidden');
   if (!text(policy.promotionRequirement, 'publicationPolicy.promotionRequirement').includes('Plan 04-03')) fail('publication', 'publication policy lacks the Plan 04-03 promotion gate');
@@ -323,7 +334,14 @@ function validatePublicationPolicy(ledger) {
     validateTarget(targets[index], `publicationPolicy.targets[${index}]`);
     const declaredTarget = declared.find((candidate) => targetKey(candidate) === targetKey(targets[index]));
     validateTarget(declaredTarget, `packageEvidence.packaging.declaredTargets[${index}]`);
+    if (declaredTarget.reExportCapability !== targets[index].reExportCapability) fail('publication', 'declared target capability differs from publication target');
   }
+  const observed = targets.filter((target) => target.reExportCapability === 'observedNativeExchange');
+  if (policy.kind === 'native-exchange-probe-pending' && observed.length !== 0) fail('publication', 'pending publication policy cannot claim observed capability');
+  if (policy.kind === 'native-exchange-probe-observed' && (targets.length === 0 || observed.length !== targets.length)) {
+    fail('publication', 'observed publication policy requires every declared target observed');
+  }
+
 }
 
 export async function validateReconciliationLedger(ledger, options = {}) {
@@ -344,7 +362,8 @@ function markdown(ledger) {
     const owner = ledger.seams[seam][0];
     return `| ${seam} | \`${owner.ownerPath}\` | \`${owner.symbols.map((symbol) => symbol.name).join(', ')}\` | \`${owner.substitutionKey}\` |`;
   }).join('\n');
-  return `# Phase 04 Plan 01 Reconciliation\n\n## Status\n\n**Approved for Phase 4 source planning only.** Native exchange remains unbuilt and unapproved.\n\n## Grounded seam owners\n\n| Seam | Owner | Evidence | Substitution |\n|---|---|---|---|\n${ownerRows}\n\n## Focused commands\n\n${requiredCommandKeys.map((key) => `- \`${key}\`: \`${ledger.commands[key].executable}\` ${ledger.commands[key].argv.map((argument) => `\`${argument}\``).join(' ')}`).join('\n')}\n\n## Package and publication disposition\n\n- Package manager: ${ledger.packageEvidence.packageManager.kind}; required installs: none.\n- Manifest: \`${ledger.packageEvidence.manifest.path}\`; lockfile: \`${ledger.packageEvidence.lockfile.path}\`.\n- Declared packaging targets: ${ledger.packageEvidence.packaging.declaredTargets.length}.\n- Publication policy: \`${ledger.publicationPolicy.kind}\`; every target capability is pending.\n- Reusable reveal adapter: \`${ledger.seams.platformRevealAdapter[0].ownerPath}\`; no export-directory reveal route is asserted.\n\n## Failures\n\n${ledger.failures.length === 0 ? 'None.' : ledger.failures.map((failure) => `- ${failure}`).join('\n')}\n`;
+  const nativeStatus = ledger.publicationPolicy.kind === 'native-exchange-probe-observed' ? 'The declared darwin-arm64 target is observed supported by its grounded compile/load/probe and packaged continuous complete-pair evidence.' : 'Native exchange remains unbuilt and unapproved.';
+  return `# Phase 04 Plan 01 Reconciliation\n\n## Status\n\n**Approved reconciliation evidence.** ${nativeStatus}\n\n## Grounded seam owners\n\n| Seam | Owner | Evidence | Substitution |\n|---|---|---|---|\n${ownerRows}\n\n## Focused commands\n\n${requiredCommandKeys.map((key) => `- \`${key}\`: \`${ledger.commands[key].executable}\` ${ledger.commands[key].argv.map((argument) => `\`${argument}\``).join(' ')}`).join('\n')}\n\n## Package and publication disposition\n\n- Package manager: ${ledger.packageEvidence.packageManager.kind}; required installs: none.\n- Manifest: \`${ledger.packageEvidence.manifest.path}\`; lockfile: \`${ledger.packageEvidence.lockfile.path}\`.\n- Declared packaging targets: ${ledger.packageEvidence.packaging.declaredTargets.length}.\n- Publication policy: \`${ledger.publicationPolicy.kind}\`; target capabilities: ${ledger.publicationPolicy.targets.length === 0 ? 'none declared' : ledger.publicationPolicy.targets.map((target) => `${target.triple}=${target.reExportCapability}`).join(', ')}.\n- Reusable reveal adapter: \`${ledger.seams.platformRevealAdapter[0].ownerPath}\`; no export-directory reveal route is asserted.\n\n## Failures\n\n${ledger.failures.length === 0 ? 'None.' : ledger.failures.map((failure) => `- ${failure}`).join('\n')}\n`;
 }
 
 function clone(value) {
