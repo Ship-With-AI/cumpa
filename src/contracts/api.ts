@@ -235,6 +235,9 @@ export const AppendDiffReviewIgnoreResultSchema = z
     z.strictObject({ kind: z.literal('appended') }).readonly(),
     z.strictObject({ kind: z.literal('alreadyIgnored') }).readonly(),
     z.strictObject({ kind: z.literal('unconfirmed') }).readonly(),
+    z.strictObject({ kind: z.literal('unchanged') }).readonly(),
+    z.strictObject({ kind: z.literal('appendUnconfirmed') }).readonly(),
+    z.strictObject({ kind: z.literal('ambiguous') }).readonly(),
   ])
   .readonly();
 

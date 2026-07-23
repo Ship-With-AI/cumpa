@@ -11,13 +11,28 @@ const props = defineProps<{
 
 const confirming = ref(false);
 const appending = ref(false);
-const appendFailed = ref(false);
+const appendOutcome = ref<Exclude<AppendDiffReviewIgnoreResult['kind'], 'appended' | 'alreadyIgnored'> | null>(null);
 const statusMessage = ref('');
 const addButton = ref<HTMLButtonElement>();
 const keepButton = ref<HTMLButtonElement>();
 
+
+function appendFailureMessage(
+  outcome: Exclude<AppendDiffReviewIgnoreResult['kind'], 'appended' | 'alreadyIgnored'>,
+): string {
+  switch (outcome) {
+    case 'unchanged':
+      return '.gitignore was not changed. You can retry the append.';
+    case 'appendUnconfirmed':
+      return '.gitignore contains the ignore rule, but its durability could not be confirmed.';
+    case 'ambiguous':
+      return '.gitignore may have changed. Inspect it before retrying.';
+    case 'unconfirmed':
+      return '.gitignore state could not be confirmed. Inspect it before retrying.';
+  }
+}
 function beginAppendConfirmation(): void {
-  appendFailed.value = false;
+  appendOutcome.value = null;
   statusMessage.value = '';
   confirming.value = true;
   void nextTick(() => keepButton.value?.focus());
@@ -25,18 +40,19 @@ function beginAppendConfirmation(): void {
 
 function keepUnchanged(): void {
   confirming.value = false;
-  appendFailed.value = false;
+  appendOutcome.value = null;
+  statusMessage.value = '';
   void nextTick(() => addButton.value?.focus());
 }
 
 async function appendRule(): Promise<void> {
   appending.value = true;
-  appendFailed.value = false;
+  appendOutcome.value = null;
   statusMessage.value = '';
   try {
     const result = await props.appendIgnoreRule();
-    if (result.kind === 'unconfirmed') {
-      appendFailed.value = true;
+    if (result.kind !== 'appended' && result.kind !== 'alreadyIgnored') {
+      appendOutcome.value = result.kind;
       return;
     }
     await props.refreshIgnoreStatus();
@@ -45,7 +61,7 @@ async function appendRule(): Promise<void> {
       ? 'Added /.diff-review/ to .gitignore.'
       : 'Export directory is already ignored.';
   } catch {
-    appendFailed.value = true;
+    appendOutcome.value = 'unconfirmed';
   } finally {
     appending.value = false;
   }
@@ -89,13 +105,13 @@ async function appendRule(): Promise<void> {
         <h5 id="gitignore-confirm-heading">Add export directory to .gitignore?</h5>
         <p>Diff Review will append exactly <code>/.diff-review/</code> to the repository-root <code>.gitignore</code>. Existing bytes and rules will be preserved.</p>
         <p v-if="appending" role="status">Appending one ignore rule…</p>
-        <section v-if="appendFailed" class="inline-notice inline-notice--error" role="alert" aria-labelledby="gitignore-failed-heading">
-          <h6 id="gitignore-failed-heading">.gitignore was not changed</h6>
-          <p>The ignore rule could not be appended safely. Export can continue; existing .gitignore content was not replaced.</p>
+        <section v-if="appendOutcome !== null" class="inline-notice inline-notice--error" role="alert" aria-labelledby="gitignore-failed-heading">
+          <h6 id="gitignore-failed-heading">{{ appendFailureMessage(appendOutcome) }}</h6>
+          <p>Diff Review did not replace existing bytes or apply any rollback. Export can continue.</p>
         </section>
         <div class="export-actions">
           <button ref="keepButton" type="button" class="ui-button" :disabled="appending" @click="keepUnchanged">Keep .gitignore unchanged</button>
-          <button type="button" class="ui-button" :disabled="appending" @click="appendRule">{{ appendFailed ? 'Try append again' : 'Append ignore rule' }}</button>
+          <button type="button" class="ui-button" :disabled="appending" @click="appendRule">{{ appendOutcome === null ? 'Append ignore rule' : 'Try append again' }}</button>
         </div>
       </section>
     </section>

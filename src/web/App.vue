@@ -430,7 +430,10 @@ async function appendDiffReviewIgnoreRule() {
   if (sessionClient === undefined) {
     throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
   }
-  return sessionClient.appendDiffReviewIgnoreRule();
+  const result = await sessionClient.appendDiffReviewIgnoreRule();
+  reviewState?.setIgnoreAppendResult(result);
+  refreshReviewSnapshot();
+  return result;
 }
 
 async function revealExportDirectory() {

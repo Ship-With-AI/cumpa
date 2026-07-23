@@ -179,10 +179,10 @@ test('reports bounded append-failure outcomes without falsely claiming .gitignor
   await expect(page.getByText('.gitignore contains the ignore rule, but its durability could not be confirmed.')).toBeVisible();
 
   appendResult = { kind: 'ambiguous' };
-  await warning.getByRole('button', { name: 'Append ignore rule' }).click();
+  await warning.getByRole('button', { name: 'Try append again' }).click();
   await expect(page.getByText('.gitignore may have changed. Inspect it before retrying.')).toBeVisible();
 
   appendResult = { kind: 'unchanged' };
-  await warning.getByRole('button', { name: 'Append ignore rule' }).click();
+  await warning.getByRole('button', { name: 'Try append again' }).click();
   await expect(page.getByText('.gitignore was not changed. You can retry the append.')).toBeVisible();
 });

@@ -1,4 +1,4 @@
-import type { DraftLoadResponse, DiffReviewIgnoreStatus, ExportReviewResult, SelectorDriftResponse } from '../../contracts/api.js';
+import type { AppendDiffReviewIgnoreResult, DraftLoadResponse, DiffReviewIgnoreStatus, ExportReviewResult, SelectorDriftResponse } from '../../contracts/api.js';
 
 import {
   projectCommentGroups,
@@ -28,6 +28,7 @@ export type ReviewExportState = Readonly<{
   driftAcknowledgementToken: string | null;
   driftObservation: SelectorDriftResponse | null;
   ignoreStatus: DiffReviewIgnoreStatus | null;
+  ignoreAppendResult: AppendDiffReviewIgnoreResult | null;
   driftStale: boolean;
 }>;
 
@@ -81,6 +82,7 @@ export interface ReviewDraftState {
   reloadLatest(): void;
   setCommentBuffer(commentId: string, value: string): void;
   setIgnoreStatus(status: DiffReviewIgnoreStatus): void;
+  setIgnoreAppendResult(result: AppendDiffReviewIgnoreResult): void;
   setSummaryBuffer(value: string): void;
   snapshot(): ReviewDraftSnapshot;
   startExport(driftAcknowledgementToken?: string): boolean;
@@ -107,6 +109,7 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
     driftObservation: null,
     driftStale: false,
     ignoreStatus: null,
+    ignoreAppendResult: null,
   };
 
   function snapshot(): ReviewDraftSnapshot {
@@ -243,6 +246,9 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
     },
     setIgnoreStatus(status) {
       exportState = { ...exportState, ignoreStatus: status };
+    },
+    setIgnoreAppendResult(result) {
+      exportState = { ...exportState, ignoreAppendResult: result };
     },
     setSummaryBuffer(value) {
       summaryBuffer = value;
