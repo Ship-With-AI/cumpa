@@ -170,6 +170,13 @@ No declared packaged runner exists for an interruption reader probe. The target-
 - **Disposition:** Accepted residual concurrent same-UID race assumption. This is detection hardening, not descriptor-level race elimination; 04-03 PLAN lines 87-91 and the empty target matrix preclude claiming otherwise.
 - **Committed in:** `f02b48f`, `3ddbeeb`.
 
+**7. [Ledger promotion - Native runtime] The reconciled target matrix now declares `darwin-arm64` Node 24/N-API.**
+- **Found during:** EXP-07 final verification.
+- **Fix:** Build and package `dist/native/directory_exchange.node`; load it only relative to the compiled server module; run its real directory-exchange probe once before granting `observedNativeExchange`; load/probe failure remains typed `reExportUnsupported`.
+- **Verification:** `npm run build` compiled the addon; generated package safety passed 8/8, including first export followed by native atomic stable-pair re-export and recovery of the new pair.
+- **Committed in:** `4023bdf`.
+- **Disposition:** Supersedes the no-packaged-native premise of residual 6 for declared `darwin-arm64`; unsupported or unobserved targets remain fail-closed.
+
 ---
 
 **Total deviations:** 6 auto-fixed correctness/security/integration issues plus one accepted residual assumption.

@@ -74,6 +74,12 @@ Each task was committed atomically:
 
 _Note: Task 1 followed the required RED → GREEN sequence. The RED test initially exposed the open review drawer intercepting the Monaco line interaction; the GREEN test closes that drawer before the real editor interaction and reopens it for the persisted mutation._
 
+## Native Target Evidence Update
+
+- Ledger commit `257eab8` declares the executable `darwin-arm64` Node 24/N-API target.
+- `4023bdf` compiles the project-owned addon into `dist/native/directory_exchange.node`, resolves it relative to the packaged server module, and grants exchange authority only after its one-time native probe succeeds.
+- Generated package safety now proves first export followed by successful atomic complete-pair re-export, continuous complete stable observations, and recovery of the new exact bytes. Unsupported or failed load/probe targets remain typed `reExportUnsupported`.
+
 ## Files Created/Modified
 
 - `tests/e2e/agent-ready-export.spec.ts` - Packed CLI/browser/Git resume and independent export-byte acceptance journey.
