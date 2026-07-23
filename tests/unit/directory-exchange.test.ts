@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { createRequire } from 'node:module';
@@ -43,7 +43,7 @@ describe('native directory exchange probe', () => {
   test('compiles the actual adapter and proves one complete sibling pair swaps without stable absence', async () => {
     const root = await mkdtemp(join(tmpdir(), 'diff-review-native-probe-'));
     roots.push(root);
-    await cp(join(process.cwd(), 'tests', 'fixtures'), join(root, 'fixtures'), { recursive: true, force: true }).catch(() => undefined);
+
 
     const addon = await buildAddon();
     const result = addon.probeDirectoryExchange(root);
@@ -52,6 +52,8 @@ describe('native directory exchange probe', () => {
       expect(result).toEqual({ kind: 'supported' });
       expect(await readFile(join(root, 'stable', 'review.json'), 'utf8')).toBe('new-json');
       expect(await readFile(join(root, 'stable', 'review.md'), 'utf8')).toBe('new-markdown');
+      expect(await readFile(join(root, 'candidate', 'review.json'), 'utf8')).toBe('old-json');
+      expect(await readFile(join(root, 'candidate', 'review.md'), 'utf8')).toBe('old-markdown');
     } else {
       expect(result).toEqual({ kind: 'unsupported' });
     }
