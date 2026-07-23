@@ -89,6 +89,8 @@ The focused browser result test covers all three rendered outcomes after the exi
 7. Direct `ReviewPanel` fixture repair: supplied fixed typed capability callbacks (`alreadyIgnored`, `revealed`, and status refresh) only at the E2E harness boundary. `node_modules/.bin/playwright test tests/e2e/review-panel-resolved.spec.ts` passed **1/1** with no Vue missing-prop warnings.
 8. **WR-04 RED/GREEN:** `e6ac613` first proved the old terminal-only reveal failure copy; `abb4bc8` now preserves the full receipt, moves focus to its adjacent alert, and says: “Reveal failed; copy a displayed relative path and open it from the repository root.” Focused receipt browser coverage passed **3/3** and `npm run build` passed.
 
+9. **UI audit remediation RED/GREEN:** `53145bb` first required all seven receipt/export UI audit contracts; it failed on old copy confirmation wording and the missing recovery-required surface. `b760f0c` renders the server-confirmed `receipt.drift` union only (never reconstructed selector data), exposes full pinned/current identities in a neutral disclosure with selectable/copyable values, distinguishes **Export needs recovery**, retains a failed re-export’s receipt as **Previous confirmed export**, uses exact copy confirmations, isolates Escape in conflict/error/recovery surfaces, gives each file row one complete accessible description, applies explicit 12/14/18px typography roles, and proves no document-level horizontal scroll at 768px and 360px responsive widths. `node_modules/.bin/playwright test tests/integration/export-receipt-ui.spec.ts` passed **4/4**; `npm run build` passed.
+
 ## Reconciliation and deviation
 
 - Pre-edit reconciliation preflight passed:
