@@ -53,8 +53,8 @@ status: complete
 
 ## Accomplishments
 
-- Added the named `packaged-resume-after-relaunch` journey using a packed production CLI, authenticated loopback browser, real Monaco, and a dirty disposable Git repository.
-- Proved accepted summary/comment state persists through full browser/server termination and a fresh packed CLI launch; a different valid ordered pair stays separate, while resumed export matches independently parsed JSON, reparsed Markdown, hashes, receipt paths, and source-control snapshot.
+- Added named packaged generated-CLI journey using a packed production tarball, authenticated loopback browser, real Monaco, and a dirty disposable Git repository.
+- Proved accepted summary/comment state persists through full browser/server termination and fresh packed CLI launch; the same pinned pair completes first export then a second **Export review again** native re-export with a confirmed `exported` receipt, while the stable output rereads as one exact canonical JSON/Markdown pair and different valid ordered pair stays separate.
 - Bound coverage evidence to a fresh, exact 22-test packaged Chromium run and its run-ID/fingerprint report, eliminating the static `executed: true` manifest.
 
 ## Verification
@@ -62,6 +62,8 @@ status: complete
 - `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs .planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json` — passed.
 - Prescribed ledger-driven command (`04-08-packaged-export`) — 22 Chromium E2E tests passed, including `packaged-resume-after-relaunch`.
 - `node_modules/.bin/vitest run tests/package/agent-ready-export.test.ts` — 1 test passed after running the exact 22-test packaged Chromium suite; its fresh random-run-ID report matched both packed and generated package SHA-256 values (`3114aef65e9db770828c4e882439b51c187a1ceabd32bb732bbcc469372f2341`).
+- `npx playwright test tests/e2e/agent-ready-export.spec.ts --grep "atomically re-exports"` — passed: 1 packed-tarball/generated-CLI Chromium journey; both export responses were `201`, the second parsed as `exported`, and the on-disk pair was independently reread after re-export.
+- `npx playwright test tests/e2e/agent-ready-export-safety.spec.ts --grep "forced unavailable capability"` — passed: 1 explicit forced-unavailable refusal test, retained only as a lower-level fallback proof.
 
 ## Task Commits
 

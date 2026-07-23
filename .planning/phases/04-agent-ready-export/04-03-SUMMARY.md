@@ -193,8 +193,13 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- Plan 04-04 can consume the strict export algebra, fixed reveal capability, canonical pair publisher, and zero-target refusal boundary.
-- A future ledger update that declares a packaged target must add that target's actual packaged compile/link, primitive, and continuous reader observation before enabling native re-export.
+- Plan 04-04 can consume the strict export algebra, fixed reveal capability, canonical pair publisher, and observed `darwin-arm64` native exchange boundary.
+- Any future target remains `reExportUnsupported` until its own packaged compile/link, primitive, and continuous reader observations succeed.
+
+## Packaged Generated-CLI Re-export Evidence
+
+- `npx playwright test tests/e2e/agent-ready-export.spec.ts --grep "atomically re-exports"` — passed: the acceptance harness builds, `npm pack`s, unpacks, and launches the generated `dist/bin/diff-review.mjs`; the browser completes a first export, clicks **Export review again**, receives a second `201` `exported` receipt rather than `reExportUnsupported`, and independently rereads the resulting two-file stable directory as canonical JSON plus byte-identical generated Markdown.
+- `npx playwright test tests/e2e/agent-ready-export-safety.spec.ts --grep "forced unavailable capability"` — passed: the explicit forced-unavailable lower-level seam still refuses before touching the old complete stable pair; it no longer asserts that the declared `darwin-arm64` package target is unavailable.
 
 ## Self-Check: PASSED
 
