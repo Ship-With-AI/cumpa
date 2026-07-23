@@ -99,6 +99,10 @@ None - plan executed exactly as written.
 
 The initial ledger used newline-count rather than inclusive source-line evidence for final non-content line positions. The validator's strict range check exposed the mismatch; the committed ledger now records source-inclusive ranges and validates their exact bytes. This was resolved within Task 2 before verification.
 
+## Post-Plan Evidence Refresh
+
+After Phase 04-02 extended `src/contracts/draft.ts`, its previous whole-file evidence hash correctly failed closed. This repair refreshed the two affected source-inclusive ranges (`ReviewDraftV1Schema` and `DurableAnchorV1Schema`) to lines 1–294 and SHA-256 `21622237b75cda0fc542f5d02f0fba45131fd9278f1a9b9e126ee8c38d8b453a`; no validator rule or production source changed. The required mutation self-test and real-ledger validation passed afterward.
+
 ## User Setup Required
 
 None - no external service configuration required.
