@@ -14,6 +14,8 @@ let server: ViteDevServer | undefined;
 let origin = '';
 let exportAttempt = 0;
 const revealBodies: string[] = [];
+let ignoreStatus: 'ignored' | 'notIgnored' = 'ignored';
+const appendBodies: string[] = [];
 
 const session = {
   base: { label: 'base', oid: baseOid },
@@ -52,7 +54,15 @@ async function startAppServer(): Promise<string> {
             comments: [],
           },
         }));
-        viteServer.middlewares.use('/api/export/gitignore', (_request, response) => json(response, { kind: 'ignored' }));
+        viteServer.middlewares.use('/api/export/gitignore', async (request, response) => {
+          if (request.method === 'POST') {
+            appendBodies.push(await readBody(request));
+            ignoreStatus = 'ignored';
+            json(response, { kind: 'appended' });
+            return;
+          }
+          json(response, { kind: ignoreStatus });
+        });
         viteServer.middlewares.use('/api/export/reveal', async (request, response) => {
           revealBodies.push(await readBody(request));
           json(response, { kind: 'revealFailed' }, 500);
@@ -99,6 +109,8 @@ test.afterAll(async () => {
 test.beforeEach(async ({ context }) => {
   exportAttempt = 0;
   revealBodies.length = 0;
+  ignoreStatus = 'ignored';
+  appendBodies.length = 0;
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
 });
 
@@ -108,10 +120,13 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
 
   const receipt = page.getByRole('region', { name: 'Review export complete' });
   await expect(receipt).toBeVisible();
-  await expect(receipt).toContainText('Accepted revision 3');
+  await expect(receipt).toContainText(/Accepted revision\s*3/);
   await expect(receipt).toContainText('2026-07-23T12:34:56.000Z');
   await expect(receipt).toContainText(`${exportDirectory}/review.json`);
   await expect(receipt).toContainText(`${exportDirectory}/review.md`);
+
+  await page.setViewportSize({ width: 320, height: 720 });
+  expect(await receipt.evaluate((element) => element.getBoundingClientRect().right <= window.innerWidth)).toBe(true);
   await expect(receipt).toContainText('sha256:1111111111111111111111111111111111111111111111111111111111111111');
   await expect(receipt).toContainText('128');
 
@@ -126,4 +141,24 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
   await page.getByRole('button', { name: 'Export review again' }).click();
   await expect(page.getByRole('heading', { name: 'Export was not published' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Previous confirmed export' })).toContainText(`${exportDirectory}/review.md`);
+});
+
+test('requires a keyboard-safe second confirmation before appending the fixed ignore rule', async ({ page }) => {
+  ignoreStatus = 'notIgnored';
+  await openReview(page);
+
+  const warning = page.getByRole('heading', { name: 'Export directory is not ignored' }).locator('..');
+  const addRule = warning.getByRole('button', { name: 'Add to .gitignore' });
+  await addRule.click();
+  expect(appendBodies).toEqual([]);
+  await expect(warning.getByRole('button', { name: 'Keep .gitignore unchanged' })).toBeFocused();
+
+  await page.keyboard.press('Escape');
+  await expect(addRule).toBeFocused();
+  expect(appendBodies).toEqual([]);
+
+  await addRule.click();
+  await warning.getByRole('button', { name: 'Append ignore rule' }).click();
+  await expect(page.getByText('Export directory ignored')).toBeVisible();
+  expect(appendBodies).toEqual(['']);
 });

@@ -433,6 +433,13 @@ async function appendDiffReviewIgnoreRule() {
   return sessionClient.appendDiffReviewIgnoreRule();
 }
 
+async function revealExportDirectory() {
+  if (sessionClient === undefined) {
+    throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+  }
+  return sessionClient.revealExportDirectory();
+}
+
 function reviewUnsavedText(): void {
   document.querySelector<HTMLButtonElement>('.review-summary button')?.focus();
 }
@@ -850,6 +857,7 @@ onBeforeUnmount(() => {
           :export-state="reviewDraft.export"
           :append-ignore-rule="appendDiffReviewIgnoreRule"
           :refresh-ignore-status="refreshIgnoreStatus"
+          :reveal-export-directory="revealExportDirectory"
           @resolve="mutateComment($event, 'resolveComment')"
           @inspect-recorded-file="inspectRecordedFile"
           @reload-latest="reloadLatestReview"

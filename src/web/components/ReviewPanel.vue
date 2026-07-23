@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 
 import type { ReviewPendingOperation } from '../model/review-draft-state.js';
 import type { ReviewExportState } from '../model/review-draft-state.js';
-import type { AppendDiffReviewIgnoreResult } from '../../contracts/api.js';
+import type { AppendDiffReviewIgnoreResult, ExportDirectoryRevealResult } from '../../contracts/api.js';
 import { projectCommentGroups } from '../model/comment-groups.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import SummarySection from './SummarySection.vue';
@@ -30,6 +30,7 @@ const props = defineProps<{
   exportState: ReviewExportState;
   appendIgnoreRule: () => Promise<AppendDiffReviewIgnoreResult>;
   refreshIgnoreStatus: () => Promise<void>;
+  revealExportDirectory: () => Promise<ExportDirectoryRevealResult>;
 }>();
 
 const emit = defineEmits<{
@@ -525,6 +526,7 @@ watch(reviewFailure, (failed) => {
       :export-state="exportState"
       :append-ignore-rule="appendIgnoreRule"
       :refresh-ignore-status="refreshIgnoreStatus"
+      :reveal-export-directory="revealExportDirectory"
       @cancel="emit('cancelExport')"
       @export="emit('export')"
       @reload-latest="emit('reload-latest')"

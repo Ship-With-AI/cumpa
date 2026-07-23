@@ -1600,7 +1600,9 @@ body {
 .export-readiness,
 .export-drift,
   .export-progress,
-  .gitignore-status {
+  .gitignore-status,
+  .export-receipt,
+  .export-receipt__files {
   display: grid;
   gap: var(--space-sm);
 }
@@ -1636,6 +1638,72 @@ body {
 
 .gitignore-status__message {
   margin: 0;
+}
+
+.export-receipt {
+  padding: var(--space-md);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.export-receipt--previous {
+  border-style: dashed;
+}
+
+.export-receipt__heading,
+.receipt-file-row__identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.export-receipt__heading h4,
+.receipt-file-row h5,
+.export-receipt__previous-note,
+.export-receipt__message,
+.receipt-file-row__message {
+  margin: 0;
+}
+
+.export-receipt__metadata,
+.receipt-file-row__metadata {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+}
+
+.export-receipt__metadata > div,
+.receipt-file-row__metadata > div {
+  display: grid;
+  grid-template-columns: minmax(9rem, 1fr) minmax(0, 2fr);
+  gap: var(--space-sm);
+}
+
+.export-receipt__metadata dd,
+.receipt-file-row__metadata dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.receipt-file-row {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--canvas);
+}
+
+.receipt-file-row__value,
+.receipt-file-row__metadata code {
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
 
@@ -1729,6 +1797,11 @@ body {
 
   .export-readiness > div,
   .export-drift__identities > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .export-receipt__metadata > div,
+  .receipt-file-row__metadata > div {
     grid-template-columns: minmax(0, 1fr);
   }
 }

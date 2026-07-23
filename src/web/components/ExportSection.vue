@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue';
 
-import type { AppendDiffReviewIgnoreResult } from '../../contracts/api.js';
+import type { AppendDiffReviewIgnoreResult, ExportDirectoryRevealResult } from '../../contracts/api.js';
 import type { ReviewExportState } from '../model/review-draft-state.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import ExportReadinessSummary from './ExportReadinessSummary.vue';
 import DriftExportAcknowledgement from './DriftExportAcknowledgement.vue';
 import ExportProgress from './ExportProgress.vue';
 import GitignoreStatus from './GitignoreStatus.vue';
+import ExportReceipt from './ExportReceipt.vue';
 
 const props = defineProps<{
   revision: number;
@@ -20,6 +21,7 @@ const props = defineProps<{
   exportState: ReviewExportState;
   appendIgnoreRule: () => Promise<AppendDiffReviewIgnoreResult>;
   refreshIgnoreStatus: () => Promise<void>;
+  revealExportDirectory: () => Promise<ExportDirectoryRevealResult>;
 }>();
 
 const emit = defineEmits<{
@@ -51,7 +53,7 @@ watch(() => props.exportState.phase, (phase) => {
     void nextTick(() => {
       if (phase === 'conflict') conflictHeading.value?.focus();
       else if (phase === 'failed') failureHeading.value?.focus();
-      else if (phase !== 'drift') heading.value?.focus();
+      else if (phase !== 'drift' && phase !== 'exported') heading.value?.focus();
     });
   }
 });
@@ -86,6 +88,12 @@ watch(() => props.exportState.phase, (phase) => {
       <section v-else-if="exportState.phase === 'failed'" class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-failure-heading">
         <h4 id="export-failure-heading" ref="failureHeading" tabindex="-1">Export was not published</h4>
         <p>{{ exportState.failure === 'reExportUnsupported' ? 'This export cannot replace a previous pair safely on this runtime.' : 'The export pair could not be validated.' }}</p>
+        <ExportReceipt
+          v-if="exportState.previousConfirmedReceipt !== null"
+          :receipt="exportState.previousConfirmedReceipt"
+          :reveal-export-directory="revealExportDirectory"
+          previous
+        />
         <div class="export-actions">
           <button type="button" class="ui-button" @click="emit('export')">Try export again</button>
           <button type="button" class="ui-button" @click="emit('reviewUnsavedText')">Return to review</button>
@@ -100,6 +108,12 @@ watch(() => props.exportState.phase, (phase) => {
           <h4 id="export-unavailable-heading">Export is unavailable</h4>
           <p>Export is unavailable on this runtime.</p>
         </section>
+      </template>
+
+      <template v-else-if="exportState.phase === 'exported' && exportState.receipt !== null">
+        <ExportReceipt :receipt="exportState.receipt" :reveal-export-directory="revealExportDirectory" />
+        <button type="button" class="ui-button ui-button--primary" :disabled="exportState.pending" @click="emit('export')">Export review again</button>
+        <p class="export-section__support">Creates <code>review.json</code> and <code>review.md</code> together from accepted revision {{ revision }}. This does not apply, stage, commit, or push changes.</p>
       </template>
 
       <template v-else>
