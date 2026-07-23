@@ -512,6 +512,17 @@ export const ExportReviewResultSchema = z
         });
       }
     }
+
+    const observedDrift = result.drift.identities.some(
+      (identity) => identity.current.kind === 'unavailable' || identity.current.oid !== identity.pinned.oid,
+    );
+    if (!observedDrift) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Acknowledged drift requires an unavailable or changed current endpoint.',
+        path: ['drift', 'identities'],
+      });
+    }
   })
   .readonly();
 
