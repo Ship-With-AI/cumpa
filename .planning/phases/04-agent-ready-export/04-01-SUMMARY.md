@@ -127,6 +127,12 @@ Wave Five changed Playwright discovery and safety harness configuration. This re
 
 The `04-08-packaged-export` ledger entry now invokes the scoped no-shell Playwright runner directly: `/Users/alessandro/projects/diff-review/node_modules/.bin/playwright` with argv `["test","tests/e2e"]`. Its evidence remains the browser-runner owner `playwright.config.ts`, lines 1–23, SHA-256 `42770db1a998d659f6d2635fa3faa572fe593712fae4e653745ed90eaeed0d85`, and now names the committed `testDir: './tests'` discovery setting. Strict validation was unchanged; the 34-branch mutation self-test and real-ledger validation passed, and the corrected ledger command discovered and passed 22 Chromium browser tests.
 
+## CR/WR Remediation Evidence Refresh
+
+The completed CR/WR remediation commits `f02b48f`, `3ddbeeb`, `87b6b77`, `1355c6d`, and `c77aca2` changed reconciled owners. The strict ledger now binds the current inclusive whole-file evidence: `ReviewDraftV1Schema` and `DurableAnchorV1Schema` in `src/contracts/draft.ts` cover lines 1–333 with SHA-256 `92ff061f9a54d66edbf6ef721898f326f9fb4feb0f047803abb33dd1d8cc3443`; `registerSessionRoutes` in `src/server/routes.ts` covers lines 1–407 with SHA-256 `0f916b744a49372fe1067a3f2a4fb911e3426cf1ae04856771e594f5a75a6cca`; `createCapabilityRegistry` in `src/server/capabilities.ts` covers lines 1–475 with SHA-256 `af9efd1c2a1e0f35dc103e7a09cc2dd8ab751352c8b4bef26e19de7248fd81f6`; and `createReviewDraftState` in `src/web/model/review-draft-state.ts` covers lines 1–282 with SHA-256 `b6223a4497c737585123926c31be1ca1db0f5a681226084abbbbd40cd786f608`.
+
+The refresh also rehashed every declared source, runner, manifest, lockfile, toolchain, and packaging evidence record against the current tree. It preserved every seam, substitution, focused command, package/no-install fact, publication disposition, and validator rule. `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs --self-test` passed all 34 rejection branches, and real-ledger validation regenerated the report and exited successfully.
+
 ## User Setup Required
 
 None - no external service configuration required.
