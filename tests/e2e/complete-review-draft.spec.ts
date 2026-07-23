@@ -4,18 +4,20 @@ import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import {
   closeSync,
+  chmodSync,
   copyFileSync,
   existsSync,
-  readdirSync,
   mkdirSync,
   mkdtempSync,
   openSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
   symlinkSync,
   writeFileSync,
 } from 'node:fs';
+import { request as requestHttp } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -41,6 +43,16 @@ interface RunningCli {
   readonly child: ChildProcess;
   readonly outputPath: string;
   readonly outputDescriptor: number;
+}
+interface StartGeneratedCliOptions {
+  readonly head?: string;
+  readonly recoveryFailure?: 'backup' | 'replacement';
+  readonly revealMarkerPath?: string;
+  readonly revealSucceeds?: boolean;
+  readonly selections?: {
+    readonly base: Record<string, unknown>;
+    readonly head: Record<string, unknown>;
+  };
 }
 
 function runPrerequisite(command: string, arguments_: readonly string[]): string {
@@ -75,7 +87,23 @@ async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
   throw new Error('[behavioral] timed out waiting for generated CLI loopback URL');
 }
 
-function startGeneratedCli(repository: GitFixture, head = repository.headRef): RunningCli {
+function startGeneratedCli(
+  repository: GitFixture,
+  options: StartGeneratedCliOptions = {},
+): RunningCli {
+  const head = options.head ?? repository.headRef;
+  const selections = options.selections ?? {
+    base: {
+      label: 'main',
+      revision: repository.baseRef,
+      source: { kind: 'branch', id: 'fixture-base', refName: repository.baseRef },
+    },
+    head: {
+      label: head.slice('refs/heads/'.length),
+      revision: head,
+      source: { kind: 'branch', id: 'fixture-head', refName: head },
+    },
+  };
   const outputPath = join(packedRoot, `terminal-${crypto.randomUUID()}.log`);
   const outputDescriptor = openSync(outputPath, 'w');
   const child = spawn(process.execPath, [executablePath], {
@@ -83,19 +111,17 @@ function startGeneratedCli(repository: GitFixture, head = repository.headRef): R
     env: {
       ...process.env,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
-      DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({
-        cwd: repository.nestedCwd,
-        base: {
-          label: 'main',
-          revision: repository.baseRef,
-          source: { kind: 'branch', id: 'fixture-base', refName: repository.baseRef },
-        },
-        head: {
-          label: head.slice('refs/heads/'.length),
-          revision: head,
-          source: { kind: 'branch', id: 'fixture-head', refName: head },
-        },
-      }),
+      DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({ cwd: repository.nestedCwd, ...selections }),
+      ...(options.recoveryFailure === undefined
+        ? {}
+        : {
+            NODE_ENV: 'test',
+            DIFF_REVIEW_TEST_RECOVERY_FAILURE: options.recoveryFailure,
+          }),
+      ...(options.revealMarkerPath === undefined
+        ? {}
+        : { DIFF_REVIEW_TEST_REVEAL_MARKER: options.revealMarkerPath }),
+      ...(options.revealSucceeds === true ? { DIFF_REVIEW_TEST_REVEAL_SUCCESS: '1' } : {}),
     },
     stdio: ['ignore', outputDescriptor, outputDescriptor],
   });
@@ -151,6 +177,93 @@ async function activateMonacoLine(
   await expect(affordance).toBeVisible();
   await affordance.click();
 }
+
+async function activateTopMonacoLine(page: Page, side: 'base' | 'head'): Promise<void> {
+  const editor = side === 'base' ? 'editor original' : 'editor modified';
+  const editorSurface = page
+    .locator(
+      `.monaco-diff-editor .${editor.split(' ').join('.')} .monaco-scrollable-element.editor-scrollable`,
+    )
+    .first();
+  await editorSurface.hover({ position: { x: 16, y: 16 } });
+  const affordance = page.locator(
+    `.diff-workspace__gutter-action[data-anchor-side="${side}"]`,
+  );
+  await expect(affordance).toBeVisible();
+  await affordance.click();
+}
+
+interface FileSnapshot {
+  readonly bytes: Buffer;
+  readonly sha256: string;
+  readonly mtimeMs: number;
+  readonly size: number;
+}
+
+function snapshotFile(path: string): FileSnapshot {
+  const bytes = readFileSync(path);
+  const stat = statSync(path);
+  return {
+    bytes,
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+    mtimeMs: stat.mtimeMs,
+    size: stat.size,
+  };
+}
+
+function expectSameFileSnapshot(before: FileSnapshot, path: string): void {
+  const after = snapshotFile(path);
+  expect(after.bytes).toEqual(before.bytes);
+  expect(after.sha256).toBe(before.sha256);
+  expect(after.size).toBe(before.size);
+  expect(after.mtimeMs).toBe(before.mtimeMs);
+}
+
+function snapshotSource(fixture: GitFixture): Readonly<Record<string, string>> {
+  return {
+    head: fixture.git(['rev-parse', 'HEAD']).toString('ascii').trim(),
+    index: fixture.git(['status', '--porcelain=v1', '-z']).toString('base64'),
+    tree: fixture.git(['rev-parse', 'HEAD^{tree}']).toString('ascii').trim(),
+  };
+}
+
+async function postReveal(
+  url: string,
+  options: Readonly<{
+    readonly authorization?: string;
+    readonly host?: string;
+    readonly origin?: string;
+    readonly path?: string;
+    readonly body?: string;
+  }> = {},
+): Promise<Readonly<{ readonly status: number; readonly body: string }>> {
+  const target = new URL(options.path ?? '/api/draft/reveal', url);
+  const { promise, resolve: resolveRequest, reject: rejectRequest } =
+    Promise.withResolvers<Readonly<{ readonly status: number; readonly body: string }>>();
+  const request = requestHttp({
+    host: '127.0.0.1',
+    port: Number(target.port),
+    path: `${target.pathname}${target.search}`,
+    method: 'POST',
+    headers: {
+      host: options.host ?? target.host,
+      ...(options.origin === undefined ? {} : { origin: options.origin }),
+      ...(options.authorization === undefined ? {} : { authorization: options.authorization }),
+      ...(options.body === undefined
+        ? {}
+        : { 'content-type': 'application/json', 'content-length': Buffer.byteLength(options.body) }),
+    },
+  }, (response) => {
+    const chunks: Buffer[] = [];
+    response.on('data', (chunk: Buffer) => chunks.push(chunk));
+    response.on('end', () => {
+      resolveRequest({ status: response.statusCode ?? 0, body: Buffer.concat(chunks).toString('utf8') });
+    });
+  });
+  request.on('error', rejectRequest);
+  request.end(options.body);
+  return await promise;
+}
 test.beforeAll(() => {
   runPrerequisite(npmCommand, ['run', 'build']);
   runPrerequisite(npmCommand, ['run', 'verify:production-artifacts']);
@@ -167,8 +280,19 @@ test.beforeAll(() => {
   symlinkSync(join(repositoryRoot, 'node_modules'), join(extractedPackageRoot, 'node_modules'), 'dir');
   mkdirSync(fakeBinRoot, { recursive: true });
   const fakeOpen = join(packedRoot, 'open');
-  writeFileSync(fakeOpen, '#!/usr/bin/env node\nprocess.exitCode = 1;\n');
+  writeFileSync(
+    fakeOpen,
+    [
+      '#!/usr/bin/env node',
+      "const { appendFileSync } = require('node:fs');",
+      "const openedDraft = process.argv.slice(2).some((argument) => !argument.startsWith('-') && !argument.startsWith('http://'));",
+      "if (process.env.DIFF_REVIEW_TEST_REVEAL_MARKER !== undefined && openedDraft) appendFileSync(process.env.DIFF_REVIEW_TEST_REVEAL_MARKER, 'revealed\\n');",
+      "process.exitCode = process.env.DIFF_REVIEW_TEST_REVEAL_SUCCESS === '1' ? 0 : 1;",
+      '',
+    ].join('\n'),
+  );
   copyFileSync(fakeOpen, join(fakeBinRoot, 'open'));
+  chmodSync(join(fakeBinRoot, 'open'), 0o755);
 });
 
 test.afterAll(() => {
@@ -507,6 +631,8 @@ test('corrupt draft recovery backs up exact bytes before starting a fresh packag
     const draftPath = await createPersistedDraft(page, fixture);
     const corrupted = Buffer.from('{ not a valid review draft', 'utf8');
     writeFileSync(draftPath, corrupted);
+    const original = snapshotFile(draftPath);
+    const source = snapshotSource(fixture);
 
     running = startGeneratedCli(fixture);
     await page.goto(await waitForLoopbackUrl(running), { waitUntil: 'domcontentloaded' });
@@ -520,40 +646,162 @@ test('corrupt draft recovery backs up exact bytes before starting a fresh packag
     const backup = readdirSync(join(fixture.root, '.diff-review', 'drafts'))
       .find((candidate) => candidate.endsWith('.bak'));
     expect(backup).toBeDefined();
-    expect(readFileSync(join(fixture.root, '.diff-review', 'drafts', backup!))).toEqual(corrupted);
-    expect(readFileSync(draftPath)).not.toEqual(corrupted);
+    const backupSnapshot = snapshotFile(join(fixture.root, '.diff-review', 'drafts', backup!));
+    expect(backupSnapshot.bytes).toEqual(original.bytes);
+    expect(backupSnapshot.sha256).toBe(original.sha256);
+    expect(backupSnapshot.size).toBe(original.size);
+    expect(snapshotFile(draftPath).sha256).not.toBe(original.sha256);
+    expect(snapshotSource(fixture)).toEqual(source);
   } finally {
     if (running !== undefined) await stopGeneratedCli(running);
     await fixture.cleanup();
   }
 });
 
-test('newer draft remains immutable while reveal keeps browser authority fixed and denies unauthenticated access', async ({ browser, page }, testInfo) => {
+test('corrupt recovery failures retain raw draft bytes and read-only packaged state', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+
+  for (const failure of ['backup', 'replacement'] as const) {
+    const fixture = await createGitFixture({ anchoredReview: true });
+    let running: RunningCli | undefined;
+
+    try {
+      const draftPath = await createPersistedDraft(page, fixture);
+      const corrupted = Buffer.from(`{ malformed recovery ${failure} bytes`, 'utf8');
+      writeFileSync(draftPath, corrupted);
+      const original = snapshotFile(draftPath);
+      const source = snapshotSource(fixture);
+
+      running = startGeneratedCli(fixture, { recoveryFailure: failure });
+      await page.goto(await waitForLoopbackUrl(running), { waitUntil: 'domcontentloaded' });
+      await page.getByRole('button', { name: 'Back up and start new' }).click();
+      const response = page.waitForResponse((candidate) => candidate.url().includes('/api/draft/recovery'));
+      await page.getByRole('button', { name: 'Back up and start new' }).last().click();
+      expect((await response).status()).toBe(500);
+
+      await expect(page.getByRole('heading', { name: 'Recovery did not complete' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Local review draft needs recovery' })).toBeVisible();
+      await expect(page.getByText('Read only', { exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'New draft started' })).toHaveCount(0);
+      await expect(page.locator('body')).not.toContainText(fixture.root);
+      await expect(page.locator('body')).not.toContainText(corrupted.toString('utf8'));
+      expectSameFileSnapshot(original, draftPath);
+      expect(snapshotSource(fixture)).toEqual(source);
+
+      const backups = readdirSync(join(fixture.root, '.diff-review', 'drafts'))
+        .filter((candidate) => candidate.endsWith('.bak'));
+      if (failure === 'backup') {
+        expect(backups).toEqual([]);
+      } else {
+        expect(backups).toHaveLength(1);
+        const backup = snapshotFile(join(fixture.root, '.diff-review', 'drafts', backups[0]!));
+        expect(backup.bytes).toEqual(original.bytes);
+        expect(backup.sha256).toBe(original.sha256);
+        expect(backup.size).toBe(original.size);
+      }
+    } finally {
+      if (running !== undefined) await stopGeneratedCli(running);
+      await fixture.cleanup();
+    }
+  }
+});
+
+test('newer draft stays immutable while fixed reveal and safe copy reject browser authority', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createGitFixture({ anchoredReview: true });
   let running: RunningCli | undefined;
 
   try {
     const draftPath = await createPersistedDraft(page, fixture);
+    const rawDraftSentinel = 'DRAFT_BYTES_MUST_NOT_LEAK';
     const newer = {
       ...JSON.parse(readFileSync(draftPath, 'utf8')) as Record<string, unknown>,
       schemaVersion: 2,
+      summary: rawDraftSentinel,
     };
     writeFileSync(draftPath, JSON.stringify(newer));
-    const original = readFileSync(draftPath);
+    const original = snapshotFile(draftPath);
+    const source = snapshotSource(fixture);
+    const revealMarker = join(packedRoot, `reveal-${crypto.randomUUID()}.marker`);
 
-    running = startGeneratedCli(fixture);
+    running = startGeneratedCli(fixture, {
+      revealMarkerPath: revealMarker,
+      revealSucceeds: true,
+    });
     const url = await waitForLoopbackUrl(running);
+    const authority = new URL(url);
+    const token = new URL(url).hash.replace(/^#token=/u, '');
+    const authorization = `Bearer ${token}`;
+    const denied = await Promise.all([
+      postReveal(url, { host: `localhost:${authority.port}`, authorization, origin: authority.origin }),
+      postReveal(url, { authorization, origin: 'http://example.invalid' }),
+      postReveal(url),
+      postReveal(url, { authorization, origin: authority.origin, body: JSON.stringify({ path: fixture.root }) }),
+      postReveal(url, { authorization, origin: authority.origin, path: `/api/draft/reveal?path=${encodeURIComponent(fixture.root)}` }),
+      postReveal(url, { authorization, origin: authority.origin, path: '/api/draft/reveal/arbitrary-path' }),
+    ]);
+    expect(denied.map((result) => result.status)).toEqual([403, 403, 401, 400, 400, 404]);
+    expect(existsSync(revealMarker)).toBe(false);
+    for (const result of denied) {
+      expect(result.body).not.toContain(fixture.root);
+      expect(result.body).not.toContain(rawDraftSentinel);
+      expect(result.body).not.toContain(token);
+    }
+
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'This draft needs a newer Diff Review' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Back up and start new' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /reset|downgrade|migrat/i })).toHaveCount(0);
     await expect(page.locator('body')).not.toContainText(fixture.root);
+    await expect(page.locator('body')).not.toContainText(rawDraftSentinel);
 
-    expect(await page.evaluate(async () => (await fetch('/api/draft/reveal')).status)).toBe(401);
+    const readOnlyProbes = await page.evaluate(async (accessToken) => {
+      const headers = { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' };
+      const [load, mutation, recovery] = await Promise.all([
+      fetch('/api/draft', { headers }).then(async (response) => ({
+        status: response.status,
+        body: await response.text(),
+      })),
+        fetch('/api/draft/mutations', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ type: 'setSummary', expectedRevision: 0, markdown: 'must not save' }),
+        }).then(async (response) => ({ status: response.status, body: await response.text() })),
+        fetch('/api/draft/recovery', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ expectedFingerprint: '0'.repeat(64) }),
+        }).then(async (response) => ({ status: response.status, body: await response.text() })),
+      ]);
+      return [load, mutation, recovery];
+    }, token);
+    expect(readOnlyProbes[0]?.status).toBe(200);
+    expect(readOnlyProbes[1]?.status).toBe(409);
+    expect(readOnlyProbes[2]?.status).toBe(409);
+    for (const probe of readOnlyProbes) {
+      expect(probe.body).not.toContain(rawDraftSentinel);
+      expect(probe.body).not.toContain(fixture.root);
+      expect(probe.body).not.toContain(token);
+    }
+
+    const revealResponse = page.waitForResponse((candidate) => candidate.url().includes('/api/draft/reveal'));
     await page.getByRole('button', { name: 'Reveal draft file' }).click();
-    await expect(page.locator('body')).not.toContainText(fixture.root);
-    expect(readFileSync(draftPath)).toEqual(original);
+    const revealBody = await (await revealResponse).text();
+    expect(revealBody).toBe('{"kind":"revealed"}');
+    await expect.poll(() => existsSync(revealMarker)).toBe(true);
+    expect(readFileSync(revealMarker, 'utf8')).toBe('revealed\n');
+    await page.getByRole('button', { name: 'Copy draft path' }).click();
+    const copiedPath = await page.evaluate(async () => await navigator.clipboard.readText());
+    expect(copiedPath).toMatch(/^\.diff-review\/drafts\/[a-z0-9_-]+\.json$/u);
+    for (const value of [await page.locator('body').innerText(), copiedPath, revealBody]) {
+      expect(value).not.toContain(fixture.root);
+      expect(value).not.toContain(rawDraftSentinel);
+      expect(value).not.toContain(token);
+      expect(value).not.toMatch(/(?:stderr|stack|\/(?:usr\/bin\/)?open\b)/iu);
+    }
+    expectSameFileSnapshot(original, draftPath);
+    expect(snapshotSource(fixture)).toEqual(source);
   } finally {
     if (running !== undefined) await stopGeneratedCli(running);
     await fixture.cleanup();
@@ -590,5 +838,85 @@ test('selector drift reports complete OIDs while the packaged comparison stays p
   } finally {
     await stopGeneratedCli(running);
     await fixture.cleanup();
+  }
+});
+
+test('registered worktree drift reports moved and unavailable full-OID state without changing pinned review state', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+
+  const selectionsFor = (fixture: GitFixture, worktreePath: string) => ({
+    base: {
+      label: 'main',
+      revision: fixture.baseRef,
+      source: { kind: 'branch', id: 'fixture-base', refName: fixture.baseRef },
+    },
+    head: {
+      label: 'Registered feature worktree',
+      revision: fixture.headRef,
+      source: {
+        kind: 'worktree' as const,
+        id: 'fixture-registered-worktree',
+        path: worktreePath,
+        detached: true,
+        dirty: false,
+      },
+    },
+  });
+
+  const movedFixture = await createGitFixture({ anchoredReview: true, registeredWorktree: true });
+  const movedWorktreePath = movedFixture.registeredWorktreePath;
+  expect(movedWorktreePath).toBeDefined();
+  const pinnedHead = movedFixture.git(['-C', movedWorktreePath!, 'rev-parse', 'HEAD']).toString('utf8').trim();
+  const movedRunning = startGeneratedCli(movedFixture, {
+    selections: selectionsFor(movedFixture, movedWorktreePath!),
+  });
+
+  try {
+    await waitForLoopbackUrl(movedRunning);
+    movedFixture.git(['-C', movedWorktreePath!, 'checkout', '--detach', movedFixture.futureHeadOid]);
+    await openGeneratedReview(page, await waitForLoopbackUrl(movedRunning));
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    await activateTopMonacoLine(page, 'head');
+    const buffer = page.locator('.monaco-anchor-zone--composer textarea');
+    await buffer.fill('Pinned local Monaco buffer.');
+    const drift = page.locator('.selector-drift-notice');
+    await expect(drift).toContainText(pinnedHead, { timeout: 10_000 });
+    await expect(drift).toContainText(movedFixture.futureHeadOid);
+    await expect(drift).toContainText('Worktree');
+    await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+    await expect(buffer).toHaveValue('Pinned local Monaco buffer.');
+  } finally {
+    await stopGeneratedCli(movedRunning);
+    await movedFixture.cleanup();
+  }
+
+  const unavailableFixture = await createGitFixture({ anchoredReview: true, registeredWorktree: true });
+  const unavailableWorktreePath = unavailableFixture.registeredWorktreePath;
+  expect(unavailableWorktreePath).toBeDefined();
+  const unavailablePinnedHead = unavailableFixture
+    .git(['-C', unavailableWorktreePath!, 'rev-parse', 'HEAD'])
+    .toString('utf8')
+    .trim();
+  const unavailableRunning = startGeneratedCli(unavailableFixture, {
+    selections: selectionsFor(unavailableFixture, unavailableWorktreePath!),
+  });
+
+  try {
+    const unavailableUrl = await waitForLoopbackUrl(unavailableRunning);
+    rmSync(unavailableWorktreePath!, { recursive: true, force: true });
+    await openGeneratedReview(page, unavailableUrl);
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    await activateTopMonacoLine(page, 'head');
+    const buffer = page.locator('.monaco-anchor-zone--composer textarea');
+    await buffer.fill('Unavailable worktree buffer.');
+    const drift = page.locator('.selector-drift-notice');
+    await expect(drift).toContainText('Head source unavailable', { timeout: 10_000 });
+    await expect(drift).toContainText(unavailablePinnedHead);
+    await expect(drift).not.toContainText(unavailableFixture.futureHeadOid);
+    await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+    await expect(buffer).toHaveValue('Unavailable worktree buffer.');
+  } finally {
+    await stopGeneratedCli(unavailableRunning);
+    await unavailableFixture.cleanup();
   }
 });

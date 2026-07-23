@@ -25,6 +25,7 @@ import {
   type CreatePinnedComparisonOptions,
 } from '../git/comparison.js';
 import { createSessionApp, type SessionApp } from '../server/app.js';
+import type { DraftRevealPort } from '../server/capabilities.js';
 import {
   createShutdownController,
   type ShutdownController,
@@ -42,6 +43,7 @@ const browserFallback =
 
 export interface LaunchPinnedSessionDependencies {
   readonly openBrowser?: (url: string) => Promise<unknown>;
+  readonly revealDraftFile?: DraftRevealPort;
   readonly output?: (message: string) => void;
   readonly signalSource?: ShutdownSignalSource;
   readonly setExitStatus?: (status: number) => void;
@@ -108,6 +110,11 @@ function createLaunchRuntime(
     (async (url: string) => {
       await open(url);
     });
+  const revealDraftFile =
+    dependencies.revealDraftFile ??
+    (async (canonicalPath: string) => {
+      await open(canonicalPath);
+    });
   let app: SessionApp | undefined;
   const shutdown = createShutdownController({
     signalSource: dependencies.signalSource,
@@ -147,6 +154,7 @@ function createLaunchRuntime(
       app = createSessionApp(comparison, {
         webRoot: dependencies.webRoot,
         sessionToken: token,
+        revealDraftFile,
         diagnostics: ({ correlationId, reason }) => {
           console.error(`Diff Review request denied [${correlationId}]: ${reason}.`);
         },

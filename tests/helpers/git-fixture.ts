@@ -29,6 +29,7 @@ export interface GitFixture {
   readonly baseRef: 'refs/heads/main';
   readonly headRef: 'refs/heads/feature';
   readonly futureHeadOid: string;
+  readonly registeredWorktreePath?: string;
   readonly alternateHeadRef?: 'refs/heads/alternate';
   git(arguments_: readonly string[]): Buffer;
   write(relativePath: string, content: string): Promise<void>;
@@ -38,6 +39,7 @@ export interface GitFixture {
 export interface GitFixtureOptions {
   readonly committedHeadChange?: boolean;
   readonly anchoredReview?: boolean;
+  readonly registeredWorktree?: boolean;
 }
 
 export async function createGitFixture(
@@ -162,6 +164,13 @@ export async function createGitFixture(
     invokeGit(['switch', 'feature']);
   }
 
+  const registeredWorktreePath = options.registeredWorktree === true
+    ? join(temporaryRoot, 'registered-feature-worktree')
+    : undefined;
+  if (registeredWorktreePath !== undefined) {
+    invokeGit(['worktree', 'add', '--detach', registeredWorktreePath, pinnedHeadOid]);
+  }
+
   const nestedCwd = join(repositoryRoot, 'nested', 'deep');
   await mkdir(nestedCwd, { recursive: true });
 
@@ -170,6 +179,9 @@ export async function createGitFixture(
     nestedCwd,
     baseRef: 'refs/heads/main',
     headRef: 'refs/heads/feature',
+    ...(registeredWorktreePath === undefined
+      ? {}
+      : { registeredWorktreePath: await realpath(registeredWorktreePath) }),
     alternateHeadRef,
     futureHeadOid,
     git: invokeGit,
