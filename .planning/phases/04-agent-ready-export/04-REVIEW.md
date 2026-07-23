@@ -112,12 +112,18 @@ Reviewed the complete Phase 04 export surface: shared schemas and deterministic 
 
 **Fix:** Render labels through the same dynamically fenced-data helper, or escape backticks and line breaks before inline-code interpolation. Add a renderer regression containing backticks, newlines, and heading-like text in both pinned labels.
 
+**Remediation evidence (2026-07-23):** Resolved by `dd83fd1` and `738985c`. The renderer regression proves heading-like, backtick-containing selector labels are emitted only as dynamically fenced data, before fixed Markdown sections. Focused unit verification passed: 16 files, 99 tests.
+
+
 ### WR-02: Valid “canonical” JSON can contain semantically incoherent or non-deterministically ordered groups
 
 **File:** `src/contracts/draft.ts:184-189, 223-286`; `src/export/review-export.ts:156-162`  
 **Issue:** `ReviewExportV1Schema` validates counts and unique comment IDs but accepts empty file groups, duplicate file paths, comments whose `anchor.path` differs from their containing file path, and arbitrary `files`/`comments` array order. `parseCanonicalReviewExport()` then accepts the byte form because JSON canonicalization sorts object keys but deliberately preserves arrays. The builder creates valid order and grouping, but the parser/publication boundary is still advertised as canonical and accepts an externally constructed, valid-but-incoherent document that renders a comment under the wrong path.
 
 **Fix:** Add schema refinements requiring non-empty groups, unique exact file identities, each comment’s exact anchor path to match its group, and the specified total order for file groups and comments. Regression-test rejected duplicate, mismatched, empty, and unsorted candidates through `parseCanonicalReviewExport()`.
+
+**Remediation evidence (2026-07-23):** Resolved by `dd83fd1` and `738985c`. `ReviewExportV1Schema` now rejects empty groups, non-strict file ordering or duplicate exact paths, anchor-path/group mismatches, and non-strict comment ordering. Builder and canonical serializer reuse the same exported ordering comparators; parser regressions exercise every rejected candidate through `parseCanonicalReviewExport()`. `npm run build:node` and focused unit verification passed: 16 files, 99 tests.
+
 
 ### WR-03: Receipt schema does not enforce the exact JSON/Markdown pair that its renderer assumes
 

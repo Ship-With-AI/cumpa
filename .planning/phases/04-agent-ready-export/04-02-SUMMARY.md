@@ -66,6 +66,12 @@ status: complete
 - **GREEN:** `a78b88f` made canonical export tests pass; `b9b4698` made Markdown projection tests pass.
 - **Follow-up contract hardening:** `a77eb82`, `6cd90ee`, and `e7c16e3` close strict Unicode, encoded absolute-path, and empty-summary boundary cases while the focused suite remains green.
 
+## Post-Plan Review Remediation
+
+- **RED:** `dd83fd1` reproduced label-based Markdown framing injection plus parser acceptance of empty, duplicate, mismatched, and unsorted canonical export groups.
+- **GREEN:** `738985c` dynamically fences base/head labels and rejects semantically incoherent or non-deterministically ordered group arrays. Shared schema and builder/serializer use one explicit total-order vocabulary.
+
+
 ## Task Commits
 
 1. **Task 1: Specify and implement canonical accepted-review JSON**
@@ -108,7 +114,7 @@ Empty summaries render `No summary provided`; zero-actionable and no-comment art
 
 - `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs .planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json` — passed before all source edits, as required by the plan's fail-closed preflight.
 - `npm run build:node` — passed after the named type re-export.
-- `node scripts/run-focused-vitest.mjs tests/unit` — passed: 15 files, 95 tests.
+- `node scripts/run-focused-vitest.mjs tests/unit` — passed: 16 files, 99 tests.
 - RED runs failed as required before each implementation: missing `review-export.ts`, then missing `render-review-markdown.ts`.
 
 ## Deviations from Plan
@@ -131,7 +137,7 @@ Plans 04-03 onward can consume `ReviewExportV1Schema`, `buildReviewExportV1`, `c
 
 - All five plan-owned source/test artifacts exist.
 - RED and GREEN commits are present in sequence.
-- `npm run build:node` and the focused ledger-resolved Vitest command pass: 15 files, 95 tests.
+- `npm run build:node` and focused ledger-resolved Vitest command pass: 16 files, 99 tests.
 
 ---
 *Phase: 04-agent-ready-export*
