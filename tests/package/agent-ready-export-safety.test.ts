@@ -56,9 +56,9 @@ describe('agent-ready export source-control safety evidence', () => {
     const controls: readonly [string, () => Promise<void>][] = [
       ['HEAD/ref', async () => { fixture.git(['update-ref', 'refs/heads/safety-control', 'HEAD']); }],
       ['remote', async () => { fixture.git(['remote', 'add', 'safety-control', 'https://example.invalid/control.git']); }],
-      ['index', async () => { fixture.git(['add', '--', 'dirty/staged.txt']); }],
+      ['index', async () => { await fixture.write('index-control.txt', 'index mutation\n'); fixture.git(['add', '--', 'index-control.txt']); }],
       ['tracked source', async () => { await fixture.write('tracked.txt', 'forbidden mutation\n'); }],
-      ['tracked mode', async () => { await chmod(fixture.path('tracked.txt'), 0o755); }],
+      ['tracked mode', async () => { await chmod(fixture.path('tracked.txt'), 0o644); }],
       ['untracked bytes', async () => { await fixture.write('unexpected-control.bin', 'forbidden\0bytes'); }],
     ];
 

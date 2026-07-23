@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, mkdir, realpath, rm, writeFile } from 'node:fs/promises';
+import { chmod, mkdtemp, mkdir, realpath, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 
@@ -40,6 +40,18 @@ export interface GitFixtureOptions {
   readonly committedHeadChange?: boolean;
   readonly anchoredReview?: boolean;
   readonly registeredWorktree?: boolean;
+}
+
+export type DirtySelectorKind =
+  | 'branch-to-branch'
+  | 'branch-to-worktree'
+  | 'worktree-to-branch'
+  | 'worktree-to-worktree';
+
+export interface DirtyGitFixture extends GitFixture {
+  readonly selectorKind: DirtySelectorKind;
+  readonly gitignorePath: string;
+  path(relativePath: string): string;
 }
 
 export async function createGitFixture(
@@ -343,4 +355,32 @@ export async function createValidationGitFixture(
       await rm(temporaryRoot, { recursive: true, force: true });
     },
   };
+}
+
+export async function createDirtyGitFixtureMatrix(): Promise<readonly DirtyGitFixture[]> {
+  const selectorKinds: readonly DirtySelectorKind[] = [
+    'branch-to-branch',
+    'branch-to-worktree',
+    'worktree-to-branch',
+    'worktree-to-worktree',
+  ];
+  return Promise.all(selectorKinds.map(async (selectorKind, index) => {
+    const fixture = await createGitFixture({ anchoredReview: true, registeredWorktree: true });
+    const gitignorePath = join(fixture.root, '.gitignore');
+    await writeFile(gitignorePath, `# safety fixture ${index}\n`);
+    await fixture.write(`unusual safe ${index}/space name.ts`, `export const unusual${index} = true;\n`);
+    await fixture.write(`dirty/staged-${index}.txt`, `staged ${index}\n`);
+    fixture.git(['add', '--', `dirty/staged-${index}.txt`]);
+    await fixture.write(`dirty/unstaged-${index}.txt`, `unstaged ${index}\n`);
+    await fixture.write(`dirty/untracked-${index}.bin`, `untracked ${index}\u0000bytes`);
+    await chmod(join(fixture.root, 'tracked.txt'), 0o755);
+    return Object.freeze({
+      ...fixture,
+      selectorKind,
+      gitignorePath,
+      path(relativePath: string) {
+        return join(fixture.root, relativePath);
+      },
+    });
+  }));
 }
