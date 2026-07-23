@@ -162,9 +162,17 @@ No declared packaged runner exists for an interruption reader probe. The target-
 - **Verification:** RED API receipt contract and browser-client tests accepted malformed pairs before enforcement. GREEN API contract passed 7/7, browser-client integration passed 4/4, and `npm run build` passed.
 - **Committed in:** `df767bc`, `9a2d18b`.
 
+**6. [Accepted residual - Concurrent same-UID attacker] Parent identity checks detect injected replacements but cannot retain directory descriptors in the approved no-native-runtime target matrix.**
+- **Found during:** Post-wave CR-01 re-review.
+- **Issue:** A path-only runtime cannot eliminate an attacker that replaces a managed parent after a JavaScript syscall check; descriptor-relative operations would require a packaged native runtime that the approved empty `publicationPolicy.targets` ledger deliberately does not declare.
+- **Fix:** Captured device/inode identities for `.diff-review` and `exports`, then revalidated immediately before publication, recovery, cleanup, and fixed reveal operations. The controlled swap test proves a replacement after candidate validation fails closed before external candidate rename.
+- **Verification:** RED controlled swap tests exported the controlled external candidate before enforcement. GREEN publication/API tests passed 14/14 and `npm run build` passed.
+- **Disposition:** Accepted residual concurrent same-UID race assumption. This is detection hardening, not descriptor-level race elimination; 04-03 PLAN lines 87-91 and the empty target matrix preclude claiming otherwise.
+- **Committed in:** `f02b48f`, `3ddbeeb`.
+
 ---
 
-**Total deviations:** 5 auto-fixed correctness/security/integration issues.
+**Total deviations:** 6 auto-fixed correctness/security/integration issues plus one accepted residual assumption.
 **Impact on plan:** The acceptance helper remains behaviorally strict and deterministic; no timeout increase, hidden-region disablement, sleep, or assertion weakening was introduced.
 
 ## Issues Encountered
