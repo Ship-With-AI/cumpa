@@ -4,6 +4,8 @@ import {
   AnchorVerificationSchema,
   ReviewDraftV1Schema,
   ReviewExportV1Schema,
+  compareReviewExportComments,
+  compareUtf16CodeUnits,
   type AnchorVerificationDto,
   type ReviewDraftV1,
   type ReviewExportV1,
@@ -36,30 +38,6 @@ export interface ExportHash {
   readonly bytes: number;
 }
 
-const sideRank: Readonly<Record<'base' | 'head', number>> = Object.freeze({ base: 0, head: 1 });
-
-function compareStrings(left: string, right: string): number {
-  const sharedLength = Math.min(left.length, right.length);
-  for (let index = 0; index < sharedLength; index += 1) {
-    const difference = left.charCodeAt(index) - right.charCodeAt(index);
-    if (difference !== 0) {
-      return difference;
-    }
-  }
-  return left.length - right.length;
-}
-
-function compareComments(left: ReviewExportV1['files'][number]['comments'][number], right: ReviewExportV1['files'][number]['comments'][number]): number {
-  const sideDifference = sideRank[left.anchor.side] - sideRank[right.anchor.side];
-  if (sideDifference !== 0) return sideDifference;
-  const lineDifference = left.anchor.line - right.anchor.line;
-  if (lineDifference !== 0) return lineDifference;
-  const blobDifference = compareStrings(left.anchor.blobOid, right.anchor.blobOid);
-  if (blobDifference !== 0) return blobDifference;
-  const contextDifference = compareStrings(left.anchor.contextHash.value, right.anchor.contextHash.value);
-  if (contextDifference !== 0) return contextDifference;
-  return compareStrings(left.id, right.id);
-}
 
 function assertCanonicalString(value: string): void {
   if (/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:^|[^\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(value)) {
@@ -89,7 +67,7 @@ function serializeCanonicalJson(value: unknown): string {
   }
   const object = value as Record<string, unknown>;
   return `{${Object.keys(object)
-    .sort(compareStrings)
+    .sort(compareUtf16CodeUnits)
     .map((key) => `${serializeCanonicalJson(key)}:${serializeCanonicalJson(object[key])}`)
     .join(',')}}`;
 }
@@ -127,7 +105,7 @@ export function buildReviewExportV1(snapshot: AcceptedReviewSnapshotV1, exported
 
   const files = [...groups.values()]
     .sort((left, right) => compareExactPaths(left.path, right.path))
-    .map((group) => ({ path: group.path, comments: group.comments.sort(compareComments) }));
+    .map((group) => ({ path: group.path, comments: group.comments.sort(compareReviewExportComments) }));
   const allComments = files.flatMap((file) => file.comments);
   const document = {
     schemaVersion: 1 as const,

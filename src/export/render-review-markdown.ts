@@ -39,10 +39,14 @@ export function renderReviewMarkdown(canonicalBytes: Uint8Array): string {
     '## Pinned comparison',
     `Accepted draft revision: ${document.acceptedDraftRevision}`,
     `Exported at: ${document.exportedAt}`,
-    `Base: \`${document.comparison.selectedBase.label}\` at \`${document.comparison.selectedBase.launchOid}\``,
-    `Head: \`${document.comparison.selectedHead.label}\` at \`${document.comparison.selectedHead.launchOid}\``,
+    `Base commit: \`${document.comparison.selectedBase.launchOid}\``,
+    `Head commit: \`${document.comparison.selectedHead.launchOid}\``,
     `Merge base: \`${document.comparison.mergeBaseOid}\``,
     `Comparison key: \`${document.comparison.comparisonKey}\``,
+  ];
+  appendFencedData(lines, 'Base label:', document.comparison.selectedBase.label);
+  appendFencedData(lines, 'Head label:', document.comparison.selectedHead.label);
+  lines.push(
     '',
     '## Drift observation',
     `Observed at: ${document.drift.observedAt}`,
@@ -51,7 +55,7 @@ export function renderReviewMarkdown(canonicalBytes: Uint8Array): string {
     `Head selector: ${document.drift.head.status}; launch \`${document.drift.head.launchOid}\`; current \`${document.drift.head.currentOid ?? 'unavailable'}\``,
     '',
     '## Summary',
-  ];
+  );
 
   if (document.summary.markdown === null) {
     lines.push('No summary provided');

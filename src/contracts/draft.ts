@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { ExactPathSchema, GitObjectIdSchema } from './comparison.js';
-import { decodeBase64url } from '../domain/path-bytes.js';
+import { compareExactPaths, decodeBase64url } from '../domain/path-bytes.js';
 
 export const RevisionSchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 export const CommentIdSchema = z.string().regex(/^comment_[0-9a-f-]{36}$/u);
@@ -188,6 +188,29 @@ const ExportFileSchema = z
   })
   .readonly();
 
+export type ReviewExportCommentV1 = z.infer<typeof ExportCommentSchema>;
+
+export function compareUtf16CodeUnits(left: string, right: string): number {
+  const sharedLength = Math.min(left.length, right.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    const difference = left.charCodeAt(index) - right.charCodeAt(index);
+    if (difference !== 0) return difference;
+  }
+  return left.length - right.length;
+}
+
+export function compareReviewExportComments(left: ReviewExportCommentV1, right: ReviewExportCommentV1): number {
+  const sideDifference = (left.anchor.side === 'base' ? 0 : 1) - (right.anchor.side === 'base' ? 0 : 1);
+  if (sideDifference !== 0) return sideDifference;
+  const lineDifference = left.anchor.line - right.anchor.line;
+  if (lineDifference !== 0) return lineDifference;
+  const blobDifference = compareUtf16CodeUnits(left.anchor.blobOid, right.anchor.blobOid);
+  if (blobDifference !== 0) return blobDifference;
+  const contextDifference = compareUtf16CodeUnits(left.anchor.contextHash.value, right.anchor.contextHash.value);
+  if (contextDifference !== 0) return contextDifference;
+  return compareUtf16CodeUnits(left.id, right.id);
+}
+
 const ExportCountsSchema = z
   .strictObject({
     all: z.number().int().nonnegative(),
@@ -249,6 +272,22 @@ export const ReviewExportV1Schema = z
   .superRefine((document, context) => {
     if (containsLoneSurrogate(document)) {
       context.addIssue({ code: 'custom', message: 'Export strings must not contain lone UTF-16 surrogate code units.' });
+    }
+    for (const [fileIndex, file] of document.files.entries()) {
+      if (file.comments.length === 0) {
+        context.addIssue({ code: 'custom', message: 'Export file groups must not be empty.', path: ['files', fileIndex, 'comments'] });
+      }
+      if (fileIndex > 0 && compareExactPaths(document.files[fileIndex - 1]!.path, file.path) >= 0) {
+        context.addIssue({ code: 'custom', message: 'Export file groups must have unique exact paths in total order.', path: ['files', fileIndex, 'path'] });
+      }
+      for (const [commentIndex, comment] of file.comments.entries()) {
+        if (compareExactPaths(file.path, comment.anchor.path) !== 0) {
+          context.addIssue({ code: 'custom', message: 'Comment anchor path must match its export file group.', path: ['files', fileIndex, 'comments', commentIndex, 'anchor', 'path'] });
+        }
+        if (commentIndex > 0 && compareReviewExportComments(file.comments[commentIndex - 1]!, comment) >= 0) {
+          context.addIssue({ code: 'custom', message: 'Export comments must have total anchor order.', path: ['files', fileIndex, 'comments', commentIndex] });
+        }
+      }
     }
     const comments = document.files.flatMap((file) => file.comments);
     const ids = new Set<string>();
