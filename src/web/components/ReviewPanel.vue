@@ -18,6 +18,8 @@ const props = defineProps<{
   inventory: readonly { identity: string; display: string }[];
   summary: string;
   revision: number;
+  pinnedBase?: Readonly<{ label: string; oid: string }>;
+  pinnedHead?: Readonly<{ label: string; oid: string }>;
   summaryBuffer: string;
   commentBuffers: ReadonlyMap<string, string>;
   pending: ReviewPendingOperation | null;
@@ -511,6 +513,8 @@ watch(reviewFailure, (failed) => {
     </section>
     <ExportSection
       :revision="revision"
+      :pinned-base="pinnedBase"
+      :pinned-head="pinnedHead"
       :summary="summary"
       :summary-buffer="summaryBuffer"
       :comments="comments"

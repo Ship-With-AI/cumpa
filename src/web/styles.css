@@ -1594,3 +1594,127 @@ body {
     min-height: 44px;
   }
 }
+
+.export-section,
+.export-section__content,
+.export-readiness,
+.export-drift,
+.export-progress {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.export-section {
+  margin-top: var(--space-lg);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--rule);
+}
+
+.export-section__heading,
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.export-section__state {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.export-section__support,
+.export-progress p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.export-readiness {
+  margin: 0;
+}
+
+.export-readiness > div,
+.export-drift__identities > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.export-readiness dt,
+.export-drift__identities dt {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.export-readiness dd,
+.export-drift__identities dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.export-drift__identities {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+}
+
+.export-drift__identities code {
+  overflow-wrap: anywhere;
+}
+
+.export-drift__consent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  line-height: 20px;
+}
+
+.export-progress {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  padding: var(--space-md);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.export-progress h4 {
+  margin: 0;
+}
+
+.export-progress__spinner {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 2px solid var(--rule);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: export-spinner 800ms linear infinite;
+}
+
+@keyframes export-spinner {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 767px) {
+  .export-actions > .ui-button {
+    width: 100%;
+  }
+
+  .export-readiness > div,
+  .export-drift__identities > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .export-progress__spinner {
+    animation: none;
+  }
+}

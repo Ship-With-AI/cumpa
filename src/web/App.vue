@@ -827,6 +827,8 @@ onBeforeUnmount(() => {
           :summary="reviewDraft.canonical.summary"
           :summary-buffer="reviewDraft.summaryBuffer"
           :revision="reviewDraft.canonical.revision"
+          :pinned-base="session?.base"
+          :pinned-head="session?.head"
           :comment-buffers="reviewDraft.commentBuffers"
           :pending="reviewDraft.pending"
           :conflict="reviewDraft.conflict === null ? null : { expectedRevision: reviewDraft.conflict.expectedRevision, actualRevision: reviewDraft.conflict.latest.revision }"

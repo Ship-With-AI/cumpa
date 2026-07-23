@@ -19,6 +19,7 @@ export type ReviewPendingOperation = 'summary' | 'comment' | 'add' | 'delete' | 
 
 export type ReviewExportState = Readonly<{
   pending: boolean;
+  progress: 'preparing' | 'validating' | 'publishing' | null;
   phase: 'ready' | 'pending' | 'drift' | 'conflict' | 'failed' | 'exported' | 'unavailable';
   failure: 'publicationFailed' | 'reExportUnsupported' | null;
   conflict: Readonly<{ expectedRevision: number; actualRevision: number }> | null;
@@ -96,6 +97,7 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
   const retainedComments = new Set<string>();
   let exportState: ReviewExportState = {
     pending: false,
+    progress: null,
     phase: 'ready',
     failure: null,
     conflict: null,
@@ -137,6 +139,7 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
       exportState = {
         ...exportState,
         phase: 'ready',
+        progress: null,
         driftAcknowledgementToken: null,
         driftObservation: null,
         driftStale: false,
@@ -151,6 +154,7 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
         exportState = {
           ...exportState,
           pending: false,
+          progress: null,
           phase: 'exported',
           failure: null,
           conflict: null,
@@ -164,6 +168,7 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
         exportState = {
           ...exportState,
           pending: false,
+          progress: null,
           phase: 'conflict',
           failure: null,
           conflict: { expectedRevision: result.expectedRevision, actualRevision: result.actualRevision },
@@ -174,8 +179,9 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
         };
       } else if (result.kind === 'driftAcknowledgementRequired' || result.kind === 'driftAcknowledgementStale') {
         exportState = {
-          pending: false,
           ...exportState,
+          pending: false,
+          progress: null,
           phase: 'drift',
           failure: null,
           conflict: null,
@@ -190,6 +196,7 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
           phase: 'failed',
           failure: result.kind,
           pending: false,
+          progress: null,
           conflict: null,
           receipt: null,
           driftAcknowledgementToken: null,
@@ -205,6 +212,7 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
           receipt: null,
           driftAcknowledgementToken: null,
           pending: false,
+          progress: null,
           driftObservation: null,
           driftStale: false,
         };
@@ -254,6 +262,7 @@ export function createReviewDraftState(initial: ReviewCanonicalDraft): ReviewDra
         conflict: null,
         receipt: null,
         pending: true,
+        progress: 'preparing',
       };
       return true;
     },

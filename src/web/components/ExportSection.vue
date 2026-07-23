@@ -4,12 +4,16 @@ import { computed, nextTick, ref, watch } from 'vue';
 import type { ReviewExportState } from '../model/review-draft-state.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import ExportReadinessSummary from './ExportReadinessSummary.vue';
+import DriftExportAcknowledgement from './DriftExportAcknowledgement.vue';
+import ExportProgress from './ExportProgress.vue';
 
 const props = defineProps<{
   revision: number;
   summary: string;
   summaryBuffer: string;
   comments: readonly WorkspaceComment[];
+  pinnedBase?: Readonly<{ label: string; oid: string }>;
+  pinnedHead?: Readonly<{ label: string; oid: string }>;
   commentBuffers: ReadonlyMap<string, string>;
   exportState: ReviewExportState;
 }>();
@@ -20,6 +24,8 @@ const emit = defineEmits<{
   reloadLatest: [];
   reviewUnsavedText: [];
 }>();
+const conflictHeading = ref<HTMLElement>();
+const failureHeading = ref<HTMLElement>();
 
 const open = ref(true);
 const heading = ref<HTMLElement>();
@@ -38,7 +44,11 @@ const stateLabel = computed(() => {
 watch(() => props.exportState.phase, (phase) => {
   if (phase === 'drift' || phase === 'conflict' || phase === 'failed' || phase === 'exported') {
     open.value = true;
-    void nextTick(() => heading.value?.focus());
+    void nextTick(() => {
+      if (phase === 'conflict') conflictHeading.value?.focus();
+      else if (phase === 'failed') failureHeading.value?.focus();
+      else if (phase !== 'drift') heading.value?.focus();
+    });
   }
 });
 </script>
@@ -52,21 +62,25 @@ watch(() => props.exportState.phase, (phase) => {
 
     <div v-if="open" id="export-section-content" class="export-section__content">
       <section v-if="exportState.phase === 'conflict' && exportState.conflict !== null" class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-conflict-heading">
-        <h4 id="export-conflict-heading" tabindex="-1">Review changed before export</h4>
+        <h4 id="export-conflict-heading" ref="conflictHeading" tabindex="-1">Review changed before export</h4>
         <p>Accepted revision {{ exportState.conflict.expectedRevision }} is no longer current. Nothing from this export attempt was published.</p>
         <p>Latest revision {{ exportState.conflict.actualRevision }}</p>
         <button type="button" class="ui-button" @click="emit('reloadLatest')">Reload latest</button>
         <p>Reloading adopts the latest accepted review. It does not export automatically.</p>
       </section>
-
-      <section v-else-if="exportState.phase === 'drift'" class="inline-notice inline-notice--warning" role="alert">
-        <h4>Export requires acknowledgement</h4>
-        <p>Selected sources changed. Confirm the pinned comparison before exporting.</p>
-      </section>
+      <DriftExportAcknowledgement
+        v-else-if="exportState.phase === 'drift' && exportState.driftObservation !== null && pinnedBase !== undefined && pinnedHead !== undefined"
+        :observation="exportState.driftObservation"
+        :stale="exportState.driftStale"
+        :pinned-base="pinnedBase"
+        :pinned-head="pinnedHead"
+        :pending="exportState.pending"
+        @cancel="emit('cancel')"
+        @confirm="emit('export')"
+      />
 
       <section v-else-if="exportState.phase === 'failed'" class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-failure-heading">
-        <h4 id="export-failure-heading" tabindex="-1">Export was not published</h4>
-        <p>No new export pair was made available. Any previous complete export remains unchanged.</p>
+        <h4 id="export-failure-heading" ref="failureHeading" tabindex="-1">Export was not published</h4>
         <p>{{ exportState.failure === 'reExportUnsupported' ? 'This export cannot replace a previous pair safely on this runtime.' : 'The export pair could not be validated.' }}</p>
         <div class="export-actions">
           <button type="button" class="ui-button" @click="emit('export')">Try export again</button>
@@ -75,7 +89,7 @@ watch(() => props.exportState.phase, (phase) => {
         <p>Retry starts a new complete export attempt from the current accepted revision.</p>
       </section>
 
-      <p v-else-if="exportState.phase === 'pending'" role="status">Checking accepted revision for export.</p>
+      <ExportProgress v-else-if="exportState.phase === 'pending'" :revision="revision" :stage="exportState.progress ?? 'preparing'" />
 
       <template v-else-if="exportState.phase === 'unavailable'">
         <section class="inline-notice inline-notice--error" aria-labelledby="export-unavailable-heading">
