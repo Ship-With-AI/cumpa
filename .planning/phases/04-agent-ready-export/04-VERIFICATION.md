@@ -38,7 +38,7 @@ Accordingly, the prior “always `reExportUnsupported`” data-flow block and it
 - GREEN: `npx vitest run tests/unit/native-exchange-capability.test.ts tests/unit/build-native-addon.test.ts` — 2 files / 4 tests passed.
 - Real target: `npm run build` — passed, compiling the declared Darwin arm64 addon.
 - Package boundary: `npx playwright test tests/e2e` — 22/22 passed after the build-gate fix.
-- `633369b` host-gates the actual Darwin compiler assertion, retains portable stale-addon removal coverage, and makes the isolated package-safety command rebuild generated output first; `npx vitest run tests/package/agent-ready-export-safety.test.ts` passed 8/8.
+- `633369b` host-gates the actual Darwin compiler assertion and retains portable stale-addon removal coverage. `b36fe78` serializes the required build in `npm run test:package-export-safety`; it rebuilt then passed 8/8, and `npx vitest run tests/package/agent-ready-export-safety.test.ts tests/package/agent-ready-export.test.ts` passed 2 files / 9 tests without a shared-`dist` race.
 ## Goal Achievement
 
 ### Roadmap Success Criteria

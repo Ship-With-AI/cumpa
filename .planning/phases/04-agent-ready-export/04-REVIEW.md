@@ -96,7 +96,7 @@ cleanup failure paths are now unit-tested and return the typed unsupported
 capability rather than rejecting an export request. The focused remediation
 suite passed on the reviewed Darwin/arm64 host.
 
-`633369b` also makes the isolated package-safety evidence command self-contained by rebuilding generated output before its assertions and preserves child stderr in any generated subprocess failure.
+`b36fe78` moves generated-output creation out of concurrent package-test hooks into serialized `npm run test:package-export-safety`; its build-then-safety command passed 8/8 and the two-file package regression passed 9/9, with generated child stderr retained on a real failure.
 
 ## Accepted Residual / Threat-Boundary Note
 
