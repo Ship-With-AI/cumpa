@@ -16,6 +16,7 @@ let exportAttempt = 0;
 const revealBodies: string[] = [];
 let ignoreStatus: 'ignored' | 'notIgnored' = 'ignored';
 const appendBodies: string[] = [];
+let appendResult: { readonly kind: string } = { kind: 'appended' };
 
 const session = {
   base: { label: 'base', oid: baseOid },
@@ -57,8 +58,10 @@ async function startAppServer(): Promise<string> {
         viteServer.middlewares.use('/api/export/gitignore', async (request, response) => {
           if (request.method === 'POST') {
             appendBodies.push(await readBody(request));
-            ignoreStatus = 'ignored';
-            json(response, { kind: 'appended' });
+            if (appendResult.kind === 'appended') {
+              ignoreStatus = 'ignored';
+            }
+            json(response, appendResult);
             return;
           }
           json(response, { kind: ignoreStatus });
@@ -110,7 +113,7 @@ test.beforeEach(async ({ context }) => {
   exportAttempt = 0;
   revealBodies.length = 0;
   ignoreStatus = 'ignored';
-  appendBodies.length = 0;
+  appendResult = { kind: 'appended' };
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
 });
 
@@ -161,4 +164,25 @@ test('requires a keyboard-safe second confirmation before appending the fixed ig
   await warning.getByRole('button', { name: 'Append ignore rule' }).click();
   await expect(page.getByText('Export directory ignored')).toBeVisible();
   expect(appendBodies).toEqual(['']);
+});
+
+test('reports bounded append-failure outcomes without falsely claiming .gitignore was unchanged', async ({ page }) => {
+  ignoreStatus = 'notIgnored';
+  await openReview(page);
+
+  const warning = page.getByRole('heading', { name: 'Export directory is not ignored' }).locator('..');
+  const append = warning.getByRole('button', { name: 'Add to .gitignore' });
+
+  appendResult = { kind: 'appendUnconfirmed' };
+  await append.click();
+  await warning.getByRole('button', { name: 'Append ignore rule' }).click();
+  await expect(page.getByText('.gitignore contains the ignore rule, but its durability could not be confirmed.')).toBeVisible();
+
+  appendResult = { kind: 'ambiguous' };
+  await warning.getByRole('button', { name: 'Append ignore rule' }).click();
+  await expect(page.getByText('.gitignore may have changed. Inspect it before retrying.')).toBeVisible();
+
+  appendResult = { kind: 'unchanged' };
+  await warning.getByRole('button', { name: 'Append ignore rule' }).click();
+  await expect(page.getByText('.gitignore was not changed. You can retry the append.')).toBeVisible();
 });

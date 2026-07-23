@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile, type FileHandle } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -142,5 +142,46 @@ describe('fixed append-only gitignore capability', () => {
       ),
     ).resolves.toEqual({ kind: 'unconfirmed' });
     expect(await readFile(concurrentPath)).toEqual(Buffer.from('# external\n'));
+  });
+  it('classifies partial-write, sync, and close failures by the reread target bytes', async () => {
+    const original = Buffer.from('# keep\n');
+    const rule = Buffer.from('/.diff-review/\n');
+    const cases = [
+      {
+        inject: {
+          writeAddition: async (handle: FileHandle, addition: Buffer) => {
+            await handle.write(addition.subarray(0, 4));
+            throw new Error('partial write');
+          },
+        },
+        expected: { kind: 'ambiguous' },
+        bytes: Buffer.concat([original, rule.subarray(0, 4)]),
+      },
+      {
+        inject: { sync: async () => { throw new Error('sync failure'); } },
+        expected: { kind: 'appendUnconfirmed' },
+        bytes: Buffer.concat([original, rule]),
+      },
+      {
+        inject: {
+          close: async (handle: FileHandle) => {
+            await handle.close();
+            throw new Error('close failure');
+          },
+        },
+        expected: { kind: 'appendUnconfirmed' },
+        bytes: Buffer.concat([original, rule]),
+      },
+    ];
+
+    for (const testCase of cases) {
+      const repositoryRoot = await createRepository();
+      const ignorePath = join(repositoryRoot, '.gitignore');
+      await writeFile(ignorePath, original);
+      await expect(
+        appendDiffReviewIgnoreRule({ repositoryRoot }, testCase.inject),
+      ).resolves.toEqual(testCase.expected);
+      expect(await readFile(ignorePath)).toEqual(testCase.bytes);
+    }
   });
 });
