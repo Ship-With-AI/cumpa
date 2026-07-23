@@ -6,9 +6,9 @@ current_phase: 04
 current_phase_name: agent-ready-export
 status: verifying
 stopped_at: Completed 04-08-PLAN.md
-last_updated: "2026-07-23T20:02:23+02:00"
+last_updated: "2026-07-23T19:06:47.257Z"
 last_activity: 2026-07-23
-last_activity_desc: Completed 04-08 generated-package export acceptance
+last_activity_desc: Remediated 04-08 execution-bound package coverage evidence
 progress:
   total_phases: 4
   completed_phases: 4
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 Phase: 04 (agent-ready-export) — VERIFYING
 Plan: 8 of 8
 Status: Phase complete — ready for verification
-Last activity: 2026-07-23 — Completed 04-08 generated-package export acceptance
+Last activity: 2026-07-23 — Remediated 04-08 execution-bound package coverage evidence
 
 Progress: ██████████ [██████████] 100%
 
@@ -170,6 +170,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 04]: Safety snapshots allow only generated .diff-review output and an exact approved ignore append. — D-17 and D-18 require narrow, independently checked filesystem exceptions.
 - [Phase 04]: Keep final acceptance at the generated package boundary. — A fresh CLI/server/browser process, real Monaco, and independently reread export bytes are the authority.
 - [Phase 04]: Record the roadmap resume criterion only against the named close/relaunch/recover/export journey. — It proves different ordered-pair isolation together with exact recovered persisted state.
+- [Phase 04]: Bind package coverage to a fresh child-process result and report. — A unique run ID, exact command identity, required scenario facts, and generated/packed artifact hashes prevent fabricated execution evidence.
 
 ### Pending Todos
 

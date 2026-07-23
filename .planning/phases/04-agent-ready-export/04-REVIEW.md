@@ -101,6 +101,8 @@ Reviewed the complete Phase 04 export surface: shared schemas and deterministic 
 
 **Fix:** Replace the fabricated manifest with assertions over artifacts produced by the actual packaged Playwright run, or remove it and make the real package scenarios directly cover the listed contracts. Do not encode an execution fact as a literal; bind it to the child-process result/report for that exact command and fail when any required scenario is absent.
 
+**Remediation evidence (2026-07-23):** Resolved by `96e191a` and `8b4ef5a`. The RED regression proves the old Vitest harness fails when no scenario report exists. The GREEN harness launches the ledger's exact absolute `node_modules/.bin/playwright test tests/e2e` command, supplies a unique run ID and private temporary report path, and fails on a missing/stale report, incorrect scenario identity, missing required resume/export facts, duplicate or unexecuted coverage records, or either generated/packed package SHA-256 mismatch. The report is emitted only after the real Chromium resume journey has persisted and recovered the draft, exported and reread the pair, and checked the source-control snapshot. The focused Vitest remediation test passed after it ran all 22 packaged Chromium tests.
+
 ## Warnings
 
 ### WR-01: Selector labels can break the Markdown framing around pinned identities

@@ -34,7 +34,7 @@ patterns-established:
 
 requirements-completed: [EXP-01, EXP-02, EXP-03, EXP-04, EXP-05, EXP-06, EXP-07, EXP-08, SAFE-04]
 
-duration: 25min
+duration: 1h 28min
 completed: 2026-07-23
 status: complete
 ---
@@ -45,9 +45,9 @@ status: complete
 
 ## Performance
 
-- **Duration:** 25 min
+- **Duration:** 1h 28min
 - **Started:** 2026-07-23T19:37:00+02:00
-- **Completed:** 2026-07-23T20:02:23+02:00
+- **Completed:** 2026-07-23T21:05:18+02:00
 - **Tasks:** 2
 - **Files modified:** 2
 
@@ -55,20 +55,20 @@ status: complete
 
 - Added the named `packaged-resume-after-relaunch` journey using a packed production CLI, authenticated loopback browser, real Monaco, and a dirty disposable Git repository.
 - Proved accepted summary/comment state persists through full browser/server termination and a fresh packed CLI launch; a different valid ordered pair stays separate, while resumed export matches independently parsed JSON, reparsed Markdown, hashes, receipt paths, and source-control snapshot.
-- Added bounded machine-readable coverage evidence for EXP-01–EXP-08, SAFE-04, D-01–D-18, Phase 4 roadmap criterion 5, UI state families, and Phase 4 threats.
+- Bound coverage evidence to a fresh, exact 22-test packaged Chromium run and its run-ID/fingerprint report, eliminating the static `executed: true` manifest.
 
 ## Verification
 
 - `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs .planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json` — passed.
 - Prescribed ledger-driven command (`04-08-packaged-export`) — 22 Chromium E2E tests passed, including `packaged-resume-after-relaunch`.
-- `node_modules/.bin/vitest run tests/package/agent-ready-export.test.ts` — 1 test passed; emitted the machine-readable coverage result with package SHA-256 `3114aef65e9db770828c4e882439b51c187a1ceabd32bb732bbcc469372f2341`.
+- `node_modules/.bin/vitest run tests/package/agent-ready-export.test.ts` — 1 test passed after running the exact 22-test packaged Chromium suite; its fresh random-run-ID report matched both packed and generated package SHA-256 values (`3114aef65e9db770828c4e882439b51c187a1ceabd32bb732bbcc469372f2341`).
 
 ## Task Commits
 
 Each task was committed atomically:
 
 1. **Task 1: Prove the complete generated browser-to-Git export journey** - `6b7a16e` (test, RED) and `b77a950` (feat, GREEN)
-2. **Task 2: Record complete source, decision, requirement, and threat disposition evidence** - `8ce7d85` (test)
+2. **Task 2: Record complete source, decision, requirement, and threat disposition evidence** - `8ce7d85` (test), remediated by `96e191a` (test, RED) and `8b4ef5a` (fix, GREEN)
 
 **Plan metadata:** included in the final plan-metadata commit.
 
@@ -77,7 +77,7 @@ _Note: Task 1 followed the required RED → GREEN sequence. The RED test initial
 ## Files Created/Modified
 
 - `tests/e2e/agent-ready-export.spec.ts` - Packed CLI/browser/Git resume and independent export-byte acceptance journey.
-- `tests/package/agent-ready-export.test.ts` - Machine-readable executed coverage map with package-artifact fingerprint and duplicate/missing evidence guards.
+- `tests/package/agent-ready-export.test.ts` - Runs the exact packaged Chromium suite and validates a fresh run-ID, complete report, and matching packed/generated package fingerprints before emitting coverage.
 
 ## Decisions Made
 
@@ -91,6 +91,7 @@ None - plan behavior was implemented through the existing generated-package and 
 ## Issues Encountered
 
 - The original ledger command attempted `node test tests/e2e`, which cannot run the Playwright suite. The ledger owner corrected it in `76ab013` to invoke the absolute project Playwright executable; reconciliation validation and the prescribed 22-test command then passed.
+- CR-03 found that Task 2's coverage map declared execution with static literals. `96e191a` first proved the false-positive by requiring a missing scenario report; `8b4ef5a` now runs the exact packaged Chromium command, requires a fresh random-run-ID report emitted only after the real resume scenario completes, and rejects fingerprint or required-evidence mismatches.
 
 ## User Setup Required
 
@@ -108,4 +109,4 @@ None - no external service configuration required.
 ## Self-Check: PASSED
 
 - Created acceptance files are present: `tests/e2e/agent-ready-export.spec.ts` and `tests/package/agent-ready-export.test.ts`.
-- Required task commits are present in history: `6b7a16e`, `b77a950`, and `8ce7d85`.
+- Required task and remediation commits are present in history: `6b7a16e`, `b77a950`, `8ce7d85`, `96e191a`, and `8b4ef5a`.
