@@ -6,9 +6,9 @@ current_phase: 04
 current_phase_name: agent-ready-export
 status: executing
 stopped_at: Completed 04-05-PLAN.md
-last_updated: "2026-07-23T15:07:10Z"
+last_updated: "2026-07-23T15:18:31Z"
 last_activity: 2026-07-23
-last_activity_desc: "Completed 04-05 core accepted-revision export UI state flow"
+last_activity_desc: "Completed quick task 260723-nnr: Prevent every packaged E2E CLI child from inheriting cmux browser routing"
 progress:
   total_phases: 4
   completed_phases: 3
@@ -180,6 +180,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260723-mzp | Keep automated browser tests hermetic and route real Diff Review browser launches to cmux when launched inside cmux | 2026-07-23 | ce6504e | [260723-mzp-keep-automated-browser-tests-hermetic-an](./quick/260723-mzp-keep-automated-browser-tests-hermetic-an/) |
+| 260723-nnr | Prevent every packaged E2E CLI child from inheriting cmux browser routing | 2026-07-23 | 9f8efef | [260723-nnr-prevent-every-packaged-e2e-cli-child-fro](./quick/260723-nnr-prevent-every-packaged-e2e-cli-child-fro/) |
 
 ## Deferred Items
 
