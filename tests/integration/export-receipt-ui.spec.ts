@@ -17,6 +17,7 @@ const revealBodies: string[] = [];
 let ignoreStatus: 'ignored' | 'notIgnored' = 'ignored';
 const appendBodies: string[] = [];
 let appendResult: { readonly kind: string } = { kind: 'appended' };
+let failedExportResult: 'publicationFailed' | 'recoveryRequired' = 'publicationFailed';
 
 const session = {
   base: { label: 'base', oid: baseOid },
@@ -100,7 +101,7 @@ async function startAppServer(): Promise<string> {
             });
             return;
           }
-          json(response, { kind: 'publicationFailed' }, 500);
+          json(response, { kind: failedExportResult }, 500);
         });
       },
     }],
@@ -129,6 +130,7 @@ test.beforeEach(async ({ context }) => {
   revealBodies.length = 0;
   ignoreStatus = 'ignored';
   appendResult = { kind: 'appended' };
+  failedExportResult = 'publicationFailed';
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
 });
 
@@ -149,7 +151,7 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
   await expect(receipt).toContainText('128');
 
   await receipt.getByRole('button', { name: 'Copy receipt details' }).click();
-  await expect(receipt.getByText('Receipt details copied')).toBeVisible();
+  await expect(receipt.getByText('Copied export receipt details.')).toBeVisible();
   await expect(page.evaluate(() => navigator.clipboard.readText())).resolves.toContain(`${exportDirectory}/review.json`);
 
   await receipt.getByRole('button', { name: 'Reveal export directory' }).click();
@@ -158,9 +160,48 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
   await expect(revealAlert).toBeFocused();
   expect(revealBodies).toEqual(['']);
 
+  const driftDisclosure = receipt.getByRole('button', { name: 'View acknowledged identities' });
+  await driftDisclosure.click();
+  await expect(receipt).toContainText(`Pinned Base: ${'1'.repeat(40)}`);
+  await expect(receipt).toContainText(`Current Head: ${'3'.repeat(40)}`);
+
+  const jsonRow = receipt.getByRole('article', { name: 'review.json' });
+  await expect(jsonRow).toHaveAccessibleDescription(`review.json. Path ${exportDirectory}/review.json. SHA-256 ${'1'.repeat(64)}. 128 bytes.`);
+  await jsonRow.getByRole('button', { name: 'Copy path' }).click();
+  await expect(jsonRow.getByText('Copied relative path for review.json.')).toBeVisible();
+
+  for (const width of [768, 360]) {
+    await page.setViewportSize({ width, height: 720 });
+    await page.evaluate(() => { document.body.style.zoom = '2'; });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expect(receipt).toBeVisible();
+  }
+  await page.evaluate(() => { document.body.style.zoom = ''; });
+
+  await expect(receipt.locator('h4')).toHaveCSS('font-size', '18px');
+  await expect(receipt.locator('h4')).toHaveCSS('font-weight', '600');
+  await expect(receipt.locator('h4')).toHaveCSS('line-height', '24px');
+
   await page.getByRole('button', { name: 'Export review again' }).click();
   await expect(page.getByRole('heading', { name: 'Export was not published' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Previous confirmed export' })).toContainText(`${exportDirectory}/review.md`);
+});
+
+test('keeps the required recovery surface open and labels the retained receipt as previous', async ({ page }) => {
+  failedExportResult = 'recoveryRequired';
+  await openReview(page);
+  await page.getByRole('button', { name: 'Export review' }).click();
+  await page.getByRole('button', { name: 'Export review again' }).click();
+
+  const failure = page.getByRole('alert');
+  await expect(failure).toContainText('Export needs recovery');
+  await expect(failure).toContainText('Diff Review could not confirm a complete new export pair. No success receipt is available. Check terminal details, then try again after recovery.');
+  await expect(failure.getByRole('region', { name: 'Previous confirmed export' })).toBeVisible();
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('heading', { name: 'Export needs recovery' })).toBeVisible();
+  await expect(failure.getByRole('button', { name: 'Try export again' })).toBeVisible();
+
 });
 
 test('requires a keyboard-safe second confirmation before appending the fixed ignore rule', async ({ page }) => {
