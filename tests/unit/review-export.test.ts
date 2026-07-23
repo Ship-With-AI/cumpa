@@ -167,4 +167,31 @@ describe('ReviewExportV1 canonical contract', () => {
     const canonical = canonicalizeReviewExport(document);
     expect(() => parseCanonicalReviewExport(new TextEncoder().encode(`${new TextDecoder().decode(canonical)}\n`))).toThrow();
   });
+
+  test('rejects incoherent or non-deterministically ordered file groups from canonical bytes', () => {
+    const document = buildReviewExportV1(snapshot(), '2026-07-23T08:02:00.000Z');
+    const file = document.files[0];
+    const first = file?.comments[0];
+    if (file === undefined || first === undefined) throw new Error('Fixture must contain one file and comment.');
+
+    const second = {
+      ...first,
+      id: 'comment_bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+      anchor: { ...first.anchor, uniqueKey: 'd'.repeat(64) },
+    };
+    const zPath = path('Z.ts');
+    const zComment = { ...second, anchor: { ...second.anchor, path: zPath, safeDisplayPath: 'Z.ts', uniqueKey: 'e'.repeat(64) } };
+    const twoCommentCounts = { ...document.counts, all: 2, openActionable: 2 };
+    const candidates = [
+      { files: [{ ...file, comments: [] }], counts: { ...document.counts, all: 0, openActionable: 0 } },
+      { files: [{ ...file }, { ...file, comments: [second] }], counts: twoCommentCounts },
+      { files: [{ ...file, path: zPath }], counts: document.counts },
+      { files: [{ ...file, comments: [second, first] }], counts: twoCommentCounts },
+      { files: [{ ...file }, { path: zPath, comments: [zComment] }], counts: twoCommentCounts },
+    ];
+
+    for (const candidate of candidates) {
+      expect(() => parseCanonicalReviewExport(canonicalizeReviewExport({ ...document, ...candidate }))).toThrow();
+    }
+  });
 });
