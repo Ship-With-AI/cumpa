@@ -73,6 +73,7 @@ Implemented the browser receipt and consent surface without creating a second ex
    5 passed
    ```
 5. The prescribed integration command ran after implementation. It passed **25/26**; the sole failure is the pre-existing, repeatedly reproduced `tests/integration/anchored-workspace.spec.ts:458` clipboard-status assertion, unrelated to 04-06. It failed before 04-06 source edits on two runs and after implementation on the final run.
+6. Discovery repair verification: `npm run test:package` collected only the 47 browser `*.spec.ts` suites—no Vitest `*.test.ts` files were handed to Playwright. It completed with 44 passes and three non-04-06 E2E failures: `anchored-review.spec.ts:222`, plus `complete-review-draft.spec.ts:315` and `:425`. The 04-06 focused browser command still passed **5/5** after this repair.
 
 ## Reconciliation and deviation
 
@@ -81,7 +82,7 @@ Implemented the browser receipt and consent surface without creating a second ex
   node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs .planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json
   reconciliation ledger valid: 04-01-RECONCILIATION.json
   ```
-- Rule 3 deviation: changed Playwright `testDir` from `tests/e2e` to `tests` in the RED commit so the ledger-prescribed `playwright test tests/integration` command discovers its target files. No dependency or product runtime configuration changed.
+- Rule 3 deviation: changed Playwright `testDir` from `tests/e2e` to `tests` so the ledger-prescribed `playwright test tests/integration` command discovers its target files, then added the explicit `testMatch: '**/*.spec.ts'` boundary when the broader root caused Playwright to collect Vitest files. The package command now sees browser suites only. No dependency or product runtime configuration changed.
 
 ## Files
 
