@@ -359,12 +359,38 @@ export const SelectorDriftResponseSchema = z
   })
   .readonly();
 
-const ExportReceiptFileSchema = z
+const ExportReceiptDirectoryPattern = /^\.diff-review\/exports\/([0-9a-f]+\.\.[0-9a-f]+)\/review\.(?:json|md)$/u;
+
+const ExportReceiptJsonFileSchema = z
   .strictObject({
-    path: z.string().regex(/^\.diff-review\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.(?:json|md)$/u),
+    path: z.string().regex(/^\.diff-review\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.json$/u),
     algorithm: z.literal('sha256'),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),
     bytes: z.number().int().nonnegative(),
+  })
+  .readonly();
+
+const ExportReceiptMarkdownFileSchema = z
+  .strictObject({
+    path: z.string().regex(/^\.diff-review\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.md$/u),
+    algorithm: z.literal('sha256'),
+    sha256: z.string().regex(/^[0-9a-f]{64}$/u),
+    bytes: z.number().int().nonnegative(),
+  })
+  .readonly();
+
+const ExportReceiptFilesSchema = z
+  .tuple([ExportReceiptJsonFileSchema, ExportReceiptMarkdownFileSchema])
+  .superRefine(([json, markdown], context) => {
+    const jsonDirectory = ExportReceiptDirectoryPattern.exec(json.path)?.[1];
+    const markdownDirectory = ExportReceiptDirectoryPattern.exec(markdown.path)?.[1];
+    if (jsonDirectory !== markdownDirectory) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Export receipt files must share one comparison directory.',
+        path: [1, 'path'],
+      });
+    }
   })
   .readonly();
 
@@ -375,7 +401,7 @@ export const ExportReviewResultSchema = z
       draftRevision: RevisionSchema,
       exportedAt: z.string().datetime(),
       driftAcknowledged: z.boolean(),
-      files: z.tuple([ExportReceiptFileSchema, ExportReceiptFileSchema]).readonly(),
+      files: ExportReceiptFilesSchema,
     }).readonly(),
     z.strictObject({
       kind: z.literal('revisionConflict'),
