@@ -71,7 +71,7 @@ None - plan executed exactly as written.
 ## Issues Encountered
 
 - The first focused Playwright invocation timed out waiting for a newly added comment to appear in the rail while the mutation returned 201. The identical focused command immediately passed both scenarios; no task-scoped code change was made for the non-reproducing failure.
-- During parent verification, the separate active Phase 04-05 executor had uncommitted UI changes on main. Three reruns reached the intercepted loopback URL, then failed in `activateMonacoLine` because Monaco's unchanged-region control was detached or absent. That concurrent UI failure is outside this quick task's three plan-owned files.
+- Parent verification reruns all reached the intercepted loopback URL before failing later in the existing Monaco unchanged-region interaction. Three ran while Phase 04-05 had concurrent UI edits; a fourth after 04-05 completion timed out on a pointer-interception race during `hover()`. Browser isolation was proven, and no unrelated UI code was changed by this quick task.
 
 ## User Setup Required
 
