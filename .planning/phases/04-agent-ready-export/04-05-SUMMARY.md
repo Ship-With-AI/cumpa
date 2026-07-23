@@ -103,6 +103,15 @@ The contract asserts that the client request is exactly `{ expectedRevision: 7 }
 
    The harness now supplies the required accepted revision, canonical ready export state, pinned Base/Head identities, and no-op export event handlers. Production props remain required.
 
+6. Wave-gate anchored workspace integration:
+
+   ```text
+   npm run test:package -- tests/integration/anchored-workspace.spec.ts
+   5 passed (7.3s)
+   ```
+
+   Restored the existing `copyRecordedAnchor` event at the sole App-to-ReviewPanel authority boundary; clipboard behavior and assertions were unchanged.
+
 ## Deviations
 
 - **[Rule 3 — blocking verification wiring]** The plan names `tests/integration/agent-ready-export-states.spec.ts`, but the immutable reconciliation command only discovers `tests/unit/**`; direct Vitest/Playwright attempts do not discover that integration path under the configured roots. The required integration artifact is present, and its behavior is mirrored in `tests/unit/agent-ready-export-state.test.ts` so the prescribed ledger proves the contract. No runner, config, dependency, or reconciliation ledger was changed.
@@ -133,4 +142,5 @@ Plan 04-06 can add only receipt, copy, reveal, and ignore-consent UI to the now-
 - RED and GREEN commits exist for both tasks.
 - Reconciliation preflight and the final required focused command passed.
 - The focused direct ReviewPanel Playwright mount passes with the required export fixture.
+- The anchored workspace Playwright spec passes after restoring the existing copy-recorded-anchor binding.
 - No dependencies were installed and no formatter, linter, build, broad browser matrix, or project-wide suite was run.

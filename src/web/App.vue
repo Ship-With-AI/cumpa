@@ -854,6 +854,7 @@ onBeforeUnmount(() => {
           :retained-summary="reviewDraft.retained.summary"
           @cancel-summary="reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot()"
           @close="closeComments"
+          @copy-recorded-anchor="copyRecordedAnchor"
           :export-state="reviewDraft.export"
           :append-ignore-rule="appendDiffReviewIgnoreRule"
           :refresh-ignore-status="refreshIgnoreStatus"
