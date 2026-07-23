@@ -8,6 +8,8 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 const require = createRequire(import.meta.url);
 const roots: string[] = [];
+const declaredNativeTarget = process.platform === 'darwin' && process.arch === 'arm64';
+
 
 type DirectoryExchangeAddon = Readonly<{
   probeDirectoryExchange(root: string): Readonly<{ kind: 'supported' | 'unsupported' }>;
@@ -40,7 +42,7 @@ afterEach(async () => {
 });
 
 describe('native directory exchange probe', () => {
-  test('compiles the actual adapter and proves one complete sibling pair swaps without stable absence', async () => {
+  test.runIf(declaredNativeTarget)('compiles the actual adapter and proves one complete sibling pair swaps without stable absence', async () => {
     const root = await mkdtemp(join(tmpdir(), 'diff-review-native-probe-'));
     roots.push(root);
 
@@ -48,14 +50,10 @@ describe('native directory exchange probe', () => {
     const addon = await buildAddon();
     const result = addon.probeDirectoryExchange(root);
 
-    if (process.platform === 'darwin') {
-      expect(result).toEqual({ kind: 'supported' });
-      expect(await readFile(join(root, 'stable', 'review.json'), 'utf8')).toBe('new-json');
-      expect(await readFile(join(root, 'stable', 'review.md'), 'utf8')).toBe('new-markdown');
-      expect(await readFile(join(root, 'candidate', 'review.json'), 'utf8')).toBe('old-json');
-      expect(await readFile(join(root, 'candidate', 'review.md'), 'utf8')).toBe('old-markdown');
-    } else {
-      expect(result).toEqual({ kind: 'unsupported' });
-    }
+    expect(result).toEqual({ kind: 'supported' });
+    expect(await readFile(join(root, 'stable', 'review.json'), 'utf8')).toBe('new-json');
+    expect(await readFile(join(root, 'stable', 'review.md'), 'utf8')).toBe('new-markdown');
+    expect(await readFile(join(root, 'candidate', 'review.json'), 'utf8')).toBe('old-json');
+    expect(await readFile(join(root, 'candidate', 'review.md'), 'utf8')).toBe('old-markdown');
   });
 });

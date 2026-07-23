@@ -64,9 +64,8 @@ status: complete
 - `node_modules/.bin/vitest run tests/package/agent-ready-export.test.ts` — passed: 4 tests, including the exact 22-test packaged Chromium suite. Fresh run-ID evidence matched packed/generated SHA-256 values and, on `darwin-arm64`, reported first and native re-export receipts under the same full-OID export directory.
 - `npx playwright test tests/e2e/agent-ready-export.spec.ts --grep "target-aware second export"` — passed on declared `darwin-arm64`: 1 packed-tarball/generated-CLI Chromium journey with two `201` responses, an `exported` second receipt, and independent reread of the stable pair. Other targets instead assert the actual packed runtime's typed `reExportUnsupported` refusal and byte-identical first pair.
 - `npx playwright test tests/e2e/agent-ready-export-safety.spec.ts --grep "forced unavailable capability"` — passed: 1 explicit forced-unavailable refusal test, retained only as a lower-level fallback proof.
-- `npx vitest run tests/package/agent-ready-export.test.ts tests/package/agent-ready-export-safety.test.ts` — passed: 2 files / 9 tests; coverage harness executed a fresh 22/22 packaged Chromium suite and binds the first export plus the target-appropriate second-export outcome to the same full-OID directory.
-- `npx vitest run tests/unit/native-exchange-capability.test.ts tests/unit/build-native-addon.test.ts` — passed: 2 files / 4 tests; setup, cleanup, unsupported-target stale-addon removal, and declared-target build failure paths are explicitly fail-closed.
-- `633369b` host-gates the native compiler assertion and retains portable stale-addon coverage. `b36fe78` serializes generated output creation in `npm run test:package-export-safety`; that command rebuilt then passed 8/8 and the concurrent two-file package command passed 9/9.
+- `npm run test:package-contract` — canonical serialized package-contract command: builds once, then runs both package evidence files with Vitest `--no-file-parallelism` so generated package rebuilds cannot race safety imports.
+- `npx vitest run tests/unit/directory-exchange.test.ts tests/unit/native-exchange-capability.test.ts tests/unit/build-native-addon.test.ts` — host-gates the Darwin compiler probe to declared `darwin-arm64`, while portable addon-removal and fail-closed capability tests remain executable on every target.
 
 ## Task Commits
 

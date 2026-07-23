@@ -27,7 +27,8 @@
     "test:api": "vitest run tests/api",
     "test:package": "playwright test",
     "test:browser": "playwright test --config=tests",
-    "test:package-export-safety": "node scripts/run-package-export-safety.mjs"
+    "test:package-export-safety": "node scripts/run-package-export-safety.mjs",
+    "test:package-contract": "npm run build && vitest run --no-file-parallelism tests/package/agent-ready-export.test.ts tests/package/agent-ready-export-safety.test.ts"
   },
   "dependencies": {
     "@fastify/static": "9.3.0",
