@@ -197,9 +197,6 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
       return Object.freeze({ kind: 'publicationFailed' });
     }
     const finalReceipt = receipt(exportsRoot, stable, finalPair);
-    if (stablePresent) {
-      await rm(candidate, { force: true, recursive: true });
-    }
     return Object.freeze({ kind: 'exported', receipt: finalReceipt });
   } catch (error) {
     if (error instanceof ReExportUnsupported) {
