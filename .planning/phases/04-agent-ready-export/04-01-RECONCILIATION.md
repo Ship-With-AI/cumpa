@@ -38,7 +38,7 @@
 - `04-06-receipt-ignore-ui`: `/Users/alessandro/projects/diff-review/node_modules/.bin/playwright` `test` `tests/integration`
 - `04-07-source-snapshot`: `/Users/alessandro/.local/share/fnm/node-versions/v24.15.0/installation/bin/node` `scripts/run-focused-vitest.mjs` `tests/git`
 - `04-07-real-fs-recovery`: `/Users/alessandro/projects/diff-review/node_modules/.bin/vitest` `run` `tests/api`
-- `04-08-packaged-export`: `/Users/alessandro/.local/share/fnm/node-versions/v24.15.0/installation/bin/node` `test` `tests/e2e`
+- `04-08-packaged-export`: `/Users/alessandro/projects/diff-review/node_modules/.bin/playwright` `test` `tests/e2e`
 
 ## Package and publication disposition
 

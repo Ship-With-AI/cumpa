@@ -123,6 +123,10 @@ Phase 04-06 extended `createSessionClient` (lines 1–260, SHA-256 `d8e483860ba4
 
 Wave Five changed Playwright discovery and safety harness configuration. This repair refreshed the browser-runner claim to lines 1–23 and SHA-256 `42770db1a998d659f6d2635fa3faa572fe593712fae4e653745ed90eaeed0d85`, including every command owner that grounds `playwright.config.ts`; strict validation and production source remain unchanged.
 
+## Post-04-08 Packaged Command Correction
+
+The `04-08-packaged-export` ledger entry now invokes the scoped no-shell Playwright runner directly: `/Users/alessandro/projects/diff-review/node_modules/.bin/playwright` with argv `["test","tests/e2e"]`. Its evidence remains the browser-runner owner `playwright.config.ts`, lines 1–23, SHA-256 `42770db1a998d659f6d2635fa3faa572fe593712fae4e653745ed90eaeed0d85`, and now names the committed `testDir: './tests'` discovery setting. Strict validation was unchanged; the 34-branch mutation self-test and real-ledger validation passed, and the corrected ledger command discovered and passed 22 Chromium browser tests.
+
 ## User Setup Required
 
 None - no external service configuration required.
