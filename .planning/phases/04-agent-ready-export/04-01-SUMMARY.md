@@ -107,6 +107,10 @@ After Phase 04-02 extended `src/contracts/draft.ts`, its previous whole-file evi
 
 Phase 04-03 intentionally extended the secured route registry and capability registry. This repair refreshed only those source-inclusive owner claims: `registerSessionRoutes` now covers lines 1–366 with SHA-256 `6e6a5330942ba8a4324dfb1f17fe0ca612fd89616f384e2941893784b4e82e1d`, and `createCapabilityRegistry` now covers lines 1–393 with SHA-256 `c10c41b77cba8a9db7c35e397e73f4fd5f24f017396be27c69e616d70fc98aff`. The validator remained strict and production source was unchanged by the refresh.
 
+## Post-04-04 Evidence Refresh
+
+Phase 04-04 intentionally extended the comparison inventory, secured route registry, and capability registry. This repair refreshed only those source-inclusive owner claims: `createChangedFileInventory` covers lines 1–221 with SHA-256 `219e1fa833cb92a05eb97fd1424db99f3edd4087abff8037b0741a78964e995e`; `registerSessionRoutes` covers lines 1–406 with SHA-256 `d29c1786e47e79faab2b7f774ed577542c78a9b07b0a989fd0224e32feca31da`; and `createCapabilityRegistry` covers lines 1–416 with SHA-256 `e65cd66eabac98fa99f02ad344d6c6a3c9c0729a96380ff85e1297c0f4a02110`. Strict validation and production source remain unchanged by this refresh.
+
 ## User Setup Required
 
 None - no external service configuration required.
