@@ -41,7 +41,7 @@ status: complete
 
 # Phase 04 Plan 08: Agent-Ready Export Acceptance Summary
 
-**Generated package acceptance now proves a real Git review survives browser/server shutdown and fresh CLI relaunch, remains isolated by ordered comparison pair, and exports independently validated canonical bytes.**
+**Generated package acceptance now proves real Git review survives browser/server shutdown fresh CLI relaunch, stays isolated by ordered comparison pair, and reports target-specific re-export evidence with independently validated canonical bytes.**
 
 ## Performance
 
@@ -49,19 +49,19 @@ status: complete
 - **Started:** 2026-07-23T19:37:00+02:00
 - **Completed:** 2026-07-23T21:05:18+02:00
 - **Tasks:** 2
-- **Files modified:** 2
+- **Files modified:** 3
 
 ## Accomplishments
 
 - Added named packaged generated-CLI journey using a packed production tarball, authenticated loopback browser, real Monaco, and a dirty disposable Git repository.
-- Proved accepted summary/comment state persists through full browser/server termination and fresh packed CLI launch; the same pinned pair completes first export then a second **Export review again** native re-export with a confirmed `exported` receipt, while the stable output rereads as one exact canonical JSON/Markdown pair and different valid ordered pair stays separate.
-- Bound coverage evidence to a fresh, exact 22-test packaged Chromium run and its run-ID/fingerprint report, eliminating the static `executed: true` manifest.
+- Proved accepted summary/comment state persists through full browser/server termination and fresh packed CLI launch. On declared `darwin-arm64`, the same pinned pair completes first export then **Export review again** with an `exported` receipt; on every other target, the actual packed runtime must return typed `reExportUnsupported` while preserving the complete first stable JSON/Markdown pair byte-for-byte.
+- Bound coverage evidence to a fresh exact 22-test packaged Chromium run, its run-ID/fingerprint report, actual platform/architecture, and the target-specific second-export result rather than a universal success claim.
 
 ## Verification
 
 - `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs .planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json` — passed.
 - Prescribed ledger-driven command (`04-08-packaged-export`) — 22 Chromium E2E tests passed, including `packaged-resume-after-relaunch`.
-- `node_modules/.bin/vitest run tests/package/agent-ready-export.test.ts` — 1 test passed after running the exact 22-test packaged Chromium suite; its fresh random-run-ID report matched both packed and generated package SHA-256 values (`3114aef65e9db770828c4e882439b51c187a1ceabd32bb732bbcc469372f2341`).
+- `node_modules/.bin/vitest run tests/package/agent-ready-export.test.ts` — passed: 4 tests, including the exact 22-test packaged Chromium suite. Fresh run-ID evidence matched packed/generated SHA-256 values and, on `darwin-arm64`, reported first and native re-export receipts under the same full-OID export directory.
 - `npx playwright test tests/e2e/agent-ready-export.spec.ts --grep "atomically re-exports"` — passed: 1 packed-tarball/generated-CLI Chromium journey; both export responses were `201`, the second parsed as `exported`, and the on-disk pair was independently reread after re-export.
 - `npx playwright test tests/e2e/agent-ready-export-safety.spec.ts --grep "forced unavailable capability"` — passed: 1 explicit forced-unavailable refusal test, retained only as a lower-level fallback proof.
 - `npx vitest run tests/package/agent-ready-export.test.ts tests/package/agent-ready-export-safety.test.ts` — passed: 2 files / 9 tests; the coverage harness executed a fresh 22/22 packaged Chromium suite and binds both first-export and native re-export receipt paths to the same full-OID directory.

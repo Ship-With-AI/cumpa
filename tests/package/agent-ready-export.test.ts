@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import { describe, expect, test } from 'vitest';
+import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.js';
+
 
 const projectRoot = resolve(import.meta.dirname, '../..');
 const packagedCli = join(projectRoot, 'dist', 'bin', 'diff-review.mjs');
@@ -74,7 +76,7 @@ interface ScenarioEvidenceReport {
   };
 }
  
-const observedNativeReExport = process.platform === 'darwin' && process.arch === 'arm64';
+const observedNativeReExport = hasObservedNativeReExport(process.platform, process.arch);
  
 
 function assertSha256(value: string): void {
@@ -185,6 +187,14 @@ function assertUniqueExecutedCoverage(records: readonly EvidenceRecord[]): void 
 }
 
 describe('agent-ready generated-package acceptance evidence', () => {
+  test.each([
+    ['declared native target', 'darwin', 'arm64', true],
+    ['other operating system', 'linux', 'arm64', false],
+    ['other architecture', 'darwin', 'x64', false],
+  ])('runs packed re-export as %s only for declared target', (_label, platform, arch, expected) => {
+    expect(hasObservedNativeReExport(platform, arch)).toBe(expected);
+  });
+
   test('runs the exact packaged Chromium suite and emits fresh, fingerprinted coverage evidence', { timeout: 120_000 }, () => {
     const report = runPackagedScenario();
     expect(existsSync(packagedCli)).toBe(true);

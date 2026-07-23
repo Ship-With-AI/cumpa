@@ -29,6 +29,7 @@ import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js
 import { ExportReviewResultSchema } from '../../src/contracts/api.js';
 import { createDirtyGitFixture, type DirtyGitFixture } from '../helpers/git-fixture.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
+import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.js';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -40,6 +41,10 @@ const scenarioEvidencePath = process.env.DIFF_REVIEW_AGENT_READY_EVIDENCE_REPORT
 const scenarioEvidenceRunId = process.env.DIFF_REVIEW_AGENT_READY_EVIDENCE_RUN_ID;
 
 test.setTimeout(120_000);
+
+const observedNativeReExport = hasObservedNativeReExport(process.platform, process.arch);
+
+type StablePairSha256 = Readonly<{ readonly json: string; readonly markdown: string }>;
 
 interface PackResult {
   readonly filename: string;
@@ -225,6 +230,9 @@ test('packaged-resume-after-relaunch preserves accepted review state, atomically
   let running = startGeneratedCli(fixture, original);
   let firstExportReceiptPaths: readonly string[] = [];
   let reExportReceiptPaths: readonly string[] = [];
+  let firstStablePairSha256: StablePairSha256 | undefined;
+  let reExportStablePairSha256: StablePairSha256 | undefined;
+  let reExportKind: 'exported' | 'reExportUnsupported' | undefined;
 
   try {
     await openSession(page, await waitForLoopbackUrl(running));
@@ -263,27 +271,52 @@ test('packaged-resume-after-relaunch preserves accepted review state, atomically
     firstExportReceiptPaths = firstExportResult.files.map((file) => file.path);
     await expect(resumedPage.getByRole('heading', { name: 'Review export complete' })).toBeVisible();
 
-    const reExported = resumedPage.waitForResponse((response) => response.url().includes('/api/export'));
-    await resumedPage.getByRole('button', { name: 'Export review again', exact: true }).click();
-    const reExportResponse = await reExported;
-    expect(reExportResponse.status()).toBe(201);
-    const reExportResult = ExportReviewResultSchema.parse(await reExportResponse.json());
-    if (reExportResult.kind !== 'exported') {
-      throw new Error(`Expected native re-export receipt, received ${reExportResult.kind}.`);
-    }
-    reExportReceiptPaths = reExportResult.files.map((file) => file.path);
-    expect(reExportResult).not.toMatchObject({ kind: 'reExportUnsupported' });
-
     const stablePairDirectory = join(
       fixture.root,
       '.diff-review',
       'exports',
       `${fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim()}..${fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim()}`,
     );
+    const [firstJson, firstMarkdown] = [
+      readFileSync(join(stablePairDirectory, 'review.json')),
+      readFileSync(join(stablePairDirectory, 'review.md')),
+    ];
+    firstStablePairSha256 = Object.freeze({
+      json: createHash('sha256').update(firstJson).digest('hex'),
+      markdown: createHash('sha256').update(firstMarkdown).digest('hex'),
+    });
+    expect(readdirSync(stablePairDirectory).sort()).toEqual(['review.json', 'review.md']);
+
+    const reExported = resumedPage.waitForResponse((response) => response.url().includes('/api/export'));
+    await resumedPage.getByRole('button', { name: 'Export review again', exact: true }).click();
+    const reExportResponse = await reExported;
+    const reExportResult = ExportReviewResultSchema.parse(await reExportResponse.json());
+    if (observedNativeReExport) {
+      expect(reExportResponse.status()).toBe(201);
+      if (reExportResult.kind !== 'exported') {
+        throw new Error(`Expected native re-export receipt on darwin-arm64, received ${reExportResult.kind}.`);
+      }
+      reExportKind = reExportResult.kind;
+      reExportReceiptPaths = reExportResult.files.map((file) => file.path);
+    } else {
+      expect(reExportResponse.status()).toBe(409);
+      expect(reExportResult).toEqual({ kind: 'reExportUnsupported' });
+      reExportKind = reExportResult.kind;
+    }
+
     const [secondJson, secondMarkdown] = [
       readFileSync(join(stablePairDirectory, 'review.json')),
       readFileSync(join(stablePairDirectory, 'review.md')),
     ];
+    reExportStablePairSha256 = Object.freeze({
+      json: createHash('sha256').update(secondJson).digest('hex'),
+      markdown: createHash('sha256').update(secondMarkdown).digest('hex'),
+    });
+    if (reExportKind === 'reExportUnsupported') {
+      expect(secondJson).toEqual(firstJson);
+      expect(secondMarkdown).toEqual(firstMarkdown);
+      expect(reExportStablePairSha256).toEqual(firstStablePairSha256);
+    }
     expect(readdirSync(stablePairDirectory).sort()).toEqual(['review.json', 'review.md']);
     expect(ReviewExportV1Schema.parse(parseCanonicalReviewExport(secondJson))).toMatchObject({
       acceptedDraftRevision: accepted.draft.revision,
@@ -333,6 +366,20 @@ test('packaged-resume-after-relaunch preserves accepted review state, atomically
   expect(markdownSha256).toMatch(/^[a-f0-9]{64}$/);
   await expect(assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root))).resolves.toBeUndefined();
 
+  if (firstStablePairSha256 === undefined || reExportStablePairSha256 === undefined || reExportKind === undefined) {
+    throw new Error('[behavioral] packaged re-export outcome was not observed.');
+  }
+  const reExportEvidence = reExportKind === 'exported'
+    ? {
+        kind: reExportKind,
+        receiptPaths: reExportReceiptPaths,
+        stablePairSha256: reExportStablePairSha256,
+      }
+    : {
+        kind: reExportKind,
+        stablePairSha256: reExportStablePairSha256,
+      };
+
   if (scenarioEvidencePath !== undefined) {
     if (scenarioEvidenceRunId === undefined) throw new Error('[behavioral] generated-package evidence report requires a run ID');
     writeFileSync(scenarioEvidencePath, `${JSON.stringify({
@@ -349,6 +396,11 @@ test('packaged-resume-after-relaunch preserves accepted review state, atomically
         packedSha256: createHash('sha256').update(readFileSync(executablePath)).digest('hex'),
       },
       execution: {
+        target: {
+          platform: process.platform,
+          arch: process.arch,
+          observedNativeReExport,
+        },
         selectorKind: fixture.selectorKind,
         originalOrderedFullOidPair: { baseOid, headOid },
         acceptedState: {
@@ -364,7 +416,8 @@ test('packaged-resume-after-relaunch preserves accepted review state, atomically
         export: {
           receiptPaths: ['review.json', 'review.md'],
           firstReceiptPaths: firstExportReceiptPaths,
-          reExportReceiptPaths,
+          firstStablePairSha256,
+          reExport: reExportEvidence,
           acceptedDraftRevision: document.acceptedDraftRevision,
           jsonSha256,
           markdownSha256,
