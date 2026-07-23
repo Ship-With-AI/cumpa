@@ -2,9 +2,11 @@
 import { computed, nextTick, ref, watch } from 'vue';
 
 import type { ReviewPendingOperation } from '../model/review-draft-state.js';
+import type { ReviewExportState } from '../model/review-draft-state.js';
 import { projectCommentGroups } from '../model/comment-groups.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import SummarySection from './SummarySection.vue';
+import ExportSection from './ExportSection.vue';
 
 type ReviewFailure = Readonly<{
   operation: ReviewPendingOperation;
@@ -15,12 +17,14 @@ const props = defineProps<{
   comments: readonly WorkspaceComment[];
   inventory: readonly { identity: string; display: string }[];
   summary: string;
+  revision: number;
   summaryBuffer: string;
   commentBuffers: ReadonlyMap<string, string>;
   pending: ReviewPendingOperation | null;
   conflict: Readonly<{ expectedRevision: number; actualRevision: number }> | null;
   failure: ReviewFailure | null;
   retainedSummary: boolean;
+  exportState: ReviewExportState;
 }>();
 
 const emit = defineEmits<{
@@ -34,7 +38,10 @@ const emit = defineEmits<{
   inspectRecordedFile: [commentId: string];
   resolve: [commentId: string];
   saveComment: [commentId: string];
+  cancelExport: [];
   saveSummary: [];
+  export: [];
+  reviewUnsavedText: [];
   show: [commentId: string];
   'update:commentBuffer': [commentId: string, value: string];
   'update:summaryBuffer': [value: string];
@@ -502,5 +509,17 @@ watch(reviewFailure, (failed) => {
         </section>
       </div>
     </section>
+    <ExportSection
+      :revision="revision"
+      :summary="summary"
+      :summary-buffer="summaryBuffer"
+      :comments="comments"
+      :comment-buffers="commentBuffers"
+      :export-state="exportState"
+      @cancel="emit('cancelExport')"
+      @export="emit('export')"
+      @reload-latest="emit('reload-latest')"
+      @review-unsaved-text="emit('reviewUnsavedText')"
+    />
   </section>
 </template>

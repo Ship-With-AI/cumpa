@@ -3,8 +3,11 @@ import {
   DraftMutationResultSchema,
   DraftMutationRequestSchema,
   DraftRecoveryRequestSchema,
+  DiffReviewIgnoreStatusSchema,
   DraftRecoveryResultSchema,
   DraftRevealResultSchema,
+  ExportReviewRequestSchema,
+  ExportReviewResultSchema,
   FileContentResponseSchema,
   FileMetadataResponseSchema,
   type DraftLoadResponse,
@@ -12,6 +15,9 @@ import {
   type DraftMutationResult,
   type DraftRecoveryResult,
   type DraftRevealResult,
+  type DiffReviewIgnoreStatus,
+  type ExportReviewRequest,
+  type ExportReviewResult,
   type FileContentResponse,
   type FileMetadataResponse,
   SelectorDriftResponseSchema,
@@ -45,7 +51,9 @@ export class SessionClientError extends Error {
 
 export interface SessionClient {
   mutate(request: DraftMutationRequest): Promise<DraftMutationResult>;
+  exportReview(request: ExportReviewRequest): Promise<ExportReviewResult>;
   getDraft(): Promise<DraftLoadResponse>;
+  getDiffReviewIgnoreStatus(): Promise<DiffReviewIgnoreStatus>;
   recoverDraft(expectedFingerprint: string): Promise<DraftRecoveryResult>;
   revealDraftFile(): Promise<DraftRevealResult>;
   getFileContent(fileId: string): Promise<FileContentResponse>;
@@ -133,6 +141,28 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       }
       const result = DraftMutationResultSchema.safeParse(
         await requestJson('/api/draft/mutations', 'POST', 'draft', payload.data, [404, 409, 500]),
+      );
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async exportReview(input) {
+      const payload = ExportReviewRequestSchema.safeParse(input);
+      if (!payload.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      const result = ExportReviewResultSchema.safeParse(
+        await requestJson('/api/export', 'POST', 'draft', payload.data, [409, 500]),
+      );
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async getDiffReviewIgnoreStatus() {
+      const result = DiffReviewIgnoreStatusSchema.safeParse(
+        await requestJson('/api/export/gitignore', 'GET', 'draft'),
       );
       if (!result.success) {
         throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);

@@ -385,8 +385,50 @@ function mutateComment(commentId: string, type: 'deleteComment' | 'resolveCommen
   mutateReview({ type, expectedRevision: current.canonical.revision, commentId });
 }
 
+function exportReview(): void {
+  const current = reviewDraft.value;
+  if (current === undefined || reviewState === undefined || sessionClient === undefined) return;
+  const token = current.export.phase === 'drift' ? current.export.driftAcknowledgementToken ?? undefined : undefined;
+  if (!reviewState.startExport(token)) return;
+  refreshReviewSnapshot();
+  announce('Checking accepted revision for export.');
+  void sessionClient.exportReview({
+    expectedRevision: current.canonical.revision,
+    ...(token === undefined ? {} : { driftAcknowledgementToken: token }),
+  }).then((result) => {
+    reviewState?.completeExport(result);
+    refreshReviewSnapshot();
+    if (result.kind === 'driftAcknowledgementRequired') {
+      announce('Selected sources changed. Confirm export of the pinned review.');
+    } else if (result.kind === 'driftAcknowledgementStale') {
+      announce('Selected sources changed again. Review the latest identities.');
+    } else if (result.kind === 'exported') {
+      announce('Review export complete. Both files were published together.');
+    } else if (result.kind === 'publicationFailed' || result.kind === 'reExportUnsupported') {
+      announce('Export was not published. No new export pair is available.');
+    }
+  }).catch(() => {
+    reviewState?.completeExport({ kind: 'publicationFailed' });
+    refreshReviewSnapshot();
+    announce('Export was not published. No new export pair is available.');
+  });
+}
+
+function cancelExport(): void {
+  reviewState?.cancelExport();
+  refreshReviewSnapshot();
+}
+
+function reviewUnsavedText(): void {
+  document.querySelector<HTMLButtonElement>('.review-summary button')?.focus();
+}
+
 async function reloadLatestReview(): Promise<void> {
-  if (latestConflictDraft === undefined || sessionClient === undefined) {
+  if (sessionClient === undefined) {
+    return;
+  }
+  const exportConflict = reviewDraft.value?.export.conflict;
+  if (latestConflictDraft === undefined && exportConflict === null) {
     return;
   }
 
@@ -398,7 +440,7 @@ async function reloadLatestReview(): Promise<void> {
 
     reviewState?.conflict(
       reviewCanonical(loaded.draft),
-      reviewDraft.value?.conflict?.expectedRevision ?? loaded.draft.revision,
+      reviewDraft.value?.conflict?.expectedRevision ?? exportConflict?.expectedRevision ?? loaded.draft.revision,
     );
     reviewState?.reloadLatest();
     draftRevision.value = loaded.draft.revision;
@@ -644,6 +686,10 @@ onMounted(async () => {
         draft,
         loadedDraft.kind === 'current' ? reconcileDraftComments(draft.comments, loaded.files) : [],
       );
+      void sessionClient.getDiffReviewIgnoreStatus().then((status) => {
+        reviewState?.setIgnoreStatus(status);
+        refreshReviewSnapshot();
+      }).catch(() => undefined);
       announce(draft.comments.length > 0
         ? 'Local draft resumed. Accepted comments for this pinned comparison are ready.'
         : 'New local draft for this pinned comparison.');
@@ -780,6 +826,7 @@ onBeforeUnmount(() => {
           :inventory="reviewableFiles.map((file) => ({ identity: file.newPath?.bytesBase64url ?? file.oldPath?.bytesBase64url ?? file.fileId, display: file.newPath?.display ?? file.oldPath?.display ?? 'Changed file' }))"
           :summary="reviewDraft.canonical.summary"
           :summary-buffer="reviewDraft.summaryBuffer"
+          :revision="reviewDraft.canonical.revision"
           :comment-buffers="reviewDraft.commentBuffers"
           :pending="reviewDraft.pending"
           :conflict="reviewDraft.conflict === null ? null : { expectedRevision: reviewDraft.conflict.expectedRevision, actualRevision: reviewDraft.conflict.latest.revision }"
@@ -787,6 +834,7 @@ onBeforeUnmount(() => {
           :retained-summary="reviewDraft.retained.summary"
           @cancel-summary="reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot()"
           @close="closeComments"
+          :export-state="reviewDraft.export"
           @delete="mutateComment($event, 'deleteComment')"
           @copy-recorded-anchor="copyRecordedAnchor"
           @reopen="mutateComment($event, 'reopenComment')"
@@ -798,6 +846,9 @@ onBeforeUnmount(() => {
           @show="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
           @update:comment-buffer="(commentId, value) => { reviewState?.setCommentBuffer(commentId, value); refreshReviewSnapshot(); }"
           @update:summary-buffer="(value) => { reviewState?.setSummaryBuffer(value); refreshReviewSnapshot(); }"
+          @cancel-export="cancelExport"
+          @export="exportReview"
+          @review-unsaved-text="reviewUnsavedText"
         />
       </aside>
     </div>
