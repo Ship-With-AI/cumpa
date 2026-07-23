@@ -55,11 +55,14 @@ function snapshot(comments = [comment()]) {
       summary: '',
       comments,
     },
+    commentVerification: Object.fromEntries(
+      comments.map((item) => [item.id, { state: 'verified' as const, reason: 'exact-match' as const }]),
+    ),
     comparison: {
       selectedBase: { label: 'main', launchOid: oid },
       selectedHead: { label: 'topic', launchOid: oid },
       mergeBaseOid: oid,
-      comparisonKey: 'comparison_'.concat('d'.repeat(64)),
+      comparisonKey: 'd'.repeat(64),
     },
     drift: {
       observedAt: '2026-07-23T08:01:00.000Z',
@@ -132,5 +135,22 @@ describe('ReviewExportV1 canonical contract', () => {
 
     expect(hash).toEqual({ algorithm: 'sha256', sha256: expect.stringMatching(/^[0-9a-f]{64}$/u), bytes: bytes.length });
     expect(hashExportBytes(new Uint8Array([...bytes, 0x20])).sha256).not.toBe(hash.sha256);
+  });
+
+  test('rejects malformed timestamps, lone surrogates, invalid resolved state, and noncanonical bytes', () => {
+    const document = buildReviewExportV1(snapshot(), '2026-07-23T08:02:00.000Z');
+    const exportedComment = document.files[0]?.comments[0];
+    if (exportedComment === undefined) throw new Error('Fixture must contain one comment.');
+
+    expect(() => ReviewExportV1Schema.parse({ ...document, exportedAt: 'tomorrow' })).toThrow();
+    expect(() => ReviewExportV1Schema.parse({ ...document, summary: { markdown: '\uD800' } })).toThrow();
+    expect(() => ReviewExportV1Schema.parse({
+      ...document,
+      files: [{ ...document.files[0]!, comments: [{ ...exportedComment, resolvedAt: '2026-07-23T08:04:00.000Z' }] }],
+    })).toThrow();
+    expect(() => canonicalizeReviewExport({ number: Number.NaN })).toThrow();
+
+    const canonical = canonicalizeReviewExport(document);
+    expect(() => parseCanonicalReviewExport(new TextEncoder().encode(`${new TextDecoder().decode(canonical)}\n`))).toThrow();
   });
 });
