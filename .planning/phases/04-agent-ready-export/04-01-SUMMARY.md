@@ -163,6 +163,12 @@ The final acknowledged-drift commits `9e6f741` (RED), `f4f7b1d` (GREEN), and `25
 
 The final fail-closed proof passed: the Node-core mutation self-test reported 34 rejection branches, and real validation returned `reconciliation ledger valid: 04-01-RECONCILIATION.json` after regenerating the report. All declared strict evidence rules remain intact.
 
+## Darwin ARM64 Native Target Declaration
+
+The reconciliation ledger now declares the executable packaged-workstation target `darwin-arm64` for Node 24/N-API. Its `04-03-native-exchange` matrix invokes the focused unit runner with `tests/unit/directory-exchange.test.ts`; evidence binds the N-API adapter source, `binding.gyp` C++20 target declaration, `/usr/bin/c++` compiler/linker invocation with Node headers, and npm package/runner declarations. The generated report records one declared packaging target.
+
+The target remains `pending`: no probe observation promotes it to production re-export capability. Unexecuted, failed, or undeclared targets remain fail-closed as `reExportUnsupported`. The mutation self-test proved all 34 rejection branches and real-ledger validation regenerated the report successfully without weakening any rule.
+
 ## User Setup Required
 
 None - no external service configuration required.

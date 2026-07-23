@@ -30,7 +30,7 @@
 
 - `04-02-canonical`: `/Users/alessandro/.local/share/fnm/node-versions/v24.15.0/installation/bin/node` `scripts/run-focused-vitest.mjs` `tests/unit`
 - `04-03-export-api`: `/Users/alessandro/projects/diff-review/node_modules/.bin/vitest` `run` `tests/api`
-- `04-03-native-exchange`: `/Users/alessandro/.local/share/fnm/node-versions/v24.15.0/installation/bin/node` `scripts/run-focused-vitest.mjs` `tests/unit`
+- `04-03-native-exchange`: `/Users/alessandro/.local/share/fnm/node-versions/v24.15.0/installation/bin/node` `scripts/run-focused-vitest.mjs` `tests/unit/directory-exchange.test.ts`
 - `04-03-publication-faults`: `/Users/alessandro/projects/diff-review/node_modules/.bin/vitest` `run` `tests/api`
 - `04-04-inventory-ignore`: `/Users/alessandro/.local/share/fnm/node-versions/v24.15.0/installation/bin/node` `scripts/run-focused-vitest.mjs` `tests/git`
 - `04-04-gitignore-api`: `/Users/alessandro/projects/diff-review/node_modules/.bin/vitest` `run` `tests/api`
@@ -44,7 +44,7 @@
 
 - Package manager: npm; required installs: none.
 - Manifest: `package.json`; lockfile: `package-lock.json`.
-- Declared packaging targets: 0.
+- Declared packaging targets: 1.
 - Publication policy: `native-exchange-probe-pending`; every target capability is pending.
 - Reusable reveal adapter: `src/cli/run.ts`; no export-directory reveal route is asserted.
 
