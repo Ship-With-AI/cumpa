@@ -63,18 +63,19 @@ afterEach(async () => {
 describe('literal export publication state machine', () => {
   test('allows first export through one validated candidate-to-stable rename and returns only final exact-byte receipt evidence', async () => {
     const repositoryRoot = await root();
+    const pair = candidatePair('new');
 
     const result = await publishReviewExport({
       repositoryRoot,
       baseOid,
       headOid,
-      json: Buffer.from('{"kind":"new"}'),
-      markdown: Buffer.from('# new\n'),
+      json: pair.json,
+      markdown: pair.markdown,
       reExportCapability: { kind: 'reExportUnsupported' },
     });
 
     expect(result.kind).toBe('exported');
-    expect(await readStable(repositoryRoot)).toEqual(['{"kind":"new"}', '# new\n']);
+    expect(await readStable(repositoryRoot)).toEqual([pair.json.toString('utf8'), pair.markdown.toString('utf8')]);
     if (result.kind === 'exported') {
       expect(result.receipt.files.map((file) => file.path)).toEqual([
         `.diff-review/exports/${baseOid}..${headOid}/review.json`,
@@ -102,20 +103,22 @@ describe('literal export publication state machine', () => {
   test('refuses unsupported re-export before exchange or stable mutation while retaining the exact old pair', async () => {
     const repositoryRoot = await root();
     const stable = join(repositoryRoot, '.diff-review', 'exports', `${baseOid}..${headOid}`);
+    const oldPair = candidatePair('old');
+    const newPair = candidatePair('new');
     await mkdir(stable, { recursive: true });
-    await writeFile(join(stable, 'review.json'), '{"kind":"old"}');
-    await writeFile(join(stable, 'review.md'), '# old\n');
+    await writeFile(join(stable, 'review.json'), oldPair.json);
+    await writeFile(join(stable, 'review.md'), oldPair.markdown);
 
     const result = await publishReviewExport({
       repositoryRoot,
       baseOid,
       headOid,
-      json: Buffer.from('{"kind":"new"}'),
-      markdown: Buffer.from('# new\n'),
+      json: newPair.json,
+      markdown: newPair.markdown,
       reExportCapability: { kind: 'reExportUnsupported' },
     });
 
     expect(result).toEqual({ kind: 'reExportUnsupported' });
-    expect(await readStable(repositoryRoot)).toEqual(['{"kind":"old"}', '# old\n']);
+    expect(await readStable(repositoryRoot)).toEqual([oldPair.json.toString('utf8'), oldPair.markdown.toString('utf8')]);
   });
 });

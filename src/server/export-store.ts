@@ -2,7 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { lstat, mkdir, open, readdir, readFile, rename, rm } from 'node:fs/promises';
 import { dirname, join, relative, resolve } from 'node:path';
 
-import { hashExportBytes, type ExportHash } from '../export/review-export.js';
+import { hashExportBytes, parseCanonicalReviewExport, type ExportHash } from '../export/review-export.js';
+import { renderReviewMarkdown } from '../export/render-review-markdown.js';
 
 export class ReExportUnsupported extends Error {
   constructor() {
@@ -144,6 +145,10 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
     const validatedCandidate = await completePair(candidate);
     if (!validatedCandidate.json.equals(input.json) || !validatedCandidate.markdown.equals(input.markdown)) {
       throw new Error('Candidate reread differs from validated export bytes.');
+    }
+    parseCanonicalReviewExport(validatedCandidate.json);
+    if (!Buffer.from(renderReviewMarkdown(validatedCandidate.json), 'utf8').equals(validatedCandidate.markdown)) {
+      throw new Error('Candidate Markdown is not the exact rendering of canonical export JSON.');
     }
     await syncDirectory(candidate);
     if (input.revalidate !== undefined && !(await input.revalidate())) {

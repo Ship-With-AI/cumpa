@@ -32,7 +32,6 @@ import { createDraftStore, type DraftStore } from './draft-store.js';
 import {
   buildReviewExportV1,
   canonicalizeReviewExport,
-  parseCanonicalReviewExport,
 } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
 import { publishReviewExport } from './export-store.js';
@@ -309,7 +308,7 @@ export function createCapabilityRegistry(
         exportedAt,
       );
       const json = canonicalizeReviewExport(document);
-      const markdown = Buffer.from(renderReviewMarkdown(parseCanonicalReviewExport(json)), 'utf8');
+      const markdown = Buffer.from(renderReviewMarkdown(json), 'utf8');
       const published = await publishReviewExport({
         repositoryRoot: comparison.repositoryRoot,
         baseOid: comparison.base.oid,
