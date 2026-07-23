@@ -208,6 +208,35 @@ describe('secured export and fixed export-directory reveal APIs', () => {
     expect(ExportReviewResultSchema.safeParse({ kind: 'recoveryRequired' }).success).toBe(true);
   });
 
+  test('rejects acknowledged receipt drift that does not map one-to-one to the pinned comparison', () => {
+    const directory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
+    const receipt = exportedReceipt([
+      { path: `${directory}/review.json`, sha256: 'a'.repeat(64), bytes: 128 },
+      { path: `${directory}/review.md`, sha256: 'b'.repeat(64), bytes: 256 },
+    ]);
+    const base = {
+      role: 'base' as const,
+      pinned: { label: 'base', selectorType: 'branch' as const, oid: '1'.repeat(40) },
+      current: { kind: 'available' as const, label: 'base', selectorType: 'branch' as const, oid: '3'.repeat(40) },
+    };
+    const head = {
+      role: 'head' as const,
+      pinned: { label: 'head', selectorType: 'branch' as const, oid: '2'.repeat(40) },
+      current: { kind: 'available' as const, label: 'head', selectorType: 'branch' as const, oid: '4'.repeat(40) },
+    };
+    const acknowledged = { kind: 'acknowledged' as const, identities: [base, head] as const };
+
+    expect(ExportReviewResultSchema.safeParse({ ...receipt, drift: acknowledged }).success).toBe(true);
+    expect(ExportReviewResultSchema.safeParse({
+      ...receipt,
+      drift: { ...acknowledged, identities: [base, { ...base, current: head.current }] },
+    }).success).toBe(false);
+    expect(ExportReviewResultSchema.safeParse({
+      ...receipt,
+      drift: { ...acknowledged, identities: [base, { ...head, pinned: { ...head.pinned, oid: '4'.repeat(40) } }] },
+    }).success).toBe(false);
+  });
+
   test('requires server-confirmed pinned comparison identities on every receipt', () => {
     const directory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
     expect(ExportReviewResultSchema.safeParse({
