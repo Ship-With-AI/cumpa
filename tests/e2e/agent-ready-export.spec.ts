@@ -35,6 +35,8 @@ const packedRoot = mkdtempSync(join(tmpdir(), 'diff-review-agent-ready-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const executablePath = join(extractedPackageRoot, 'dist/bin/diff-review.mjs');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
+const scenarioEvidencePath = process.env.DIFF_REVIEW_AGENT_READY_EVIDENCE_REPORT;
+const scenarioEvidenceRunId = process.env.DIFF_REVIEW_AGENT_READY_EVIDENCE_RUN_ID;
 
 test.setTimeout(120_000);
 
@@ -216,6 +218,9 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
   const different = Object.freeze({ base: fixture.baseRef, head: fixture.alternateHeadRef! });
   const summary = 'Accepted summary survives a fully new packaged process.';
   const body = 'Verified anchor survives a fully new packaged process.';
+  let launchedGeneratedProcesses = 1;
+  let terminatedGeneratedProcesses = 0;
+  let closedBrowserPages = 0;
   let running = startGeneratedCli(fixture, original);
 
   try {
@@ -224,7 +229,9 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
     await saveSummary(page, summary);
   } finally {
     await page.close();
+    closedBrowserPages += 1;
     await stopGeneratedCli(running);
+    terminatedGeneratedProcesses += 1;
   }
 
   const accepted = readOnlyDraft(fixture);
@@ -234,6 +241,7 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
 
   const resumedPage = await browser.newPage();
   running = startGeneratedCli(fixture, original);
+  launchedGeneratedProcesses += 1;
   try {
     await openSession(resumedPage, await waitForLoopbackUrl(running));
     await ensureReviewOpen(resumedPage);
@@ -247,11 +255,14 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
     await expect(resumedPage.getByRole('heading', { name: 'Review export complete' })).toBeVisible();
   } finally {
     await resumedPage.close();
+    closedBrowserPages += 1;
     await stopGeneratedCli(running);
+    terminatedGeneratedProcesses += 1;
   }
 
   const differentPage = await browser.newPage();
   running = startGeneratedCli(fixture, different);
+  launchedGeneratedProcesses += 1;
   try {
     await openSession(differentPage, await waitForLoopbackUrl(running));
     await ensureReviewOpen(differentPage);
@@ -259,10 +270,15 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
     await expect(differentPage.locator('.comments-rail__comment', { hasText: body })).toHaveCount(0);
   } finally {
     await differentPage.close();
+    closedBrowserPages += 1;
     await stopGeneratedCli(running);
+    terminatedGeneratedProcesses += 1;
   }
 
-  const pairDirectory = join(fixture.root, '.diff-review', 'exports', `${fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim()}..${fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim()}`);
+  const baseOid = fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim();
+  const headOid = fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim();
+  const alternateHeadOid = fixture.git(['rev-parse', fixture.alternateHeadRef!]).toString('ascii').trim();
+  const pairDirectory = join(fixture.root, '.diff-review', 'exports', `${baseOid}..${headOid}`);
   const [json, markdown, names] = await Promise.all([
     import('node:fs/promises').then(({ readFile }) => readFile(join(pairDirectory, 'review.json'))),
     import('node:fs/promises').then(({ readFile }) => readFile(join(pairDirectory, 'review.md'))),
@@ -274,8 +290,49 @@ test('packaged-resume-after-relaunch preserves accepted review state, separates 
   expect(document.acceptedDraftRevision).toBe(accepted.draft.revision);
   expect(document.summary.markdown).toBe(summary);
   expect(document.files.flatMap((file) => file.comments).map((comment) => comment.body)).toContain(body);
-  expect(createHash('sha256').update(json).digest('hex')).toMatch(/^[a-f0-9]{64}$/);
-  expect(createHash('sha256').update(markdown).digest('hex')).toMatch(/^[a-f0-9]{64}$/);
+  const jsonSha256 = createHash('sha256').update(json).digest('hex');
+  const markdownSha256 = createHash('sha256').update(markdown).digest('hex');
+  expect(jsonSha256).toMatch(/^[a-f0-9]{64}$/);
+  expect(markdownSha256).toMatch(/^[a-f0-9]{64}$/);
   await expect(assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root))).resolves.toBeUndefined();
+
+  if (scenarioEvidencePath !== undefined) {
+    if (scenarioEvidenceRunId === undefined) throw new Error('[behavioral] generated-package evidence report requires a run ID');
+    writeFileSync(scenarioEvidencePath, `${JSON.stringify({
+      schemaVersion: 1,
+      runId: scenarioEvidenceRunId,
+      scenario: {
+        id: 'packaged-resume-after-relaunch',
+        title: testInfo.title,
+        testFile: 'tests/e2e/agent-ready-export.spec.ts',
+      },
+      packageArtifact: {
+        path: 'dist/bin/diff-review.mjs',
+        sourceSha256: createHash('sha256').update(readFileSync(join(repositoryRoot, 'dist', 'bin', 'diff-review.mjs'))).digest('hex'),
+        packedSha256: createHash('sha256').update(readFileSync(executablePath)).digest('hex'),
+      },
+      execution: {
+        selectorKind: fixture.selectorKind,
+        originalOrderedFullOidPair: { baseOid, headOid },
+        acceptedState: {
+          revision: accepted.draft.revision,
+          summarySha256: createHash('sha256').update(summary).digest('hex'),
+          draftSha256: createHash('sha256').update(accepted.bytes).digest('hex'),
+          comment: accepted.draft.comments[0],
+        },
+        closedBrowserPages,
+        launchedGeneratedProcesses,
+        terminatedGeneratedProcesses,
+        differentOrderedPair: { baseOid, headOid: alternateHeadOid },
+        export: {
+          receiptPaths: ['review.json', 'review.md'],
+          acceptedDraftRevision: document.acceptedDraftRevision,
+          jsonSha256,
+          markdownSha256,
+        },
+      },
+    })}\n`, 'utf8');
+  }
+
   await fixture.cleanup();
 });
