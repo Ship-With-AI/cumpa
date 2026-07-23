@@ -98,10 +98,12 @@ async function waitForExit(child: ChildProcess): Promise<void> {
 function startGeneratedCli(repository: GitFixture): RunningCli {
   const outputPath = join(packedRoot, `terminal-${crypto.randomUUID()}.log`);
   const outputDescriptor = openSync(outputPath, 'w');
+  const environment = { ...process.env };
+  delete environment.CMUX_WORKSPACE_ID;
   const child = spawn(process.execPath, [executablePath], {
     cwd: repository.nestedCwd,
     env: {
-      ...process.env,
+      ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
       DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({
         cwd: repository.nestedCwd,
