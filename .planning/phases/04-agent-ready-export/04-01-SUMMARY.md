@@ -111,6 +111,10 @@ Phase 04-03 intentionally extended the secured route registry and capability reg
 
 Phase 04-04 intentionally extended the comparison inventory, secured route registry, and capability registry. This repair refreshed only those source-inclusive owner claims: `createChangedFileInventory` covers lines 1–221 with SHA-256 `219e1fa833cb92a05eb97fd1424db99f3edd4087abff8037b0741a78964e995e`; `registerSessionRoutes` covers lines 1–406 with SHA-256 `d29c1786e47e79faab2b7f774ed577542c78a9b07b0a989fd0224e32feca31da`; and `createCapabilityRegistry` covers lines 1–416 with SHA-256 `e65cd66eabac98fa99f02ad344d6c6a3c9c0729a96380ff85e1297c0f4a02110`. Strict validation and production source remain unchanged by this refresh.
 
+## Wave-Four Evidence Refresh
+
+Wave Four intentionally extended the browser API client, canonical browser state, review panel, and launch adapter. This repair refreshed their source-inclusive evidence claims to the committed tree: `createSessionClient` 1–236 (`c5a4c1738e352f71335a556d657b9d6d29154293f5de92d2f63249a0de41e027`), `createReviewDraftState` 1–276 (`5724ff15444d79c6bd68db0fbd9282b1d908f00fa8fbb1bc073f0de8b7168653`), `defineExpose` 1–530 (`3d809c319b9a838903affe69308cb3fc116e2aa45ebeb2f16c230fe6fd80887b`), and `revealDraftFile` 1–460 (`6dbb42b57139d5a2357ecaa7361ce72cc85eb28f867e817b14618660ff3c8add`). Validation remained strict; this refresh did not alter production source.
+
 ## User Setup Required
 
 None - no external service configuration required.
