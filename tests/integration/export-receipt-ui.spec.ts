@@ -18,6 +18,7 @@ let ignoreStatus: 'ignored' | 'notIgnored' = 'ignored';
 const appendBodies: string[] = [];
 let appendResult: { readonly kind: string } = { kind: 'appended' };
 let failedExportResult: 'publicationFailed' | 'recoveryRequired' = 'publicationFailed';
+let receiptHasAcknowledgedDrift = true;
 
 const session = {
   base: { label: 'base', oid: baseOid },
@@ -78,8 +79,8 @@ async function startAppServer(): Promise<string> {
               kind: 'exported',
               draftRevision: 3,
               exportedAt: '2026-07-23T12:34:56.000Z',
-              driftAcknowledged: true,
-              drift: {
+              driftAcknowledged: receiptHasAcknowledgedDrift,
+              drift: receiptHasAcknowledgedDrift ? {
                 kind: 'acknowledged',
                 identities: [
                   {
@@ -93,11 +94,11 @@ async function startAppServer(): Promise<string> {
                     current: { kind: 'available', label: 'head', selectorType: 'branch', oid: '3'.repeat(40) },
                   },
                 ],
+              } : { kind: 'noneObserved' },
+              comparison: {
+                base: { label: 'base', selectorType: 'branch', oid: '1'.repeat(40) },
+                head: { label: 'head', selectorType: 'branch', oid: '2'.repeat(40) },
               },
-        comparison: {
-          base: { label: 'base', selectorType: 'branch', oid: '1'.repeat(40) },
-          head: { label: 'head', selectorType: 'branch', oid: '2'.repeat(40) },
-        },
               files: [
                 { path: `${exportDirectory}/review.json`, algorithm: 'sha256', sha256: '1'.repeat(64), bytes: 128 },
                 { path: `${exportDirectory}/review.md`, algorithm: 'sha256', sha256: '2'.repeat(64), bytes: 256 },
@@ -134,7 +135,7 @@ test.beforeEach(async ({ context }) => {
   revealBodies.length = 0;
   ignoreStatus = 'ignored';
   appendResult = { kind: 'appended' };
-  failedExportResult = 'publicationFailed';
+  receiptHasAcknowledgedDrift = true;
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin });
 });
 
@@ -148,31 +149,46 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
   await expect(receipt).toContainText('2026-07-23T12:34:56.000Z');
   await expect(receipt).toContainText(`${exportDirectory}/review.json`);
   await expect(receipt).toContainText(`${exportDirectory}/review.md`);
+  await expect(receipt).toContainText('Both files were published together from accepted revision 3.');
 
   await page.setViewportSize({ width: 320, height: 720 });
   expect(await receipt.evaluate((element) => element.getBoundingClientRect().right <= window.innerWidth)).toBe(true);
   await expect(receipt).toContainText('sha256:1111111111111111111111111111111111111111111111111111111111111111');
   await expect(receipt).toContainText('128');
 
-  await receipt.getByRole('button', { name: 'Copy receipt details' }).click();
+  await receipt.getByRole('button', { name: 'Copy all receipt details' }).click();
   await expect(receipt.getByText('Copied export receipt details.')).toBeVisible();
   await expect(page.evaluate(() => navigator.clipboard.readText())).resolves.toContain(`${exportDirectory}/review.json`);
 
   await receipt.getByRole('button', { name: 'Reveal export directory' }).click();
   const revealAlert = receipt.getByRole('alert');
-  await expect(revealAlert).toContainText('Reveal failed; copy a displayed relative path and open it from the repository root.');
+  await expect(revealAlert).toContainText('Could not reveal the export directory. Copy the relative path and open it from the repository root.');
   await expect(revealAlert).toBeFocused();
   expect(revealBodies).toEqual(['']);
 
+  const comparisonDisclosure = receipt.getByRole('button', { name: 'Comparison' });
+  await comparisonDisclosure.click();
+  await expect(receipt).toContainText(`Pinned Base: ${'1'.repeat(40)}`);
+  await expect(receipt).toContainText(`Pinned Head: ${'2'.repeat(40)}`);
+
   const driftDisclosure = receipt.getByRole('button', { name: 'View acknowledged identities' });
   await driftDisclosure.click();
-  await expect(receipt).toContainText(`Pinned Base: ${'1'.repeat(40)}`);
+  await expect(receipt).toContainText('Pinned label: base');
+  await expect(receipt).toContainText('Pinned type: branch');
+  await expect(receipt).toContainText('Current label: head');
+  await expect(receipt).toContainText('Current type: branch');
   await expect(receipt).toContainText(`Current Head: ${'3'.repeat(40)}`);
 
   const jsonRow = receipt.getByRole('article', { name: 'review.json' });
   await expect(jsonRow).toHaveAccessibleDescription(`review.json. Path ${exportDirectory}/review.json. SHA-256 ${'1'.repeat(64)}. 128 bytes.`);
   await jsonRow.getByRole('button', { name: 'Copy path' }).click();
   await expect(jsonRow.getByText('Copied relative path for review.json.')).toBeVisible();
+
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, 'writeText', { configurable: true, value: () => Promise.reject(new Error('blocked')) });
+  });
+  await jsonRow.getByRole('button', { name: 'Copy path' }).click();
+  await expect(jsonRow.getByText('Could not copy. Select the value and copy it manually.')).toBeVisible();
 
   for (const width of [768, 360]) {
     await page.setViewportSize({ width, height: 720 });
@@ -187,6 +203,18 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
   await page.getByRole('button', { name: 'Export review again' }).click();
   await expect(page.getByRole('heading', { name: 'Export was not published' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Previous confirmed export' })).toContainText(`${exportDirectory}/review.md`);
+});
+
+test('keeps a no-drift receipt comparison inspectable', async ({ page }) => {
+  receiptHasAcknowledgedDrift = false;
+  await openReview(page);
+  await page.getByRole('button', { name: 'Export review' }).click();
+
+  const receipt = page.getByRole('region', { name: 'Review export complete' });
+  await expect(receipt).toContainText('None observed');
+  await receipt.getByRole('button', { name: 'Comparison' }).click();
+  await expect(receipt).toContainText(`Pinned Base: ${'1'.repeat(40)}`);
+  await expect(receipt).toContainText(`Pinned Head: ${'2'.repeat(40)}`);
 });
 
 test('keeps the required recovery surface open and labels the retained receipt as previous', async ({ page }) => {
