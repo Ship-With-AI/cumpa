@@ -123,6 +123,10 @@ describe('secured export and fixed export-directory reveal APIs', () => {
       kind: 'exported',
       draftRevision: 1,
       driftAcknowledged: false,
+      comparison: {
+        base: { label: 'base', oid: '1'.repeat(40) },
+        head: { label: 'head', oid: '2'.repeat(40) },
+      },
       files: [
         { path: `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}/review.json` },
         { path: `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}/review.md` },
