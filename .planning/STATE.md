@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: agent-ready-export
 status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-07-23T13:36:29Z"
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-07-23T14:30:07.122Z"
 last_activity: 2026-07-23
-last_activity_desc: Completed Phase 04 Plan 03 secured native export publication
+last_activity_desc: Completed 04-03 secured native export publication
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 38
-  completed_plans: 33
-  percent: 86
+  completed_plans: 34
+  percent: 75
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 04 (agent-ready-export) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 Status: Ready to execute
 Last activity: 2026-07-23 — Completed 04-03 secured native export publication
 
@@ -88,6 +88,7 @@ Progress: ████░░░░░░ [████░░░░░░] 38%
 | Phase 04 P01 | 15min | 2 tasks | 4 files |
 | Phase 04 P02 | 1min | 2 tasks | 5 files |
 | Phase 04 P03 | execution session | 3 tasks | 9 files |
+| Phase 04 P04 | execution session | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -161,6 +162,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 04]: Compose ReviewExportV1 from reconciled draft and anchor schemas; Markdown reparses canonical bytes only. — Keeps one validated export model and prevents a parallel Markdown review state.
 - [Phase 04]: Re-export is native-exchange-only and denied before stable-path mutation unless a declared packaged target independently proves its exact primitive and continuous probe. — The current zero-target ledger keeps all re-export requests typed `reExportUnsupported`.
 - [Phase 04]: Publish only an exact canonical JSON and derived Markdown pair after accepted draft revision/fingerprint and retained-selector drift revalidation. — Final receipts are from stable reread SHA-256/byte evidence.
+- [Phase 04]: Exclude exact root .diff-review path bytes from inventory independently of user ignore configuration. — Internal application state must never enter review output.
+- [Phase 04]: Keep ignore consent as a fixed append-only capability with reread and safe-probe confirmation. — A review client must not receive generic Git or filesystem authority.
 
 ### Pending Todos
 
@@ -182,6 +185,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T13:36:29Z
-Stopped at: Completed 04-03-PLAN.md
-Resume file: .planning/phases/04-agent-ready-export/04-03-SUMMARY.md
+Last session: 2026-07-23T14:30:07.118Z
+Stopped at: Completed 04-04-PLAN.md
+Resume file: None

@@ -75,7 +75,7 @@
 - [x] **EXP-05**: User sees repository-relative output paths and content hashes after export.
 - [x] **EXP-06**: User never receives one new export format without the other when an export write fails.
 - [x] **EXP-07**: Re-exporting unchanged review state produces deterministic content apart from the explicit export timestamp.
-- [ ] **EXP-08**: Export never applies, stages, commits, or pushes repository changes.
+- [x] **EXP-08**: Export never applies, stages, commits, or pushes repository changes.
 
 ### Local Safety
 
@@ -192,7 +192,7 @@ Each v1 requirement maps to exactly one roadmap phase.
 | EXP-05 | Phase 4 | Complete |
 | EXP-06 | Phase 4 | Complete |
 | EXP-07 | Phase 4 | Complete |
-| EXP-08 | Phase 4 | Pending |
+| EXP-08 | Phase 4 | Complete |
 | SAFE-04 | Phase 4 | Complete |
 
 **Coverage:**
