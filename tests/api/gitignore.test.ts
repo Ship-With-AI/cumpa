@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { lstat, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -55,7 +55,7 @@ describe('fixed append-only gitignore capability', () => {
       { method: 'POST' as const, url: '/api/export/gitignore', headers: { ...headers, authorization: `Bearer ${'z'.repeat(43)}` }, payload: undefined },
       { method: 'POST' as const, url: '/api/export/gitignore', headers: { ...headers, host: 'localhost:43131' }, payload: undefined },
       { method: 'POST' as const, url: '/api/export/gitignore', headers: { ...headers, origin: 'http://localhost:43131' }, payload: undefined },
-      { method: 'GET' as const, url: '/api/export/gitignore', headers, payload: undefined },
+      { method: 'PUT' as const, url: '/api/export/gitignore', headers, payload: undefined },
       { method: 'POST' as const, url: '/api/export/gitignore', headers, payload: {} },
       { method: 'POST' as const, url: '/api/export/gitignore?path=/tmp/evil', headers, payload: undefined },
       { method: 'POST' as const, url: '/api/export/gitignore', headers, payload: { path: '/tmp/evil' } },
@@ -126,6 +126,12 @@ describe('fixed append-only gitignore capability', () => {
     await expect(appendDiffReviewIgnoreRule({ repositoryRoot: symlinkRoot })).resolves.toEqual({ kind: 'unconfirmed' });
     expect(await readFile(target)).toEqual(targetBytes);
 
+    const directoryRoot = await createRepository();
+    const directoryPath = join(directoryRoot, '.gitignore');
+    await mkdir(directoryPath);
+    await expect(appendDiffReviewIgnoreRule({ repositoryRoot: directoryRoot })).resolves.toEqual({ kind: 'unconfirmed' });
+    expect((await lstat(directoryPath)).isDirectory()).toBe(true);
+
     const concurrentRoot = await createRepository();
     const concurrentPath = join(concurrentRoot, '.gitignore');
     await writeFile(concurrentPath, Buffer.from('# initial\n'));
@@ -135,6 +141,6 @@ describe('fixed append-only gitignore capability', () => {
         { beforeAppend: async () => writeFile(concurrentPath, Buffer.from('# external\n')) },
       ),
     ).resolves.toEqual({ kind: 'unconfirmed' });
-    expect(await readFile(concurrentPath)).toEqual(Buffer.from('# external\n/.diff-review/\n'));
+    expect(await readFile(concurrentPath)).toEqual(Buffer.from('# external\n'));
   });
 });

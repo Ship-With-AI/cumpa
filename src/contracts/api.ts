@@ -222,6 +222,27 @@ export const ExportDirectoryRevealResultSchema = z
   ])
   .readonly();
 
+export const DiffReviewIgnoreStatusSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('ignored') }).readonly(),
+    z.strictObject({ kind: z.literal('notIgnored') }).readonly(),
+    z.strictObject({ kind: z.literal('unavailable') }).readonly(),
+  ])
+  .readonly();
+
+export const AppendDiffReviewIgnoreResultSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('appended') }).readonly(),
+    z.strictObject({ kind: z.literal('alreadyIgnored') }).readonly(),
+    z.strictObject({ kind: z.literal('unconfirmed') }).readonly(),
+  ])
+  .readonly();
+
+export type DiffReviewIgnoreStatus = z.infer<typeof DiffReviewIgnoreStatusSchema>;
+export type AppendDiffReviewIgnoreResult = z.infer<
+  typeof AppendDiffReviewIgnoreResultSchema
+>;
+
 export type ExportReviewRequest = z.infer<typeof ExportReviewRequestSchema>;
 export type ExportDirectoryRevealResult = z.infer<typeof ExportDirectoryRevealResultSchema>;
 

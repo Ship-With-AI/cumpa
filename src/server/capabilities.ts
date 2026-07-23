@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import type { PinnedComparison, ChangedFile } from '../contracts/comparison.js';
 import {
   ExportReviewResultSchema,
+  AppendDiffReviewIgnoreResultSchema,
+  DiffReviewIgnoreStatusSchema,
   FileContentResponseSchema,
   FileMetadataResponseSchema,
   SessionResponseSchema,
@@ -13,6 +15,8 @@ import {
   type FileContentResponse,
   type FileMetadataResponse,
   type SessionResponse,
+  type AppendDiffReviewIgnoreResult,
+  type DiffReviewIgnoreStatus,
 } from '../contracts/api.js';
 import {
   buildDurableAnchor,
@@ -35,6 +39,8 @@ import {
 } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
 import { publishReviewExport } from './export-store.js';
+import { inspectDiffReviewIgnore } from '../git/ignore-status.js';
+import { appendDiffReviewIgnoreRule } from './gitignore-capability.js';
 
 export type AnchorAddPort = (
   input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
@@ -93,6 +99,8 @@ export type CapabilityRegistry = Readonly<{
   readonly revealDraftFile: () => Promise<void>;
   readonly revealExportDirectory: () => Promise<void>;
   readonly exportReview: (input: ExportReviewRequest) => Promise<ExportReviewResult>;
+  readonly inspectDiffReviewIgnore: () => Promise<DiffReviewIgnoreStatus>;
+  readonly appendDiffReviewIgnoreRule: () => Promise<AppendDiffReviewIgnoreResult>;
 }>;
 
 function toSessionEndpoint(endpoint: PinnedComparison['base']) {
@@ -245,6 +253,21 @@ export function createCapabilityRegistry(
         throw new Error('Export reveal adapter is unavailable.');
       }
       await options.revealDraftFile(exportDirectory);
+    },
+    async inspectDiffReviewIgnore() {
+      const status = await inspectDiffReviewIgnore({
+        repositoryRoot: comparison.repositoryRoot,
+      });
+      return DiffReviewIgnoreStatusSchema.parse({
+        kind: status.kind === 'not-ignored' ? 'notIgnored' : status.kind,
+      });
+    },
+    async appendDiffReviewIgnoreRule() {
+      return AppendDiffReviewIgnoreResultSchema.parse(
+        await appendDiffReviewIgnoreRule({
+          repositoryRoot: comparison.repositoryRoot,
+        }),
+      );
     },
     async exportReview(input: ExportReviewRequest): Promise<ExportReviewResult> {
       const initial = await draftStore.loadState();

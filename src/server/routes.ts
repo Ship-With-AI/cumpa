@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
+  AppendDiffReviewIgnoreResultSchema,
+  DiffReviewIgnoreStatusSchema,
   DraftLoadResponseSchema,
   DraftMutationRequestSchema,
   DraftMutationResultSchema,
@@ -305,6 +307,44 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
     } catch {
       return unavailable(reply, 500);
     }
+    },
+  );
+
+  app.get<{ Querystring: Record<string, never> }>(
+    '/api/export/gitignore',
+    { schema: { querystring: EMPTY_QUERY_SCHEMA } },
+    async (request, reply) => {
+      if (
+        Object.keys(request.query).length !== 0 ||
+        request.body !== undefined ||
+        request.headers['content-length'] !== undefined ||
+        request.headers['content-type'] !== undefined
+      ) {
+        return unavailable(reply, 400);
+      }
+      return DiffReviewIgnoreStatusSchema.parse(
+        await capabilities.inspectDiffReviewIgnore(),
+      );
+    },
+  );
+
+  app.post<{ Querystring: Record<string, never>; Body: unknown }>(
+    '/api/export/gitignore',
+    { schema: { querystring: EMPTY_QUERY_SCHEMA } },
+    async (request, reply) => {
+      if (
+        Object.keys(request.query).length !== 0 ||
+        request.body !== undefined ||
+        request.headers['content-length'] !== undefined ||
+        request.headers['content-type'] !== undefined
+      ) {
+        return unavailable(reply, 400);
+      }
+      return reply.code(200).send(
+        AppendDiffReviewIgnoreResultSchema.parse(
+          await capabilities.appendDiffReviewIgnoreRule(),
+        ),
+      );
     },
   );
 
