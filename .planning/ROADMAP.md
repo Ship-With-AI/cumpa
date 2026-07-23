@@ -11,7 +11,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 | 1 | Pinned Local Comparison | 13/13 | Complete    | 2026-07-20 |
 | 2 | Anchored Diff Review | 10/10 | Complete | 2026-07-21 |
 | 3 | Complete Review Draft | 7/7 | Complete    | 2026-07-23 |
-| 4 | Agent-Ready Export | 1/8 | In Progress|  |
+| 4 | Agent-Ready Export | 2/8 | In Progress|  |
 
 **Total:** 4 phases, 51 v1 requirements, 35 planned implementation units.
 

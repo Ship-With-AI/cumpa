@@ -6,14 +6,14 @@ current_phase: 04
 current_phase_name: agent-ready-export
 status: executing
 stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-07-23T12:28:48.168Z"
+last_updated: "2026-07-23T12:54:31.366Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 04 execution started
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 38
-  completed_plans: 31
+  completed_plans: 32
   percent: 75
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 04 (agent-ready-export) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 Status: Ready to execute
 Last activity: 2026-07-23 — Phase 04 execution started
 
@@ -86,6 +86,7 @@ Progress: ████░░░░░░ [███████░░░] 68%
 | Phase 03 P02 | 33min | 3 tasks | 13 files |
 | Phase 03 P03 | 24min | 3 tasks | 13 files |
 | Phase 04 P01 | 15min | 2 tasks | 4 files |
+| Phase 04 P02 | 1min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -156,6 +157,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 03]: Re-resolve only server-retained selectors through fixed native-Git argument arrays; selector drift is visible-only and never mutates the pinned comparison, draft, anchors, Monaco, or local buffers.
 - [Phase 04]: 04-01 enforces export ownership and evidence integrity through a strict reconciliation ledger. — A deterministic preflight gate makes handoff contract coverage auditable before agent-ready export work begins.
 - [Phase 04]: Reconciliation evidence hashes source-inclusive line ranges, preserving trailing newlines. — The validator must prove the ledger addresses the exact reviewed source bytes, including a final newline when present.
+- [Phase 04]: Compose ReviewExportV1 from reconciled draft and anchor schemas; Markdown reparses canonical bytes only. — Keeps one validated export model and prevents a parallel Markdown review state.
 
 ### Pending Todos
 
@@ -177,6 +179,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T12:28:40.603Z
+Last session: 2026-07-23T12:52:44.333Z
 Stopped at: Completed 04-01-PLAN.md
 Resume file: None
