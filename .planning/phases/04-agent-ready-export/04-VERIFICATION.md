@@ -1,160 +1,125 @@
 ---
 phase: 04-agent-ready-export
-verified: 2026-07-23T22:00:00Z
+verified: 2026-07-24T00:45:00Z
 status: passed
 score: 36/36 plan must-haves verified
 roadmap_score: 5/5 success criteria verified
+requirements_score: 9/9 satisfied
 behavior_unverified: 0
 overrides_applied: 0
 gaps: []
 ---
 
-# Phase 4: Agent-Ready Export Verification Report
+# Phase 04: Agent-Ready Export — Final Goal-Backward Verification
 
-**Phase Goal:** A developer can explicitly produce a complete, stable, machine-actionable review artifact that an agent can consume safely without Diff Review modifying source control.
+**Phase goal:** A developer can explicitly produce a complete, stable, machine-actionable review artifact that an agent can consume safely without Diff Review modifying source control.
 
-**Verified:** 2026-07-23T22:00:00Z
-**Status:** **passed**
-**Re-verification:** Native packaged-target remediation
+**Verdict:** **passed**
 
-## Native Re-export Gap Remediation
+This is a re-verification of the former EXP-07 production-native blocker. The blocker is closed: the declared `darwin-arm64` packaged runtime now builds, loads, probes, and supplies its native directory-exchange capability to the production publisher. The latest generated-package run observed an actual second `201`/`exported` response and independently reread the resulting exact two-file stable pair. Other targets fail closed as `reExportUnsupported` before a stable pair is touched.
 
-The preceding initial-verification findings are retained as historical evidence. The original EXP-07 blocker is remediated by `4023bdf`: `build:runtime` emits `dist/native/directory_exchange.node`, the production capability loader resolves that package-relative artifact, and only its successful same-filesystem probe grants `observedNativeExchange`; load, compile, or probe failure remains `reExportUnsupported`.
+## Goal-Backward Result
 
-Focused generated-package evidence now exercises the actual product boundary:
+| Outcome needed for the goal | Result | Grounded evidence |
+|---|---|---|
+| Export is a complete, versioned, schema-valid JSON/Markdown pair in a full-OID repository-local path. | **VERIFIED** | `buildReviewExportV1` creates the strict document; `publishReviewExport` validates the candidate, requires exactly `review.json` and `review.md`, then rereads the final stable pair. The packed Chromium run independently observed the receipt paths under `.diff-review/exports/<full-base>..<full-head>/`. |
+| An applying agent receives only actionable verified feedback plus enough identity to avoid unsafe guessing. | **VERIFIED** | `renderReviewMarkdown` first calls `parseCanonicalReviewExport`; it emits verified-open requests, sends stale/orphaned open comments to reviewer attention, retains resolved history only in JSON/counts, and states the commit/blob/path/side/text/context-hash/no-guess contract. |
+| Re-export is deterministic apart from the explicit timestamp and never exposes a one-file new generation. | **VERIFIED** | Canonical serializer and hash boundary are deterministic; publication writes/validates a candidate pair before first atomic rename or one native directory exchange. `npm run test:package-contract` passed the target-aware packed re-export on this Darwin/arm64 host. |
+| The browser exposes only server-confirmed export/receipt/ignore/reveal authority. | **VERIFIED** | `ExportSection.vue` presents pair-level states and delegates fixed capability callbacks; `ExportReceipt.vue` and `GitignoreStatus.vue` consume server DTOs. Export/reveal/ignore routes retain server-held repository/OID/path authority. |
+| Export does not mutate source control, and generated internal files neither enter review nor require an ignore rewrite. | **VERIFIED** | `inventory.ts` filters only exact root `.diff-review` old/new identities. `gitignore-capability.ts` performs a consent-gated fixed-byte append only. Generated-package safety uses independent dirty-repository snapshots and command auditing. |
 
-- `npx playwright test tests/e2e/agent-ready-export.spec.ts --grep "atomically re-exports"` — passed: 1 Chromium test. The harness builds, creates an `npm pack --ignore-scripts` tarball, extracts it, launches its generated `dist/bin/diff-review.mjs` in a disposable Git repository, performs a first export, clicks **Export review again**, receives a second `201` result parsed as `kind: "exported"` (never `reExportUnsupported`), and rereads `review.json`/`review.md` as one canonical JSON-to-Markdown pair.
-- `npm run build && npx vitest run tests/package/agent-ready-export-safety.test.ts` — passed: generated-package safety suite 8/8, including first export followed by observed native exchange, 32 stable-pair observations, and recovery of the new complete pair.
-- `npx playwright test tests/e2e/agent-ready-export-safety.spec.ts --grep "forced unavailable capability"` — passed: 1 lower-level forced-unavailable seam still proves refusal leaves the old complete pair untouched; it is no longer evidence about declared `darwin-arm64`.
+## Former EXP-07 Native Re-export Gap — Re-evaluation
 
-Accordingly, the prior “always `reExportUnsupported`” data-flow block and its three dependent failed truths are resolved for the declared `darwin-arm64` target. Unobserved, unsupported, unavailable, or probe-failed targets remain fail-closed.
+The earlier gap was real: native source and an isolated probe did not establish a production packaged runtime capability. It is no longer present.
 
+| Level | Current evidence | Result |
+|---|---|---|
+| Exists/substantive | `scripts/build-native-addon.mjs` produces `dist/native/directory_exchange.node` only for the declared `darwin-arm64` target; `src/native/directory-exchange.cc` uses Darwin `renameatx_np(..., RENAME_SWAP)` with no-follow directory/file checks. | **VERIFIED** |
+| Runtime capability | `createNativeExchangeCapabilityObserver` creates a private probe root, loads the addon package-relatively from the compiled server module, performs the native probe, and returns `observedNativeExchange` only after setup/load/probe/cleanup succeed. Setup, load, probe, or cleanup failure returns typed `reExportUnsupported`. | **VERIFIED** |
+| Production wiring | `createCapabilityRegistry().exportReview()` awaits `getObservedNativeExchangeCapability()` and passes the result to `publishReviewExport`. With an existing stable pair, `publishReviewExport` refuses before stable mutation unless the capability is observed; observed capability performs the one native exchange. | **VERIFIED** |
+| Real packed supported target | The executed `npm run test:package-contract` run built the package, launched the packed CLI in a disposable real Git repository, and ran **22/22 Chromium** tests. Its generated evidence recorded `{ platform: "darwin", arch: "arm64", observedNativeReExport: true }`, a second `exported` result, the same full-OID stable directory, exactly two receipt paths, and independently reread final JSON/Markdown SHA-256 values. | **VERIFIED** |
+| Real packed unsupported/refusal boundary | The packed target-aware journey asserts `409` plus `{ kind: "reExportUnsupported" }` on unobserved targets and byte-identical old JSON/Markdown. The forced-unavailable generated scenario separately proves refusal, 24 complete-pair samples, recovery, and unchanged source-control snapshot. This fallback test is not used as evidence of Darwin support. | **VERIFIED** |
 
-## Native Setup, Cleanup, and Build-Gate Remediation
+## Roadmap Success Criteria
 
-`fd6b700` closes the follow-up review warnings. The observed capability factory now treats probe-root setup and cleanup errors as `reExportUnsupported`; it cannot resolve a supported capability until load, primitive probe, and cleanup all succeed. The project-owned build script now compiles only `darwin-arm64` and removes any stale `dist/native/directory_exchange.node` on every other target before exiting successfully.
-
-- RED `6e2f3a9`: four injected tests demonstrated missing failure containment and stale-addon retention.
-- GREEN: `npx vitest run tests/unit/native-exchange-capability.test.ts tests/unit/build-native-addon.test.ts` — 2 files / 4 tests passed.
-- Real target: `npm run build` — passed, compiling the declared Darwin arm64 addon.
-- Package boundary: `npx playwright test tests/e2e` — 22/22 passed after the build-gate fix.
-- `633369b` host-gates the actual Darwin compiler assertion and retains portable stale-addon removal coverage. `b36fe78` serializes the required build in `npm run test:package-export-safety`; it rebuilt then passed 8/8, and `npx vitest run tests/package/agent-ready-export-safety.test.ts tests/package/agent-ready-export.test.ts` passed 2 files / 9 tests without a shared-`dist` race.
-## Goal Achievement
-
-### Roadmap Success Criteria
-
-| # | Truth | Status | Evidence |
+| # | Criterion | Status | Evidence |
 |---|---|---|---|
-| 1 | Explicit export writes versioned schema-valid `review.json` and derived `review.md` below `.diff-review/exports/`, then returns relative paths and hashes. | VERIFIED | `buildReviewExportV1`/canonical parser and `publishReviewExport` generate and validate both files; `tests/api/export.test.ts` asserts the two relative receipt paths; 37 focused export/API/ignore tests passed. |
-| 2 | JSON retains full review identity/history and Markdown contains only open actionable feedback grouped by file with applying-agent instructions. | VERIFIED | `src/export/review-export.ts` maps every comment/state/timestamp/anchor; `render-review-markdown.ts` reparses canonical bytes, groups verified open comments, puts stale/orphaned open comments under attention, and emits identity instructions. `review-export`/`review-markdown` tests passed. |
-| 3 | Re-export is deterministic apart from `exportedAt` and a write failure never exposes only one newly updated format. | FAILED — BLOCKER | First export is pair-validated and safe, but a real second export cannot occur: `capabilities.ts` always provides `reExportUnsupported`, and `export-store.ts` returns that result when stable already exists. |
-| 4 | `.diff-review/` is excluded from comparisons and can be added to `.gitignore` only without rewriting existing rules. | VERIFIED | Exact two-sided reserved-path filtering, fixed Git ignore probe, and byte-preserving fixed-rule capability are exercised by the 37 focused tests and the 9 generated UI checks. |
-| 5 | Packaged end-to-end behavior preserves source control while covering package, resume/relaunch, drift/access control, unsupported content, and branch/worktree selection. | VERIFIED, with the re-export limitation above | `npm exec vitest run tests/package/agent-ready-export.test.ts` passed and ran 22 generated-package Chromium tests. Its generated evidence includes resume/relaunch, isolated ordered pairs, receipt hashes, source-control safety, and the explicitly refusal-only re-export test. |
+| 1 | Explicit export writes schema-valid `review.json` and derived `review.md` together beneath `.diff-review/exports/`, then returns relative paths/hashes. | **VERIFIED** | `review-export.ts`, `export-store.ts`, strict receipt schemas, and the packed final reread prove the exact two-file pair and SHA-256/byte receipts. |
+| 2 | JSON retains identity/history/anchors; Markdown groups only open actionable feedback and tells an agent how to apply safely. | **VERIFIED** | Strict composed schema plus reparse-only Markdown projection and focused unit contracts. |
+| 3 | Unchanged re-export is deterministic except for `exportedAt`; failure never exposes only one new format. | **VERIFIED** | Canonical-byte/explicit-time contract; validated candidate pair; native exchange or refusal-before-touch; successful packed Darwin re-export. |
+| 4 | `.diff-review/` is excluded from reviewed changes and can be added without rewriting existing ignore rules. | **VERIFIED** | Exact two-sided raw-path filter; fixed `check-ignore` probe; no-follow, append-only fixed rule with byte-prefix confirmation. |
+| 5 | Packaged end-to-end behavior preserves source control across selections, resume, drift, unsupported content, and API access controls. | **VERIFIED** | The named packed `packaged-resume-after-relaunch` scenario terminates/relaunches generated processes, isolates a different ordered pair, exports resumed data, and checks source-control snapshots. |
 
-**Roadmap score:** 4/5 success criteria verified.
+**Roadmap score: 5/5.**
 
-### Plan Must-Have Coverage
+## Plan Must-Have Coverage
 
-All 36 declared plan truths were checked against current implementation and focused behavior. Thirty-three are verified. The three failed truths share one root cause: no packaged runtime native exchange is wired into production.
+| Plan | Must-haves | Result | Verification basis |
+|---|---:|---|---|
+| 04-01 Reconciliation | 4/4 | **VERIFIED** | Current validator accepted the ledger; mutation self-test rejected **34** adversarial branches. |
+| 04-02 Canonical export | 5/5 | **VERIFIED** | Strict schema, total ordering, canonical bytes, exact hashes, reparse-only projection, and actionability contracts are implemented and covered by unit tests. |
+| 04-03 Publication | 5/5 | **VERIFIED** | Server-held snapshot/drift authority, full-OID stable path, candidate validation, final receipt, fixed reveal, observed Darwin exchange, and refusal fallback are wired. |
+| 04-04 Ignore safety | 4/4 | **VERIFIED** | Exact old/new internal filtering, fixed effective-ignore probe, explicit fixed append, and nonblocking failure behavior are present and API/Git-tested. |
+| 04-05 Export UI state | 5/5 | **VERIFIED** | One state owner controls explicit accepted-revision export, drift acknowledgement, pair progress/failure, buffer exclusion, and accessibility surfaces. |
+| 04-06 Receipt/consent UI | 4/4 | **VERIFIED** | Server-confirmed two-file receipt, fixed reveal, two-step ignore consent, accessible copy/failure behavior, and previous-receipt distinction are wired. |
+| 04-07 Safety harness | 4/4 | **VERIFIED** | Dirty Git snapshot/audit, candidate/recovery proof, observed-target re-export safety, and forced-unavailable refusal-before-touch are exercised at generated boundaries. |
+| 04-08 Packaged acceptance | 5/5 | **VERIFIED** | Packed CLI/server/browser lifecycle, resume/different-pair isolation, exact disk reread, target-aware second export, source-control evidence, and coverage report all executed. |
 
-| Plan | Verified | Failed | Disposition |
-|---|---:|---:|---|
-| 04-01 Reconciliation | 4/4 | — | Ledger schema validation passed; mutation self-test rejected all 34 adversarial branches. |
-| 04-02 Canonical export | 5/5 | — | Strict schema/snapshot/order/canonical-byte/hash/Markdown projection behavior is covered by focused unit tests. |
-| 04-03 Publication | 4/5 | Native supported-target re-export | Candidate validation, first export, receipt, fixed reveal, and refusal-before-touch are wired; runtime native exchange is not. |
-| 04-04 Ignore safety | 4/4 | — | Exact comparison exclusion, fixed ignore probing, explicit append, and decline/failure behavior are covered. |
-| 04-05 Export UI state | 5/5 | — | One accepted-revision authority, truthful drift/readiness/progress behavior, and UI accessibility checks passed. |
-| 04-06 Receipt/consent UI | 4/4 | — | Server receipt values, fixed reveal, two-step ignore consent, and accessible feedback passed in browser checks. |
-| 04-07 Safety harness | 3/4 | Supported-target continuous exchange | The harness proves refusal/old-pair recovery, not the required supported-target old-or-new continuous exchange. |
-| 04-08 Packaged acceptance | 4/5 | Supported native re-export behavior | Generated package resume/relaunch and first export pass, but the package accepts/refers to re-export refusal rather than successful supported-target replacement. |
-
-**Plan score:** 33/36 must-haves verified.
-
-## Required Artifacts
-
-| Artifact | Expected | Status | Details |
-|---|---|---|---|
-| `.planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json` | Grounded owner/command/package ledger | VERIFIED | `--schema-only` accepted the current ledger. |
-| `validate-reconciliation.mjs` | Fail-closed validator and mutation self-test | VERIFIED | `--self-test` passed 34 rejection branches. |
-| `src/export/review-export.ts` | Canonical strict JSON/snapshot/order/hash boundary | VERIFIED | Current substantive implementation; focused canonical tests passed. |
-| `src/export/render-review-markdown.ts` | Exact JSON-derived Markdown/actionability projection | VERIFIED | Re-parses canonical bytes and derives all content; focused Markdown tests passed. |
-| `src/server/export-store.ts` | Validated complete-pair publication/recovery | PARTIAL — BLOCKER | First publication/recovery and unsupported refusal are implemented; replacement requires a capability production never supplies. |
-| `src/native/directory-exchange.cc` and `binding.gyp` | Narrow native exchange primitive | PARTIAL — ORPHANED | Native unit test passed, but no production loader or call site exists. |
-| `src/git/ignore-status.ts`, `src/server/gitignore-capability.ts` | Fixed effective-ignore probe and consent-only append | VERIFIED | Focused Git/API/browser tests passed. |
-| `src/web/components/ExportSection.vue`, `ExportReceipt.vue`, `GitignoreStatus.vue` | Explicit export, truthful receipt, fixed reveal, explicit consent | VERIFIED | State flows through the existing API/state owner; 9 focused Chromium UI tests passed. |
-| `tests/e2e/agent-ready-export.spec.ts`, `tests/package/agent-ready-export.test.ts` | Generated-package relaunch/resume proof | VERIFIED | Focused packaged resume test and package acceptance test passed. |
-
-## Key Link Verification
-
-| From | To | Via | Status | Details |
-|---|---|---|---|---|
-| Canonical snapshot | Markdown renderer | Canonical bytes are parsed before projection | WIRED | `renderReviewMarkdown(canonicalBytes)` calls `parseCanonicalReviewExport`. |
-| Server capability | Pair publisher | Server-side accepted snapshot, drift/revision revalidation, server-held OIDs | WIRED | `createCapabilityRegistry().exportReview()` builds bytes and invokes `publishReviewExport`. |
-| Pair publisher | Native directory exchange | Observed packaged adapter capability | **NOT WIRED — BLOCKER** | Production passes `{ kind: 'reExportUnsupported' }`; search finds `exchangeDirectories` only in native source, `export-store.ts`, and isolated tests. |
-| Browser receipt | Secured fixed reveal route | Zero-argument API capability | WIRED | Focused state/UI tests assert no body/query/path authority. |
-| Ignore UI | Fixed append capability | Explicit two-step consent | WIRED | Browser test passes consent confirmation and bounded append-failure behavior. |
-| Packaged CLI/browser | Persisted accepted draft/export | Close/relaunch then on-disk reread | WIRED | The generated package test passed 22 Chromium scenarios, including the named resume scenario. |
-
-## Data-Flow Trace
-
-| Artifact | Data | Source | Status |
-|---|---|---|---|
-| `ExportSection.vue` | Accepted revision, counts, drift, receipt, failure | Existing `ReviewDraftState` and `SessionClient` responses | FLOWING |
-| `ExportReceipt.vue` | Paths, hashes, byte counts, comparison/drift identity | Server-confirmed `ExportReviewResult` only | FLOWING |
-| `GitignoreStatus.vue` | Effective ignore status/append outcome | Fixed server capability, not `.gitignore` text inference | FLOWING |
-| `export-store.ts` | Re-export capability | `createCapabilityRegistry().exportReview()` | BLOCKED: always unsupported |
-
-## Behavioral Spot-Checks
-
-| Behavior | Command | Result | Status |
-|---|---|---|---|
-| Ledger validity | `node .../validate-reconciliation.mjs --schema-only .../04-01-RECONCILIATION.json` | Ledger valid | PASS |
-| Ledger mutation defense | `node .../validate-reconciliation.mjs --self-test .../04-01-RECONCILIATION.json` | 34 rejection branches | PASS |
-| Canonical/export/API/ignore contracts | `npm exec vitest run tests/unit/review-export.test.ts tests/unit/review-markdown.test.ts tests/api/export.test.ts tests/api/export-publication.test.ts tests/git/ignore-status.test.ts tests/git/inventory.test.ts` | 37/37 tests | PASS |
-| Native primitive plus generated safety boundary | `npm exec vitest run tests/unit/directory-exchange.test.ts tests/package/agent-ready-export-safety.test.ts` | 9/9 tests | PASS — proves primitive/refusal safety, not product native wiring |
-| Export state/receipt/consent UI | `npm exec playwright test tests/integration/agent-ready-export-states.spec.ts tests/integration/export-receipt-ui.spec.ts` | 9/9 Chromium tests | PASS |
-| Generated resume/relaunch | `npm exec playwright test tests/e2e/agent-ready-export.spec.ts` | 1/1 Chromium test | PASS |
-| Generated package acceptance | `npm exec vitest run tests/package/agent-ready-export.test.ts` | 1/1 wrapper test; 22/22 generated-package Chromium scenarios | PASS; scenario 1 explicitly expects re-export refusal |
+**Plan score: 36/36.**
 
 ## Requirements Coverage
 
-| Requirement | Source plans | Status | Evidence |
-|---|---|---|---|
-| EXP-01 | 01, 03, 05, 06, 08 | SATISFIED | Explicit export creates a stable full-OID comparison directory with exactly the JSON/Markdown pair and receipt. |
-| EXP-02 | 01, 02, 05, 08 | SATISFIED | Strict `ReviewExportV1Schema`, complete draft identity/history/anchors, and canonical parser are implemented and tested. |
-| EXP-03 | 01, 02, 05, 08 | SATISFIED | Markdown is derived from reparsed canonical JSON; only verified open comments are actionable and grouped by exact path. |
-| EXP-04 | 01, 02, 05, 08 | SATISFIED | Applying-agent instructions require commit/blob/path/side/selected-text/context-hash verification and prohibit line-number authority/guessing. |
-| EXP-05 | 01, 02, 03, 06, 07, 08 | SATISFIED | Final reread receipts contain only relative pair paths plus exact SHA-256 and byte counts. |
-| EXP-06 | 01, 03, 05, 06, 07, 08 | SATISFIED | Candidate pair is fully validated before first publication; unsupported re-export refuses before stable changes. |
-| EXP-07 | 01, 02, 05, 08 | **BLOCKED** | Deterministic serialization exists, but a second unchanged accepted review cannot be exported through the current packaged product. |
-| EXP-08 | 01, 03, 04, 05, 06, 07, 08 | SATISFIED | Focused source-control snapshots and generated package checks show no apply/stage/commit/push/source mutation; only approved export files and explicit ignore append are allowed. |
-| SAFE-04 | 01, 04, 06, 07, 08 | SATISFIED | Exact `.diff-review` inventory exclusion and explicit fixed-rule gitignore consent are implemented and browser-tested. |
+| Requirement | Status | Grounded implementation/evidence |
+|---|---|---|
+| EXP-01 | **SATISFIED** | Explicit API/UI export publishes only the stable full-OID JSON/Markdown pair and returns its relative receipt. |
+| EXP-02 | **SATISFIED** | `ReviewExportV1Schema` and `buildReviewExportV1` preserve accepted revision, comparison/drift identity, complete comment history/state/times, anchors, and validated counts. |
+| EXP-03 | **SATISFIED** | Markdown reparses canonical JSON and requests only open/verified comments grouped by exact path; stale/orphaned are attention-only and resolved feedback is excluded from requested work. |
+| EXP-04 | **SATISFIED** | Applying-agent instructions require commit/blob/path/side/text/context-hash verification, make line numbers hints only, and prohibit guessing or relocation. |
+| EXP-05 | **SATISFIED** | Final stable reread yields exactly two repository-relative paths, lowercase SHA-256 values, and byte counts. |
+| EXP-06 | **SATISFIED** | Complete candidate validation precedes first rename; existing stable generation is swapped only through observed native exchange or remains untouched on typed refusal. |
+| EXP-07 | **SATISFIED** | Same snapshot/time canonicalization is deterministic; current packed Darwin evidence proves a real second successful re-export rather than the prior permanent refusal. |
+| EXP-08 | **SATISFIED** | Fixed capabilities, source-control snapshots, and command audit prohibit apply/stage/commit/push/source execution; only repository-local export files and explicit ignore append are allowed. |
+| SAFE-04 | **SATISFIED** | Exact `.diff-review` comparison exclusion is ignore-independent; optional `.gitignore` consent appends only `/.diff-review/` and preserves prior bytes. |
 
-No Phase 4 requirement is orphaned: every mapped requirement appears in at least one Phase 4 plan.
+**Requirements score: 9/9. No requirement is orphaned.**
 
-## Audit and Risk Cross-Check
+## Executed Evidence
 
-- `04-REVIEW.md` records a clean focused review; this verification independently found the native runtime link absent despite the native source and isolated tests existing.
-- `04-SECURITY.md` records 44/44 mitigations and `threats_open: 0`; its accepted risk **AR-04-01** is correctly bounded to a malicious concurrent same-UID directory replacement outside the locked path-identity threat boundary. That accepted residual is not this gap.
-- `04-UI-REVIEW.md` is **PASS 24/24**. Current focused browser checks also passed 9/9.
-- The reconciliation report and ledger are valid, including the 34-branch self-test. The ledger's approved state does not establish a packaged native target was later built, loaded, observed, and supplied at runtime.
+| Focused check | Observed result |
+|---|---|
+| `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs --self-test … && node …/validate-reconciliation.mjs …/04-01-RECONCILIATION.json` | **PASS** — **34** mutation rejection branches; current ledger valid. |
+| `npm run test:unit` | **PASS** — **18 files / 104 tests**. |
+| `npm run test:git` | **PASS** — **8 files / 35 tests**. |
+| `npm run test:api` | **PASS** — **14 files / 98 tests**. |
+| `npm run test:package-contract` | **PASS** — production build, packed/generated **22/22 Chromium** tests, then **2 files / 12 tests**. This is the direct production-native remediation check. |
+| `npx playwright test --list` | **52 tests in 16 files** currently collected. Per supplied final phase evidence, the corresponding full Playwright run passed **52/52**; it was not rerun here because verifier constraints prohibit project-wide browser suites. |
 
-## Anti-Patterns Found
+## Audit Gate
 
-| File | Line | Pattern | Severity | Impact |
-|---|---:|---|---|---|
-| `src/server/capabilities.ts` | export publication call | Hard-coded `reExportUnsupported` | BLOCKER | Permanently disables successful stable-pair replacement. |
-| `tests/e2e/agent-ready-export-safety.spec.ts` | named re-export safety test | Test asserts packaged target refusal | INFO | Accurately tests current refusal path; it is not evidence for required supported-target replacement. |
+| Audit | Result | Disposition |
+|---|---|---|
+| Code review (`04-REVIEW.md`) | **clean** — 0 critical, 0 warning, 0 info across 18 final native/package files. | Accepted. |
+| Security (`04-SECURITY.md`) | **44/44 closed**, 0 open; final native re-audit passed. | Accepted. |
+| UI (`04-UI-REVIEW.md`) | **24/24** — six pillars at 4/4; 0 blockers, 0 warnings. | Accepted. |
+| Reconciliation | Current strict ledger and 34-branch mutation defense both passed in this verification. | Accepted. |
 
-No untracked `TBD`, `FIXME`, or `XXX` debt marker was found in the Phase 4 product/test files scanned.
+## Disconfirmation Pass
 
-## Gaps Summary
+- **Prior partial requirement:** EXP-07 previously looked implemented because native source and isolated tests existed, while production always supplied `reExportUnsupported`. This pass traced the runtime capability through `getObservedNativeExchangeCapability()` into `exportReview()` and exercised the packed second export; the former partial implementation is now complete.
+- **Misleading-test guard:** The forced-unavailable test proves only refusal safety. It is intentionally not treated as native-success evidence. The successful Darwin conclusion rests on the executed packed CLI/browser journey with a second `201` `exported` result.
+- **Hard error path:** Addon probe-root setup, addon load, probe, and cleanup errors all downgrade to `reExportUnsupported`; stale addon removal on unsupported targets is separately covered. The remaining crash/power-loss and concurrent same-UID replacement boundary is documented below, rather than hidden by the passing suite.
 
-One root-cause blocker prevents a `passed` status. The project contains a Darwin N-API exchange implementation and an isolated unit test, but no packaged runtime imports it or promotes the product capability after a real probe. Consequently, first export is safe and recovery is safe, but re-export of an existing comparison is always returned as `reExportUnsupported`.
+## Residual Risks
 
-This is not covered by accepted risk AR-04-01. The necessary closure is production adapter build/load/probe wiring plus a generated-package success test for supported-target re-export that continuously observes only an old or new complete stable pair.
+- **AR-04-01 (accepted):** A same-UID process can replace a managed parent between JavaScript path-based identity checks around first publication, recovery, cleanup, or reveal. The code revalidates `dev`/`ino` identities and rejects symlinks/non-directories; the native addon uses descriptor-relative no-follow exchange for the re-export primitive. It does not retain descriptors for every surrounding JavaScript filesystem operation. This is a bounded, explicitly accepted race residual in `04-SECURITY.md`; it is not a Phase 04 must-have gap.
+- Power loss outside the process-observable interruption windows remains an operating-system/filesystem durability boundary. Candidate validation, atomic rename/exchange, directory sync, final reread, and recovery reduce it; no claim of stronger crash-consistency than those primitives is made.
 
----
+## Final Classification
 
-_Verified: 2026-07-23T21:02:52Z_  
+- **Blockers:** 0
+- **Warnings:** 0
+- **Behavior-dependent truths without executed evidence:** 0
+- **Status:** **passed**
+
+_Verified: 2026-07-24_  
 _Verifier: gsd-verifier_
