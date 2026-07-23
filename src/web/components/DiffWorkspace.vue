@@ -110,8 +110,13 @@ function renderAnnotation(): void {
     const contentHeight = zone.firstElementChild?.scrollHeight ?? zone.scrollHeight;
     adapter?.setAnchorZoneHeight(Math.max(280, contentHeight + 16));
     if (shouldFocusComposer) {
-      zone.querySelector<HTMLTextAreaElement>('textarea')?.focus();
-      focusComposerAnchor = undefined;
+      requestAnimationFrame(() => {
+        if (zone !== host.value?.querySelector('.monaco-anchor-zone--composer')) {
+          return;
+        }
+        zone.querySelector<HTMLTextAreaElement>('textarea')?.focus();
+        focusComposerAnchor = undefined;
+      });
     }
   });
 }
@@ -214,7 +219,10 @@ watch(() => [props.composer, props.comments] as const, () => {
       adapter.clearAnchor();
     }
   }
-  anchorAffordance.value = adapter?.getAnchorAffordance();
+  const pendingMove = props.composer?.pendingMove;
+  anchorAffordance.value = pendingMove === undefined
+    ? adapter?.getAnchorAffordance()
+    : adapter?.getAnchorAffordanceAt(pendingMove.side, pendingMove.line);
   void nextTick(renderAnnotation);
 }, { deep: true });
 

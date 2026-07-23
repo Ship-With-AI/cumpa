@@ -430,6 +430,7 @@ class PublicMonacoDiffAdapter {
     const anchoredZoneId = this.addZone(anchoredEditor, anchoredZone);
     const spacerZoneId = this.addZone(counterpartEditor, spacerZone);
     if (anchor.side === 'base') {
+      this.originalZone = { id: anchoredZoneId, zone: anchoredZone };
       this.modifiedZone = { id: spacerZoneId, zone: spacerZone };
       this.positionZones(anchor.line, counterpartLine);
       this.originalDecorations = anchoredEditor.createDecorationsCollection([this.anchorDecoration(anchor.line)]);

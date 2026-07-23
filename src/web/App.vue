@@ -20,7 +20,7 @@ import {
 import type { DraftView, SessionClient } from './api/client';
 import DiffWorkspace from './components/DiffWorkspace.vue';
 import DraftRecovery from './components/DraftRecovery.vue';
-import CommentsRail from './components/CommentsRail.vue';
+import ReviewPanel from './components/ReviewPanel.vue';
 import ErrorState from './components/ErrorState.vue';
 import FileTree from './components/FileTree.vue';
 import IdentityHeader from './components/IdentityHeader.vue';
@@ -38,6 +38,7 @@ import {
   type ReadOnlyDraftLoad,
   type ReviewDraftState,
   type ReviewDraftSnapshot,
+  type ReviewPendingOperation,
 } from './model/review-draft-state.js';
 import {
   createSelectorDriftState,
@@ -55,6 +56,11 @@ type CanonicalReviewDraft = Readonly<{
     anchor: WorkspaceComment['recordedAnchor'];
     createdAt: string;
   }>[];
+}>;
+
+type ReviewFailure = Readonly<{
+  operation: ReviewPendingOperation;
+  commentId?: string;
 }>;
 
 const session = shallowRef<SessionResponse>();
@@ -79,6 +85,7 @@ const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
 const draftRevision = ref(0);
 const reviewDraft = shallowRef<ReviewDraftSnapshot>();
+const reviewFailure = shallowRef<ReviewFailure | null>(null);
 const draftLoad = shallowRef<DraftLoadResponse>();
 const recoveredDraft = shallowRef<Extract<DraftRecoveryResult, { readonly kind: 'recovered' }>>();
 const recoveredDraftOpen = ref(false);
@@ -138,12 +145,17 @@ function closeFiles(): void {
 function openComments(): void {
   commentsOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
   commentsOpen.value = true;
-  void nextTick(() => commentsDrawer.value?.focus());
+  void nextTick(() => commentsDrawer.value?.querySelector<HTMLElement>('#review-heading')?.focus());
 }
 
 function closeComments(): void {
+  if (!commentsOpen.value) return;
   commentsOpen.value = false;
   void nextTick(() => commentsOpener?.focus());
+}
+
+function toggleComments(): void {
+  commentsOpen.value ? closeComments() : openComments();
 }
 
 function inspectRecordedFile(commentId: string): void {
@@ -296,24 +308,59 @@ function openRecoveredDraft(): void {
   announce('New local draft for this pinned comparison.');
 }
 
+function mutationOperation(request: DraftMutationRequest): ReviewPendingOperation {
+  switch (request.type) {
+    case 'setSummary': return 'summary';
+    case 'editComment': return 'comment';
+    case 'deleteComment': return 'delete';
+    case 'resolveComment': return 'resolve';
+    case 'reopenComment': return 'reopen';
+    case 'addComment': return 'add';
+  }
+}
+
+function mutationFailure(request: DraftMutationRequest): ReviewFailure {
+  return {
+    operation: mutationOperation(request),
+    ...('commentId' in request ? { commentId: request.commentId } : {}),
+  };
+}
+
 function mutateReview(request: DraftMutationRequest, successfulBuffer?: 'summary' | string): void {
-  if (reviewState === undefined || sessionClient === undefined || !reviewState.start(request.type === 'setSummary' ? 'summary' : request.type === 'editComment' ? 'comment' : request.type === 'deleteComment' ? 'delete' : request.type === 'resolveComment' ? 'resolve' : request.type === 'reopenComment' ? 'reopen' : 'add')) return;
+  if (reviewState === undefined || sessionClient === undefined || !reviewState.start(mutationOperation(request))) return;
+  reviewFailure.value = null;
   refreshReviewSnapshot();
   void sessionClient.mutate(request).then((result) => {
     if (result.kind === 'accepted') {
+      reviewFailure.value = null;
       acceptReviewDraft(result.draft, successfulBuffer);
-      announce(request.type === 'setSummary' ? 'Summary saved locally.' : 'Comment saved locally.');
+      const open = result.draft.comments.filter((comment) => comment.state === 'open').length;
+      const resolved = result.draft.comments.length - open;
+      announce(
+        request.type === 'setSummary'
+          ? 'Summary saved locally.'
+          : request.type === 'resolveComment'
+            ? `Comment resolved. ${open} open, ${resolved} resolved.`
+            : request.type === 'reopenComment'
+              ? `Comment reopened. ${open} open, ${resolved} resolved.`
+              : request.type === 'deleteComment'
+                ? `Comment deleted. ${open} open, ${resolved} resolved.`
+                : 'Comment saved locally.',
+      );
       return;
     }
     if (result.kind === 'revisionConflict') {
+      reviewFailure.value = null;
       latestConflictDraft = result.latest;
       reviewState?.conflict(reviewCanonical(result.latest), request.expectedRevision);
       refreshReviewSnapshot();
       return;
     }
+    reviewFailure.value = mutationFailure(request);
     reviewState?.fail();
     refreshReviewSnapshot();
   }).catch(() => {
+    reviewFailure.value = mutationFailure(request);
     reviewState?.fail();
     refreshReviewSnapshot();
   });
@@ -569,9 +616,6 @@ function handleViewportChange(): void {
   if (!isFilesDrawer.value) {
     filesOpen.value = false;
   }
-  if (!isCommentsDrawer.value) {
-    commentsOpen.value = false;
-  }
   dispatchWorkspace({ type: 'resize' });
   diffWorkspace.value?.layout();
 }
@@ -579,7 +623,8 @@ function handleViewportChange(): void {
 onMounted(async () => {
   document.addEventListener('keydown', handleKeydown);
   filesDrawerMedia = window.matchMedia('(max-width: 1099px)');
-  commentsDrawerMedia = window.matchMedia('(max-width: 1279px)');
+  commentsDrawerMedia = window.matchMedia('(max-width: 1439px)');
+  commentsOpen.value = !commentsDrawerMedia.matches;
   handleViewportChange();
   filesDrawerMedia.addEventListener('change', handleViewportChange);
   commentsDrawerMedia.addEventListener('change', handleViewportChange);
@@ -632,7 +677,7 @@ onBeforeUnmount(() => {
   <div v-else class="session-shell">
     <a class="skip-link" href="#changed-files-heading">Skip to changed files</a>
     <a class="skip-link" href="#diff-review-heading">Skip to diff</a>
-    <a class="skip-link" href="#comments-heading">Skip to comments</a>
+    <a class="skip-link" href="#review-heading">Skip review</a>
     <IdentityHeader ref="identityHeader" :session="session" :expanded="identityOpen" @toggle="toggleIdentity" />
     <SelectorDriftNotice :drift="selectorDriftStatus" />
     <IdentityPanel ref="identityPanel" v-if="identityOpen" :session="session" :modal="isNarrow" @close="closeIdentity" />
@@ -677,11 +722,12 @@ onBeforeUnmount(() => {
           :has-active-file="selectedFile?.availability.kind === 'text'"
           :open-comment-count="openCommentCount"
           :resolved-comment-count="resolvedCommentCount"
+          :review-expanded="commentsOpen"
           @previous-file="previousFile"
           @next-file="nextFile"
           @previous-change="previousChange"
           @next-change="nextChange"
-          @comments="openComments"
+          @comments="toggleComments"
           @keyboard-help="keyboardHelpOpen = true"
         />
         <KeyboardHelp :open="keyboardHelpOpen" @close="keyboardHelpOpen = false" />
@@ -719,28 +765,28 @@ onBeforeUnmount(() => {
 
       </main>
       <aside
+        v-show="commentsOpen"
+        id="review-panel"
         ref="commentsDrawer"
         class="comments-rail"
         :class="{ 'comments-rail--open': commentsOpen }"
-        :inert="isCommentsDrawer && !commentsOpen"
-        :aria-hidden="isCommentsDrawer && !commentsOpen ? 'true' : undefined"
-        aria-labelledby="comments-heading"
-        tabindex="-1"
+        :inert="!commentsOpen"
+        :aria-hidden="commentsOpen ? undefined : 'true'"
+        aria-labelledby="review-heading"
       >
-        <div class="comments-rail__heading">
-        <h2 id="comments-heading">Review</h2>
-        <button v-if="isCommentsDrawer" type="button" class="drawer-close ui-button" @click="closeComments">Close review</button>
-        </div>
-        <CommentsRail
+        <ReviewPanel
           v-if="reviewDraft !== undefined"
           :comments="workspaceComments"
           :inventory="reviewableFiles.map((file) => ({ identity: file.newPath?.bytesBase64url ?? file.oldPath?.bytesBase64url ?? file.fileId, display: file.newPath?.display ?? file.oldPath?.display ?? 'Changed file' }))"
           :summary="reviewDraft.canonical.summary"
           :summary-buffer="reviewDraft.summaryBuffer"
           :comment-buffers="reviewDraft.commentBuffers"
-          :pending="reviewDraft.pending !== null"
-          :conflict="reviewDraft.conflict !== null"
+          :pending="reviewDraft.pending"
+          :conflict="reviewDraft.conflict === null ? null : { expectedRevision: reviewDraft.conflict.expectedRevision, actualRevision: reviewDraft.conflict.latest.revision }"
+          :failure="reviewFailure"
+          :retained-summary="reviewDraft.retained.summary"
           @cancel-summary="reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot()"
+          @close="closeComments"
           @delete="mutateComment($event, 'deleteComment')"
           @copy-recorded-anchor="copyRecordedAnchor"
           @reopen="mutateComment($event, 'reopenComment')"

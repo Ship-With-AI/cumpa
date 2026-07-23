@@ -7,6 +7,7 @@ defineProps<{
   hasActiveFile: boolean;
   openCommentCount: number;
   resolvedCommentCount: number;
+  reviewExpanded: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -53,6 +54,8 @@ const emit = defineEmits<{
         <button
           type="button"
           class="ui-button"
+          aria-controls="review-panel"
+          :aria-expanded="reviewExpanded"
           aria-describedby="review-description"
           @click="emit('comments')"
         >

@@ -104,6 +104,17 @@ async function stopGeneratedCli(running: RunningCli): Promise<void> {
   closeSync(running.outputDescriptor);
 }
 
+async function ensureReviewOpen(page: Page): Promise<void> {
+  const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
+  await expect(reviewButton).toBeVisible();
+  const expanded = await reviewButton.getAttribute('aria-expanded');
+  expect(expanded).toMatch(/^(?:true|false)$/u);
+  if (expanded === 'false') {
+    await reviewButton.click();
+  }
+  await expect(reviewButton).toHaveAttribute('aria-expanded', 'true');
+}
+
 async function openGeneratedReview(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
@@ -207,6 +218,7 @@ test('packaged anchored gap closure recovers a non-line-1 exact anchor', async (
     const addResponse = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
     await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
     expect((await addResponse).status()).toBe(201);
+    await ensureReviewOpen(page);
     await expect(page.locator('.comments-rail__comment', { hasText: commentBody })).toHaveCount(1);
   } finally {
     await stopGeneratedCli(initial);
@@ -233,6 +245,7 @@ test('packaged anchored gap closure recovers a non-line-1 exact anchor', async (
   const resumed = startGeneratedCli(fixture);
   try {
     await openGeneratedReview(page, await waitForLoopbackUrl(resumed));
+    await ensureReviewOpen(page);
     const recoveredComment = page.locator('.comments-rail__comment', { hasText: commentBody });
     await expect(recoveredComment).toHaveCount(1);
     await expect(recoveredComment.getByText('Head line 10')).toBeVisible();
@@ -256,10 +269,13 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
     await openGeneratedReview(page, await waitForLoopbackUrl(initial));
     await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
     await expect(page.getByText(/Unchanged regions begin collapsed/)).toBeVisible();
+    await ensureReviewOpen(page);
+    await page.getByRole('button', { name: 'Close review' }).click();
     await activateMonacoLine(page, 'head', 'export const stableContext10 = 10;', 10);
     const composer = page.locator('.monaco-anchor-zone--composer textarea');
     await composer.fill('Canonical source for degraded records.');
     await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    await ensureReviewOpen(page);
     await expect(page.locator('.comments-rail__comment', { hasText: 'Canonical source for degraded records.' })).toHaveCount(1);
   } finally {
     await stopGeneratedCli(initial);
@@ -305,9 +321,11 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
     await expect(page.getByText(/Recorded anchor details copied|Couldn’t copy anchor details/)).toBeVisible();
     await expect(page.locator('.monaco-anchor-zone--composer textarea')).toHaveCount(0);
 
-    await page.setViewportSize({ width: 1200, height: 900 });
     const commentsToggle = page.getByRole('button', { name: 'Review', exact: true });
-    await commentsToggle.click();
+    await ensureReviewOpen(page);
+    await page.getByRole('button', { name: 'Close review' }).click();
+    await expect(commentsToggle).toHaveAttribute('aria-expanded', 'false');
+    await ensureReviewOpen(page);
     await page.getByRole('button', { name: 'Close review' }).click();
     await expect(commentsToggle).toBeFocused();
     await expect(page.locator('.comments-rail')).toHaveAttribute('inert', '');
@@ -320,6 +338,7 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
     await expect(page.locator('.review-files')).toHaveAttribute('inert', '');
 
     await page.setViewportSize({ width: 1440, height: 900 });
+    await ensureReviewOpen(page);
     const inspectRecordedFile = staleComment.getByRole('button', { name: 'Inspect recorded file' });
     await inspectRecordedFile.click();
     await expect(page.getByRole('heading', { level: 1, name: 'src/changed.ts' })).toBeVisible();

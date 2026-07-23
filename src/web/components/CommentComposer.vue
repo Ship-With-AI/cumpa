@@ -27,11 +27,14 @@ const sideLabel = () => props.side === 'base' ? 'Base' : 'Head';
   <section class="inline-comment-composer" :aria-label="`Comment on ${side} line ${line}`">
     <header class="inline-comment-composer__header" :title="'Anchor fields are fixed for this comment.'">
       <span>{{ path }} · {{ sideLabel() }} · line {{ line }}</span>
-      <span aria-hidden="true">🔒</span>
+      <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path d="M4.5 7V5a3.5 3.5 0 1 1 7 0v2M3 7h10v6H3V7Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </header>
     <label>
       <span>Comment</span>
       <textarea
+        aria-label="Comment"
         :value="text"
         :disabled="status === 'pending'"
         placeholder="Describe the issue or requested change…"

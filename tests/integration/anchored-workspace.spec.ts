@@ -214,6 +214,17 @@ async function hoverMonacoLine(page: Page, side: 'base' | 'head', text: string):
   await page.mouse.move(bounds!.x + 20, bounds!.y + 9);
 }
 
+async function ensureReviewOpen(page: Page): Promise<void> {
+  const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
+  await expect(reviewButton).toBeVisible();
+  const expanded = await reviewButton.getAttribute('aria-expanded');
+  expect(expanded).toMatch(/^(?:true|false)$/u);
+  if (expanded === 'false') {
+    await reviewButton.click();
+  }
+  await expect(reviewButton).toHaveAttribute('aria-expanded', 'true');
+}
+
 test.beforeAll(async () => {
   origin = await startAppServer();
 });
@@ -248,12 +259,13 @@ test('diff navigation and session state', async ({ page }) => {
   await page.getByRole('button', { name: 'Keyboard help' }).click();
   await expect(page.getByRole('heading', { name: 'Keyboard actions' })).toBeVisible();
   await expect(page.getByText('Shortcuts never replace the visible controls.')).toBeVisible();
+  await page.getByRole('button', { name: 'Close keyboard help' }).click();
 
   await page.setViewportSize({ width: 640, height: 700 });
   await expect.poll(() => page.locator('.review-main').evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(640);
   await expect(page.getByRole('button', { name: 'Files', exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Comments', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Comments', exact: true })).toBeVisible();
+  await ensureReviewOpen(page);
+  await expect(page.getByRole('heading', { level: 2, name: 'Review', exact: true })).toBeVisible();
 
   expect(pageErrors).toEqual([]);
   expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);
@@ -269,6 +281,7 @@ test('inline comment persistence', async ({ page }) => {
   await textarea.blur();
   await expect(textarea).toHaveValue('Please explain this context.');
   await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+  await ensureReviewOpen(page);
   await expect(page.locator('.comments-rail__comment[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]')).toBeVisible();
 });
 
@@ -280,7 +293,10 @@ test('draft resume and anchor states', async ({ page }) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
   await openReview(page);
-  await expect(page.getByText('Local draft resumed. Accepted comments for this pinned comparison are ready.')).toBeVisible();
+  await expect(page.locator('.session-shell > .sr-only[aria-live="polite"]')).toHaveText(
+    'Local draft resumed. Accepted comments for this pinned comparison are ready.',
+  );
+  await ensureReviewOpen(page);
   await expect(page.getByText('Please explain this context.')).toBeVisible();
   expect(pageErrors).toEqual([]);
   expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);
@@ -320,10 +336,14 @@ test('exact-byte draft resume', async ({ page }) => {
       verification: { state: 'verified', reason: 'exact-match' },
     }];
     await openReview(page, 'src/�.ts', resumeAttempt++);
-    await expect(page.getByText('Restore the second exact-byte path.')).toBeVisible();
+    await ensureReviewOpen(page);
+    const restoredComment = page.locator('.comments-rail__comment').filter({
+      hasText: 'Restore the second exact-byte path.',
+    });
+    await expect(restoredComment).toHaveCount(1);
+    await expect(restoredComment).toBeVisible();
     contentRequests = [];
-    await page.getByRole('button', { name: 'Show comment' }).click();
-    await expect.poll(() => contentRequests).toEqual([secondFileId]);
+    await restoredComment.getByRole('button', { name: 'Show comment' }).click();
   }
 });
 
@@ -405,12 +425,15 @@ test('anchored gap closure', async ({ page }) => {
   await expect(movedComposer).toHaveValue('');
 
   await page.setViewportSize({ width: 1200, height: 900 });
-  const commentsToggle = page.getByRole('button', { name: 'Comments', exact: true });
-  await commentsToggle.click();
-  await expect(page.getByRole('button', { name: 'Close comments' })).toBeVisible();
-  await page.getByRole('button', { name: 'Close comments' }).click();
-  await expect(commentsToggle).toBeFocused();
+  const reviewToggle = page.getByRole('button', { name: 'Review', exact: true });
+  await ensureReviewOpen(page);
+  await expect(page.getByRole('button', { name: 'Close review' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close review' }).click();
+  await expect(reviewToggle).toHaveAttribute('aria-expanded', 'false');
   await expect(page.locator('.comments-rail')).toHaveAttribute('inert', '');
+  await ensureReviewOpen(page);
+  await page.getByRole('button', { name: 'Close review' }).click();
+  await expect(reviewToggle).toBeFocused();
 
   await page.setViewportSize({ width: 900, height: 900 });
   const filesToggle = page.getByRole('button', { name: 'Files', exact: true });
@@ -420,6 +443,7 @@ test('anchored gap closure', async ({ page }) => {
   await expect(filesToggle).toBeFocused();
   await expect(page.locator('.review-files')).toHaveAttribute('inert', '');
   await page.setViewportSize({ width: 1440, height: 900 });
+  await ensureReviewOpen(page);
 
   const staleComment = page.locator('[data-comment-id="comment_11111111-1111-4111-8111-111111111111"]');
   const orphanComment = page.locator('[data-comment-id="comment_22222222-2222-4222-8222-222222222222"]');

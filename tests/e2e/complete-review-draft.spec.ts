@@ -140,6 +140,17 @@ async function stopGeneratedCli(running: RunningCli): Promise<void> {
   closeSync(running.outputDescriptor);
 }
 
+async function ensureReviewOpen(page: Page): Promise<void> {
+  const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
+  await expect(reviewButton).toBeVisible();
+  const expanded = await reviewButton.getAttribute('aria-expanded');
+  expect(expanded).toMatch(/^(?:true|false)$/u);
+  if (expanded === 'false') {
+    await reviewButton.click();
+  }
+  await expect(reviewButton).toHaveAttribute('aria-expanded', 'true');
+}
+
 async function openGeneratedReview(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
@@ -318,9 +329,10 @@ test('complete draft lifecycle edits, resolves, reopens, deletes, and groups com
     await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
     expect((await added).status()).toBe(201);
 
-    await page.getByRole('button', { name: /^Review/ }).click();
-    await expect(page.locator('#comments-heading')).toHaveText('Review');
-    await expect(page.locator('#review-summary-heading')).toBeVisible();
+    await ensureReviewOpen(page);
+    await expect(page.getByRole('complementary', { name: 'Review', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Review', exact: true })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Summary Saved', exact: true })).toBeVisible();
     await expect(page.getByText('No summary yet', { exact: true })).toBeVisible();
 
 
@@ -334,12 +346,14 @@ test('complete draft lifecycle edits, resolves, reopens, deletes, and groups com
     const inlineHeading = page.locator('.inline-accepted-comment h3');
     await expect(inlineHeading).toBeVisible();
     await expect(inlineHeading).toBeFocused();
-    await record.getByRole('button', { name: 'Edit' }).click();
+    await record.getByRole('button', { name: 'Edit', exact: true }).click();
     const editor = record.getByRole('textbox');
     await editor.fill('discarded local edit');
     await record.getByRole('button', { name: 'Cancel edit' }).click();
+    await expect(record.getByRole('heading', { name: 'Discard comment edits?', exact: true })).toBeVisible();
+    await record.getByRole('button', { name: 'Discard edits', exact: true }).click();
     await expect(record).toContainText(commentBody);
-    await record.getByRole('button', { name: 'Edit' }).click();
+    await record.getByRole('button', { name: 'Edit', exact: true }).click();
     await editor.fill(editedBody);
     await record.getByRole('button', { name: 'Save comment' }).click();
     await expect(record).toContainText(editedBody);
@@ -357,6 +371,7 @@ test('complete draft lifecycle edits, resolves, reopens, deletes, and groups com
   running = startGeneratedCli(fixture);
   try {
     await openGeneratedReview(page, await waitForLoopbackUrl(running));
+    await ensureReviewOpen(page);
     const record = page.locator('.comments-rail__comment', { hasText: editedBody });
     await record.getByRole('button', { name: 'Delete' }).click();
     await expect(record.getByText('Delete comment?')).toBeVisible();
@@ -376,7 +391,7 @@ test('complete draft lifecycle saves a safe summary and relaunches it through th
 
   try {
     await openGeneratedReview(page, await waitForLoopbackUrl(running));
-    await page.getByRole('button', { name: /^Review/ }).click();
+    await ensureReviewOpen(page);
     await page.getByRole('button', { name: 'Write summary' }).click();
     const summaryEditor = page.getByLabel('Review summary (Markdown)');
     await summaryEditor.fill('<script>window.bad = true</script>\n\n' + summary);
@@ -397,6 +412,7 @@ test('complete draft lifecycle saves a safe summary and relaunches it through th
   running = startGeneratedCli(fixture);
   try {
     await openGeneratedReview(page, await waitForLoopbackUrl(running));
+    await ensureReviewOpen(page);
     await expect(page.locator('.review-summary__preview')).toContainText('Review outcome');
   } finally {
     await stopGeneratedCli(running);
@@ -430,7 +446,7 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
     expect((await seeded).status()).toBe(201);
 
-    await page.getByRole('button', { name: /^Review/ }).click();
+    await ensureReviewOpen(page);
     const seedRecord = page.locator('.comments-rail__comment', { hasText: seedBody });
     await expect(seedRecord).toHaveCount(1);
     const seedId = await seedRecord.getAttribute('data-comment-id');
@@ -438,9 +454,9 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
 
     await otherTab.setViewportSize({ width: 1440, height: 900 });
     await openGeneratedReview(otherTab, url);
-    await otherTab.getByRole('button', { name: /^Review/ }).click();
+    await ensureReviewOpen(otherTab);
     const otherSeedRecord = otherTab.locator(`[data-comment-id="${seedId}"]`);
-    await otherSeedRecord.getByRole('button', { name: 'Edit' }).click();
+    await otherSeedRecord.getByRole('button', { name: 'Edit', exact: true }).click();
     const otherEdit = otherSeedRecord.getByLabel('Comment');
     await otherEdit.fill(attemptedEdit);
     await otherTab.getByRole('button', { name: 'Write summary' }).click();

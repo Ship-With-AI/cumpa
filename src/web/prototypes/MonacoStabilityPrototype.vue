@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, render } from 'vue';
+
+import CommentComposer from '../components/CommentComposer.vue';
 
 import {
   createMonacoDiffAdapter,
@@ -111,6 +113,50 @@ const updateVersion = ref(0);
 const currentFile = computed(() => FILES[currentFileIndex.value]);
 let adapter: MonacoDiffAdapter | undefined;
 let resizeObserver: ResizeObserver | undefined;
+let zoneRoot: HTMLElement | undefined;
+const composerTextByFileId = new Map<string, string>();
+
+function unmountComposer(): void {
+  if (zoneRoot !== undefined) {
+    render(null, zoneRoot);
+    zoneRoot = undefined;
+  }
+}
+
+function renderComposer(): void {
+  const zone = host.value?.querySelector<HTMLElement>('.monaco-anchor-zone--composer');
+  const anchor = adapter?.getActiveAnchor();
+  if (zone === undefined || zone === null || anchor === undefined || anchor.fileId !== currentFile.value.id) {
+    unmountComposer();
+    return;
+  }
+
+  if (zoneRoot !== zone) {
+    unmountComposer();
+    zoneRoot = zone;
+  }
+
+  render(h(CommentComposer, {
+    path: currentFile.value.head.path,
+    side: anchor.side,
+    line: anchor.line,
+    text: composerTextByFileId.get(anchor.fileId) ?? '',
+    status: 'ready',
+    onCancel: () => adapter?.clearAnchor(),
+    onUpdateText: (text: string) => {
+      composerTextByFileId.set(anchor.fileId, text);
+      renderComposer();
+    },
+  }), zone);
+  void nextTick(() => {
+    if (zoneRoot !== zone) {
+      return;
+    }
+    const contentHeight = zone.firstElementChild?.scrollHeight ?? zone.scrollHeight;
+    adapter?.setAnchorZoneHeight(Math.max(280, contentHeight + 16));
+  });
+}
+
 
 function publishContract(): void {
   const diagnostics = adapter?.getDiagnostics();
@@ -172,6 +218,7 @@ onMounted(async () => {
   configureMonacoWorkers();
   adapter = createMonacoDiffAdapter(host.value, languageForPath, () => {
     rendered.value = true;
+    renderComposer();
     updateVersion.value += 1;
     publishContract();
   });
@@ -181,6 +228,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  unmountComposer();
   resizeObserver?.disconnect();
   adapter?.dispose();
   adapter = undefined;

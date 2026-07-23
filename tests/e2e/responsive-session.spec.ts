@@ -385,7 +385,7 @@ test('responsive keyboard and accessibility contract', async ({
     });
     const routeControls = await installPackagedSessionRoutes(page, session);
 
-    await page.setViewportSize({ width: 1280, height: 560 });
+    await page.setViewportSize({ width: 1440, height: 560 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toContainText(
@@ -396,6 +396,24 @@ test('responsive keyboard and accessibility contract', async ({
       const tokens = await page.locator(':root').evaluate((element) => {
         const style = getComputedStyle(element);
         const names = [
+          '--canvas',
+          '--panel',
+          '--accent',
+          '--destructive',
+          '--surface',
+          '--text',
+          '--text-muted',
+          '--rule',
+          '--addition-bg',
+          '--addition-fg',
+          '--deletion-bg',
+          '--deletion-fg',
+          '--warning-bg',
+          '--warning-fg',
+          '--info-bg',
+          '--info-fg',
+          '--error-bg',
+          '--error-fg',
           '--color-dominant',
           '--color-secondary',
           '--color-accent',
@@ -406,7 +424,6 @@ test('responsive keyboard and accessibility contract', async ({
           '--color-hover',
           '--color-added',
           '--color-modified',
-          '--color-renamed',
           '--color-focus',
           '--space-xs',
           '--space-sm',
@@ -421,18 +438,35 @@ test('responsive keyboard and accessibility contract', async ({
         );
       });
       expect(tokens).toEqual({
-      '--color-dominant': '#f6f3ec',
-      '--color-secondary': '#e9e4da',
-      '--color-accent': '#245a7a',
-      '--color-destructive': '#f85149',
-      '--color-text-primary': '#242822',
-      '--color-text-secondary': '#596058',
-      '--color-border': '#c9c2b5',
-      '--color-hover': '#dfd8cc',
-        '--color-added': '#3fb950',
-        '--color-modified': '#d29922',
-        '--color-renamed': '#a371f7',
-      '--color-focus': '#245a7a',
+        '--canvas': '#f6f3ec',
+        '--panel': '#e9e4da',
+        '--accent': '#245a7a',
+        '--destructive': '#a33a32',
+        '--surface': '#fcfaf5',
+        '--text': '#242822',
+        '--text-muted': '#596058',
+        '--rule': '#c9c2b5',
+        '--addition-bg': '#e2f0e6',
+        '--addition-fg': '#285b3f',
+        '--deletion-bg': '#f8e3de',
+        '--deletion-fg': '#8e352f',
+        '--warning-bg': '#fff0cd',
+        '--warning-fg': '#775313',
+        '--info-bg': '#ddeaf2',
+        '--info-fg': '#315770',
+        '--error-bg': '#fae8e6',
+        '--error-fg': '#a33a32',
+        '--color-dominant': '#f6f3ec',
+        '--color-secondary': '#e9e4da',
+        '--color-accent': '#245a7a',
+        '--color-destructive': '#a33a32',
+        '--color-text-primary': '#242822',
+        '--color-text-secondary': '#596058',
+        '--color-border': '#c9c2b5',
+        '--color-hover': '#fcfaf5',
+        '--color-added': '#285b3f',
+        '--color-modified': '#775313',
+        '--color-focus': '#245a7a',
         '--space-xs': '4px',
         '--space-sm': '8px',
         '--space-md': '16px',
@@ -445,6 +479,39 @@ test('responsive keyboard and accessibility contract', async ({
       expect(contrastRatio('#596058', '#f6f3ec')).toBeGreaterThanOrEqual(4.5);
       expect(contrastRatio('#242822', '#e9e4da')).toBeGreaterThanOrEqual(4.5);
       expect(contrastRatio('#596058', '#e9e4da')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#775313', '#fff0cd')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#315770', '#ddeaf2')).toBeGreaterThanOrEqual(4.5);
+      expect(contrastRatio('#a33a32', '#fae8e6')).toBeGreaterThanOrEqual(4.5);
+
+      await page.evaluate(() => {
+        const fixture = document.createElement('div');
+        fixture.dataset.semanticContract = 'true';
+        fixture.innerHTML = [
+          '<aside class="inline-notice inline-notice--warning">Warning</aside>',
+          '<aside class="inline-notice inline-notice--error">Error</aside>',
+          '<aside class="draft-recovery__notice">Information</aside>',
+          '<button class="ui-button ui-button--destructive">Delete</button>',
+        ].join('');
+        document.body.append(fixture);
+      });
+      const semanticStyles = await page.locator('[data-semantic-contract]').evaluate((fixture) => {
+        const styles = Array.from(fixture.children, (element) => {
+          const style = getComputedStyle(element);
+          return {
+            background: style.backgroundColor,
+            border: style.borderLeftColor,
+            color: style.color,
+          };
+        });
+        fixture.remove();
+        return styles;
+      });
+      expect(semanticStyles).toEqual([
+        { background: 'rgb(255, 240, 205)', border: 'rgb(119, 83, 19)', color: 'rgb(119, 83, 19)' },
+        { background: 'rgb(250, 232, 230)', border: 'rgb(163, 58, 50)', color: 'rgb(163, 58, 50)' },
+        { background: 'rgb(221, 234, 242)', border: 'rgb(49, 87, 112)', color: 'rgb(49, 87, 112)' },
+        { background: 'rgb(252, 250, 245)', border: 'rgb(163, 58, 50)', color: 'rgb(163, 58, 50)' },
+      ]);
 
       const typography = await page.evaluate(() => {
         const selectors = [
@@ -514,22 +581,68 @@ test('responsive keyboard and accessibility contract', async ({
       }
     });
 
-    await test.step('wide and medium workspace retain the review surface and drawers', async () => {
+    await test.step('review rail and drawers honor locked responsive geometry', async () => {
+      const rail = page.locator('.comments-rail');
+      const panel = page.locator('.review-panel');
       const treePane = page.locator('.review-files');
       const reviewMain = page.locator('.review-main');
-      await expect(treePane).toHaveCSS('overflow-y', 'auto');
+      const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
+
+      await page.setViewportSize({ width: 1440, height: 560 });
       await expect(reviewMain).toBeVisible();
-      await page.setViewportSize({ width: 900, height: 560 });
+      await expect(rail).toBeVisible();
+      expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
+      await expect(rail).toHaveCSS('overflow-y', 'hidden');
+      await expect(panel).toHaveCSS('overflow-y', 'auto');
+      const reviewScrollOwners = await page.locator('.comments-rail, .review-panel').evaluateAll((elements) =>
+        elements
+          .filter((element) => ['auto', 'scroll'].includes(getComputedStyle(element).overflowY))
+          .map((element) => element.classList.contains('review-panel') ? 'panel' : 'rail'),
+      );
+      expect(reviewScrollOwners).toEqual(['panel']);
+
+      await reviewButton.focus();
+      const focusStyle = await readStyles(reviewButton);
+      expect(focusStyle.outlineColor).toBe('rgb(36, 90, 122)');
+      expect(focusStyle.outlineStyle).toBe('solid');
+      expect(Number.parseFloat(focusStyle.outlineWidth)).toBeGreaterThanOrEqual(2);
+
+      await page.setViewportSize({ width: 1439, height: 560 });
+      await expect(rail).toHaveClass(/comments-rail--open/);
+      expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
+      await page.getByRole('button', { name: 'Close review' }).click();
+
+      await page.setViewportSize({ width: 1100, height: 560 });
+      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
+      await reviewButton.click();
+      await expect(rail).toHaveClass(/comments-rail--open/);
+      const mediumBox = await rail.boundingBox();
+      expect(Math.round(mediumBox!.width)).toBe(360);
+      expect(Math.round(mediumBox!.x + mediumBox!.width)).toBe(1100);
+      await page.getByRole('button', { name: 'Close review' }).click();
+
+      await page.setViewportSize({ width: 1099, height: 560 });
       const filesButton = page.getByRole('button', { name: 'Files', exact: true });
       await expect(filesButton).toBeVisible();
+      await expect(treePane).toHaveCSS('overflow-y', 'auto');
       await filesButton.click();
       await expect(treePane).toHaveClass(/review-files--open/);
       await page.getByRole('button', { name: 'Close files' }).click();
       await expect(treePane).not.toHaveClass(/review-files--open/);
-      await page.getByRole('button', { name: 'Review', exact: true }).click();
-      await expect(page.locator('.comments-rail')).toHaveClass(/comments-rail--open/);
+
+      await page.setViewportSize({ width: 768, height: 560 });
+      await reviewButton.click();
+      expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
       await page.getByRole('button', { name: 'Close review' }).click();
-      await expect(page.locator('.comments-rail')).not.toHaveClass(/comments-rail--open/);
+
+      await page.setViewportSize({ width: 375, height: 640 });
+      await reviewButton.click();
+      const compactBox = await rail.boundingBox();
+      expect(Math.round(compactBox!.width)).toBe(343);
+      expect(Math.round(compactBox!.x + compactBox!.width)).toBe(375);
+      const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(documentWidth).toBeLessThanOrEqual(375);
+      await page.getByRole('button', { name: 'Close review' }).click();
     });
 
     await test.step('narrow identity sheet traps focus and restores disclosure', async () => {
