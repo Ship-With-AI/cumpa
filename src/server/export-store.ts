@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { lstat, mkdir, open, readdir, readFile, rename, rm } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
+import type { Stats } from 'node:fs';
 
 import { hashExportBytes, parseCanonicalReviewExport, type ExportHash } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
@@ -41,6 +42,15 @@ export type PublishReviewExportInput = Readonly<{
 }>;
 
 type CompletePair = Readonly<{ readonly json: Buffer; readonly markdown: Buffer }>;
+
+type DirectoryIdentity = Readonly<{ readonly dev: number; readonly ino: number }>;
+
+export type ManagedExportsRoot = Readonly<{
+  readonly diffReviewRoot: string;
+  readonly exportsRoot: string;
+  readonly diffReviewIdentity: DirectoryIdentity;
+  readonly exportsIdentity: DirectoryIdentity;
+}>;
 
 function isMissing(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
@@ -113,53 +123,88 @@ function receipt(exportsRoot: string, stable: string, pair: CompletePair): Expor
   return Object.freeze({ files: Object.freeze(files) as ExportReceipt['files'] });
 }
 
+function identity(info: Stats): DirectoryIdentity {
+  if (!info.isDirectory() || info.isSymbolicLink()) {
+    throw new Error('Managed export directory is not a real directory.');
+  }
+  return Object.freeze({ dev: info.dev, ino: info.ino });
+}
+
+function sameIdentity(left: DirectoryIdentity, right: DirectoryIdentity): boolean {
+  return left.dev === right.dev && left.ino === right.ino;
+}
+
+async function managedDirectory(component: string, create: boolean): Promise<DirectoryIdentity | undefined> {
+  let info: Stats;
+  try {
+    info = await lstat(component);
+  } catch (error) {
+    if (!isMissing(error)) throw error;
+    if (!create) return undefined;
+    await mkdir(component, { mode: 0o700 });
+    info = await lstat(component);
+  }
+  return identity(info);
+}
+
 export async function ensureManagedExportsRoot(
   repositoryRoot: string,
   create: boolean,
-): Promise<string | undefined> {
+): Promise<ManagedExportsRoot | undefined> {
   const root = resolve(repositoryRoot);
   const diffReviewRoot = join(root, '.diff-review');
+  const diffReviewIdentity = await managedDirectory(diffReviewRoot, create);
+  if (diffReviewIdentity === undefined) return undefined;
   const exportsRoot = join(diffReviewRoot, 'exports');
-  for (const component of [diffReviewRoot, exportsRoot]) {
-    let info;
-    try {
-      info = await lstat(component);
-    } catch (error) {
-      if (!isMissing(error) || !create) {
-        if (isMissing(error)) return undefined;
-        throw error;
-      }
-      await mkdir(component, { mode: 0o700 });
-      info = await lstat(component);
-    }
-    if (!info.isDirectory() || info.isSymbolicLink()) {
-      throw new Error('Managed export directory is not a real directory.');
-    }
+  const exportsIdentity = await managedDirectory(exportsRoot, create);
+  if (exportsIdentity === undefined) return undefined;
+  return Object.freeze({ diffReviewRoot, exportsRoot, diffReviewIdentity, exportsIdentity });
+}
+
+export async function assertManagedExportsRoot(managedRoot: ManagedExportsRoot): Promise<void> {
+  const diffReviewIdentity = await managedDirectory(managedRoot.diffReviewRoot, false);
+  if (
+    diffReviewIdentity === undefined
+    || !sameIdentity(diffReviewIdentity, managedRoot.diffReviewIdentity)
+  ) {
+    throw new Error('Managed export directory identity changed.');
   }
-  return exportsRoot;
+  const exportsIdentity = await managedDirectory(managedRoot.exportsRoot, false);
+  if (
+    exportsIdentity === undefined
+    || !sameIdentity(exportsIdentity, managedRoot.exportsIdentity)
+  ) {
+    throw new Error('Managed export directory identity changed.');
+  }
 }
 
 export async function publishReviewExport(input: PublishReviewExportInput): Promise<PublishReviewExportResult> {
   const repositoryRoot = resolve(input.repositoryRoot);
   const stableName = `${input.baseOid}..${input.headOid}`;
-  let exportsRoot: string | undefined;
+  let managedRoot: ManagedExportsRoot | undefined;
   let candidate: string | undefined;
   try {
-    exportsRoot = await ensureManagedExportsRoot(repositoryRoot, true);
-    if (exportsRoot === undefined) {
+    managedRoot = await ensureManagedExportsRoot(repositoryRoot, true);
+    if (managedRoot === undefined) {
       return Object.freeze({ kind: 'publicationFailed' });
     }
+    const exportsRoot = managedRoot.exportsRoot;
     const stable = join(exportsRoot, stableName);
-    let stablePresent = await stableExists(stable);
+    await assertManagedExportsRoot(managedRoot);
+    const stablePresent = await stableExists(stable);
     if (stablePresent && input.reExportCapability.kind === 'reExportUnsupported') {
       return Object.freeze({ kind: 'reExportUnsupported' });
     }
 
     const candidateName = `.${stableName}.candidate-${randomUUID()}`;
     candidate = join(exportsRoot, candidateName);
+    await assertManagedExportsRoot(managedRoot);
     await mkdir(candidate, { mode: 0o700 });
+    await assertManagedExportsRoot(managedRoot);
     await writeFileExactly(join(candidate, 'review.json'), input.json);
+    await assertManagedExportsRoot(managedRoot);
     await writeFileExactly(join(candidate, 'review.md'), input.markdown);
+    await assertManagedExportsRoot(managedRoot);
     const validatedCandidate = await completePair(candidate);
     if (!validatedCandidate.json.equals(input.json) || !validatedCandidate.markdown.equals(input.markdown)) {
       throw new Error('Candidate reread differs from validated export bytes.');
@@ -168,15 +213,19 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
     if (!Buffer.from(renderReviewMarkdown(validatedCandidate.json), 'utf8').equals(validatedCandidate.markdown)) {
       throw new Error('Candidate Markdown is not the exact rendering of canonical export JSON.');
     }
+    await assertManagedExportsRoot(managedRoot);
     await syncDirectory(candidate);
     if (input.revalidate !== undefined && !(await input.revalidate())) {
       return Object.freeze({ kind: 'publicationFailed' });
     }
+    await assertManagedExportsRoot(managedRoot);
 
     if (!stablePresent) {
+      await assertManagedExportsRoot(managedRoot);
       if (await stableExists(stable)) {
         return Object.freeze({ kind: 'publicationFailed' });
       }
+      await assertManagedExportsRoot(managedRoot);
       await rename(candidate, stable);
     } else {
       if (input.reExportCapability.kind !== 'observedNativeExchange') {
@@ -191,7 +240,9 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
       }
     }
 
+    await assertManagedExportsRoot(managedRoot);
     await syncDirectory(exportsRoot);
+    await assertManagedExportsRoot(managedRoot);
     const finalPair = await completePair(stable);
     if (!finalPair.json.equals(input.json) || !finalPair.markdown.equals(input.markdown)) {
       return Object.freeze({ kind: 'publicationFailed' });
@@ -204,11 +255,10 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
     }
     return Object.freeze({ kind: 'publicationFailed' });
   } finally {
-    if (candidate !== undefined && exportsRoot !== undefined) {
+    if (candidate !== undefined && managedRoot !== undefined) {
       try {
-        if (await ensureManagedExportsRoot(repositoryRoot, false) === exportsRoot) {
-          await rm(candidate, { force: true, recursive: true });
-        }
+        await assertManagedExportsRoot(managedRoot);
+        await rm(candidate, { force: true, recursive: true });
       } catch {
         // A failed cleanup never changes the complete stable generation.
       }
@@ -217,10 +267,12 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
 }
 
 export async function recoverReviewExport(repositoryRoot: string, baseOid: string, headOid: string): Promise<CompletePair | undefined> {
-  const exportsRoot = await ensureManagedExportsRoot(repositoryRoot, false);
-  if (exportsRoot === undefined) return undefined;
-  const stable = join(exportsRoot, `${baseOid}..${headOid}`);
+  const managedRoot = await ensureManagedExportsRoot(repositoryRoot, false);
+  if (managedRoot === undefined) return undefined;
+  await assertManagedExportsRoot(managedRoot);
+  const stable = join(managedRoot.exportsRoot, `${baseOid}..${headOid}`);
   try {
+    await assertManagedExportsRoot(managedRoot);
     return await completePair(stable);
   } catch (error) {
     if (isMissing(error)) return undefined;

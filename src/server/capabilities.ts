@@ -38,7 +38,7 @@ import {
   canonicalizeReviewExport,
 } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
-import { ensureManagedExportsRoot, publishReviewExport } from './export-store.js';
+import { assertManagedExportsRoot, ensureManagedExportsRoot, publishReviewExport } from './export-store.js';
 import { inspectDiffReviewIgnore } from '../git/ignore-status.js';
 import { appendDiffReviewIgnoreRule } from './gitignore-capability.js';
 
@@ -243,17 +243,22 @@ export function createCapabilityRegistry(
       return filesByCapability.get(fileId);
     },
     async revealExportDirectory() {
-      const exportsRoot = await ensureManagedExportsRoot(comparison.repositoryRoot, false);
-      const exportDirectory = exportsRoot === undefined
+      const managedRoot = await ensureManagedExportsRoot(comparison.repositoryRoot, false);
+      const exportDirectory = managedRoot === undefined
         ? undefined
-        : join(exportsRoot, `${comparison.base.oid}..${comparison.head.oid}`);
+        : join(managedRoot.exportsRoot, `${comparison.base.oid}..${comparison.head.oid}`);
       if (
         options.revealDraftFile === undefined
+        || managedRoot === undefined
         || exportDirectory === undefined
-        || !(await isCompleteExportDirectory(exportDirectory))
       ) {
         throw new Error('Export reveal adapter is unavailable.');
       }
+      await assertManagedExportsRoot(managedRoot);
+      if (!(await isCompleteExportDirectory(exportDirectory))) {
+        throw new Error('Export reveal adapter is unavailable.');
+      }
+      await assertManagedExportsRoot(managedRoot);
       await options.revealDraftFile(exportDirectory);
     },
     async inspectDiffReviewIgnore() {
