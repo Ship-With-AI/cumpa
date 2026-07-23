@@ -526,9 +526,9 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(treePane).toHaveClass(/review-files--open/);
       await page.getByRole('button', { name: 'Close files' }).click();
       await expect(treePane).not.toHaveClass(/review-files--open/);
-      await page.getByRole('button', { name: 'Comments', exact: true }).click();
+      await page.getByRole('button', { name: 'Review', exact: true }).click();
       await expect(page.locator('.comments-rail')).toHaveClass(/comments-rail--open/);
-      await page.getByRole('button', { name: 'Close comments' }).click();
+      await page.getByRole('button', { name: 'Close review' }).click();
       await expect(page.locator('.comments-rail')).not.toHaveClass(/comments-rail--open/);
     });
 

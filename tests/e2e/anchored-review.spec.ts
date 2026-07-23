@@ -204,7 +204,7 @@ test('packaged anchored gap closure recovers a non-line-1 exact anchor', async (
     await page.getByRole('button', { name: 'Previous file' }).click();
     await expect(composer).toHaveCount(1);
     await composer.fill(commentBody);
-    const addResponse = page.waitForResponse((response) => response.url().includes('/api/draft/comments'));
+    const addResponse = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
     await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
     expect((await addResponse).status()).toBe(201);
     await expect(page.locator('.comments-rail__comment', { hasText: commentBody })).toHaveCount(1);
@@ -270,12 +270,13 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
   const draftPath = join(draftsPath, draftFile!);
   const draft = JSON.parse(readFileSync(draftPath, 'utf8')) as {
     revision: number;
-    comments: Array<{ id: string; anchor: { line: number; selectedText: string; safeDisplayPath: string; path: { bytesBase64url: string; display: string; utf8?: string }; context: { target: { text: string } } } }>;
+    comments: Array<{ id: string; anchor: { line: number; selectedText: string; safeDisplayPath: string; uniqueKey: string; path: { bytesBase64url: string; display: string; utf8?: string }; context: { target: { text: string } } } }>;
   };
   const stale = JSON.parse(JSON.stringify(draft.comments[0])) as (typeof draft.comments)[number];
   stale.id = `comment_${crypto.randomUUID()}`;
   stale.anchor.selectedText = 'deliberately stale';
   stale.anchor.context.target.text = 'deliberately stale';
+  stale.anchor.uniqueKey = 'a'.repeat(64);
   const orphan = JSON.parse(JSON.stringify(draft.comments[0])) as (typeof draft.comments)[number];
   orphan.id = `comment_${crypto.randomUUID()}`;
   orphan.anchor.line = 999;
@@ -285,6 +286,7 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
     utf8: 'src/deleted.ts',
   };
   orphan.anchor.safeDisplayPath = 'src/deleted.ts';
+  orphan.anchor.uniqueKey = 'b'.repeat(64);
   draft.comments.push(stale, orphan);
   draft.revision += 2;
   writeFileSync(draftPath, `${JSON.stringify(draft)}\n`);
@@ -304,9 +306,9 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
     await expect(page.locator('.monaco-anchor-zone--composer textarea')).toHaveCount(0);
 
     await page.setViewportSize({ width: 1200, height: 900 });
-    const commentsToggle = page.getByRole('button', { name: 'Comments', exact: true });
+    const commentsToggle = page.getByRole('button', { name: 'Review', exact: true });
     await commentsToggle.click();
-    await page.getByRole('button', { name: 'Close comments' }).click();
+    await page.getByRole('button', { name: 'Close review' }).click();
     await expect(commentsToggle).toBeFocused();
     await expect(page.locator('.comments-rail')).toHaveAttribute('inert', '');
 

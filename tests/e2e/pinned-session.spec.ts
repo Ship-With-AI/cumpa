@@ -195,7 +195,7 @@ async function proveLoadingTransition(page: Page, url: string): Promise<void> {
     await route.continue();
   });
   await page.goto(url, { waitUntil: 'domcontentloaded' });
-  await expect(page.getByRole('status')).toHaveText('Opening pinned comparison…');
+  await expect(page.getByRole('status')).toHaveText('Opening local draft…');
   gate.resolve();
 }
 
@@ -1061,7 +1061,7 @@ test('metadata and availability states', async ({ browser, context, page }, test
       origin: new URL(url).origin,
     });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('status')).toHaveText('Opening pinned comparison…');
+    await expect(page.getByRole('status')).toHaveText('Opening local draft…');
     sessionGate.resolve();
 
     const workspace = page.getByRole('main', { name: '00-src/new\\nname.ts' });

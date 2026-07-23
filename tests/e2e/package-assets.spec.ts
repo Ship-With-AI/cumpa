@@ -86,7 +86,7 @@ test('packed artifact contains runtime and production Vue assets', () => {
       )
       .join('\n');
     expect(packagedJavaScript).toContain('Diff Review: loading pinned comparison');
-    expect(packagedJavaScript).toContain('Opening pinned comparison');
+    expect(packagedJavaScript).toContain('Opening local draft…');
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });
   }
