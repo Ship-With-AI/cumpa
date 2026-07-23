@@ -3,103 +3,80 @@ phase: 04-agent-ready-export
 artifact: UI-REVIEW.md
 audited: 2026-07-23
 baseline: .planning/phases/04-agent-ready-export/04-UI-SPEC.md
-scope: Post-remediation re-audit of UI-01 through UI-07
-status: remediation-required
+scope: Final re-audit of UI-01 and UI-03 after receipt-contract remediation
+status: passed
 scores:
-  hierarchy: 3
-  interaction: 3
+  hierarchy: 4
+  interaction: 4
   responsive: 4
   accessibility: 4
-  state_truthfulness: 3
+  state_truthfulness: 4
   visual_consistency: 4
-blockers: 1
-warnings: 1
+blockers: 0
+warnings: 0
 ---
 
 # Phase 04 — UI Review
 
-**Status: REMEDIATION REQUIRED — 1 BLOCKER, 1 WARNING**
+**Status: PASS — 0 BLOCKERS, 0 WARNINGS**
 
-This is a code-and-browser re-audit of the current Phase 04 export UI after the requested remediations. No production source or test was modified. The review follows `04-UI-SPEC.md` and assesses hierarchy, interaction, responsiveness, accessibility/focus, truthful state, and visual consistency.
+Final code-and-browser re-audit of the current Phase 04 export UI against `04-UI-SPEC.md`. No production source or test was modified by this audit.
 
 ## Focused evidence
 
 | Evidence | Result | What it covers |
 |---|---:|---|
-| `node_modules/.bin/playwright test tests/integration/agent-ready-export-states.spec.ts tests/integration/export-receipt-ui.spec.ts` | **8 passed** | Browser-rendered receipt, acknowledged-drift disclosure, recovery state, reveal/copy behavior, 320 px receipt containment, ignore consent/Escape, fixed capability bodies, accepted-revision state transitions |
-| Full package Playwright suite | **51 passed** | Parent-agent verification of the complete current packaged browser suite |
+| `node_modules/.bin/playwright test tests/integration/agent-ready-export-states.spec.ts tests/integration/export-receipt-ui.spec.ts` | **9 passed** | Browser-rendered acknowledged and no-drift receipts, full comparison disclosure, receipt body/actions/copy/reveal failures, recovery state, 320 px containment, Escape/ignore consent, and accepted-revision state transitions |
 | `node_modules/.bin/playwright test tests/e2e/agent-ready-export.spec.ts` | **1 passed** | Packaged relaunch/resume flow and exact recovered export bytes |
-| Source inspection | complete | Current contracts, export state model, receipt/failure components, drawer Escape handling, and export styles |
+| Full package Playwright suite | **51 passed** | Parent-agent current-package verification |
+| Source inspection | complete | Final receipt schema/server payload, receipt component, file-row feedback, export error handling, and export styles |
 
 `.planning/ui-reviews/.gitignore` already excludes screenshot artifacts. The focused Playwright tests start their own disposable Vite target; no standalone target remained available for an audit screenshot, so no screenshot artifact was retained.
 
 ## Pillar scores
 
-| Pillar | Score | Assessment |
+| Pillar | Score | Final assessment |
 |---|---:|---|
-| Hierarchy | 3/4 | Export states and prior-receipt separation are clear, but the required comparison disclosure is absent for a normal no-drift receipt. |
-| Interaction | 3/4 | Retry, reveal, copy, disclosure, and ignore-consent mechanics work, but receipt action ordering and several prescribed strings remain off-contract. |
-| Responsive behavior | 4/4 | The browser receipt remains contained at 320 px; grid/action breakpoints stack metadata and controls, while long hashes scroll inside their value region. |
-| Accessibility and focus | 4/4 | Error sections stop Escape before the drawer handler; receipt rows expose a single combined path/hash/bytes description; reveal failure focuses the adjacent alert; reduced-motion suppresses spinner rotation. |
-| State/error truthfulness | 3/4 | The recovery-specific state is explicit and retains a prior receipt correctly. Receipt provenance remains incomplete because a no-drift receipt cannot disclose the pinned comparison. |
-| Visual consistency | 4/4 | Export-specific headings, labels, controls, and body copy use the specified 18/12/14 px roles with only 600/400 weights; palette and compact spacing remain consistent with the inherited UI. |
+| Hierarchy | 4/4 | Receipt distinguishes confirmed current/previous export, provides the success body, exposes comparison before file details, and places completion actions after the two fixed-order file rows. |
+| Interaction | 4/4 | Copy, disclosure, reveal, retry, and ignore-consent actions are explicit, scoped, keyboard-operable, and use the required labels/failure feedback. |
+| Responsive behavior | 4/4 | Browser evidence verifies receipt containment at 320 px and no document horizontal overflow at 360/768 px; long values are contained in their own scroll regions. |
+| Accessibility and focus | 4/4 | Error sections stop Escape before the drawer handler, each file row has one complete accessible path/hash/byte description, and reveal failure receives focus only after activation. |
+| State/error truthfulness | 4/4 | Confirmed receipts carry/render pinned comparison identities, acknowledged drift renders full pinned/current identities, recovery failure remains distinct from ordinary publication failure, and prior confirmation stays explicitly previous. |
+| Visual consistency | 4/4 | Export typography explicitly uses the specified 18/12/14 px roles with only 600/400 weights, inherited palette/tokens, and responsive spacing. |
 
-**Total: 21/24**
+**Total: 24/24**
 
-## Findings
+## Final UI-01 and UI-03 verification
 
-### UI-01 — BLOCKER: confirmed no-drift receipts cannot show the required pinned comparison
+### UI-01 — RESOLVED: every confirmed receipt exposes comparison provenance
 
-`04-UI-SPEC.md` requires every confirmed receipt to include a `Comparison` disclosure with full pinned Base and Head OIDs; acknowledged drift additionally requires a `View acknowledged identities` disclosure with full pinned/current values.
+The exported receipt contract now includes a required `comparison` object with pinned Base and Head identity (`src/contracts/api.ts:447-467`), produced by the server for each confirmed receipt (`src/server/capabilities.ts:122-129, 414-422`). `ExportReceipt` renders an informational `Comparison` disclosure for every receipt, including `noneObserved`, with full pinned Base/Head OIDs and supplementary label/type (`src/web/components/ExportReceipt.vue:116-134`).
 
-The current receipt schema carries `label`, `selectorType`, and `oid` for acknowledged identities (`src/contracts/api.ts:394-426`), and the component now renders acknowledged OIDs. However, the only disclosure is conditional on `acknowledgedIdentities.length > 0` (`src/web/components/ExportReceipt.vue:101-122`). A receipt with `drift.kind === 'noneObserved'` has no comparison disclosure at all. The acknowledged disclosure also omits the carried selector labels/types, so it is not a complete selector-identity presentation.
+When drift is acknowledged, `View acknowledged identities` remains an independent copy-only disclosure with full pinned/current label, type, and OID values (`ExportReceipt.vue:135-164`). Focused browser coverage verifies both the acknowledged disclosure and the no-drift `Comparison` disclosure (`tests/integration/export-receipt-ui.spec.ts:142-218`).
 
-**Impact:** a successful, non-drift export—the common path—does not let a reviewer verify which pinned Base and Head the receipt represents. This violates the receipt’s core provenance contract, not merely its visual presentation.
+### UI-03 — RESOLVED: receipt content, ordering, and feedback match the contract
 
-**Required remediation:** include pinned Base and Head identities in every exported receipt and render them in a non-mutating disclosure. For acknowledged drift, render both full pinned and full current identity (label/type/OID or the established equivalent), retaining informational/copy-only behavior.
+The confirmed receipt now shows `Both files were published together from accepted revision {revision}.`, uses `Acknowledged for this export`, and places `Copy all receipt details` and `Reveal export directory` below the two fixed file rows (`src/web/components/ExportReceipt.vue:23-24, 109-110, 165-169`).
 
-### UI-03 — WARNING: receipt wording and action order remain partially off the specified contract
+- Path success: `Copied relative path for {filename}.`
+- All-details success: `Copied export receipt details.`
+- Clipboard failure: `Could not copy. Select the value and copy it manually.`
+- Reveal failure: `Could not reveal the export directory. Copy the relative path and open it from the repository root.`
 
-The prior copy-success defect is fixed: paths announce `Copied relative path for {filename}.` and all-details copy announces `Copied export receipt details.` (`src/web/components/ReceiptFileRow.vue:16-25`, `src/web/components/ExportReceipt.vue:42-53`), and focused browser evidence observes the all-details success.
-
-The remaining observable receipt differences are:
-
-- The receipt has no required body, `Both files were published together from accepted revision {revision}.` (`ExportReceipt.vue:87-99`).
-- Its drift text is `Acknowledged export`, not `Acknowledged for this export` (`ExportReceipt.vue:23-24`).
-- `Copy receipt details` is placed in the receipt header ahead of the file rows, instead of the specified below-row `Copy all receipt details` action (`ExportReceipt.vue:88-93`; `04-UI-SPEC.md:374-391`).
-- Clipboard failures use file-specific prose rather than the required adjacent `Could not copy. Select the value and copy it manually.` (`ReceiptFileRow.vue:21-23`).
-- Reveal failure says `Reveal failed; copy a displayed relative path and open it from the repository root.`, rather than the specified `Could not reveal the export directory. Copy the relative path and open it from the repository root.` (`ExportReceipt.vue:76-81`).
-
-**Impact:** these do not cause an unsafe export, but they weaken the authored UI contract and make the normal receipt hierarchy differ from the approved specification.
-
-**Required remediation:** use the specified receipt body, drift label, action label/order, and adjacent failure copy verbatim.
-
-### Final remediation evidence — 2026-07-23
-
-`7436482` added browser RED coverage for the receipt body, exact wording/actions, acknowledged identity label/type details, and a `noneObserved` receipt’s universal `Comparison` disclosure. It failed as expected because the previous UI had no completion body and exposed no comparison control for no-drift receipts. `292b9b5` now projects the Plan 05 server-confirmed `receipt.comparison` data without deriving identities in the browser: every receipt has a keyboard-operable, copy-only `Comparison` disclosure with full pinned Base/Head OIDs and the server’s supplementary label/type. Acknowledged drift additionally displays server-confirmed full pinned/current label/type/OID values, including the unavailable branch. The receipt now uses the exact approved completion body, `Acknowledged for this export`, below-row `Copy all receipt details`, generic adjacent clipboard failure, and exact reveal failure wording.
-
-Verification: `node_modules/.bin/playwright test tests/integration/export-receipt-ui.spec.ts` — **5 passed**; `npm run build` — **passed**.
+The focused browser test asserts these messages, action label, receipt body, 320 px containment, and reveal focus (`tests/integration/export-receipt-ui.spec.ts:142-204`).
 
 ## UI-01 through UI-07 disposition
 
-| ID | Previous concern | Current disposition |
+| ID | Final disposition | Evidence |
 |---|---|---|
-| UI-01 | Acknowledged drift had only a boolean/no identity evidence | **Resolved.** Every receipt renders a non-mutating `Comparison` disclosure from server-confirmed Base/Head OIDs with supplementary labels/types; acknowledged drift also renders full pinned/current label/type/OID identities. |
-| UI-02 | Recovery-unknown was collapsed into ordinary failure | **Resolved.** `recoveryRequired` has a distinct heading, bounded recovery copy, no current-success receipt, prior-receipt separation, and a fresh retry. |
-| UI-03 | Copy success feedback differed from required wording | **Resolved.** Receipt body, drift label, post-row all-details action, and copy/reveal recovery wording match the UI-SPEC exactly. |
-| UI-04 | No grounded narrow/zoom receipt behavior | **Resolved.** Focused browser evidence verifies 320 px containment; current responsive CSS stacks actions and metadata below 768 px and constrains long values to their own scroll regions. |
-| UI-05 | Escape could close the drawer during an export error | **Resolved.** Conflict, failure, and unavailable error sections stop Escape propagation before `ReviewPanel`’s close handler (`ExportSection.vue:70,88,106`). |
-| UI-06 | Receipt rows lacked one complete accessible value label | **Resolved.** Each row uses a combined visually-hidden path/hash/byte description via `aria-describedby` (`ReceiptFileRow.vue:15,29-41`). |
-| UI-07 | Export chrome relied on browser heading typography | **Resolved.** Explicit export heading/label/body rules set the specified font sizes, weights, and line heights (`src/web/styles.css:1625-1645`). |
+| UI-01 | **Resolved** | Comparison is now part of every receipt and is rendered for both acknowledged and no-drift export. |
+| UI-02 | **Resolved** | `recoveryRequired` has a distinct recovery surface, no current-success receipt, a previous confirmed receipt boundary, and explicit fresh retry. |
+| UI-03 | **Resolved** | Receipt body, drift label, below-row action order, exact copy/reveal feedback, and focused browser coverage are current. |
+| UI-04 | **Resolved** | 320 px receipt containment and 360/768 px no-document-overflow browser checks pass; responsive CSS constrains values/actions. |
+| UI-05 | **Resolved** | Conflict, failure, and unavailable export errors stop Escape propagation before `ReviewPanel` can close the drawer. |
+| UI-06 | **Resolved** | Every receipt file row has an aggregate accessible path/hash/byte description via `aria-describedby`. |
+| UI-07 | **Resolved** | Export-specific heading/label/body declarations enforce the required type scale, weights, and line heights. |
 
-## Positive verification
+## Final outcome
 
-- Export is visibly scoped to accepted revision, preserves local unsaved buffers, and the focused state tests verify those transitions.
-- Drift acknowledgement is inspectable, its disclosure is keyboard-toggleable, and the UI cannot use it to refresh or mutate comparison state.
-- Pending presentation remains pair-level, and reduced-motion disables spinner rotation without removing status text.
-- Receipt rows retain complete visible paths/hashes, with copy controls and fixed no-body reveal capability; browser verification confirms reveal failure focus and no request body.
-- `.gitignore` remains a two-step, Escape-safe, fixed-rule action independent from export success/failure.
-
-## Remediation gate
-
-**Complete.** UI-01 and UI-03 have focused acknowledged- and no-drift receipt coverage, plus exact receipt-string assertions. The focused Playwright receipt suite passed 5/5 after remediation.
+The Phase 04 receipt/recovery/ignore UI meets the reviewed UI-SPEC contract. No remaining UI blocker or warning was found in the final targeted audit.
