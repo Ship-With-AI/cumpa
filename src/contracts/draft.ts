@@ -242,7 +242,7 @@ export const ReviewExportV1Schema = z
         head: ExportDriftEndpointSchema,
       })
       .readonly(),
-    summary: z.strictObject({ markdown: ExportStringSchema.nullable() }).readonly(),
+    summary: z.strictObject({ markdown: ExportStringSchema.min(1).nullable() }).readonly(),
     files: z.array(ExportFileSchema).readonly(),
     counts: ExportCountsSchema,
   })

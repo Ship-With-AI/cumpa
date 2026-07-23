@@ -153,6 +153,7 @@ describe('ReviewExportV1 canonical contract', () => {
 
     expect(() => ReviewExportV1Schema.parse({ ...document, exportedAt: 'tomorrow' })).toThrow();
     expect(() => ReviewExportV1Schema.parse({ ...document, summary: { markdown: '\uD800' } })).toThrow();
+    expect(() => ReviewExportV1Schema.parse({ ...document, summary: { markdown: '' } })).toThrow();
     expect(() => ReviewExportV1Schema.parse({
       ...document,
       files: [{ ...document.files[0]!, comments: [{ ...exportedComment, body: '\uD800' }] }],
