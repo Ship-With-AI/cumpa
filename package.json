@@ -26,7 +26,8 @@
     "test:git": "node scripts/run-focused-vitest.mjs tests/git",
     "test:api": "vitest run tests/api",
     "test:package": "playwright test",
-    "test:browser": "playwright test --config=tests"
+    "test:browser": "playwright test --config=tests",
+    "test:package-export-safety": "node scripts/run-package-export-safety.mjs"
   },
   "dependencies": {
     "@fastify/static": "9.3.0",

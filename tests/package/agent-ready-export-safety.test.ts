@@ -1,15 +1,14 @@
-import { execFileSync } from 'node:child_process';
 import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 
 import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
 import { canonicalizeReviewExport, parseCanonicalReviewExport } from '../../src/export/review-export.js';
 import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js';
 import { runGeneratedExport, runGeneratedIgnoreAppend, runGeneratedRecovery, sampleGeneratedStablePair } from '../helpers/export-fault-runner.js';
 
-import { afterEach, beforeAll, describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test } from 'vitest';
 
 import {
   createDirtyGitFixture,
@@ -25,12 +24,6 @@ import {
 
 const fixtures: DirtyGitFixture[] = [];
 const outsideRoots: string[] = [];
-const projectRoot = resolve(import.meta.dirname, '../..');
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-
-beforeAll(() => {
-  execFileSync(npmCommand, ['run', 'build'], { cwd: projectRoot, stdio: 'inherit' });
-});
 
 afterEach(async () => {
   await Promise.all(fixtures.splice(0).map((fixture) => fixture.cleanup()));
