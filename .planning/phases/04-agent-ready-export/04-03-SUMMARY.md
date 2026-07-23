@@ -140,11 +140,11 @@ No declared packaged runner exists for an interruption reader probe. The target-
 
 **3. [Post-wave integration - Deterministic acceptance] Monaco virtualized unchanged context hid the requested side line before the helper could activate it.**
 - **Found during:** Post-wave full package gate
-- **Issue:** Monaco can retain an attached but zero-height virtual line while it rebuilds; the prior helper split visibility and scrolling into separately stale actions.
-- **Fix:** Scope matching to the requested original/modified editor, require a rendered side-editor line, select only a visible target row, and retry through public Monaco controls: `Show Unchanged Region` when present, otherwise the existing `Next change` control to stabilize the editor before selection.
+- **Issue:** Monaco can retain an attached but zero-height virtual line while it rebuilds; the prior helper navigated speculative diff controls rather than focusing the requested side and targeting its line directly.
+- **Fix:** Reused the established packaged acceptance pattern: focus the requested original/modified editor surface, invoke Monaco’s public Go to Line command (`Meta+g`), enter the requested line number, then select the rendered matching row.
 - **Files modified:** `tests/e2e/anchored-review.spec.ts`, `04-03-SUMMARY.md`
-- **Verification:** Chromium anchored-review acceptance passed 6/6 with `--repeat-each=3`; `npm run build` passed.
-- **Committed in:** post-wave follow-up integration commit
+- **Verification:** Chromium anchored-review acceptance passed 6/6 with `--repeat-each=3`; `agent-ready-export-safety.spec.ts` followed by anchored-review passed 3/3 in the full-suite ordering.
+- **Committed in:** post-wave focused integration commit
 
 ---
 

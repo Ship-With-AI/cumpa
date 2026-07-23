@@ -161,19 +161,20 @@ async function activateMonacoLine(
   text: string,
   lineNumber: number,
 ): Promise<void> {
-  const diffEditor = page.locator('.monaco-diff-editor');
-  const editor = diffEditor.locator(`.${side === 'base' ? 'editor.original' : 'editor.modified'}`);
-  await expect(editor.locator('.view-line:visible').first()).toBeVisible();
-  const matchingLine = editor.locator('.view-line').filter({ hasText: text }).first();
-  const line = editor.locator('.view-line:visible').filter({ hasText: text }).first();
-  const control = page.getByRole('button', { name: 'Show Unchanged Region', exact: true }).first();
-  for (let action = 0; action < 32 && (await line.count()) === 0; action += 1) {
-    if ((await control.count()) !== 0) {
-      await control.click();
-    } else {
-      await page.getByRole('button', { name: 'Next change', exact: true }).click();
-    }
-  }
+  const editor = side === 'base' ? 'editor original' : 'editor modified';
+  const editorSurface = page
+    .locator(
+      `.monaco-diff-editor .${editor.split(' ').join('.')} .monaco-scrollable-element.editor-scrollable`,
+    )
+    .first();
+  await editorSurface.click({ position: { x: 16, y: 16 } });
+  await page.keyboard.press('Meta+g');
+  await page.keyboard.insertText(String(lineNumber));
+  await page.keyboard.press('Enter');
+  const line = page
+    .locator(`.monaco-diff-editor .${editor.split(' ').join('.')}`)
+    .locator('.view-line')
+    .filter({ hasText: text });
   await expect(line).toBeVisible();
   await line.hover();
   await line.click();
