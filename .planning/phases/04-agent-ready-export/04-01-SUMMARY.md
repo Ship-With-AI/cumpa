@@ -139,6 +139,12 @@ The final UI remediation commits `53145bb` (RED), `b760f0c` (GREEN), and `429ee9
 
 The final validator run was exact: `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs --self-test` reported `mutation self-test passed (34 rejection branches)`, and `node .planning/phases/04-agent-ready-export/validate-reconciliation.mjs .planning/phases/04-agent-ready-export/04-01-RECONCILIATION.json` reported `reconciliation ledger valid: 04-01-RECONCILIATION.json` and regenerated the report. Strict rules, declared seams, requirements, decisions, UI states, commands, and publication policy remain unchanged.
 
+## Receipt Contract Evidence Refresh
+
+The receipt-contract RED/GREEN commits `2f8c4e4` and `478a950` extended the declared capability owner. The strict ledger now binds `createCapabilityRegistry` in `src/server/capabilities.ts` through inclusive lines 1–487 with SHA-256 `b0f0f0555c3e000df0bc7b54e94437e9305fc14e0aa490da6d776b4067669afe`. No test path became ledger evidence, and no additional owner was inferred.
+
+Both required Node-core checks passed after the hash refresh: the mutation self-test proved 34 rejection branches and real-ledger validation regenerated `04-01-RECONCILIATION.md` successfully. Every strict validator rule, declared seam, substitution, command, package/no-install fact, UI state, and pending native-exchange policy remains unchanged.
+
 ## User Setup Required
 
 None - no external service configuration required.
