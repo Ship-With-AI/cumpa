@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 04
 current_phase_name: agent-ready-export
 status: executing
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-07-23T15:00:58Z"
+stopped_at: Completed 04-05-PLAN.md
+last_updated: "2026-07-23T15:07:10Z"
 last_activity: 2026-07-23
-last_activity_desc: "Completed quick task 260723-mzp: Keep automated browser tests hermetic and route real Diff Review browser launches to cmux when launched inside cmux"
+last_activity_desc: "Completed 04-05 core accepted-revision export UI state flow"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 38
-  completed_plans: 34
+  completed_plans: 35
   percent: 75
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 ## Current Position
 
 Phase: 04 (agent-ready-export) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Ready to execute
-Last activity: 2026-07-23 — Completed 04-03 secured native export publication
+Last activity: 2026-07-23 — Completed 04-05 accepted-revision export UI states
 
-Progress: ████░░░░░░ [████░░░░░░] 38%
+Progress: ██████░░░░ [██████░░░░] 63%
 
 ## Performance Metrics
 
@@ -191,6 +191,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T14:30:07.118Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-07-23T15:07:10Z
+Stopped at: Completed 04-05-PLAN.md
 Resume file: None
