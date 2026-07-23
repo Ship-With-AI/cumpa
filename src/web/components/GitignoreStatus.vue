@@ -84,7 +84,7 @@ async function appendRule(): Promise<void> {
         class="gitignore-status__confirmation"
         role="region"
         aria-labelledby="gitignore-confirm-heading"
-        @keydown.escape.prevent="keepUnchanged"
+        @keydown.escape.prevent.stop="keepUnchanged"
       >
         <h5 id="gitignore-confirm-heading">Add export directory to .gitignore?</h5>
         <p>Diff Review will append exactly <code>/.diff-review/</code> to the repository-root <code>.gitignore</code>. Existing bytes and rules will be preserved.</p>
