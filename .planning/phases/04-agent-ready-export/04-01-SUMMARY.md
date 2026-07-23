@@ -115,6 +115,10 @@ Phase 04-04 intentionally extended the comparison inventory, secured route regis
 
 Wave Four intentionally extended the browser API client, canonical browser state, review panel, and launch adapter. This repair refreshed their source-inclusive evidence claims to the committed tree: `createSessionClient` 1–236 (`c5a4c1738e352f71335a556d657b9d6d29154293f5de92d2f63249a0de41e027`), `createReviewDraftState` 1–276 (`5724ff15444d79c6bd68db0fbd9282b1d908f00fa8fbb1bc073f0de8b7168653`), `defineExpose` 1–530 (`3d809c319b9a838903affe69308cb3fc116e2aa45ebeb2f16c230fe6fd80887b`), and `revealDraftFile` 1–460 (`6dbb42b57139d5a2357ecaa7361ce72cc85eb28f867e817b14618660ff3c8add`). Validation remained strict; this refresh did not alter production source.
 
+## Post-04-06 Evidence Refresh
+
+Phase 04-06 extended `createSessionClient` (lines 1–260, SHA-256 `d8e483860ba4485da35589fc3686c95fe3e4774611fe6ebefe8fe4971b74fae5`) and the review panel (lines 1–537, SHA-256 `bb1bff7864f1fe98fc710e0fcbd78963a17b82025e7e97ed7bb2f82503a9a67f`), and changed Playwright discovery (`playwright.config.ts`, SHA-256 `6704c21c7308a61fc71407f8b9fc8f169048af2bd779d24c9c3a5782952069a2`). This repair refreshed every affected claim and command evidence without weakening validation or changing production source.
+
 ## User Setup Required
 
 None - no external service configuration required.
