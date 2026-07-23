@@ -236,6 +236,16 @@ describe('secured export and fixed export-directory reveal APIs', () => {
       ...receipt,
       drift: { ...acknowledged, identities: [base, { ...head, pinned: { ...head.pinned, oid: '4'.repeat(40) } }] },
     }).success).toBe(false);
+    expect(ExportReviewResultSchema.safeParse({
+      ...receipt,
+      drift: {
+        ...acknowledged,
+        identities: [
+          { ...base, current: { ...base.current, oid: base.pinned.oid } },
+          { ...head, current: { ...head.current, oid: head.pinned.oid } },
+        ],
+      },
+    }).success).toBe(false);
   });
 
   test('requires server-confirmed pinned comparison identities on every receipt', () => {
