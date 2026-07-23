@@ -6,9 +6,9 @@ current_phase: 04
 current_phase_name: agent-ready-export
 status: executing
 stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-07-23T14:30:07.122Z"
+last_updated: "2026-07-23T15:00:58Z"
 last_activity: 2026-07-23
-last_activity_desc: Completed 04-03 secured native export publication
+last_activity_desc: "Completed quick task 260723-mzp: Keep automated browser tests hermetic and route real Diff Review browser launches to cmux when launched inside cmux"
 progress:
   total_phases: 4
   completed_phases: 3
@@ -174,6 +174,12 @@ None yet.
 - Phase 2: Prove Monaco inline comment view zones preserve side alignment through context expansion, resize, file switching, and diff recomputation; use `@pierre/diffs` only if the prototype fails.
 - Product: PRless already covers generic local agent review; preserve committed branch/worktree parity, merge-base semantics, comparison-specific drafts, and canonical anchored JSON.
 - Phase 03 plan 03-06 completed retained selector drift observation and pinned warning; continue remaining Phase 03 work.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260723-mzp | Keep automated browser tests hermetic and route real Diff Review browser launches to cmux when launched inside cmux | 2026-07-23 | ce6504e | [260723-mzp-keep-automated-browser-tests-hermetic-an](./quick/260723-mzp-keep-automated-browser-tests-hermetic-an/) |
 
 ## Deferred Items
 
