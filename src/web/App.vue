@@ -520,7 +520,7 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
           }
           if (result.kind === 'revisionConflict') {
             latestConflictDraft = result.latest;
-            reviewState?.conflict(reviewCanonical(result.latest), draftRevision.value);
+            reviewState?.conflict(reviewCanonical(result.latest), result.expectedRevision);
             refreshReviewSnapshot();
             const message = 'Comment wasn’t added. Your text is still here. Reload the latest draft before trying again.';
             dispatchWorkspace({
