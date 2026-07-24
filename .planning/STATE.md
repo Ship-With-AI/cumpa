@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 Phase: 04
 Plan: Not started
 Status: Phase complete — ready for verification
-Last activity: 2026-07-23 — Phase 04 complete
+Last activity: 2026-07-24 - Completed quick task 260724-cg0: Write user-facing README explaining how install, launch, review, comment, save, export, stop Diff Review
 
 Progress: ██████████ [██████████] 100%
 
@@ -190,6 +190,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260723-mzp | Keep automated browser tests hermetic and route real Diff Review browser launches to cmux when launched inside cmux | 2026-07-23 | ce6504e | [260723-mzp-keep-automated-browser-tests-hermetic-an](./quick/260723-mzp-keep-automated-browser-tests-hermetic-an/) |
 | 260723-nnr | Prevent every packaged E2E CLI child from inheriting cmux browser routing | 2026-07-23 | 9f8efef | [260723-nnr-prevent-every-packaged-e2e-cli-child-fro](./quick/260723-nnr-prevent-every-packaged-e2e-cli-child-fro/) |
+| 260724-cg0 | Write user-facing README explaining how install, launch, review, comment, save, export, stop Diff Review | 2026-07-24 | ce8028e | [260724-cg0-write-a-user-facing-readme-explaining-ho](./quick/260724-cg0-write-a-user-facing-readme-explaining-ho/) |
 
 ## Deferred Items
 
