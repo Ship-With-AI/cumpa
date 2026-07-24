@@ -185,20 +185,43 @@ describe('workspace session state', () => {
 
     workspace.dispatch({ type: 'composer-text-changed', text: 'Needs a guard' });
     const pending = workspace.dispatch({ type: 'add-comment' });
-    expect(pending.state.files['file-a'].composer).toEqual({ side: 'head', line: 9, text: 'Needs a guard', status: 'pending' });
-    expect(pending.commands).toEqual([{ type: 'persist-comment', fileId: 'file-a', side: 'head', line: 9, body: 'Needs a guard' }]);
+    const first = pending.commands[0];
+    expect(pending.state.files['file-a'].composer).toMatchObject({ side: 'head', line: 9, text: 'Needs a guard', status: 'pending' });
+    if (first?.type !== 'persist-comment') {
+      throw new Error('Expected the first add-comment command.');
+    }
 
-    const failed = workspace.dispatch({ type: 'add-failed', message: 'Comment wasn’t added. Your text is still here.' });
+    const failed = workspace.dispatch({
+      type: 'add-failed',
+      fileId: first.fileId,
+      requestId: first.requestId,
+      message: 'Comment wasn’t added. Your text is still here.',
+    });
     expect(failed.state.files['file-a'].composer).toMatchObject({ side: 'head', line: 9, text: 'Needs a guard', status: 'ready' });
 
-    workspace.dispatch({ type: 'add-comment' });
-    const duplicate = workspace.dispatch({ type: 'add-duplicate', comment: comments[0]! });
+    const duplicatePending = workspace.dispatch({ type: 'add-comment' });
+    const duplicateCommand = duplicatePending.commands[0];
+    if (duplicateCommand?.type !== 'persist-comment') {
+      throw new Error('Expected the duplicate add-comment command.');
+    }
+    const duplicate = workspace.dispatch({
+      type: 'add-duplicate',
+      fileId: duplicateCommand.fileId,
+      requestId: duplicateCommand.requestId,
+      comment: comments[0]!,
+    });
     expect(duplicate.state.files['file-a'].composer).toMatchObject({ side: 'head', line: 9, text: 'Needs a guard', status: 'ready' });
     expect(duplicate.commands).toEqual([{ type: 'focus-comment', commentId: 'comment-base-3' }]);
 
-    workspace.dispatch({ type: 'add-comment' });
+    const acceptedPending = workspace.dispatch({ type: 'add-comment' });
+    const acceptedCommand = acceptedPending.commands[0];
+    if (acceptedCommand?.type !== 'persist-comment') {
+      throw new Error('Expected the accepted add-comment command.');
+    }
     const accepted = workspace.dispatch({
       type: 'add-succeeded',
+      fileId: acceptedCommand.fileId,
+      requestId: acceptedCommand.requestId,
       comment: { id: 'comment-head-9', fileId: 'file-a', side: 'head', line: 9, body: 'Needs a guard', status: 'verified' },
     });
     expect(accepted.state.files['file-a'].composer).toBeUndefined();

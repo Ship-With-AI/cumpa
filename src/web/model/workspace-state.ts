@@ -29,6 +29,7 @@ export type WorkspaceComposer = Readonly<{
   line: number;
   text: string;
   status: ComposerStatus;
+  requestId?: number;
   pendingMove?: Readonly<{ side: DiffSide; line: number }>;
   validation?: string;
   error?: string;
@@ -57,7 +58,7 @@ export type WorkspaceCommand =
   | Readonly<{ type: 'go-to-change'; direction: 'next' | 'previous' }>
   | Readonly<{ type: 'layout' }>
   | Readonly<{ type: 'load-file'; fileId: string }>
-  | Readonly<{ type: 'persist-comment'; fileId: string; side: DiffSide; line: number; body: string }>
+  | Readonly<{ type: 'persist-comment'; fileId: string; requestId: number; side: DiffSide; line: number; body: string }>
   | Readonly<{ type: 'rebuild-annotations'; fileId: string }>
   | Readonly<{ type: 'restore-view'; fileId: string; scrollTop: number; context: 'collapsed' | 'all-revealed' }>
   | Readonly<{ type: 'reveal-comment-context'; fileId: string; side: DiffSide; line: number }>
@@ -72,9 +73,9 @@ export type WorkspaceEvent =
   | Readonly<{ type: 'activate-focused-line'; side: DiffSide; line: number }>
   | Readonly<{ type: 'activate-line'; side: DiffSide; line: number }>
   | Readonly<{ type: 'add-comment' }>
-  | Readonly<{ type: 'add-duplicate'; comment: WorkspaceComment }>
-  | Readonly<{ type: 'add-failed'; message: string }>
-  | Readonly<{ type: 'add-succeeded'; comment: WorkspaceComment }>
+  | Readonly<{ type: 'add-duplicate'; fileId: string; requestId: number; comment: WorkspaceComment }>
+  | Readonly<{ type: 'add-failed'; fileId: string; requestId: number; message: string }>
+  | Readonly<{ type: 'add-succeeded'; fileId: string; requestId: number; comment: WorkspaceComment }>
   | Readonly<{ type: 'blur' }>
   | Readonly<{ type: 'cancel-composer' }>
   | Readonly<{ type: 'composer-text-changed'; text: string }>
@@ -218,11 +219,17 @@ function cancelComposer(state: WorkspaceState): WorkspaceTransition {
   }]);
 }
 
-function completePendingComment(state: WorkspaceState, comment: WorkspaceComment): WorkspaceTransition {
-  const current = fileState(state);
+function completePendingComment(
+  state: WorkspaceState,
+  fileId: string,
+  requestId: number,
+  comment: WorkspaceComment,
+): WorkspaceTransition {
+  const current = fileState(state, fileId);
   const composer = current.composer;
   if (composer === undefined || composer.status !== 'pending'
-    || comment.fileId !== state.activeFileId
+    || composer.requestId !== requestId
+    || comment.fileId !== fileId
     || comment.side !== composer.side
     || comment.line !== composer.line) {
     return transition(state);
@@ -230,8 +237,10 @@ function completePendingComment(state: WorkspaceState, comment: WorkspaceComment
   const next = replaceFileState({
     ...state,
     comments: state.comments.some((existing) => existing.id === comment.id) ? state.comments : [...state.comments, comment],
-  }, state.activeFileId, { ...current, composer: undefined });
-  return transition(next, [{ type: 'focus-comment', commentId: comment.id }]);
+  }, fileId, { ...current, composer: undefined });
+  return fileId === state.activeFileId
+    ? transition(next, [{ type: 'focus-comment', commentId: comment.id }])
+    : transition(next);
 }
 
 function showComment(state: WorkspaceState, commentId: string): WorkspaceTransition {
@@ -254,7 +263,12 @@ function showComment(state: WorkspaceState, commentId: string): WorkspaceTransit
   return transition(state, commands);
 }
 
-function applyEvent(state: WorkspaceState, fileIds: readonly string[], event: WorkspaceEvent): WorkspaceTransition {
+function applyEvent(
+  state: WorkspaceState,
+  fileIds: readonly string[],
+  event: WorkspaceEvent,
+  nextRequestId: () => number,
+): WorkspaceTransition {
   switch (event.type) {
     case 'activate-focused-line':
     case 'activate-line':
@@ -271,36 +285,45 @@ function applyEvent(state: WorkspaceState, fileIds: readonly string[], event: Wo
           composer: { ...composer, validation: 'Write a comment before adding it.' },
         }));
       }
-      const pending = { ...composer, status: 'pending' as const };
+      const pending = { ...composer, status: 'pending' as const, requestId: nextRequestId() };
       return transition(replaceFileState(state, state.activeFileId, { ...current, composer: pending }), [{
         type: 'persist-comment',
         fileId: state.activeFileId,
+        requestId: pending.requestId,
         side: composer.side,
         line: composer.line,
         body: composer.text,
       }]);
     }
     case 'add-duplicate': {
-      const current = fileState(state);
+      const current = fileState(state, event.fileId);
       const composer = current.composer;
-      if (composer === undefined) {
+      if (composer === undefined || composer.status !== 'pending' || composer.requestId !== event.requestId) {
         return transition(state);
       }
-      return transition(replaceFileState(state, state.activeFileId, {
+      const { requestId: _requestId, ...readyComposer } = composer;
+      const next = replaceFileState(state, event.fileId, {
         ...current,
-        composer: { ...composer, status: 'ready' },
-      }), [{ type: 'focus-comment', commentId: event.comment.id }]);
+        composer: { ...readyComposer, status: 'ready' },
+      });
+      return event.fileId === state.activeFileId
+        ? transition(next, [{ type: 'focus-comment', commentId: event.comment.id }])
+        : transition(next);
     }
     case 'add-failed': {
-      const current = fileState(state);
+      const current = fileState(state, event.fileId);
       const composer = current.composer;
-      return composer === undefined ? transition(state) : transition(replaceFileState(state, state.activeFileId, {
+      if (composer === undefined || composer.status !== 'pending' || composer.requestId !== event.requestId) {
+        return transition(state);
+      }
+      const { requestId: _requestId, ...readyComposer } = composer;
+      return transition(replaceFileState(state, event.fileId, {
         ...current,
-        composer: { ...composer, status: 'ready', error: event.message },
+        composer: { ...readyComposer, status: 'ready', error: event.message },
       }));
     }
     case 'add-succeeded':
-      return completePendingComment(state, event.comment);
+      return completePendingComment(state, event.fileId, event.requestId, event.comment);
     case 'blur':
       return transition(state);
     case 'cancel-composer':
@@ -423,6 +446,7 @@ export function createWorkspaceState(
     throw new Error('Workspace state requires at least one opaque file ID.');
   }
   const initialFiles = Object.fromEntries(fileIds.map((fileId) => [fileId, EMPTY_FILE_STATE]));
+  let nextRequestId = 1;
   let state: WorkspaceState = {
     activeFileId: fileIds[0]!,
     readyFileId: null,
@@ -433,7 +457,7 @@ export function createWorkspaceState(
 
   return {
     dispatch(event) {
-      const next = applyEvent(state, fileIds, event);
+      const next = applyEvent(state, fileIds, event, () => nextRequestId++);
       state = next.state;
       return next;
     },

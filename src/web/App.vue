@@ -519,6 +519,8 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
             refreshReviewSnapshot();
             dispatchWorkspace({
               type: 'add-failed',
+              fileId: command.fileId,
+              requestId: command.requestId,
               message: 'Comment wasn’t added. Your text is still here. Reload the latest draft before trying again.',
             });
             return;
@@ -543,11 +545,18 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
             recordedAnchor: comment.anchor,
           };
           acceptReviewDraft(result.draft, undefined, workspaceComment);
-          dispatchWorkspace({ type: 'add-succeeded', comment: workspaceComment });
+          dispatchWorkspace({
+            type: 'add-succeeded',
+            fileId: command.fileId,
+            requestId: command.requestId,
+            comment: workspaceComment,
+          });
           announce(`Comment added and saved locally on ${command.side} line ${command.line}.`);
         }).catch(() => {
           dispatchWorkspace({
             type: 'add-failed',
+            fileId: command.fileId,
+            requestId: command.requestId,
             message: 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.',
           });
         });
