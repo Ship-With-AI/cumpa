@@ -18,7 +18,7 @@ The work is safest as a dependency-ordered brownfield migration: establish the p
 The current stack is sufficient: Vue 3.5.39, Monaco Editor 0.55.1, Vite 8.1.4, TypeScript 7.0.2, and the Node.js 24 LTS baseline remain in place. Native CSS custom properties and media queries are the right styling mechanism; adding a CSS framework, preprocessor, component library, Monaco wrapper, or alternate diff renderer would create a second convention and threaten validated line mapping and comment anchors.
 
 **Core technologies:**
-- **Vue 3.5.39:** retain existing component and ARIA structure; the milestone changes presentation rather than state or composition.
+- **Vue 3.5.39:** retain the existing component and ARIA structure in `src/web/components/DiffWorkspace.vue`; the milestone changes presentation rather than state or composition.
 - **Monaco Editor 0.55.1:** retain side-by-side diff, line mapping, decorations, view zones, syntax tokenization, and accessible diff behavior; use `defineTheme` and the construction-time `theme` option.
 - **Vite 8.1.4 + native CSS:** keep the existing SFC/global stylesheet pipeline; consolidate semantic roles in `src/web/styles.css` without a preprocessor.
 - **TypeScript 7.0.2 + Node 24 LTS:** retain the supported build/runtime baseline and type the Monaco theme data.
