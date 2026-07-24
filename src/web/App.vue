@@ -77,6 +77,7 @@ const filesOpen = ref(false);
 const commentsOpen = ref(false);
 const keyboardHelpOpen = ref(false);
 const liveMessage = ref('');
+const liveMessageVersion = ref(0);
 const diffWorkspace = ref<InstanceType<typeof DiffWorkspace>>();
 const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
 const identityPanel = ref<InstanceType<typeof IdentityPanel>>();
@@ -129,6 +130,7 @@ const resolvedCommentCount = computed(
 
 function announce(message: string): void {
   liveMessage.value = message;
+  liveMessageVersion.value += 1;
 }
 
 function openFiles(): void {
@@ -901,7 +903,9 @@ onBeforeUnmount(() => {
         />
       </aside>
     </div>
-    <p class="visually-hidden" aria-live="polite">{{ liveMessage }}</p>
+    <p class="visually-hidden" aria-live="polite">
+      <span :key="liveMessageVersion" :data-announcement-version="liveMessageVersion">{{ liveMessage }}</span>
+    </p>
   </div>
 </template>
 
