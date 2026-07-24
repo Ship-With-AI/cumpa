@@ -65,34 +65,34 @@ Requirements for the GitHub Dark Diff milestone. Each maps to exactly one roadma
 
 ## Traceability
 
-Roadmap mapping is populated after roadmap approval.
+Roadmap mapping for the approved v1.1 milestone.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| VIS-01 | TBD | Pending |
-| VIS-02 | TBD | Pending |
-| VIS-03 | TBD | Pending |
-| VIS-04 | TBD | Pending |
-| DIFF-01 | TBD | Pending |
-| DIFF-02 | TBD | Pending |
-| DIFF-03 | TBD | Pending |
-| DIFF-04 | TBD | Pending |
-| DIFF-05 | TBD | Pending |
-| REVW-01 | TBD | Pending |
-| REVW-02 | TBD | Pending |
-| REVW-03 | TBD | Pending |
-| REVW-04 | TBD | Pending |
-| A11Y-01 | TBD | Pending |
-| A11Y-02 | TBD | Pending |
-| A11Y-03 | TBD | Pending |
-| RESP-01 | TBD | Pending |
-| CONT-01 | TBD | Pending |
+| VIS-01 | Phase 05 | Pending |
+| VIS-02 | Phase 05 | Pending |
+| VIS-03 | Phase 05 | Pending |
+| VIS-04 | Phase 07 | Pending |
+| DIFF-01 | Phase 06 | Pending |
+| DIFF-02 | Phase 06 | Pending |
+| DIFF-03 | Phase 06 | Pending |
+| DIFF-04 | Phase 06 | Pending |
+| DIFF-05 | Phase 06 | Pending |
+| REVW-01 | Phase 07 | Pending |
+| REVW-02 | Phase 07 | Pending |
+| REVW-03 | Phase 07 | Pending |
+| REVW-04 | Phase 07 | Pending |
+| A11Y-01 | Phase 08 | Pending |
+| A11Y-02 | Phase 08 | Pending |
+| A11Y-03 | Phase 08 | Pending |
+| RESP-01 | Phase 08 | Pending |
+| CONT-01 | Phase 08 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-24*
-*Last updated: 2026-07-24 after initial v1.1 definition*
+*Last updated: 2026-07-24 v1.1 roadmap mapping*
