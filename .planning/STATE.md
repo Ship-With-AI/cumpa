@@ -1,44 +1,42 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-current_phase: 04.1
-status: completed
-stopped_at: Completed 04.1-02-PLAN.md
-last_updated: "2026-07-24T11:58:22.061Z"
+milestone_name: MVP
+status: Awaiting next milestone
+stopped_at: Archived v1.0 MVP
+last_updated: "2026-07-24T14:43:11Z"
 last_activity: 2026-07-24
-last_activity_desc: Phase 04.1 complete
+last_activity_desc: Milestone v1.0 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
   total_plans: 40
   completed_plans: 40
-current_phase_name: "Close gap: CMT-01 — correlate async comment settlement"
+current_phase: null
+current_phase_name: null
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-11)
+See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 04.1 — Close gap: CMT-01 — correlate async comment settlement
+**Current focus:** Planning the next milestone
 
 ## Current Position
 
-Phase: 04.1
-Plan: Not started
-Status: All phases complete
-Last activity: 2026-07-24 — Phase 04.1 complete
-
-Progress: ██████████ [██████████] 100%
+Phase: Milestone v1.0 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-24 — Milestone v1.0 completed and archived
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 30
+- Total plans completed: 40
 - Average duration: 23 min
 - Total execution time: 4.7 hours
 
@@ -185,9 +183,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 2: Prove Monaco inline comment view zones preserve side alignment through context expansion, resize, file switching, and diff recomputation; use `@pierre/diffs` only if the prototype fails.
-- Product: PRless already covers generic local agent review; preserve committed branch/worktree parity, merge-base semantics, comparison-specific drafts, and canonical anchored JSON.
-- Phase 03 plan 03-06 completed retained selector drift observation and pinned warning; continue remaining Phase 03 work.
+- No open milestone blocker.
+- Cleanup debt: retire or intentionally consume the authenticated orphan file-metadata route and client method.
+- Accepted residual risk: same-UID managed-parent replacement and operating-system power-loss durability boundaries.
+- Deferred product scope remains recorded below for future milestones.
 
 ### Quick Tasks Completed
 
@@ -211,6 +210,10 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-24T11:24:37.727Z
-Stopped at: Completed 04.1-02-PLAN.md
+Last session: 2026-07-24T14:43:11Z
+Stopped at: Archived v1.0 MVP
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with $gsd-new-milestone

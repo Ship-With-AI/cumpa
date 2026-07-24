@@ -44,13 +44,17 @@ None — the v1.0 milestone scope is validated.
 
 ## Context
 
-The motivating workflow is reviewing local agent or developer work before it is pushed or opened as a pull request. Existing hosted review tools require remote branches. Local tools such as PRless and diffmux already prove the browser-review-to-agent loop; this project is distinct only if it preserves committed branch/worktree parity, PR-style merge-base semantics, pinned comparison identity, and a canonical drift-detectable JSON export.
+Diff Review v1.0 shipped the complete local browser-review-to-agent loop. A developer can select ordered local branches or registered worktrees, inspect the immutable merge-base-to-head change set, maintain a repository-local review draft, and export canonical JSON plus derived Markdown without publishing refs or modifying source control.
 
-Each comparison is ordered: the first selection is the base and the second is the head. PR-style semantics mean the displayed change is the merge base of those commits compared with the selected head, not a direct tree-to-tree snapshot. A selected worktree resolves to its committed `HEAD`; dirty files do not affect the review.
+Each comparison is ordered and frozen to full commit IDs. The displayed change is the merge base of those commits compared with the selected head; selected worktrees resolve to committed `HEAD` values and dirty bytes never enter the review.
 
-The browser workspace should provide a changed-file tree with statuses and counts, collapsible file diffs, side-by-side hunks, syntax highlighting, context expansion, and keyboard navigation. Comments may attach to any visible changed or context line on either side. Drafts survive browser closure in a repository-local, gitignored directory.
+The browser workspace now provides an exact changed-file tree, real Monaco side-by-side text diffs, expandable context, keyboard navigation, durable line comments, review summary and comment lifecycle, conflict recovery, selector-drift reporting, and explicit unsupported, stale, and orphaned states.
 
-The canonical JSON export must be versioned and machine-validated. Each comment must carry enough identity to detect drift: comparison commit IDs, relevant blob IDs, file path, old/new side, line or range, nearby context anchors, comment text, and resolution state. Markdown is generated from the same review model for human readability.
+Exports are versioned and machine-validated. Canonical JSON owns comparison identities, accepted summary and comments, timestamps, blob identities, and context anchors; Markdown is derived from that same validated model. Publication is an atomic pair beneath `.diff-review/exports/`, with hashes and a bounded receipt.
+
+The shipped repository contains 30,428 tracked TypeScript, Vue, and MJS lines. v1.0 completed 51/51 requirements, 22/22 integrations, eight end-to-end flows, and a final 56/56 configured Playwright run.
+
+Retained debt is bounded: one authenticated orphan metadata route/client method, Phase 3 UI polish, and accepted Phase 4 filesystem/power-loss durability limits. No v1.0 requirement or user flow remains blocked.
 
 ## Constraints
 
@@ -68,13 +72,18 @@ The canonical JSON export must be versioned and machine-validated. Each comment 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Use PR-style merge-base-to-head comparison | Match the mental model and visible change set of hosted pull-request reviews | — Pending |
-| Resolve branches and worktrees to committed Git objects | Produce stable, reproducible comparisons and exclude ambiguous dirty state | — Pending |
-| Use the installed Git CLI rather than a Git library | Preserve native Git behavior for merge bases, worktrees, renames, blobs, and diff metadata | — Pending |
-| Use TypeScript, Node.js, Fastify, Vue 3, Vite, and Monaco | Keep shared contracts in one language while supporting a capable browser diff workspace | — Pending |
-| Store drafts as repository-local versioned JSON | Keep reviews resumable, portable within the local repository, and independent of browser storage | — Pending |
-| Export canonical JSON plus generated Markdown | Give agents a strict contract and humans a readable review artifact | — Pending |
-| Keep v1 local and single-user | Focus effort on accurate comparison, commenting, persistence, and export rather than hosting or collaboration | — Pending |
+| Use PR-style merge-base-to-head comparison | Match the mental model and visible change set of hosted pull-request reviews | Good — native-Git fixtures verify frozen merge-base-to-head semantics across branch/worktree orderings |
+| Resolve branches and worktrees to committed Git objects | Produce stable, reproducible comparisons and exclude ambiguous dirty state | Good — sessions, drafts, anchors, and exports remain pinned while selectors drift |
+| Use the installed Git CLI rather than a Git library | Preserve native Git behavior for merge bases, worktrees, renames, blobs, and diff metadata | Good — byte-safe native protocols cover discovery, inventory, availability, and object reads |
+| Use TypeScript, Node.js, Fastify, Vue 3, Vite, and Monaco | Keep shared contracts in one language while supporting a capable browser diff workspace | Good — one packaged runtime serves strict shared contracts and the real browser workspace |
+| Store drafts as repository-local versioned JSON | Keep reviews resumable, portable within the local repository, and independent of browser storage | Good — comparison-keyed atomic drafts survive relaunch and fail explicitly on corruption or newer schemas |
+| Export canonical JSON plus generated Markdown | Give agents a strict contract and humans a readable review artifact | Good — canonical bytes and reparse-derived Markdown publish together with hashes and receipts |
+| Keep v1 local and single-user | Focus effort on accurate comparison, commenting, persistence, and export rather than hosting or collaboration | Good — the loopback-only capability model delivered the full v1 workflow without remote infrastructure |
+| Use opaque file IDs and fixed capability routes | Prevent browser paths, refs, and object IDs from becoming repository authority | Good — all API operations are authenticated and path-safe; one unused metadata operation remains cleanup debt |
+| Accept only server-returned canonical draft state | Prevent client-synthesized persistence and silent concurrent overwrite | Good — atomic CAS, typed conflicts, and accepted-result ordering cover every review mutation |
+| Keep durable anchors immutable and classify mismatch instead of relocating | Preserve drift-detectable feedback for applying agents | Good — stale and orphaned records retain exact recorded evidence and never move silently |
+| Verify release behavior at the generated-package boundary | Test the same CLI, server, browser assets, Git objects, and export bytes users receive | Good — final configured Playwright suite passes 56/56 |
+| Correlate asynchronous comment settlement to controller, file, request, and originating revision | Prevent late results from mutating the active or replacement composer | Good — Phase 04.1 closed the audit gap across success, failure, conflict, replacement, and repeated announcements |
 
 ## Evolution
 
@@ -94,4 +103,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-24 after Phase 04.1 completion*
+*Last updated: 2026-07-24 after v1.0 milestone*
