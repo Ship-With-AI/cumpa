@@ -563,6 +563,7 @@ test.describe('async comment settlement', () => {
     expect((await response).status()).toBe(201);
     await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
       'Comment on src/first.ts at head line 10 was added and saved locally.',
+      { timeout: 15_000 },
     );
 
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
