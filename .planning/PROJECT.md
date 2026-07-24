@@ -8,6 +8,16 @@ Diff Review is a local-first code review application for developers who want a G
 
 A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
 
+## Current Milestone: v1.1 GitHub Dark Diff
+
+**Goal:** Make the existing diff-review workspace feel substantially closer to GitHub's dark pull-request diff experience without changing review mechanics.
+
+**Target features:**
+- Apply a GitHub dark-default-inspired semantic palette to the diff workspace.
+- Restyle the file header, Monaco diff, gutters, controls, inline comments, and review rail.
+- Improve visual hierarchy, spacing, typography, interaction states, contrast, non-color cues, and responsive behavior.
+- Preserve Diff Review's identity, information architecture, and existing review workflow.
+
 ## Requirements
 
 ### Validated
@@ -31,7 +41,9 @@ Phase 04.1 closed the audited CMT-01 async cross-file settlement gap without cha
 
 ### Active
 
-None — the v1.0 milestone scope is validated.
+- [ ] User experiences a close adaptation of GitHub's dark-default pull-request diff palette throughout the diff workspace.
+- [ ] User can distinguish additions, deletions, selected lines, comments, focus, errors, and disabled states through accessible color and non-color cues.
+- [ ] User retains the existing review workflow and information architecture across desktop and narrow layouts.
 
 ### Out of Scope
 
@@ -103,4 +115,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-24 after v1.0 milestone*
+*Last updated: 2026-07-24 after starting v1.1 milestone*

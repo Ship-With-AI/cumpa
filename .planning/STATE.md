@@ -1,19 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: MVP
-status: Awaiting next milestone
-stopped_at: Archived v1.0 MVP
-last_updated: "2026-07-24T14:43:11Z"
+milestone: v1.1
+milestone_name: GitHub Dark Diff
+status: planning
+last_updated: "2026-07-24T15:19:30.856Z"
 last_activity: 2026-07-24
-last_activity_desc: Milestone v1.0 completed and archived
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 40
-  completed_plans: 40
-current_phase: null
-current_phase_name: null
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -27,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 
 ## Current Position
 
-Phase: Milestone v1.0 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-07-24 — Milestone v1.0 completed and archived
+Status: Defining requirements
+Last activity: 2026-07-24 — Milestone v1.1 started
 
 ## Performance Metrics
 
