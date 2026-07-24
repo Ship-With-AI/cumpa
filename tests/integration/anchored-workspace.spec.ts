@@ -358,7 +358,7 @@ test('draft resume and anchor states', async ({ page }) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
   await openReview(page);
-  await expect(page.locator('.session-shell > .sr-only[aria-live="polite"]')).toHaveText(
+  await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
     'Local draft resumed. Accepted comments for this pinned comparison are ready.',
   );
   await ensureReviewOpen(page);
