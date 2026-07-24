@@ -506,6 +506,7 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
         break;
       case 'persist-comment':
         const originWorkspace = workspace;
+        const commentLocation = `${filePath(command.fileId)} at ${command.side} line ${command.line}`;
         void sessionClient?.mutate({
           type: 'addComment',
           expectedRevision: draftRevision.value,
@@ -521,12 +522,14 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
             latestConflictDraft = result.latest;
             reviewState?.conflict(reviewCanonical(result.latest), draftRevision.value);
             refreshReviewSnapshot();
+            const message = 'Comment wasn’t added. Your text is still here. Reload the latest draft before trying again.';
             dispatchWorkspace({
               type: 'add-failed',
               fileId: command.fileId,
               requestId: command.requestId,
-              message: 'Comment wasn’t added. Your text is still here. Reload the latest draft before trying again.',
+              message,
             });
+            announce(`Comment on ${commentLocation} wasn’t added. Your text is still here. Reload the latest draft before trying again.`);
             return;
           }
           if (result.kind !== 'accepted') {
@@ -555,7 +558,7 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
             requestId: command.requestId,
             comment: workspaceComment,
           });
-          announce(`Comment added and saved locally on ${command.side} line ${command.line}.`);
+          announce(`Comment on ${commentLocation} was added and saved locally.`);
         }).catch(() => {
           if (workspace !== originWorkspace) {
             return;
@@ -567,7 +570,7 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
             requestId: command.requestId,
             message,
           });
-          announce(message);
+          announce(`Comment on ${commentLocation} wasn’t added. Your text is still here. Check that Diff Review is running, then try again.`);
         });
         break;
       case 'reveal-comment-context':
@@ -898,7 +901,7 @@ onBeforeUnmount(() => {
         />
       </aside>
     </div>
-    <p class="sr-only" aria-live="polite">{{ liveMessage }}</p>
+    <p class="visually-hidden" aria-live="polite">{{ liveMessage }}</p>
   </div>
 </template>
 
