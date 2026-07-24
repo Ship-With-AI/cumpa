@@ -108,3 +108,14 @@ Every v1 requirement maps to exactly one phase:
 
 ---
 *Roadmap created: 2026-07-11*
+
+### Phase 04.1: Close gap: CMT-01 — correlate async comment settlement (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 4
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run $gsd-plan-phase 04.1 to break down)
