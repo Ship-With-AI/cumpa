@@ -651,4 +651,35 @@ test.describe('async comment settlement', () => {
     await expect(retryComposer.locator('textarea')).toHaveValue(body);
     await expect(retryComposer.locator('[role="alert"]')).toHaveText(message);
   });
+
+  test('repeated identical settlement messages create distinct live-region updates', async ({ page }) => {
+    const body = 'Retry the same failed comment.';
+    const announcement = 'Comment on src/first.ts at head line 10 wasn’t added. Your text is still here. Check that Diff Review is running, then try again.';
+    const liveRegion = page.locator('.session-shell > .visually-hidden[aria-live="polite"]');
+
+    const firstDelayed = delayNextMutation('persistenceFailure');
+    await openReview(page);
+    await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+    await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+    await page.locator('.monaco-anchor-zone--composer textarea').fill(body);
+    const firstResponse = page.waitForResponse((candidate) =>
+      candidate.url().includes('/api/draft/mutations'));
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    await firstDelayed.received;
+    firstDelayed.release();
+    expect((await firstResponse).status()).toBe(500);
+    await expect(liveRegion).toHaveText(announcement);
+    const firstVersion = await liveRegion.locator('span').getAttribute('data-announcement-version');
+
+    const secondDelayed = delayNextMutation('persistenceFailure');
+    const secondResponse = page.waitForResponse((candidate) =>
+      candidate.url().includes('/api/draft/mutations'));
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    await secondDelayed.received;
+    secondDelayed.release();
+    expect((await secondResponse).status()).toBe(500);
+    await expect.poll(async () =>
+      liveRegion.locator('span').getAttribute('data-announcement-version')).not.toBe(firstVersion);
+    await expect(liveRegion).toHaveText(announcement);
+  });
 });
