@@ -505,6 +505,7 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
         diffWorkspace.value?.layout();
         break;
       case 'persist-comment':
+        const originWorkspace = workspace;
         void sessionClient?.mutate({
           type: 'addComment',
           expectedRevision: draftRevision.value,
@@ -513,6 +514,9 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
           line: command.line,
           body: command.body,
         }).then((result) => {
+          if (workspace !== originWorkspace) {
+            return;
+          }
           if (result.kind === 'revisionConflict') {
             latestConflictDraft = result.latest;
             reviewState?.conflict(reviewCanonical(result.latest), draftRevision.value);
@@ -553,12 +557,17 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
           });
           announce(`Comment added and saved locally on ${command.side} line ${command.line}.`);
         }).catch(() => {
+          if (workspace !== originWorkspace) {
+            return;
+          }
+          const message = 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.';
           dispatchWorkspace({
             type: 'add-failed',
             fileId: command.fileId,
             requestId: command.requestId,
-            message: 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.',
+            message,
           });
+          announce(message);
         });
         break;
       case 'reveal-comment-context':
