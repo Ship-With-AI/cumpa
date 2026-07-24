@@ -50,11 +50,11 @@
 
 - [x] **CMT-01**: User can add one comment to any visible line on either the base or head side, including unchanged context.
 - [x] **CMT-02**: Each accepted comment records the side-specific path, side, line, blob identity, exact selected text, nearby context, and context hash.
-- [ ] **CMT-03**: User can edit an existing comment.
-- [ ] **CMT-04**: User can delete an existing comment.
-- [ ] **CMT-05**: User can resolve and reopen an existing comment.
-- [ ] **CMT-06**: User can see open and resolved comment counts and jump from a comment list to its anchored line.
-- [ ] **CMT-07**: User can write and edit one overall review summary.
+- [x] **CMT-03**: User can edit an existing comment.
+- [x] **CMT-04**: User can delete an existing comment.
+- [x] **CMT-05**: User can resolve and reopen an existing comment.
+- [x] **CMT-06**: User can see open and resolved comment counts and jump from a comment list to its anchored line.
+- [x] **CMT-07**: User can write and edit one overall review summary.
 - [x] **CMT-08**: User sees a clear stale or orphaned state instead of a silently relocated comment when its recorded anchor cannot be verified.
 
 ### Drafts
@@ -62,9 +62,9 @@
 - [x] **DRFT-01**: User's accepted comment and summary mutations are persisted atomically before the UI confirms success.
 - [x] **DRFT-02**: User can relaunch the same pinned comparison and resume its repository-local draft.
 - [x] **DRFT-03**: User gets a separate draft when either pinned comparison commit differs.
-- [ ] **DRFT-04**: User cannot unknowingly overwrite newer review state from another browser tab.
+- [x] **DRFT-04**: User cannot unknowingly overwrite newer review state from another browser tab.
 - [x] **DRFT-05**: User receives a recoverable error when a draft is corrupt or uses an unsupported schema; the existing file is preserved.
-- [ ] **DRFT-06**: User's open review remains pinned if a selected branch or worktree advances and visibly reports that selector drift.
+- [x] **DRFT-06**: User's open review remains pinned if a selected branch or worktree advances and visibly reports that selector drift.
 
 ### Export
 
@@ -177,14 +177,14 @@ Each v1 requirement maps to exactly one roadmap phase.
 | DRFT-01 | Phase 2 | Complete |
 | DRFT-02 | Phase 2 | Complete |
 | DRFT-03 | Phase 2 | Complete |
-| CMT-03 | Phase 3 | Pending |
-| CMT-04 | Phase 3 | Pending |
-| CMT-05 | Phase 3 | Pending |
-| CMT-06 | Phase 3 | Pending |
-| CMT-07 | Phase 3 | Pending |
-| DRFT-04 | Phase 3 | Pending |
+| CMT-03 | Phase 3 | Complete |
+| CMT-04 | Phase 3 | Complete |
+| CMT-05 | Phase 3 | Complete |
+| CMT-06 | Phase 3 | Complete |
+| CMT-07 | Phase 3 | Complete |
+| DRFT-04 | Phase 3 | Complete |
 | DRFT-05 | Phase 3 | Complete |
-| DRFT-06 | Phase 3 | Pending |
+| DRFT-06 | Phase 3 | Complete |
 | EXP-01 | Phase 4 | Complete |
 | EXP-02 | Phase 4 | Complete |
 | EXP-03 | Phase 4 | Complete |
