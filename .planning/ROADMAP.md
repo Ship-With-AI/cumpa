@@ -117,6 +117,10 @@ Every v1 requirement maps to exactly one phase:
 **Plans:** 2 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 04.1-01-PLAN.md — TDD origin/request-correlated reducer events and App.vue async callback dispatch
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 04.1-02-PLAN.md — Production-transition browser evidence and Phase 2/milestone verification reconciliation
