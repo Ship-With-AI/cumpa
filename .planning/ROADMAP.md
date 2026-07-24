@@ -114,7 +114,7 @@ Every v1 requirement maps to exactly one phase:
 **Goal:** A reviewer can switch files while an add-comment request is pending, and success or failure settles only its originating composer without weakening canonical atomic draft acceptance or anchored-diff stability.
 **Requirements**: CMT-01
 **Depends on:** Phase 4
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 **Wave 1**
@@ -123,4 +123,4 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04.1-02-PLAN.md — Production-transition browser evidence and Phase 2/milestone verification reconciliation
+- [x] 04.1-02-PLAN.md — Production-transition browser evidence and Phase 2/milestone verification reconciliation

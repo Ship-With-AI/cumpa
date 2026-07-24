@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 04.1
-status: executing
-stopped_at: Phase 04.1 context gathered
-last_updated: "2026-07-24T10:29:55.890Z"
+current_phase_name: "Close gap: CMT-01 — correlate async comment settlement"
+status: verifying
+stopped_at: Completed 04.1-02-PLAN.md
+last_updated: "2026-07-24T11:24:37.731Z"
 last_activity: 2026-07-24
-last_activity_desc: "Completed quick task 260724-cg0: Write user-facing README explaining how install, launch, review, comment, save, export, stop Diff Review"
+last_activity_desc: Phase 04.1 execution started
 progress:
   total_phases: 5
-  completed_phases: 4
-  total_plans: 38
-  completed_plans: 38
-  percent: 80
-current_phase_name: agent-ready-export
+  completed_phases: 5
+  total_plans: 40
+  completed_plans: 40
+  percent: 100
 ---
 
 # Project State
@@ -24,14 +24,14 @@ current_phase_name: agent-ready-export
 See: .planning/PROJECT.md (updated 2026-07-11)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 04 — agent-ready-export
+**Current focus:** Phase 04.1 — Close gap: CMT-01 — correlate async comment settlement
 
 ## Current Position
 
-Phase: 04.1
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-07-24 - Completed quick task 260724-cg0: Write user-facing README explaining how install, launch, review, comment, save, export, stop Diff Review
+Phase: 04.1 (Close gap: CMT-01 — correlate async comment settlement) — EXECUTING
+Plan: 2 of 2
+Status: Phase complete — ready for verification
+Last activity: 2026-07-24 — Phase 04.1 execution started
 
 Progress: ██████████ [██████████] 100%
 
@@ -93,6 +93,8 @@ Progress: ██████████ [██████████] 100%
 | Phase 04 P06 | 60min | 2 tasks | 11 files |
 | Phase 04 P07 | 35min | 2 tasks | 6 files |
 | Phase 04 P08 | 25 | 2 tasks | 2 files |
+| Phase 04.1 P01 | 5min | 2 tasks | 3 files |
+| Phase 04.1 P02 | 33min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -173,6 +175,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 04]: Keep final acceptance at the generated package boundary. — A fresh CLI/server/browser process, real Monaco, and independently reread export bytes are the authority.
 - [Phase 04]: Record the roadmap resume criterion only against the named close/relaunch/recover/export journey. — It proves different ordered-pair isolation together with exact recovered persisted state.
 - [Phase 04]: Bind package coverage to a fresh child-process result and report. — A unique run ID, exact command identity, required scenario facts, and generated/packed artifact hashes prevent fabricated execution evidence.
+- [Phase 04.1]: Use controller-local request IDs for comment settlement. — The command origin, not active selection, owns async composer mutation.
+- [Phase 04.1]: Gate browser mutation completion only after schema validation, preserving production composer-to-reducer transitions. — This makes A-to-B settlement deterministic without direct reducer dispatch or timing sleeps.
+- [Phase 04.1]: Reconcile Phase 2 and milestone closure only from freshly rerun focused gates. — This closes CMT-01 evidence while retaining unrelated Phase 2, 3, and 4 debt.
 
 ### Pending Todos
 
@@ -206,6 +211,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-24T09:49:30.527Z
-Stopped at: Phase 04.1 context gathered
-Resume file: .planning/phases/04.1-close-gap-cmt-01-correlate-async-comment-settlement/04.1-CONTEXT.md
+Last session: 2026-07-24T11:24:37.727Z
+Stopped at: Completed 04.1-02-PLAN.md
+Resume file: None
