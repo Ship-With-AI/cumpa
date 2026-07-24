@@ -17,6 +17,7 @@ A developer can accurately review committed changes between any two local branch
 - [x] User can review merge-base-to-head changes in a GitHub-like side-by-side text diff with changed-file navigation and expandable context.
 - [x] User can create, edit, delete, and resolve comments on any visible line on either side of a diff.
 - [x] User can write an overall review summary while the review remains an editable repository-local draft.
+- [x] User can export a completed review as readable Markdown and versioned JSON containing stable Git identities and context anchors for an applying agent.
 
 Validated in Phase 01: Pinned Local Comparison.
 
@@ -24,9 +25,13 @@ Validated in Phase 02: Anchored Diff Review.
 
 Validated in Phase 03: Complete Review Draft.
 
+Validated in Phase 04: Agent-Ready Export.
+
+Phase 04.1 closed the audited CMT-01 async cross-file settlement gap without changing the validated product scope.
+
 ### Active
 
-- [ ] User can export a completed review as readable Markdown and versioned JSON containing stable Git identities and context anchors for an applying agent.
+None — the v1.0 milestone scope is validated.
 
 ### Out of Scope
 
@@ -89,4 +94,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-23 after Phase 03 completion*
+*Last updated: 2026-07-24 after Phase 04.1 completion*
