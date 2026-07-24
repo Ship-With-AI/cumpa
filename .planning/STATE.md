@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 04
+current_phase: 04.1
 status: verifying
-stopped_at: Completed 04-08-PLAN.md
-last_updated: "2026-07-23T22:45:45.830Z"
-last_activity: 2026-07-23
-last_activity_desc: Phase 04 complete
+stopped_at: Phase 04.1 context gathered
+last_updated: "2026-07-24T09:49:30.531Z"
+last_activity: 2026-07-24
+last_activity_desc: "Completed quick task 260724-cg0: Write user-facing README explaining how install, launch, review, comment, save, export, stop Diff Review"
 progress:
-  total_phases: 4
+  total_phases: 5
   completed_phases: 4
   total_plans: 38
   completed_plans: 38
-  percent: 100
+  percent: 80
 current_phase_name: agent-ready-export
 ---
 
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-07-11)
 
 ## Current Position
 
-Phase: 04
+Phase: 04.1
 Plan: Not started
 Status: Phase complete — ready for verification
 Last activity: 2026-07-24 - Completed quick task 260724-cg0: Write user-facing README explaining how install, launch, review, comment, save, export, stop Diff Review
@@ -192,6 +192,10 @@ None yet.
 | 260723-nnr | Prevent every packaged E2E CLI child from inheriting cmux browser routing | 2026-07-23 | 9f8efef | [260723-nnr-prevent-every-packaged-e2e-cli-child-fro](./quick/260723-nnr-prevent-every-packaged-e2e-cli-child-fro/) |
 | 260724-cg0 | Write user-facing README explaining how install, launch, review, comment, save, export, stop Diff Review | 2026-07-24 | ce8028e | [260724-cg0-write-a-user-facing-readme-explaining-ho](./quick/260724-cg0-write-a-user-facing-readme-explaining-ho/) |
 
+### Roadmap Evolution
+
+- Phase 04.1 inserted after Phase 4: Close gap: CMT-01 — correlate async comment settlement (URGENT)
+
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
@@ -202,6 +206,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-23T18:06:56.782Z
-Stopped at: Completed 04-08-PLAN.md
-Resume file: None
+Last session: 2026-07-24T09:49:30.527Z
+Stopped at: Phase 04.1 context gathered
+Resume file: .planning/phases/04.1-close-gap-cmt-01-correlate-async-comment-settlement/04.1-CONTEXT.md
