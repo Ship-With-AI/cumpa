@@ -13,7 +13,7 @@ Build Diff Review as four vertical MVP phases. First establish an accurate, secu
 | 3 | Complete Review Draft | 7/7 | Complete    | 2026-07-23 |
 | 4 | Agent-Ready Export | 8/8 | Complete    | 2026-07-23 |
 
-**Total:** 4 phases, 51 v1 requirements, 35 planned implementation units.
+**Total:** 5 phases, 51 v1 requirements, 37 planned implementation units.
 
 ## Phase Details
 
@@ -111,11 +111,12 @@ Every v1 requirement maps to exactly one phase:
 
 ### Phase 04.1: Close gap: CMT-01 — correlate async comment settlement (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** A reviewer can switch files while an add-comment request is pending, and success or failure settles only its originating composer without weakening canonical atomic draft acceptance or anchored-diff stability.
+**Requirements**: CMT-01
 **Depends on:** Phase 4
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
 
-- [ ] TBD (run $gsd-plan-phase 04.1 to break down)
+- [ ] 04.1-01-PLAN.md — TDD origin/request-correlated reducer events and App.vue async callback dispatch
+- [ ] 04.1-02-PLAN.md — Production-transition browser evidence and Phase 2/milestone verification reconciliation
