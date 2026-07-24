@@ -17,6 +17,17 @@ let server: ViteDevServer | undefined;
 let origin = '';
 let canonicalComments: unknown[] = [];
 let contentRequests: string[] = [];
+type DelayedMutationOutcome = 'accepted' | 'persistenceFailure';
+
+type DelayedMutation = Readonly<{
+  outcome: DelayedMutationOutcome;
+  received: Promise<void>;
+  release: () => void;
+  notifyReceived: () => void;
+  waitForRelease: () => Promise<void>;
+}>;
+
+let delayedMutation: DelayedMutation | undefined;
 
 const collisionPath = (terminalByte: number) => ({
   bytesBase64url: Buffer.from([0x73, 0x72, 0x63, 0x2f, terminalByte, 0x2e, 0x74, 0x73]).toString('base64url'),
@@ -34,6 +45,8 @@ const firstText = Array.from({ length: 20 }, (_, index) =>
   index === 9 ? 'export const changed = 2;' : `const context${index + 1} = ${index + 1};`,
 ).join('\n');
 const changedFirstText = firstText.replace('export const changed = 2;', 'export const changed = 3;');
+const secondText = firstText.replace('export const changed = 2;', 'export const secondChanged = 2;');
+const changedSecondText = secondText.replace('export const secondChanged = 2;', 'export const secondChanged = 3;');
 
 let session = {
   base: { label: 'base', oid: 'a'.repeat(40) },
@@ -61,10 +74,13 @@ let session = {
 
 function content(fileId: string) {
   const display = fileId === firstFileId ? 'src/first.ts' : 'src/second.ts';
+  const [baseText, headText] = fileId === firstFileId
+    ? [firstText, changedFirstText]
+    : [secondText, changedSecondText];
   return {
     fileId,
-    base: { exists: true, path: path(display), language: 'typescript', blobOid: 'd'.repeat(40), text: firstText },
-    head: { exists: true, path: path(display), language: 'typescript', blobOid: 'e'.repeat(40), text: changedFirstText },
+    base: { exists: true, path: path(display), language: 'typescript', blobOid: 'd'.repeat(40), text: baseText },
+    head: { exists: true, path: path(display), language: 'typescript', blobOid: 'e'.repeat(40), text: headText },
   };
 }
 
@@ -109,6 +125,33 @@ function draftLoad(comments: readonly object[]) {
   });
 }
 
+function delayNextMutation(outcome: DelayedMutationOutcome): DelayedMutation {
+  const received = Promise.withResolvers<void>();
+  const released = Promise.withResolvers<void>();
+  const delayed: DelayedMutation = {
+    outcome,
+    received: received.promise,
+    release: released.resolve,
+    notifyReceived: received.resolve,
+    waitForRelease: () => released.promise,
+  };
+  delayedMutation = delayed;
+  return delayed;
+}
+
+function resetAsyncSettlementFixture(): void {
+  session = {
+    ...session,
+    files: session.files.map((file) => ({
+      ...file,
+      newPath: path(file.fileId === firstFileId ? 'src/first.ts' : 'src/second.ts'),
+    })),
+  };
+  canonicalComments = [];
+  contentRequests = [];
+  delayedMutation = undefined;
+}
+
 async function startAppServer(): Promise<string> {
   server = await createServer({
     configFile: resolve(repositoryRoot, 'vite.config.ts'),
@@ -119,7 +162,7 @@ async function startAppServer(): Promise<string> {
         viteServer.middlewares.use('/api/draft/mutations', (request, response) => {
           let rawBody = '';
           request.on('data', (chunk) => { rawBody += String(chunk); });
-          request.on('end', () => {
+          request.on('end', async () => {
             let input: unknown;
             try {
               input = JSON.parse(rawBody);
@@ -135,7 +178,18 @@ async function startAppServer(): Promise<string> {
               return;
             }
 
+            const delayed = delayedMutation;
+            if (delayed !== undefined) {
+              delayed.notifyReceived();
+              await delayed.waitForRelease();
+            }
+
             const latest = draftSnapshot(canonicalComments);
+            if (delayed?.outcome === 'persistenceFailure') {
+              json(response, DraftMutationResultSchema.parse({ kind: 'persistenceFailure' }), 500);
+              return;
+            }
+
             if (mutation.data.expectedRevision !== latest.revision) {
               json(response, DraftMutationResultSchema.parse({
                 kind: 'revisionConflict',
@@ -462,4 +516,79 @@ test('anchored gap closure', async ({ page }) => {
   await inspectRecordedFile.click();
   await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
   await expect(inspectRecordedFile).toBeFocused();
+});
+
+test.describe('async comment settlement', () => {
+  test.beforeEach(() => {
+    resetAsyncSettlementFixture();
+  });
+
+  test.afterEach(() => {
+    resetAsyncSettlementFixture();
+  });
+
+  test('async comment settlement keeps B active when accepted A completion returns', async ({ page }) => {
+    const delayed = delayNextMutation('accepted');
+    const body = 'Keep acceptance on its originating file.';
+
+    await openReview(page);
+    await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+    await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+    const composer = page.locator('.monaco-anchor-zone--composer textarea');
+    await composer.fill(body);
+    const response = page.waitForResponse((candidate) =>
+      candidate.url().includes('/api/draft/mutations'));
+    let settled = false;
+    void response.then(() => { settled = true; });
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    await delayed.received;
+    expect(settled).toBe(false);
+
+    await page.getByRole('treeitem', { name: /src\/second\.ts/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
+    await hoverMonacoLine(page, 'head', 'export const secondChanged = 3;');
+    expect(settled).toBe(false);
+    delayed.release();
+    expect((await response).status()).toBe(201);
+
+    await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
+    await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(0);
+    await page.getByRole('treeitem', { name: /src\/first\.ts/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
+    await ensureReviewOpen(page);
+    await expect(page.locator('[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]')).toContainText(body);
+    await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(0);
+  });
+
+  test('async comment settlement restores A retry state when its delayed failure returns', async ({ page }) => {
+    const delayed = delayNextMutation('persistenceFailure');
+    const body = 'Keep retry text and anchor on file A.';
+    const message = 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.';
+
+    await openReview(page);
+    await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+    await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+    const response = page.waitForResponse((candidate) =>
+      candidate.url().includes('/api/draft/mutations'));
+    await page.locator('.monaco-anchor-zone--composer textarea').fill(body);
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    await delayed.received;
+
+    await page.getByRole('treeitem', { name: /src\/second\.ts/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
+    await hoverMonacoLine(page, 'head', 'export const secondChanged = 3;');
+    delayed.release();
+    expect((await response).status()).toBe(500);
+    await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
+    await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(0);
+
+    await page.getByRole('treeitem', { name: /src\/first\.ts/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
+    await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+    const retryComposer = page.locator('.monaco-anchor-zone--composer');
+    await expect(retryComposer.locator('textarea')).toHaveValue(body);
+    await expect(retryComposer).toContainText('src/first.ts · Head · line 10');
+    await expect(retryComposer.locator('[role="alert"]')).toHaveText(message);
+    await expect(retryComposer.locator('button').filter({ hasText: 'Add comment' })).toBeEnabled();
+  });
 });
