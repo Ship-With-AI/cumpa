@@ -550,6 +550,9 @@ test.describe('async comment settlement', () => {
     expect(settled).toBe(false);
     delayed.release();
     expect((await response).status()).toBe(201);
+    await expect(page.locator('.session-shell > .sr-only[aria-live="polite"]')).toHaveText(
+      'Comment added and saved locally on head line 10.',
+    );
 
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
     await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(0);
@@ -579,6 +582,7 @@ test.describe('async comment settlement', () => {
     await hoverMonacoLine(page, 'head', 'export const secondChanged = 3;');
     delayed.release();
     expect((await response).status()).toBe(500);
+    await expect(page.locator('.session-shell > .sr-only[aria-live="polite"]')).toHaveText(message);
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
     await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(0);
 

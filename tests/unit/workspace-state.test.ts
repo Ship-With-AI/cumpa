@@ -5,31 +5,61 @@ import {
   type WorkspaceComment,
 } from '../../src/web/model/workspace-state.js';
 
+function workspaceComment(
+  comment: Pick<WorkspaceComment, 'id' | 'fileId' | 'side' | 'line' | 'body' | 'status'>,
+): WorkspaceComment {
+  const displayPath = comment.fileId === null ? 'recorded/file.ts' : `src/${comment.fileId}.ts`;
+  return {
+    ...comment,
+    exactFile: comment.fileId === null
+      ? { kind: 'unavailable' }
+      : { kind: 'available', fileId: comment.fileId },
+    state: 'open',
+    createdAt: '2026-07-24T00:00:00.000Z',
+    recordedAnchor: {
+      version: 'durable-anchor-v1',
+      path: { bytesBase64url: 'c3JjL2ZpbGUudHM', display: displayPath },
+      safeDisplayPath: displayPath,
+      side: comment.side,
+      line: comment.line,
+      blobOid: '0'.repeat(40),
+      selectedText: comment.body,
+      context: {
+        before: [],
+        target: { line: comment.line, text: comment.body },
+        after: [],
+      },
+      contextHash: { algorithm: 'sha256-v1', value: '0'.repeat(64) },
+      uniqueKey: '0'.repeat(64),
+    },
+  };
+}
+
 const comments: readonly WorkspaceComment[] = [
-  {
+  workspaceComment({
     id: 'comment-base-3',
     fileId: 'file-a',
     side: 'base',
     line: 3,
     body: 'Existing base comment',
     status: 'verified',
-  },
-  {
+  }),
+  workspaceComment({
     id: 'comment-hidden',
     fileId: 'file-b',
     side: 'head',
     line: 8,
     body: 'Hidden comment',
     status: 'verified',
-  },
-  {
+  }),
+  workspaceComment({
     id: 'comment-stale',
     fileId: 'file-b',
     side: 'base',
     line: 2,
     body: 'Stale comment',
     status: 'stale',
-  },
+  }),
 ];
 
 
@@ -222,7 +252,7 @@ describe('workspace session state', () => {
       type: 'add-succeeded',
       fileId: acceptedCommand.fileId,
       requestId: acceptedCommand.requestId,
-      comment: { id: 'comment-head-9', fileId: 'file-a', side: 'head', line: 9, body: 'Needs a guard', status: 'verified' },
+      comment: workspaceComment({ id: 'comment-head-9', fileId: 'file-a', side: 'head', line: 9, body: 'Needs a guard', status: 'verified' }),
     });
     expect(accepted.state.files['file-a'].composer).toBeUndefined();
     expect(accepted.state.comments).toContainEqual(expect.objectContaining({ id: 'comment-head-9', side: 'head', line: 9 }));
@@ -296,7 +326,7 @@ describe('workspace session state', () => {
       type: 'add-succeeded',
       fileId: command.fileId,
       requestId: command.requestId,
-      comment: { id: 'comment-head-12', fileId: 'file-a', side: 'head', line: 12, body: 'Origin-owned success', status: 'verified' },
+      comment: workspaceComment({ id: 'comment-head-12', fileId: 'file-a', side: 'head', line: 12, body: 'Origin-owned success', status: 'verified' }),
     });
 
     expect(accepted.state.activeFileId).toBe('file-b');
@@ -370,7 +400,7 @@ describe('workspace session state', () => {
       type: 'add-succeeded',
       fileId: first.fileId,
       requestId: first.requestId,
-      comment: { id: 'comment-stale-first', fileId: 'file-a', side: 'head', line: 16, body: 'First request', status: 'verified' },
+      comment: workspaceComment({ id: 'comment-stale-first', fileId: 'file-a', side: 'head', line: 16, body: 'First request', status: 'verified' }),
     });
     expect(staleSuccess.state).toEqual(secondPending.state);
     expect(staleSuccess.commands).toEqual([]);
@@ -379,7 +409,7 @@ describe('workspace session state', () => {
       type: 'add-duplicate',
       fileId: first.fileId,
       requestId: first.requestId,
-      comment: { id: 'comment-duplicate-first', fileId: 'file-a', side: 'head', line: 16, body: 'First request', status: 'verified' },
+      comment: workspaceComment({ id: 'comment-duplicate-first', fileId: 'file-a', side: 'head', line: 16, body: 'First request', status: 'verified' }),
     });
     expect(staleDuplicate.state).toEqual(secondPending.state);
     expect(staleDuplicate.commands).toEqual([]);
@@ -409,7 +439,7 @@ describe('workspace session state', () => {
       type: 'add-succeeded',
       fileId: command.fileId,
       requestId: command.requestId,
-      comment: { id: 'comment-head-20', fileId: 'file-a', side: 'head', line: 20, body: 'Active origin success', status: 'verified' },
+      comment: workspaceComment({ id: 'comment-head-20', fileId: 'file-a', side: 'head', line: 20, body: 'Active origin success', status: 'verified' }),
     });
     expect(accepted.commands).toEqual([{ type: 'focus-comment', commentId: 'comment-head-20' }]);
   });
