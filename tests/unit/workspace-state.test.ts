@@ -250,4 +250,144 @@ describe('workspace session state', () => {
 
     expect(workspace.toRepositoryDraft()).toEqual({ comments: [] });
   });
+
+  it('settles an accepted add on its origin file without focusing when another file is active', () => {
+    const workspace = createWorkspaceState(['file-a', 'file-b']);
+    workspace.dispatch({ type: 'diff-ready', fileId: 'file-a' });
+    workspace.dispatch({ type: 'activate-line', side: 'head', line: 12 });
+    workspace.dispatch({ type: 'composer-text-changed', text: 'Origin-owned success' });
+    const pending = workspace.dispatch({ type: 'add-comment' });
+    const command = pending.commands.find((candidate) => candidate.type === 'persist-comment');
+    expect(command).toMatchObject({
+      type: 'persist-comment',
+      fileId: 'file-a',
+      requestId: expect.any(Number),
+    });
+    if (command?.type !== 'persist-comment') {
+      throw new Error('Expected an add-comment command.');
+    }
+
+    const switched = workspace.dispatch({ type: 'switch-file', fileId: 'file-b' });
+    const fileBBeforeSettlement = switched.state.files['file-b'];
+    const accepted = workspace.dispatch({
+      type: 'add-succeeded',
+      fileId: command.fileId,
+      requestId: command.requestId,
+      comment: { id: 'comment-head-12', fileId: 'file-a', side: 'head', line: 12, body: 'Origin-owned success', status: 'verified' },
+    });
+
+    expect(accepted.state.activeFileId).toBe('file-b');
+    expect(accepted.state.files['file-b']).toEqual(fileBBeforeSettlement);
+    expect(accepted.state.files['file-a'].composer).toBeUndefined();
+    expect(accepted.state.comments).toContainEqual(expect.objectContaining({ id: 'comment-head-12' }));
+    expect(accepted.commands).toEqual([]);
+  });
+
+  it('returns only an off-screen origin composer to retryable state after a recoverable failure', () => {
+    const workspace = createWorkspaceState(['file-a', 'file-b']);
+    workspace.dispatch({ type: 'diff-ready', fileId: 'file-a' });
+    workspace.dispatch({ type: 'activate-line', side: 'base', line: 14 });
+    workspace.dispatch({ type: 'composer-text-changed', text: 'Origin-owned failure' });
+    const pending = workspace.dispatch({ type: 'add-comment' });
+    const command = pending.commands.find((candidate) => candidate.type === 'persist-comment');
+    expect(command).toMatchObject({ type: 'persist-comment', fileId: 'file-a', requestId: expect.any(Number) });
+    if (command?.type !== 'persist-comment') {
+      throw new Error('Expected an add-comment command.');
+    }
+
+    const switched = workspace.dispatch({ type: 'switch-file', fileId: 'file-b' });
+    const fileBBeforeSettlement = switched.state.files['file-b'];
+    const failed = workspace.dispatch({
+      type: 'add-failed',
+      fileId: command.fileId,
+      requestId: command.requestId,
+      message: 'Comment wasn’t added. Your text is still here.',
+    });
+
+    expect(failed.state.activeFileId).toBe('file-b');
+    expect(failed.state.files['file-b']).toEqual(fileBBeforeSettlement);
+    expect(failed.state.files['file-a'].composer).toEqual({
+      side: 'base',
+      line: 14,
+      text: 'Origin-owned failure',
+      status: 'ready',
+      error: 'Comment wasn’t added. Your text is still here.',
+    });
+    expect(failed.commands).toEqual([]);
+  });
+
+  it('ignores every stale settlement for a replacement request at the same anchor', () => {
+    const workspace = createWorkspaceState(['file-a']);
+    workspace.dispatch({ type: 'diff-ready', fileId: 'file-a' });
+    workspace.dispatch({ type: 'activate-line', side: 'head', line: 16 });
+    workspace.dispatch({ type: 'composer-text-changed', text: 'First request' });
+    const firstPending = workspace.dispatch({ type: 'add-comment' });
+    const first = firstPending.commands.find((candidate) => candidate.type === 'persist-comment');
+    expect(first).toMatchObject({ type: 'persist-comment', requestId: expect.any(Number) });
+    if (first?.type !== 'persist-comment') {
+      throw new Error('Expected the first add-comment command.');
+    }
+
+    workspace.dispatch({
+      type: 'add-failed',
+      fileId: first.fileId,
+      requestId: first.requestId,
+      message: 'Comment wasn’t added. Your text is still here.',
+    });
+    workspace.dispatch({ type: 'composer-text-changed', text: 'Replacement request' });
+    const secondPending = workspace.dispatch({ type: 'add-comment' });
+    const second = secondPending.commands.find((candidate) => candidate.type === 'persist-comment');
+    expect(second).toMatchObject({ type: 'persist-comment', requestId: expect.any(Number) });
+    if (second?.type !== 'persist-comment') {
+      throw new Error('Expected the replacement add-comment command.');
+    }
+    expect(second.requestId).not.toBe(first.requestId);
+
+    const staleSuccess = workspace.dispatch({
+      type: 'add-succeeded',
+      fileId: first.fileId,
+      requestId: first.requestId,
+      comment: { id: 'comment-stale-first', fileId: 'file-a', side: 'head', line: 16, body: 'First request', status: 'verified' },
+    });
+    expect(staleSuccess.state).toEqual(secondPending.state);
+    expect(staleSuccess.commands).toEqual([]);
+
+    const staleDuplicate = workspace.dispatch({
+      type: 'add-duplicate',
+      fileId: first.fileId,
+      requestId: first.requestId,
+      comment: { id: 'comment-duplicate-first', fileId: 'file-a', side: 'head', line: 16, body: 'First request', status: 'verified' },
+    });
+    expect(staleDuplicate.state).toEqual(secondPending.state);
+    expect(staleDuplicate.commands).toEqual([]);
+
+    const staleFailure = workspace.dispatch({
+      type: 'add-failed',
+      fileId: first.fileId,
+      requestId: first.requestId,
+      message: 'Comment wasn’t added. Your text is still here.',
+    });
+    expect(staleFailure.state).toEqual(secondPending.state);
+    expect(staleFailure.commands).toEqual([]);
+  });
+
+  it('focuses an accepted comment when its exact origin composer remains active', () => {
+    const workspace = createWorkspaceState(['file-a']);
+    workspace.dispatch({ type: 'diff-ready', fileId: 'file-a' });
+    workspace.dispatch({ type: 'activate-line', side: 'head', line: 20 });
+    workspace.dispatch({ type: 'composer-text-changed', text: 'Active origin success' });
+    const pending = workspace.dispatch({ type: 'add-comment' });
+    const command = pending.commands.find((candidate) => candidate.type === 'persist-comment');
+    if (command?.type !== 'persist-comment') {
+      throw new Error('Expected an add-comment command.');
+    }
+
+    const accepted = workspace.dispatch({
+      type: 'add-succeeded',
+      fileId: command.fileId,
+      requestId: command.requestId,
+      comment: { id: 'comment-head-20', fileId: 'file-a', side: 'head', line: 20, body: 'Active origin success', status: 'verified' },
+    });
+    expect(accepted.commands).toEqual([{ type: 'focus-comment', commentId: 'comment-head-20' }]);
+  });
 });
