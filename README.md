@@ -36,7 +36,7 @@ diff-review
 
 Diff Review first asks you to choose the **base**, then the **head**, using searchable lists of local branches and registered worktrees. The base is the reference point; the selected head is the committed state under review.
 
-The comparison is the merge base of those two selections through the selected head: it reviews the merge-base-to-head changes. If a selected worktree is dirty, Diff Review uses its committed HEAD only; uncommitted worktree bytes are not reviewed.
+The comparison is a diff from the selected base and head’s merge base to the selected head. If a selected worktree is dirty, Diff Review uses its committed HEAD only; uncommitted worktree bytes are not reviewed.
 
 Before launch, the confirmation screen shows the full base, head, and merge base OIDs. Confirm only after checking them: the session is pinned to those commits and does not follow later ref movement.
 
@@ -101,4 +101,4 @@ Visible controls remain available for every action. These shortcuts are addition
 
 Diff Review reviews regular UTF-8 text files only. Each inspected blob side must be at most 1,048,576 bytes (1 MiB).
 
-Binary, non-UTF-8, oversized, symlink, submodule, and unsupported mode/type entries stay visible but are not reviewable. Missing objects are separately unavailable rather than an unsupported file kind. Diff Review does not separately detect arbitrary generated source files. Its own `.diff-review/` internal output is always excluded from the review inventory.
+Binary, non-UTF-8, oversized, symlink, submodule, and unsupported mode/type entries stay visible but are not reviewable. Missing-object cases (missing objects) are separately unavailable rather than unsupported file kinds. Diff Review does not separately detect arbitrary generated source files. Its own `.diff-review/` internal output is always excluded from the review inventory.
