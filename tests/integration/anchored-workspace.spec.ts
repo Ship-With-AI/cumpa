@@ -17,7 +17,7 @@ let server: ViteDevServer | undefined;
 let origin = '';
 let canonicalComments: unknown[] = [];
 let contentRequests: string[] = [];
-type DelayedMutationOutcome = 'accepted' | 'persistenceFailure';
+type DelayedMutationOutcome = 'accepted' | 'persistenceFailure' | 'revisionConflict';
 
 type DelayedMutation = Readonly<{
   outcome: DelayedMutationOutcome;
@@ -185,6 +185,16 @@ async function startAppServer(): Promise<string> {
             }
 
             const latest = draftSnapshot(canonicalComments);
+            if (delayed?.outcome === 'revisionConflict') {
+              const conflictLatest = { ...latest, revision: latest.revision + 1 };
+              json(response, DraftMutationResultSchema.parse({
+                kind: 'revisionConflict',
+                expectedRevision: mutation.data.expectedRevision,
+                actualRevision: conflictLatest.revision,
+                latest: conflictLatest,
+              }), 409);
+              return;
+            }
             if (delayed?.outcome === 'persistenceFailure') {
               json(response, DraftMutationResultSchema.parse({ kind: 'persistenceFailure' }), 500);
               return;
@@ -550,8 +560,8 @@ test.describe('async comment settlement', () => {
     expect(settled).toBe(false);
     delayed.release();
     expect((await response).status()).toBe(201);
-    await expect(page.locator('.session-shell > .sr-only[aria-live="polite"]')).toHaveText(
-      'Comment added and saved locally on head line 10.',
+    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
+      'Comment on src/first.ts at head line 10 was added and saved locally.',
     );
 
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
@@ -582,7 +592,9 @@ test.describe('async comment settlement', () => {
     await hoverMonacoLine(page, 'head', 'export const secondChanged = 3;');
     delayed.release();
     expect((await response).status()).toBe(500);
-    await expect(page.locator('.session-shell > .sr-only[aria-live="polite"]')).toHaveText(message);
+    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
+      'Comment on src/first.ts at head line 10 wasn’t added. Your text is still here. Check that Diff Review is running, then try again.',
+    );
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
     await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(0);
 
@@ -594,5 +606,36 @@ test.describe('async comment settlement', () => {
     await expect(retryComposer).toContainText('src/first.ts · Head · line 10');
     await expect(retryComposer.locator('[role="alert"]')).toHaveText(message);
     await expect(retryComposer.locator('button').filter({ hasText: 'Add comment' })).toBeEnabled();
+  });
+
+  test('async comment settlement announces A revision conflict while keeping B active', async ({ page }) => {
+    const delayed = delayNextMutation('revisionConflict');
+    const body = 'Keep conflict text and anchor on file A.';
+    const message = 'Comment wasn’t added. Your text is still here. Reload the latest draft before trying again.';
+
+    await openReview(page);
+    await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+    await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+    const response = page.waitForResponse((candidate) =>
+      candidate.url().includes('/api/draft/mutations'));
+    await page.locator('.monaco-anchor-zone--composer textarea').fill(body);
+    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+    await delayed.received;
+
+    await page.getByRole('treeitem', { name: /src\/second\.ts/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
+    delayed.release();
+    expect((await response).status()).toBe(409);
+    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
+      'Comment on src/first.ts at head line 10 wasn’t added. Your text is still here. Reload the latest draft before trying again.',
+    );
+    await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
+
+    await page.getByRole('treeitem', { name: /src\/first\.ts/ }).click();
+    await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
+    await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+    const retryComposer = page.locator('.monaco-anchor-zone--composer');
+    await expect(retryComposer.locator('textarea')).toHaveValue(body);
+    await expect(retryComposer.locator('[role="alert"]')).toHaveText(message);
   });
 });
