@@ -61,6 +61,15 @@ status: complete
 - Added a dependency-free audit that validates source and emitted Vite CSS for the exact token root, legacy-token retirement, raw-style restrictions, and elevation/selected-rail invariants.
 - Expanded packaged and mounted Chromium journeys to cover semantic token resolution, dark first paint and state surfaces, controls, typography, receipt/recovery presentation, and locked responsive tiers.
 
+
+## Post-review corrections
+
+- **WR-01:** Closed responsive comments/files drawers now compute `box-shadow: none`; only their corresponding open overlay classes apply `var(--shadow-overlay)`. Packaged Chromium assertions cover closed, open, and restored-closed states.
+- **WR-02 / WR-03:** The dependency-free audit rejects duplicate `box-shadow` declarations and all contextual `:root` rules, exempts raw colors only in the sole context-free source token root, and self-checks both bypasses.
+- **WR-04:** The responsive package journey now loads deterministic real diff content, drives the generated Monaco gutter action by exact accessible name, and independently exercises the real `UiPrimitives` tooltip through hover/leave, focus/focus-out, and focus/Escape states.
+- **WR-05:** Receipt heading and static-surface computed-style assertions now execute at both 768px and 360px.
+- **Verification:** `npm run build:web && node scripts/verify-semantic-css.mjs`, `npm run test:package -- tests/e2e/responsive-session.spec.ts`, and `npm run test:browser -- tests/integration/export-receipt-ui.spec.ts --grep "renders only the confirmed receipt"` passed after the corrections.
+
 ## Task Commits
 
 Each task was committed atomically:
@@ -69,6 +78,7 @@ Each task was committed atomically:
 2. **Task 1 correction: complete recovery and narrow state styles** - `351467a` (fix)
 3. **Task 2: Update focused Chromium contracts for every foundation state and preserved responsive tier** - `fbf8e3e` (test)
 4. **Task 2 correction: cover forced-colors foundation** - `555d20b` (test)
+5. **Post-review corrections: drawer elevation, audit bypasses, and browser evidence** - `e4fa809` (fix)
 
 **Plan metadata:** this completion commit
 
