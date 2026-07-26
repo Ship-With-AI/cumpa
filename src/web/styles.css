@@ -277,6 +277,12 @@ body {
   border-radius: var(--radius-compact);
 }
 
+.draft-recovery__badge {
+  border-color: var(--status-information-foreground);
+  background: var(--status-information-background);
+  color: var(--text-primary);
+}
+
 .dirty-badge,
 .status-badge--modified,
 .availability-marker--unsupported {
@@ -1570,6 +1576,10 @@ input:-webkit-autofill:focus {
   }
 
   .draft-recovery__card {
+    padding: var(--space-md);
+  }
+
+  .state-card {
     padding: var(--space-md);
   }
 
