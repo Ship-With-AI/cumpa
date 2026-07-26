@@ -66,6 +66,10 @@ function declarations(body) {
   }));
 }
 
+function selectorArms(selector) {
+  return selector.split(',').map((arm) => arm.trim());
+}
+
 function leafRules(css, context = []) {
   const rules = [];
   let cursor = 0;
@@ -93,11 +97,18 @@ function leafRules(css, context = []) {
 }
 
 function rootRule(css, label, tokenBearing = false) {
-  const roots = leafRules(css).filter((rule) => rule.selector === ':root'
-    && rule.context.length === 0
-    && (!tokenBearing || rule.declarations.some(({ property }) => property === '--surface-canvas')));
-  if (roots.length !== 1) fail(`${label} must contain exactly one ${tokenBearing ? 'canonical token-bearing ' : 'document-foundation '}:root; found ${roots.length}`);
-  return roots[0];
+  const roots = leafRules(css).filter((rule) => selectorArms(rule.selector).includes(':root'));
+  const contextualRoot = roots.find((rule) => rule.context.length !== 0);
+  if (contextualRoot !== undefined) {
+    fail(`${label} :root must be context-free; found ${contextualRoot.context.join(' > ')}`);
+  }
+  const candidates = tokenBearing
+    ? roots.filter((rule) => rule.declarations.some(({ property }) => property === '--surface-canvas'))
+    : roots;
+  if (candidates.length !== 1) {
+    fail(`${label} must contain exactly one ${tokenBearing ? 'canonical token-bearing ' : ''}:root rule; found ${candidates.length}`);
+  }
+  return candidates[0];
 }
 
 function assertTokenRoot(rule, label, exact) {
@@ -143,7 +154,9 @@ function assertAuthorStyle(source) {
 
   for (const rule of leafRules(ordinary)) {
     const hasColorLiteral = /#[0-9a-f]{3,8}\b|\b(?:rgb|hsl)a?\(/i.test(rule.body);
-    if (hasColorLiteral && rule.selector !== ':root') fail(`raw color literal outside the token root in ${rule.selector}`);
+    if (hasColorLiteral && !(rule.selector === ':root' && rule.context.length === 0)) {
+      fail(`raw color literal outside the token root in ${rule.selector}`);
+    }
   }
 
   const insetAllowlist = new Map([
@@ -152,22 +165,24 @@ function assertAuthorStyle(source) {
   ]);
   const overlayAllowlist = new Set([
     '.identity-panel', '.keyboard-help', '.ui-tooltip__content', '.diff-workspace__gutter-action::after',
-    '.comments-rail', '.review-files',
+    '.comments-rail--open', '.review-files--open',
   ]);
 
   for (const rule of leafRules(ordinary)) {
-    const shadow = rule.declarations.find(({ property }) => property === 'box-shadow');
-    const selectorArms = rule.selector.split(',').map((selector) => selector.trim());
-    const isPressed = selectorArms.some((selector) => selector.includes(':active') || selector.includes('[aria-pressed="true"]'));
+    const shadows = rule.declarations.filter(({ property }) => property === 'box-shadow');
+    if (shadows.length > 1) fail(`rule ${rule.selector} declares box-shadow more than once`);
+    const [shadow] = shadows;
+    const arms = selectorArms(rule.selector);
+    const isPressed = arms.some((selector) => selector.includes(':active') || selector.includes('[aria-pressed="true"]'));
     if (isPressed && shadow?.value !== 'none') fail(`pressed control rule ${rule.selector} must explicitly set box-shadow: none`);
     if (shadow === undefined) continue;
-    for (const selector of selectorArms) {
+    for (const selector of arms) {
       if (shadow.value.includes('inset')) {
         if (insetAllowlist.get(selector) !== shadow.value) fail(`inset shadow is not allowlisted for ${selector}`);
       } else if (shadow.value === 'var(--shadow-overlay)') {
         if (!overlayAllowlist.has(selector)) fail(`overlay shadow is not allowlisted for ${selector}`);
-        if ((selector === '.comments-rail' && !rule.context.some((item) => item.includes('max-width: 1439px')))
-          || (selector === '.review-files' && !rule.context.some((item) => item.includes('max-width: 1099px')))) {
+        if ((selector === '.comments-rail--open' && !rule.context.some((item) => item.includes('max-width: 1439px')))
+          || (selector === '.review-files--open' && !rule.context.some((item) => item.includes('max-width: 1099px')))) {
           fail(`overlay shadow for ${selector} is outside its permitted responsive query`);
         }
       } else if (shadow.value !== 'none') {
@@ -176,6 +191,29 @@ function assertAuthorStyle(source) {
     }
   }
 }
+
+function expectAuditFailure(assertion, name) {
+  try {
+    assertion();
+  } catch {
+    return;
+  }
+  fail(`self-check did not reject ${name}`);
+}
+
+function assertAuditSelfChecks() {
+  const forcedColors = '@media (forced-colors: active) { body { color: CanvasText; } }';
+  expectAuditFailure(
+    () => assertAuthorStyle(`:root { --surface-canvas: #0D1117; } .ui-button:active { box-shadow: none; box-shadow: inset 1px 1px black; } ${forcedColors}`),
+    'duplicate box-shadow declarations',
+  );
+  expectAuditFailure(
+    () => rootRule(`:root { --surface-canvas: #0D1117; } @media (width > 0px) { :root { --surface-panel: #161B22; } }`, 'nested-root fixture'),
+    'a contextual :root',
+  );
+}
+
+assertAuditSelfChecks();
 
 const source = await readFile(sourcePath, 'utf8');
 const index = await readFile(indexPath, 'utf8');

@@ -263,6 +263,68 @@ async function assertNoPageOverflow(page: Page): Promise<void> {
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
 }
 
+async function hoverMonacoLine(page: Page, side: 'base' | 'head', text: string): Promise<void> {
+  const editor = side === 'base' ? 'original' : 'modified';
+  const editorSurface = page
+    .locator(`.monaco-diff-editor .editor.${editor} .monaco-scrollable-element.editor-scrollable`)
+    .first();
+  await editorSurface.click({ position: { x: 16, y: 16 } });
+  await page.keyboard.press('Meta+g');
+  await page.keyboard.insertText('10');
+  await page.keyboard.press('Enter');
+  const line = page.locator(`.monaco-diff-editor .${editor} .view-line`).filter({ hasText: text });
+  let bounds: { height: number; width: number; x: number; y: number } | undefined;
+  await expect.poll(async () => {
+    bounds = await line.evaluateAll((elements) => elements
+      .map((element) => {
+        const { height, width, x, y } = element.getBoundingClientRect();
+        return { height, width, x, y };
+      })
+      .find(({ height, width }) => height > 0 && width > 0));
+    return bounds !== undefined;
+  }).toBe(true);
+  await page.mouse.move(bounds!.x + 20, bounds!.y + 9);
+}
+
+async function expectTooltipSurface(tooltip: Locator): Promise<void> {
+  await expect(tooltip).toHaveText('Keyboard help · ?');
+  const styles = await readStyles(tooltip);
+  expect(styles).toMatchObject({
+    backgroundColor: 'rgb(33, 38, 45)',
+    borderColor: 'rgb(48, 54, 61)',
+    borderRadius: '4px',
+    boxShadow: 'rgba(0, 0, 0, 0.4) 0px 8px 24px 0px',
+    fontSize: '12px',
+    lineHeight: '16px',
+  });
+}
+
+async function expectGutterLabelSurface(gutter: Locator): Promise<void> {
+  const styles = await gutter.evaluate((element) => {
+    const style = getComputedStyle(element, '::after');
+    return {
+      backgroundColor: style.backgroundColor,
+      borderColor: style.borderColor,
+      borderRadius: style.borderRadius,
+      boxShadow: style.boxShadow,
+      content: style.content,
+      display: style.display,
+      fontSize: style.fontSize,
+      lineHeight: style.lineHeight,
+    };
+  });
+  expect(styles).toEqual({
+    backgroundColor: 'rgb(33, 38, 45)',
+    borderColor: 'rgb(48, 54, 61)',
+    borderRadius: '4px',
+    boxShadow: 'rgba(0, 0, 0, 0.4) 0px 8px 24px 0px',
+    content: '"Add comment to head line 10"',
+    display: 'block',
+    fontSize: '12px',
+    lineHeight: '16px',
+  });
+}
+
 async function installPackagedSessionRoutes(
   page: Page,
   session: SessionResponse,
@@ -307,6 +369,38 @@ async function installPackagedSessionRoutes(
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(response),
+    });
+  });
+
+  await page.route('**/api/files/*/content', async (route) => {
+    const fileId = new URL(route.request().url()).pathname.split('/').at(-2) ?? '';
+    const file = session.files.find((candidate) => candidate.fileId === fileId);
+    expect(file, `[behavioral] unexpected file content capability ${fileId}`).toBeDefined();
+    const path = file!.newPath ?? exactPath('src/changed.ts');
+    const context = Array.from(
+      { length: 9 },
+      (_, index) => `export const stableContext${index + 1} = ${index + 1};`,
+    ).join('\n');
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        fileId,
+        base: {
+          exists: true,
+          path,
+          language: 'typescript',
+          blobOid: 'a'.repeat(40),
+          text: `${context}\nexport const changed = 2;\n`,
+        },
+        head: {
+          exists: true,
+          path,
+          language: 'typescript',
+          blobOid: 'b'.repeat(40),
+          text: `${context}\nexport const changed = 3;\n`,
+        },
+      }),
     });
   });
 
@@ -503,9 +597,9 @@ test('responsive keyboard and accessibility contract', async ({
           '<input type="checkbox" aria-label="Semantic checkbox" />',
           '<div class="tree-row file-row" data-normal-file>normal.ts</div>',
           '<span class="object-id">0123456789abcdef</span>',
-          '<div data-gutter-targets style="display: flex; gap: 8px">',
-          '<button class="diff-workspace__gutter-action" aria-label="Add comment to head line 10" style="position: static !important; right: auto !important">+</button>',
-          '<button aria-label="Second semantic target">Second</button></div>',
+          '<div data-gutter-targets style="position: relative; height: 32px">',
+          '<button class="diff-workspace__gutter-action" aria-label="Add comment to head line 10">+</button>',
+          '<button aria-label="Second semantic target" style="position: absolute; right: 48px">Second</button></div>',
         ].join('');
         document.body.append(fixture);
       });
@@ -549,17 +643,15 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(fixture.locator('.object-id')).toHaveCSS('font-family', /monospace/);
       expect(contrastRatio('#FFFFFF', '#1F6FEB')).toBeGreaterThanOrEqual(4.5);
 
-      const gutter = fixture.locator('.diff-workspace__gutter-action');
-      const gutterBox = await gutter.boundingBox();
+      const gutterTarget = fixture.locator('.diff-workspace__gutter-action');
+      const gutterBox = await gutterTarget.boundingBox();
+      const secondTargetBox = await fixture.getByRole('button', { name: 'Second semantic target' }).boundingBox();
       expect(gutterBox!.width).toBeGreaterThanOrEqual(32);
       expect(gutterBox!.height).toBeGreaterThanOrEqual(32);
-      await expect(gutter).toHaveCSS('font-size', '16px');
-      await expect(gutter).toHaveCSS('line-height', '16px');
-      await expect(gutter).toHaveCSS('padding', '4px');
-      await gutter.hover();
-      expect(await gutter.evaluate((element) => getComputedStyle(element, '::after').content)).toBe('"Add comment to head line 10"');
-      await gutter.focus();
-      expect(await gutter.evaluate((element) => getComputedStyle(element, '::after').display)).toBe('block');
+      expect(secondTargetBox!.x + secondTargetBox!.width + 8).toBeLessThanOrEqual(gutterBox!.x);
+      await expect(gutterTarget).toHaveCSS('font-size', '16px');
+      await expect(gutterTarget).toHaveCSS('line-height', '16px');
+      await expect(gutterTarget).toHaveCSS('padding', '4px');
 
       const neutral = fixture.locator('.ui-button').first();
       await neutral.hover();
@@ -576,6 +668,53 @@ test('responsive keyboard and accessibility contract', async ({
         buttons.map((button) => getComputedStyle(button).transitionDuration),
       );
       expect(motionDurations.every((duration) => duration === '0s')).toBe(true);
+    });
+
+    await test.step('real gutter action and UiPrimitives tooltip journeys remain independently accessible', async () => {
+      const firstDirectory = page.getByRole('treeitem').first();
+      await firstDirectory.focus();
+      await page.keyboard.press('ArrowRight');
+      await expect(firstDirectory).toHaveAttribute('aria-expanded', 'true');
+      await page.locator('.file-tree .file-row').first().click();
+      await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+      await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+      const gutter = page.getByRole('button', {
+        name: 'Add comment to head line 10',
+        exact: true,
+      });
+      const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
+      await expect(gutter).toBeVisible();
+      await expect(gutter).toHaveAttribute('aria-label', 'Add comment to head line 10');
+
+      await gutter.hover();
+      await expectGutterLabelSurface(gutter);
+      await page.mouse.move(0, 0);
+      expect(await gutter.evaluate((element) => getComputedStyle(element, '::after').display)).toBe('none');
+
+      await gutter.focus();
+      await expectGutterLabelSurface(gutter);
+      await reviewButton.focus();
+      expect(await gutter.evaluate((element) => getComputedStyle(element, '::after').display)).toBe('none');
+
+      const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
+      await gutter.focus();
+      await expect(page.getByRole('tooltip', { name: 'Review', exact: true })).toHaveCount(0);
+      await keyboardHelp.hover();
+      const tooltip = page.getByRole('tooltip', { name: 'Keyboard help · ?', exact: true });
+      await expectTooltipSurface(tooltip);
+      await page.mouse.move(0, 0);
+      await expect(tooltip).toHaveCount(0);
+
+      await keyboardHelp.focus();
+      await expectTooltipSurface(tooltip);
+      await reviewButton.focus();
+      await expect(tooltip).toHaveCount(0);
+
+      await keyboardHelp.focus();
+      await expectTooltipSurface(tooltip);
+      await page.keyboard.press('Escape');
+      await expect(tooltip).toHaveCount(0);
+      await expect(page.locator('.review-toolbar')).toHaveCSS('box-shadow', 'none');
     });
 
     await test.step('forced colors preserve boundaries, rails, focus, links, and disabled states', async () => {
@@ -624,6 +763,7 @@ test('responsive keyboard and accessibility contract', async ({
       const reviewMain = page.locator('.review-main');
       const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
       const stateCard = page.locator('[data-state-card-contract]');
+      const overlayShadow = 'rgba(0, 0, 0, 0.4) 0px 8px 24px 0px';
 
       await page.setViewportSize({ width: 1440, height: 560 });
       await expect(reviewMain).toBeVisible();
@@ -661,62 +801,74 @@ test('responsive keyboard and accessibility contract', async ({
 
       await page.setViewportSize({ width: 1439, height: 560 });
       await expect(rail).toHaveClass(/comments-rail--open/);
-      await expect(rail).toHaveCSS('box-shadow', /8px 24px/);
+      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
       await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close review' }).click();
       await expect(rail).not.toHaveClass(/comments-rail--open/);
+      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       for (const width of [1280, 1279]) {
         await page.setViewportSize({ width, height: 560 });
         await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
-        await expect(rail).toHaveCSS('box-shadow', /8px 24px/);
+        await expect(rail).toHaveCSS('box-shadow', 'none');
         await reviewButton.click();
         await expect(rail).toHaveClass(/comments-rail--open/);
-        await expect(rail).toHaveCSS('box-shadow', /8px 24px/);
+        await expect(rail).toHaveCSS('box-shadow', overlayShadow);
         await assertNoPageOverflow(page);
         await page.getByRole('button', { name: 'Close review' }).click();
         await expect(rail).not.toHaveClass(/comments-rail--open/);
+        await expect(rail).toHaveCSS('box-shadow', 'none');
       }
 
       await page.setViewportSize({ width: 1100, height: 560 });
       await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
+      await expect(rail).toHaveCSS('box-shadow', 'none');
       await reviewButton.click();
       const mediumBox = await rail.boundingBox();
       expect(Math.round(mediumBox!.width)).toBe(360);
       expect(Math.round(mediumBox!.x + mediumBox!.width)).toBe(1100);
-      await expect(rail).toHaveCSS('box-shadow', /8px 24px/);
+      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close review' }).click();
+      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 1099, height: 560 });
       const filesButton = page.getByRole('button', { name: 'Files', exact: true });
       await expect(filesButton).toBeVisible();
       await expect(treePane).toHaveCSS('overflow-y', 'auto');
+      await expect(treePane).toHaveCSS('box-shadow', 'none');
       await filesButton.click();
       await expect(treePane).toHaveClass(/review-files--open/);
-      await expect(treePane).toHaveCSS('box-shadow', /8px 24px/);
+      await expect(treePane).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close files' }).click();
       await expect(treePane).not.toHaveClass(/review-files--open/);
+      await expect(treePane).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 768, height: 560 });
+      await expect(rail).toHaveCSS('box-shadow', 'none');
+      await expect(treePane).toHaveCSS('box-shadow', 'none');
       await reviewButton.click();
       expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
+      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close review' }).click();
+      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 375, height: 640 });
+      await expect(rail).toHaveCSS('box-shadow', 'none');
       await reviewButton.click();
       const compactBox = await rail.boundingBox();
       expect(Math.round(compactBox!.width)).toBe(343);
       expect(Math.round(compactBox!.x + compactBox!.width)).toBe(375);
+      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       await expect(stateCard).toHaveCSS('padding', '16px');
       await assertNoPageOverflow(page);
       await stateCard.evaluate((element) => element.remove());
       await page.getByRole('button', { name: 'Close review' }).click();
+      await expect(rail).toHaveCSS('box-shadow', 'none');
     });
-
     await test.step('narrow identity sheet traps focus and restores disclosure', async () => {
       const disclosure = page.getByRole('button', {
         name: 'Comparison identities',
