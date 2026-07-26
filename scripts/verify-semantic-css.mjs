@@ -216,9 +216,14 @@ function assertNoLegacy(css, label) {
   if (match !== null) fail(`${label} still references retired token ${match[0]}`);
 }
 
-const forcedColorKeywords = new Set([
+const allowedForcedColorKeywords = new Set([
   'canvas', 'canvastext', 'buttonface', 'buttontext', 'buttonborder',
   'linktext', 'highlight', 'highlighttext', 'graytext',
+]);
+const systemColorKeywords = new Set([
+  ...allowedForcedColorKeywords,
+  'accentcolor', 'accentcolortext', 'activetext', 'field', 'fieldtext',
+  'mark', 'marktext', 'selecteditem', 'selecteditemtext', 'visitedtext',
 ]);
 const namedColorKeywords = new Set(`
   aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond
@@ -258,12 +263,12 @@ function directColorSyntaxes(value) {
     .replace(/url\([^)]*\)/gi, '');
   const syntaxes = [];
   if (/#[0-9a-f]{3,8}\b/i.test(inspected)) syntaxes.push('hex color');
-  if (/\b(?:rgba?|hsla?|oklch|oklab|lab|lch|color-mix|color)\s*\(/i.test(inspected)) {
+  if (/\b(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color-mix|color|device-cmyk|light-dark|color-contrast)\s*\(/i.test(inspected)) {
     syntaxes.push('color function');
   }
   for (const word of inspected.matchAll(/\b[a-z][\w-]*\b/gi)) {
     const normalized = word[0].toLowerCase();
-    if (forcedColorKeywords.has(normalized)) syntaxes.push(`system color ${word[0]}`);
+    if (systemColorKeywords.has(normalized)) syntaxes.push(`system color ${word[0]}`);
     if (namedColorKeywords.has(normalized)) syntaxes.push(`named color ${word[0]}`);
     if (normalized === 'currentcolor') syntaxes.push('currentColor');
     if (normalized === 'transparent') syntaxes.push('transparent');
@@ -289,7 +294,8 @@ function assertDirectColorConfinement(source) {
       const syntaxes = directColorSyntaxes(declaration.value);
       for (const syntax of syntaxes) {
         if (isTokenRoot || isNonPaletteColor(declaration.property, syntax)) continue;
-        if (inForcedColors && syntax.startsWith('system color ')) continue;
+        if (inForcedColors && syntax.startsWith('system color ')
+          && allowedForcedColorKeywords.has(syntax.slice('system color '.length).toLowerCase())) continue;
         fail(`direct ${syntax} outside the permitted token root or forced-colors repair in ${rule.selector}`);
       }
     }
@@ -305,7 +311,7 @@ function assertAuthorStyle(source) {
     fail('forced-colors repair must be one terminal media block');
   }
   const ordinary = source.slice(0, forcedStart);
-  const systemKeyword = /\b(?:Canvas|CanvasText|ButtonFace|ButtonText|ButtonBorder|LinkText|Highlight|HighlightText|GrayText)\b/;
+  const systemKeyword = /\b(?:AccentColor|AccentColorText|ActiveText|ButtonBorder|ButtonFace|ButtonText|Canvas|CanvasText|Field|FieldText|GrayText|Highlight|HighlightText|LinkText|Mark|MarkText|SelectedItem|SelectedItemText|VisitedText)\b/;
   if (systemKeyword.test(ordinary)) fail('system colors are only allowed in the forced-colors repair block');
 
   assertDirectColorConfinement(source);
@@ -389,12 +395,20 @@ function assertAuditSelfChecks() {
     ['rebeccapurple', 'color: rebeccapurple;'],
     ['oklch()', 'border-color: oklch(75% 0.1 250);'],
     ['color()', 'background: color(srgb 1 1 1);'],
+    ['hwb()', 'color: hwb(0 0% 0%);'],
+    ['device-cmyk()', 'border-color: device-cmyk(0% 100% 100% 0%);'],
+    ['light-dark()', 'background: light-dark(white, black);'],
   ]) {
     expectAuditFailure(
       () => assertAuthorStyle(`${canonicalRoot} .direct-color { ${declaration} } ${forcedColors}`),
       `a direct ${name} color outside the token root`,
     );
   }
+
+  expectAuditFailure(
+    () => assertAuthorStyle(`${canonicalRoot} @media (forced-colors: active) { .direct-color { background: AccentColor; } }`),
+    'an unapproved forced-colors system color',
+  );
 
   assertAuthorStyle(`${canonicalRoot} .semantic-colors { color: var(--text-primary); border-color: currentColor; background: transparent; } @media (forced-colors: active) {
     body { background: Canvas; color: CanvasText; }
