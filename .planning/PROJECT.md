@@ -39,6 +39,8 @@ Validated in Phase 04: Agent-Ready Export.
 
 Phase 04.1 closed the audited CMT-01 async cross-file settlement gap without changing the validated product scope.
 
+Validated in Phase 05: Semantic Dark Foundation established the dark semantic palette, typography, interaction-state, surface, and responsive foundation; Monaco diff semantics and later review-surface adaptation remain active.
+
 ### Active
 
 - [ ] User experiences a close adaptation of GitHub's dark-default pull-request diff palette throughout the diff workspace.
@@ -55,6 +57,8 @@ Phase 04.1 closed the audited CMT-01 async cross-file settlement gap without cha
 - Full GitHub review mechanics such as replies, suggestion patches, approvals, and pending-review submission — v1 provides line comments, resolution, and an overall summary.
 
 ## Context
+
+Phase 05 of v1.1 is complete: application chrome and workflow states now consume one verified semantic dark vocabulary, with diff-facing roles declared for Phase 06.
 
 Diff Review v1.0 shipped the complete local browser-review-to-agent loop. A developer can select ordered local branches or registered worktrees, inspect the immutable merge-base-to-head change set, maintain a repository-local review draft, and export canonical JSON plus derived Markdown without publishing refs or modifying source control.
 
@@ -115,4 +119,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-24 after starting v1.1 milestone*
+*Last updated: 2026-07-26 after completing Phase 05 Semantic Dark Foundation*
