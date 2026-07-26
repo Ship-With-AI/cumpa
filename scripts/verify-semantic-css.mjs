@@ -263,7 +263,7 @@ function directColorSyntaxes(value) {
     .replace(/url\([^)]*\)/gi, '');
   const syntaxes = [];
   if (/#[0-9a-f]{3,8}\b/i.test(inspected)) syntaxes.push('hex color');
-  if (/\b(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color-mix|color|device-cmyk|light-dark|color-contrast)\s*\(/i.test(inspected)) {
+  if (/\b(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color-mix|color|device-cmyk|light-dark|color-contrast|contrast-color)\s*\(/i.test(inspected)) {
     syntaxes.push('color function');
   }
   for (const word of inspected.matchAll(/\b[a-z][\w-]*\b/gi)) {
@@ -398,6 +398,7 @@ function assertAuditSelfChecks() {
     ['hwb()', 'color: hwb(0 0% 0%);'],
     ['device-cmyk()', 'border-color: device-cmyk(0% 100% 100% 0%);'],
     ['light-dark()', 'background: light-dark(white, black);'],
+    ['contrast-color()', 'color: contrast-color(var(--surface-canvas));'],
   ]) {
     expectAuditFailure(
       () => assertAuthorStyle(`${canonicalRoot} .direct-color { ${declaration} } ${forcedColors}`),
