@@ -43,7 +43,10 @@ Full phase goals, success criteria, requirement mappings, and plan details are a
   2. User can read compact, GitHub-familiar interface typography while code, labels, line numbers, and controls remain legible and aligned.
   3. User can distinguish canvas, inset, raised, and interactive regions through restrained surface steps, borders, radii, and overlay-only elevation without decoration competing with code.
 **Planning detail**: Establish one dark-only semantic vocabulary for surfaces, text, borders, controls, status, focus, selection, and diff roles; migrate existing CSS consumers rather than layering a second palette. Keep current Vue structure, DOM semantics, local copy, and dependencies intact.
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 05-01-PLAN.md — Replace both visual vocabularies with one semantic dark CSS contract and prove every foundation state in focused Chromium flows.
 **UI hint**: yes
 
 ### Phase 06: Monaco Diff Semantics
@@ -102,7 +105,7 @@ Full phase goals, success criteria, requirement mappings, and plan details are a
 | 03. Complete Review Draft | v1.0 | 7/7 | Complete | 2026-07-23 |
 | 04. Agent-Ready Export | v1.0 | 8/8 | Complete | 2026-07-23 |
 | 04.1. Close CMT-01 Async Comment Settlement | v1.0 | 2/2 | Complete | 2026-07-24 |
-| 05. Semantic Dark Foundation | v1.1 | 0/TBD | Not started | - |
+| 05. Semantic Dark Foundation | v1.1 | 0/1 | Planned | - |
 | 06. Monaco Diff Semantics | v1.1 | 0/TBD | Not started | - |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 0/TBD | Not started | - |
 | 08. Accessible Responsive Continuity | v1.1 | 0/TBD | Not started | - |
