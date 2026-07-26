@@ -151,6 +151,21 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   await expect(page.getByRole('heading', { name: 'Comments' })).toHaveCount(0);
   await expect(page.getByText(absolutePath)).toHaveCount(0);
   await expect(page.locator('body')).not.toContainText(absolutePath);
+  const recovery = page.locator('.draft-recovery');
+  const card = page.locator('.draft-recovery__card');
+  const badge = page.locator('.draft-recovery__badge');
+  const recoveryAction = page.getByRole('button', { name: 'Back up and start new' });
+  await expect(recovery).toHaveCSS('background-color', 'rgb(13, 17, 23)');
+  await expect(card).toHaveCSS('background-color', 'rgb(22, 27, 34)');
+  await expect(card).toHaveCSS('border-color', 'rgb(48, 54, 61)');
+  await expect(card).toHaveCSS('border-radius', '6px');
+  await expect(card).toHaveCSS('box-shadow', 'none');
+  await expect(badge).toHaveCSS('background-color', 'rgba(56, 139, 253, 0.15)');
+  await expect(badge).toHaveCSS('color', 'rgb(230, 237, 243)');
+  await recoveryAction.focus();
+  await expect(recoveryAction).toHaveCSS('outline-color', 'rgb(88, 166, 255)');
+  await expect(recoveryAction).toHaveCSS('outline-width', '2px');
+  await expect(recoveryAction).toHaveCSS('outline-offset', '2px');
 
   await page.getByRole('button', { name: 'Reveal draft file' }).click();
   await expect(page.getByText('Draft file revealed in the system file browser.', { exact: true })).toBeVisible();

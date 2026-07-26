@@ -207,7 +207,10 @@ async function readStyles(locator: Locator): Promise<Record<string, string>> {
     return {
       backgroundColor: style.backgroundColor,
       borderColor: style.borderColor,
+      borderRadius: style.borderRadius,
       boxShadow: style.boxShadow,
+      caretColor: style.caretColor,
+      color: style.color,
       fontFamily: style.fontFamily,
       fontSize: style.fontSize,
       fontWeight: style.fontWeight,
@@ -217,6 +220,7 @@ async function readStyles(locator: Locator): Promise<Record<string, string>> {
       outlineOffset: style.outlineOffset,
       outlineStyle: style.outlineStyle,
       outlineWidth: style.outlineWidth,
+      padding: style.padding,
       transitionDuration: style.transitionDuration,
     };
   });
@@ -394,81 +398,71 @@ test('responsive keyboard and accessibility contract', async ({
       'Diff Review: Base responsive fixture',
     );
 
-    await test.step('exact palette, spacing, typography, contrast, and motion tokens', async () => {
-      const tokens = await page.locator(':root').evaluate((element) => {
-        const style = getComputedStyle(element);
-        const names = [
-          '--canvas',
-          '--panel',
-          '--accent',
-          '--destructive',
-          '--surface',
-          '--text',
-          '--text-muted',
-          '--rule',
-          '--addition-bg',
-          '--addition-fg',
-          '--deletion-bg',
-          '--deletion-fg',
-          '--warning-bg',
-          '--warning-fg',
-          '--info-bg',
-          '--info-fg',
-          '--error-bg',
-          '--error-fg',
-          '--color-dominant',
-          '--color-secondary',
-          '--color-accent',
-          '--color-destructive',
-          '--color-text-primary',
-          '--color-text-secondary',
-          '--color-border',
-          '--color-hover',
-          '--color-added',
-          '--color-modified',
-          '--color-focus',
-          '--space-xs',
-          '--space-sm',
-          '--space-md',
-          '--space-lg',
-          '--space-xl',
-          '--space-2xl',
-          '--space-3xl',
-        ];
-        return Object.fromEntries(
-          names.map((name) => [name, style.getPropertyValue(name).trim()]),
-        );
-      });
-      expect(tokens).toEqual({
-        '--canvas': '#f6f3ec',
-        '--panel': '#e9e4da',
-        '--accent': '#245a7a',
-        '--destructive': '#a33a32',
-        '--surface': '#fcfaf5',
-        '--text': '#242822',
-        '--text-muted': '#596058',
-        '--rule': '#c9c2b5',
-        '--addition-bg': '#e2f0e6',
-        '--addition-fg': '#285b3f',
-        '--deletion-bg': '#f8e3de',
-        '--deletion-fg': '#8e352f',
-        '--warning-bg': '#fff0cd',
-        '--warning-fg': '#775313',
-        '--info-bg': '#ddeaf2',
-        '--info-fg': '#315770',
-        '--error-bg': '#fae8e6',
-        '--error-fg': '#a33a32',
-        '--color-dominant': '#f6f3ec',
-        '--color-secondary': '#e9e4da',
-        '--color-accent': '#245a7a',
-        '--color-destructive': '#a33a32',
-        '--color-text-primary': '#242822',
-        '--color-text-secondary': '#596058',
-        '--color-border': '#c9c2b5',
-        '--color-hover': '#fcfaf5',
-        '--color-added': '#285b3f',
-        '--color-modified': '#775313',
-        '--color-focus': '#245a7a',
+    await test.step('exact semantic palette, typography, control, and motion contract', async () => {
+      const canonical = {
+        '--surface-canvas': '#0d1117',
+        '--surface-inset': '#010409',
+        '--surface-panel': '#161b22',
+        '--surface-raised': '#21262d',
+        '--surface-interactive': '#21262d',
+        '--surface-interactive-hover': '#292e36',
+        '--surface-interactive-active': '#30363d',
+        '--text-primary': '#e6edf3',
+        '--text-secondary': '#b1bac4',
+        '--text-muted': '#8b949e',
+        '--text-on-emphasis': '#fff',
+        '--border-muted': '#21262d',
+        '--border-default': '#30363d',
+        '--border-strong': '#484f58',
+        '--interactive-accent': '#2f81f7',
+        '--interactive-accent-emphasis': '#1f6feb',
+        '--focus-ring': '#58a6ff',
+        '--selection-background': '#388bfd59',
+        '--selection-border': '#58a6ff',
+        '--destructive-foreground': '#f85149',
+        '--destructive-emphasis': '#b62324',
+        '--status-success-foreground': '#3fb950',
+        '--status-success-background': '#2ea04326',
+        '--status-warning-foreground': '#d29922',
+        '--status-warning-background': '#bb800926',
+        '--status-error-foreground': '#f85149',
+        '--status-error-background': '#f8514926',
+        '--status-information-foreground': '#58a6ff',
+        '--status-information-background': '#388bfd26',
+        '--status-resolved-foreground': '#a371f7',
+        '--status-resolved-background': '#a371f726',
+        '--status-disabled-foreground': '#8b949e',
+        '--status-pending-foreground': '#b1bac4',
+        '--status-pending-background': '#21262d',
+        '--status-disabled-background': '#161b22',
+        '--diff-addition-foreground': '#3fb950',
+        '--diff-addition-background': '#2ea04326',
+        '--diff-addition-intraline-background': '#2ea04359',
+        '--diff-deletion-foreground': '#f85149',
+        '--diff-deletion-background': '#f8514926',
+        '--diff-deletion-intraline-background': '#f8514959',
+        '--diff-hunk-foreground': '#a371f7',
+        '--diff-hunk-background': '#a371f726',
+        '--diff-empty-background': '#010409',
+        '--diff-unchanged-background': '#010409',
+        '--diff-region-border': '#30363d',
+        '--font-ui': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        '--font-mono': 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+        '--font-size-metadata': '12px',
+        '--line-height-metadata': '16px',
+        '--font-size-body': '14px',
+        '--line-height-body': '20px',
+        '--font-size-section-heading': '16px',
+        '--line-height-section-heading': '24px',
+        '--font-size-page-heading': '20px',
+        '--line-height-page-heading': '28px',
+        '--font-weight-regular': '400',
+        '--font-weight-semibold': '600',
+        '--radius-compact': '4px',
+        '--radius-control': '6px',
+        '--radius-overlay': '8px',
+        '--radius-pill': '999px',
+        '--shadow-overlay': '0 8px 24px #0006',
         '--space-xs': '4px',
         '--space-sm': '8px',
         '--space-md': '16px',
@@ -476,14 +470,23 @@ test('responsive keyboard and accessibility contract', async ({
         '--space-xl': '32px',
         '--space-2xl': '48px',
         '--space-3xl': '64px',
-      });
-      expect(contrastRatio('#242822', '#f6f3ec')).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#596058', '#f6f3ec')).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#242822', '#e9e4da')).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#596058', '#e9e4da')).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#775313', '#fff0cd')).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#315770', '#ddeaf2')).toBeGreaterThanOrEqual(4.5);
-      expect(contrastRatio('#a33a32', '#fae8e6')).toBeGreaterThanOrEqual(4.5);
+      };
+      const retired = [
+        '--canvas', '--panel', '--accent', '--destructive', '--surface', '--text', '--rule',
+        '--addition-bg', '--addition-fg', '--deletion-bg', '--deletion-fg', '--warning-bg',
+        '--warning-fg', '--info-bg', '--info-fg', '--error-bg', '--error-fg', '--color-dominant',
+        '--color-secondary', '--color-accent', '--color-destructive', '--color-text-primary',
+        '--color-text-secondary', '--color-border', '--color-hover', '--color-added',
+        '--color-modified', '--color-renamed', '--color-focus',
+      ];
+      const rootTokens = await page.locator(':root').evaluate((element, names) => {
+        const style = getComputedStyle(element);
+        return Object.fromEntries(names.map((name) => [name, style.getPropertyValue(name).trim()]));
+      }, Object.keys(canonical));
+      expect(rootTokens).toEqual(canonical);
+      expect(await page.locator(':root').evaluate((element) => getComputedStyle(element).colorScheme)).toBe('dark');
+      await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(13, 17, 23)');
+      await expect(page.locator('body')).toHaveCSS('color', 'rgb(230, 237, 243)');
 
       await page.evaluate(() => {
         const fixture = document.createElement('div');
@@ -492,95 +495,87 @@ test('responsive keyboard and accessibility contract', async ({
           '<aside class="inline-notice inline-notice--warning">Warning</aside>',
           '<aside class="inline-notice inline-notice--error">Error</aside>',
           '<aside class="draft-recovery__notice">Information</aside>',
+          '<button class="ui-button">Neutral</button>',
+          '<button class="ui-button ui-button--primary">Primary</button>',
           '<button class="ui-button ui-button--destructive">Delete</button>',
+          '<button class="ui-button" disabled>Disabled</button>',
+          '<textarea aria-label="Semantic textarea" placeholder="Write a comment"></textarea>',
+          '<input type="checkbox" aria-label="Semantic checkbox" />',
+          '<div class="tree-row file-row" data-normal-file>normal.ts</div>',
+          '<span class="object-id">0123456789abcdef</span>',
+          '<div data-gutter-targets style="display: flex; gap: 8px">',
+          '<button class="diff-workspace__gutter-action" aria-label="Add comment to head line 10" style="position: static !important; right: auto !important">+</button>',
+          '<button aria-label="Second semantic target">Second</button></div>',
         ].join('');
         document.body.append(fixture);
       });
-      const semanticStyles = await page.locator('[data-semantic-contract]').evaluate((fixture) => {
-        const styles = Array.from(fixture.children, (element) => {
-          const style = getComputedStyle(element);
-          return {
-            background: style.backgroundColor,
-            border: style.borderLeftColor,
-            color: style.color,
-          };
-        });
-        fixture.remove();
-        return styles;
-      });
-      expect(semanticStyles).toEqual([
-        { background: 'rgb(255, 240, 205)', border: 'rgb(119, 83, 19)', color: 'rgb(119, 83, 19)' },
-        { background: 'rgb(250, 232, 230)', border: 'rgb(163, 58, 50)', color: 'rgb(163, 58, 50)' },
-        { background: 'rgb(221, 234, 242)', border: 'rgb(49, 87, 112)', color: 'rgb(49, 87, 112)' },
-        { background: 'rgb(252, 250, 245)', border: 'rgb(163, 58, 50)', color: 'rgb(163, 58, 50)' },
-      ]);
+      const fixture = page.locator('[data-semantic-contract]');
+      const semanticValues = await fixture.evaluate((element, names) => {
+        const all = [element, ...Array.from(element.children)];
+        return all.map((child) => Object.fromEntries(names.map((name) => [
+          name,
+          getComputedStyle(child).getPropertyValue(name).trim(),
+        ])));
+      }, retired);
+      for (const values of semanticValues) {
+        expect(values).toEqual(Object.fromEntries(retired.map((name) => [name, ''])));
+      }
+      await expect(fixture.locator('.inline-notice--warning')).toHaveCSS('border-left-color', 'rgb(210, 153, 34)');
+      await expect(fixture.locator('.inline-notice--error')).toHaveCSS('border-left-color', 'rgb(248, 81, 73)');
+      await expect(fixture.locator('.draft-recovery__notice')).toHaveCSS('border-left-color', 'rgb(88, 166, 255)');
+      await expect(fixture.locator('.ui-button').first()).toHaveCSS('background-color', 'rgb(33, 38, 45)');
+      await expect(fixture.locator('.ui-button--primary')).toHaveCSS('background-color', 'rgb(31, 111, 235)');
+      await expect(fixture.locator('.ui-button--primary')).toHaveCSS('color', 'rgb(255, 255, 255)');
+      await expect(fixture.locator('.ui-button--destructive')).toHaveCSS('color', 'rgb(248, 81, 73)');
+      await expect(fixture.getByRole('button', { name: 'Disabled' })).toHaveCSS('opacity', '1');
+      await expect(fixture.getByRole('button', { name: 'Disabled' })).toHaveCSS('color', 'rgb(139, 148, 158)');
+      await expect(fixture.getByLabel('Semantic textarea')).toHaveCSS('caret-color', 'rgb(230, 237, 243)');
 
-      const typography = await page.evaluate(() => {
-        const selectors = [
-          '.session-header h1',
-          '.active-file-strip h1',
-          '.file-row',
-          '.availability-marker',
-          '.pin-cue',
-        ];
-        return selectors.map((selector) => {
-          const style = getComputedStyle(document.querySelector(selector)!);
-          return {
-            selector,
-            family: style.fontFamily,
-            size: style.fontSize,
-            weight: style.fontWeight,
-            lineHeight: style.lineHeight,
-          };
-        });
-      });
+      const typography = await page.evaluate(() => [
+        '.session-header h1', '.active-file-strip h1', '[data-normal-file]', '.availability-marker', '.pin-cue',
+      ].map((selector) => {
+        const style = getComputedStyle(document.querySelector(selector)!);
+        return [selector, style.fontSize, style.fontWeight, style.lineHeight, style.fontFamily];
+      }));
       expect(typography).toEqual([
-        {
-          selector: '.session-header h1',
-          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
-          size: '20px',
-          weight: '600',
-          lineHeight: '28px',
-        },
-        {
-          selector: '.active-file-strip h1',
-          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
-          size: '18px',
-          weight: '700',
-          lineHeight: '24px',
-        },
-        {
-          selector: '.file-row',
-          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
-          size: '14px',
-          weight: '600',
-          lineHeight: '20.02px',
-        },
-        {
-          selector: '.availability-marker',
-          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
-          size: '12px',
-          weight: '600',
-          lineHeight: '15.96px',
-        },
-        {
-          selector: '.pin-cue',
-          family: '"Avenir Next", Avenir, "Segoe UI", sans-serif',
-          size: '12px',
-          weight: '600',
-          lineHeight: '15.96px',
-        },
+        ['.session-header h1', '20px', '600', '28px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.active-file-strip h1', '16px', '600', '24px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['[data-normal-file]', '14px', '400', '20px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.availability-marker', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.pin-cue', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
       ]);
-      const monospace = await page.locator('.path-display').first().evaluate(
-        (element) => getComputedStyle(element).fontFamily,
-      );
-      expect(monospace).toContain('monospace');
+      await expect(page.locator('.path-display').first()).toHaveCSS('font-family', /monospace/);
+      expect(contrastRatio('#E6EDF3', '#0D1117')).toBeGreaterThanOrEqual(4.5);
+      await expect(fixture.locator('.object-id')).toHaveCSS('font-family', /monospace/);
+      expect(contrastRatio('#FFFFFF', '#1F6FEB')).toBeGreaterThanOrEqual(4.5);
+
+      const gutter = fixture.locator('.diff-workspace__gutter-action');
+      const gutterBox = await gutter.boundingBox();
+      expect(gutterBox!.width).toBeGreaterThanOrEqual(32);
+      expect(gutterBox!.height).toBeGreaterThanOrEqual(32);
+      await expect(gutter).toHaveCSS('font-size', '16px');
+      await expect(gutter).toHaveCSS('line-height', '16px');
+      await expect(gutter).toHaveCSS('padding', '4px');
+      await gutter.hover();
+      expect(await gutter.evaluate((element) => getComputedStyle(element, '::after').content)).toBe('"Add comment to head line 10"');
+      await gutter.focus();
+      expect(await gutter.evaluate((element) => getComputedStyle(element, '::after').display)).toBe('block');
+
+      const neutral = fixture.locator('.ui-button').first();
+      await neutral.hover();
+      await expect(neutral).toHaveCSS('background-color', 'rgb(41, 46, 54)');
+      const neutralBox = await neutral.boundingBox();
+      await page.mouse.move(neutralBox!.x + 1, neutralBox!.y + 1);
+      await page.mouse.down();
+      await expect(neutral).toHaveCSS('box-shadow', 'none');
+      await page.mouse.up();
+      await fixture.locator('.ui-button--destructive').hover();
+      await expect(fixture.locator('.ui-button--destructive')).toHaveCSS('background-color', 'rgb(182, 35, 36)');
+      await fixture.evaluate((element) => element.remove());
       const motionDurations = await page.locator('button').evaluateAll((buttons) =>
         buttons.map((button) => getComputedStyle(button).transitionDuration),
       );
-      for (const duration of motionDurations) {
-        expect(duration === '0s' || Number.parseFloat(duration) <= 0.15).toBe(true);
-      }
+      expect(motionDurations.every((duration) => duration === '0s')).toBe(true);
     });
 
     await test.step('review rail and drawers honor locked responsive geometry', async () => {
@@ -589,6 +584,7 @@ test('responsive keyboard and accessibility contract', async ({
       const treePane = page.locator('.review-files');
       const reviewMain = page.locator('.review-main');
       const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
+      const stateCard = page.locator('[data-state-card-contract]');
 
       await page.setViewportSize({ width: 1440, height: 560 });
       await expect(reviewMain).toBeVisible();
@@ -602,25 +598,56 @@ test('responsive keyboard and accessibility contract', async ({
           .map((element) => element.classList.contains('review-panel') ? 'panel' : 'rail'),
       );
       expect(reviewScrollOwners).toEqual(['panel']);
+      await page.evaluate(() => {
+        const card = document.createElement('section');
+        card.className = 'state-card';
+        card.dataset.stateCardContract = 'true';
+        document.body.append(card);
+      });
+      await expect(stateCard).toHaveCSS('padding', '24px');
+      for (const staticSurface of [rail, treePane, page.locator('.session-header'), reviewMain, stateCard]) {
+        await expect(staticSurface).toHaveCSS('box-shadow', 'none');
+      }
+      await assertNoPageOverflow(page);
 
       await reviewButton.focus();
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Tab');
+      await expect(reviewButton).toBeFocused();
       const focusStyle = await readStyles(reviewButton);
-      expect(focusStyle.outlineColor).toBe('rgb(36, 90, 122)');
+      expect(focusStyle.outlineColor).toBe('rgb(88, 166, 255)');
       expect(focusStyle.outlineStyle).toBe('solid');
-      expect(Number.parseFloat(focusStyle.outlineWidth)).toBeGreaterThanOrEqual(2);
+      expect(focusStyle.outlineWidth).toBe('2px');
+      expect(focusStyle.outlineOffset).toBe('2px');
 
       await page.setViewportSize({ width: 1439, height: 560 });
       await expect(rail).toHaveClass(/comments-rail--open/);
+      await expect(rail).toHaveCSS('box-shadow', /8px 24px/);
       expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
+      await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close review' }).click();
+      await expect(rail).not.toHaveClass(/comments-rail--open/);
+
+      for (const width of [1280, 1279]) {
+        await page.setViewportSize({ width, height: 560 });
+        await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
+        await expect(rail).toHaveCSS('box-shadow', /8px 24px/);
+        await reviewButton.click();
+        await expect(rail).toHaveClass(/comments-rail--open/);
+        await expect(rail).toHaveCSS('box-shadow', /8px 24px/);
+        await assertNoPageOverflow(page);
+        await page.getByRole('button', { name: 'Close review' }).click();
+        await expect(rail).not.toHaveClass(/comments-rail--open/);
+      }
 
       await page.setViewportSize({ width: 1100, height: 560 });
       await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
       await reviewButton.click();
-      await expect(rail).toHaveClass(/comments-rail--open/);
       const mediumBox = await rail.boundingBox();
       expect(Math.round(mediumBox!.width)).toBe(360);
       expect(Math.round(mediumBox!.x + mediumBox!.width)).toBe(1100);
+      await expect(rail).toHaveCSS('box-shadow', /8px 24px/);
+      await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close review' }).click();
 
       await page.setViewportSize({ width: 1099, height: 560 });
@@ -629,12 +656,15 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(treePane).toHaveCSS('overflow-y', 'auto');
       await filesButton.click();
       await expect(treePane).toHaveClass(/review-files--open/);
+      await expect(treePane).toHaveCSS('box-shadow', /8px 24px/);
+      await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close files' }).click();
       await expect(treePane).not.toHaveClass(/review-files--open/);
 
       await page.setViewportSize({ width: 768, height: 560 });
       await reviewButton.click();
       expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
+      await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close review' }).click();
 
       await page.setViewportSize({ width: 375, height: 640 });
@@ -642,8 +672,9 @@ test('responsive keyboard and accessibility contract', async ({
       const compactBox = await rail.boundingBox();
       expect(Math.round(compactBox!.width)).toBe(343);
       expect(Math.round(compactBox!.x + compactBox!.width)).toBe(375);
-      const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
-      expect(documentWidth).toBeLessThanOrEqual(375);
+      await expect(stateCard).toHaveCSS('padding', '16px');
+      await assertNoPageOverflow(page);
+      await stateCard.evaluate((element) => element.remove());
       await page.getByRole('button', { name: 'Close review' }).click();
     });
 

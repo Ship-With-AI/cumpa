@@ -195,9 +195,17 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
     await expect(receipt).toBeVisible();
   }
 
-  await expect(receipt.locator('h4')).toHaveCSS('font-size', '18px');
+  await expect(receipt.locator('h4')).toHaveCSS('font-size', '16px');
   await expect(receipt.locator('h4')).toHaveCSS('font-weight', '600');
   await expect(receipt.locator('h4')).toHaveCSS('line-height', '24px');
+  await expect(receipt).toHaveCSS('background-color', 'rgb(22, 27, 34)');
+  await expect(receipt).toHaveCSS('border-color', 'rgb(48, 54, 61)');
+  await expect(receipt).toHaveCSS('border-radius', '6px');
+  await expect(receipt).toHaveCSS('box-shadow', 'none');
+  await expect(jsonRow).toHaveCSS('background-color', 'rgb(13, 17, 23)');
+  await expect(jsonRow).toHaveCSS('border-color', 'rgb(48, 54, 61)');
+  await expect(jsonRow).toHaveCSS('border-radius', '6px');
+  await expect(jsonRow).toHaveCSS('box-shadow', 'none');
 
   await page.getByRole('button', { name: 'Export review again' }).click();
   await expect(page.getByRole('heading', { name: 'Export was not published' })).toBeVisible();
