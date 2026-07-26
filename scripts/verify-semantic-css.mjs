@@ -70,28 +70,85 @@ function selectorArms(selector) {
   return selector.split(',').map((arm) => arm.trim());
 }
 
+function skipCssStringOrComment(css, cursor) {
+  if (css.startsWith('/*', cursor)) {
+    const closing = css.indexOf('*/', cursor + 2);
+    if (closing === -1) fail('unterminated CSS comment');
+    return closing + 2;
+  }
+  if (css[cursor] !== '"' && css[cursor] !== "'") return cursor;
+
+  const quote = css[cursor];
+  cursor += 1;
+  while (cursor < css.length) {
+    if (css[cursor] === '\\') {
+      cursor += 2;
+    } else if (css[cursor] === quote) {
+      return cursor + 1;
+    } else {
+      cursor += 1;
+    }
+  }
+  fail('unterminated CSS string');
+}
+
+function closingBrace(css, opening, selector) {
+  let depth = 1;
+  for (let cursor = opening + 1; cursor < css.length; cursor += 1) {
+    const next = skipCssStringOrComment(css, cursor);
+    if (next !== cursor) {
+      cursor = next - 1;
+      continue;
+    }
+    if (css[cursor] === '{') depth += 1;
+    if (css[cursor] === '}') depth -= 1;
+    if (depth === 0) return cursor;
+  }
+  fail(`unbalanced rule near ${selector}`);
+}
+
+function blocks(css) {
+  const rules = [];
+  let preludeStart = 0;
+  let groupingDepth = 0;
+
+  for (let cursor = 0; cursor < css.length; cursor += 1) {
+    const next = skipCssStringOrComment(css, cursor);
+    if (next !== cursor) {
+      cursor = next - 1;
+      continue;
+    }
+
+    if (css[cursor] === '(' || css[cursor] === '[') groupingDepth += 1;
+    if (css[cursor] === ')' || css[cursor] === ']') groupingDepth -= 1;
+    if (groupingDepth !== 0) continue;
+    if (css[cursor] === ';') {
+      preludeStart = cursor + 1;
+      continue;
+    }
+    if (css[cursor] !== '{') continue;
+
+    const selector = css.slice(preludeStart, cursor).replaceAll(/\/\*[\s\S]*?\*\//g, '').trim();
+    const closing = closingBrace(css, cursor, selector);
+    rules.push({ selector, body: css.slice(cursor + 1, closing) });
+    preludeStart = closing + 1;
+    cursor = closing;
+  }
+  return rules;
+}
+
+function isKeyframes(selector) {
+  return /^@(?:-[\w]+-)?keyframes\b/i.test(selector);
+}
+
 function leafRules(css, context = []) {
   const rules = [];
-  let cursor = 0;
-  while (cursor < css.length) {
-    const opening = css.indexOf('{', cursor);
-    if (opening === -1) break;
-    const selector = css.slice(cursor, opening).trim();
-    let depth = 1;
-    let closing = opening + 1;
-    while (closing < css.length && depth > 0) {
-      if (css[closing] === '{') depth += 1;
-      if (css[closing] === '}') depth -= 1;
-      closing += 1;
-    }
-    if (depth !== 0) fail(`unbalanced rule near ${selector}`);
-    const body = css.slice(opening + 1, closing - 1);
-    if (selector.startsWith('@media')) {
-      rules.push(...leafRules(body, [...context, selector]));
-    } else if (!selector.startsWith('@keyframes')) {
+  for (const { selector, body } of blocks(css)) {
+    if (selector.startsWith('@')) {
+      if (!isKeyframes(selector)) rules.push(...leafRules(body, [...context, selector]));
+    } else {
       rules.push({ selector, body, declarations: declarations(body), context });
     }
-    cursor = closing;
   }
   return rules;
 }
@@ -203,13 +260,27 @@ function expectAuditFailure(assertion, name) {
 
 function assertAuditSelfChecks() {
   const forcedColors = '@media (forced-colors: active) { body { color: CanvasText; } }';
+  const canonicalRoot = ':root { --surface-canvas: #0D1117; }';
+
+  for (const [name, groupingRule] of [
+    ['@supports', '@supports (display: grid)'],
+    ['@layer', '@layer components'],
+    ['@container', '@container (width > 0px)'],
+    ['@scope', '@scope (.review-workspace)'],
+  ]) {
+    expectAuditFailure(
+      () => rootRule(`${canonicalRoot} ${groupingRule} { :root { --surface-canvas: var(--surface-panel); } }`, `${name} nested-root fixture`),
+      `a contextual :root inside ${name}`,
+    );
+  }
+
   expectAuditFailure(
-    () => assertAuthorStyle(`:root { --surface-canvas: #0D1117; } .ui-button:active { box-shadow: none; box-shadow: inset 1px 1px black; } ${forcedColors}`),
-    'duplicate box-shadow declarations',
+    () => assertAuthorStyle(`${canonicalRoot} @container (width > 0px) { .ui-button:active { box-shadow: inset 1px 1px black; } } ${forcedColors}`),
+    'a non-permitted pressed-control shadow inside @container',
   );
   expectAuditFailure(
-    () => rootRule(`:root { --surface-canvas: #0D1117; } @media (width > 0px) { :root { --surface-panel: #161B22; } }`, 'nested-root fixture'),
-    'a contextual :root',
+    () => assertAuthorStyle(`${canonicalRoot} @scope (.review-workspace) { .review-heading { color: #E6EDF3; } } ${forcedColors}`),
+    'a raw color literal inside @scope',
   );
 }
 
