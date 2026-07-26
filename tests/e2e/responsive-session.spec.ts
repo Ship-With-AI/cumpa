@@ -578,6 +578,45 @@ test('responsive keyboard and accessibility contract', async ({
       expect(motionDurations.every((duration) => duration === '0s')).toBe(true);
     });
 
+    await test.step('forced colors preserve boundaries, rails, focus, links, and disabled states', async () => {
+      await page.emulateMedia({ forcedColors: 'active' });
+      await page.evaluate(() => {
+        const fixture = document.createElement('div');
+        fixture.dataset.forcedColorsContract = 'true';
+        fixture.innerHTML = [
+          '<button class="ui-button">Enabled</button>',
+          '<button class="ui-button" disabled>Disabled</button>',
+          '<a href="#forced-colors">Forced colors link</a>',
+          '<div class="tree-row tree-row--selected">Selected file</div>',
+        ].join('');
+        document.body.append(fixture);
+      });
+
+      const fixture = page.locator('[data-forced-colors-contract]');
+      const enabled = fixture.getByRole('button', { name: 'Enabled' });
+      const disabled = fixture.getByRole('button', { name: 'Disabled' });
+      const link = fixture.getByRole('link', { name: 'Forced colors link' });
+      const selected = fixture.locator('.tree-row--selected');
+      await expect(enabled).toHaveCSS('border-top-color', /rgb/);
+      await expect(link).toHaveCSS('color', /rgb/);
+      await expect(link).toHaveCSS('text-decoration-line', /underline/);
+      await expect(selected).toHaveCSS('border-left-color', /rgb/);
+      expect(await fixture.evaluate((element) =>
+        [element, ...Array.from(element.children)].every(
+          (candidate) => getComputedStyle(candidate).forcedColorAdjust !== 'none',
+        ),
+      )).toBe(true);
+      await enabled.focus();
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Tab');
+      await expect(enabled).toBeFocused();
+      await expect(enabled).toHaveCSS('outline-width', '2px');
+      expect(await disabled.evaluate((element) => getComputedStyle(element).color))
+        .not.toBe(await enabled.evaluate((element) => getComputedStyle(element).color));
+      await fixture.evaluate((element) => element.remove());
+      await page.emulateMedia({ forcedColors: 'none' });
+    });
+
     await test.step('review rail and drawers honor locked responsive geometry', async () => {
       const rail = page.locator('.comments-rail');
       const panel = page.locator('.review-panel');
