@@ -153,6 +153,25 @@ function leafRules(css, context = []) {
   return rules;
 }
 
+function declarationRules(css, context = []) {
+  const rules = [];
+  for (const { selector, body } of blocks(css)) {
+    const nested = blocks(body);
+    if (selector.startsWith('@')) {
+      if (nested.length === 0) {
+        const directDeclarations = declarations(body);
+        if (directDeclarations.length !== 0) {
+          rules.push({ selector, body, declarations: directDeclarations, context });
+        }
+      }
+      rules.push(...declarationRules(body, [...context, selector]));
+    } else {
+      rules.push({ selector, body, declarations: declarations(body), context });
+    }
+  }
+  return rules;
+}
+
 function rootRule(css, label, tokenBearing = false) {
   const roots = leafRules(css).filter((rule) => selectorArms(rule.selector).includes(':root'));
   const contextualRoot = roots.find((rule) => rule.context.length !== 0);
@@ -197,6 +216,86 @@ function assertNoLegacy(css, label) {
   if (match !== null) fail(`${label} still references retired token ${match[0]}`);
 }
 
+const forcedColorKeywords = new Set([
+  'canvas', 'canvastext', 'buttonface', 'buttontext', 'buttonborder',
+  'linktext', 'highlight', 'highlighttext', 'graytext',
+]);
+const namedColorKeywords = new Set(`
+  aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond
+  blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue
+  cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey
+  darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon
+  darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet
+  deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen
+  fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew
+  hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon
+  lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey
+  lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey
+  lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine
+  mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen
+  mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite
+  navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise
+  palevioletred papayawhip peachpuff peru pink plum powderblue purple rebeccapurple red
+  rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue
+  slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato turquoise
+  violet wheat white whitesmoke yellow yellowgreen
+`.trim().split(/\s+/));
+const nonPaletteColorProperties = new Set([
+  'background', 'background-color', 'border', 'border-color', 'border-top', 'border-right',
+  'border-bottom', 'border-left', 'border-top-color', 'border-right-color',
+  'border-bottom-color', 'border-left-color', 'outline', 'outline-color',
+  'text-decoration', 'text-decoration-color', 'fill', 'stroke',
+]);
+
+function isPaintBearingProperty(property) {
+  return property.startsWith('--')
+    || /^(?:background(?:-color)?|border(?:-(?:top|right|bottom|left))?(?:-color)?|outline(?:-color)?|color|caret-color|accent-color|column-rule(?:-color)?|text-(?:decoration|emphasis)(?:-color)?|(?:-webkit-)?text-(?:fill|stroke)(?:-color)?|fill|stroke|stop-color|flood-color|lighting-color)$/.test(property);
+}
+
+function directColorSyntaxes(value) {
+  const inspected = value
+    .replace(/(["'])(?:\\.|(?!\1)[\s\S])*\1/g, '')
+    .replace(/url\([^)]*\)/gi, '');
+  const syntaxes = [];
+  if (/#[0-9a-f]{3,8}\b/i.test(inspected)) syntaxes.push('hex color');
+  if (/\b(?:rgba?|hsla?|oklch|oklab|lab|lch|color-mix|color)\s*\(/i.test(inspected)) {
+    syntaxes.push('color function');
+  }
+  for (const word of inspected.matchAll(/\b[a-z][\w-]*\b/gi)) {
+    const normalized = word[0].toLowerCase();
+    if (forcedColorKeywords.has(normalized)) syntaxes.push(`system color ${word[0]}`);
+    if (namedColorKeywords.has(normalized)) syntaxes.push(`named color ${word[0]}`);
+    if (normalized === 'currentcolor') syntaxes.push('currentColor');
+    if (normalized === 'transparent') syntaxes.push('transparent');
+  }
+  return syntaxes;
+}
+
+function isNonPaletteColor(property, syntax) {
+  return nonPaletteColorProperties.has(property)
+    && (syntax === 'currentColor' || syntax === 'transparent');
+}
+
+function isForcedColorsContext(context) {
+  return context.some((item) => /^@media\s*\(\s*forced-colors\s*:\s*active\s*\)$/i.test(item));
+}
+
+function assertDirectColorConfinement(source) {
+  for (const rule of declarationRules(source)) {
+    const isTokenRoot = rule.selector === ':root' && rule.context.length === 0;
+    const inForcedColors = isForcedColorsContext(rule.context);
+    for (const declaration of rule.declarations) {
+      if (!isPaintBearingProperty(declaration.property) || declaration.property === 'box-shadow') continue;
+      const syntaxes = directColorSyntaxes(declaration.value);
+      for (const syntax of syntaxes) {
+        if (isTokenRoot || isNonPaletteColor(declaration.property, syntax)) continue;
+        if (inForcedColors && syntax.startsWith('system color ')) continue;
+        fail(`direct ${syntax} outside the permitted token root or forced-colors repair in ${rule.selector}`);
+      }
+    }
+  }
+}
+
 function assertAuthorStyle(source) {
   if (/@import\b|url\(\s*(?:['"]?https?:|['"]?\/\/)|(?:repeating-)?(?:linear|radial|conic)-gradient\(|backdrop-filter\s*:|text-shadow\s*:|filter\s*:\s*drop-shadow\(/i.test(source)) {
     fail('source contains an import, remote URL, gradient, glow, glass, or drop shadow');
@@ -209,12 +308,7 @@ function assertAuthorStyle(source) {
   const systemKeyword = /\b(?:Canvas|CanvasText|ButtonFace|ButtonText|ButtonBorder|LinkText|Highlight|HighlightText|GrayText)\b/;
   if (systemKeyword.test(ordinary)) fail('system colors are only allowed in the forced-colors repair block');
 
-  for (const rule of leafRules(ordinary)) {
-    const hasColorLiteral = /#[0-9a-f]{3,8}\b|\b(?:rgb|hsl)a?\(/i.test(rule.body);
-    if (hasColorLiteral && !(rule.selector === ':root' && rule.context.length === 0)) {
-      fail(`raw color literal outside the token root in ${rule.selector}`);
-    }
-  }
+  assertDirectColorConfinement(source);
 
   const insetAllowlist = new Map([
     ['.tree-row--selected', 'inset 3px 0 var(--selection-border)'],
@@ -225,7 +319,7 @@ function assertAuthorStyle(source) {
     '.comments-rail--open', '.review-files--open',
   ]);
 
-  for (const rule of leafRules(ordinary)) {
+  for (const rule of declarationRules(ordinary)) {
     const shadows = rule.declarations.filter(({ property }) => property === 'box-shadow');
     if (shadows.length > 1) fail(`rule ${rule.selector} declares box-shadow more than once`);
     const [shadow] = shadows;
@@ -282,6 +376,33 @@ function assertAuditSelfChecks() {
     () => assertAuthorStyle(`${canonicalRoot} @scope (.review-workspace) { .review-heading { color: #E6EDF3; } } ${forcedColors}`),
     'a raw color literal inside @scope',
   );
+  expectAuditFailure(
+    () => assertAuthorStyle(`${canonicalRoot} @keyframes theme-bypass { to { color: #FFFFFF; } } ${forcedColors}`),
+    'a raw color literal inside a keyframe step',
+  );
+  expectAuditFailure(
+    () => assertAuthorStyle(`${canonicalRoot} @keyframes theme-shadow { to { box-shadow: 0 0 1px white; } } ${forcedColors}`),
+    'a non-allowlisted shadow inside a keyframe step',
+  );
+  for (const [name, declaration] of [
+    ['white', 'background: white;'],
+    ['rebeccapurple', 'color: rebeccapurple;'],
+    ['oklch()', 'border-color: oklch(75% 0.1 250);'],
+    ['color()', 'background: color(srgb 1 1 1);'],
+  ]) {
+    expectAuditFailure(
+      () => assertAuthorStyle(`${canonicalRoot} .direct-color { ${declaration} } ${forcedColors}`),
+      `a direct ${name} color outside the token root`,
+    );
+  }
+
+  assertAuthorStyle(`${canonicalRoot} .semantic-colors { color: var(--text-primary); border-color: currentColor; background: transparent; } @media (forced-colors: active) {
+    body { background: Canvas; color: CanvasText; }
+    button { background: ButtonFace; color: ButtonText; border-color: ButtonBorder; }
+    a { color: LinkText; }
+    .selected { background: Highlight; color: HighlightText; }
+    :disabled { color: GrayText; }
+  }`);
 }
 
 assertAuditSelfChecks();

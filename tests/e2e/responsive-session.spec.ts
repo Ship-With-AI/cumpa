@@ -763,6 +763,9 @@ test('responsive keyboard and accessibility contract', async ({
       const reviewMain = page.locator('.review-main');
       const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
       const stateCard = page.locator('[data-state-card-contract]');
+      const reviewShell = page.locator('.review-shell');
+      const sessionHeader = page.locator('.session-header');
+      const headerFacts = page.locator('.header-facts');
       const overlayShadow = 'rgba(0, 0, 0, 0.4) 0px 8px 24px 0px';
 
       await page.setViewportSize({ width: 1440, height: 560 });
@@ -808,18 +811,144 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).not.toHaveClass(/comments-rail--open/);
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
-      for (const width of [1280, 1279]) {
-        await page.setViewportSize({ width, height: 560 });
-        await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
-        await expect(rail).toHaveCSS('box-shadow', 'none');
-        await reviewButton.click();
-        await expect(rail).toHaveClass(/comments-rail--open/);
-        await expect(rail).toHaveCSS('box-shadow', overlayShadow);
-        await assertNoPageOverflow(page);
-        await page.getByRole('button', { name: 'Close review' }).click();
-        await expect(rail).not.toHaveClass(/comments-rail--open/);
-        await expect(rail).toHaveCSS('box-shadow', 'none');
+      await page.setViewportSize({ width: 1280, height: 560 });
+      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
+      await expect(sessionHeader).toHaveCSS('flex-wrap', 'nowrap');
+      await expect(headerFacts).toHaveCSS('flex-wrap', 'nowrap');
+      await expect(rail).toHaveCSS('box-shadow', 'none');
+      const desktopColumns = await reviewShell.evaluate((shell) => {
+        const files = shell.querySelector<HTMLElement>('.review-files')!;
+        const main = shell.querySelector<HTMLElement>('.review-main')!;
+        const filesBox = files.getBoundingClientRect();
+        const mainBox = main.getBoundingClientRect();
+        return {
+          filesPosition: getComputedStyle(files).position,
+          mainPosition: getComputedStyle(main).position,
+          filesBox: { x: filesBox.x, width: filesBox.width },
+          mainBox: { x: mainBox.x, width: mainBox.width },
+        };
+      });
+      expect(desktopColumns.filesPosition).toBe('static');
+      expect(desktopColumns.mainPosition).toBe('static');
+      expect(desktopColumns.filesBox.width).toBeGreaterThan(0);
+      expect(desktopColumns.mainBox.width).toBeGreaterThan(0);
+      expect(desktopColumns.filesBox.x + desktopColumns.filesBox.width).toBeCloseTo(desktopColumns.mainBox.x, 3);
+      await reviewButton.click();
+      await expect(rail).toHaveClass(/comments-rail--open/);
+      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
+      expect(await reviewShell.evaluate((shell) => {
+        const files = shell.querySelector<HTMLElement>('.review-files')!;
+        const main = shell.querySelector<HTMLElement>('.review-main')!;
+        const comments = shell.querySelector<HTMLElement>('.comments-rail')!;
+        return {
+          commentsPosition: getComputedStyle(comments).position,
+          commentsZIndex: getComputedStyle(comments).zIndex,
+          openComments: shell.querySelectorAll('.comments-rail--open').length,
+          openFiles: shell.querySelectorAll('.review-files--open').length,
+          filesPosition: getComputedStyle(files).position,
+          mainPosition: getComputedStyle(main).position,
+        };
+      })).toEqual({
+        commentsPosition: 'absolute',
+        commentsZIndex: '7',
+        openComments: 1,
+        openFiles: 0,
+        filesPosition: 'static',
+        mainPosition: 'static',
+      });
+      await assertNoPageOverflow(page);
+      await page.getByRole('button', { name: 'Close review' }).click();
+      await expect(rail).not.toHaveClass(/comments-rail--open/);
+      await expect(rail).toHaveCSS('box-shadow', 'none');
+
+      await page.setViewportSize({ width: 1279, height: 560 });
+      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
+      await expect(sessionHeader).toHaveCSS('flex-wrap', 'wrap');
+      await expect(headerFacts).toHaveCSS('flex-wrap', 'wrap');
+      const wrappedHeaderGeometry = await sessionHeader.evaluate((header) => {
+        const headerBox = header.getBoundingClientRect();
+        const items = [
+          header.querySelector<HTMLElement>('h1')!,
+          ...header.querySelectorAll<HTMLElement>('.header-facts > *'),
+        ].map((element) => {
+          const box = element.getBoundingClientRect();
+          return {
+            left: box.left,
+            top: box.top,
+            right: box.right,
+            bottom: box.bottom,
+            width: box.width,
+            height: box.height,
+          };
+        });
+        return {
+          header: {
+            left: headerBox.left,
+            top: headerBox.top,
+            right: headerBox.right,
+            bottom: headerBox.bottom,
+          },
+          items,
+        };
+      });
+      for (const item of wrappedHeaderGeometry.items) {
+        expect(item.width).toBeGreaterThan(0);
+        expect(item.height).toBeGreaterThan(0);
+        expect(item.left).toBeGreaterThanOrEqual(wrappedHeaderGeometry.header.left);
+        expect(item.top).toBeGreaterThanOrEqual(wrappedHeaderGeometry.header.top);
+        expect(item.right).toBeLessThanOrEqual(wrappedHeaderGeometry.header.right);
+        expect(item.bottom).toBeLessThanOrEqual(wrappedHeaderGeometry.header.bottom);
       }
+      for (const [index, item] of wrappedHeaderGeometry.items.entries()) {
+        for (const other of wrappedHeaderGeometry.items.slice(index + 1)) {
+          expect(item.right <= other.left || other.right <= item.left || item.bottom <= other.top || other.bottom <= item.top).toBe(true);
+        }
+      }
+      await expect(rail).toHaveCSS('box-shadow', 'none');
+      const wrappedColumns = await reviewShell.evaluate((shell) => {
+        const files = shell.querySelector<HTMLElement>('.review-files')!;
+        const main = shell.querySelector<HTMLElement>('.review-main')!;
+        const filesBox = files.getBoundingClientRect();
+        const mainBox = main.getBoundingClientRect();
+        return {
+          filesPosition: getComputedStyle(files).position,
+          mainPosition: getComputedStyle(main).position,
+          filesBox: { x: filesBox.x, width: filesBox.width },
+          mainBox: { x: mainBox.x, width: mainBox.width },
+        };
+      });
+      expect(wrappedColumns.filesPosition).toBe('static');
+      expect(wrappedColumns.mainPosition).toBe('static');
+      expect(wrappedColumns.filesBox.width).toBeGreaterThan(0);
+      expect(wrappedColumns.mainBox.width).toBeGreaterThan(0);
+      expect(wrappedColumns.filesBox.x + wrappedColumns.filesBox.width).toBeCloseTo(wrappedColumns.mainBox.x, 3);
+      await reviewButton.click();
+      await expect(rail).toHaveClass(/comments-rail--open/);
+      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
+      expect(await reviewShell.evaluate((shell) => {
+        const files = shell.querySelector<HTMLElement>('.review-files')!;
+        const main = shell.querySelector<HTMLElement>('.review-main')!;
+        const comments = shell.querySelector<HTMLElement>('.comments-rail')!;
+        return {
+          commentsPosition: getComputedStyle(comments).position,
+          commentsZIndex: getComputedStyle(comments).zIndex,
+          openComments: shell.querySelectorAll('.comments-rail--open').length,
+          openFiles: shell.querySelectorAll('.review-files--open').length,
+          filesPosition: getComputedStyle(files).position,
+          mainPosition: getComputedStyle(main).position,
+        };
+      })).toEqual({
+        commentsPosition: 'absolute',
+        commentsZIndex: '7',
+        openComments: 1,
+        openFiles: 0,
+        filesPosition: 'static',
+        mainPosition: 'static',
+      });
+      await assertNoPageOverflow(page);
+      await page.getByRole('button', { name: 'Close review' }).click();
+      await expect(rail).not.toHaveClass(/comments-rail--open/);
+      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 1100, height: 560 });
       await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
