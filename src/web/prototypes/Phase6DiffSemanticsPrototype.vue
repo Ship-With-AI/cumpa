@@ -196,7 +196,7 @@ onBeforeUnmount(() => {
 
 <template>
   <main
-    :class="['review-shell', 'phase6-prototype', `phase6-prototype--${variant}`]"
+    :class="['phase6-prototype', `phase6-prototype--${variant}`]"
     :data-active-variant="variant"
     aria-label="Phase 6 diff semantics throwaway mockup"
   >
@@ -378,7 +378,7 @@ onBeforeUnmount(() => {
         </div>
       </section>
 
-      <aside class="comments-rail phase6-prototype__rail" aria-label="Semantic legend and checklist">
+      <aside class="phase6-prototype__rail" aria-label="Semantic legend and checklist">
         <section class="phase6-prototype__panel phase6-prototype__panel--variant">
           <div class="comments-rail__heading">
             <h2>Variant switcher</h2>
