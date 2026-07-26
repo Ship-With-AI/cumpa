@@ -64,12 +64,10 @@ status: complete
 
 ## Post-review corrections
 
-- **WR-01:** Closed responsive comments/files drawers now compute `box-shadow: none`; only their corresponding open overlay classes apply `var(--shadow-overlay)`. Packaged Chromium assertions cover closed, open, and restored-closed states.
-- **WR-02:** The dependency-free audit rejects duplicate `box-shadow` declarations and exempts raw colors only in the sole context-free source token root.
-- **WR-03:** `7bbbc11` makes the rule walker recurse through every non-keyframes block-bearing at-rule while preserving context. Contextual `:root` rules under `@supports`, `@layer`, `@container`, and `@scope` now fail; deterministic fixtures also prove nested `@container` shadows and `@scope` raw colors are audited.
-- **WR-04:** The responsive package journey now loads deterministic real diff content, drives the generated Monaco gutter action by exact accessible name, and independently exercises the real `UiPrimitives` tooltip through hover/leave, focus/focus-out, and focus/Escape states.
-- **WR-05:** Receipt heading and static-surface computed-style assertions now execute at both 768px and 360px.
-- **Verification:** `npm run build:web && node scripts/verify-semantic-css.mjs` passed after the WR-03 correction; prior focused Chromium verification remains recorded above.
+- **WR-01 — keyframe declaration audit:** `declarationRules()` now recurses through every declaration-bearing at-rule context, including `@keyframes` steps, while `leafRules()` continues to exclude keyframes from root selection. The author-style checks retain `@keyframes` in rule context and reject a direct raw color or non-allowlisted shadow there; deterministic fixtures exercise both failures.
+- **WR-02 — direct-color confinement:** the dependency-free audit now inspects paint-bearing declaration property/value semantics rather than only hex/rgb/hsl text. Outside the one context-free token root, it rejects named colors and `oklch()`, `oklab()`, `lab()`, `lch()`, `color()`, and `color-mix()`; the terminal forced-colors repair admits only its documented system keywords. Semantic variables plus intentionally non-palette `currentColor`/`transparent` values pass deterministic checks; fixtures prove `white`, `rebeccapurple`, `oklch()`, and `color()` fail.
+- **WR-03 — responsive breakpoint evidence:** the real packaged session journey now separately proves 1280px `nowrap` desktop header plus static files/diff columns and a comments-only overlay, versus 1279px `wrap` header with all heading/fact/control boxes non-overlapping while files/diff remain static and comments remain the only overlay. Both cases retain Files-trigger absence, overlay-shadow, and document-overflow assertions.
+- **Verification:** `npm run build:web && node scripts/verify-semantic-css.mjs` and `npm run test:package -- tests/e2e/responsive-session.spec.ts` passed after these corrections.
 
 ## Task Commits
 
