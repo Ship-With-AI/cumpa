@@ -115,7 +115,7 @@ Plans:
 | 03. Complete Review Draft | v1.0 | 7/7 | Complete | 2026-07-23 |
 | 04. Agent-Ready Export | v1.0 | 8/8 | Complete | 2026-07-23 |
 | 04.1. Close CMT-01 Async Comment Settlement | v1.0 | 2/2 | Complete | 2026-07-24 |
-| 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete | 2026-07-26 |
+| 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
 | 06. Monaco Diff Semantics | v1.1 | 0/TBD | Not started | - |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 0/TBD | Not started | - |
 | 08. Accessible Responsive Continuity | v1.1 | 0/TBD | Not started | - |
