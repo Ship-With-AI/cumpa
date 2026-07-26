@@ -65,10 +65,11 @@ status: complete
 ## Post-review corrections
 
 - **WR-01:** Closed responsive comments/files drawers now compute `box-shadow: none`; only their corresponding open overlay classes apply `var(--shadow-overlay)`. Packaged Chromium assertions cover closed, open, and restored-closed states.
-- **WR-02 / WR-03:** The dependency-free audit rejects duplicate `box-shadow` declarations and all contextual `:root` rules, exempts raw colors only in the sole context-free source token root, and self-checks both bypasses.
+- **WR-02:** The dependency-free audit rejects duplicate `box-shadow` declarations and exempts raw colors only in the sole context-free source token root.
+- **WR-03:** `7bbbc11` makes the rule walker recurse through every non-keyframes block-bearing at-rule while preserving context. Contextual `:root` rules under `@supports`, `@layer`, `@container`, and `@scope` now fail; deterministic fixtures also prove nested `@container` shadows and `@scope` raw colors are audited.
 - **WR-04:** The responsive package journey now loads deterministic real diff content, drives the generated Monaco gutter action by exact accessible name, and independently exercises the real `UiPrimitives` tooltip through hover/leave, focus/focus-out, and focus/Escape states.
 - **WR-05:** Receipt heading and static-surface computed-style assertions now execute at both 768px and 360px.
-- **Verification:** `npm run build:web && node scripts/verify-semantic-css.mjs`, `npm run test:package -- tests/e2e/responsive-session.spec.ts`, and `npm run test:browser -- tests/integration/export-receipt-ui.spec.ts --grep "renders only the confirmed receipt"` passed after the corrections.
+- **Verification:** `npm run build:web && node scripts/verify-semantic-css.mjs` passed after the WR-03 correction; prior focused Chromium verification remains recorded above.
 
 ## Task Commits
 
@@ -79,6 +80,7 @@ Each task was committed atomically:
 3. **Task 2: Update focused Chromium contracts for every foundation state and preserved responsive tier** - `fbf8e3e` (test)
 4. **Task 2 correction: cover forced-colors foundation** - `555d20b` (test)
 5. **Post-review corrections: drawer elevation, audit bypasses, and browser evidence** - `e4fa809` (fix)
+6. **WR-03 correction: close nested semantic root audit gap** - `7bbbc11` (fix)
 
 **Plan metadata:** this completion commit
 
