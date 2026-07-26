@@ -1,6 +1,6 @@
 ---
 phase: 05-semantic-dark-foundation
-reviewed: 2026-07-26
+reviewed: 2026-07-26T15:24:56Z
 depth: standard
 files_reviewed: 6
 files_reviewed_list:
@@ -12,64 +12,46 @@ files_reviewed_list:
   - tests/integration/export-receipt-ui.spec.ts
 findings:
   critical: 0
-  warning: 5
+  warning: 0
   info: 0
-  total: 5
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 05: Code Review Report
 
-**Reviewed:** 2026-07-26
-**Depth:** standard
-**Files Reviewed:** 6
-**Status:** issues_found
+**Reviewed:** 2026-07-26T15:24:56Z  
+**Depth:** standard  
+**Files Reviewed:** 6  
+**Status:** clean
 
 ## Summary
 
-The semantic token cutover is largely consistent with the locked palette and the scoped recovery, receipt, and first-paint assertions use real rendered states. However, closed responsive drawers still carry overlay elevation, the stylesheet audit has two concrete bypasses, and the responsive browser contract substitutes a fixture for required real accessibility journeys. The receipt assertions also do not execute at both claimed viewport widths.
+Reviewed the six locked Phase 05 artifacts against `05-01-PLAN.md`, `05-UI-SPEC.md`, and the phase summary. The current stylesheet retains one exact semantic root, confines direct paint values to that root or the terminal forced-colors repair, and preserves the Phase 05-only foundation boundary: no Monaco theme/model/diff-layer adaptation is introduced.
+
+The CSS audit traverses declaration-bearing keyframe steps and grouping contexts; rejects duplicate or non-allowlisted shadows; and its deterministic self-checks cover raw colors in keyframes, named colors, current CSS color functions, and unapproved forced-colors system colors. The browser contracts use the packaged/mounted state journeys required for this phase, including the real Monaco gutter and `UiPrimitives` tooltip journeys, drawer transitions, exact 1280px/1279px layout distinction, recovery, receipt, loading, unavailable, and empty states.
+
+No actionable defect remains in the supplied Phase 05 scope. Tests, linters, and formatters were not run by this reviewer, as directed.
+
+## Historical Findings Re-evaluated
+
+| Historical finding | Current result | Current evidence |
+| --- | --- | --- |
+| WR-01 — closed responsive drawers painted overlay elevation | **Resolved** | Closed responsive drawer rules explicitly compute `box-shadow: none`; overlay elevation is applied only by `.comments-rail--open` and `.review-files--open` in their permitted responsive contexts (`src/web/styles.css:1355-1369`, `src/web/styles.css:1380-1402`). The packaged journey asserts both open shadow and post-close `none` across the affected tiers (`tests/e2e/responsive-session.spec.ts:805-812`, `836-862`, `925-951`, `970-976`). |
+| WR-02 — later `box-shadow` declaration could bypass the audit | **Resolved** | The audit gathers all `box-shadow` declarations and fails a rule with more than one before evaluating selector/context allowlists (`scripts/verify-semantic-css.mjs:328-347`). The inset allowlist contains only the two specified resting rails, while the overlay allowlist and responsive-context checks name only the permitted overlays (`scripts/verify-semantic-css.mjs:317-342`). |
+| WR-03 — contextual/nested token roots could evade the audit | **Resolved** | `rootRule()` rejects contextual `:root` leaves, and direct-color exemption requires both selector `:root` and an empty context (`scripts/verify-semantic-css.mjs:175-188`, `296-308`). Deterministic fixtures cover nested roots under `@supports`, `@layer`, `@container`, and `@scope` (`scripts/verify-semantic-css.mjs:375-386`). |
+| WR-04 — gutter/tooltip proof used a fixture or let hover mask focus | **Resolved** | The test drives the generated Monaco session, finds the real gutter action by exact accessible name, proves hover open/mouse-leave close and focus open/focus-out close, then separately proves the `UiPrimitives` hover, focus, focus-out, and Escape journeys (`tests/e2e/responsive-session.spec.ts:673-717`). The only synthetic gutter control remains the separate target-spacing fixture (`tests/e2e/responsive-session.spec.ts:599-654`). |
+| WR-05 — receipt visual checks ran only at 360px | **Resolved** | Typography and static receipt/file-row surface assertions execute inside the `[768, 360]` viewport loop (`tests/integration/export-receipt-ui.spec.ts:192-210`). |
+| Later WR-01 — keyframe declaration steps escaped raw-color and shadow auditing | **Resolved** | `declarationRules()` descends into declaration-bearing nested blocks, including keyframe steps; direct-color and shadow checks consume those rules (`scripts/verify-semantic-css.mjs:156-173`, `295-308`, `328-347`). Deterministic raw-color and shadow keyframe fixtures must fail (`scripts/verify-semantic-css.mjs:390-397`). The shipped spinner keyframe contains only a transform (`src/web/styles.css:1323-1326`). |
+| Later WR-02 — named/modern direct colors and forced-colors allowed-value boundaries escaped confinement | **Resolved** | Direct-color detection now covers named colors, hex, legacy/current color functions including `hwb()`, `oklab()/oklch()`, `lab()/lch()`, `color()`, `color-mix()`, `device-cmyk()`, `light-dark()`, and both contrast-function spellings (`scripts/verify-semantic-css.mjs:260-274`). It distinguishes all standard system colors from the documented forced-colors allowlist (`scripts/verify-semantic-css.mjs:218-230`, `300-306`). Fixtures reject named and modern color syntax plus forced-colors `AccentColor`, while allowing only approved system keywords and intentional `currentColor`/`transparent` values (`scripts/verify-semantic-css.mjs:399-423`). |
+| Later WR-03 — 1280px/1279px breakpoint proof did not exercise distinct real layouts | **Resolved** | At 1280px the packaged test asserts an unwrapped header, static adjacent files/diff columns, and comments-only overlay behavior (`tests/e2e/responsive-session.spec.ts:814-862`). At 1279px it separately asserts wrapping, in-header/non-overlapping bounding boxes, the same static column ownership, comments-only overlay, and no document overflow (`tests/e2e/responsive-session.spec.ts:864-951`). |
 
 ## Narrative Findings (AI reviewer)
 
-## Warnings
-
-### WR-01: Closed responsive drawers still paint the overlay shadow
-
-**File:** `src/web/styles.css:1364-1374`, `src/web/styles.css:1389-1402`  
-**Issue:** Both media-query base rules assign `box-shadow: var(--shadow-overlay)` to the drawer before its `--open` class is applied. A translated-offscreen element's blurred shadow still extends into the viewport (leftward for the closed comments rail and rightward for the closed files drawer), so a closed drawer can leave a visible elevated edge. This contradicts the UI contract that only an *open* overlay is raised/shadowed. The responsive test also codifies this incorrect state by expecting a rail shadow before it clicks `Review` at `tests/e2e/responsive-session.spec.ts:674-681`.
-
-**Fix:** Keep `box-shadow: none` on the closed drawer rules and place `box-shadow: var(--shadow-overlay)` on `.comments-rail--open` and `.review-files--open` inside their respective media queries. Update the test to assert `none` while closed and the overlay shadow only after opening.
-
-### WR-02: The semantic CSS audit accepts a disallowed later `box-shadow` declaration
-
-**File:** `scripts/verify-semantic-css.mjs:165-185`  
-**Issue:** `assertAuthorStyle()` uses `rule.declarations.find(...)`, so it validates only the first `box-shadow` declaration in a rule. CSS resolves duplicate declarations by using the later applicable declaration. Consequently, a rule such as `.ui-button:active { box-shadow: none; box-shadow: inset 1px 1px black; }` passes the pressed-shadow check even though its computed style violates the no-inset-shadow contract. The same bypass applies to the selected-rail and overlay allowlists.
-
-**Fix:** Collect every `box-shadow` declaration per rule. Reject duplicate declarations outright (simplest for this constrained stylesheet), or validate every declaration and use the final declaration when determining the computed contract.
-
-### WR-03: The audit permits additional nested token roots with raw colors
-
-**File:** `scripts/verify-semantic-css.mjs:109-115`, `scripts/verify-semantic-css.mjs:143-145`  
-**Issue:** `rootRule()` counts only a context-free `:root`, while the raw-color scan exempts every rule whose selector is `:root`, regardless of its media-query context. An added `@media (...) { :root { --some-token: #fff; } }` would therefore pass this audit: it is not counted as another root and its raw literal is exempted. That violates the required single root vocabulary and allows responsive palette overrides to evade the clean-cutover gate.
-
-**Fix:** Fail when any `:root` leaf rule has a non-empty context, and make the raw-color exemption conditional on both `selector === ':root'` and `context.length === 0`. Prefer counting all `:root` rules before selecting the canonical one so the error states the duplicate-root violation directly.
-
-### WR-04: Required real gutter and tooltip journeys are replaced by a fixture, and the focus assertion is a hover false positive
-
-**File:** `tests/e2e/responsive-session.spec.ts:506-510`, `tests/e2e/responsive-session.spec.ts:552-568`  
-**Issue:** The test injects a standalone `.diff-workspace__gutter-action` into `document.body`; it never drives the generated Monaco session until the real gutter action appears, as required by the Phase 05 plan. It also has no `UiPrimitives` tooltip journey at all. Further, the test calls `gutter.focus()` immediately after `gutter.hover()` without moving the pointer away, so `::after { display: block }` can be caused solely by `:hover`; removal of the `:focus-visible` selector would still pass.
-
-**Fix:** Route the real diff content and use the existing Monaco hover path to locate the actual button by its exact accessible name. After the pointer-open assertion, move outside the control and assert closure before separately focusing it, then focus another control and assert closure. Add the independent `UiPrimitives` hover/mouse-leave, focus/focus-out, and focus/Escape journeys required by the UI contract.
-
-### WR-05: Receipt static-surface assertions run only at 360px, not both promised widths
-
-**File:** `tests/integration/export-receipt-ui.spec.ts:165-171`, `tests/integration/export-receipt-ui.spec.ts:189-199`  
-**Issue:** The viewport loop ends at 360px. The following typography and surface assertions execute once, at that final width only. A 768px-specific receipt rule could reintroduce a light/static-shadow surface or wrong heading type without this test failing, despite the Phase 05 contract requiring evidence at both 768px and 360px.
-
-**Fix:** Move the receipt/row computed-style assertions into the `[768, 360]` loop (or extract and invoke a helper for each width), retaining the overflow assertion alongside them.
+No critical issues, warnings, or information findings.
 
 ---
 
-_Reviewed: 2026-07-26_  
-_Reviewer: the agent (gsd-code-reviewer)_  
+_Reviewed: 2026-07-26T15:24:56Z_  
+_Reviewer: agent (gsd-code-reviewer)_  
 _Depth: standard_
