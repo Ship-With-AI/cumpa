@@ -26,7 +26,7 @@ Full phase goals, success criteria, requirement mappings, and plan details are a
 
 ### v1.1 GitHub Dark Diff
 
-- [ ] **Phase 05: Semantic Dark Foundation** — Establish one coherent dark-only visual language for the existing diff workspace.
+- [x] **Phase 05: Semantic Dark Foundation** Establish one coherent dark-only visual language for the existing diff workspace. (completed 2026-07-26)
 - [ ] **Phase 06: Monaco Diff Semantics** — Make every diff, gutter, selection, and overlapping editor state legible within that language.
 - [ ] **Phase 07: GitHub-Familiar Review Surfaces** — Adapt the file header, controls, comments, notices, and review rail without changing review mechanics.
 - [ ] **Phase 08: Accessible Responsive Continuity** — Prove the restyled workspace remains accessible, reflows safely, and preserves the complete review workflow.
@@ -39,14 +39,18 @@ Full phase goals, success criteria, requirement mappings, and plan details are a
 **Depends on**: Phase 04.1 (v1.0 complete)
 **Requirements**: VIS-01, VIS-02, VIS-03
 **Success Criteria** (what must be TRUE):
+
   1. User sees a consistently dark workspace across page, panels, drawers, controls, loading, empty, and error surfaces without light panels or browser-default flashes.
   2. User can read compact, GitHub-familiar interface typography while code, labels, line numbers, and controls remain legible and aligned.
   3. User can distinguish canvas, inset, raised, and interactive regions through restrained surface steps, borders, radii, and overlay-only elevation without decoration competing with code.
+
 **Planning detail**: Establish one dark-only semantic vocabulary for surfaces, text, borders, controls, status, focus, selection, and diff roles; migrate existing CSS consumers rather than layering a second palette. Keep current Vue structure, DOM semantics, local copy, and dependencies intact.
-**Plans**: 1 plan
+**Plans**: 1/1 plans complete
 
 Plans:
-- [ ] 05-01-PLAN.md — Replace both visual vocabularies with one semantic dark CSS contract and prove every foundation state in focused Chromium flows.
+
+- [x] 05-01-PLAN.md — Replace both visual vocabularies with one semantic dark CSS contract and prove every foundation state in focused Chromium flows.
+
 **UI hint**: yes
 
 ### Phase 06: Monaco Diff Semantics
@@ -55,11 +59,13 @@ Plans:
 **Depends on**: Phase 05
 **Requirements**: DIFF-01, DIFF-02, DIFF-03, DIFF-04, DIFF-05
 **Success Criteria** (what must be TRUE):
+
   1. User sees the Monaco canvas, syntax tokens, gutters, widgets, and surrounding workspace as one coordinated dark interface.
   2. User can distinguish additions, deletions, intraline changes, hunks, unchanged regions, and empty diff regions while text remains readable over every layer.
   3. User can tell Base/deletion from Head/addition without relying on red versus green alone.
   4. User sees legible line-number gutters, active-line emphasis, and the existing comment affordance without movement or gutter reflow.
   5. User can still distinguish selection, active lines, hover targets, comment anchors, keyboard focus, and diff meaning when those states overlap.
+
 **Planning detail**: Register an idempotent typed Monaco theme before editor construction and map the shared semantic roles into editor, syntax, diff, gutter, widget, selection, unchanged-region, and focus colors. Preserve the existing adapter, models, line mapping, view zones, hidden regions, side-by-side geometry, accessibility labels, and keyboard commands.
 **Plans**: TBD
 **UI hint**: yes
@@ -70,11 +76,13 @@ Plans:
 **Depends on**: Phase 06
 **Requirements**: VIS-04, REVW-01, REVW-02, REVW-03, REVW-04
 **Success Criteria** (what must be TRUE):
+
   1. User can identify the current file and its Base/Head context in a compact file header that retains every existing file and diff control.
   2. User can distinguish rest, hover, pressed, selected, focused, disabled, destructive, and busy states on every existing diff-workspace control.
   3. User can read and operate inline comment composers and comment cards with clear anchors, headings, validation, and lifecycle status.
   4. User can scan the review rail through clear heading, count, group, card, form, and selected-comment hierarchy.
   5. User can distinguish error, warning, informational, success, pending, disabled, open, and resolved states through text or icons and structural treatment in addition to color.
+
 **Planning detail**: Restyle the existing file tree and header, toolbar, drawers, inline view-zone content, comment composer and cards, review rail, notices, conflict and recovery states, summary, and export surfaces. Reuse current components, semantic hooks, ARIA relationships, focus targets, events, and state transitions; add no review mechanics or information-architecture changes.
 **Plans**: TBD
 **UI hint**: yes
@@ -85,11 +93,13 @@ Plans:
 **Depends on**: Phase 07
 **Requirements**: A11Y-01, A11Y-02, A11Y-03, RESP-01, CONT-01
 **Success Criteria** (what must be TRUE):
+
   1. User can read normal text and identify meaningful indicators at WCAG 2.2 AA contrast after translucent diff, selection, comment, and status layers are composited.
   2. Keyboard user sees a persistent, unclipped focus indicator on every operable workspace control and editor affordance.
   3. User retains durable labels, markers, borders, and focus cues when browser or operating-system forced-colors behavior overrides the palette.
   4. User can use headers, controls, drawers, comments, notices, and forms at narrow widths and 400% zoom without page-wide horizontal scrolling; only the side-by-side diff owns localized two-dimensional scrolling.
   5. User can complete existing file navigation, side-by-side review, commenting, summary, and export with unchanged information architecture, keyboard commands, persistence, and review mechanics.
+
 **Planning detail**: Validate representative desktop, narrow, zoomed, overlapping-state, grayscale, and forced-color scenarios after all real review surfaces are styled. Keep the diff viewport as the sole localized two-dimensional scroll owner and use the existing end-to-end workflow as the behavioral regression boundary.
 **Plans**: TBD
 **UI hint**: yes
@@ -105,7 +115,7 @@ Plans:
 | 03. Complete Review Draft | v1.0 | 7/7 | Complete | 2026-07-23 |
 | 04. Agent-Ready Export | v1.0 | 8/8 | Complete | 2026-07-23 |
 | 04.1. Close CMT-01 Async Comment Settlement | v1.0 | 2/2 | Complete | 2026-07-24 |
-| 05. Semantic Dark Foundation | v1.1 | 0/1 | Planned | - |
+| 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete | 2026-07-26 |
 | 06. Monaco Diff Semantics | v1.1 | 0/TBD | Not started | - |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 0/TBD | Not started | - |
 | 08. Accessible Responsive Continuity | v1.1 | 0/TBD | Not started | - |

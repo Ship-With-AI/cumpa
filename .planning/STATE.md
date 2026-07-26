@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: GitHub Dark Diff
-current_phase: 05
-current_phase_name: v1.1 phase 1 of 4
-status: executing
-stopped_at: Phase 05 UI-SPEC approved
-last_updated: "2026-07-26T11:14:04.835Z"
-last_activity: 2026-07-24
-last_activity_desc: Created the approved v1.1 roadmap and mapped all 18 requirements
+current_phase: 06
+current_phase_name: Monaco Diff Semantics
+status: planned
+stopped_at: Completed 05-01-PLAN.md
+last_updated: "2026-07-26T13:53:41.244Z"
+last_activity: 2026-07-26
+last_activity_desc: Completed Phase 05 plan 01 semantic dark foundation
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 1
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 05 — Semantic Dark Foundation
+**Current focus:** Phase 06 — Monaco Diff Semantics
 
 ## Current Position
 
-Phase: 05 of 08 (v1.1 phase 1 of 4) — Semantic Dark Foundation
+Phase: 06 — Monaco Diff Semantics
 Plan: Not planned
-Status: Ready to execute
-Last activity: 2026-07-24 — Created the approved v1.1 roadmap and mapped all 18 requirements
+Status: Ready to plan
+Last activity: 2026-07-26 — Completed Phase 05 plan 01 semantic dark foundation
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -51,6 +51,11 @@ Progress: [░░░░░░░░░░] 0%
 | v1.1 GitHub Dark Diff | 4 | TBD | Ready to plan |
 
 *Updated after each plan completion.*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 05 P01 | 18min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -62,6 +67,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - One semantic dark presentation contract precedes Monaco integration and review-surface styling.
 - Monaco diff semantics precede the surrounding review-state adaptation; accessibility, responsive reflow, and workflow continuity close the milestone.
 - No new review mechanics, theme system, UI framework, remote assets, persistence changes, or export-contract changes belong in v1.1.
+- [Phase 05]: Use a single direct semantic-token root with no compatibility aliases or component token roots.
+- [Phase 05]: Keep Monaco internals untouched; Phase 05 exposes only CSS foundation roles for later consumers.
 
 ### Pending Todos
 
@@ -85,6 +92,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-26T06:56:28.438Z
-Stopped at: Phase 05 UI-SPEC approved
-Resume file: .planning/phases/05-semantic-dark-foundation/05-UI-SPEC.md
+Last session: 2026-07-26T13:53:41.240Z
+Stopped at: Completed 05-01-PLAN.md
+Resume file: .planning/phases/05-semantic-dark-foundation/05-01-SUMMARY.md
