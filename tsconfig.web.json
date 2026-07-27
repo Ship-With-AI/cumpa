@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "verbatimModuleSyntax": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "files": [
+    "src/web/monaco/diff-adapter.ts",
+    "src/web/monaco/diff-semantics.ts",
+    "src/web/monaco/line-mapping.ts",
+    "src/web/monaco/theme.ts",
+    "src/web/model/workspace-command.ts"
+  ]
+}

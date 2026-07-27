@@ -18,6 +18,7 @@
     "build:node": "tsc --project tsconfig.json",
     "build:runtime": "npm run build:bin && npm run build:node && node scripts/build-native-addon.mjs",
     "build:web": "vite build",
+    "typecheck:web": "tsc --noEmit --project tsconfig.web.json",
     "build": "npm run build:runtime && npm run build:web",
     "prepack": "npm run build",
     "verify:prerequisites": "node scripts/verify-prerequisites.mjs && npm run build:runtime",

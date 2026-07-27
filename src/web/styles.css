@@ -1667,8 +1667,7 @@ input:-webkit-autofill:focus {
 }
 
 .monaco-editor .monaco-anchor-line {
-  box-sizing: border-box;
-  border-left: 3px solid var(--interactive-accent);
+  box-shadow: inset 3px 0 var(--interactive-accent);
 }
 
 .monaco-diff-pane--base:focus-within,

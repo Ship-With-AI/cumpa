@@ -3,7 +3,7 @@ import * as monaco from 'monaco-editor';
 import { counterpartBoundary, type DiffSide } from './line-mapping';
 import { buildDiffDecorations } from './diff-semantics';
 import { applyDiffReviewTheme } from './theme';
-import type { WorkspaceCommand } from '../model/workspace-state.js';
+import type { WorkspaceCommand } from '../model/workspace-command.js';
 
 export type { DiffSide } from './line-mapping';
 
@@ -95,7 +95,7 @@ class PublicMonacoDiffAdapter {
     private readonly languageForPath: (path: string) => string,
     private readonly onChange: () => void,
   ) {
-    applyDiffReviewTheme(monaco);
+    applyDiffReviewTheme();
     this.diffEditor = monaco.editor.createDiffEditor(host, {
       ariaLabel: 'Immutable base and head side-by-side diff',
       automaticLayout: false,

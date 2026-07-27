@@ -17,6 +17,14 @@ type PrototypeState = {
   pairedZones: number;
   activeComposers: number;
   contextMode: 'collapsed' | 'all-revealed';
+  firstFrame: Readonly<{
+    canvasBackground: string;
+    gutterBackground: string;
+    capturedAt: number;
+    sequence: number;
+  }> | undefined;
+  fileReadyAt: number | undefined;
+  fileReadySequence: number | undefined;
 };
 
 async function startPrototypeServer(): Promise<string> {
@@ -203,12 +211,18 @@ test('10. reconstructs paired public zones after repeated diff updates without d
 
 
 test('11. paints first-frame semantic theme, flat empty regions, and sparse signed bars', async ({ page }) => {
-  await openPrototype(page);
-
-  const canvas = page.locator('.monaco-editor-background').first();
-  const gutter = page.locator('.monaco-editor .margin').first();
-  await expect(canvas).toHaveCSS('background-color', 'rgb(13, 17, 23)');
-  await expect(gutter).toHaveCSS('background-color', 'rgb(1, 4, 9)');
+  await page.goto(`${origin}/monaco-stability`);
+  await expect.poll(() => page.evaluate(() => (window as Window & {
+    __monacoStabilityPrototype?: PrototypeState;
+  }).__monacoStabilityPrototype?.firstFrame !== undefined)).toBe(true);
+  await expect(page.getByTestId('monaco-render-status')).toHaveText('Rendered real Monaco');
+  const state = await readState(page);
+  expect(state.firstFrame).toMatchObject({
+    canvasBackground: 'rgb(13, 17, 23)',
+    gutterBackground: 'rgb(1, 4, 9)',
+  });
+  expect(state.fileReadyAt).toBeGreaterThanOrEqual(state.firstFrame?.capturedAt ?? Infinity);
+  expect(state.fileReadySequence).toBeGreaterThan(state.firstFrame?.sequence ?? Infinity);
 
   const headBars = page.locator('.monaco-diff-change-bar--head');
   const baseBars = page.locator('.monaco-diff-change-bar--base');
@@ -257,9 +271,9 @@ test('12. keeps selection contrast, anchor rail, diff meaning, and focus in sepa
   await expect(page.locator('.monaco-diff-change-bar--head')).not.toHaveCount(0);
 
   await page.getByRole('button', { name: 'Add head comment' }).click();
-  await expect(page.locator('.monaco-anchor-line')).not.toHaveCount(0);
-  await expect(page.locator('.monaco-anchor-line').first()).toHaveCSS('border-left-color', 'rgb(47, 129, 247)');
-
+  const anchorLine = page.locator('.monaco-anchor-line').first();
+  await expect(anchorLine).toHaveCSS('border-left-width', '0px');
+  await expect(anchorLine).toHaveCSS('box-shadow', 'rgb(47, 129, 247) 3px 0px 0px 0px inset');
   await page.getByRole('button', { name: 'Next file' }).click();
   await expect(selectionContrast).toHaveCount(0);
   await expect.poll(() => readState(page)).toMatchObject({ listenerCount: 17, liveModels: 2 });

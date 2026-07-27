@@ -146,7 +146,57 @@ const currentFile = computed(() => FILES[currentFileIndex.value]);
 let adapter: MonacoDiffAdapter | undefined;
 let resizeObserver: ResizeObserver | undefined;
 let zoneRoot: HTMLElement | undefined;
+let firstFrameObserver: MutationObserver | undefined;
 const composerTextByFileId = new Map<string, string>();
+type FirstFrame = Readonly<{
+  canvasBackground: string;
+  gutterBackground: string;
+  capturedAt: number;
+  sequence: number;
+}>;
+
+let firstFrame: FirstFrame | undefined;
+let fileReadyAt: number | undefined;
+let fileReadySequence: number | undefined;
+let lifecycleSequence = 0;
+
+function captureFirstFrame(): boolean {
+  if (firstFrame !== undefined) {
+    return true;
+  }
+  const canvas = host.value?.querySelector<HTMLElement>('.monaco-editor-background');
+  const gutter = host.value?.querySelector<HTMLElement>('.monaco-editor .margin');
+  if (canvas === undefined || canvas === null || gutter === undefined || gutter === null) {
+    return false;
+  }
+  firstFrame = {
+    canvasBackground: getComputedStyle(canvas).backgroundColor,
+    gutterBackground: getComputedStyle(gutter).backgroundColor,
+    capturedAt: performance.now(),
+    sequence: ++lifecycleSequence,
+  };
+  firstFrameObserver?.disconnect();
+  return true;
+}
+
+function beginFirstFrameCapture(): void {
+  if (host.value === undefined) {
+    return;
+  }
+  firstFrameObserver = new MutationObserver(() => {
+    captureFirstFrame();
+  });
+  firstFrameObserver.observe(host.value, { childList: true, subtree: true });
+}
+
+function markFileReady(): void {
+  if (fileReadyAt !== undefined) {
+    return;
+  }
+  fileReadyAt = performance.now();
+  fileReadySequence = ++lifecycleSequence;
+}
+
 
 function unmountComposer(): void {
   if (zoneRoot !== undefined) {
@@ -203,6 +253,9 @@ function publishContract(): void {
       pairedZones: diagnostics?.pairedZoneCount ?? 0,
       activeComposers: diagnostics?.activeComposerCount ?? 0,
       contextMode: diagnostics?.contextMode ?? 'collapsed',
+      firstFrame,
+      fileReadyAt,
+      fileReadySequence,
     },
   });
 }
@@ -210,6 +263,7 @@ function publishContract(): void {
 async function selectFile(index: number): Promise<void> {
   currentFileIndex.value = index;
   await adapter?.setFile(currentFile.value);
+  markFileReady();
   rendered.value = true;
   updateVersion.value += 1;
   publishContract();
@@ -248,19 +302,29 @@ onMounted(async () => {
     return;
   }
   configureMonacoWorkers();
+  beginFirstFrameCapture();
   adapter = createMonacoDiffAdapter(host.value, languageForPath, () => {
+    markFileReady();
     rendered.value = true;
     renderComposer();
     updateVersion.value += 1;
     publishContract();
   });
+  adapter.layout();
   resizeObserver = new ResizeObserver(() => adapter?.layout());
   resizeObserver.observe(host.value);
-  await selectFile(0);
+  const initialFile = selectFile(0);
+  await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+  if (!captureFirstFrame()) {
+    throw new Error('Monaco first frame did not create canvas and gutter surfaces');
+  }
+  publishContract();
+  await initialFile;
 });
 
 onBeforeUnmount(() => {
   unmountComposer();
+  firstFrameObserver?.disconnect();
   resizeObserver?.disconnect();
   adapter?.dispose();
   adapter = undefined;
@@ -294,8 +358,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .prototype {
-  background: #f6f3ec;
-  color: #242822;
+  background: var(--surface-canvas);
+  color: var(--text-primary);
   font-family: "Avenir Next", Avenir, "Segoe UI", sans-serif;
   min-height: 100dvh;
   padding: 16px;
@@ -305,5 +369,5 @@ h1 { font-size: 18px; margin: 0; }
 p { margin: 4px 0; }
 nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 button { min-height: 32px; }
-.monaco-host { border: 1px solid #c9c2b5; height: calc(100dvh - 164px); min-height: 500px; }
+.monaco-host { border: 1px solid var(--border-default); height: calc(100dvh - 164px); min-height: 500px; }
 </style>

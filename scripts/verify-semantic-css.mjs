@@ -3,6 +3,7 @@ import { resolve, relative, sep } from 'node:path';
 
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const sourcePath = resolve(repositoryRoot, 'src/web/styles.css');
+const prototypePath = resolve(repositoryRoot, 'src/web/prototypes/MonacoStabilityPrototype.vue');
 const outputRoot = resolve(repositoryRoot, 'dist/web');
 const indexPath = resolve(outputRoot, 'index.html');
 
@@ -324,6 +325,7 @@ function assertAuthorStyle(source) {
   const insetAllowlist = new Map([
     ['.tree-row--selected', 'inset 3px 0 var(--selection-border)'],
     ['.view-tab[aria-selected="true"]', 'inset 0 -3px var(--selection-border)'],
+    ['.monaco-editor .monaco-anchor-line', 'inset 3px 0 var(--interactive-accent)'],
   ]);
   const overlayAllowlist = new Set([
     '.identity-panel', '.keyboard-help', '.ui-tooltip__content', '.diff-workspace__gutter-action::after',
@@ -351,6 +353,16 @@ function assertAuthorStyle(source) {
         fail(`box-shadow value ${shadow.value} is not permitted for ${selector}`);
       }
     }
+  }
+}
+
+function assertVueStyleBlocks(source, label) {
+  const styles = [...source.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map((match) => match[1]);
+  if (styles.length === 0) fail(`${label} has no authored style block to audit`);
+  for (const style of styles) {
+    assertAuthorStyle(`:root { --surface-canvas: #0D1117; } ${style} @media (forced-colors: active) {
+      body { background: Canvas; color: CanvasText; }
+    }`);
   }
 }
 
@@ -416,6 +428,11 @@ function assertAuditSelfChecks() {
     'an unapproved forced-colors system color',
   );
 
+  expectAuditFailure(
+    () => assertVueStyleBlocks('<style scoped>.prototype { background: #f6f3ec; }</style>', 'raw Vue fixture'),
+    'a direct palette literal in an authored Vue style block',
+  );
+
   assertAuthorStyle(`${canonicalRoot} .semantic-colors { color: var(--text-primary); border-color: currentColor; background: transparent; } @media (forced-colors: active) {
     body { background: Canvas; color: CanvasText; }
     button { background: ButtonFace; color: ButtonText; border-color: ButtonBorder; }
@@ -428,6 +445,7 @@ function assertAuditSelfChecks() {
 assertAuditSelfChecks();
 
 const source = await readFile(sourcePath, 'utf8');
+const prototypeSource = await readFile(prototypePath, 'utf8');
 const index = await readFile(indexPath, 'utf8');
 const cssHrefs = [...index.matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi)]
   .map((match) => match[1]);
@@ -455,5 +473,6 @@ assertExpectedValues(sourceRoot);
 assertNoLegacy(source, 'source CSS');
 assertNoLegacy(generated, 'generated CSS');
 assertAuthorStyle(source);
+assertVueStyleBlocks(prototypeSource, 'Monaco stability prototype');
 
 console.log('Semantic CSS verified: canonical root, retired vocabulary, and author-style invariants pass.');

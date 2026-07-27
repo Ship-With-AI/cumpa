@@ -279,6 +279,84 @@ async function hoverMonacoLine(page: Page, side: 'base' | 'head', text: string):
   await page.mouse.move(bounds!.x + 20, bounds!.y + 9);
 }
 
+type GeometryRect = Readonly<{ x: number; y: number; width: number; height: number }>;
+type MonacoGeometry = Readonly<{
+  action: GeometryRect | null;
+  codeOrigin: Readonly<{ tokenX: number; viewLineX: number; lineHeight: number }> | null;
+  document: Readonly<{ clientWidth: number; scrollWidth: number }>;
+  gutters: readonly number[];
+  panes: readonly GeometryRect[];
+  reviewMain: Readonly<{ clientHeight: number; clientWidth: number; scrollHeight: number; scrollWidth: number }> | null;
+  sashes: readonly GeometryRect[];
+  scrollOwners: readonly Readonly<{ clientHeight: number; clientWidth: number; scrollHeight: number; scrollWidth: number }>[];
+  zones: readonly GeometryRect[];
+}>;
+
+async function readMonacoGeometry(page: Page, targetText: string): Promise<MonacoGeometry> {
+  return page.evaluate((text) => {
+    const rect = (element: Element | null): GeometryRect | null => {
+      if (element === null) return null;
+      const { x, y, width, height } = element.getBoundingClientRect();
+      return { x, y, width, height };
+    };
+    const scrollDimensions = (element: HTMLElement) => ({
+      clientHeight: element.clientHeight,
+      clientWidth: element.clientWidth,
+      scrollHeight: element.scrollHeight,
+      scrollWidth: element.scrollWidth,
+    });
+    const action = document.querySelector('.diff-workspace__gutter-action');
+    const actionRect = rect(action);
+    const line = [...document.querySelectorAll('.monaco-diff-editor .modified .view-line')]
+      .filter((element) => element.getBoundingClientRect().height > 0)
+      .find((element) => {
+        const bounds = element.getBoundingClientRect();
+        return actionRect !== null
+          && actionRect.y + actionRect.height / 2 >= bounds.y
+          && actionRect.y + actionRect.height / 2 <= bounds.y + bounds.height;
+      }) ?? [...document.querySelectorAll('.monaco-diff-editor .modified .view-line')]
+      .find((element) => (element.textContent?.includes(text) || (element as HTMLElement).innerText.includes(text))
+        && element.getBoundingClientRect().height > 0);
+    const lineRect = rect(line ?? null);
+    const tokenRect = rect(line?.querySelector('span') ?? null);
+    const reviewMain = document.querySelector<HTMLElement>('.review-main');
+    return {
+      action: actionRect,
+      codeOrigin: lineRect === null || tokenRect === null
+        ? null
+        : { tokenX: tokenRect.x, viewLineX: lineRect.x, lineHeight: lineRect.height },
+      document: {
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      },
+      gutters: [...document.querySelectorAll('.monaco-diff-editor .margin')]
+        .map((element) => element.getBoundingClientRect().width),
+      panes: [...document.querySelectorAll('.monaco-diff-pane--base, .monaco-diff-pane--head')]
+        .map((element) => rect(element)).filter((value): value is GeometryRect => value !== null),
+      reviewMain: reviewMain === null ? null : scrollDimensions(reviewMain),
+      sashes: [...document.querySelectorAll('.monaco-diff-editor .monaco-sash')]
+        .map((element) => rect(element)).filter((value): value is GeometryRect => value !== null),
+      scrollOwners: [...document.querySelectorAll<HTMLElement>('.monaco-diff-editor .monaco-scrollable-element')]
+        .map(scrollDimensions),
+      zones: [...document.querySelectorAll('.monaco-anchor-zone')]
+        .map((element) => rect(element)).filter((value): value is GeometryRect => value !== null),
+    };
+  }, targetText);
+}
+
+function expectAnchoringNotToReflow(before: MonacoGeometry, anchored: MonacoGeometry): void {
+  expect(anchored.codeOrigin).toEqual(before.codeOrigin);
+  expect(anchored.gutters).toEqual(before.gutters);
+  expect(anchored.panes).toEqual(before.panes);
+  expect(anchored.sashes).toEqual(before.sashes);
+  expect(anchored.action).toEqual(before.action);
+  expect(anchored.document).toEqual(before.document);
+  expect(anchored.reviewMain).toMatchObject(before.reviewMain ?? {});
+  expect(anchored.scrollOwners.map(({ clientHeight, clientWidth, scrollWidth }) => ({ clientHeight, clientWidth, scrollWidth })))
+    .toEqual(before.scrollOwners.map(({ clientHeight, clientWidth, scrollWidth }) => ({ clientHeight, clientWidth, scrollWidth })));
+  expect(anchored.document.scrollWidth).toBeLessThanOrEqual(anchored.document.clientWidth);
+}
+
 async function ensureReviewOpen(page: Page): Promise<void> {
   const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
   await expect(reviewButton).toBeVisible();
@@ -685,28 +763,45 @@ test.describe('async comment settlement', () => {
   });
 });
 
-test('preserves production Base Head labels and the non-reflow Monaco semantic channels', async ({ page }) => {
-  resetAsyncSettlementFixture();
-  await page.setViewportSize({ width: 1280, height: 760 });
-  await openReview(page);
-  await expect(page.getByText('BASE', { exact: true })).toBeVisible();
-  await expect(page.getByText('HEAD', { exact: true })).toBeVisible();
-  await expect(page.locator('.monaco-diff-pane--base')).toHaveCount(1);
-  await expect(page.locator('.monaco-diff-pane--head')).toHaveCount(1);
+test('preserves production Base Head labels and no-reflow Monaco semantic channels at every phase viewport', async ({ page }) => {
+  test.setTimeout(120_000);
+  const targetText = 'export const changed = 3;';
 
-  const diff = page.locator('.monaco-diff-editor');
-  const before = await diff.boundingBox();
-  await hoverMonacoLine(page, 'head', 'export const changed = 3;');
-  const action = page.getByRole('button', { name: 'Add comment to head line 10' });
-  await expect(action).toHaveCSS('width', '32px');
-  await expect(action).toHaveCSS('height', '32px');
-  await action.click();
-  await expect(page.locator('.monaco-anchor-line')).not.toHaveCount(0);
-  await expect(page.locator('.monaco-anchor-line').first()).toHaveCSS('border-left-color', 'rgb(47, 129, 247)');
-  const after = await diff.boundingBox();
-  expect(after).toEqual(before);
-  const hasNoPageOverflow = await page.locator('.review-main').evaluate(
-    (element) => element.scrollWidth <= document.documentElement.clientWidth,
-  );
-  expect(hasNoPageOverflow).toBeTruthy();
+  for (const width of [1440, 1280, 1100, 768, 640]) {
+    resetAsyncSettlementFixture();
+    await page.setViewportSize({ width, height: 760 });
+    await openReview(page);
+    await expect(page.getByText('BASE', { exact: true })).toBeVisible();
+    await expect(page.getByText('HEAD', { exact: true })).toBeVisible();
+    await expect(page.locator('.monaco-diff-pane--base')).toHaveCount(1);
+    await expect(page.locator('.monaco-diff-pane--head')).toHaveCount(1);
+
+    await hoverMonacoLine(page, 'head', targetText);
+    const action = page.getByRole('button', { name: 'Add comment to head line 10' });
+    await expect(action).toHaveCSS('width', '32px');
+    await expect(action).toHaveCSS('height', '32px');
+    const before = await readMonacoGeometry(page, targetText);
+    expect(before.codeOrigin).not.toBeNull();
+    expect(before.action).not.toBeNull();
+
+    await action.click({ force: true });
+    const anchorLine = page.locator('.monaco-anchor-line').first();
+    await expect(anchorLine).toHaveCSS('border-left-width', '0px');
+    await expect(anchorLine).toHaveCSS('box-shadow', 'rgb(47, 129, 247) 3px 0px 0px 0px inset');
+    const anchored = await readMonacoGeometry(page, targetText);
+    expectAnchoringNotToReflow(before, anchored);
+    expect(anchored.zones).toHaveLength(2);
+    expect(Math.abs(anchored.zones[0].y - anchored.zones[1].y)).toBeLessThanOrEqual(1);
+    expect(anchored.zones[0].height).toBe(anchored.zones[1].height);
+
+    const targetLine = page.locator('.monaco-diff-editor .modified .view-line').filter({ hasText: targetText }).first();
+    await targetLine.click({ force: true, position: { x: 20, y: 9 } });
+    await page.keyboard.down('Shift');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.up('Shift');
+    await hoverMonacoLine(page, 'head', targetText);
+    const semanticStates = await readMonacoGeometry(page, targetText);
+    expect(semanticStates).toEqual(anchored);
+    expect(semanticStates.document.scrollWidth).toBeLessThanOrEqual(semanticStates.document.clientWidth);
+  }
 });

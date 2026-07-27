@@ -1,5 +1,8 @@
 import type { DiffSide } from '../monaco/line-mapping.js';
 import type { DurableAnchorV1Dto } from '../../contracts/draft.js';
+import type { WorkspaceCommand } from './workspace-command.js';
+export type { WorkspaceCommand } from './workspace-command.js';
+
 
 
 export type WorkspaceCommentStatus = 'verified' | 'stale' | 'orphaned';
@@ -50,19 +53,6 @@ export type WorkspaceState = Readonly<{
   pendingCommentId: string | null;
 }>;
 
-export type WorkspaceCommand =
-  | Readonly<{ type: 'announce'; text: string }>
-  | Readonly<{ type: 'focus-comment'; commentId: string }>
-  | Readonly<{ type: 'focus-editor-line'; fileId: string; side: DiffSide; line: number }>
-  | Readonly<{ type: 'focus-gutter'; fileId: string; side: DiffSide; line: number }>
-  | Readonly<{ type: 'go-to-change'; direction: 'next' | 'previous' }>
-  | Readonly<{ type: 'layout' }>
-  | Readonly<{ type: 'load-file'; fileId: string }>
-  | Readonly<{ type: 'persist-comment'; fileId: string; requestId: number; side: DiffSide; line: number; body: string }>
-  | Readonly<{ type: 'rebuild-annotations'; fileId: string }>
-  | Readonly<{ type: 'restore-view'; fileId: string; scrollTop: number; context: 'collapsed' | 'all-revealed' }>
-  | Readonly<{ type: 'reveal-comment-context'; fileId: string; side: DiffSide; line: number }>
-  | Readonly<{ type: 'reveal-line'; fileId: string; side: DiffSide; line: number; center: boolean }>;
 
 export type WorkspaceTransition = Readonly<{
   state: WorkspaceState;
