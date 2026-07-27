@@ -67,7 +67,13 @@ Plans:
   5. User can still distinguish selection, active lines, hover targets, comment anchors, keyboard focus, and diff meaning when those states overlap.
 
 **Planning detail**: Register an idempotent typed Monaco theme before editor construction and map the shared semantic roles into editor, syntax, diff, gutter, widget, selection, unchanged-region, and focus colors. Preserve the existing adapter, models, line mapping, view zones, hidden regions, side-by-side geometry, accessibility labels, and keyboard commands.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+
+- [ ] 06-01-PLAN.md — Define and audit the exact typed diff-review-dark theme contract.
+- [ ] 06-02-PLAN.md — Derive deterministic continuous bars and sparse signed gutter cues from Monaco line changes.
+- [ ] 06-03-PLAN.md — Integrate all Monaco semantic layers and prove overlap, contrast, no-reflow, and lifecycle behavior in Chromium.
 **UI hint**: yes
 
 ### Phase 07: GitHub-Familiar Review Surfaces
