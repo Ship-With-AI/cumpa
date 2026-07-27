@@ -1,5 +1,18 @@
 import type * as monaco from 'monaco-editor';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+const { Range } = vi.hoisted(() => ({
+  Range: class {
+    constructor(
+      readonly startLineNumber: number,
+      readonly startColumn: number,
+      readonly endLineNumber: number,
+      readonly endColumn: number,
+    ) {}
+  },
+}));
+
+vi.mock('monaco-editor', () => ({ Range }));
 
 import { buildDiffDecorations } from '../../src/web/monaco/diff-semantics.js';
 
