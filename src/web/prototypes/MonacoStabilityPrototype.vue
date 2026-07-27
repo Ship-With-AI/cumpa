@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, render } from 'vue';
+import '../styles.css';
+
 
 import CommentComposer from '../components/CommentComposer.vue';
 
@@ -47,6 +49,9 @@ const FILES: readonly ImmutableDiffFile[] = [
   const stable06 = 'six';
   const stable07 = 'seven';
   const inserted = 'head only';
+  const inserted02 = 'head only';
+  const inserted03 = 'head only';
+  const inserted04 = 'head only';
   const stable08 = 'eight';
   const stable09 = 'nine';
   const stable10 = 'ten changed';
@@ -71,6 +76,10 @@ const FILES: readonly ImmutableDiffFile[] = [
   "stable05": true,
   "stable06": true,
   "stable07": true,
+  "obsolete01": "base only",
+  "obsolete02": "base only",
+  "obsolete03": "base only",
+  "obsolete04": "base only",
   "stable08": true,
   "stable09": true,
   "stable10": true,
@@ -78,8 +87,7 @@ const FILES: readonly ImmutableDiffFile[] = [
   "stable12": true,
   "stable13": true,
   "stable14": true,
-  "stable15": true,
-  "obsolete": "base only"
+  "stable15": true
 }`,
     },
     head: {
@@ -94,15 +102,39 @@ const FILES: readonly ImmutableDiffFile[] = [
   "stable06": true,
   "stable07": true,
   "stable08": true,
-  "inserted": "head only",
   "stable09": true,
   "stable10": "changed",
   "stable11": true,
   "stable12": true,
   "stable13": true,
-  "stable14": true
+  "stable14": true,
+  "stable15": true
 }`,
     },
+  },
+  {
+    id: 'fixture-added',
+    base: { path: 'src/added.ts', text: '' },
+    head: {
+      path: 'src/added.ts',
+      text: `export type Added = {
+  created: true;
+};
+
+export const added = 'head only';`,
+    },
+  },
+  {
+    id: 'fixture-deleted',
+    base: {
+      path: 'src/deleted.ts',
+      text: `export interface Deleted {
+  removed: true;
+}
+
+export const deleted = 'base only';`,
+    },
+    head: { path: 'src/deleted.ts', text: '' },
   },
 ];
 
@@ -184,7 +216,7 @@ async function selectFile(index: number): Promise<void> {
 }
 
 function addComment(side: 'base' | 'head'): void {
-  adapter?.activateAnchor(side, side === 'base' ? 10 : 11);
+  adapter?.activateAnchor(side, side === 'base' ? 10 : 16);
   updateVersion.value += 1;
   publishContract();
 }
@@ -206,7 +238,7 @@ function navigateChange(direction: 'next' | 'previous'): void {
 async function stressRecompute(): Promise<void> {
   const initialIndex = currentFileIndex.value;
   for (let iteration = 0; iteration < 10; iteration += 1) {
-    await selectFile(iteration % 2 === 0 ? 1 - initialIndex : initialIndex);
+    await selectFile((initialIndex + iteration + 1) % FILES.length);
   }
   await selectFile(initialIndex);
 }
@@ -246,8 +278,8 @@ onBeforeUnmount(() => {
         {{ currentFile.id }} · {{ languageForPath(currentFile.head.path) }}
       </p>
       <nav aria-label="Prototype navigation">
-        <button type="button" :disabled="currentFileIndex === 0" @click="selectFile(0)">Previous file</button>
-        <button type="button" :disabled="currentFileIndex === FILES.length - 1" @click="selectFile(1)">Next file</button>
+        <button type="button" :disabled="currentFileIndex === 0" @click="selectFile(currentFileIndex - 1)">Previous file</button>
+        <button type="button" :disabled="currentFileIndex === FILES.length - 1" @click="selectFile(currentFileIndex + 1)">Next file</button>
         <button type="button" title="Previous change · Shift+F7" @click="navigateChange('previous')">Previous change</button>
         <button type="button" title="Next change · F7" @click="navigateChange('next')">Next change</button>
         <button type="button" @click="addComment('base')">Add base comment</button>

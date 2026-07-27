@@ -1599,6 +1599,64 @@ input:-webkit-autofill:focus {
   }
 }
 
+.monaco-editor .monaco-diff-change-bar--base {
+  box-sizing: border-box;
+  border-left: 2px solid var(--diff-deletion-foreground);
+}
+
+.monaco-editor .monaco-diff-change-bar--head {
+  box-sizing: border-box;
+  border-left: 2px solid var(--diff-addition-foreground);
+}
+
+.monaco-editor .monaco-diff-change-sign--base::before,
+.monaco-editor .monaco-diff-change-sign--head::before {
+  display: block;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  pointer-events: none;
+}
+
+.monaco-editor .monaco-diff-change-sign--base::before {
+  color: var(--diff-deletion-foreground);
+  content: '−';
+}
+
+.monaco-editor .monaco-diff-change-sign--head::before {
+  color: var(--diff-addition-foreground);
+  content: '+';
+}
+
+.monaco-editor .diagonal-fill {
+  background-color: var(--diff-empty-background) !important;
+  background-image: none !important;
+}
+
+.monaco-editor .diff-hidden-lines .center {
+  background: var(--surface-panel);
+  box-shadow: none;
+  color: var(--diff-hunk-foreground);
+}
+
+.monaco-editor .diff-hidden-lines .top,
+.monaco-editor .diff-hidden-lines .bottom {
+  border-color: var(--border-default);
+}
+
+.monaco-editor .diff-hidden-lines:not(.dragging) .top:hover,
+.monaco-editor .diff-hidden-lines:not(.dragging) .bottom:hover,
+.monaco-editor .diff-hidden-lines .top.dragging,
+.monaco-editor .diff-hidden-lines .bottom.dragging,
+.monaco-editor .diff-hidden-lines .center a:hover .codicon,
+.monaco-editor .diff-hidden-lines div.breadcrumb-item:hover {
+  background-color: var(--surface-panel);
+  color: var(--diff-hunk-foreground);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -100,7 +100,7 @@ test('2. anchors both base and head model lines through one active composer', as
   await expectPairedZonesAligned(page);
 
   await page.getByRole('button', { name: 'Add head comment' }).click();
-  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Head · line 11');
+  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Head · line 16');
   await expect.poll(() => readState(page)).toMatchObject({ pairedZones: 2, activeComposers: 1 });
 });
 
@@ -127,11 +127,17 @@ test('5. follows deterministic file order and public previous/next change contro
   await expect(page.getByRole('button', { name: 'Previous file' })).toBeDisabled();
   await page.getByRole('button', { name: 'Next file' }).click();
   await expect(page.getByTestId('monaco-metrics')).toContainText('fixture-b · json');
+  await page.getByRole('button', { name: 'Next file' }).click();
+  await expect(page.getByTestId('monaco-metrics')).toContainText('fixture-added · typescript');
+  await page.getByRole('button', { name: 'Next file' }).click();
+  await expect(page.getByTestId('monaco-metrics')).toContainText('fixture-deleted · typescript');
   await expect(page.getByRole('button', { name: 'Next file' })).toBeDisabled();
   await page.getByRole('button', { name: 'Previous change' }).click();
   await page.getByRole('button', { name: 'Next change' }).click();
   await page.keyboard.press('F7');
   await page.keyboard.press('Shift+F7');
+  await page.getByRole('button', { name: 'Previous file' }).click();
+  await page.getByRole('button', { name: 'Previous file' }).click();
   await page.getByRole('button', { name: 'Previous file' }).click();
   await expect(page.getByTestId('monaco-metrics')).toContainText('fixture-a · typescript');
 });
@@ -193,3 +199,39 @@ test('10. reconstructs paired public zones after repeated diff updates without d
   await expect.poll(() => readState(page)).toMatchObject({ pairedZones: 2, activeComposers: 1, liveModels: 2 });
 });
 
+
+test('11. paints first-frame semantic theme, flat empty regions, and sparse signed bars', async ({ page }) => {
+  await openPrototype(page);
+
+  const canvas = page.locator('.monaco-editor-background').first();
+  const gutter = page.locator('.monaco-editor .margin').first();
+  await expect(canvas).toHaveCSS('background-color', 'rgb(13, 17, 23)');
+  await expect(gutter).toHaveCSS('background-color', 'rgb(1, 4, 9)');
+
+  const headBars = page.locator('.monaco-diff-change-bar--head');
+  const baseBars = page.locator('.monaco-diff-change-bar--base');
+  const headSigns = page.locator('.monaco-diff-change-sign--head');
+  const baseSigns = page.locator('.monaco-diff-change-sign--base');
+  await expect(headBars).not.toHaveCount(0);
+  await expect(baseBars).not.toHaveCount(0);
+  await expect(headSigns).not.toHaveCount(0);
+  await expect(baseSigns).not.toHaveCount(0);
+  await expect(headBars.first()).toHaveCSS('border-left-width', '2px');
+  await expect(baseBars.first()).toHaveCSS('border-left-width', '2px');
+  await expect(headSigns.first()).toHaveJSProperty('tabIndex', -1);
+  await expect(baseSigns.first()).toHaveJSProperty('tabIndex', -1);
+  await expect.poll(() => headSigns.first().evaluate((element) => getComputedStyle(element, '::before').content)).toBe('"+"');
+  await expect.poll(() => baseSigns.first().evaluate((element) => getComputedStyle(element, '::before').content)).toBe('"−"');
+
+  await page.getByRole('button', { name: 'Next file' }).click();
+  await page.getByRole('button', { name: 'Next file' }).click();
+  const addedEmpty = page.locator('.diagonal-fill').first();
+  await expect(addedEmpty).toHaveCSS('background-image', 'none');
+  await expect(addedEmpty).toHaveCSS('background-color', 'rgb(1, 4, 9)');
+  await expect(page.locator('.monaco-diff-change-sign--base')).toHaveCount(0);
+  await expect(page.locator('.monaco-diff-change-sign--head')).not.toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Next file' }).click();
+  await expect(page.locator('.monaco-diff-change-sign--head')).toHaveCount(0);
+  await expect(page.locator('.monaco-diff-change-sign--base')).not.toHaveCount(0);
+});

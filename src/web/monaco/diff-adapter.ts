@@ -1,6 +1,8 @@
 import * as monaco from 'monaco-editor';
 
 import { counterpartBoundary, type DiffSide } from './line-mapping';
+import { buildDiffDecorations } from './diff-semantics';
+import { applyDiffReviewTheme } from './theme';
 import type { WorkspaceCommand } from '../model/workspace-state.js';
 
 export type { DiffSide } from './line-mapping';
@@ -74,6 +76,8 @@ class PublicMonacoDiffAdapter {
   private modifiedModel: monaco.editor.ITextModel | undefined;
   private originalDecorations: monaco.editor.IEditorDecorationsCollection | undefined;
   private modifiedDecorations: monaco.editor.IEditorDecorationsCollection | undefined;
+  private readonly originalDiffDecorations: monaco.editor.IEditorDecorationsCollection;
+  private readonly modifiedDiffDecorations: monaco.editor.IEditorDecorationsCollection;
   private currentFile: ImmutableDiffFile | undefined;
   private activeComposer: ActiveComposer | undefined;
   private focused: { side: DiffSide; line: number } | undefined;
@@ -89,6 +93,7 @@ class PublicMonacoDiffAdapter {
     private readonly languageForPath: (path: string) => string,
     private readonly onChange: () => void,
   ) {
+    applyDiffReviewTheme(monaco);
     this.diffEditor = monaco.editor.createDiffEditor(host, {
       ariaLabel: 'Immutable base and head side-by-side diff',
       automaticLayout: false,
@@ -100,12 +105,16 @@ class PublicMonacoDiffAdapter {
       renderSideBySide: true,
       renderSideBySideInlineBreakpoint: 0,
       hideUnchangedRegions: HIDE_UNCHANGED_REGIONS,
+      renderIndicators: false,
     });
     this.originalEditor = this.diffEditor.getOriginalEditor();
     this.modifiedEditor = this.diffEditor.getModifiedEditor();
+    this.originalDiffDecorations = this.originalEditor.createDecorationsCollection();
+    this.modifiedDiffDecorations = this.modifiedEditor.createDecorationsCollection();
     this.staticDisposables.push(
       this.diffEditor.onDidUpdateDiff(() => {
         this.diffUpdates += 1;
+        this.refreshDiffDecorations();
         this.rebuildAnchoredLayout();
         this.refreshAnchorAffordance();
         this.onChange();
@@ -380,6 +389,8 @@ class PublicMonacoDiffAdapter {
     this.modifiedDecorations?.clear();
     this.originalDecorations = undefined;
     this.modifiedDecorations = undefined;
+    this.originalDiffDecorations.clear();
+    this.modifiedDiffDecorations.clear();
     this.diffEditor.setModel(null);
     this.originalModel?.dispose();
     this.modifiedModel?.dispose();
@@ -398,8 +409,29 @@ class PublicMonacoDiffAdapter {
     this.modifiedZone = undefined;
   }
 
+  private refreshDiffDecorations(): void {
+    const changes = this.diffEditor.getLineChanges();
+    const originalLineCount = this.originalModel?.getValueLength() === 0
+      ? 0
+      : this.originalModel?.getLineCount() ?? 0;
+    const modifiedLineCount = this.modifiedModel?.getValueLength() === 0
+      ? 0
+      : this.modifiedModel?.getLineCount() ?? 0;
+    this.originalDiffDecorations.set(buildDiffDecorations(
+      changes,
+      'base',
+      originalLineCount,
+    ));
+    this.modifiedDiffDecorations.set(buildDiffDecorations(
+      changes,
+      'head',
+      modifiedLineCount,
+    ));
+  }
+
   private rebuildAnchoredLayout(): void {
     if (this.activeComposer === undefined || this.currentFile === undefined) {
+
       this.removeZones();
       this.originalDecorations?.clear();
       this.modifiedDecorations?.clear();
