@@ -78,6 +78,8 @@ class PublicMonacoDiffAdapter {
   private modifiedDecorations: monaco.editor.IEditorDecorationsCollection | undefined;
   private readonly originalDiffDecorations: monaco.editor.IEditorDecorationsCollection;
   private readonly modifiedDiffDecorations: monaco.editor.IEditorDecorationsCollection;
+  private readonly originalSelectionDecorations: monaco.editor.IEditorDecorationsCollection;
+  private readonly modifiedSelectionDecorations: monaco.editor.IEditorDecorationsCollection;
   private currentFile: ImmutableDiffFile | undefined;
   private activeComposer: ActiveComposer | undefined;
   private focused: { side: DiffSide; line: number } | undefined;
@@ -111,6 +113,10 @@ class PublicMonacoDiffAdapter {
     this.modifiedEditor = this.diffEditor.getModifiedEditor();
     this.originalDiffDecorations = this.originalEditor.createDecorationsCollection();
     this.modifiedDiffDecorations = this.modifiedEditor.createDecorationsCollection();
+    this.originalSelectionDecorations = this.originalEditor.createDecorationsCollection();
+    this.modifiedSelectionDecorations = this.modifiedEditor.createDecorationsCollection();
+    this.originalEditor.getContainerDomNode().classList.add('monaco-diff-pane--base');
+    this.modifiedEditor.getContainerDomNode().classList.add('monaco-diff-pane--head');
     this.staticDisposables.push(
       this.diffEditor.onDidUpdateDiff(() => {
         this.diffUpdates += 1;
@@ -123,6 +129,10 @@ class PublicMonacoDiffAdapter {
       this.modifiedEditor.onDidFocusEditorText(() => this.captureFocusedSide('head')),
       this.originalEditor.onDidChangeCursorPosition((event) => this.captureCursor('base', event.position.lineNumber)),
       this.modifiedEditor.onDidChangeCursorPosition((event) => this.captureCursor('head', event.position.lineNumber)),
+      this.originalEditor.onDidChangeCursorSelection(() => this.refreshSelectionDecorations()),
+      this.modifiedEditor.onDidChangeCursorSelection(() => this.refreshSelectionDecorations()),
+      this.originalEditor.onDidChangeModel(() => this.refreshSelectionDecorations()),
+      this.modifiedEditor.onDidChangeModel(() => this.refreshSelectionDecorations()),
       this.originalEditor.onMouseMove((event) => this.captureAffordance('base', event.target.position?.lineNumber)),
       this.modifiedEditor.onMouseMove((event) => this.captureAffordance('head', event.target.position?.lineNumber)),
       this.originalEditor.onMouseDown((event) => this.captureAffordance('base', event.target.position?.lineNumber)),
@@ -175,6 +185,7 @@ class PublicMonacoDiffAdapter {
     this.diffEditor.setModel({ original: this.originalModel, modified: this.modifiedModel });
     await ready;
     this.diffEditor.restoreViewState(saved?.viewState ?? null);
+    this.refreshSelectionDecorations();
     this.focused = saved?.focused;
     this.activeComposer = saved?.composer;
     this.rebuildAnchoredLayout();
@@ -391,6 +402,8 @@ class PublicMonacoDiffAdapter {
     this.modifiedDecorations = undefined;
     this.originalDiffDecorations.clear();
     this.modifiedDiffDecorations.clear();
+    this.originalSelectionDecorations.clear();
+    this.modifiedSelectionDecorations.clear();
     this.diffEditor.setModel(null);
     this.originalModel?.dispose();
     this.modifiedModel?.dispose();
@@ -429,11 +442,28 @@ class PublicMonacoDiffAdapter {
     ));
   }
 
+  private refreshSelectionDecorations(): void {
+    const decorationsFor = (editor: monaco.editor.IStandaloneCodeEditor): monaco.editor.IModelDeltaDecoration[] =>
+      (editor.getSelections() ?? [])
+        .filter((selection) => !selection.isEmpty())
+        .map((selection) => ({
+          range: selection,
+          options: {
+            inlineClassName: 'monaco-selection-contrast-foreground',
+            inlineClassNameAffectsLetterSpacing: false,
+          },
+        }));
+
+    this.originalSelectionDecorations.set(decorationsFor(this.originalEditor));
+    this.modifiedSelectionDecorations.set(decorationsFor(this.modifiedEditor));
+  }
+
   private rebuildAnchoredLayout(): void {
     if (this.activeComposer === undefined || this.currentFile === undefined) {
 
       this.removeZones();
       this.originalDecorations?.clear();
+
       this.modifiedDecorations?.clear();
       return;
     }

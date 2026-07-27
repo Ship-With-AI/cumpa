@@ -684,3 +684,29 @@ test.describe('async comment settlement', () => {
     await expect(liveRegion).toHaveText(announcement);
   });
 });
+
+test('preserves production Base Head labels and the non-reflow Monaco semantic channels', async ({ page }) => {
+  resetAsyncSettlementFixture();
+  await page.setViewportSize({ width: 1280, height: 760 });
+  await openReview(page);
+  await expect(page.getByText('BASE', { exact: true })).toBeVisible();
+  await expect(page.getByText('HEAD', { exact: true })).toBeVisible();
+  await expect(page.locator('.monaco-diff-pane--base')).toHaveCount(1);
+  await expect(page.locator('.monaco-diff-pane--head')).toHaveCount(1);
+
+  const diff = page.locator('.monaco-diff-editor');
+  const before = await diff.boundingBox();
+  await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+  const action = page.getByRole('button', { name: 'Add comment to head line 10' });
+  await expect(action).toHaveCSS('width', '32px');
+  await expect(action).toHaveCSS('height', '32px');
+  await action.click();
+  await expect(page.locator('.monaco-anchor-line')).not.toHaveCount(0);
+  await expect(page.locator('.monaco-anchor-line').first()).toHaveCSS('border-left-color', 'rgb(47, 129, 247)');
+  const after = await diff.boundingBox();
+  expect(after).toEqual(before);
+  const hasNoPageOverflow = await page.locator('.review-main').evaluate(
+    (element) => element.scrollWidth <= document.documentElement.clientWidth,
+  );
+  expect(hasNoPageOverflow).toBeTruthy();
+});

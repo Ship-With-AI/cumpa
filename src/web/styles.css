@@ -1657,6 +1657,26 @@ input:-webkit-autofill:focus {
   color: var(--diff-hunk-foreground);
 }
 
+.monaco-editor .monaco-selection-contrast-foreground {
+  color: var(--text-on-emphasis) !important;
+}
+
+.monaco-editor .selected-text {
+  outline: 1px solid var(--selection-border);
+  outline-offset: -1px;
+}
+
+.monaco-editor .monaco-anchor-line {
+  box-sizing: border-box;
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.monaco-diff-pane--base:focus-within,
+.monaco-diff-pane--head:focus-within {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

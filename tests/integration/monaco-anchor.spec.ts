@@ -157,7 +157,7 @@ test('7. bounds live models, listeners, zones, and composers over ten recomputat
   await openPrototype(page);
   await page.getByRole('button', { name: 'Add head comment' }).click();
   const initial = await readState(page);
-  expect(initial.listenerCount).toBe(13);
+  expect(initial.listenerCount).toBe(17);
   await page.getByRole('button', { name: 'Recompute 10 times' }).click();
   await expect.poll(() => readState(page)).toMatchObject({
     fileId: 'fixture-a',
@@ -192,7 +192,9 @@ test('9. uses read-only side editors and preserves separate base/head syntax lan
 test('10. reconstructs paired public zones after repeated diff updates without duplicate composers', async ({ page }) => {
   await openPrototype(page);
   await page.getByRole('button', { name: 'Add base comment' }).click();
+  const updatesBeforeRecompute = (await readState(page)).diffUpdates;
   await page.getByRole('button', { name: 'Recompute 10 times' }).click();
+  await expect.poll(() => readState(page).then((state) => state.diffUpdates)).toBeGreaterThan(updatesBeforeRecompute);
   await expect(page.locator('textarea[aria-label=\"Comment\"]')).toHaveCount(1);
   await expect(page.locator('.monaco-anchor-zone')).toHaveCount(2);
   await expectPairedZonesAligned(page);
@@ -234,4 +236,31 @@ test('11. paints first-frame semantic theme, flat empty regions, and sparse sign
   await page.getByRole('button', { name: 'Next file' }).click();
   await expect(page.locator('.monaco-diff-change-sign--head')).toHaveCount(0);
   await expect(page.locator('.monaco-diff-change-sign--base')).not.toHaveCount(0);
+});
+
+test('12. keeps selection contrast, anchor rail, diff meaning, and focus in separate channels', async ({ page }) => {
+  await openPrototype(page);
+  expect((await readState(page)).listenerCount).toBe(17);
+
+  const modifiedPane = page.locator('.monaco-diff-pane--head');
+  await modifiedPane.click({ position: { x: 100, y: 80 } });
+  await page.keyboard.down('Shift');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.up('Shift');
+
+  const selectionContrast = page.locator('.monaco-selection-contrast-foreground');
+  await expect(selectionContrast).not.toHaveCount(0);
+  await expect(selectionContrast.first()).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(page.locator('.selected-text').first()).toHaveCSS('outline-color', 'rgb(88, 166, 255)');
+  await expect(modifiedPane).toHaveCSS('outline-color', 'rgb(88, 166, 255)');
+  await expect(page.locator('.monaco-diff-change-bar--head')).not.toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Add head comment' }).click();
+  await expect(page.locator('.monaco-anchor-line')).not.toHaveCount(0);
+  await expect(page.locator('.monaco-anchor-line').first()).toHaveCSS('border-left-color', 'rgb(47, 129, 247)');
+
+  await page.getByRole('button', { name: 'Next file' }).click();
+  await expect(selectionContrast).toHaveCount(0);
+  await expect.poll(() => readState(page)).toMatchObject({ listenerCount: 17, liveModels: 2 });
 });
