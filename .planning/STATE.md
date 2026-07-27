@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: GitHub Dark Diff
 current_phase: 07
-current_phase_name: GitHub-Familiar Review Surfaces
+current_phase_name: github-familiar-review-surfaces
 status: executing
-stopped_at: Phase 07 UI-SPEC approved
-last_updated: "2026-07-27T16:37:05.799Z"
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-07-27T17:15:36.180Z"
 last_activity: 2026-07-27
-last_activity_desc: Phase 06 complete, transitioned to Phase 07
+last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 10
+  completed_plans: 5
   percent: 50
 ---
 
@@ -24,16 +24,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-27)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 07 GitHub-Familiar Review Surfaces
+**Current focus:** Phase 07 — github-familiar-review-surfaces
 
 ## Current Position
 
-Phase: 07 — GitHub-Familiar Review Surfaces
-Plan: Not started
+Phase: 07 (github-familiar-review-surfaces) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-07-27 — Phase 06 complete, transitioned to Phase 07
+Last activity: 2026-07-27 — Phase 07 execution started
 
-Progress: [██████████] 100%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [██████████] 100%
 | Phase 06 P01 | 8min | 2 tasks | 4 files |
 | Phase 06 P02 | 8min | 1 tasks | 2 files |
 | Phase 06 P03 | 35min | 2 tasks | 5 files |
+| Phase 07 P01 | 22min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 06]: Use public ILineChange ranges with fixed DiffSide classes; reject empty sides before clamping and merge ranges before sparse markers. — Preserves Monaco authority and prevents phantom signed cues.
 - [Phase 06]: Represent pure Monaco decoration ranges structurally through type-only imports so no browser runtime is required. — Keeps the focused contract deterministic in Node.
 - [Phase 06]: Use independent Monaco diff, selection, and anchor decoration collections so composer rebuilds cannot erase semantic cues.
+- [Phase 07]: Render the grouped header only from existing pinned session endpoints and selected SessionFile safe display values. — Preserves source authority without a new fetch, ref resolution, or path reconstruction.
+- [Phase 07]: Keep toolbar behavior in ReviewToolbar and compose it into the grouped header. — Retains emits, shortcuts, ARIA relationships, native disabled rules, and focus ownership.
+- [Phase 07]: Use bounded local SVG names and CSS state hooks instead of icon assets, packages, or product state. — Keeps the review presentation local, decorative, and behavior-free.
 
 ### Pending Todos
 
@@ -105,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-27T14:31:28.928Z
-Stopped at: Phase 07 UI-SPEC approved
-Resume file: .planning/phases/07-github-familiar-review-surfaces/07-UI-SPEC.md
+Last session: 2026-07-27T17:15:36.176Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: .planning/phases/07-github-familiar-review-surfaces/07-02-PLAN.md

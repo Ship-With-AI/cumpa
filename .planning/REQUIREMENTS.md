@@ -12,7 +12,7 @@ Requirements for the GitHub Dark Diff milestone. Each maps to exactly one roadma
 - [x] **VIS-01**: User experiences one coherent GitHub dark-default-inspired surface hierarchy across the diff workspace without light panels or browser-default control flashes.
 - [x] **VIS-02**: User sees compact GitHub-familiar UI typography and density while code, line numbers, labels, and controls remain legible and aligned.
 - [x] **VIS-03**: User can distinguish workspace regions through restrained surface steps, borders, radii, and overlay-only elevation without decorative effects competing with code.
-- [ ] **VIS-04**: User can identify the current file and its Base/Head context from a compact file header that preserves every existing file and diff control.
+- [x] **VIS-04**: User can identify the current file and its Base/Head context from a compact file header that preserves every existing file and diff control.
 
 ### Diff Semantics
 
@@ -24,7 +24,7 @@ Requirements for the GitHub Dark Diff milestone. Each maps to exactly one roadma
 
 ### Review Surfaces
 
-- [ ] **REVW-01**: User can distinguish rest, hover, pressed, selected, focused, disabled, destructive, and busy states on every existing diff-workspace control.
+- [x] **REVW-01**: User can distinguish rest, hover, pressed, selected, focused, disabled, destructive, and busy states on every existing diff-workspace control.
 - [ ] **REVW-02**: User can read and operate inline comment composers and comment cards in the dark workspace with clear anchors, headings, validation, and lifecycle status.
 - [ ] **REVW-03**: User can scan the review rail through clear heading, count, group, card, form, and selected-comment hierarchy.
 - [ ] **REVW-04**: User can distinguish error, warning, informational, success, pending, disabled, open, and resolved states through text or icons and structural treatment in addition to color.
@@ -72,13 +72,13 @@ Roadmap mapping for the approved v1.1 milestone.
 | VIS-01 | Phase 05 | Complete |
 | VIS-02 | Phase 05 | Complete |
 | VIS-03 | Phase 05 | Complete |
-| VIS-04 | Phase 07 | Pending |
+| VIS-04 | Phase 07 | Complete |
 | DIFF-01 | Phase 06 | Complete |
 | DIFF-02 | Phase 06 | Complete |
 | DIFF-03 | Phase 06 | Complete |
 | DIFF-04 | Phase 06 | Complete |
 | DIFF-05 | Phase 06 | Complete |
-| REVW-01 | Phase 07 | Pending |
+| REVW-01 | Phase 07 | Complete |
 | REVW-02 | Phase 07 | Pending |
 | REVW-03 | Phase 07 | Pending |
 | REVW-04 | Phase 07 | Pending |
