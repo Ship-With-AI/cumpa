@@ -1,4 +1,4 @@
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 
 import type { DiffSide } from './line-mapping.js';
 
@@ -69,14 +69,14 @@ export function buildDiffDecorations(
 
   for (const range of ranges) {
     decorations.push({
-      range: new monaco.Range(range.start, 1, range.end, 1),
+      range: { startLineNumber: range.start, startColumn: 1, endLineNumber: range.end, endColumn: 1 },
       options: {
         isWholeLine: true,
         linesDecorationsClassName: `monaco-diff-change-bar--${suffix}`,
       },
     });
     decorations.push({
-      range: new monaco.Range(range.start, 1, range.start, 1),
+      range: { startLineNumber: range.start, startColumn: 1, endLineNumber: range.start, endColumn: 1 },
       options: {
         glyphMarginClassName: `monaco-diff-change-sign--${suffix}`,
       },
@@ -84,7 +84,7 @@ export function buildDiffDecorations(
 
     if (range.end - range.start >= 3) {
       decorations.push({
-        range: new monaco.Range(range.end, 1, range.end, 1),
+        range: { startLineNumber: range.end, startColumn: 1, endLineNumber: range.end, endColumn: 1 },
         options: {
           glyphMarginClassName: `monaco-diff-change-sign--${suffix}`,
         },
