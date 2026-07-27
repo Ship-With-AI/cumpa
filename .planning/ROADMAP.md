@@ -70,10 +70,15 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
+**Wave 1**
 
 - [ ] 06-01-PLAN.md — Define and audit the exact typed diff-review-dark theme contract.
 - [ ] 06-02-PLAN.md — Derive deterministic continuous bars and sparse signed gutter cues from Monaco line changes.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 06-03-PLAN.md — Integrate all Monaco semantic layers and prove overlap, contrast, no-reflow, and lifecycle behavior in Chromium.
+
 **UI hint**: yes
 
 ### Phase 07: GitHub-Familiar Review Surfaces

@@ -387,12 +387,12 @@ Register the refresh on cursor-selection and model-change events for both panes,
 |---|-------|---------|---------------|
 | — | None. All implementation claims are grounded in the locked phase artifacts, current repository code, pinned Monaco 0.55.1 declarations/source, or official W3C/Monaco documentation. | — | — |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Which additional inherited Monaco color roles appear in the actual read-only diff path?**
+1. **RESOLVED — Which additional inherited Monaco color roles appear in the actual read-only diff path?**
    - What we know: the UI specification supplies the complete mandatory map, and installed source proves `editorLink.activeForeground` is also visible on collapsed-region hover. [VERIFIED: installed Monaco CSS]
    - What's unclear: browser-only widgets or language-specific token scopes may expose another inherited `vs-dark` role for a fixture/state not visible from static inspection. [VERIFIED: `06-UI-SPEC.md:201` explicitly requires discovery]
-   - Recommendation: treat this as an implementation verification loop, not a design decision—exercise find/hover/context controls and map any visible fallback to the nearest existing semantic role, adding no new palette value. [VERIFIED: `06-UI-SPEC.md:201`]
+   - Resolution: execution must inspect the pinned Monaco 0.55.1 read-only diff path in Chromium, map any visible inherited role to the nearest existing semantic role, add a focused Chromium assertion for that role, and introduce no new palette role. [VERIFIED: `06-UI-SPEC.md:201`]
 
 No blocking product or architecture decision remains. [VERIFIED: `STATE.md:77-82`, locked context]
 
