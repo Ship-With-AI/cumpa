@@ -5,15 +5,15 @@ milestone_name: GitHub Dark Diff
 current_phase: 06
 current_phase_name: monaco-diff-semantics
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-07-27T07:44:28.533Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-07-27T08:01:11.131Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
   percent: 25
 ---
 
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-26)
 ## Current Position
 
 Phase: 06 (monaco-diff-semantics) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 06 execution started
 
-Progress: [██████████] 100%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [██████████] 100%
 |------|----------|-------|-------|
 | Phase 05 P01 | 18min | 2 tasks | 6 files |
 | Phase 06 P01 | 8min | 2 tasks | 4 files |
+| Phase 06 P02 | 8min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 05]: Use a single direct semantic-token root with no compatibility aliases or component token roots.
 - [Phase 05]: Keep Monaco internals untouched; Phase 05 exposes only CSS foundation roles for later consumers.
 - [Phase 06]: Use the one stable diff-review-dark typed Monaco theme, selected by defineTheme then setTheme on every application. — Guarantees an idempotent, local first-paint prerequisite while exact tests preserve Phase 05 semantic-role parity.
+- [Phase 06]: Use public ILineChange ranges with fixed DiffSide classes; reject empty sides before clamping and merge ranges before sparse markers. — Preserves Monaco authority and prevents phantom signed cues.
+- [Phase 06]: Represent pure Monaco decoration ranges structurally through type-only imports so no browser runtime is required. — Keeps the focused contract deterministic in Node.
 
 ### Pending Todos
 
@@ -100,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-27T07:44:28.516Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-07-27T08:01:11.128Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
