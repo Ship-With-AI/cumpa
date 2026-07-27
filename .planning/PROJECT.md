@@ -58,7 +58,7 @@ Validated in Phase 05: Semantic Dark Foundation established the dark semantic pa
 
 ## Context
 
-Phase 05 of v1.1 is complete: application chrome and workflow states now consume one verified semantic dark vocabulary, with diff-facing roles declared for Phase 06.
+Phase 05 v1.1 complete: application chrome and workflow states consume one verified semantic dark vocabulary. Phase 06 complete: real Monaco now applies the typed `diff-review-dark` theme, bounded Base/Head bars and signs, selection/anchor/focus layers, and flat empty/hunk regions while preserving immutable diff mechanics and geometry.
 
 Diff Review v1.0 shipped the complete local browser-review-to-agent loop. A developer can select ordered local branches or registered worktrees, inspect the immutable merge-base-to-head change set, maintain a repository-local review draft, and export canonical JSON plus derived Markdown without publishing refs or modifying source control.
 
@@ -100,6 +100,9 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 | Keep durable anchors immutable and classify mismatch instead of relocating | Preserve drift-detectable feedback for applying agents | Good — stale and orphaned records retain exact recorded evidence and never move silently |
 | Verify release behavior at the generated-package boundary | Test the same CLI, server, browser assets, Git objects, and export bytes users receive | Good — final configured Playwright suite passes 56/56 |
 | Correlate asynchronous comment settlement to controller, file, request, and originating revision | Prevent late results from mutating the active or replacement composer | Good — Phase 04.1 closed the audit gap across success, failure, conflict, replacement, and repeated announcements |
+| Use one stable typed Monaco theme mapped byte-for-byte to the canonical semantic CSS root | Prevent editor colors from drifting from the surrounding dark workspace or changing across applications | Good — focused parity, build, semantic CSS, and first-frame browser checks pass |
+| Derive Base/Head cues only from public `ILineChange` ranges and fixed side classes | Preserve Monaco as diff authority while preventing repository text, phantom empty-side signs, or unbounded decorations from entering presentation | Good — bounded pure-transform tests and real Chromium signs/bars pass |
+| Keep diff, selection, anchor, and focus semantics in independent replacement collections | Ensure overlapping review cues coexist without model mutation, listener growth, or composer interference | Good — lifecycle, restoration, overlap, and production geometry checks pass |
 
 ## Evolution
 
@@ -119,4 +122,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-26 after completing Phase 05 Semantic Dark Foundation*
+*Last updated: 2026-07-27 after completing Phase 06 Monaco Diff Semantics*

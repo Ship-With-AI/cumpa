@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: GitHub Dark Diff
-current_phase: 06
-current_phase_name: monaco-diff-semantics
-status: verifying
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-07-27T08:37:55.771Z"
+current_phase: 07
+current_phase_name: GitHub-Familiar Review Surfaces
+status: ready_to_plan
+stopped_at: Phase 06 complete, ready to discuss Phase 07
+last_updated: "2026-07-27T10:45:11Z"
 last_activity: 2026-07-27
-last_activity_desc: Phase 06 execution started
+last_activity_desc: Phase 06 complete, transitioned to Phase 07
 progress:
   total_phases: 4
   completed_phases: 2
@@ -21,17 +21,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-26)
+See: .planning/PROJECT.md (updated 2026-07-27)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 06 — monaco-diff-semantics
+**Current focus:** Phase 07 GitHub-Familiar Review Surfaces
 
 ## Current Position
 
-Phase: 06 (monaco-diff-semantics) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-07-27 — Phase 06 execution started
+Phase: 07 — GitHub-Familiar Review Surfaces
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-27 — Phase 06 complete, transitioned to Phase 07
 
 Progress: [██████████] 100%
 
@@ -39,7 +39,7 @@ Progress: [██████████] 100%
 
 **Velocity:**
 
-- Total plans completed: 41
+- Total plans completed: 44
 - Average duration: 23 min
 - Total execution time: 4.7 hours
 
@@ -48,7 +48,7 @@ Progress: [██████████] 100%
 | Milestone | Phases | Plans | Status |
 |-----------|--------|-------|--------|
 | v1.0 MVP | 5 including Phase 04.1 | 40 | Complete |
-| v1.1 GitHub Dark Diff | 4 | TBD | Ready to plan |
+| v1.1 GitHub Dark Diff | 4 | 4 completed | 2/4 phases complete |
 
 *Updated after each plan completion.*
 **Per-Plan Metrics:**
@@ -84,7 +84,7 @@ None yet.
 ### Blockers/Concerns
 
 - No open milestone blocker.
-- Validate actual composited contrast where diff, selection, comment, focus, and status layers overlap.
+- [Phase 07/08] Validate composited contrast for comments, controls, focus, and status layers; Phase 06 Monaco diff/selection checks passed UAT.
 - Treat narrow layout, 400% zoom, keyboard focus, grayscale, and forced colors as acceptance boundaries rather than late polish.
 - Reject scope expansion into replies, suggestions, approvals, viewed state, pending-review submission, or information-architecture redesign.
 
@@ -105,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-27T08:37:55.767Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-07-27T10:45:11Z
+Stopped at: Phase 06 complete, ready to discuss Phase 07
 Resume file: None

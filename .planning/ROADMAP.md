@@ -27,7 +27,7 @@ Full phase goals, success criteria, requirement mappings, and plan details are a
 ### v1.1 GitHub Dark Diff
 
 - [x] **Phase 05: Semantic Dark Foundation** Establish one coherent dark-only visual language for the existing diff workspace. (completed 2026-07-26)
-- [ ] **Phase 06: Monaco Diff Semantics** — Make every diff, gutter, selection, and overlapping editor state legible within that language.
+- [x] **Phase 06: Monaco Diff Semantics** — Make every diff, gutter, selection, and overlapping editor state legible within that language. (completed 2026-07-27)
 - [ ] **Phase 07: GitHub-Familiar Review Surfaces** — Adapt the file header, controls, comments, notices, and review rail without changing review mechanics.
 - [ ] **Phase 08: Accessible Responsive Continuity** — Prove the restyled workspace remains accessible, reflows safely, and preserves the complete review workflow.
 
@@ -127,7 +127,7 @@ Plans:
 | 04. Agent-Ready Export | v1.0 | 8/8 | Complete | 2026-07-23 |
 | 04.1. Close CMT-01 Async Comment Settlement | v1.0 | 2/2 | Complete | 2026-07-24 |
 | 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
-| 06. Monaco Diff Semantics | v1.1 | 3/3 | In Progress|  |
+| 06. Monaco Diff Semantics | v1.1 | 3/3 | Complete    | 2026-07-27 |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 0/TBD | Not started | - |
 | 08. Accessible Responsive Continuity | v1.1 | 0/TBD | Not started | - |
 
