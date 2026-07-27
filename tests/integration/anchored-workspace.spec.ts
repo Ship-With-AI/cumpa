@@ -389,8 +389,8 @@ test('diff navigation and session state', async ({ page }) => {
   await openReview(page);
   await expect(page.getByRole('button', { name: 'Previous file' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Next file' })).toBeEnabled();
-  await expect(page.getByText('BASE', { exact: true })).toBeVisible();
-  await expect(page.getByText('HEAD', { exact: true })).toBeVisible();
+  await expect(page.locator('.review-context-header').getByText('BASE', { exact: true })).toBeVisible();
+  await expect(page.locator('.review-context-header').getByText('HEAD', { exact: true })).toBeVisible();
   await expect(page.getByText(/Unchanged regions begin collapsed/)).toBeVisible();
 
 
@@ -412,6 +412,101 @@ test('diff navigation and session state', async ({ page }) => {
 
   expect(pageErrors).toEqual([]);
   expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);
+});
+
+test('Phase 07 header and control states', async ({ page }) => {
+  resetAsyncSettlementFixture();
+  session = {
+    ...session,
+    files: session.files.map((file) => file.fileId === firstFileId
+      ? {
+        ...file,
+        status: { kind: 'renamed' },
+        oldPath: path('src/old/first.ts'),
+        newPath: path('src/new/first.ts'),
+      }
+      : file),
+  };
+
+  try {
+    await page.goto(`${origin}#token=${token}`);
+    await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+
+    const header = page.locator('.review-context-header');
+    await expect(header).toHaveCount(1);
+    await expect(header.locator('.review-context-header__context')).toHaveCount(1);
+    await expect(header.locator('.review-context-header__toolbar')).toHaveCount(1);
+    await expect(header.getByText('BASE', { exact: true })).toBeVisible();
+    await expect(header.getByText('HEAD', { exact: true })).toBeVisible();
+    await expect(header.locator('.review-context-header__endpoint-oid').nth(0)).toHaveText('aaaaaaa');
+    await expect(header.locator('.review-context-header__endpoint-oid').nth(1)).toHaveText('bbbbbbb');
+    await expect(page.getByRole('heading', {
+      level: 1,
+      name: 'renamed from src/old/first.ts to src/new/first.ts',
+    })).toBeVisible();
+    await expect(header.locator('.path-display__old .path-text__directory')).toHaveText('src/old/');
+    await expect(header.locator('.path-display__old .path-text__filename')).toHaveText('first.ts');
+    await expect(header.locator('.path-display__new .path-text__directory')).toHaveText('src/new/');
+    await expect(header.locator('.path-display__new .path-text__filename')).toHaveText('first.ts');
+
+    const previousFile = page.getByRole('button', { name: 'Previous file', exact: true });
+    const nextFile = page.getByRole('button', { name: 'Next file', exact: true });
+    const previousChange = page.getByRole('button', { name: 'Previous change', exact: true });
+    const nextChange = page.getByRole('button', { name: 'Next change', exact: true });
+    const review = page.getByRole('button', { name: 'Review', exact: true });
+    const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
+
+    await expect(previousFile).toBeDisabled();
+    await expect(nextFile).toBeEnabled();
+    await expect(previousChange).toBeEnabled();
+    await expect(nextChange).toBeEnabled();
+    await expect(review).toBeVisible();
+    await expect(keyboardHelp).toBeVisible();
+
+    for (const control of [previousFile, nextFile, previousChange, nextChange]) {
+      await expect(control).toHaveClass(/ui-button--icon/);
+      await expect(control).toHaveJSProperty('offsetWidth', 32);
+      await expect(control).toHaveJSProperty('offsetHeight', 32);
+    }
+
+    await nextFile.hover();
+    await expect(page.getByRole('tooltip')).toHaveText('Next file · Alt+Shift+]');
+    const restBounds = await nextFile.boundingBox();
+    const disabledBackground = await previousFile.evaluate((element) => getComputedStyle(element).backgroundColor);
+    await previousFile.hover({ force: true });
+    expect(await previousFile.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(disabledBackground);
+    expect(await nextFile.boundingBox()).toEqual(restBounds);
+
+    await review.click();
+    await expect(review).toHaveAttribute('aria-expanded', 'true');
+    await expect(review).toHaveClass(/ui-button--selected/);
+
+    const selectedBounds = await review.boundingBox();
+    await review.evaluate((element) => {
+      element.classList.add('ui-button--busy');
+      element.setAttribute('aria-busy', 'true');
+      element.setAttribute('disabled', '');
+      const spinner = document.createElement('span');
+      spinner.className = 'ui-spinner';
+      spinner.setAttribute('aria-hidden', 'true');
+      element.append(spinner);
+    });
+    expect(await review.boundingBox()).toEqual(selectedBounds);
+    await expect(review.locator('.ui-spinner')).toHaveCSS('animation-name', 'ui-spinner-rotate');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(review.locator('.ui-spinner')).toHaveCSS('animation-duration', '0s');
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+
+    for (const width of [1440, 1280, 1100, 768, 640]) {
+      await page.setViewportSize({ width, height: 700 });
+      await expect
+        .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth))
+        .toBe(true);
+    }
+    await expect(page.getByRole('button', { name: 'Files', exact: true })).toBeVisible();
+  } finally {
+    resetAsyncSettlementFixture();
+  }
 });
 
 test('inline comment persistence', async ({ page }) => {
@@ -771,8 +866,8 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
     resetAsyncSettlementFixture();
     await page.setViewportSize({ width, height: 760 });
     await openReview(page);
-    await expect(page.getByText('BASE', { exact: true })).toBeVisible();
-    await expect(page.getByText('HEAD', { exact: true })).toBeVisible();
+    await expect(page.locator('.review-context-header').getByText('BASE', { exact: true })).toBeVisible();
+    await expect(page.locator('.review-context-header').getByText('HEAD', { exact: true })).toBeVisible();
     await expect(page.locator('.monaco-diff-pane--base')).toHaveCount(1);
     await expect(page.locator('.monaco-diff-pane--head')).toHaveCount(1);
 

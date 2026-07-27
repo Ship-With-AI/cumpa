@@ -28,6 +28,7 @@ import IdentityPanel from './components/IdentityPanel.vue';
 import SelectorDriftNotice from './components/SelectorDriftNotice.vue';
 import KeyboardHelp from './components/KeyboardHelp.vue';
 import ReviewToolbar from './components/ReviewToolbar.vue';
+import PathDisplay from './components/PathDisplay.vue';
 import type { WorkspaceCommand, WorkspaceEvent } from './model/workspace-state.js';
 import { createWorkspaceState, type WorkspaceController } from './model/workspace-state.js';
 import { reconcileDraftComments } from './model/draft-reconciliation.js';
@@ -115,6 +116,8 @@ let latestConflictDraft: CanonicalReviewDraft | undefined;
 
 const reviewableFiles = computed(() => session.value?.files.filter((file) => file.availability.kind === 'text') ?? []);
 const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? selectedFile.value?.oldPath?.display ?? 'Changed file');
+const baseShortOid = computed(() => session.value?.base.oid.slice(0, 7));
+const headShortOid = computed(() => session.value?.head.oid.slice(0, 7));
 const selectedIndex = computed(() => reviewableFiles.value.findIndex((file) => file.fileId === selectedFile.value?.fileId));
 const atFirstFile = computed(() => selectedIndex.value <= 0);
 const atLastFile = computed(() => selectedIndex.value === -1 || selectedIndex.value === reviewableFiles.value.length - 1);
@@ -801,27 +804,46 @@ onBeforeUnmount(() => {
       </nav>
 
       <main class="review-main" aria-labelledby="diff-review-heading">
-        <div class="active-file-strip">
-          <div>
-            <p class="active-file-strip__eyebrow">Diff review</p>
-            <h1 id="diff-review-heading">{{ selectedPath }}</h1>
+        <header class="review-context-header">
+          <div class="review-context-header__context">
+            <div class="review-context-header__endpoint">
+              <span class="review-context-header__endpoint-label">BASE</span>
+              <span class="review-context-header__endpoint-name" :title="session.base.label">{{ session.base.label }}</span>
+              <span class="review-context-header__endpoint-oid" :title="session.base.oid">{{ baseShortOid }}</span>
+            </div>
+            <div class="review-context-header__file">
+              <div>
+                <p class="active-file-strip__eyebrow">Diff review</p>
+                <h1 id="diff-review-heading">
+                  <PathDisplay v-if="selectedFile !== undefined" :file="selectedFile" />
+                  <template v-else>{{ selectedPath }}</template>
+                </h1>
+              </div>
+              <button v-if="isFilesDrawer" type="button" class="ui-button" @click="openFiles">Files</button>
+            </div>
+            <div class="review-context-header__endpoint review-context-header__endpoint--head">
+              <span class="review-context-header__endpoint-label">HEAD</span>
+              <span class="review-context-header__endpoint-name" :title="session.head.label">{{ session.head.label }}</span>
+              <span class="review-context-header__endpoint-oid" :title="session.head.oid">{{ headShortOid }}</span>
+            </div>
           </div>
-          <button v-if="isFilesDrawer" type="button" class="ui-button" @click="openFiles">Files</button>
-        </div>
-        <ReviewToolbar
-          :at-first-file="atFirstFile"
-          :at-last-file="atLastFile"
-          :has-active-file="selectedFile?.availability.kind === 'text'"
-          :open-comment-count="openCommentCount"
-          :resolved-comment-count="resolvedCommentCount"
-          :review-expanded="commentsOpen"
-          @previous-file="previousFile"
-          @next-file="nextFile"
-          @previous-change="previousChange"
-          @next-change="nextChange"
-          @comments="toggleComments"
-          @keyboard-help="keyboardHelpOpen = true"
-        />
+          <div class="review-context-header__toolbar">
+            <ReviewToolbar
+              :at-first-file="atFirstFile"
+              :at-last-file="atLastFile"
+              :has-active-file="selectedFile?.availability.kind === 'text'"
+              :open-comment-count="openCommentCount"
+              :resolved-comment-count="resolvedCommentCount"
+              :review-expanded="commentsOpen"
+              @previous-file="previousFile"
+              @next-file="nextFile"
+              @previous-change="previousChange"
+              @next-change="nextChange"
+              @comments="toggleComments"
+              @keyboard-help="keyboardHelpOpen = true"
+            />
+          </div>
+        </header>
         <KeyboardHelp :open="keyboardHelpOpen" @close="keyboardHelpOpen = false" />
 
         <section v-if="session.files.length === 0" class="empty-state">
