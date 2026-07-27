@@ -1,44 +1,10 @@
 ---
 phase: 06-monaco-diff-semantics
-verified: 2026-07-27T09:52:38Z
-status: human_needed
-score: 6/11 must-haves verified
-behavior_unverified: 5
+verified: 2026-07-27T10:41:33Z
+status: passed
+score: "11/11 must-haves verified"
+behavior_unverified: 0
 overrides_applied: 0
-behavior_unverified_items:
-  - truth: "Every syntax foreground remains readable over normal, whole-line, intraline, focused-selection, and inactive-selection layers."
-    test: "Inspect TypeScript and JSON token samples across the five diff backgrounds and focused/inactive selections."
-    expected: "Every text composite is at least 4.5:1 and selected text is white without hiding diff meaning."
-    why_human: "The current Chromium spec checks one selected range but contains no source-over contrast loop for the full token/state matrix."
-  - truth: "All required Monaco canvas, widget, scrollbar, separator, hidden-region, and workspace layers visibly coordinate on the semantic dark contract."
-    test: "Open a changed file, a collapsed hunk, and editor widget/scrollbar states."
-    expected: "Surfaces stay dark and semantic; hunk purple is restricted to context controls and separators."
-    why_human: "Theme parity is unit-tested and canvas/gutter first frame is browser-tested, but the focused Chromium spec does not inspect all named visible Monaco roles."
-  - truth: "All diff-region hierarchy states are visibly distinguishable while code remains readable."
-    test: "Inspect whole-line and intraline additions/deletions, unchanged context, collapsed/revealed hunk, and empty counterparts."
-    expected: "Quiet whole-line fills, stronger intraline fills, neutral unchanged context, purple hunk controls, and flat empty counterparts remain distinct."
-    why_human: "The automated browser test proves bars/signs and flat empty regions but does not assert computed whole-line/intraline/hidden-region styles together."
-  - truth: "Active-line emphasis and line-number contrast coexist with the unchanged 32px comment action without reflow."
-    test: "Move the caret across changed/unchanged lines while the comment action is visible at each required width."
-    expected: "Active line gets only its edge and primary number; gutter/action geometry remains fixed."
-    why_human: "The viewport geometry/action contract passes, but no Chromium assertion reads the active-line number and edge in this state."
-  - truth: "Every required selection, active-line, hover, anchor, focused-pane, and diff overlap state remains simultaneously distinguishable, including grayscale."
-    test: "Exercise the seven UI-SPEC overlap states and repeat Base/Head addition/deletion cues in grayscale."
-    expected: "Bars/signs, selection edge and white text, active edge/number, anchor rail, hover action, and focus perimeter coexist; labels, signs, bars, and side position survive without hue."
-    why_human: "The focused browser spec proves one Head selection/focus/anchor channel but has no seven-state or grayscale matrix."
-human_verification:
-  - test: "Run the full token/diff/selection contrast matrix in real Monaco."
-    expected: "All specified text composites meet 4.5:1 and meaningful cue boundaries meet 3:1."
-    why_human: "No current Playwright assertion calculates source-over contrast for that matrix."
-  - test: "Inspect all named Monaco surfaces: hidden hunk controls, separator, widget, hover widget, and scrollbars."
-    expected: "They use the approved dark semantic roles, with purple restricted to hunk/context cues."
-    why_human: "The theme object is exact and first canvas/gutter paint is covered, but current browser assertions do not observe every visible role."
-  - test: "Exercise all seven overlap states and grayscale Base/Head interpretation at 1280×760."
-    expected: "Each independent cue remains visible, no state erases diff meaning, and Base/Head remain identifiable without red/green."
-    why_human: "Current Chromium coverage only executes one representative selection/focus/anchor state and no grayscale pass."
-  - test: "Move the active cursor with the native 32px comment action visible across 1440, 1280, 1100, 768, and 640px."
-    expected: "Active line edge/number remain legible and all measured geometry remains unchanged."
-    why_human: "The five-viewport geometry test passes but does not read active-line computed styles."
 ---
 
 # Phase 06: Monaco Diff Semantics Verification Report
@@ -154,17 +120,22 @@ The required remediation commit `aff4241` exists (`fix(06): enforce Monaco seman
 - The rebuilt semantic audit rejects an additional token root, direct paint colors outside the root/forced-colors repair, remote imports/assets, gradients, unallowlisted shadows, and the prototype SFC palette escape. It passed.
 - Debt-marker scan of the phase production/test files found only the pre-existing CSS `::placeholder` pseudo-element, not a TODO/placeholder implementation.
 
-## Human Verification Required
+## Human Verification Completed
 
-Automated Chromium evidence is substantial but does **not** fully cover the requested visual behavior. Perform the four targeted checks in the frontmatter before treating the phase as fully verified. No code defect or closure-plan gap was found; this is an evidence/visual-completeness gate.
+All four targeted checks completed through `06-UAT.md`; 4 passed, 0 issues, 0 skipped, and 0 blocked. The checks cover the full contrast matrix, named Monaco surfaces, seven overlap/grayscale interpretation states, and active-line/comment-action behavior at all required widths.
 
 ## Gaps Summary
 
-No failed implementation, missing artifact, unwired key link, or blocker anti-pattern was found. The only remaining items are the five present-and-wired visual behaviors listed above. They require the targeted human checks because the current focused specs do not execute the full contrast, grayscale, active-line, all-role, and seven-overlap matrices prescribed by the UI contract.
+No failed implementation, missing artifact, unwired key link, or blocker anti-pattern remains. Human UAT closed the five present-and-wired visual behavior items that automated verification left open.
+
+## Acknowledged Gaps
+
+- Full seven-state/grayscale/source-over threshold loops remain absent from focused Chromium automation. The user accepted this evidence gap as `T-06-08` / `AR-06-01` in `06-SECURITY.md` after passing manual UAT.
+- Hidden-region center/top/bottom computed-style guards remain absent from focused Chromium automation. The user accepted this evidence gap as `T-06-11` / `AR-06-02` in `06-SECURITY.md`.
 
 ## Next Action
 
-Run the targeted visual checks above, or add focused automated coverage for the missing contrast/role/overlap/grayscale assertions and re-run this verification. Do not create a closure implementation plan unless a visual check reveals an actual defect.
+Phase 06 can transition complete. Future coverage may automate the two accepted evidence gaps without reopening implementation unless a behavioral defect is observed.
 
 ---
 
