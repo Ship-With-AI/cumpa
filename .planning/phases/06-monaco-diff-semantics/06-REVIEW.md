@@ -1,10 +1,14 @@
 ---
 phase: 06-monaco-diff-semantics
-reviewed: 2026-07-27T08:51:22Z
+reviewed: 2026-07-27T09:35:09Z
 depth: standard
-files_reviewed: 10
+files_reviewed: 15
 files_reviewed_list:
+  - package.json
+  - tsconfig.web.json
   - scripts/verify-semantic-css.mjs
+  - src/web/model/workspace-command.ts
+  - src/web/model/workspace-state.ts
   - src/web/styles.css
   - src/web/monaco/theme.ts
   - src/web/monaco/diff-semantics.ts
@@ -12,91 +16,65 @@ files_reviewed_list:
   - src/web/prototypes/MonacoStabilityPrototype.vue
   - tests/unit/monaco-theme.test.ts
   - tests/unit/monaco-diff-semantics.test.ts
+  - tests/unit/monaco-diff-adapter.test.ts
   - tests/integration/monaco-anchor.spec.ts
   - tests/integration/anchored-workspace.spec.ts
 findings:
-  critical: 1
-  warning: 5
+  critical: 0
+  warning: 0
   info: 0
-  total: 6
-status: issues_found
+  total: 0
+status: passed
 ---
 
 # Phase 06: Code Review Report
 
-**Reviewed:** 2026-07-27T08:51:22Z  
-**Depth:** standard, with cross-file contract tracing  
-**Files Reviewed:** 10  
-**Status:** issues_found
+**Reviewed:** 2026-07-27T09:35:09Z  
+**Depth:** Standard, with cross-module lifecycle and browser-contract tracing  
+**Files Reviewed:** 15  
+**Status:** passed
 
 ## Summary
 
-The review traced the typed theme through adapter construction, the public `ILineChange` decoration transform through its adapter collections and CSS hooks, the prototype/browser harnesses, and the semantic-CSS verifier. The range transform correctly rejects empty counterpart ranges before clamping, merges touching ranges, uses fixed side-owned classes only, and does not inject repository text. Theme/theme-test mappings use public Monaco APIs and the adapter keeps diff, selection, and anchor decorations independently owned and cleared. No security injection, secret, network, or model-mutation defect was found in the reviewed scope.
+The complete current Phase 06 scope is clean. The remediation at `aff4241` corrects the anchor layout defect, makes the adapter call type-safe under a focused strict web target, extends the semantic audit to the browser-served Vue fixture, derives theme parity from the canonical CSS root, and records the first mounted Monaco surfaces before file readiness. No current blocker, warning, or info finding was established.
 
-One blocker violates the phase's explicit no-reflow contract: the anchor rail is a layout-consuming border on the whole-line code decoration. The current browser checks do not measure the affected code origin, so the regression can pass. The remaining warnings are integration/type-safety and verification gaps that leave specified semantic contracts unenforced.
+The review traced the typed theme through `PublicMonacoDiffAdapter` construction, immutable-model diff decoration and selection lifecycles, fixed CSS class hooks, prototype timing publication, real-Chromium geometry checks, and the production workspace. Decorations remain numeric-range/fixed-class only: repository content cannot become injected decoration text, a selector, or a control.
 
-## Critical Issues
+## Prior-Finding Disposition
 
-### BL-01: Anchor rail shifts the anchored line's code origin
+| Prior ID | Disposition | Direct evidence |
+|---|---|---|
+| BL-01 — anchor rail shifts code origin | **Resolved** | `.monaco-anchor-line` now uses the non-layout `box-shadow: inset 3px 0 var(--interactive-accent)` rather than a border. The production browser test records token and line x-origin, gutters, panes, sash, action, document dimensions, scroll owners, and paired zones before/after anchoring at 1440, 1280, 1100, 768, and 640px. The focused suite passed. |
+| WR-01 — hidden helper call-signature error | **Resolved** | `applyDiffReviewTheme()` has a zero-argument call in the adapter. `tsconfig.web.json` includes the adapter and its Monaco/type-boundary dependencies; `npm run typecheck:web` passed. `monaco-diff-adapter.test.ts` proves `defineTheme`, `setTheme`, then `createDiffEditor` ordering. |
+| WR-02 — SFC palette escape un-audited | **Resolved** | The verifier reads `MonacoStabilityPrototype.vue`, extracts every `<style>` block, and subjects it to the same authored-style/direct-colour confinement checks. The prototype now consumes semantic variables rather than raw palette literals. The verifier contains a negative self-check for a raw Vue style literal and passed against the production build. |
+| WR-03 — no-reflow and responsive proof too narrow | **Resolved** | `anchored-workspace.spec.ts` now asserts content origin, gutters, line height, pane/sash geometry, action placement, local scroll ownership, document overflow, and paired-zone alignment across every required phase viewport. All focused Chromium tests passed. |
+| WR-04 — CSS/theme parity tested against duplicated literals | **Resolved** | `monaco-theme.test.ts` parses the canonical `:root` declarations, resolves aliases, derives the required Monaco hex/alpha values, and requires every painted theme color and syntax rule to map to an explicit root role. Its 3 focused contracts passed. |
+| WR-05 — first-frame sample occurred after file readiness | **Resolved** | The prototype starts a `MutationObserver` before editor construction, captures the first canvas/gutter surfaces once present, exposes capture/ready sequence data, and disconnects on capture/unmount. The browser test waits for that captured state and requires it to precede file-ready sequencing; it passed in real Chromium. |
 
-**Files:** `src/web/monaco/diff-adapter.ts:507-511`, `src/web/styles.css:1669-1672`, `tests/integration/anchored-workspace.spec.ts:697-711`  
-**Issue:** `anchorDecoration()` applies `className: 'monaco-anchor-line'` to an `isWholeLine` decoration. That is the code-line decoration surface, not the independently allocated line-decoration/glyph-margin lane used for the change bars. The CSS then applies `border-left: 3px`; a left border consumes inline box space and moves the anchored line's content start by 3px. This violates DIFF-04/UI-SPEC's invariant that an anchor rail must not move code, gutter, sash, or line geometry. `box-sizing: border-box` only keeps the outer width fixed; it does not keep the content origin fixed. The sole production geometry assertion compares the outer diff-editor rectangle before and after anchoring, so it cannot detect this line-level shift.
+## Narrative Findings (AI reviewer)
 
-**Fix:** Paint the rail through a non-layout channel, then prove it at the affected element level. For example, permit this exact inset shadow in the semantic-CSS verifier and replace the border:
+No findings. The reviewed implementation preserves the Phase 06 observable contracts without a demonstrated regression.
 
-```css
-.monaco-editor .monaco-anchor-line {
-  box-shadow: inset 3px 0 var(--interactive-accent);
-}
-```
+## Checked Risk Areas
 
-Alternatively, use an absolutely positioned decoration pseudo-element that does not participate in line layout. Extend the browser test to record the anchored `.view-line`/token `x` coordinate, gutter width, and line height before and after activating the anchor, asserting exact equality while still asserting the visible 3px rail.
+- **Theme ordering and first paint:** Stable typed `diff-review-dark` registration and selection execute before `createDiffEditor`; the first captured Monaco canvas is `rgb(13, 17, 23)` and gutter is `rgb(1, 4, 9)` before file-ready sequencing.
+- **CSS/theme semantic parity:** Every non-transparent Monaco color and every syntax foreground rule has an explicit canonical-root mapping. Alpha conversion is exercised for selection, whitespace, scrollbar, whole-line, and intraline roles.
+- **Semantic CSS audit:** Source CSS, emitted CSS, and the prototype SFC style block are audited for canonical root integrity, retired vocabulary, direct-colour confinement, forbidden visual effects, forced-colours placement, and permitted inset/overlay shadows.
+- **Diff correctness and safety:** `buildDiffDecorations` rejects empty counterparts before clamping, merges touching/overlapping ranges deterministically, bounds populated ranges, and emits only fixed Base/Head class names and numeric ranges.
+- **Lifecycle isolation:** Diff, selection, and anchor decorations remain separately owned and cleared on outgoing-model/final disposal. The real-Monaco recomputation test observes two live models, 17 stable listeners, one active composer, and two paired zones through repeated updates.
+- **No reflow and local overflow:** The production workspace verifies no semantic-anchor movement of code origin, gutters, line height, panes, sash, action, or document width at all five Phase 06 viewport widths; paired zones remain aligned.
+- **Scope and compatibility:** The type split leaves state transitions as the command producer while letting the adapter consume the narrow command type without importing workspace state. No API, persistence, model-text, line-mapping, side-by-side breakpoint, or interaction-control change was introduced.
 
-## Warnings
+## Verification Evidence
 
-### WR-01: The web adapter has a TypeScript call-signature error hidden by the build configuration
-
-**Files:** `src/web/monaco/diff-adapter.ts:98`, `src/web/monaco/theme.ts:90-93`, `tsconfig.json:14-19`  
-**Issue:** The adapter calls `applyDiffReviewTheme(monaco)`, but the exported helper accepts zero arguments. A focused strict TypeScript check of the adapter with bundler resolution reports `TS2554: Expected 0 arguments, but got 1.` The normal `build:node` command does not catch it because `tsconfig.json` excludes `src/web/**`; Vite transpiles without type checking. JavaScript currently ignores the extra argument, but the shipped TypeScript source is invalid and the integration test invokes the helper directly with no argument, so it cannot catch the adapter integration error.
-
-**Fix:** Invoke the helper with no argument:
-
-```ts
-applyDiffReviewTheme();
-```
-
-Add a web type-check target (or include the web adapter in the existing type-check) and an adapter construction-order test that asserts theme definition/selection occur before `createDiffEditor`.
-
-### WR-02: The semantic-CSS gate does not enforce the component-style palette rule, and the Phase fixture violates it
-
-**Files:** `src/web/prototypes/MonacoStabilityPrototype.vue:296-308`, `scripts/verify-semantic-css.mjs:451-457`  
-**Issue:** The prototype's scoped component CSS uses raw light palette literals (`#f6f3ec`, `#242822`, and `#c9c2b5`) even though the Phase 06 contract requires component CSS to consume the root semantic roles and confines raw colors to the root/theme mapping. The verifier validates author-style/direct-color confinement only for `src/web/styles.css` (`assertAuthorStyle(source)`); it never validates the browser-served prototype SFC style. Consequently, the claimed semantic CSS gate passes while the phase's real-Monaco test fixture renders a light surrounding surface and can conceal the prohibited palette escape.
-
-**Fix:** Replace those declarations with the existing semantic variables (for example `var(--surface-canvas)`, `var(--text-primary)`, and `var(--border-default)`) and ensure the verifier or a focused build-time test also examines authored Vue/SFC style blocks that are served by the Phase fixture.
-
-### WR-03: The no-reflow integration test cannot catch the anchor-induced code movement or the required responsive boundary
-
-**Files:** `tests/integration/anchored-workspace.spec.ts:688-711`, `src/web/styles.css:1669-1672`  
-**Issue:** The test checks only the outer `.monaco-diff-editor` bounding box at one 1280px viewport. It does not capture content origin, gutter allocation, line height, pane split, sash position, scroll dimensions, or paired-zone positions before/after semantic states. Its `hasNoPageOverflow` expression compares `.review-main.scrollWidth` with the document viewport rather than asserting `document.documentElement.scrollWidth <= document.documentElement.clientWidth`, and it never runs the required 1440/1280/1100/768/640px matrix. It therefore passes despite the concrete line-level reflow in BL-01 and does not defend the stated localized-overflow contract.
-
-**Fix:** At each required viewport, retain baseline measurements for both panes' code/gutter origins, line height, pane widths/sash, scroll dimensions, action position, and paired-zone geometry; activate selection/anchor/focus/hover states; then assert no change. Separately assert document-level overflow is absent while allowing the designated local Monaco/review-main scroll owner.
-
-### WR-04: Theme tests duplicate literals but do not test CSS-to-theme parity
-
-**Files:** `tests/unit/monaco-theme.test.ts:19-111`, `src/web/styles.css:1-48`, `src/web/monaco/theme.ts:5-87`  
-**Issue:** The test compares `DIFF_REVIEW_THEME` to locally duplicated `REQUIRED_COLORS` and `REQUIRED_RULES`; it never reads or derives the values from the canonical root token declaration. The semantic CSS script independently checks a different duplicated `expectedValues` map. A future approved root-token update can therefore change the CSS and its verifier expectation without changing the theme test expectation, leaving Monaco on a parallel palette—the exact divergence the Phase contract says the parity test must prevent.
-
-**Fix:** In the unit test, read and parse the canonical `:root` declarations (test-time only; do not add runtime token extraction), then assert every mapped Monaco color/token foreground is byte-identical to its specified root role. Keep the explicit map of Monaco role-to-root-token relationships as the tested contract.
-
-### WR-05: The test labelled “first-frame” samples only after the asynchronous diff has rendered
-
-**Files:** `tests/integration/monaco-anchor.spec.ts:57-60`, `tests/integration/monaco-anchor.spec.ts:205-211`, `src/web/prototypes/MonacoStabilityPrototype.vue:212-215`, `src/web/prototypes/MonacoStabilityPrototype.vue:251-255`  
-**Issue:** `openPrototype()` waits for `Rendered real Monaco`. That state is set by the adapter's change callback and again after `await adapter.setFile(...)`; only then does test 11 sample canvas/gutter colors. A light/base-theme flash between editor construction and that later state would not fail this test, despite its name and the Phase requirement that the first mounted Monaco frame is already themed.
-
-**Fix:** Add an adapter-level construction-order test that spies on the public Monaco API and proves `defineTheme`/`setTheme` precede `createDiffEditor`. In the real-browser fixture, also record the first editor frame's computed canvas/gutter values before the asynchronous file-ready signal and assert those recorded values, not only the settled DOM.
+- `npm run typecheck:web` — passed.
+- `./node_modules/.bin/vitest run tests/unit/monaco-theme.test.ts tests/unit/monaco-diff-semantics.test.ts tests/unit/monaco-diff-adapter.test.ts` — passed: 3 files, 9 tests.
+- `npm run build:web` — passed.
+- `node scripts/verify-semantic-css.mjs` — passed: canonical root, retired vocabulary, and author-style invariants.
+- `npm run test:browser -- tests/integration/monaco-anchor.spec.ts tests/integration/anchored-workspace.spec.ts` — passed: 22 focused Chromium tests.
 
 ---
 
-_Reviewed: 2026-07-27T08:51:22Z_  
+_Reviewed: 2026-07-27T09:35:09Z_  
 _Reviewer: gsd-code-reviewer_  
 _Depth: standard_
