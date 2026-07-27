@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: GitHub Dark Diff
 current_phase: 06
-current_phase_name: Monaco Diff Semantics
+current_phase_name: monaco-diff-semantics
 status: executing
-stopped_at: Phase 06 UI-SPEC approved
-last_updated: "2026-07-27T07:10:30.438Z"
-last_activity: 2026-07-26
-last_activity_desc: "Completed quick task 260726-q8a: Generate interactive Phase 6 Monaco diff semantics mockup"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-07-27T07:44:28.533Z"
+last_activity: 2026-07-27
+last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 1
-  completed_plans: 1
+  total_plans: 4
+  completed_plans: 2
   percent: 25
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-26)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 06 — Monaco Diff Semantics
+**Current focus:** Phase 06 — monaco-diff-semantics
 
 ## Current Position
 
-Phase: 06 — Monaco Diff Semantics
-Plan: Not started
+Phase: 06 (monaco-diff-semantics) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-07-26 - Completed quick task 260726-q8a: Generate interactive Phase 6 Monaco diff semantics mockup
+Last activity: 2026-07-27 — Phase 06 execution started
 
 Progress: [██████████] 100%
 
@@ -56,6 +56,7 @@ Progress: [██████████] 100%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 05 P01 | 18min | 2 tasks | 6 files |
+| Phase 06 P01 | 8min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - No new review mechanics, theme system, UI framework, remote assets, persistence changes, or export-contract changes belong in v1.1.
 - [Phase 05]: Use a single direct semantic-token root with no compatibility aliases or component token roots.
 - [Phase 05]: Keep Monaco internals untouched; Phase 05 exposes only CSS foundation roles for later consumers.
+- [Phase 06]: Use the one stable diff-review-dark typed Monaco theme, selected by defineTheme then setTheme on every application. — Guarantees an idempotent, local first-paint prerequisite while exact tests preserve Phase 05 semantic-role parity.
 
 ### Pending Todos
 
@@ -98,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-26T17:18:17.755Z
-Stopped at: Phase 06 UI-SPEC approved
-Resume file: .planning/phases/06-monaco-diff-semantics/06-UI-SPEC.md
+Last session: 2026-07-27T07:44:28.516Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None

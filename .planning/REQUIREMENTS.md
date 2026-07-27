@@ -16,11 +16,11 @@ Requirements for the GitHub Dark Diff milestone. Each maps to exactly one roadma
 
 ### Diff Semantics
 
-- [ ] **DIFF-01**: User sees the Monaco diff canvas, syntax tokens, gutters, widgets, and surrounding workspace rendered from one coordinated dark semantic palette.
-- [ ] **DIFF-02**: User can distinguish added, deleted, intraline-changed, hunk, unchanged, and empty diff regions while code remains readable over every layer.
+- [x] **DIFF-01**: User sees the Monaco diff canvas, syntax tokens, gutters, widgets, and surrounding workspace rendered from one coordinated dark semantic palette.
+- [x] **DIFF-02**: User can distinguish added, deleted, intraline-changed, hunk, unchanged, and empty diff regions while code remains readable over every layer.
 - [ ] **DIFF-03**: User can distinguish Base from Head and deletion from addition without relying on red and green alone.
 - [ ] **DIFF-04**: User sees legible line-number gutters, active-line emphasis, and the existing comment affordance without code movement or gutter reflow.
-- [ ] **DIFF-05**: User can distinguish text selection, active lines, hover targets, comment anchors, keyboard focus, and addition or deletion meaning when those states overlap.
+- [x] **DIFF-05**: User can distinguish text selection, active lines, hover targets, comment anchors, keyboard focus, and addition or deletion meaning when those states overlap.
 
 ### Review Surfaces
 
@@ -73,11 +73,11 @@ Roadmap mapping for the approved v1.1 milestone.
 | VIS-02 | Phase 05 | Complete |
 | VIS-03 | Phase 05 | Complete |
 | VIS-04 | Phase 07 | Pending |
-| DIFF-01 | Phase 06 | Pending |
-| DIFF-02 | Phase 06 | Pending |
+| DIFF-01 | Phase 06 | Complete |
+| DIFF-02 | Phase 06 | Complete |
 | DIFF-03 | Phase 06 | Pending |
 | DIFF-04 | Phase 06 | Pending |
-| DIFF-05 | Phase 06 | Pending |
+| DIFF-05 | Phase 06 | Complete |
 | REVW-01 | Phase 07 | Pending |
 | REVW-02 | Phase 07 | Pending |
 | REVW-03 | Phase 07 | Pending |

@@ -67,12 +67,12 @@ Plans:
   5. User can still distinguish selection, active lines, hover targets, comment anchors, keyboard focus, and diff meaning when those states overlap.
 
 **Planning detail**: Register an idempotent typed Monaco theme before editor construction and map the shared semantic roles into editor, syntax, diff, gutter, widget, selection, unchanged-region, and focus colors. Preserve the existing adapter, models, line mapping, view zones, hidden regions, side-by-side geometry, accessibility labels, and keyboard commands.
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 06-01-PLAN.md — Define and audit the exact typed diff-review-dark theme contract.
+- [x] 06-01-PLAN.md — Define and audit the exact typed diff-review-dark theme contract.
 - [ ] 06-02-PLAN.md — Derive deterministic continuous bars and sparse signed gutter cues from Monaco line changes.
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -127,7 +127,7 @@ Plans:
 | 04. Agent-Ready Export | v1.0 | 8/8 | Complete | 2026-07-23 |
 | 04.1. Close CMT-01 Async Comment Settlement | v1.0 | 2/2 | Complete | 2026-07-24 |
 | 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
-| 06. Monaco Diff Semantics | v1.1 | 0/TBD | Not started | - |
+| 06. Monaco Diff Semantics | v1.1 | 1/3 | In Progress|  |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 0/TBD | Not started | - |
 | 08. Accessible Responsive Continuity | v1.1 | 0/TBD | Not started | - |
 
