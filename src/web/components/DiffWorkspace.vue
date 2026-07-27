@@ -3,6 +3,8 @@ import { h, nextTick, onBeforeUnmount, onMounted, ref, render, watch } from 'vue
 
 import type { FileContentResponse } from '../../contracts/api.js';
 import CommentComposer from './CommentComposer.vue';
+import PathText from './ui/PathText.vue';
+import ReviewStateBadge from './ui/ReviewStateBadge.vue';
 import {
   createMonacoDiffAdapter,
   type AnchorAffordanceTarget,
@@ -86,9 +88,20 @@ function renderAnnotation(): void {
   }
   const comment = currentComment();
   if (comment !== undefined) {
-    render(h('section', { class: 'inline-accepted-comment', 'data-comment-id': comment.id },
-      [h('h3', { tabindex: -1 }, `${props.path} · ${comment.side === 'base' ? 'Base' : 'Head'} · line ${comment.line}`),
-        h('span', { class: 'comment-badge' }, 'Saved locally'), h('p', comment.body)]), zone);
+    render(h('section', { class: 'conversation-card inline-accepted-comment', 'data-comment-id': comment.id }, [
+      h('header', { class: 'conversation-card__header' }, [
+        h('h3', { tabindex: -1, class: 'conversation-card__identity' }, [
+          h(PathText, { display: props.path }),
+          h('span', ` · ${comment.side === 'base' ? 'Base' : 'Head'} · line ${comment.line}`),
+        ]),
+        h('div', { class: 'conversation-card__badges' }, [
+          h(ReviewStateBadge, { kind: comment.state, label: comment.state === 'open' ? 'Open' : 'Resolved' }),
+          h(ReviewStateBadge, { kind: 'verified', label: 'Verified' }),
+        ]),
+      ]),
+      h('div', { class: 'conversation-card__body' }, [h('p', comment.body)]),
+      h('footer', { class: 'conversation-card__footer' }, [h('span', { class: 'comment-badge' }, 'Saved locally')]),
+    ]), zone);
     return;
   }
   if (props.composer === undefined || props.composer.side !== anchor.side || props.composer.line !== anchor.line) {
