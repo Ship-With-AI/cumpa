@@ -67,7 +67,7 @@ Plans:
   5. User can still distinguish selection, active lines, hover targets, comment anchors, keyboard focus, and diff meaning when those states overlap.
 
 **Planning detail**: Register an idempotent typed Monaco theme before editor construction and map the shared semantic roles into editor, syntax, diff, gutter, widget, selection, unchanged-region, and focus colors. Preserve the existing adapter, models, line mapping, view zones, hidden regions, side-by-side geometry, accessibility labels, and keyboard commands.
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans executed
 
 Plans:
 **Wave 1**
@@ -77,7 +77,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-03-PLAN.md — Integrate all Monaco semantic layers and prove overlap, contrast, no-reflow, and lifecycle behavior in Chromium.
+- [x] 06-03-PLAN.md — Integrate all Monaco semantic layers and prove overlap, contrast, no-reflow, and lifecycle behavior in Chromium.
 
 **UI hint**: yes
 
@@ -127,7 +127,7 @@ Plans:
 | 04. Agent-Ready Export | v1.0 | 8/8 | Complete | 2026-07-23 |
 | 04.1. Close CMT-01 Async Comment Settlement | v1.0 | 2/2 | Complete | 2026-07-24 |
 | 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
-| 06. Monaco Diff Semantics | v1.1 | 2/3 | In Progress|  |
+| 06. Monaco Diff Semantics | v1.1 | 3/3 | In Progress|  |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 0/TBD | Not started | - |
 | 08. Accessible Responsive Continuity | v1.1 | 0/TBD | Not started | - |
 
