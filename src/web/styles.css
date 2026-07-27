@@ -35,6 +35,11 @@
   --status-pending-background: #21262D;
   --status-disabled-foreground: #8B949E;
   --status-disabled-background: #161B22;
+  --syntax-keyword-foreground: #D2A8FF;
+  --syntax-string-foreground: #A5D6FF;
+  --syntax-number-foreground: #F2CC60;
+  --syntax-type-foreground: #79C0FF;
+  --syntax-invalid-foreground: #FFA198;
   --diff-addition-foreground: #3FB950;
   --diff-addition-background: rgb(46 160 67 / 15%);
   --diff-addition-intraline-background: rgb(46 160 67 / 35%);
