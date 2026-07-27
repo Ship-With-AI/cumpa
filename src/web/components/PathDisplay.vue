@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
+import PathText from './ui/PathText.vue';
+
 import type { SessionFile } from '../../contracts/api.js';
 
 const props = defineProps<{
@@ -26,10 +28,17 @@ const moveLabel = computed(() => {
 </script>
 
 <template>
-  <span v-if="isMove && file.oldPath !== undefined && file.newPath !== undefined" class="path-display" :aria-label="moveLabel">
-    <span aria-hidden="true" class="path-display__old">{{ file.oldPath.display }}</span>
+  <span
+    v-if="isMove && file.oldPath !== undefined && file.newPath !== undefined"
+    class="path-display"
+    :aria-label="moveLabel"
+    :title="moveLabel"
+  >
+    <span aria-hidden="true" class="path-display__old"><PathText :display="file.oldPath.display" /></span>
     <span aria-hidden="true" class="path-display__arrow">→</span>
-    <span aria-hidden="true" class="path-display__new">{{ file.newPath.display }}</span>
+    <span aria-hidden="true" class="path-display__new"><PathText :display="file.newPath.display" /></span>
   </span>
-  <span v-else class="path-display">{{ effectivePath?.display }}</span>
+  <span v-else class="path-display" :title="effectivePath?.display">
+    <PathText v-if="effectivePath !== undefined" :display="effectivePath.display" />
+  </span>
 </template>
