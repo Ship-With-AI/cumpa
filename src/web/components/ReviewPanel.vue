@@ -9,6 +9,7 @@ import type { WorkspaceComment } from '../model/workspace-state.js';
 import SummarySection from './SummarySection.vue';
 import ExportSection from './ExportSection.vue';
 import ReviewStateBadge from './ui/ReviewStateBadge.vue';
+import UiIcon from './ui/UiIcon.vue';
 import PathText from './ui/PathText.vue';
 
 type ReviewFailure = Readonly<{
@@ -288,14 +289,17 @@ watch(reviewFailure, (failed) => {
       tabindex="-1"
       aria-labelledby="review-conflict-heading"
     >
-      <h3 id="review-conflict-heading">Review changed in another tab</h3>
-      <dl>
-        <div><dt>Your revision</dt><dd>{{ conflict.expectedRevision }}</dd></div>
-        <div><dt>Latest revision</dt><dd>{{ conflict.actualRevision }}</dd></div>
-      </dl>
-      <p>Nothing from your attempt was written.</p>
-      <p>Unsaved text retained in this tab.</p>
-      <button type="button" class="ui-button" @click="emit('reload-latest')">Reload latest</button>
+      <UiIcon name="warning" class="inline-notice__icon" />
+      <div class="inline-notice__content">
+        <h3 id="review-conflict-heading">Review changed in another tab</h3>
+        <dl>
+          <div><dt>Your revision</dt><dd>{{ conflict.expectedRevision }}</dd></div>
+          <div><dt>Latest revision</dt><dd>{{ conflict.actualRevision }}</dd></div>
+        </dl>
+        <p>Nothing from your attempt was written.</p>
+        <p>Unsaved text retained in this tab.</p>
+        <button type="button" class="ui-button" @click="emit('reload-latest')">Reload latest</button>
+      </div>
     </section>
 
     <section
@@ -306,9 +310,12 @@ watch(reviewFailure, (failed) => {
       tabindex="-1"
       aria-labelledby="review-operation-failed-heading"
     >
-      <h3 id="review-operation-failed-heading">Review change failed</h3>
-      <p v-if="failure?.operation === 'comment'">Comment wasn’t saved. Your text is still here in this tab.</p>
-      <p v-else>The review change wasn’t saved. The accepted local draft is unchanged. Try again after checking Diff Review is running.</p>
+      <UiIcon name="error" class="inline-notice__icon" />
+      <div class="inline-notice__content">
+        <h3 id="review-operation-failed-heading">Review change failed</h3>
+        <p v-if="failure?.operation === 'comment'">Comment wasn’t saved. Your text is still here in this tab.</p>
+        <p v-else>The review change wasn’t saved. The accepted local draft is unchanged. Try again after checking Diff Review is running.</p>
+      </div>
     </section>
 
     <section class="review-panel__section review-panel__section--summary">

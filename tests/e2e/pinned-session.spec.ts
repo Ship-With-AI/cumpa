@@ -20,6 +20,8 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test } from '@playwright/test';
 import type { Browser, Page, TestInfo } from '@playwright/test';
+import { createServer } from 'vite';
+import type { ViteDevServer } from 'vite';
 
 import {
   createGitFixture,
@@ -43,6 +45,82 @@ const executablePath = join(
   extractedPackageRoot,
   'dist/bin/diff-review.mjs',
 );
+
+const metadataHarnessModule = `
+import { createApp, h } from 'vue';
+import FileMetadataPane from '/components/FileMetadataPane.vue';
+
+const path = (display) => ({
+  bytesBase64url: btoa(display),
+  display,
+  utf8: display,
+});
+
+const file = (availability, name) => ({
+  fileId: name,
+  status: { kind: 'modified' },
+  oldPath: path(name),
+  newPath: path(name),
+  additions: 1,
+  deletions: 1,
+  availability,
+});
+
+export function mountMetadataHarness() {
+  createApp({
+    setup: () => () => h('main', { id: 'metadata-harness' }, [
+      h('section', { id: 'metadata-text' }, [
+        h(FileMetadataPane, {
+          file: file({ kind: 'text' }, 'src/safe text.ts'),
+          loading: false,
+          errorMessage: '',
+        }),
+      ]),
+      h('section', { id: 'metadata-unsupported' }, [
+        h(FileMetadataPane, {
+          file: file({ kind: 'unsupported', reason: 'binary' }, 'assets/image.dat'),
+          loading: false,
+          errorMessage: '',
+        }),
+      ]),
+      h('section', { id: 'metadata-unavailable' }, [
+        h(FileMetadataPane, {
+          file: file({ kind: 'unavailable', reason: 'missing-object' }, 'removed/missing.txt'),
+          loading: false,
+          errorMessage: '',
+        }),
+      ]),
+      h('section', { id: 'metadata-retry-error' }, [
+        h(FileMetadataPane, {
+          file: file({ kind: 'text' }, 'src/retry.ts'),
+          loading: true,
+          errorMessage: 'Metadata request failed without exposing a path.',
+          onRetry: () => {},
+        }),
+      ]),
+    ]),
+  }).mount('#metadata-harness');
+}
+`;
+
+async function startMetadataHarness(): Promise<Readonly<{ server: ViteDevServer; url: string }>> {
+  const server = await createServer({
+    configFile: 'vite.config.ts',
+    plugins: [{
+      name: 'metadata-pane-harness',
+      resolveId: (id) => id === 'virtual:metadata-pane-harness' ? '\0metadata-pane-harness' : undefined,
+      load: (id) => id === '\0metadata-pane-harness' ? metadataHarnessModule : undefined,
+    }],
+    server: { host: '127.0.0.1' },
+  });
+  await server.listen();
+  const url = server.resolvedUrls?.local[0];
+  if (url === undefined) {
+    await server.close();
+    throw new Error('metadata harness did not expose a loopback URL');
+  }
+  return { server, url };
+}
 
 interface PackResult {
   filename: string;
@@ -1076,10 +1154,11 @@ test('metadata and availability states', async ({ browser, context, page }, test
     sessionGate.resolve();
 
     const workspace = page.getByRole('main', { name: '00-src/new\\nname.ts' });
-    await expect(workspace.getByRole('heading', { level: 1 })).toHaveText('00-src/new\\nname.ts');
+    await expect(workspace.getByRole('heading', { level: 1 })).toHaveText('00-src/old\\tname.ts→00-src/new\\nname.ts');
     await expect(workspace.locator('.monaco-diff-editor')).toBeVisible();
-    await expect(workspace.getByText('BASE', { exact: true })).toBeVisible();
-    await expect(workspace.getByText('HEAD', { exact: true })).toBeVisible();
+    const contextHeader = workspace.locator('.review-context-header');
+    await expect(contextHeader.getByText('BASE', { exact: true })).toBeVisible();
+    await expect(contextHeader.getByText('HEAD', { exact: true })).toBeVisible();
 
     const selectFile = async (fileId: string): Promise<void> => {
       const row = page.locator(`[role="treeitem"][data-file-id="${fileId}"]`);
@@ -1112,6 +1191,36 @@ test('metadata and availability states', async ({ browser, context, page }, test
     const requestUrl = new URL(requestEvidence[0]!.url);
     expect(requestUrl.search).toBe('');
     expect(requestUrl.pathname).toBe(`/api/files/${ids.supported}/content`);
+
+    const metadataHarness = await startMetadataHarness();
+    try {
+      await page.goto(metadataHarness.url, { waitUntil: 'domcontentloaded' });
+      await page.evaluate(async () => {
+        const { mountMetadataHarness } = await import(`/@id/${'virtual:metadata-pane-harness'}`);
+        document.body.innerHTML = '<div id="metadata-harness"></div>';
+        mountMetadataHarness();
+      });
+
+      const textNotice = page.locator('#metadata-text .inline-notice');
+      const unsupportedNotice = page.locator('#metadata-unsupported .inline-notice');
+      const unavailableNotice = page.locator('#metadata-unavailable .inline-notice');
+      const retryErrorNotice = page.locator('#metadata-retry-error .inline-notice--error');
+
+      for (const notice of [textNotice, unsupportedNotice, unavailableNotice, retryErrorNotice]) {
+        await expect(notice.locator('svg[aria-hidden="true"]')).toHaveCount(1);
+        await expect(notice).toHaveCSS('border-left-width', '3px');
+      }
+
+      await expect(textNotice.getByRole('heading', { name: 'Text file availability' })).toBeVisible();
+      await expect(unsupportedNotice.getByRole('heading', { name: 'File cannot be shown inline' })).toBeVisible();
+      await expect(unavailableNotice.getByRole('heading', { name: 'File content is unavailable' })).toBeVisible();
+      await expect(retryErrorNotice.getByRole('heading', { name: 'File details could not be loaded' })).toBeVisible();
+      await expect(retryErrorNotice.getByRole('alert')).toHaveText('Metadata request failed without exposing a path.');
+      await expect(page.locator('#metadata-text .metadata-value')).toContainText('src/safe text.ts');
+      await expect(page.getByRole('button', { name: 'Retry file details' })).toBeDisabled();
+    } finally {
+      await metadataHarness.server.close();
+    }
   } finally {
     sessionGate.resolve();
     await stopGeneratedCli(running);

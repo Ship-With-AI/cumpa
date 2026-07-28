@@ -11,8 +11,10 @@ const savedBody = 'Resolved comment body, edited.';
 
 const harnessModule = `
 import { createApp, h, ref } from 'vue';
+import InlineNotice from '/components/InlineNotice.vue';
 import ReviewPanel from '/components/ReviewPanel.vue';
 import ReviewToolbar from '/components/ReviewToolbar.vue';
+import SelectorDriftNotice from '/components/SelectorDriftNotice.vue';
 
 export function mountReviewPanelHarness(id, body) {
   const comments = ref([{
@@ -42,9 +44,13 @@ export function mountReviewPanelHarness(id, body) {
   const summaryBuffer = ref('');
   const pending = ref(null);
   const selectedCommentId = ref(null);
-  globalThis.__setReviewPanelState = ({ pending: nextPending, selectedCommentId: nextSelected }) => {
-    pending.value = nextPending;
-    selectedCommentId.value = nextSelected;
+  const conflict = ref(null);
+  const failure = ref(null);
+  globalThis.__setReviewPanelState = (nextState) => {
+    if ('pending' in nextState) pending.value = nextState.pending;
+    if ('selectedCommentId' in nextState) selectedCommentId.value = nextState.selectedCommentId;
+    if ('conflict' in nextState) conflict.value = nextState.conflict;
+    if ('failure' in nextState) failure.value = nextState.failure;
   };
   const reviewExpanded = ref(true);
   const saved = ref([]);
@@ -73,8 +79,8 @@ export function mountReviewPanelHarness(id, body) {
         commentBuffers: new Map([[id, commentBuffer.value]]),
         pending: pending.value,
         selectedCommentId: selectedCommentId.value,
-        conflict: null,
-        failure: null,
+        conflict: conflict.value,
+        failure: failure.value,
         retainedSummary: false,
         exportState: {
           pending: false,
@@ -108,11 +114,43 @@ export function mountReviewPanelHarness(id, body) {
         onReloadLatest: () => {},
         onReviewUnsavedText: () => {},
       }),
+      h(InlineNotice, { tone: 'warning', role: 'alert' }, {
+        default: () => [
+          h('h2', { id: 'notice-warning-heading', tabindex: -1 }, 'Warning notice'),
+          h('p', 'Review this warning before continuing.'),
+        ],
+      }),
+      h(InlineNotice, { tone: 'information', role: 'status' }, {
+        default: () => [
+          h('h2', { id: 'notice-information-heading' }, 'Information notice'),
+          h('p', 'Informational status remains available.'),
+        ],
+      }),
+      h(InlineNotice, { tone: 'success', role: 'note' }, {
+        default: () => [
+          h('h2', { id: 'notice-success-heading' }, 'Success notice'),
+          h('p', 'The completed state remains explicit.'),
+        ],
+      }),
+      h(SelectorDriftNotice, {
+        drift: {
+          base: {
+            kind: 'moved',
+            role: 'base',
+            label: 'main',
+            selectorType: 'branch',
+            oldOid: '1'.repeat(40),
+            newOid: '2'.repeat(40),
+          },
+          head: { kind: 'unchanged', role: 'head' },
+        },
+      }),
       h('output', { id: 'saved-comment-ids' }, saved.value.join(',')),
       h('output', { id: 'deleted-comment-ids' }, deleted.value.join(',')),
     ]),
   }).mount('#review-panel-harness');
 }
+
 `;
 
 test.beforeAll(async () => {
@@ -224,4 +262,46 @@ test('review hierarchy, keyboard, discard, resolved lifecycle, and focus follow 
   await expect(page.locator('#deleted-comment-ids')).toHaveText(commentId);
   await expect(record).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'No resolved comments' })).toBeVisible();
+});
+
+test('Phase 07 notice status language', async ({ page }) => {
+  await page.goto(serverUrl, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(async ({ commentId: id, body }) => {
+    const { mountReviewPanelHarness } = await import(`/@id/${'virtual:review-panel-resolved-harness'}`);
+    mountReviewPanelHarness(id, body);
+  }, { commentId, body: originalBody });
+
+  await page.evaluate((id) => globalThis.__setReviewPanelState({
+    failure: { operation: 'comment', commentId: id },
+  }), commentId);
+  const failure = page.getByRole('alert', { name: 'Review change failed' });
+  await expect(failure).toBeFocused();
+  await expect(failure.locator('svg[aria-hidden="true"]')).toHaveCount(1);
+  await expect(failure.getByRole('heading', { name: 'Review change failed' })).toBeVisible();
+  await expect(failure).toHaveCSS('border-left-width', '3px');
+
+
+  const warning = page.locator('.inline-notice--warning').filter({ hasText: 'Warning notice' });
+  const information = page.locator('.inline-notice--information');
+  const success = page.locator('.inline-notice--success');
+  const drift = page.locator('.selector-drift-notice');
+
+  await expect(warning).toHaveAttribute('role', 'alert');
+  await expect(information).toHaveAttribute('role', 'status');
+  await expect(success).toHaveAttribute('role', 'note');
+  await expect(drift).toHaveAttribute('role', 'status');
+
+  for (const notice of [warning, information, success, drift]) {
+    await expect(notice.locator('svg[aria-hidden="true"]')).toHaveCount(1);
+    await expect(notice).toHaveCSS('border-left-width', '3px');
+  }
+
+  await expect(warning.getByRole('heading', { name: 'Warning notice' })).toBeVisible();
+  await expect(information.getByRole('heading', { name: 'Information notice' })).toBeVisible();
+  await expect(success.getByRole('heading', { name: 'Success notice' })).toBeVisible();
+  await expect(drift.getByRole('heading', { name: 'Selected source changed — open review remains pinned' })).toBeVisible();
+  await expect(drift).toHaveClass(/inline-notice--warning/);
+
+  await warning.getByRole('heading', { name: 'Warning notice' }).focus();
+  await expect(warning.getByRole('heading', { name: 'Warning notice' })).toBeFocused();
 });

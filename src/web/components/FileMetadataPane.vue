@@ -111,6 +111,18 @@ const availabilityExplanation = computed(() => {
   }
 });
 
+const metadataErrorHeading = computed(() => 'File details could not be loaded');
+const availabilityNoticeHeading = computed(() => {
+  switch (selectedRecord.value.availability.kind) {
+    case 'text':
+      return 'Text file availability';
+    case 'unsupported':
+      return 'File cannot be shown inline';
+    case 'unavailable':
+      return 'File content is unavailable';
+  }
+});
+
 function createPathEntry(
   path: ExactPathDto,
   role: 'path' | 'old path' | 'new path',
@@ -171,6 +183,7 @@ defineExpose({ focusHeading, getScrollPosition, setScrollPosition });
     </h2>
 
     <InlineNotice v-if="errorMessage !== ''" tone="error">
+      <h3>{{ metadataErrorHeading }}</h3>
       <p role="alert">{{ errorMessage }}</p>
       <button
         type="button"
@@ -249,9 +262,7 @@ defineExpose({ focusHeading, getScrollPosition, setScrollPosition });
       <InlineNotice
         :tone="selectedRecord.availability.kind === 'text' ? 'neutral' : selectedRecord.availability.kind === 'unavailable' ? 'error' : 'warning'"
       >
-        <h4 v-if="selectedRecord.availability.kind !== 'text'">
-          File cannot be shown inline
-        </h4>
+        <h4>{{ availabilityNoticeHeading }}</h4>
         <p v-if="machineReason !== undefined" class="machine-reason">
           {{ machineReason }}
         </p>
