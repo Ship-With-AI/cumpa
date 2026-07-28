@@ -227,6 +227,14 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   await expect(page.getByText('Backing up existing draft…', { exact: true })).toBeVisible();
   releaseRecovery?.();
   await expect(page.getByRole('heading', { name: 'New draft started' })).toBeVisible();
+  const recoveredCard = page.locator('.draft-recovery__card');
+  const recoveryNotice = recoveredCard.locator('.draft-recovery__notice');
+  const recoveryLiveOwners = recoveredCard.locator('[role="status"], [aria-live="polite"]');
+  await expect(recoveryLiveOwners).toHaveCount(1);
+  await expect(recoveryLiveOwners).toHaveClass(/inline-notice--success/);
+  await expect(recoveryNotice).toHaveAttribute('role', 'status');
+  await expect(recoveryNotice.getByRole('heading', { name: 'New draft started' })).toHaveCount(1);
+  await expect(recoveryNotice).toContainText('The original draft was preserved before the new empty draft was created.');
   await expect(page.getByText(safeBackupPath, { exact: true })).toBeVisible();
   await expect(page.locator('.draft-recovery__receipt-status')).toContainText('Recovered');
   await expect(page.locator('.draft-recovery__receipt-status .ui-icon')).toHaveCount(1);

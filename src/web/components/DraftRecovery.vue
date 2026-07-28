@@ -107,7 +107,7 @@ async function recover(): Promise<void> {
 
 <template>
   <main class="draft-recovery" aria-labelledby="draft-recovery-heading" @keydown.escape="confirming ? cancelConfirmation() : undefined">
-    <section v-if="recovered !== undefined" class="draft-recovery__card" aria-live="polite">
+    <section v-if="recovered !== undefined" class="draft-recovery__card">
       <ReviewStateBadge class="draft-recovery__receipt-status" kind="success" label="Recovered" />
       <InlineNotice class="draft-recovery__notice" tone="success" role="status">
         <h1 id="draft-recovery-heading">New draft started</h1>
