@@ -5,15 +5,15 @@ milestone_name: GitHub Dark Diff
 current_phase: 07
 current_phase_name: github-familiar-review-surfaces
 status: executing
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-07-28T07:45:36.843Z"
+stopped_at: Completed 07-04-PLAN.md
+last_updated: "2026-07-28T08:24:00.539Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 8
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 07 (github-familiar-review-surfaces) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 07 execution started
 
@@ -62,6 +62,7 @@ Progress: [█████░░░░░] 50%
 | Phase 07 P01 | 22min | 2 tasks | 7 files |
 | Phase 07 P02 | recovery | 2 tasks | 5 files |
 | Phase 07 P03 | 23min | 2 tasks | 5 files |
+| Phase 07 P04 | 5min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Keep selectedCommentId in App presentation state and derive it only from focus-comment commands. — Selection remains transient and cannot enter persistence or export.
 - [Phase 07]: Use existing projectCommentGroups as the sole review rail grouping and order authority. — Presentation changes cannot alter comment grouping or section order.
 - [Phase 07]: Correlate lifecycle busy feedback with pendingFocus.commentId to prevent false progress cues. — Operation-wide pending state must not make sibling rows appear in progress.
+- [Phase 07]: Use one closed notice icon mapping for neutral, information, success, warning, and error; pending remains spinner plus progressive text.
+- [Phase 07]: Preserve existing raw notice roots and add only decorative icon and content children where refs or focus ownership are authoritative.
+- [Phase 07]: Present Summary computed state through ReviewStateBadge and local field IDs without adding summary state or changing save authority.
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T07:44:43.995Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-07-28T08:24:00.536Z
+Stopped at: Completed 07-04-PLAN.md
 Resume file: None
