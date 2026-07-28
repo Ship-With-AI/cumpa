@@ -95,11 +95,11 @@ Plans:
   5. User can distinguish error, warning, informational, success, pending, disabled, open, and resolved states through text or icons and structural treatment in addition to color.
 
 **Planning detail**: Restyle the existing file tree and header, toolbar, drawers, inline view-zone content, comment composer and cards, review rail, notices, conflict and recovery states, summary, and export surfaces. Reuse current components, semantic hooks, ARIA relationships, focus targets, events, and state transitions; add no review mechanics or information-architecture changes.
-**Plans**: 8/9 plans executed
+**Plans**: 9/9 plans complete
 
 - [x] 07-07-PLAN.md
 - [x] 07-08-PLAN.md
-- [ ] 07-09-PLAN.md
+- [x] 07-09-PLAN.md
 
 **Wave 1**
 
@@ -157,7 +157,7 @@ Plans:
 | 04.1. Close CMT-01 Async Comment Settlement | v1.0 | 2/2 | Complete | 2026-07-24 |
 | 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
 | 06. Monaco Diff Semantics | v1.1 | 3/3 | Complete    | 2026-07-27 |
-| 07. GitHub-Familiar Review Surfaces | v1.1 | 8/9 | In Progress|  |
+| 07. GitHub-Familiar Review Surfaces | v1.1 | 9/9 | Complete   | 2026-07-28 |
 | 08. Accessible Responsive Continuity | v1.1 | 0/TBD | Not started | - |
 
 **v1.1 coverage:** 4 phases, 18 requirements, 18 mapped, 0 unmapped.
