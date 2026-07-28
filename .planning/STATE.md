@@ -5,15 +5,15 @@ milestone_name: GitHub Dark Diff
 current_phase: 07
 current_phase_name: github-familiar-review-surfaces
 status: executing
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-07-27T17:15:36.180Z"
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-07-28T07:14:56.976Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 10
-  completed_plans: 5
+  completed_plans: 6
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 07 (github-familiar-review-surfaces) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 07 execution started
 
@@ -60,6 +60,7 @@ Progress: [█████░░░░░] 50%
 | Phase 06 P02 | 8min | 1 tasks | 2 files |
 | Phase 06 P03 | 35min | 2 tasks | 5 files |
 | Phase 07 P01 | 22min | 2 tasks | 7 files |
+| Phase 07 P02 | recovery | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Render the grouped header only from existing pinned session endpoints and selected SessionFile safe display values. — Preserves source authority without a new fetch, ref resolution, or path reconstruction.
 - [Phase 07]: Keep toolbar behavior in ReviewToolbar and compose it into the grouped header. — Retains emits, shortcuts, ARIA relationships, native disabled rules, and focus ownership.
 - [Phase 07]: Use bounded local SVG names and CSS state hooks instead of icon assets, packages, or product state. — Keeps the review presentation local, decorative, and behavior-free.
+- [Phase 07]: Keep lifecycle and verified-anchor meanings as separate visible badges while the Phase 06 source-line rail remains authoritative. — Preserves independent review state axes and immutable Monaco anchor ownership.
 
 ### Pending Todos
 
@@ -109,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-27T17:15:36.176Z
-Stopped at: Completed 07-01-PLAN.md
-Resume file: .planning/phases/07-github-familiar-review-surfaces/07-02-PLAN.md
+Last session: 2026-07-28T07:14:56.972Z
+Stopped at: Completed 07-02-PLAN.md
+Resume file: None
