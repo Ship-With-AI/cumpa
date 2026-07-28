@@ -11,6 +11,8 @@
 | `src/web/styles.css` | global stylesheet / design-token contract | transform (semantic tokens → rendered UI) | existing `src/web/styles.css` root, workbench, breakpoint, state rules | exact same file; atomic cutover |
 | `scripts/verify-semantic-css.mjs` | dependency-free Node ESM build audit | filesystem validation (source CSS + `dist/web` assets → thrown failure or concise success) | `scripts/verify-production-artifacts.mjs`, with output ownership confirmed by `vite.config.ts` and invocation conventions confirmed by `package.json` | strong structural analog |
 | `tests/e2e/responsive-session.spec.ts` | browser contract test | request-response + responsive UI state transitions | existing computed-style/responsive contract in same file | exact |
+| `tests/e2e/pinned-session.spec.ts` | packaged browser lifecycle contract test | request-response + loading/security/identity/empty-state transitions | same-file `proveLoadingTransition` helper and `identity session and empty states` packaged flow | exact |
+| `tests/integration/draft-recovery-ui.spec.ts` | mounted browser integration test | request-response + corrupt-draft recovery state transitions | same-file `corrupt drafts remain read only until the fingerprint-bound recovery response succeeds` flow | exact |
 | `tests/integration/export-receipt-ui.spec.ts` | browser integration test | request-response + export state transitions | existing receipt assertions in same file | exact |
 | `src/web/App.vue` | integration boundary (no expected edit) | request-response + responsive drawer state | existing template and `styles.css` import | exact boundary analog; preserve structure |
 | `src/web/components/ui/UiPrimitives.vue` | component (no expected edit) | event-driven tooltip state | existing tooltip template and global class hooks | exact boundary analog; CSS-only visual migration |
@@ -113,12 +115,13 @@ Keep loading, unavailable, empty, recovery, review, and export DOM/class hooks. 
   }
 }
 ```
-Preserve 1439/1099/767 breakpoint behavior, transforms, widths, and transitions. Static panes/editor hosts have no shadow; only an open comments rail, files drawer, identity panel, keyboard-help/dialog, or tooltip may use overlay elevation. Do not add breakpoints or transfer Monaco/document scrolling.
+Preserve 1439/1099/767 breakpoint behavior, transforms, widths, and transitions. Static panes/editor hosts and active/pressed controls have no shadow; only an open comments rail, files drawer, identity panel, keyboard-help/dialog, tooltip, or the floating gutter-action label may use exterior overlay elevation. The only non-elevation inset shadows are the exact resting `.tree-row--selected` and `.view-tab[aria-selected="true"]` selected/current rails described below. Do not add breakpoints or transfer Monaco/document scrolling.
 
 **Control/status/focus analogs** (existing lines 1136–1165, 1459–1535, 1569–1580):
 - Keep `.ui-button`, legacy `identity-disclosure`/`copy-button`/`retry-button`, textarea, checkbox, and native control hooks. Give dark background, text, border, caret/placeholder, hover/focus/disabled/autofill-safe rules explicitly; do not use opacity-only disabled styling.
 - Preserve existing `.inline-notice`, `.draft-recovery__notice`, warning/error classes and their labels/roles. Convert colored inherited text to readable `text-primary` body text with semantic foreground border/rail and subtle status backgrounds.
 - Use one `:focus-visible` rule: `2px solid var(--focus-ring)` and `2px` offset; no later duplicate override.
+- Remove the existing inset pressed effects. Every control selector arm containing `:active` or `[aria-pressed="true"]` must explicitly set `box-shadow: none`, including a selected view tab while pressed. The complete ordinary-palette inset allowlist is `.tree-row--selected { box-shadow: inset 3px 0 var(--selection-border); }` and `.view-tab[aria-selected="true"] { box-shadow: inset 0 -3px var(--selection-border); }` at rest; no focus rule, static surface, active/pressed control, or other selector receives an inset shadow.
 
 **Forced-colors addition (no existing analog):**
 ```css
@@ -155,6 +158,18 @@ Preserve conventions:
 - Keep `test.step(...)` grouping, `expect(...)` diagnostics, viewport transitions at 1440/1439/1100/1099/768/375/320, and `assertNoPageOverflow`.
 
 The existing token step reads `:root` custom properties and injects representative `.inline-notice`, `.draft-recovery__notice`, and `.ui-button--destructive` fixtures (lines 397–515); replace assertions for the old light token vocabulary with the approved one semantic dark vocabulary and representative composed status/control styles. Retain typography checks and change expected system font, 16/24 heading scale, 400/600 weights, and exact line heights. Retain rail/drawer/focus/inert checks (lines 593–679), adding targeted static `box-shadow: none`, overlay shadow, native control, and `page.emulateMedia({ forcedColors: 'active' })` checks as required by the contract. Do not turn this into a full Phase 08 accessibility audit.
+
+### `tests/e2e/pinned-session.spec.ts` (packaged browser lifecycle contract, request-response + state transitions)
+
+**Analog:** same-file `proveLoadingTransition` (lines 193–202) and `identity session and empty states` packaged flow (beginning at line 636). The helper already gates `/api/session` before continuing the real generated-package request, and the named flow already covers ready identity, 403 unavailable, 500 error, stopped session, dirty identity, and zero-file empty states.
+
+Preserve the exact Chromium prerequisite, generated CLI/package launch, route gate, security redaction, clipboard/copy, stopped-session, identity, and empty-state assertions. Add computed-style evidence inside those existing transitions: inspect root/body/loading before releasing `proveLoadingTransition`, then the actual unavailable/error/stopped and empty shells/cards after each route or package state resolves. Do not replace these seams with an injected static fixture or change deterministic response timing beyond the existing gate.
+
+### `tests/integration/draft-recovery-ui.spec.ts` (mounted browser integration test, corrupt-draft recovery flow)
+
+**Analog:** same-file `corrupt drafts remain read only until the fingerprint-bound recovery response succeeds` mounted flow (beginning at line 135). It already mounts the real Vite application, drives reveal/copy/confirmation/pending/failure/success states, and proves the fingerprint-bound request body plus byte-preserving read-only recovery behavior.
+
+Add computed-style assertions for the rendered recovery shell, card, badge, notice, controls, pending/disabled state, focus, and static no-shadow contract inside that same flow. Preserve the Vite server seam, request/body evidence, safe path handling, byte/fingerprint guarantees, confirmation/Escape/focus behavior, and recovery outcome assertions; do not create an isolated visual-only test.
 
 ### `tests/integration/export-receipt-ui.spec.ts` (browser integration test, export request-response)
 
@@ -207,6 +222,6 @@ Retain text/icon/`+`/`−`/label/rail cues, ARIA/inert/role/live-region semantic
 
 ## Metadata
 
-**Analog search scope:** `src/web/styles.css`, `src/web/index.html`, `src/web/App.vue`, `src/web/components/ui/UiPrimitives.vue`, `src/web/components/DiffWorkspace.vue`, `scripts/verify-production-artifacts.mjs`, `vite.config.ts`, `package.json`, `tests/e2e/responsive-session.spec.ts`, `tests/integration/export-receipt-ui.spec.ts`
-**Files scanned:** 10 targeted files
+**Analog search scope:** `src/web/styles.css`, `src/web/index.html`, `src/web/App.vue`, `src/web/components/ui/UiPrimitives.vue`, `src/web/components/DiffWorkspace.vue`, `scripts/verify-production-artifacts.mjs`, `vite.config.ts`, `package.json`, `tests/e2e/responsive-session.spec.ts`, `tests/e2e/pinned-session.spec.ts`, `tests/integration/draft-recovery-ui.spec.ts`, `tests/integration/export-receipt-ui.spec.ts`
+**Files scanned:** 12 targeted files
 **Pattern extraction date:** 2026-07-26
