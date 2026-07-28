@@ -65,7 +65,7 @@ function copyPinnedCommit(status: Exclude<SelectorDriftStatus, { readonly kind: 
           Copy pinned commit
         </button>
       </section>
-      <p aria-live="polite">{{ copied }}</p>
+      <p>{{ copied }}</p>
       <button type="button" class="ui-button" @click="relaunchInstructionsOpen = !relaunchInstructionsOpen">
         Launch new comparison
       </button>

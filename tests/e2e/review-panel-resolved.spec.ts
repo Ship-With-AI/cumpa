@@ -329,6 +329,17 @@ test('Phase 07 notice status language', async ({ page }) => {
   await expect(information).toHaveAttribute('role', 'status');
   await expect(success).toHaveAttribute('role', 'note');
   await expect(drift).toHaveAttribute('role', 'status');
+  const driftLiveOwners = page.locator('.selector-drift-notice[role="status"], .selector-drift-notice [aria-live="polite"]');
+  await expect(driftLiveOwners).toHaveCount(1);
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async () => undefined },
+    });
+  });
+  await drift.getByRole('button', { name: `Copy pinned Base commit ${'1'.repeat(40)}` }).click();
+  await expect(drift).toContainText('Pinned Base commit copied.');
+  await expect(driftLiveOwners).toHaveCount(1);
 
   for (const notice of [warning, information, success, drift]) {
     await expect(notice.locator('svg[aria-hidden="true"]')).toHaveCount(1);
