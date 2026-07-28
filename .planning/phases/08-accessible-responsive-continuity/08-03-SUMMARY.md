@@ -142,6 +142,14 @@ The headed true-zoom branch also passed separately: `1 passed (17.9s)`.
 
 None - no external service configuration required.
 
+## Self-Check: PASSED
+
+- **Task commits:** `de90d6f` contains the Task 1 responsive/media evidence; `a5ce346` contains Task 2 keyboard continuity and accessibility corrections.
+- **Plan metadata:** `61bd99b` contains this summary plus Phase 08 STATE, ROADMAP, and requirements tracking.
+- **Required files:** `tests/e2e/responsive-session.spec.ts`, `src/web/styles.css`, `src/web/App.vue`, `src/web/components/ui/UiPrimitives.vue`, and `src/web/components/SummarySection.vue` are accounted for by the two task commits.
+- **Authority sources:** `tests/e2e/complete-review-draft.spec.ts` and `tests/e2e/agent-ready-export.spec.ts` remained source-unmodified.
+- **Authority verification:** focused responsive 1/1, complete draft 8/8, and agent-ready export 1/1 passed; the separate headed 400% true-zoom pass also passed.
+
 ## Next Phase Readiness
 
 - Phase 08's final browser and authority evidence is complete.
