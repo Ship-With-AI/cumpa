@@ -19,6 +19,12 @@ const appendBodies: string[] = [];
 let appendResult: { readonly kind: string } = { kind: 'appended' };
 let failedExportResult: 'publicationFailed' | 'recoveryRequired' = 'publicationFailed';
 let receiptHasAcknowledgedDrift = true;
+type PendingExport = PromiseWithResolvers<unknown>;
+
+const exportBodies: string[] = [];
+const exportResults: unknown[] = [];
+let pendingExport: PendingExport | null = null;
+let heldExport: PendingExport | null = null;
 
 const session = {
   base: { label: 'base', oid: baseOid },
@@ -38,6 +44,35 @@ async function readBody(request: IncomingMessage): Promise<string> {
   for await (const chunk of request) body += String(chunk);
   return body;
 }
+
+function holdNextExport(): void {
+  heldExport = Promise.withResolvers<unknown>();
+  pendingExport = heldExport;
+}
+
+function completeHeldExport(result: unknown): void {
+  heldExport?.resolve(result);
+  heldExport = null;
+}
+
+const driftObservation = {
+  base: {
+    kind: 'moved',
+    role: 'base',
+    label: 'base',
+    selectorType: 'branch',
+    oldOid: baseOid,
+    newOid: 'd'.repeat(40),
+  },
+  head: {
+    kind: 'unavailable',
+    role: 'head',
+    label: 'head',
+    selectorType: 'branch',
+    oldOid: headOid,
+    reason: 'source-unavailable',
+  },
+};
 
 async function startAppServer(): Promise<string> {
   server = await createServer({
@@ -72,7 +107,19 @@ async function startAppServer(): Promise<string> {
           revealBodies.push(await readBody(request));
           json(response, { kind: 'revealFailed' }, 500);
         });
-        viteServer.middlewares.use('/api/export', (_request, response) => {
+        viteServer.middlewares.use('/api/export', async (request, response) => {
+          exportBodies.push(await readBody(request));
+          if (pendingExport !== null) {
+            const { promise } = pendingExport;
+            pendingExport = null;
+            json(response, await promise);
+            return;
+          }
+          const queuedResult = exportResults.shift();
+          if (queuedResult !== undefined) {
+            json(response, queuedResult);
+            return;
+          }
           exportAttempt += 1;
           if (exportAttempt === 1) {
             json(response, {
@@ -131,7 +178,12 @@ test.afterAll(async () => {
 
 test.beforeEach(async ({ context }) => {
   exportAttempt = 0;
+  exportBodies.length = 0;
+  exportResults.length = 0;
+  pendingExport = null;
+  heldExport = null;
   revealBodies.length = 0;
+  appendBodies.length = 0;
   ignoreStatus = 'ignored';
   appendResult = { kind: 'appended' };
   receiptHasAcknowledgedDrift = true;
@@ -258,6 +310,7 @@ test('requires a keyboard-safe second confirmation before appending the fixed ig
   await warning.getByRole('button', { name: 'Append ignore rule' }).click();
   await expect(page.getByText('Export directory ignored')).toBeVisible();
   expect(appendBodies).toEqual(['']);
+  expect(exportBodies).toEqual([]);
 });
 
 test('reports bounded append-failure outcomes without falsely claiming .gitignore was unchanged', async ({ page }) => {
@@ -279,4 +332,71 @@ test('reports bounded append-failure outcomes without falsely claiming .gitignor
   appendResult = { kind: 'unchanged' };
   await warning.getByRole('button', { name: 'Try append again' }).click();
   await expect(page.getByText('.gitignore was not changed. You can retry the append.')).toBeVisible();
+});
+
+test('Phase 07 explicit export and status states', async ({ page }) => {
+  exportResults.push(
+    { kind: 'driftAcknowledgementRequired', acknowledgementToken: 'd'.repeat(43), observation: driftObservation },
+    { kind: 'driftAcknowledgementStale', acknowledgementToken: 's'.repeat(43), observation: driftObservation },
+    { kind: 'revisionConflict', expectedRevision: 3, actualRevision: 4 },
+  );
+  await openReview(page);
+
+  const exportSection = page.getByRole('heading', { name: 'Export' }).locator('..').locator('..');
+  await exportSection.getByRole('button', { name: 'Collapse export' }).click();
+  await exportSection.getByRole('button', { name: 'Expand export' }).click();
+  expect(exportBodies).toEqual([]);
+
+  await page.getByRole('button', { name: 'Export review' }).click();
+  const drift = page.getByRole('heading', { name: 'Confirm export of pinned review' }).locator('..');
+  await expect(drift).toContainText(`Pinned at ${baseOid}`);
+  await expect(drift).toContainText(`Now at ${'d'.repeat(40)}`);
+  await expect(drift).toContainText('Now unavailable');
+  const consent = drift.getByRole('checkbox');
+  const exportPinned = drift.getByRole('button', { name: 'Export pinned review' });
+  await expect(consent).not.toBeChecked();
+  await expect(exportPinned).toBeDisabled();
+  expect(JSON.parse(exportBodies[0] ?? '')).toEqual({ expectedRevision: 3 });
+
+  await consent.check();
+  expect(exportBodies).toHaveLength(1);
+  await exportPinned.click();
+  const stale = page.getByRole('heading', { name: 'Selected sources changed again' }).locator('..');
+  await expect(stale.getByRole('checkbox')).not.toBeChecked();
+  await expect(stale.getByRole('button', { name: 'Export pinned review' })).toBeDisabled();
+  expect(JSON.parse(exportBodies[1] ?? '')).toEqual({ expectedRevision: 3, driftAcknowledgementToken: 'd'.repeat(43) });
+
+  await stale.getByRole('checkbox').check();
+  await stale.getByRole('button', { name: 'Export pinned review' }).click();
+  const conflict = page.getByRole('alert');
+  await expect(conflict).toContainText('Accepted revision 3 is no longer current. Nothing from this export attempt was published.');
+  await expect(conflict).toContainText('Latest revision 4');
+  expect(JSON.parse(exportBodies[2] ?? '')).toEqual({ expectedRevision: 3, driftAcknowledgementToken: 's'.repeat(43) });
+
+  await conflict.getByRole('button', { name: 'Reload latest' }).click();
+  await expect(page.getByRole('button', { name: 'Export review' })).toBeVisible();
+  expect(exportBodies).toHaveLength(3);
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  holdNextExport();
+  await page.getByRole('button', { name: 'Export review' }).click();
+  const progress = page.getByRole('status', { name: 'Exporting accepted revision' });
+  await expect(progress).toContainText('Preparing accepted revision 3…');
+  await expect(progress.locator('.ui-spinner')).toHaveCount(1);
+  await expect(progress.locator('.export-progress__spinner')).toHaveCount(0);
+  await expect(progress.locator('.ui-spinner')).toHaveAttribute('aria-hidden', 'true');
+  await expect(progress.locator('.ui-spinner')).toHaveCSS('animation-duration', '0s');
+  await expect(page.getByRole('region', { name: 'Review export complete' })).toHaveCount(0);
+  expect(exportBodies).toHaveLength(4);
+
+  completeHeldExport({ kind: 'publicationFailed' });
+  const failure = page.getByRole('alert');
+  await expect(failure).toContainText('Export was not published');
+  await expect(failure.getByRole('region', { name: 'Review export complete' })).toHaveCount(0);
+  await expect(failure.locator('.ui-icon')).toHaveCount(1);
+
+  exportResults.push({ kind: 'draftReadOnly' });
+  await failure.getByRole('button', { name: 'Try export again' }).click();
+  await expect(page.getByRole('heading', { name: 'Export is unavailable' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Review export complete' })).toHaveCount(0);
 });
