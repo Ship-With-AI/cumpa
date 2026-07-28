@@ -141,7 +141,7 @@ Plans:
   5. User can complete existing file navigation, side-by-side review, commenting, summary, and export with unchanged information architecture, keyboard commands, persistence, and review mechanics.
 
 **Planning detail**: Validate representative desktop, narrow, zoomed, overlapping-state, grayscale, and forced-color scenarios after all real review surfaces are styled. Keep the diff viewport as the sole localized two-dimensional scroll owner and use the existing end-to-end workflow as the behavioral regression boundary.
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 **Wave 1**
 
@@ -149,7 +149,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 08-02-PLAN.md — Harden composited contrast, persistent focus, and forced-color cues through the shared CSS contract and real browser states.
+- [x] 08-02-PLAN.md — Harden composited contrast, persistent focus, and forced-color cues through the shared CSS contract and real browser states.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -171,6 +171,6 @@ Plans:
 | 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
 | 06. Monaco Diff Semantics | v1.1 | 3/3 | Complete    | 2026-07-27 |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 9/9 | Complete    | 2026-07-28 |
-| 08. Accessible Responsive Continuity | v1.1 | 1/3 | In Progress|  |
+| 08. Accessible Responsive Continuity | v1.1 | 2/3 | In Progress|  |
 
 **v1.1 coverage:** 4 phases, 18 requirements, 18 mapped, 0 unmapped.
