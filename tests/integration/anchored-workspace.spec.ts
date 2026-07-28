@@ -454,8 +454,12 @@ test('diff navigation and session state', async ({ page }) => {
   await openReview(page);
   await expect(page.getByRole('button', { name: 'Previous file' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Next file' })).toBeEnabled();
-  await expect(page.locator('.review-context-header').getByText('BASE', { exact: true })).toBeVisible();
-  await expect(page.locator('.review-context-header').getByText('HEAD', { exact: true })).toBeVisible();
+  const contextBaseLabel = page.locator('.review-context-header__endpoint--base .review-context-header__endpoint-label');
+  const contextHeadLabel = page.locator('.review-context-header__endpoint--head .review-context-header__endpoint-label');
+  await expect(contextBaseLabel).toHaveText('Base');
+  await expect(contextHeadLabel).toHaveText('Head');
+  await expect(contextBaseLabel).toHaveCSS('text-transform', 'uppercase');
+  await expect(contextHeadLabel).toHaveCSS('text-transform', 'uppercase');
   await expect(page.getByText(/Unchanged regions begin collapsed/)).toBeVisible();
 
 
@@ -507,8 +511,12 @@ test('Phase 07 header and control states', async ({ page }) => {
     await expect(header).toHaveCount(1);
     await expect(header.locator('.review-context-header__context')).toHaveCount(1);
     await expect(header.locator('.review-context-header__toolbar')).toHaveCount(1);
-    await expect(header.getByText('BASE', { exact: true })).toBeVisible();
-    await expect(header.getByText('HEAD', { exact: true })).toBeVisible();
+    const baseLabel = header.locator('.review-context-header__endpoint--base .review-context-header__endpoint-label');
+    const headLabel = header.locator('.review-context-header__endpoint--head .review-context-header__endpoint-label');
+    await expect(baseLabel).toHaveText('Base');
+    await expect(headLabel).toHaveText('Head');
+    await expect(baseLabel).toHaveCSS('text-transform', 'uppercase');
+    await expect(headLabel).toHaveCSS('text-transform', 'uppercase');
     await expect(header.locator('.review-context-header__endpoint-oid').nth(0)).toHaveText('aaaaaaa');
     await expect(header.locator('.review-context-header__endpoint-oid').nth(1)).toHaveText('bbbbbbb');
     await expect(page.getByRole('heading', {
@@ -1166,8 +1174,12 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
     resetAsyncSettlementFixture();
     await page.setViewportSize({ width, height: 760 });
     await openReview(page);
-    await expect(page.locator('.review-context-header').getByText('BASE', { exact: true })).toBeVisible();
-    await expect(page.locator('.review-context-header').getByText('HEAD', { exact: true })).toBeVisible();
+    const baseEndpointLabel = page.locator('.review-context-header__endpoint--base .review-context-header__endpoint-label');
+    const headEndpointLabel = page.locator('.review-context-header__endpoint--head .review-context-header__endpoint-label');
+    await expect(baseEndpointLabel).toHaveText('Base');
+    await expect(headEndpointLabel).toHaveText('Head');
+    await expect(baseEndpointLabel).toHaveCSS('text-transform', 'uppercase');
+    await expect(headEndpointLabel).toHaveCSS('text-transform', 'uppercase');
     await expect(page.locator('.monaco-diff-pane--base')).toHaveCount(1);
     await expect(page.locator('.monaco-diff-pane--head')).toHaveCount(1);
 
