@@ -31,9 +31,9 @@ Requirements for the GitHub Dark Diff milestone. Each maps to exactly one roadma
 
 ### Accessibility and Responsive Layout
 
-- [ ] **A11Y-01**: User can read normal text and identify meaningful UI indicators at WCAG 2.2 AA contrast after translucent diff, selection, and state layers are composited.
-- [ ] **A11Y-02**: Keyboard user sees a persistent, unclipped focus indicator on every operable diff-workspace control and editor affordance.
-- [ ] **A11Y-03**: User retains durable labels, markers, borders, and focus cues when browser or operating-system forced-colors behavior overrides the palette.
+- [x] **A11Y-01**: User can read normal text and identify meaningful UI indicators at WCAG 2.2 AA contrast after translucent diff, selection, and state layers are composited.
+- [x] **A11Y-02**: Keyboard user sees a persistent, unclipped focus indicator on every operable diff-workspace control and editor affordance.
+- [x] **A11Y-03**: User retains durable labels, markers, borders, and focus cues when browser or operating-system forced-colors behavior overrides the palette.
 - [x] **RESP-01**: User can use headers, controls, drawers, comments, notices, and forms at narrow widths and 400% zoom without page-wide horizontal scrolling; only the side-by-side diff owns localized two-dimensional scrolling.
 
 ### Workflow Continuity
@@ -82,9 +82,9 @@ Roadmap mapping for the approved v1.1 milestone.
 | REVW-02 | Phase 07 | Complete |
 | REVW-03 | Phase 07 | Complete |
 | REVW-04 | Phase 07 | Complete |
-| A11Y-01 | Phase 08 | Pending |
-| A11Y-02 | Phase 08 | Pending |
-| A11Y-03 | Phase 08 | Pending |
+| A11Y-01 | Phase 08 | Complete |
+| A11Y-02 | Phase 08 | Complete |
+| A11Y-03 | Phase 08 | Complete |
 | RESP-01 | Phase 08 | Complete |
 | CONT-01 | Phase 08 | Complete |
 

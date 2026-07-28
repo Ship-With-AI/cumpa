@@ -29,7 +29,7 @@ Full phase goals, success criteria, requirement mappings, and plan details are a
 - [x] **Phase 05: Semantic Dark Foundation** Establish one coherent dark-only visual language for the existing diff workspace. (completed 2026-07-26)
 - [x] **Phase 06: Monaco Diff Semantics** — Make every diff, gutter, selection, and overlapping editor state legible within that language. (completed 2026-07-27)
 - [x] **Phase 07: GitHub-Familiar Review Surfaces** — Adapt the file header, controls, comments, notices, and review rail without changing review mechanics. (completed 2026-07-28)
-- [ ] **Phase 08: Accessible Responsive Continuity** — Prove the restyled workspace remains accessible, reflows safely, and preserves the complete review workflow.
+- [x] **Phase 08: Accessible Responsive Continuity** — Prove the restyled workspace remains accessible, reflows safely, and preserves the complete review workflow. (completed 2026-07-28)
 
 ## Phase Details
 
@@ -141,7 +141,7 @@ Plans:
   5. User can complete existing file navigation, side-by-side review, commenting, summary, and export with unchanged information architecture, keyboard commands, persistence, and review mechanics.
 
 **Planning detail**: Validate representative desktop, narrow, zoomed, overlapping-state, grayscale, and forced-color scenarios after all real review surfaces are styled. Keep the diff viewport as the sole localized two-dimensional scroll owner and use the existing end-to-end workflow as the behavioral regression boundary.
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 **Wave 1**
 
@@ -153,7 +153,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 08-03-PLAN.md — Prove the full responsive, zoom, grayscale, forced-color, keyboard, persistence, and export continuity matrix.
+- [x] 08-03-PLAN.md — Prove the full responsive, zoom, grayscale, forced-color, keyboard, persistence, and export continuity matrix.
 
 **UI hint**: yes
 
@@ -171,6 +171,6 @@ Plans:
 | 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
 | 06. Monaco Diff Semantics | v1.1 | 3/3 | Complete    | 2026-07-27 |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 9/9 | Complete    | 2026-07-28 |
-| 08. Accessible Responsive Continuity | v1.1 | 2/3 | In Progress|  |
+| 08. Accessible Responsive Continuity | v1.1 | 3/3 | Complete   | 2026-07-28 |
 
 **v1.1 coverage:** 4 phases, 18 requirements, 18 mapped, 0 unmapped.
