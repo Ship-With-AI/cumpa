@@ -5,15 +5,15 @@ milestone_name: GitHub Dark Diff
 current_phase: 07
 current_phase_name: github-familiar-review-surfaces
 status: executing
-stopped_at: Completed 07-07-PLAN.md
-last_updated: "2026-07-28T11:30:43.233Z"
+stopped_at: Completed 07-08-PLAN.md
+last_updated: "2026-07-28T11:44:59.571Z"
 last_activity: 2026-07-28
 last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 07 (github-familiar-review-surfaces) — EXECUTING
-Plan: 8 of 9
+Plan: 9 of 9
 Status: Ready to execute
 Last activity: 2026-07-28 — Phase 07 execution started
 
@@ -66,6 +66,7 @@ Progress: [█████████░] 85%
 | Phase 07 P05 | not recorded | 1 tasks | 3 files |
 | Phase 07 P06 | 0min | 3 tasks | 9 files |
 | Phase 07 P07 | not recorded | 1 tasks | 2 files |
+| Phase 07 P08 | 9min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Localize recovery progress to the acted-on destructive confirmation action — Sibling disabled controls must not claim progress.
 - [Phase 07]: Keep ReviewExportState as the only export-state authority for Export presentation. — Every badge, notice, CTA, and receipt hierarchy maps from existing phase, receipt, drift, progress, and ignore values, preserving export and filesystem behavior.
 - [Phase 07]: Route accepted and composer card height through one file-local helper using the existing paired-zone adapter. — Keeps Math.max(280, contentHeight + 16), source-line rail, line map, and Monaco authority unchanged while containing long accepted content.
+- [Phase 07]: Keep ReviewExportState.phase as the sole export-badge authority; conflict is an explicit error-label branch. — Preserves export transitions while eliminating the contradictory Ready label.
+- [Phase 07]: Keep DiffReviewIgnoreStatus | null as the sole readiness authority; null is pending and unavailable requires the concrete discriminant. — Keeps both export status surfaces truthful without adding polling or mutation state.
 
 ### Pending Todos
 
@@ -126,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T11:30:43.228Z
-Stopped at: Completed 07-07-PLAN.md
+Last session: 2026-07-28T11:44:59.568Z
+Stopped at: Completed 07-08-PLAN.md
 Resume file: None
