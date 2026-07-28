@@ -41,6 +41,8 @@ Phase 04.1 closed the audited CMT-01 async cross-file settlement gap without cha
 
 Validated in Phase 05: Semantic Dark Foundation established the dark semantic palette, typography, interaction-state, surface, and responsive foundation; Monaco diff semantics and later review-surface adaptation remain active.
 
+Validated in Phase 07: GitHub-Familiar Review Surfaces adapted the file header, controls, inline conversations, review rail, recovery, notices, and export feedback without changing review mechanics.
+
 ### Active
 
 - [ ] User experiences a close adaptation of GitHub's dark-default pull-request diff palette throughout the diff workspace.
@@ -58,7 +60,7 @@ Validated in Phase 05: Semantic Dark Foundation established the dark semantic pa
 
 ## Context
 
-Phase 05 v1.1 complete: application chrome and workflow states consume one verified semantic dark vocabulary. Phase 06 complete: real Monaco now applies the typed `diff-review-dark` theme, bounded Base/Head bars and signs, selection/anchor/focus layers, and flat empty/hunk regions while preserving immutable diff mechanics and geometry.
+Phase 05 v1.1 complete: application chrome and workflow states consume one verified semantic dark vocabulary. Phase 06 complete: real Monaco now applies the typed `diff-review-dark` theme, bounded Base/Head bars and signs, selection/anchor/focus layers, and flat empty/hunk regions while preserving immutable diff mechanics and geometry. Phase 07 complete: every existing review surface now uses the GitHub-familiar hierarchy and explicit interaction-state language, with paired Monaco comment-zone containment and single-owner live feedback verified in Chromium.
 
 Diff Review v1.0 shipped the complete local browser-review-to-agent loop. A developer can select ordered local branches or registered worktrees, inspect the immutable merge-base-to-head change set, maintain a repository-local review draft, and export canonical JSON plus derived Markdown without publishing refs or modifying source control.
 
@@ -103,6 +105,9 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 | Use one stable typed Monaco theme mapped byte-for-byte to the canonical semantic CSS root | Prevent editor colors from drifting from the surrounding dark workspace or changing across applications | Good — focused parity, build, semantic CSS, and first-frame browser checks pass |
 | Derive Base/Head cues only from public `ILineChange` ranges and fixed side classes | Preserve Monaco as diff authority while preventing repository text, phantom empty-side signs, or unbounded decorations from entering presentation | Good — bounded pure-transform tests and real Chromium signs/bars pass |
 | Keep diff, selection, anchor, and focus semantics in independent replacement collections | Ensure overlapping review cues coexist without model mutation, listener growth, or composer interference | Good — lifecycle, restoration, overlap, and production geometry checks pass |
+| Keep Phase 07 presentation derived from existing session, review, export, recovery, and selector state | Prevent a visual adaptation from creating a second behavior, persistence, or filesystem authority | Good — all five roadmap criteria and 42/42 plan must-haves passed goal verification |
+| Resize accepted and composing inline cards through one post-render paired-zone helper | Keep Base/Head Monaco zones equal while long accepted content remains contained without changing adapter or anchor authority | Good — production Chromium proves long-card containment and following-code separation |
+| Give each dynamic recovery and selector-copy outcome one authoritative live-region owner | Prevent duplicate assistive announcements while retaining visible feedback, actions, and focus behavior | Good — focused browser checks count exactly one owner after each real state transition |
 
 ## Evolution
 
@@ -122,4 +127,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-27 after completing Phase 06 Monaco Diff Semantics*
+*Last updated: 2026-07-28 after completing Phase 07 GitHub-Familiar Review Surfaces*
