@@ -349,6 +349,61 @@ async function expectRenderedContrast(
   ).toBeGreaterThanOrEqual(minimum);
 }
 
+async function expectFocusIndicatorUnclipped(locator: Locator): Promise<void> {
+  const geometry = await locator.evaluate((element) => {
+    const style = getComputedStyle(element);
+    const outlineWidth = Number.parseFloat(style.outlineWidth);
+    const outlineOffset = Number.parseFloat(style.outlineOffset);
+    const bounds = element.getBoundingClientRect();
+    const perimeter = {
+      bottom: bounds.bottom + Math.max(0, outlineWidth + outlineOffset),
+      left: bounds.left - Math.max(0, outlineWidth + outlineOffset),
+      right: bounds.right + Math.max(0, outlineWidth + outlineOffset),
+      top: bounds.top - Math.max(0, outlineWidth + outlineOffset),
+    };
+    const clippingAncestors: {
+      readonly bottom: number;
+      readonly left: number;
+      readonly right: number;
+      readonly top: number;
+    }[] = [];
+    for (let current = element.parentElement; current !== null; current = current.parentElement) {
+      const currentStyle = getComputedStyle(current);
+      if (!/(auto|clip|hidden|scroll)/.test(`${currentStyle.overflowX} ${currentStyle.overflowY}`)) {
+        continue;
+      }
+      const ancestor = current.getBoundingClientRect();
+      clippingAncestors.push({
+        bottom: ancestor.bottom,
+        left: ancestor.left,
+        right: ancestor.right,
+        top: ancestor.top,
+      });
+    }
+    return {
+      clippingAncestors,
+      focused: document.activeElement === element,
+      outlineOffset,
+      outlineStyle: style.outlineStyle,
+      outlineWidth,
+      perimeter,
+    };
+  });
+  expect(geometry.focused, '[accessibility] focus must result from keyboard traversal').toBe(true);
+  expect(geometry.outlineStyle).toBe('solid');
+  expect(geometry.outlineWidth).toBeGreaterThanOrEqual(2);
+  for (const ancestor of geometry.clippingAncestors) {
+    const perimeterFits = geometry.perimeter.left >= ancestor.left
+      && geometry.perimeter.right <= ancestor.right
+      && geometry.perimeter.top >= ancestor.top
+      && geometry.perimeter.bottom <= ancestor.bottom;
+    expect(
+      perimeterFits || geometry.outlineOffset <= -2,
+      `[accessibility] focus perimeter ${JSON.stringify(geometry.perimeter)} clipped by ${JSON.stringify(ancestor)}`,
+    ).toBe(true);
+  }
+}
+
 async function assertNoPageOverflow(page: Page): Promise<void> {
   const dimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,
@@ -841,43 +896,46 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(page.locator('.review-toolbar')).toHaveCSS('box-shadow', 'none');
     });
 
-    await test.step('forced colors preserve boundaries, rails, focus, links, and disabled states', async () => {
+    await test.step('forced colors preserve real workspace boundaries, rails, focus, links, and provenance', async () => {
       await page.emulateMedia({ forcedColors: 'active' });
-      await page.evaluate(() => {
-        const fixture = document.createElement('div');
-        fixture.dataset.forcedColorsContract = 'true';
-        fixture.innerHTML = [
-          '<button class="ui-button">Enabled</button>',
-          '<button class="ui-button" disabled>Disabled</button>',
-          '<a href="#forced-colors">Forced colors link</a>',
-          '<div class="tree-row tree-row--selected">Selected file</div>',
-        ].join('');
-        document.body.append(fixture);
-      });
+      try {
+        const review = page.getByRole('button', { name: 'Review', exact: true });
+        const disabled = page.getByRole('button', { name: 'Previous file', exact: true });
+        const link = page.getByRole('link', { name: 'Skip to diff', exact: true });
+        const selected = page.locator('.tree-row--selected').first();
+        const baseBar = page.locator('.monaco-editor .monaco-diff-change-bar--base').first();
+        const headBar = page.locator('.monaco-editor .monaco-diff-change-bar--head').first();
+        const baseSign = page.locator('.monaco-editor .monaco-diff-change-sign--base').first();
+        const headSign = page.locator('.monaco-editor .monaco-diff-change-sign--head').first();
 
-      const fixture = page.locator('[data-forced-colors-contract]');
-      const enabled = fixture.getByRole('button', { name: 'Enabled' });
-      const disabled = fixture.getByRole('button', { name: 'Disabled' });
-      const link = fixture.getByRole('link', { name: 'Forced colors link' });
-      const selected = fixture.locator('.tree-row--selected');
-      await expect(enabled).toHaveCSS('border-top-color', /rgb/);
-      await expect(link).toHaveCSS('color', /rgb/);
-      await expect(link).toHaveCSS('text-decoration-line', /underline/);
-      await expect(selected).toHaveCSS('border-left-color', /rgb/);
-      expect(await fixture.evaluate((element) =>
-        [element, ...Array.from(element.children)].every(
-          (candidate) => getComputedStyle(candidate).forcedColorAdjust !== 'none',
-        ),
-      )).toBe(true);
-      await enabled.focus();
-      await page.keyboard.press('Shift+Tab');
-      await page.keyboard.press('Tab');
-      await expect(enabled).toBeFocused();
-      await expect(enabled).toHaveCSS('outline-width', '2px');
-      expect(await disabled.evaluate((element) => getComputedStyle(element).color))
-        .not.toBe(await enabled.evaluate((element) => getComputedStyle(element).color));
-      await fixture.evaluate((element) => element.remove());
-      await page.emulateMedia({ forcedColors: 'none' });
+        await expect(review).toHaveCSS('border-top-color', /rgb/);
+        await expect(link).toHaveCSS('color', /rgb/);
+        await expect(link).toHaveCSS('text-decoration-line', /underline/);
+        await expect(selected).toHaveCSS('border-left-color', /rgb/);
+        expect(await page.locator('.session-shell').evaluate((element) =>
+          getComputedStyle(element).forcedColorAdjust !== 'none',
+        )).toBe(true);
+
+        await review.focus();
+        await page.keyboard.press('Shift+Tab');
+        await page.keyboard.press('Tab');
+        await expect(review).toBeFocused();
+        await expect(review).toHaveCSS('outline-width', '2px');
+        expect(await disabled.evaluate((element) => getComputedStyle(element).color))
+          .not.toBe(await review.evaluate((element) => getComputedStyle(element).color));
+
+        await expect(baseBar).toHaveCSS('border-left-style', 'dashed');
+        await expect(headBar).toHaveCSS('border-left-style', 'solid');
+        await expect(page.locator('.diff-workspace__side-labels')).toHaveText(/BASEHEAD/);
+        expect(await baseSign.evaluate((element) =>
+          getComputedStyle(element, '::before').content,
+        )).toContain('−');
+        expect(await headSign.evaluate((element) =>
+          getComputedStyle(element, '::before').content,
+        )).toContain('+');
+      } finally {
+        await page.emulateMedia({ forcedColors: 'none' });
+      }
     });
 
     await test.step('review rail and drawers honor locked responsive geometry', async () => {
@@ -925,6 +983,7 @@ test('responsive keyboard and accessibility contract', async ({
       expect(focusStyle.outlineStyle).toBe('solid');
       expect(focusStyle.outlineWidth).toBe('2px');
       expect(focusStyle.outlineOffset).toBe('2px');
+      await expectFocusIndicatorUnclipped(reviewButton);
 
       await page.setViewportSize({ width: 1439, height: 560 });
       await expect(rail).toHaveClass(/comments-rail--open/);
@@ -1121,6 +1180,14 @@ test('responsive keyboard and accessibility contract', async ({
       await stateCard.evaluate((element) => element.remove());
       await page.getByRole('button', { name: 'Close review' }).click();
       await expect(rail).toHaveCSS('box-shadow', 'none');
+
+      await page.setViewportSize({ width: 320, height: 640 });
+      await reviewButton.focus();
+      await page.keyboard.press('Shift+Tab');
+      await page.keyboard.press('Tab');
+      await expect(reviewButton).toBeFocused();
+      await expectFocusIndicatorUnclipped(reviewButton);
+      await assertNoPageOverflow(page);
     });
     await test.step('narrow identity sheet traps focus and restores disclosure', async () => {
       const disclosure = page.getByRole('button', {

@@ -2365,4 +2365,58 @@ h3.conversation-card__identity {
     background: Canvas;
     color: CanvasText;
   }
+
+  .ui-button--selected,
+  .review-panel__comment--selected {
+    border-color: Highlight;
+    background: Highlight;
+    color: HighlightText;
+    box-shadow: inset 3px 0 Highlight;
+  }
+
+  .review-state-badge,
+  .inline-notice {
+    border-color: ButtonBorder;
+    border-inline-start-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .export-receipt--current::before {
+    background: CanvasText;
+  }
+
+  .receipt-file-row__message,
+  .export-receipt__message,
+  .gitignore-status__message {
+    border-inline-start-color: CanvasText;
+    color: CanvasText;
+  }
+
+  .monaco-editor .monaco-diff-change-bar--base,
+  .monaco-editor .monaco-diff-change-bar--head {
+    border-left-color: CanvasText;
+  }
+
+  .monaco-editor .monaco-diff-change-bar--base {
+    border-left-style: dashed;
+  }
+
+  .monaco-editor .monaco-diff-change-bar--head {
+    border-left-style: solid;
+  }
+
+  .monaco-editor .monaco-diff-change-sign--base::before,
+  .monaco-editor .monaco-diff-change-sign--head::before {
+    color: CanvasText;
+  }
+
+  .monaco-editor .monaco-anchor-line {
+    box-shadow: inset 3px 0 LinkText;
+  }
+
+  .monaco-diff-pane--base:focus-within,
+  .monaco-diff-pane--head:focus-within {
+    outline-color: Highlight;
+  }
 }
