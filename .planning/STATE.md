@@ -6,14 +6,14 @@ current_phase: 07
 current_phase_name: github-familiar-review-surfaces
 status: executing
 stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-07-28T07:14:56.976Z"
+last_updated: "2026-07-28T07:45:36.843Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 10
-  completed_plans: 6
+  completed_plans: 7
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 07 (github-familiar-review-surfaces) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 07 execution started
 
@@ -61,6 +61,7 @@ Progress: [█████░░░░░] 50%
 | Phase 06 P03 | 35min | 2 tasks | 5 files |
 | Phase 07 P01 | 22min | 2 tasks | 7 files |
 | Phase 07 P02 | recovery | 2 tasks | 5 files |
+| Phase 07 P03 | 23min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Keep toolbar behavior in ReviewToolbar and compose it into the grouped header. — Retains emits, shortcuts, ARIA relationships, native disabled rules, and focus ownership.
 - [Phase 07]: Use bounded local SVG names and CSS state hooks instead of icon assets, packages, or product state. — Keeps the review presentation local, decorative, and behavior-free.
 - [Phase 07]: Keep lifecycle and verified-anchor meanings as separate visible badges while the Phase 06 source-line rail remains authoritative. — Preserves independent review state axes and immutable Monaco anchor ownership.
+- [Phase 07]: Keep selectedCommentId in App presentation state and derive it only from focus-comment commands. — Selection remains transient and cannot enter persistence or export.
+- [Phase 07]: Use existing projectCommentGroups as the sole review rail grouping and order authority. — Presentation changes cannot alter comment grouping or section order.
+- [Phase 07]: Correlate lifecycle busy feedback with pendingFocus.commentId to prevent false progress cues. — Operation-wide pending state must not make sibling rows appear in progress.
 
 ### Pending Todos
 
@@ -111,6 +115,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T07:14:56.972Z
+Last session: 2026-07-28T07:44:43.995Z
 Stopped at: Completed 07-02-PLAN.md
 Resume file: None

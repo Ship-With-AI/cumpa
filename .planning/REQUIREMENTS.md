@@ -26,7 +26,7 @@ Requirements for the GitHub Dark Diff milestone. Each maps to exactly one roadma
 
 - [x] **REVW-01**: User can distinguish rest, hover, pressed, selected, focused, disabled, destructive, and busy states on every existing diff-workspace control.
 - [x] **REVW-02**: User can read and operate inline comment composers and comment cards in the dark workspace with clear anchors, headings, validation, and lifecycle status.
-- [ ] **REVW-03**: User can scan the review rail through clear heading, count, group, card, form, and selected-comment hierarchy.
+- [x] **REVW-03**: User can scan the review rail through clear heading, count, group, card, form, and selected-comment hierarchy.
 - [ ] **REVW-04**: User can distinguish error, warning, informational, success, pending, disabled, open, and resolved states through text or icons and structural treatment in addition to color.
 
 ### Accessibility and Responsive Layout
@@ -80,7 +80,7 @@ Roadmap mapping for the approved v1.1 milestone.
 | DIFF-05 | Phase 06 | Complete |
 | REVW-01 | Phase 07 | Complete |
 | REVW-02 | Phase 07 | Complete |
-| REVW-03 | Phase 07 | Pending |
+| REVW-03 | Phase 07 | Complete |
 | REVW-04 | Phase 07 | Pending |
 | A11Y-01 | Phase 08 | Pending |
 | A11Y-02 | Phase 08 | Pending |
