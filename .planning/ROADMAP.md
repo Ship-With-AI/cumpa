@@ -141,7 +141,19 @@ Plans:
   5. User can complete existing file navigation, side-by-side review, commenting, summary, and export with unchanged information architecture, keyboard commands, persistence, and review mechanics.
 
 **Planning detail**: Validate representative desktop, narrow, zoomed, overlapping-state, grayscale, and forced-color scenarios after all real review surfaces are styled. Keep the diff viewport as the sole localized two-dimensional scroll owner and use the existing end-to-end workflow as the behavioral regression boundary.
-**Plans**: TBD
+**Plans:** 3 plans
+
+**Wave 1**
+
+- [ ] 08-01-PLAN.md — Reflow the existing header, drawers, and workspace around one localized 640px diff canvas without changing Monaco or review mechanics.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 08-02-PLAN.md — Harden composited contrast, persistent focus, and forced-color cues through the shared CSS contract and real browser states.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 08-03-PLAN.md — Prove the full responsive, zoom, grayscale, forced-color, keyboard, persistence, and export continuity matrix.
 **UI hint**: yes
 
 ## Progress
