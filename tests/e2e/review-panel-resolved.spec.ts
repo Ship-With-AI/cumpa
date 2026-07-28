@@ -46,11 +46,13 @@ export function mountReviewPanelHarness(id, body) {
   const selectedCommentId = ref(null);
   const conflict = ref(null);
   const failure = ref(null);
+  const retainedSummary = ref(false);
   globalThis.__setReviewPanelState = (nextState) => {
     if ('pending' in nextState) pending.value = nextState.pending;
     if ('selectedCommentId' in nextState) selectedCommentId.value = nextState.selectedCommentId;
     if ('conflict' in nextState) conflict.value = nextState.conflict;
     if ('failure' in nextState) failure.value = nextState.failure;
+    if ('retainedSummary' in nextState) retainedSummary.value = nextState.retainedSummary;
   };
   const reviewExpanded = ref(true);
   const saved = ref([]);
@@ -81,7 +83,7 @@ export function mountReviewPanelHarness(id, body) {
         selectedCommentId: selectedCommentId.value,
         conflict: conflict.value,
         failure: failure.value,
-        retainedSummary: false,
+        retainedSummary: retainedSummary.value,
         exportState: {
           pending: false,
           progress: null,
@@ -99,6 +101,7 @@ export function mountReviewPanelHarness(id, body) {
         revealExportDirectory: async () => ({ kind: 'revealed' }),
         'onUpdate:summaryBuffer': (value) => { summaryBuffer.value = value; },
         onCancelSummary: () => { summaryBuffer.value = ''; },
+        onSaveSummary: () => { pending.value = 'summary'; },
         'onUpdate:commentBuffer': (_commentId, value) => { commentBuffer.value = value; },
         onSaveComment: (savedId) => {
           saved.value = [...saved.value, savedId];
@@ -188,28 +191,64 @@ test('review hierarchy, keyboard, discard, resolved lifecycle, and focus follow 
   await expect(page.locator('.review-panel__heading-counts .review-state-badge')).toHaveText(['Open 0', 'Resolved 1']);
 
   await expect(page.getByRole('heading', { name: 'No open comments' })).toBeVisible();
-  const summaryDisclosure = page.getByRole('button', { name: /Summary Saved/ });
+  const summary = page.locator('.review-summary');
+  const summaryDisclosure = page.getByRole('button', { name: 'Summary', exact: true });
+  await expect(summary.locator('.review-summary__badges .review-state-badge')).toHaveText('Saved');
   await expect(summaryDisclosure).toHaveAttribute('aria-expanded', 'true');
   await expect(summaryDisclosure).toHaveAttribute('aria-controls', 'review-summary-content');
+  await expect(page.locator('.review-panel__section').first()).toContainText('Summary');
+  await expect(summary).toHaveCSS('box-shadow', 'none');
 
   const previewTab = page.getByRole('tab', { name: 'Preview' });
   const editTab = page.getByRole('tab', { name: 'Edit' });
   await expect(previewTab).toHaveAttribute('id', 'summary-tab-preview');
   await expect(previewTab).toHaveAttribute('aria-controls', 'summary-panel-preview');
+  await expect(previewTab).toHaveClass(/ui-button--selected/);
   await previewTab.focus();
   await page.keyboard.press('ArrowLeft');
   await expect(editTab).toHaveAttribute('aria-selected', 'true');
+  await expect(editTab).toHaveClass(/ui-button--selected/);
   await expect(editTab).toBeFocused();
 
   const summaryEditor = page.getByRole('textbox', { name: 'Review summary (Markdown)' });
   await summaryEditor.fill('Unsaved summary');
-  await page.getByRole('button', { name: 'Cancel changes' }).click();
+  await expect(summaryEditor).toHaveAttribute('aria-describedby', 'review-summary-support');
+  await expect(summary.locator('.review-summary__badges .review-state-badge')).toHaveText('Unsaved');
+  await expect(page.locator('#review-summary-support')).toHaveText('Markdown is supported. Your summary changes only after you save.');
+
+  const saveSummary = page.getByRole('button', { name: 'Save summary' });
+  await saveSummary.click();
+  const savingSummary = page.getByRole('button', { name: 'Saving summary…' });
+  await expect(savingSummary).toHaveAttribute('aria-busy', 'true');
+  await expect(savingSummary.locator('.ui-spinner')).toBeVisible();
+  await expect(savingSummary).toHaveCSS('min-width', '144px');
+  const cancelChanges = page.getByRole('button', { name: 'Cancel changes' });
+  await expect(cancelChanges).toBeDisabled();
+  await expect(cancelChanges).not.toHaveAttribute('aria-busy', 'true');
+
+  await page.evaluate(() => globalThis.__setReviewPanelState({ pending: null, retainedSummary: true }));
+  const retained = page.getByRole('status', { name: /Summary retained after reload/ });
+  await expect(retained).toContainText('Latest draft loaded. Your unsaved text is still here.');
+  await expect(summaryEditor).toHaveAttribute('aria-describedby', 'review-summary-support review-summary-feedback');
+
+  await page.evaluate(() => globalThis.__setReviewPanelState({
+    failure: { operation: 'summary' },
+    retainedSummary: false,
+  }));
+  const summaryFailure = page.getByRole('alert', { name: 'Summary wasn’t saved' });
+  await expect(summaryFailure).toBeFocused();
+  await expect(summaryFailure.locator('svg[aria-hidden="true"]')).toHaveCount(1);
+  await expect(summaryFailure).toHaveCSS('border-left-width', '3px');
+  await expect(summaryEditor).toHaveAttribute('aria-invalid', 'true');
+  await page.evaluate(() => globalThis.__setReviewPanelState({ failure: null }));
+
+  await cancelChanges.click();
   const keepSummary = page.getByRole('button', { name: 'Keep editing' });
   await expect(keepSummary).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(summaryEditor).toBeFocused();
   await expect(summaryEditor).toHaveValue('Unsaved summary');
-  await page.getByRole('button', { name: 'Cancel changes' }).click();
+  await cancelChanges.click();
   await page.getByRole('button', { name: 'Discard changes' }).click();
   await expect(summaryDisclosure).toBeFocused();
 

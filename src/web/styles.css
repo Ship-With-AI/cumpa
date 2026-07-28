@@ -1581,6 +1581,49 @@ h3.conversation-card__identity {
   box-shadow: none;
 }
 
+.review-summary {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+
+.review-summary__header,
+.review-summary__badges,
+.review-summary__actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.review-summary__header {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.review-summary__header h3 {
+  margin: 0;
+}
+
+.review-summary__content {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-md);
+}
+
+.review-summary__actions {
+  flex-wrap: wrap;
+}
+
+.review-summary__save--busy {
+  min-inline-size: 144px;
+}
+
+.review-summary__feedback {
+  margin: 0;
+}
+
 .review-panel__comments {
   padding: var(--space-md);
 }

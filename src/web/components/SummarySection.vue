@@ -2,6 +2,8 @@
 import { computed, nextTick, ref, watch } from 'vue';
 
 import { renderMarkdownPreview } from '../model/markdown-preview.js';
+import UiIcon from './ui/UiIcon.vue';
+import ReviewStateBadge from './ui/ReviewStateBadge.vue';
 
 const props = defineProps<{
   canonical: string;
@@ -38,6 +40,17 @@ const status = computed(() => {
   return unsaved.value ? 'Unsaved' : 'Saved';
 });
 const preview = computed(() => renderMarkdownPreview(props.modelValue));
+const summarySupportId = 'review-summary-support';
+const summaryFeedbackId = 'review-summary-feedback';
+const summaryDescribedBy = computed(() => [
+  summarySupportId,
+  props.failure || (props.retained && unsaved.value && !props.conflict) ? summaryFeedbackId : undefined,
+].filter((value): value is string => value !== undefined).join(' '));
+const statusBadgeKind = computed(() => {
+  if (props.conflict || props.failure) return 'error' as const;
+  if (props.saving) return 'pending' as const;
+  return unsaved.value ? 'information' as const : 'success' as const;
+});
 
 function selectMode(nextMode: 'edit' | 'preview', focusPanel = false): void {
   mode.value = nextMode;
@@ -126,9 +139,12 @@ watch(() => props.failure, (failed) => {
           class="review-summary__toggle ui-button"
           @click="open = !open"
         >
-          Summary <span class="review-summary__status">{{ status }}</span>
+          Summary
         </button>
       </h3>
+      <div class="review-summary__badges">
+        <ReviewStateBadge :kind="statusBadgeKind" :label="status" />
+      </div>
     </header>
 
     <div v-if="open" id="review-summary-content" class="review-summary__content">
@@ -139,6 +155,7 @@ watch(() => props.failure, (failed) => {
           type="button"
           role="tab"
           class="ui-button"
+          :class="{ 'ui-button--selected': mode === 'edit' }"
           :aria-selected="mode === 'edit'"
           aria-controls="summary-panel-edit"
           :tabindex="mode === 'edit' ? 0 : -1"
@@ -152,6 +169,7 @@ watch(() => props.failure, (failed) => {
           type="button"
           role="tab"
           class="ui-button"
+          :class="{ 'ui-button--selected': mode === 'preview' }"
           :aria-selected="mode === 'preview'"
           aria-controls="summary-panel-preview"
           :tabindex="mode === 'preview' ? 0 : -1"
@@ -172,15 +190,25 @@ watch(() => props.failure, (failed) => {
           <textarea
             ref="textarea"
             :value="modelValue"
+            :aria-describedby="summaryDescribedBy"
+            :aria-invalid="failure ? 'true' : undefined"
             placeholder="Summarize the review outcome and the most important changes requested…"
             :disabled="pending || conflict"
             @input="emit('update:modelValue', ($event.target as HTMLTextAreaElement).value)"
             @keydown="onTextareaKeydown"
           />
         </label>
-        <p>Markdown is supported. Your summary changes only after you save.</p>
+        <p :id="summarySupportId">Markdown is supported. Your summary changes only after you save.</p>
         <div class="review-summary__actions">
-          <button type="button" class="ui-button ui-button--primary" :disabled="!unsaved || pending || conflict" @click="emit('save')">
+          <button
+            type="button"
+            class="ui-button ui-button--primary"
+            :class="{ 'review-summary__save--busy': saving, 'ui-button--busy': saving }"
+            :aria-busy="saving ? 'true' : undefined"
+            :disabled="!unsaved || pending || conflict"
+            @click="emit('save')"
+          >
+            <span v-if="saving" class="ui-spinner" aria-hidden="true" />
             {{ saving ? 'Saving summary…' : 'Save summary' }}
           </button>
           <button type="button" class="ui-button" :disabled="pending" @click="requestCancel">Cancel changes</button>
@@ -204,15 +232,31 @@ watch(() => props.failure, (failed) => {
       <section
         v-if="failure"
         ref="failureAlert"
-        class="inline-notice inline-notice--error"
+        :id="summaryFeedbackId"
+        class="inline-notice inline-notice--error review-summary__feedback"
         role="alert"
         tabindex="-1"
         aria-labelledby="summary-save-failed-heading"
       >
-        <h4 id="summary-save-failed-heading">Summary wasn’t saved</h4>
-        <p>Your text is still here in this tab. Try again after checking Diff Review is running.</p>
+        <UiIcon name="error" class="inline-notice__icon" />
+        <div class="inline-notice__content">
+          <h4 id="summary-save-failed-heading">Summary wasn’t saved</h4>
+          <p>Your text is still here in this tab. Try again after checking Diff Review is running.</p>
+        </div>
       </section>
-      <p v-if="retained && unsaved && !conflict" class="inline-notice" role="status">Latest draft loaded. Your unsaved text is still here.</p>
+      <section
+        v-else-if="retained && unsaved && !conflict"
+        :id="summaryFeedbackId"
+        class="inline-notice inline-notice--information review-summary__feedback"
+        role="status"
+        aria-labelledby="summary-retained-heading"
+      >
+        <UiIcon name="information" class="inline-notice__icon" />
+        <div class="inline-notice__content">
+          <h4 id="summary-retained-heading">Summary retained after reload</h4>
+          <p>Latest draft loaded. Your unsaved text is still here.</p>
+        </div>
+      </section>
 
       <section
         v-if="confirmingDiscard"
