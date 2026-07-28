@@ -28,7 +28,7 @@ Full phase goals, success criteria, requirement mappings, and plan details are a
 
 - [x] **Phase 05: Semantic Dark Foundation** Establish one coherent dark-only visual language for the existing diff workspace. (completed 2026-07-26)
 - [x] **Phase 06: Monaco Diff Semantics** — Make every diff, gutter, selection, and overlapping editor state legible within that language. (completed 2026-07-27)
-- [ ] **Phase 07: GitHub-Familiar Review Surfaces** — Adapt the file header, controls, comments, notices, and review rail without changing review mechanics.
+- [x] **Phase 07: GitHub-Familiar Review Surfaces** — Adapt the file header, controls, comments, notices, and review rail without changing review mechanics. (completed 2026-07-28)
 - [ ] **Phase 08: Accessible Responsive Continuity** — Prove the restyled workspace remains accessible, reflows safely, and preserves the complete review workflow.
 
 ## Phase Details
@@ -95,14 +95,14 @@ Plans:
   5. User can distinguish error, warning, informational, success, pending, disabled, open, and resolved states through text or icons and structural treatment in addition to color.
 
 **Planning detail**: Restyle the existing file tree and header, toolbar, drawers, inline view-zone content, comment composer and cards, review rail, notices, conflict and recovery states, summary, and export surfaces. Reuse current components, semantic hooks, ARIA relationships, focus targets, events, and state transitions; add no review mechanics or information-architecture changes.
-**Plans**: 5/6 plans executed
+**Plans**: 6/6 plans complete
 
 - [x] 07-01-PLAN.md
 - [x] 07-02-PLAN.md
 - [x] 07-03-PLAN.md
 - [x] 07-04-PLAN.md
 - [x] 07-05-PLAN.md
-- [ ] 07-06-PLAN.md
+- [x] 07-06-PLAN.md
 
 **UI hint**: yes
 
@@ -136,7 +136,7 @@ Plans:
 | 04.1. Close CMT-01 Async Comment Settlement | v1.0 | 2/2 | Complete | 2026-07-24 |
 | 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
 | 06. Monaco Diff Semantics | v1.1 | 3/3 | Complete    | 2026-07-27 |
-| 07. GitHub-Familiar Review Surfaces | v1.1 | 5/6 | In Progress|  |
+| 07. GitHub-Familiar Review Surfaces | v1.1 | 6/6 | Complete   | 2026-07-28 |
 | 08. Accessible Responsive Continuity | v1.1 | 0/TBD | Not started | - |
 
 **v1.1 coverage:** 4 phases, 18 requirements, 18 mapped, 0 unmapped.

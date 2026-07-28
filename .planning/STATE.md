@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: GitHub Dark Diff
 current_phase: 07
 current_phase_name: github-familiar-review-surfaces
-status: executing
-stopped_at: Completed 07-05-PLAN.md
-last_updated: "2026-07-28T08:45:48.406Z"
+status: verifying
+stopped_at: Completed 07-06-PLAN.md
+last_updated: "2026-07-28T09:17:10.035Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 10
-  completed_plans: 9
-  percent: 50
+  completed_plans: 10
+  percent: 75
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 
 Phase: 07 (github-familiar-review-surfaces) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-27 — Phase 07 execution started
 
 Progress: [█████░░░░░] 50%
@@ -64,6 +64,7 @@ Progress: [█████░░░░░] 50%
 | Phase 07 P03 | 23min | 2 tasks | 5 files |
 | Phase 07 P04 | 5min | 2 tasks | 8 files |
 | Phase 07 P05 | not recorded | 1 tasks | 3 files |
+| Phase 07 P06 | 0min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Present Summary computed state through ReviewStateBadge and local field IDs without adding summary state or changing save authority.
 - [Phase 07]: Keep ReadOnlyDraftLoad classifications and fixed recovery closures authoritative — Presentation adds no filesystem or request authority.
 - [Phase 07]: Localize recovery progress to the acted-on destructive confirmation action — Sibling disabled controls must not claim progress.
+- [Phase 07]: Keep ReviewExportState as the only export-state authority for Export presentation. — Every badge, notice, CTA, and receipt hierarchy maps from existing phase, receipt, drift, progress, and ignore values, preserving export and filesystem behavior.
 
 ### Pending Todos
 
@@ -122,6 +124,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T08:45:48.402Z
-Stopped at: Completed 07-05-PLAN.md
+Last session: 2026-07-28T09:17:10.029Z
+Stopped at: Completed 07-06-PLAN.md
 Resume file: None
