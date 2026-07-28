@@ -8,6 +8,7 @@ import { projectCommentGroups } from '../model/comment-groups.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import SummarySection from './SummarySection.vue';
 import ExportSection from './ExportSection.vue';
+import ReviewStateBadge from './ui/ReviewStateBadge.vue';
 
 type ReviewFailure = Readonly<{
   operation: ReviewPendingOperation;
@@ -31,6 +32,7 @@ const props = defineProps<{
   appendIgnoreRule: () => Promise<AppendDiffReviewIgnoreResult>;
   refreshIgnoreStatus: () => Promise<void>;
   revealExportDirectory: () => Promise<ExportDirectoryRevealResult>;
+  selectedCommentId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -341,12 +343,13 @@ watch(reviewFailure, (failed) => {
             :key="comment.id"
             :data-comment-id="comment.id"
             class="review-panel__comment comments-rail__comment"
+            :class="{ 'review-panel__comment--selected': selectedCommentId === comment.id }"
             :aria-labelledby="`comment-heading-${comment.id}`"
           >
-            <h5 :id="`comment-heading-${comment.id}`" data-comment-heading tabindex="-1">
+            <h5 :id="`comment-heading-${comment.id}`" class="review-panel__comment-heading" data-comment-heading tabindex="-1">
               {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}
             </h5>
-            <p><span>Open</span> · <span>{{ comment.status === 'verified' ? 'Verified' : comment.status === 'stale' ? 'Stale anchor' : 'Anchor unavailable' }}</span></p>
+            <p><span>Open</span> · <span>{{ comment.status === 'verified' ? 'Verified' : comment.status === 'stale' ? 'Stale anchor' : 'Anchor unavailable' }}</span><ReviewStateBadge v-if="selectedCommentId === comment.id" kind="selected" label="Selected" /></p>
 
             <template v-if="editing === comment.id">
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} · line {{ comment.line }} · Anchor fields fixed for this comment.</p>
@@ -449,10 +452,13 @@ watch(reviewFailure, (failed) => {
             :key="comment.id"
             :data-comment-id="comment.id"
             class="review-panel__comment comments-rail__comment"
+            :class="{ 'review-panel__comment--selected': selectedCommentId === comment.id }"
             :aria-labelledby="`comment-heading-${comment.id}`"
           >
-            <h5 :id="`comment-heading-${comment.id}`" data-comment-heading tabindex="-1">{{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</h5>
-            <p><span>Resolved</span> · <span>{{ comment.status === 'verified' ? 'Verified' : comment.status === 'stale' ? 'Stale anchor' : 'Anchor unavailable' }}</span></p>
+            <h5 :id="`comment-heading-${comment.id}`" class="review-panel__comment-heading" data-comment-heading tabindex="-1">
+              {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}
+            </h5>
+            <p><span>Resolved</span> · <span>{{ comment.status === 'verified' ? 'Verified' : comment.status === 'stale' ? 'Stale anchor' : 'Anchor unavailable' }}</span><ReviewStateBadge v-if="selectedCommentId === comment.id" kind="selected" label="Selected" /></p>
             <template v-if="editing === comment.id">
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} · line {{ comment.line }} · Anchor fields fixed for this comment.</p>
               <details><summary>Saved text</summary><p>{{ comment.body }}</p></details>

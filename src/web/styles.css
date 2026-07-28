@@ -1477,6 +1477,16 @@ h3.conversation-card__identity {
   overflow-y: auto;
 }
 
+.review-panel__comment--selected {
+  background: var(--surface-raised);
+  border-inline-start: 3px solid var(--selection-border);
+}
+
+.review-panel__comment--selected .review-panel__comment-heading {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
 .review-summary textarea,
 .review-panel textarea {
   min-height: 96px;

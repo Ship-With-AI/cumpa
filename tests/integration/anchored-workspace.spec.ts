@@ -172,7 +172,7 @@ async function startAppServer(): Promise<string> {
               return;
             }
             const mutation = DraftMutationRequestSchema.safeParse(input);
-            if (!mutation.success || mutation.data.type !== 'addComment') {
+            if (!mutation.success) {
               response.statusCode = 400;
               response.end();
               return;
@@ -208,6 +208,23 @@ async function startAppServer(): Promise<string> {
                 actualRevision: latest.revision,
                 latest,
               }), 409);
+              return;
+            }
+
+            if (mutation.data.type === 'deleteComment') {
+              canonicalComments = canonicalComments.filter(
+                (comment) => typeof comment !== 'object' || comment === null || !('id' in comment) || comment.id !== mutation.data.commentId,
+              );
+              json(response, DraftMutationResultSchema.parse({
+                kind: 'accepted',
+                draft: draftSnapshot(canonicalComments),
+              }), 201);
+              return;
+            }
+
+            if (mutation.data.type !== 'addComment') {
+              response.statusCode = 400;
+              response.end();
               return;
             }
 
@@ -648,6 +665,67 @@ test('Phase 07 inline conversation states', async ({ page }) => {
   expectConversationCardNotToReflow(before, restored);
   expect(Math.abs(restored.zones[0]!.y - restored.zones[1]!.y)).toBeLessThanOrEqual(1);
   expect(restored.zones[0]!.height).toBe(restored.zones[1]!.height);
+});
+
+test('Phase 07 rail selection follows focus-comment', async ({ page }) => {
+  resetAsyncSettlementFixture();
+  const resolvedCommentId = 'comment_323e4567-e89b-12d3-a456-426614174000';
+  canonicalComments = [{
+    id: resolvedCommentId,
+    state: 'resolved',
+    body: 'Selected resolved comment.',
+    anchor: {
+      version: 'durable-anchor-v1',
+      path: path('src/first.ts'),
+      safeDisplayPath: 'src/first.ts',
+      side: 'head',
+      line: 11,
+      blobOid: 'd'.repeat(40),
+      selectedText: 'const context11 = 11;',
+      context: { before: [], target: { line: 11, text: 'const context11 = 11;' }, after: [] },
+      contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
+      uniqueKey: '3'.repeat(64),
+    },
+    createdAt: '2026-07-21T00:00:00.000Z',
+    updatedAt: '2026-07-21T00:00:00.000Z',
+    resolvedAt: '2026-07-21T00:00:00.000Z',
+  }];
+
+  await openReview(page);
+  await ensureReviewOpen(page);
+  await page.getByRole('button', { name: /^Resolved comments/ }).click();
+
+  const resolvedRow = page.locator(`article[data-comment-id="${resolvedCommentId}"]`);
+  await resolvedRow.getByRole('button', { name: 'Show comment' }).click();
+  await expect(resolvedRow).toHaveClass(/review-panel__comment--selected/);
+  await expect(resolvedRow).toHaveCSS('border-left-width', '3px');
+  await expect(resolvedRow.getByText('Selected', { exact: true })).toBeVisible();
+  await expect(resolvedRow).not.toHaveAttribute('aria-selected');
+  await expect(resolvedRow.locator('[tabindex="0"]')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Close review' }).focus();
+  await expect(resolvedRow).toHaveClass(/review-panel__comment--selected/);
+
+  await page.getByRole('button', { name: 'Close review' }).click();
+  await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+  await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+  const composer = page.locator('.monaco-anchor-zone--composer textarea');
+  await composer.fill('Selected open comment.');
+  await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
+
+  await ensureReviewOpen(page);
+  const openRow = page.locator('article[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]');
+  await openRow.getByRole('button', { name: 'Show comment' }).click();
+  await expect(resolvedRow).not.toHaveClass(/review-panel__comment--selected/);
+  await expect(openRow).toHaveClass(/review-panel__comment--selected/);
+
+  const persistedDraft = await page.evaluate(async () => (await fetch('/api/draft')).json());
+  expect(JSON.stringify(persistedDraft)).not.toContain('selectedCommentId');
+
+  await openRow.getByRole('button', { name: 'Delete' }).click();
+  await openRow.getByRole('button', { name: 'Delete comment' }).click();
+  await expect(openRow).toHaveCount(0);
+  await expect(page.locator('.review-panel__comment--selected')).toHaveCount(0);
 });
 
 test('draft resume and anchor states', async ({ page }) => {

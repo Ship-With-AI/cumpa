@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 
 import type {
   DraftLoadResponse,
@@ -92,6 +92,7 @@ const draftLoad = shallowRef<DraftLoadResponse>();
 const recoveredDraft = shallowRef<Extract<DraftRecoveryResult, { readonly kind: 'recovered' }>>();
 const recoveredDraftOpen = ref(false);
 const selectorDriftStatus = shallowRef<SelectorDriftResponse>();
+const selectedCommentId = ref<string | null>(null);
 const primarySurface = computed(() => recoveredDraftOpen.value
   ? 'workspace'
   : reviewPrimarySurface(draftLoad.value));
@@ -130,6 +131,12 @@ const openCommentCount = computed(
 const resolvedCommentCount = computed(
   () => workspaceComments.value.filter((comment) => comment.state === 'resolved').length,
 );
+
+watch(workspaceComments, (comments) => {
+  if (selectedCommentId.value !== null && !comments.some((comment) => comment.id === selectedCommentId.value)) {
+    selectedCommentId.value = null;
+  }
+});
 
 function announce(message: string): void {
   liveMessage.value = message;
@@ -501,6 +508,7 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
         announce(command.text);
         break;
       case 'focus-comment':
+        selectedCommentId.value = command.commentId;
         void nextTick(() => diffWorkspace.value?.focusComment(command.commentId));
         break;
       case 'go-to-change':
@@ -891,6 +899,7 @@ onBeforeUnmount(() => {
         <ReviewPanel
           v-if="reviewDraft !== undefined && session !== undefined"
           :comments="workspaceComments"
+          :selected-comment-id="selectedCommentId"
           :inventory="reviewableFiles.map((file) => ({ identity: file.newPath?.bytesBase64url ?? file.oldPath?.bytesBase64url ?? file.fileId, display: file.newPath?.display ?? file.oldPath?.display ?? 'Changed file' }))"
           :summary="reviewDraft.canonical.summary"
           :summary-buffer="reviewDraft.summaryBuffer"
