@@ -14,6 +14,7 @@
   --border-muted: #21262D;
   --border-default: #30363D;
   --border-strong: #484F58;
+  --control-boundary: #8B949E;
   --interactive-accent: #2F81F7;
   --interactive-accent-emphasis: #1F6FEB;
   --focus-ring: #58A6FF;
@@ -321,7 +322,7 @@ select,
 textarea {
   min-height: 32px;
   padding: var(--space-xs) var(--space-sm);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--control-boundary);
   border-radius: var(--radius-control);
   background: var(--surface-interactive);
   color: var(--text-primary);

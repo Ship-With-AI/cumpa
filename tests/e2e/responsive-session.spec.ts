@@ -240,19 +240,113 @@ function srgbChannel(value: number): number {
     : ((channel + 0.055) / 1.055) ** 2.4;
 }
 
-function contrastRatio(foreground: string, background: string): number {
-  const parse = (hex: string): readonly [number, number, number] => [
-    Number.parseInt(hex.slice(1, 3), 16),
-    Number.parseInt(hex.slice(3, 5), 16),
-    Number.parseInt(hex.slice(5, 7), 16),
-  ];
-  const luminance = (hex: string): number => {
-    const [red, green, blue] = parse(hex).map(srgbChannel);
-    return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+interface RgbaColor {
+  readonly red: number;
+  readonly green: number;
+  readonly blue: number;
+  readonly alpha: number;
+}
+
+function parseComputedColor(value: string): RgbaColor {
+  const channels = value.match(/[\d.]+/g)?.map(Number);
+  expect(channels, `[accessibility] unable to parse computed color ${value}`).toBeDefined();
+  const [red, green, blue, alpha = 1] = channels!;
+  return { red, green, blue, alpha };
+}
+
+function compositeOver(foreground: RgbaColor, background: RgbaColor): RgbaColor {
+  const alpha = foreground.alpha + background.alpha * (1 - foreground.alpha);
+  if (alpha === 0) {
+    return { red: 0, green: 0, blue: 0, alpha: 0 };
+  }
+  const composite = (channel: keyof Pick<RgbaColor, 'red' | 'green' | 'blue'>): number =>
+    (foreground[channel] * foreground.alpha
+      + background[channel] * background.alpha * (1 - foreground.alpha)) / alpha;
+  return {
+    red: composite('red'),
+    green: composite('green'),
+    blue: composite('blue'),
+    alpha,
   };
+}
+
+function renderedContrastRatio(foreground: RgbaColor, background: RgbaColor): number {
+  const luminance = ({ blue, green, red }: RgbaColor): number =>
+    0.2126 * srgbChannel(red) + 0.7152 * srgbChannel(green) + 0.0722 * srgbChannel(blue);
   const first = luminance(foreground);
   const second = luminance(background);
   return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+}
+
+async function readRenderedContrast(
+  locator: Locator,
+  property: 'color' | 'borderColor' | 'outlineColor' = 'color',
+): Promise<{
+  readonly background: RgbaColor;
+  readonly foreground: RgbaColor;
+  readonly layers: readonly string[];
+  readonly ratio: number;
+}> {
+  const measured = await locator.evaluate((element, measuredProperty) => {
+    const ancestors: Element[] = [];
+    const layers: { color: string; opacity: number; source: string }[] = [];
+    for (let current: Element | null = element; current !== null; current = current.parentElement) {
+      ancestors.push(current);
+    }
+    for (const current of ancestors.reverse()) {
+      const style = getComputedStyle(current);
+      layers.push({
+        color: style.backgroundColor,
+        opacity: Number(style.opacity),
+        source: current === element ? 'target' : current.tagName.toLowerCase(),
+      });
+      for (const pseudo of ['::before', '::after']) {
+        const pseudoStyle = getComputedStyle(current, pseudo);
+        if (pseudoStyle.content !== 'none' && pseudoStyle.content !== 'normal') {
+          layers.push({
+            color: pseudoStyle.backgroundColor,
+            opacity: Number(pseudoStyle.opacity),
+            source: `${current.tagName.toLowerCase()}${pseudo}`,
+          });
+        }
+      }
+    }
+    const style = getComputedStyle(element);
+    return {
+      foreground: style[measuredProperty],
+      foregroundOpacity: Number(style.opacity),
+      layers,
+    };
+  }, property);
+  const withOpacity = (color: string, opacity: number): RgbaColor => {
+    const parsed = parseComputedColor(color);
+    return { ...parsed, alpha: parsed.alpha * opacity };
+  };
+  const background = measured.layers.reduce(
+    (composite, layer) => compositeOver(withOpacity(layer.color, layer.opacity), composite),
+    { red: 0, green: 0, blue: 0, alpha: 0 },
+  );
+  const foreground = withOpacity(measured.foreground, measured.foregroundOpacity);
+  const renderedForeground = compositeOver(foreground, background);
+  return {
+    background,
+    foreground: renderedForeground,
+    layers: measured.layers.map((layer) => `${layer.source}: ${layer.color} × ${layer.opacity}`),
+    ratio: renderedContrastRatio(renderedForeground, background),
+  };
+}
+
+async function expectRenderedContrast(
+  locator: Locator,
+  label: string,
+  minimum: number,
+  property: 'color' | 'borderColor' | 'outlineColor' = 'color',
+): Promise<void> {
+  const measurement = await readRenderedContrast(locator, property);
+  expect(
+    measurement.ratio,
+    `[accessibility] ${label}: ${measurement.ratio} ${property}; foreground ${JSON.stringify(measurement.foreground)}, background ${JSON.stringify(measurement.background)}, layers ${measurement.layers.join(' → ')}`,
+  ).toBeGreaterThanOrEqual(minimum);
 }
 
 async function assertNoPageOverflow(page: Page): Promise<void> {
@@ -492,6 +586,38 @@ test('responsive keyboard and accessibility contract', async ({
       'Diff Review: Base responsive fixture',
     );
 
+  await test.step('rendered real workspace contrast contract', async () => {
+    await expectRenderedContrast(
+      page.locator('.session-header h1'),
+      'session heading',
+      4.5,
+    );
+    await expectRenderedContrast(
+      page.locator('.review-context-header__file h1'),
+      'active file heading',
+      4.5,
+    );
+    const review = page.getByRole('button', { name: 'Review', exact: true });
+    const keyboardHelp = page.getByRole('button', {
+      name: 'Keyboard help',
+      exact: true,
+    });
+    await expectRenderedContrast(review, 'Review control label', 4.5);
+    await expectRenderedContrast(
+      review,
+      'Review control boundary',
+      3,
+      'borderColor',
+    );
+    await expectRenderedContrast(keyboardHelp, 'Keyboard help control label', 4.5);
+    await expectRenderedContrast(
+      keyboardHelp,
+      'Keyboard help control boundary',
+      3,
+      'borderColor',
+    );
+  });
+
     await test.step('exact semantic palette, typography, control, and motion contract', async () => {
       const canonical = {
         '--surface-canvas': '#0d1117',
@@ -507,7 +633,7 @@ test('responsive keyboard and accessibility contract', async ({
         '--text-on-emphasis': '#fff',
         '--border-muted': '#21262d',
         '--border-default': '#30363d',
-        '--border-strong': '#484f58',
+        '--control-boundary': '#8b949e',
         '--interactive-accent': '#2f81f7',
         '--interactive-accent-emphasis': '#1f6feb',
         '--focus-ring': '#58a6ff',
@@ -639,9 +765,7 @@ test('responsive keyboard and accessibility contract', async ({
         ['.pin-cue', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
       ]);
       await expect(page.locator('.path-display').first()).toHaveCSS('font-family', /monospace/);
-      expect(contrastRatio('#E6EDF3', '#0D1117')).toBeGreaterThanOrEqual(4.5);
       await expect(fixture.locator('.object-id')).toHaveCSS('font-family', /monospace/);
-      expect(contrastRatio('#FFFFFF', '#1F6FEB')).toBeGreaterThanOrEqual(4.5);
 
       const gutterTarget = fixture.locator('.diff-workspace__gutter-action');
       const gutterBox = await gutterTarget.boundingBox();
@@ -956,7 +1080,7 @@ test('responsive keyboard and accessibility contract', async ({
       await reviewButton.click();
       const mediumBox = await rail.boundingBox();
       expect(Math.round(mediumBox!.width)).toBe(360);
-      expect(Math.round(mediumBox!.x + mediumBox!.width)).toBe(1100);
+      expect(Math.round(mediumBox!.x + mediumBox!.width)).toBe(1092);
       await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close review' }).click();
@@ -989,8 +1113,8 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).toHaveCSS('box-shadow', 'none');
       await reviewButton.click();
       const compactBox = await rail.boundingBox();
-      expect(Math.round(compactBox!.width)).toBe(343);
-      expect(Math.round(compactBox!.x + compactBox!.width)).toBe(375);
+      expect(Math.round(compactBox!.width)).toBe(359);
+      expect(Math.round(compactBox!.x + compactBox!.width)).toBe(367);
       await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       await expect(stateCard).toHaveCSS('padding', '16px');
       await assertNoPageOverflow(page);
