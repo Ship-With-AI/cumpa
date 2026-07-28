@@ -96,12 +96,28 @@ Plans:
 
 **Planning detail**: Restyle the existing file tree and header, toolbar, drawers, inline view-zone content, comment composer and cards, review rail, notices, conflict and recovery states, summary, and export surfaces. Reuse current components, semantic hooks, ARIA relationships, focus targets, events, and state transitions; add no review mechanics or information-architecture changes.
 **Plans**: 6/6 plans complete
+**Wave 1**
 
 - [x] 07-01-PLAN.md
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [x] 07-02-PLAN.md
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [x] 07-03-PLAN.md
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [x] 07-04-PLAN.md
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [x] 07-05-PLAN.md
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
 - [x] 07-06-PLAN.md
 
 **UI hint**: yes
