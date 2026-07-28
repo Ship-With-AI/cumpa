@@ -297,13 +297,24 @@ async function hoverMonacoLine(page: Page, side: 'base' | 'head', text: string):
 }
 
 type GeometryRect = Readonly<{ x: number; y: number; width: number; height: number }>;
+type ScrollGeometry = Readonly<{
+  clientHeight: number;
+  clientWidth: number;
+  rect: GeometryRect;
+  scrollHeight: number;
+  scrollWidth: number;
+}>;
+
 type MonacoGeometry = Readonly<{
   action: GeometryRect | null;
   codeOrigin: Readonly<{ tokenX: number; viewLineX: number; lineHeight: number }> | null;
+  diffCanvas: ScrollGeometry | null;
+  diffViewport: ScrollGeometry | null;
   document: Readonly<{ clientWidth: number; scrollWidth: number }>;
   gutters: readonly number[];
   panes: readonly GeometryRect[];
-  reviewMain: Readonly<{ clientHeight: number; clientWidth: number; scrollHeight: number; scrollWidth: number }> | null;
+  reviewMain: ScrollGeometry | null;
+  reviewShell: ScrollGeometry | null;
   sashes: readonly GeometryRect[];
   scrollOwners: readonly Readonly<{ clientHeight: number; clientWidth: number; scrollHeight: number; scrollWidth: number }>[];
   zones: readonly GeometryRect[];
@@ -311,10 +322,21 @@ type MonacoGeometry = Readonly<{
 
 async function readMonacoGeometry(page: Page, targetText: string): Promise<MonacoGeometry> {
   return page.evaluate((text) => {
-    const rect = (element: Element | null): GeometryRect | null => {
+    const canvasBounds = document.querySelector('.diff-workspace__canvas')?.getBoundingClientRect();
+    const rawRect = (element: Element | null): GeometryRect | null => {
       if (element === null) return null;
       const { x, y, width, height } = element.getBoundingClientRect();
-      return { x, y, width, height };
+      return { height, width, x, y };
+    };
+    const rect = (element: Element | null): GeometryRect | null => {
+      const bounds = rawRect(element);
+      if (bounds === null) return null;
+      return {
+        height: bounds.height,
+        width: bounds.width,
+        x: bounds.x - (canvasBounds?.x ?? 0),
+        y: bounds.y - (canvasBounds?.y ?? 0),
+      };
     };
     const scrollDimensions = (element: HTMLElement) => ({
       clientHeight: element.clientHeight,
@@ -322,21 +344,31 @@ async function readMonacoGeometry(page: Page, targetText: string): Promise<Monac
       scrollHeight: element.scrollHeight,
       scrollWidth: element.scrollWidth,
     });
+    const scrollGeometry = (element: HTMLElement | null): ScrollGeometry | null => {
+      if (element === null) return null;
+      const bounds = rawRect(element);
+      if (bounds === null) return null;
+      return { ...scrollDimensions(element), rect: bounds };
+    };
     const action = document.querySelector('.diff-workspace__gutter-action');
+    const actionBounds = action?.getBoundingClientRect();
     const actionRect = rect(action);
     const line = [...document.querySelectorAll('.monaco-diff-editor .modified .view-line')]
       .filter((element) => element.getBoundingClientRect().height > 0)
       .find((element) => {
         const bounds = element.getBoundingClientRect();
-        return actionRect !== null
-          && actionRect.y + actionRect.height / 2 >= bounds.y
-          && actionRect.y + actionRect.height / 2 <= bounds.y + bounds.height;
+        return actionBounds !== undefined
+          && actionBounds.y + actionBounds.height / 2 >= bounds.y
+          && actionBounds.y + actionBounds.height / 2 <= bounds.y + bounds.height;
       }) ?? [...document.querySelectorAll('.monaco-diff-editor .modified .view-line')]
       .find((element) => (element.textContent?.includes(text) || (element as HTMLElement).innerText.includes(text))
         && element.getBoundingClientRect().height > 0);
     const lineRect = rect(line ?? null);
     const tokenRect = rect(line?.querySelector('span') ?? null);
     const reviewMain = document.querySelector<HTMLElement>('.review-main');
+    const reviewShell = document.querySelector<HTMLElement>('.review-shell');
+    const diffViewport = document.querySelector<HTMLElement>('.diff-workspace__viewport');
+    const diffCanvas = document.querySelector<HTMLElement>('.diff-workspace__canvas');
     return {
       action: actionRect,
       codeOrigin: lineRect === null || tokenRect === null
@@ -350,9 +382,13 @@ async function readMonacoGeometry(page: Page, targetText: string): Promise<Monac
         .map((element) => element.getBoundingClientRect().width),
       panes: [...document.querySelectorAll('.monaco-diff-pane--base, .monaco-diff-pane--head')]
         .map((element) => rect(element)).filter((value): value is GeometryRect => value !== null),
-      reviewMain: reviewMain === null ? null : scrollDimensions(reviewMain),
+      diffCanvas: scrollGeometry(diffCanvas),
+      diffViewport: scrollGeometry(diffViewport),
+      reviewMain: scrollGeometry(reviewMain),
+      reviewShell: scrollGeometry(reviewShell),
       sashes: [...document.querySelectorAll('.monaco-diff-editor .monaco-sash')]
-        .map((element) => rect(element)).filter((value): value is GeometryRect => value !== null),
+        .map((element) => rect(element)).filter((value): value is GeometryRect => value !== null
+          && value.width > 0 && value.height > 0),
       scrollOwners: [...document.querySelectorAll<HTMLElement>('.monaco-diff-editor .monaco-scrollable-element')]
         .map(scrollDimensions),
       zones: [...document.querySelectorAll('.monaco-anchor-zone')]
@@ -434,8 +470,14 @@ test('diff navigation and session state', async ({ page }) => {
   await page.getByRole('button', { name: 'Close keyboard help' }).click();
 
   await page.setViewportSize({ width: 640, height: 700 });
-  await expect.poll(() => page.locator('.review-main').evaluate((element) => element.getBoundingClientRect().width)).toBeGreaterThanOrEqual(640);
-  await expect(page.getByRole('button', { name: 'Files', exact: true })).toBeVisible();
+  const narrowGeometry = await readMonacoGeometry(page, 'export const changed = 3;');
+  expect(narrowGeometry.document.scrollWidth).toBeLessThanOrEqual(narrowGeometry.document.clientWidth);
+  expect(narrowGeometry.reviewShell).not.toBeNull();
+  expect(narrowGeometry.reviewMain).not.toBeNull();
+  if (narrowGeometry.reviewShell === null || narrowGeometry.reviewMain === null) {
+    throw new Error('Expected rendered review shell and main geometry.');
+  }
+  expect(narrowGeometry.reviewMain.rect.width).toBeLessThanOrEqual(narrowGeometry.reviewShell.rect.width + 1);
   await ensureReviewOpen(page);
   await expect(page.getByRole('heading', { level: 2, name: 'Review', exact: true })).toBeVisible();
 
@@ -1120,7 +1162,7 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
   test.setTimeout(120_000);
   const targetText = 'export const changed = 3;';
 
-  for (const width of [1440, 1280, 1100, 768, 640]) {
+  for (const width of [1440, 1280, 1100, 1099, 768, 767, 640, 320]) {
     resetAsyncSettlementFixture();
     await page.setViewportSize({ width, height: 760 });
     await openReview(page);
@@ -1128,6 +1170,65 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
     await expect(page.locator('.review-context-header').getByText('HEAD', { exact: true })).toBeVisible();
     await expect(page.locator('.monaco-diff-pane--base')).toHaveCount(1);
     await expect(page.locator('.monaco-diff-pane--head')).toHaveCount(1);
+
+    const initial = await readMonacoGeometry(page, targetText);
+    expect(initial.document.scrollWidth).toBeLessThanOrEqual(initial.document.clientWidth);
+    if (initial.reviewShell === null || initial.reviewMain === null
+      || initial.diffViewport === null || initial.diffCanvas === null) {
+      throw new Error('Expected rendered review shell, main, diff viewport, and diff canvas geometry.');
+    }
+    expect(initial.reviewMain.rect.width).toBeLessThanOrEqual(initial.reviewShell.rect.width + 1);
+    expect(initial.diffViewport.rect.width).toBeLessThanOrEqual(initial.reviewMain.rect.width + 1);
+    const outerOverflowOwners = await page.locator('.review-main').evaluate((root) => [...root.querySelectorAll<HTMLElement>('*')]
+      .filter((element) => !element.closest('.diff-workspace__viewport')
+        && !element.classList.contains('sr-only')
+        && element.scrollWidth > element.clientWidth)
+      .map((element) => element.className));
+    expect(outerOverflowOwners).toEqual([]);
+    expect(initial.reviewMain.scrollWidth).toBeLessThanOrEqual(initial.reviewMain.clientWidth);
+    expect(initial.reviewShell.scrollWidth).toBeLessThanOrEqual(initial.reviewShell.clientWidth);
+    expect(initial.diffCanvas.rect.width).toBeGreaterThanOrEqual(640);
+
+    if (width === 320) {
+      const reachability = await page.locator('.diff-workspace__viewport').evaluate((viewport) => {
+        const intersectsViewport = (element: Element | null) => {
+          if (element === null) return false;
+          const bounds = element.getBoundingClientRect();
+          const viewportBounds = viewport.getBoundingClientRect();
+          return bounds.left < viewportBounds.right && bounds.right > viewportBounds.left;
+        };
+        viewport.scrollLeft = 0;
+        const baseReachableAtStart = intersectsViewport(document.querySelector('.monaco-diff-pane--base'));
+        const baseLabelReachableAtStart = intersectsViewport(document.querySelector('.diff-workspace__side-labels span:first-child'));
+        viewport.scrollLeft = viewport.scrollWidth;
+        const headLabelReachableAtEnd = intersectsViewport(document.querySelector('.diff-workspace__side-labels span:last-child'));
+        const headReachableAtEnd = intersectsViewport(document.querySelector('.monaco-diff-pane--head'));
+        const actionReachableAtEnd = intersectsViewport(document.querySelector('.diff-workspace__gutter-action'));
+        const canvasWidth = document.querySelector<HTMLElement>('.diff-workspace__canvas')?.getBoundingClientRect().width;
+        const viewportClientWidth = viewport.clientWidth;
+        const viewportScrollWidth = viewport.scrollWidth;
+        viewport.scrollLeft = 0;
+        return {
+          actionReachableAtEnd,
+          baseLabelReachableAtStart,
+          baseReachableAtStart,
+          canvasWidth,
+          documentScrollLeft: document.documentElement.scrollLeft,
+          headLabelReachableAtEnd,
+          headReachableAtEnd,
+          viewportClientWidth,
+          viewportScrollWidth,
+        };
+      });
+      expect(reachability.viewportScrollWidth).toBeGreaterThan(reachability.viewportClientWidth);
+      expect(reachability.canvasWidth).toBeGreaterThanOrEqual(640);
+      expect(reachability.baseReachableAtStart).toBe(true);
+      expect(reachability.baseLabelReachableAtStart).toBe(true);
+      expect(reachability.headReachableAtEnd).toBe(true);
+      expect(reachability.headLabelReachableAtEnd).toBe(true);
+      expect(reachability.actionReachableAtEnd).toBe(true);
+      expect(reachability.documentScrollLeft).toBe(0);
+    }
 
     await hoverMonacoLine(page, 'head', targetText);
     const action = page.getByRole('button', { name: 'Add comment to head line 10' });

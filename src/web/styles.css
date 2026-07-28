@@ -332,6 +332,16 @@ textarea {
   line-height: var(--line-height-body);
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .identity-disclosure,
 .copy-button,
 .retry-button,
@@ -1057,6 +1067,7 @@ input:-webkit-autofill:focus {
   min-width: 0;
   max-width: 100%;
   min-height: 0;
+  contain: paint;
   grid-template-columns: 288px minmax(0, 1fr) 360px;
 }
 
@@ -1176,11 +1187,16 @@ input:-webkit-autofill:focus {
 }
 
 .review-context-header__toolbar {
+  min-width: 0;
+  max-width: 100%;
   border-top: 1px solid var(--border-default);
 }
 
 .review-context-header__toolbar .review-toolbar {
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
   border-bottom: 0;
@@ -1267,6 +1283,7 @@ input:-webkit-autofill:focus {
   position: relative;
   display: grid;
   width: 100%;
+  height: 100%;
   min-width: 640px;
   min-height: 100%;
   grid-template-rows: 32px minmax(0, 1fr);
@@ -1945,7 +1962,12 @@ h3.conversation-card__identity {
     transform: translateX(0);
     box-shadow: var(--shadow-overlay);
   }
+
+  .comments-rail:not(.comments-rail--open) {
+    display: none;
+  }
 }
+
 
 @media (max-width: 1099px) {
   .review-shell {
@@ -1983,10 +2005,15 @@ h3.conversation-card__identity {
     transform: translateX(0);
     box-shadow: var(--shadow-overlay);
   }
+
+  .review-files:not(.review-files--open) {
+    display: none;
+  }
 }
 
 @media (max-width: 767px) {
   .session-header {
+
     display: grid;
     min-width: 0;
     min-height: 96px;
