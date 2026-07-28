@@ -5,16 +5,16 @@ milestone_name: GitHub Dark Diff
 current_phase: 07
 current_phase_name: github-familiar-review-surfaces
 status: executing
-stopped_at: Completed 07-06-PLAN.md
-last_updated: "2026-07-28T11:06:51.607Z"
-last_activity: 2026-07-27
+stopped_at: Completed 07-07-PLAN.md
+last_updated: "2026-07-28T11:30:43.233Z"
+last_activity: 2026-07-28
 last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 4
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
-  percent: 75
+  completed_phases: 2
+  total_plans: 13
+  completed_plans: 11
+  percent: 50
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 07 (github-familiar-review-surfaces) — EXECUTING
-Plan: 6 of 6
+Plan: 8 of 9
 Status: Ready to execute
-Last activity: 2026-07-27 — Phase 07 execution started
+Last activity: 2026-07-28 — Phase 07 execution started
 
-Progress: [█████░░░░░] 50%
+Progress: [█████████░] 85%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [█████░░░░░] 50%
 | Phase 07 P04 | 5min | 2 tasks | 8 files |
 | Phase 07 P05 | not recorded | 1 tasks | 3 files |
 | Phase 07 P06 | 0min | 3 tasks | 9 files |
+| Phase 07 P07 | not recorded | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Keep ReadOnlyDraftLoad classifications and fixed recovery closures authoritative — Presentation adds no filesystem or request authority.
 - [Phase 07]: Localize recovery progress to the acted-on destructive confirmation action — Sibling disabled controls must not claim progress.
 - [Phase 07]: Keep ReviewExportState as the only export-state authority for Export presentation. — Every badge, notice, CTA, and receipt hierarchy maps from existing phase, receipt, drift, progress, and ignore values, preserving export and filesystem behavior.
+- [Phase 07]: Route accepted and composer card height through one file-local helper using the existing paired-zone adapter. — Keeps Math.max(280, contentHeight + 16), source-line rail, line map, and Monaco authority unchanged while containing long accepted content.
 
 ### Pending Todos
 
@@ -124,6 +126,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T09:17:10.029Z
-Stopped at: Completed 07-06-PLAN.md
+Last session: 2026-07-28T11:30:43.228Z
+Stopped at: Completed 07-07-PLAN.md
 Resume file: None
