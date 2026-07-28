@@ -9,6 +9,7 @@ import type { WorkspaceComment } from '../model/workspace-state.js';
 import SummarySection from './SummarySection.vue';
 import ExportSection from './ExportSection.vue';
 import ReviewStateBadge from './ui/ReviewStateBadge.vue';
+import PathText from './ui/PathText.vue';
 
 type ReviewFailure = Readonly<{
   operation: ReviewPendingOperation;
@@ -272,7 +273,10 @@ watch(reviewFailure, (failed) => {
     <header class="review-panel__heading">
       <div>
         <h2 id="review-heading" ref="heading" tabindex="-1">Review</h2>
-        <p><span>Open {{ openCount }}</span> · <span>Resolved {{ resolvedCount }}</span></p>
+        <div class="review-panel__heading-counts">
+          <ReviewStateBadge kind="open" :label="`Open ${openCount}`" />
+          <ReviewStateBadge kind="resolved" :label="`Resolved ${resolvedCount}`" />
+        </div>
       </div>
       <button type="button" class="ui-button" @click="emit('close')">Close review</button>
     </header>
@@ -307,20 +311,22 @@ watch(reviewFailure, (failed) => {
       <p v-else>The review change wasn’t saved. The accepted local draft is unchanged. Try again after checking Diff Review is running.</p>
     </section>
 
-    <SummarySection
-      :canonical="summary"
-      :model-value="summaryBuffer"
-      :pending="pending !== null"
-      :saving="pending === 'summary'"
-      :conflict="conflict !== null"
-      :failure="summaryFailure"
-      :retained="retainedSummary"
-      @cancel="emit('cancelSummary')"
-      @save="emit('saveSummary')"
-      @update:model-value="emit('update:summaryBuffer', $event)"
-    />
+    <section class="review-panel__section review-panel__section--summary">
+      <SummarySection
+        :canonical="summary"
+        :model-value="summaryBuffer"
+        :pending="pending !== null"
+        :saving="pending === 'summary'"
+        :conflict="conflict !== null"
+        :failure="summaryFailure"
+        :retained="retainedSummary"
+        @cancel="emit('cancelSummary')"
+        @save="emit('saveSummary')"
+        @update:model-value="emit('update:summaryBuffer', $event)"
+      />
+    </section>
 
-    <section class="review-panel__comments" aria-labelledby="open-comments-heading">
+    <section class="review-panel__comments review-panel__section" aria-labelledby="open-comments-heading">
       <h3>
         <button
           id="open-comments-heading"
@@ -337,19 +343,29 @@ watch(reviewFailure, (failed) => {
           <p>Add a comment from a line in the diff, or reopen one from Resolved comments.</p>
         </section>
         <section v-for="group in groups.open" v-else :key="group.path.bytesBase64url" class="review-panel__group">
-          <h4 tabindex="-1">{{ group.path.display }} <span>({{ group.comments.length }})</span></h4>
+          <header class="review-panel__group-header">
+            <h4 tabindex="-1"><PathText :display="group.path.display" /></h4>
+            <span>({{ group.comments.length }})</span>
+          </header>
+          <div class="review-panel__group-rows">
           <article
             v-for="comment in group.comments"
             :key="comment.id"
             :data-comment-id="comment.id"
             class="review-panel__comment comments-rail__comment"
-            :class="{ 'review-panel__comment--selected': selectedCommentId === comment.id }"
+            :class="{ 'review-panel__comment--selected': selectedCommentId === comment.id, 'review-panel__comment--busy': (pending === 'resolve' || pending === 'reopen' || pending === 'delete') && pendingFocus?.commentId === comment.id }"
             :aria-labelledby="`comment-heading-${comment.id}`"
           >
-            <h5 :id="`comment-heading-${comment.id}`" class="review-panel__comment-heading" data-comment-heading tabindex="-1">
-              {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}
-            </h5>
-            <p><span>Open</span> · <span>{{ comment.status === 'verified' ? 'Verified' : comment.status === 'stale' ? 'Stale anchor' : 'Anchor unavailable' }}</span><ReviewStateBadge v-if="selectedCommentId === comment.id" kind="selected" label="Selected" /></p>
+            <div class="review-panel__comment-heading">
+              <h5 :id="`comment-heading-${comment.id}`" data-comment-heading tabindex="-1">
+                <PathText :display="comment.recordedAnchor.safeDisplayPath" /> · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}
+              </h5>
+              <div class="review-panel__comment-badges">
+                <ReviewStateBadge kind="open" label="Open" />
+                <ReviewStateBadge :kind="comment.status === 'verified' ? 'verified' : comment.status === 'stale' ? 'stale' : 'unavailable'" :label="comment.status === 'verified' ? 'Verified' : comment.status === 'stale' ? 'Stale anchor' : 'Anchor unavailable'" />
+                <ReviewStateBadge v-if="selectedCommentId === comment.id" kind="selected" label="Selected" />
+              </div>
+            </div>
 
             <template v-if="editing === comment.id">
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} · line {{ comment.line }} · Anchor fields fixed for this comment.</p>
@@ -365,7 +381,15 @@ watch(reviewFailure, (failed) => {
               <p v-if="buffer(comment) !== comment.body">Unsaved</p>
               <p v-if="buffer(comment).trim() === ''" role="alert">Write a comment before saving it.</p>
               <div class="review-panel__actions">
-                <button type="button" class="ui-button ui-button--primary" :disabled="pending !== null || conflict !== null || buffer(comment).trim() === ''" @click="emit('saveComment', comment.id)">
+                <button
+                  type="button"
+                  class="ui-button ui-button--primary"
+                  :class="{ 'ui-button--busy': pending === 'comment' }"
+                  :aria-busy="pending === 'comment' || undefined"
+                  :disabled="pending !== null || conflict !== null || buffer(comment).trim() === ''"
+                  @click="emit('saveComment', comment.id)"
+                >
+                  <span v-if="pending === 'comment'" class="ui-spinner" aria-hidden="true" />
                   {{ pending === 'comment' ? 'Saving comment…' : 'Save comment' }}
                 </button>
                 <button type="button" class="ui-button" :disabled="pending !== null" @click="closeEdit(comment)">Cancel edit</button>
@@ -377,7 +401,17 @@ watch(reviewFailure, (failed) => {
                 <button v-if="comment.status === 'verified'" type="button" class="ui-button" @click="emit('show', comment.id)">Show comment</button>
                 <button v-else type="button" class="ui-button" disabled>Show comment</button>
                 <button data-comment-edit type="button" class="ui-button" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null" @click="startEdit(comment)">Edit</button>
-                <button type="button" class="ui-button" :disabled="pending !== null || conflict !== null" @click="runLifecycle(comment.id, 'resolve')">Resolve</button>
+                <button
+                  type="button"
+                  class="ui-button"
+                  :class="{ 'ui-button--busy': pending === 'resolve' && pendingFocus?.commentId === comment.id }"
+                  :aria-busy="pending === 'resolve' && pendingFocus?.commentId === comment.id || undefined"
+                  :disabled="pending !== null || conflict !== null"
+                  @click="runLifecycle(comment.id, 'resolve')"
+                >
+                  <span v-if="pending === 'resolve' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />
+                  {{ pending === 'resolve' && pendingFocus?.commentId === comment.id ? 'Resolving…' : 'Resolve' }}
+                </button>
                 <button data-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null" @click="openDeleteConfirmation(comment.id)">Delete</button>
               </div>
               <p v-if="comment.status !== 'verified'">Editing requires a verified anchor.</p>
@@ -419,17 +453,26 @@ watch(reviewFailure, (failed) => {
               <p>{{ comment.body }}</p>
               <p>This permanently removes the comment from this local draft. Diff Review has no undo history.</p>
               <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null" @click="cancelDelete(comment.id)">Keep comment</button>
-              <button type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null" @click="confirmDelete(comment.id)">
-                {{ pending === 'delete' ? 'Deleting comment…' : 'Delete comment' }}
+              <button
+                type="button"
+                class="ui-button ui-button--destructive"
+                :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }"
+                :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined"
+                :disabled="pending !== null || conflict !== null"
+                @click="confirmDelete(comment.id)"
+              >
+                <span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />
+                {{ pending === 'delete' && pendingFocus?.commentId === comment.id ? 'Deleting…' : 'Delete comment' }}
               </button>
             </section>
             <p v-if="pending === 'resolve' && pendingFocus?.commentId === comment.id" role="status">Resolving comment…</p>
           </article>
+          </div>
         </section>
       </div>
     </section>
 
-    <section class="review-panel__comments" aria-labelledby="resolved-comments-heading">
+    <section class="review-panel__comments review-panel__section" aria-labelledby="resolved-comments-heading">
       <h3>
         <button
           id="resolved-comments-heading"
@@ -446,19 +489,29 @@ watch(reviewFailure, (failed) => {
           <p>Resolved comments will remain available here.</p>
         </section>
         <section v-for="group in groups.resolved" v-else :key="group.path.bytesBase64url" class="review-panel__group">
-          <h4 tabindex="-1">{{ group.path.display }} <span>({{ group.comments.length }})</span></h4>
+          <header class="review-panel__group-header">
+            <h4 tabindex="-1"><PathText :display="group.path.display" /></h4>
+            <span>({{ group.comments.length }})</span>
+          </header>
+          <div class="review-panel__group-rows">
           <article
             v-for="comment in group.comments"
             :key="comment.id"
             :data-comment-id="comment.id"
             class="review-panel__comment comments-rail__comment"
-            :class="{ 'review-panel__comment--selected': selectedCommentId === comment.id }"
+            :class="{ 'review-panel__comment--selected': selectedCommentId === comment.id, 'review-panel__comment--busy': (pending === 'resolve' || pending === 'reopen' || pending === 'delete') && pendingFocus?.commentId === comment.id }"
             :aria-labelledby="`comment-heading-${comment.id}`"
           >
-            <h5 :id="`comment-heading-${comment.id}`" class="review-panel__comment-heading" data-comment-heading tabindex="-1">
-              {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}
-            </h5>
-            <p><span>Resolved</span> · <span>{{ comment.status === 'verified' ? 'Verified' : comment.status === 'stale' ? 'Stale anchor' : 'Anchor unavailable' }}</span><ReviewStateBadge v-if="selectedCommentId === comment.id" kind="selected" label="Selected" /></p>
+            <div class="review-panel__comment-heading">
+              <h5 :id="`comment-heading-${comment.id}`" data-comment-heading tabindex="-1">
+                <PathText :display="comment.recordedAnchor.safeDisplayPath" /> · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}
+              </h5>
+              <div class="review-panel__comment-badges">
+                <ReviewStateBadge kind="resolved" label="Resolved" />
+                <ReviewStateBadge :kind="comment.status === 'verified' ? 'verified' : comment.status === 'stale' ? 'stale' : 'unavailable'" :label="comment.status === 'verified' ? 'Verified' : comment.status === 'stale' ? 'Stale anchor' : 'Anchor unavailable'" />
+                <ReviewStateBadge v-if="selectedCommentId === comment.id" kind="selected" label="Selected" />
+              </div>
+            </div>
             <template v-if="editing === comment.id">
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} · line {{ comment.line }} · Anchor fields fixed for this comment.</p>
               <details><summary>Saved text</summary><p>{{ comment.body }}</p></details>
@@ -473,7 +526,7 @@ watch(reviewFailure, (failed) => {
               <p v-if="buffer(comment) !== comment.body">Unsaved</p>
               <p v-if="buffer(comment).trim() === ''" role="alert">Write a comment before saving it.</p>
               <div class="review-panel__actions">
-                <button type="button" class="ui-button ui-button--primary" :disabled="pending !== null || conflict !== null || buffer(comment).trim() === ''" @click="emit('saveComment', comment.id)">{{ pending === 'comment' ? 'Saving comment…' : 'Save comment' }}</button>
+              <button type="button" class="ui-button ui-button--primary" :class="{ 'ui-button--busy': pending === 'comment' }" :aria-busy="pending === 'comment' || undefined" :disabled="pending !== null || conflict !== null || buffer(comment).trim() === ''" @click="emit('saveComment', comment.id)"><span v-if="pending === 'comment'" class="ui-spinner" aria-hidden="true" />{{ pending === 'comment' ? 'Saving comment…' : 'Save comment' }}</button>
                 <button type="button" class="ui-button" :disabled="pending !== null" @click="closeEdit(comment)">Cancel edit</button>
               </div>
             </template>
@@ -483,7 +536,7 @@ watch(reviewFailure, (failed) => {
                 <button v-if="comment.status === 'verified'" type="button" class="ui-button" @click="emit('show', comment.id)">Show comment</button>
                 <button v-else type="button" class="ui-button" disabled>Show comment</button>
                 <button data-comment-edit type="button" class="ui-button" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null" @click="startEdit(comment)">Edit</button>
-                <button type="button" class="ui-button" :disabled="pending !== null || conflict !== null" @click="runLifecycle(comment.id, 'reopen')">Reopen</button>
+              <button type="button" class="ui-button" :class="{ 'ui-button--busy': pending === 'reopen' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'reopen' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null" @click="runLifecycle(comment.id, 'reopen')"><span v-if="pending === 'reopen' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'reopen' && pendingFocus?.commentId === comment.id ? 'Reopening…' : 'Reopen' }}</button>
                 <button data-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null" @click="openDeleteConfirmation(comment.id)">Delete</button>
               </div>
               <p v-if="comment.status !== 'verified'">Editing requires a verified anchor.</p>
@@ -514,29 +567,32 @@ watch(reviewFailure, (failed) => {
               <p>{{ comment.body }}</p>
               <p>This permanently removes the comment from this local draft. Diff Review has no undo history.</p>
               <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null" @click="cancelDelete(comment.id)">Keep comment</button>
-              <button type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null" @click="confirmDelete(comment.id)">{{ pending === 'delete' ? 'Deleting comment…' : 'Delete comment' }}</button>
+              <button type="button" class="ui-button ui-button--destructive" :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null" @click="confirmDelete(comment.id)"><span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'delete' && pendingFocus?.commentId === comment.id ? 'Deleting…' : 'Delete comment' }}</button>
             </section>
             <p v-if="pending === 'reopen' && pendingFocus?.commentId === comment.id" role="status">Reopening comment…</p>
           </article>
+          </div>
         </section>
       </div>
     </section>
-    <ExportSection
-      :revision="revision"
-      :pinned-base="pinnedBase"
-      :pinned-head="pinnedHead"
-      :summary="summary"
-      :summary-buffer="summaryBuffer"
-      :comments="comments"
-      :comment-buffers="commentBuffers"
-      :export-state="exportState"
-      :append-ignore-rule="appendIgnoreRule"
-      :refresh-ignore-status="refreshIgnoreStatus"
-      :reveal-export-directory="revealExportDirectory"
-      @cancel="emit('cancelExport')"
-      @export="emit('export')"
-      @reload-latest="emit('reload-latest')"
-      @review-unsaved-text="emit('reviewUnsavedText')"
-    />
+    <section class="review-panel__section review-panel__section--export">
+      <ExportSection
+        :revision="revision"
+        :pinned-base="pinnedBase"
+        :pinned-head="pinnedHead"
+        :summary="summary"
+        :summary-buffer="summaryBuffer"
+        :comments="comments"
+        :comment-buffers="commentBuffers"
+        :export-state="exportState"
+        :append-ignore-rule="appendIgnoreRule"
+        :refresh-ignore-status="refreshIgnoreStatus"
+        :reveal-export-directory="revealExportDirectory"
+        @cancel="emit('cancelExport')"
+        @export="emit('export')"
+        @reload-latest="emit('reload-latest')"
+        @review-unsaved-text="emit('reviewUnsavedText')"
+      />
+    </section>
   </section>
 </template>

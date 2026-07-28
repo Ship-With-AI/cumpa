@@ -40,6 +40,12 @@ export function mountReviewPanelHarness(id, body) {
   }]);
   const commentBuffer = ref(body);
   const summaryBuffer = ref('');
+  const pending = ref(null);
+  const selectedCommentId = ref(null);
+  globalThis.__setReviewPanelState = ({ pending: nextPending, selectedCommentId: nextSelected }) => {
+    pending.value = nextPending;
+    selectedCommentId.value = nextSelected;
+  };
   const reviewExpanded = ref(true);
   const saved = ref([]);
   const deleted = ref([]);
@@ -65,7 +71,8 @@ export function mountReviewPanelHarness(id, body) {
         pinnedHead: { label: 'feature/export', oid: '2'.repeat(40) },
         summaryBuffer: summaryBuffer.value,
         commentBuffers: new Map([[id, commentBuffer.value]]),
-        pending: null,
+        pending: pending.value,
+        selectedCommentId: selectedCommentId.value,
         conflict: null,
         failure: null,
         retainedSummary: false,
@@ -77,7 +84,6 @@ export function mountReviewPanelHarness(id, body) {
           conflict: null,
           receipt: null,
           previousConfirmedReceipt: null,
-          driftAcknowledgementToken: null,
           driftObservation: null,
           ignoreStatus: null,
           driftStale: false,
@@ -96,6 +102,7 @@ export function mountReviewPanelHarness(id, body) {
           deleted.value = [...deleted.value, deletedId];
           comments.value = comments.value.filter((comment) => comment.id !== deletedId);
         },
+        onReopen: () => { pending.value = 'reopen'; },
         onCancelExport: () => {},
         onExport: () => {},
         onReloadLatest: () => {},
@@ -138,7 +145,9 @@ test('review hierarchy, keyboard, discard, resolved lifecycle, and focus follow 
   await expect(reviewTrigger).toHaveAttribute('aria-expanded', 'true');
   await expect(reviewTrigger).toHaveAttribute('aria-controls', 'review-panel');
   await reviewTrigger.click();
-  await expect(reviewTrigger).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('button', { name: 'Review', exact: true })).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.locator('.review-panel__section')).toHaveCount(4);
+  await expect(page.locator('.review-panel__heading-counts .review-state-badge')).toHaveText(['Open 0', 'Resolved 1']);
 
   await expect(page.getByRole('heading', { name: 'No open comments' })).toBeVisible();
   const summaryDisclosure = page.getByRole('button', { name: /Summary Saved/ });
@@ -167,8 +176,22 @@ test('review hierarchy, keyboard, discard, resolved lifecycle, and focus follow 
   await expect(summaryDisclosure).toBeFocused();
 
   await page.getByRole('button', { name: /Resolved comments \(1\)/ }).click();
-  const record = page.locator(`[data-comment-id="${commentId}"]`);
+  const record = page.locator(`article[data-comment-id="${commentId}"]`);
   await expect(record).toHaveCount(1);
+  await expect(record).toHaveCSS('border-radius', '0px');
+  await expect(record).toHaveCSS('box-shadow', 'none');
+  await expect(record.getByRole('heading', { name: 'src/file.ts · Head line 4' })).toBeVisible();
+  await expect(record.getByText('Resolved', { exact: true })).toBeVisible();
+  await expect(record.getByText('Verified', { exact: true })).toBeVisible();
+  await expect(record.locator('.review-panel__group').or(page.locator('.review-panel__group'))).toHaveCount(1);
+
+  await page.evaluate((id) => globalThis.__setReviewPanelState({ pending: null, selectedCommentId: id }), commentId);
+  await expect(record).toHaveClass(/review-panel__comment--selected/);
+  await expect(record.getByText('Selected', { exact: true })).toBeVisible();
+  await record.getByRole('button', { name: 'Reopen' }).click();
+  await expect(record.getByRole('button', { name: 'Reopening…' })).toHaveAttribute('aria-busy', 'true');
+  await expect(record.getByRole('button', { name: 'Reopening…' }).locator('.ui-spinner')).toBeVisible();
+  await page.evaluate((id) => globalThis.__setReviewPanelState({ pending: null, selectedCommentId: id }), commentId);
 
   await record.getByRole('button', { name: 'Edit' }).click();
   const editor = record.getByRole('textbox');

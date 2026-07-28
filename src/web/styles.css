@@ -134,7 +134,6 @@ body {
 .state-card,
 .draft-recovery__card,
 .identity-row,
-.review-panel__comment,
 .review-panel__confirm,
 .review-summary,
 .gitignore-status__confirmation,
@@ -1472,9 +1471,96 @@ h3.conversation-card__identity {
 }
 
 .review-panel {
+  display: flex;
   min-height: 0;
+  flex-direction: column;
+  gap: var(--space-md);
   padding: var(--space-md);
   overflow-y: auto;
+}
+
+.review-panel__heading,
+.review-panel__heading-counts,
+.review-panel__group-header,
+.review-panel__comment-heading,
+.review-panel__comment-badges,
+.review-panel__actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.review-panel__heading {
+  justify-content: space-between;
+}
+
+.review-panel__heading-counts,
+.review-panel__comment-badges,
+.review-panel__actions {
+  flex-wrap: wrap;
+}
+
+.review-panel__section {
+  min-width: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--surface-panel);
+  box-shadow: none;
+}
+
+.review-panel__section > .review-summary,
+.review-panel__section > .export-section {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.review-panel__comments {
+  padding: var(--space-md);
+}
+
+.review-panel__group {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control);
+}
+
+.review-panel__group-header {
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-panel);
+}
+
+.review-panel__group-header h4 {
+  min-width: 0;
+}
+
+.review-panel__group-rows > .review-panel__comment + .review-panel__comment {
+  border-block-start: 1px solid var(--border-muted);
+}
+
+.review-panel__comment {
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-sm) var(--space-md);
+  border: 0;
+  border-radius: 0;
+  background: var(--surface-canvas);
+  box-shadow: none;
+  overflow-wrap: anywhere;
+}
+
+.review-panel__comment-heading {
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.review-panel__comment-heading h5 {
+  min-width: 0;
+  margin: 0;
 }
 
 .review-panel__comment--selected {
@@ -1482,9 +1568,13 @@ h3.conversation-card__identity {
   border-inline-start: 3px solid var(--selection-border);
 }
 
-.review-panel__comment--selected .review-panel__comment-heading {
+.review-panel__comment--selected .review-panel__comment-heading h5 {
   color: var(--text-primary);
   font-weight: var(--font-weight-semibold);
+}
+
+.review-panel__comment--busy {
+  border-inline-end: 1px solid var(--border-strong);
 }
 
 .review-summary textarea,
