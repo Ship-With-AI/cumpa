@@ -74,6 +74,11 @@ function unmountZone(): void {
     zoneRoot = undefined;
   }
 }
+function resizeAnchorZoneToContent(zone: HTMLElement): void {
+  const contentHeight = zone.firstElementChild?.scrollHeight ?? zone.scrollHeight;
+  adapter?.setAnchorZoneHeight(Math.max(280, contentHeight + 16));
+}
+
 
 function renderAnnotation(): void {
   const zone = host.value?.querySelector<HTMLElement>('.monaco-anchor-zone--composer');
@@ -102,6 +107,9 @@ function renderAnnotation(): void {
       h('div', { class: 'conversation-card__body' }, [h('p', comment.body)]),
       h('footer', { class: 'conversation-card__footer' }, [h('span', { class: 'comment-badge' }, 'Saved locally')]),
     ]), zone);
+    void nextTick(() => {
+      resizeAnchorZoneToContent(zone);
+    });
     return;
   }
   if (props.composer === undefined || props.composer.side !== anchor.side || props.composer.line !== anchor.line) {
@@ -120,8 +128,7 @@ function renderAnnotation(): void {
     onUpdateText: (text: string) => emit('updateText', text),
   }), zone);
   void nextTick(() => {
-    const contentHeight = zone.firstElementChild?.scrollHeight ?? zone.scrollHeight;
-    adapter?.setAnchorZoneHeight(Math.max(280, contentHeight + 16));
+    resizeAnchorZoneToContent(zone);
     if (shouldFocusComposer) {
       requestAnimationFrame(() => {
         if (zone !== host.value?.querySelector('.monaco-anchor-zone--composer')) {

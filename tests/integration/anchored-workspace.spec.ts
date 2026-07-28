@@ -555,7 +555,7 @@ test('inline comment persistence', async ({ page }) => {
 test('Phase 07 inline conversation states', async ({ page }) => {
   resetAsyncSettlementFixture();
   const targetText = 'export const changed = 3;';
-  const retainedText = `Keep this long comment ${'without-losing-words '.repeat(12)}after the failed save.`;
+  const retainedText = `Keep this long accepted comment ${'without-losing-words while proving the paired Monaco zone contains every rendered line. '.repeat(120)}after the failed save.`;
   const resolvedText = 'A separately saved resolved comment.';
   canonicalComments = [{
     id: 'comment_223e4567-e89b-12d3-a456-426614174000',
@@ -652,6 +652,39 @@ test('Phase 07 inline conversation states', async ({ page }) => {
   await expect(inlineAccepted.locator('.review-state-badge svg[aria-hidden="true"]')).toHaveCount(2);
   await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(1);
   await expect(page.locator('.monaco-anchor-zone--spacer')).toHaveCount(1);
+  const acceptedGeometry = await page.evaluate(() => {
+    const rect = (element: Element): DOMRect => element.getBoundingClientRect();
+    const card = document.querySelector('.monaco-anchor-zone--composer .inline-accepted-comment');
+    const composerZone = document.querySelector('.monaco-anchor-zone--composer');
+    const spacerZone = document.querySelector('.monaco-anchor-zone--spacer');
+    if (card === null || composerZone === null || spacerZone === null) {
+      return null;
+    }
+    const cardRect = rect(card);
+    const composerRect = rect(composerZone);
+    const spacerRect = rect(spacerZone);
+    const nextCode = [...document.querySelectorAll('.monaco-diff-editor .modified .view-line')]
+      .map(rect)
+      .filter((line) => line.height > 0 && line.top >= composerRect.bottom - 1)
+      .sort((left, right) => left.top - right.top)[0] ?? null;
+    return {
+      cardHeight: (card as HTMLElement).scrollHeight,
+      cardBottom: cardRect.bottom,
+      composerBottom: composerRect.bottom,
+      composerHeight: composerRect.height,
+      spacerHeight: spacerRect.height,
+      zoneTopDelta: Math.abs(composerRect.top - spacerRect.top),
+      nextCodeTop: nextCode?.top ?? null,
+    };
+  });
+  expect(acceptedGeometry).not.toBeNull();
+  expect(acceptedGeometry!.cardHeight).toBeGreaterThan(280);
+  expect(acceptedGeometry!.zoneTopDelta).toBeLessThanOrEqual(1);
+  expect(acceptedGeometry!.composerHeight).toBe(acceptedGeometry!.spacerHeight);
+  expect(acceptedGeometry!.cardBottom).toBeLessThanOrEqual(acceptedGeometry!.composerBottom + 1);
+  expect(acceptedGeometry!.nextCodeTop).not.toBeNull();
+  expect(acceptedGeometry!.nextCodeTop!).toBeGreaterThanOrEqual(acceptedGeometry!.composerBottom - 1);
+  expect(acceptedGeometry!.nextCodeTop!).toBeGreaterThanOrEqual(acceptedGeometry!.cardBottom - 1);
 
   await ensureReviewOpen(page);
   await page.getByRole('button', { name: /^Resolved comments/ }).click();
