@@ -44,6 +44,22 @@ interface RunningCli {
   readonly outputDescriptor: number;
   readonly outputPath: string;
 }
+const phase08Widths = [1440, 1280, 1100, 1099, 768, 767, 640, 320] as const;
+
+type Phase08Width = (typeof phase08Widths)[number];
+
+interface Phase08Reflow {
+  readonly canvas: { readonly clientWidth: number; readonly scrollWidth: number };
+  readonly document: { readonly clientWidth: number; readonly scrollWidth: number };
+  readonly headerOrder: readonly string[];
+  readonly layout: {
+    readonly base: DOMRect;
+    readonly file: DOMRect;
+    readonly head: DOMRect;
+  };
+  readonly toolbarGroups: readonly DOMRect[];
+  readonly viewport: { readonly clientWidth: number; readonly scrollWidth: number };
+}
 
 function runPrerequisite(command: string, arguments_: readonly string[]): string {
   try {
@@ -179,8 +195,9 @@ function createFiles(): readonly SessionFile[] {
     },
     {
       fileId: opaqueFileId(2),
-      status: { kind: 'modified' },
-      newPath: exactPath('00-src/components/beta.ts'),
+      status: { kind: 'renamed', similarity: 100 },
+      oldPath: exactPath('00-src/components/previous/deeply/nested/beta-before-a-very-long-rename.ts'),
+      newPath: exactPath('00-src/components/current/deeply/nested/beta-after-a-very-long-rename.ts'),
       additions: 8,
       deletions: 3,
       availability: { kind: 'text' },
@@ -410,6 +427,126 @@ async function assertNoPageOverflow(page: Page): Promise<void> {
     scrollWidth: document.documentElement.scrollWidth,
   }));
   expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.clientWidth);
+}
+async function expectPhase08ReflowAtCurrentWidth(
+  page: Page,
+  width: Phase08Width,
+): Promise<void> {
+  const context = page.locator('.review-context-header__context');
+  await expect.poll(async () => await context.evaluate((element) => {
+    const viewport = document.querySelector<HTMLElement>('.diff-workspace__viewport');
+    const canvas = document.querySelector<HTMLElement>('.diff-workspace__canvas');
+    return viewport !== null
+      && canvas !== null
+      && viewport.clientWidth > 0
+      && canvas.clientWidth >= 640;
+  })).toBe(true);
+
+  const reflow: Phase08Reflow = await page.evaluate(() => {
+    const rect = (selector: string): DOMRect => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (element === null) {
+        throw new Error(`[accessibility] missing ${selector}`);
+      }
+      return element.getBoundingClientRect();
+    };
+    const element = (selector: string): HTMLElement => {
+      const candidate = document.querySelector<HTMLElement>(selector);
+      if (candidate === null) {
+        throw new Error(`[accessibility] missing ${selector}`);
+      }
+      return candidate;
+    };
+    const viewport = element('.diff-workspace__viewport');
+    const canvas = element('.diff-workspace__canvas');
+    return {
+      canvas: { clientWidth: canvas.clientWidth, scrollWidth: canvas.scrollWidth },
+      document: {
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+      },
+      headerOrder: [
+        ...document.querySelectorAll<HTMLElement>(
+          '.review-context-header__file, .review-context-header__endpoint--base, .review-context-header__endpoint--head',
+        ),
+      ].map((item) => item.className),
+      layout: {
+        base: rect('.review-context-header__endpoint--base'),
+        file: rect('.review-context-header__file'),
+        head: rect('.review-context-header__endpoint--head'),
+      },
+      toolbarGroups: [...document.querySelectorAll<HTMLElement>('.review-toolbar__group')]
+        .map((group) => group.getBoundingClientRect()),
+      viewport: { clientWidth: viewport.clientWidth, scrollWidth: viewport.scrollWidth },
+    };
+  });
+  expect(reflow.document.clientWidth, `[responsive] effective ${width}px viewport`).toBe(width);
+
+  expect(reflow.document.scrollWidth, `[responsive] ${width}px document fit`).toBeLessThanOrEqual(
+    reflow.document.clientWidth,
+  );
+  expect(reflow.headerOrder).toEqual([
+    'review-context-header__file',
+    'review-context-header__endpoint review-context-header__endpoint--base',
+    'review-context-header__endpoint review-context-header__endpoint--head',
+  ]);
+  expect(reflow.toolbarGroups).toHaveLength(3);
+  for (const [index, group] of reflow.toolbarGroups.entries()) {
+    expect(group.width, `[responsive] ${width}px toolbar group ${index}`).toBeGreaterThan(0);
+    expect(group.height, `[responsive] ${width}px toolbar group ${index}`).toBeGreaterThan(0);
+  }
+  expect(reflow.canvas.clientWidth).toBeGreaterThanOrEqual(640);
+  if (width === 320) {
+    expect(reflow.viewport.scrollWidth).toBeGreaterThan(reflow.viewport.clientWidth);
+    const localScroll = await page.locator('.diff-workspace__viewport').evaluate((viewport) => {
+      const element = viewport as HTMLElement;
+      element.scrollLeft = 0;
+      const atStart = element.scrollLeft;
+      element.scrollLeft = element.scrollWidth;
+      const atEnd = element.scrollLeft;
+      return { atEnd, atStart, documentLeft: window.scrollX };
+    });
+    expect(localScroll.atStart).toBe(0);
+    expect(localScroll.atEnd).toBeGreaterThan(0);
+    expect(localScroll.documentLeft).toBe(0);
+  }
+
+  if (width >= 1100) {
+    expect(reflow.layout.base.left).toBeLessThan(reflow.layout.file.left);
+    expect(reflow.layout.file.left).toBeLessThan(reflow.layout.head.left);
+    return;
+  }
+  expect(reflow.layout.file.top).toBeLessThan(reflow.layout.base.top);
+  if (width >= 768) {
+    expect(Math.abs(reflow.layout.base.top - reflow.layout.head.top)).toBeLessThanOrEqual(1);
+    expect(reflow.layout.base.left).toBeLessThan(reflow.layout.head.left);
+    return;
+  }
+  expect(reflow.layout.base.top).toBeLessThan(reflow.layout.head.top);
+}
+
+async function expectPhase08ReflowAtWidth(page: Page, width: Phase08Width): Promise<void> {
+  await page.setViewportSize({ width, height: 640 });
+  await expectPhase08ReflowAtCurrentWidth(page, width);
+}
+
+async function expectNonColorStateCues(page: Page): Promise<void> {
+  const review = page.getByRole('button', { name: 'Review', exact: true });
+  const selected = page.locator('.tree-row--selected').first();
+  const baseBar = page.locator('.monaco-editor .monaco-diff-change-bar--base').first();
+  const headBar = page.locator('.monaco-editor .monaco-diff-change-bar--head').first();
+  const baseSign = page.locator('.monaco-editor .monaco-diff-change-sign--base').first();
+  const headSign = page.locator('.monaco-editor .monaco-diff-change-sign--head').first();
+
+  await expect(page.locator('.diff-workspace__side-labels')).toHaveText(/BASEHEAD/);
+  await expect(selected).toBeVisible();
+  await expect(selected).toHaveCSS('border-left-width', '3px');
+  await expect(baseBar).toHaveCSS('border-left-style', 'dashed');
+  await expect(headBar).toHaveCSS('border-left-style', 'solid');
+  expect(await baseSign.evaluate((element) => getComputedStyle(element, '::before').content)).toContain('−');
+  expect(await headSign.evaluate((element) => getComputedStyle(element, '::before').content)).toContain('+');
+  await review.focus();
+  await expectFocusIndicatorUnclipped(review);
 }
 
 async function hoverMonacoLine(page: Page, side: 'base' | 'head', text: string): Promise<void> {
@@ -896,8 +1033,76 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(page.locator('.review-toolbar')).toHaveCSS('box-shadow', 'none');
     });
 
+    await test.step('Phase 08 boundary matrix preserves local diff overflow and complete identities', async () => {
+      for (const width of phase08Widths) {
+        await expectPhase08ReflowAtWidth(page, width);
+      }
+
+      const closeReview = page.getByRole('button', { name: 'Close review', exact: true });
+      if (await closeReview.isVisible()) {
+        await closeReview.focus();
+        await page.keyboard.press('Enter');
+      }
+      const files = page.getByRole('button', { name: 'Files', exact: true });
+      await files.focus();
+      await page.keyboard.press('Enter');
+      const movedFile = page.locator('.file-tree .file-row').nth(1);
+      await movedFile.click();
+      const movedPath = page.locator('.review-context-header .path-display');
+      await expect(movedPath).toContainText('beta-before-a-very-long-rename.ts');
+      await expect(movedPath).toContainText('→');
+      await expect(movedPath).toContainText('beta-after-a-very-long-rename.ts');
+
+      await page.setViewportSize({ width: 1440, height: 640 });
+      await page.keyboard.press('Alt+Shift+[');
+      await expect(page.locator('.review-context-header__file')).toContainText('alpha.ts');
+      await hoverMonacoLine(page, 'head', 'export const changed = 3;');
+      await page.setViewportSize({ width: 320, height: 640 });
+      await files.focus();
+      await page.keyboard.press('Enter');
+      const filesDrawer = page.locator('.review-files');
+      const filesBox = await filesDrawer.boundingBox();
+      expect(filesBox!.x).toBe(8);
+      expect(filesBox!.width).toBeLessThanOrEqual(304);
+      await expect(filesDrawer).not.toHaveAttribute('inert', '');
+      await expect(filesDrawer).not.toHaveAttribute('aria-hidden', 'true');
+      await expect(page.getByRole('button', { name: 'Close files' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(files).toBeFocused();
+
+      const review = page.getByRole('button', { name: 'Review', exact: true });
+      await review.focus();
+      await page.keyboard.press('Enter');
+      const reviewDrawer = page.locator('.comments-rail');
+      const reviewBox = await reviewDrawer.boundingBox();
+      expect(Math.round(reviewBox!.x + reviewBox!.width)).toBe(312);
+      expect(reviewBox!.width).toBeLessThanOrEqual(304);
+      await expect(page.getByRole('button', { name: 'Close review' })).toBeVisible();
+      await page.keyboard.press('Escape');
+      await expect(review).toBeFocused();
+    });
+
+
+    await test.step('achromatopsia preserves real non-color diff and focus cues', async () => {
+      const cdp = await page.context().newCDPSession(page);
+      const files = page.getByRole('button', { name: 'Files', exact: true });
+      await cdp.send('Emulation.setEmulatedVisionDeficiency', { type: 'achromatopsia' });
+      await files.focus();
+      await page.keyboard.press('Enter');
+      try {
+        await expectNonColorStateCues(page);
+      } finally {
+        await page.getByRole('button', { name: 'Close files', exact: true }).click();
+        await cdp.send('Emulation.setEmulatedVisionDeficiency', { type: 'none' });
+        await cdp.detach();
+      }
+    });
+
     await test.step('forced colors preserve real workspace boundaries, rails, focus, links, and provenance', async () => {
       await page.emulateMedia({ forcedColors: 'active' });
+      const files = page.getByRole('button', { name: 'Files', exact: true });
+      await files.focus();
+      await page.keyboard.press('Enter');
       try {
         const review = page.getByRole('button', { name: 'Review', exact: true });
         const disabled = page.getByRole('button', { name: 'Previous file', exact: true });
@@ -933,10 +1138,15 @@ test('responsive keyboard and accessibility contract', async ({
         expect(await headSign.evaluate((element) =>
           getComputedStyle(element, '::before').content,
         )).toContain('+');
+        await expectNonColorStateCues(page);
       } finally {
+        await page.getByRole('button', { name: 'Close files', exact: true }).click();
         await page.emulateMedia({ forcedColors: 'none' });
       }
     });
+    await page.setViewportSize({ width: 1440, height: 560 });
+    await page.getByRole('button', { name: 'Review', exact: true }).click();
+
 
     await test.step('review rail and drawers honor locked responsive geometry', async () => {
       const rail = page.locator('.comments-rail');
@@ -1219,6 +1429,40 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(page.getByRole('tree', { name: /Changed files/ })).toBeVisible();
       await page.getByRole('button', { name: 'Close files' }).click();
     });
+
+    if (process.env.DIFF_REVIEW_TRUE_ZOOM === '1') {
+      test.setTimeout(90_000);
+      await test.step('headed true 400% browser zoom preserves the effective 320px contract', async () => {
+        await page.setViewportSize({ width: 1280, height: 640 });
+        const review = page.getByRole('button', { name: 'Review', exact: true });
+        await review.focus();
+        await expect(review).toBeFocused();
+        await page.bringToFront();
+        console.log('[manual] Apply Chromium browser zoom to 400% with the browser zoom shortcut.');
+        await expect.poll(
+          () => page.evaluate(() => document.documentElement.clientWidth),
+          { message: '[manual] waiting for true browser zoom to create a 320 CSS px viewport', timeout: 60_000 },
+        ).toBe(320);
+        await expectPhase08ReflowAtCurrentWidth(page, 320);
+        console.log('[manual] true zoom observation', JSON.stringify(await page.evaluate(() => {
+          const viewport = document.querySelector<HTMLElement>('.diff-workspace__viewport')!;
+          const canvas = document.querySelector<HTMLElement>('.diff-workspace__canvas')!;
+          const focused = document.activeElement as HTMLElement | null;
+          return {
+            canvas: { clientWidth: canvas.clientWidth, scrollWidth: canvas.scrollWidth },
+            document: {
+              clientWidth: document.documentElement.clientWidth,
+              scrollWidth: document.documentElement.scrollWidth,
+            },
+            focus: focused?.getAttribute('aria-label') ?? focused?.textContent?.trim() ?? null,
+            headerOrder: [...document.querySelectorAll<HTMLElement>(
+              '.review-context-header__file, .review-context-header__endpoint--base, .review-context-header__endpoint--head',
+            )].map((element) => element.className),
+            viewport: { clientWidth: viewport.clientWidth, scrollWidth: viewport.scrollWidth },
+          };
+        })));
+      });
+    }
   } finally {
     await stopGeneratedCli(running);
     await repository.cleanup();

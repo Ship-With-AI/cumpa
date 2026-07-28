@@ -2208,6 +2208,7 @@ h3.conversation-card__identity {
 .monaco-editor .monaco-diff-change-bar--base {
   box-sizing: border-box;
   border-left: 2px solid var(--diff-deletion-foreground);
+  border-left-style: dashed;
 }
 
 .monaco-editor .monaco-diff-change-bar--head {
