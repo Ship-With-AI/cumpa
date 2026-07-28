@@ -1812,8 +1812,11 @@ h3.conversation-card__identity {
   font-variant-numeric: tabular-nums;
 }
 
-.export-section__state {
-  font-weight: var(--font-weight-regular);
+.export-section__heading h3 {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .export-progress {
@@ -1821,20 +1824,8 @@ h3.conversation-card__identity {
   align-items: start;
 }
 
-.export-progress__spinner {
-  width: var(--space-md);
-  height: var(--space-md);
+.export-progress > .ui-spinner {
   margin-top: 2px;
-  border: 2px solid var(--border-default);
-  border-top-color: var(--interactive-accent);
-  border-radius: var(--radius-pill);
-  animation: export-spinner 800ms linear infinite;
-}
-
-@keyframes export-spinner {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 @media (min-width: 768px) and (max-width: 1279px) {
@@ -2191,9 +2182,6 @@ h3.conversation-card__identity {
     animation-duration: 0s !important;
   }
 
-  .export-progress__spinner {
-    animation: none;
-  }
 }
 
 @media (forced-colors: active) {

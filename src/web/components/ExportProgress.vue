@@ -20,7 +20,7 @@ const heading = computed(() => {
 
 <template>
   <section class="export-progress" role="status" aria-live="polite" aria-label="Exporting accepted revision">
-    <span class="export-progress__spinner" aria-hidden="true" />
+    <span class="ui-spinner" aria-hidden="true" />
     <div>
       <h4>{{ heading }}</h4>
       <p><code>review.json</code> and <code>review.md</code> become available only after both pass validation and publication checks.</p>
