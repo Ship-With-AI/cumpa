@@ -668,18 +668,13 @@ Each task should name the exact CSS ownership invariant it establishes and the b
 |---|-------|---------|---------------|
 | — | None. Recommendations are grounded in repository code/context or cited official platform documentation. | — | — |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **When will a real Windows High Contrast environment be available?**
-   - What we know: This workstation is macOS; installed Playwright Chromium supports deterministic `forcedColors: 'active'` emulation. [VERIFIED: environment audit; CITED: Playwright official API]
-   - What's unclear: The phase cannot schedule an actual Windows OS/browser pass locally.
-   - Recommendation: Treat Chromium emulation as the automated gate and record a real Windows manual pass when an environment becomes available; do not block implementation planning or invent a custom high-contrast theme.
+1. **Windows High Contrast evidence**
+   - Resolution: Chromium `forcedColors: 'active'` emulation is the blocking, repeatable local gate on this macOS workstation. A real Windows High Contrast pass is additional manual evidence when an environment becomes available, not a Phase 08 implementation blocker. Do not invent a custom high-contrast theme. [VERIFIED: environment audit; CITED: Playwright official API]
 
-2. **Which existing semantic text pairings fail after real compositing?**
-   - What we know: The stylesheet contains translucent diff/selection/state layers and the UI spec requires measured rather than presumed corrections. [VERIFIED: `styles.css`, UI spec]
-   - What's unclear: Research did not run the browser/test suite or pre-decide failures because the user explicitly constrained this task to research only.
-   - Recommendation: Make measurement the first action of the accessibility-state task, then change only failing semantic roles or affected selectors; preserve hue on a neighboring icon/edge/sign when text is promoted.
-
+2. **Composited semantic failures**
+   - Resolution: Rendered composite measurement precedes CSS correction. The accessibility-state executor first adds source-over helpers and retained assertions over real application states, runs them against the pre-correction CSS to identify exact failures, then changes only the failing shared semantic roles or affected selectors and reruns the same assertions to passing thresholds. Preserve semantic hue on a neighboring icon, edge, sign, or label when required text is promoted. Research does not pre-decide which selectors fail. [VERIFIED: `styles.css`, UI spec]
 ## Sources
 
 ### Primary (HIGH confidence)
