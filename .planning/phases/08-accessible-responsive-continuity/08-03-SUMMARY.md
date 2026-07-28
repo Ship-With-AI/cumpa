@@ -81,12 +81,20 @@ npm run test:package -- tests/e2e/agent-ready-export.spec.ts
 # 1 passed
 ```
 
+
+The semantic endpoint-label follow-up also passed:
+
+```text
+npm run test:browser -- tests/integration/anchored-workspace.spec.ts --grep "diff navigation and session state|preserves production Base Head labels and no-reflow Monaco semantic channels at every phase viewport"
+# 2 passed
+```
 The headed true-zoom branch also passed separately: `1 passed (17.9s)`.
 
 ## Task Commits
 
 1. **Task 1: Consolidate boundary, zoom, grayscale, forced-color, and overlap evidence** — `de90d6f` (`test`)
 2. **Task 2: Prove the unchanged keyboard review, persistence, recovery, and export workflow** — `a5ce346` (`test`)
+3. **Follow-up: Restore anchored geometry gate after semantic endpoint casing** — `266bb8d` (`fix`)
 
 ## Files Created/Modified
 
@@ -95,6 +103,7 @@ The headed true-zoom branch also passed separately: `1 passed (17.9s)`.
 - `src/web/App.vue` — semantic `Base`/`Head` endpoint source labels while retaining uppercase presentation.
 - `src/web/components/ui/UiPrimitives.vue` — allows tooltip Escape dismissal to bubble to the existing application handler.
 - `src/web/components/SummarySection.vue` — restores the status-specific accessible Summary region used by the existing workflow authority.
+- `tests/integration/anchored-workspace.spec.ts` — asserts semantic `Base`/`Head` source text and uppercase computed presentation without conflating Monaco's literal side labels.
 
 ## Decisions Made
 
@@ -129,9 +138,17 @@ The headed true-zoom branch also passed separately: `1 passed (17.9s)`.
 - **Verification:** Full unchanged draft authority passed 8/8 and export authority passed 1/1.
 - **Committed in:** `a5ce346`
 
+**4. [Rule 3 - Blocking] Anchored geometry gate retained obsolete endpoint source-text expectations.**
+- **Found during:** Post-completion code-review gate.
+- **Issue:** The 08-01 focused browser test still asserted exact uppercase DOM text after semantic title-case endpoint labels were introduced.
+- **Fix:** Updated only the geometry test to assert semantic `Base`/`Head` text and computed uppercase presentation, retaining Monaco's literal `BASE`/`HEAD` authority.
+- **Files modified:** `tests/integration/anchored-workspace.spec.ts`
+- **Verification:** Exact 08-01 focused browser command passed 2/2.
+- **Committed in:** `266bb8d`
+
 ---
 
-**Total deviations:** 3 auto-fixed (1 browser accessibility, 2 blocking continuity defects).
+**Total deviations:** 4 auto-fixed (1 browser accessibility, 3 blocking continuity/gate defects).
 **Impact on plan:** All fixes preserve existing state, API, persistence, command, mapping, Monaco, and publication semantics; no authority suite source was modified.
 
 ## Issues Encountered
@@ -144,11 +161,11 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- **Task commits:** `de90d6f` contains the Task 1 responsive/media evidence; `a5ce346` contains Task 2 keyboard continuity and accessibility corrections.
+- **Task commits:** `de90d6f` contains Task 1 responsive/media evidence; `a5ce346` contains Task 2 continuity corrections; `266bb8d` restores the anchored geometry gate.
 - **Plan metadata:** `61bd99b` contains this summary plus Phase 08 STATE, ROADMAP, and requirements tracking.
-- **Required files:** `tests/e2e/responsive-session.spec.ts`, `src/web/styles.css`, `src/web/App.vue`, `src/web/components/ui/UiPrimitives.vue`, and `src/web/components/SummarySection.vue` are accounted for by the two task commits.
+- **Required files:** `tests/e2e/responsive-session.spec.ts`, `tests/integration/anchored-workspace.spec.ts`, `src/web/styles.css`, `src/web/App.vue`, `src/web/components/ui/UiPrimitives.vue`, and `src/web/components/SummarySection.vue` are accounted for by the task/follow-up commits.
 - **Authority sources:** `tests/e2e/complete-review-draft.spec.ts` and `tests/e2e/agent-ready-export.spec.ts` remained source-unmodified.
-- **Authority verification:** focused responsive 1/1, complete draft 8/8, and agent-ready export 1/1 passed; the separate headed 400% true-zoom pass also passed.
+- **Verification:** focused responsive 1/1, complete draft 8/8, agent-ready export 1/1, and focused anchored geometry 2/2 passed; the separate headed 400% true-zoom pass also passed.
 
 ## Next Phase Readiness
 
