@@ -17,9 +17,13 @@ const actionableCount = computed(() => props.comments.filter((comment) => commen
 const attentionCount = computed(() => props.comments.filter((comment) => comment.state === 'open' && comment.status !== 'verified').length);
 const resolvedCount = computed(() => props.comments.filter((comment) => comment.state === 'resolved').length);
 const ignoreStatusPresentation = computed(() => {
-  if (props.ignoreStatus?.kind === 'ignored') return { kind: 'success' as const, label: '/.diff-review/ is ignored' };
-  if (props.ignoreStatus?.kind === 'notIgnored') return { kind: 'warning' as const, label: '/.diff-review/ is not ignored' };
-  return { kind: 'disabled' as const, label: 'Ignore status unavailable' };
+  if (props.ignoreStatus === null) return { kind: 'pending' as const, label: 'Checking ignore status' };
+
+  switch (props.ignoreStatus.kind) {
+    case 'ignored': return { kind: 'success' as const, label: '/.diff-review/ is ignored' };
+    case 'notIgnored': return { kind: 'warning' as const, label: '/.diff-review/ is not ignored' };
+    case 'unavailable': return { kind: 'disabled' as const, label: 'Ignore status unavailable' };
+  }
 });
 </script>
 

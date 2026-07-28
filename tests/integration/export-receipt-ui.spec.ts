@@ -14,7 +14,10 @@ let server: ViteDevServer | undefined;
 let origin = '';
 let exportAttempt = 0;
 const revealBodies: string[] = [];
-let ignoreStatus: 'ignored' | 'notIgnored' = 'ignored';
+type IgnoreStatusKind = 'ignored' | 'notIgnored' | 'unavailable';
+
+let ignoreStatus: IgnoreStatusKind = 'ignored';
+let heldIgnoreStatus: PromiseWithResolvers<void> | null = null;
 const appendBodies: string[] = [];
 let appendResult: { readonly kind: string } = { kind: 'appended' };
 let failedExportResult: 'publicationFailed' | 'recoveryRequired' = 'publicationFailed';
@@ -53,6 +56,15 @@ function holdNextExport(): void {
 function completeHeldExport(result: unknown): void {
   heldExport?.resolve(result);
   heldExport = null;
+}
+
+function holdNextIgnoreStatus(): void {
+  heldIgnoreStatus = Promise.withResolvers<void>();
+}
+
+function completeHeldIgnoreStatus(): void {
+  heldIgnoreStatus?.resolve();
+  heldIgnoreStatus = null;
 }
 
 const driftObservation = {
@@ -101,6 +113,7 @@ async function startAppServer(): Promise<string> {
             json(response, appendResult);
             return;
           }
+          if (heldIgnoreStatus !== null) await heldIgnoreStatus.promise;
           json(response, { kind: ignoreStatus });
         });
         viteServer.middlewares.use('/api/export/reveal', async (request, response) => {
@@ -182,6 +195,7 @@ test.beforeEach(async ({ context }) => {
   exportResults.length = 0;
   pendingExport = null;
   heldExport = null;
+  heldIgnoreStatus = null;
   revealBodies.length = 0;
   appendBodies.length = 0;
   ignoreStatus = 'ignored';
@@ -340,7 +354,20 @@ test('Phase 07 explicit export and status states', async ({ page }) => {
     { kind: 'driftAcknowledgementStale', acknowledgementToken: 's'.repeat(43), observation: driftObservation },
     { kind: 'revisionConflict', expectedRevision: 3, actualRevision: 4 },
   );
+  holdNextIgnoreStatus();
   await openReview(page);
+
+  const ignoreReadiness = page.getByText('Ignore status', { exact: true }).locator('..');
+  await expect(ignoreReadiness.getByText('Checking ignore status', { exact: true })).toBeVisible();
+  await expect(ignoreReadiness.locator('.review-state-badge--pending')).toHaveCount(1);
+  await expect(page.getByRole('heading', { name: 'Checking export directory ignore status' })).toBeVisible();
+  expect(exportBodies).toEqual([]);
+
+  ignoreStatus = 'unavailable';
+  completeHeldIgnoreStatus();
+  await expect(ignoreReadiness.getByText('Ignore status unavailable', { exact: true })).toBeVisible();
+  await expect(ignoreReadiness.locator('.review-state-badge--disabled')).toHaveCount(1);
+  await expect(page.getByRole('heading', { name: 'Ignore status unavailable' })).toBeVisible();
 
   const exportSection = page.getByRole('heading', { name: 'Export' }).locator('..').locator('..');
   await exportSection.getByRole('button', { name: 'Collapse export' }).click();
@@ -368,9 +395,12 @@ test('Phase 07 explicit export and status states', async ({ page }) => {
 
   await stale.getByRole('checkbox').check();
   await stale.getByRole('button', { name: 'Export pinned review' }).click();
-  const conflict = page.getByRole('alert');
+  const conflict = page.getByRole('alert', { name: 'Review changed before export' });
   await expect(conflict).toContainText('Accepted revision 3 is no longer current. Nothing from this export attempt was published.');
   await expect(conflict).toContainText('Latest revision 4');
+  const exportHeading = exportSection.getByRole('heading', { name: 'Export' });
+  await expect(exportHeading.getByText('Review changed', { exact: true })).toBeVisible();
+  await expect(exportHeading.getByText('Ready', { exact: true })).toHaveCount(0);
   expect(JSON.parse(exportBodies[2] ?? '')).toEqual({ expectedRevision: 3, driftAcknowledgementToken: 's'.repeat(43) });
 
   await conflict.getByRole('button', { name: 'Reload latest' }).click();
@@ -390,7 +420,7 @@ test('Phase 07 explicit export and status states', async ({ page }) => {
   expect(exportBodies).toHaveLength(4);
 
   completeHeldExport({ kind: 'publicationFailed' });
-  const failure = page.getByRole('alert');
+  const failure = page.getByRole('alert', { name: 'Export was not published' });
   await expect(failure).toContainText('Export was not published');
   await expect(failure.getByRole('region', { name: 'Review export complete' })).toHaveCount(0);
   await expect(failure.locator('.ui-icon')).toHaveCount(1);

@@ -42,6 +42,7 @@ const stateLabel = computed(() => {
   switch (props.exportState.phase) {
     case 'drift': return 'Needs acknowledgement';
     case 'pending': return 'Exporting';
+    case 'conflict': return 'Review changed';
     case 'exported': return 'Exported';
     case 'failed': return 'Failed';
     case 'unavailable': return 'Unavailable';
