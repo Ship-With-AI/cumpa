@@ -2,6 +2,7 @@
 import { nextTick, ref } from 'vue';
 
 import type { AppendDiffReviewIgnoreResult, DiffReviewIgnoreStatus } from '../../contracts/api.js';
+import UiIcon from './ui/UiIcon.vue';
 
 const props = defineProps<{
   status: DiffReviewIgnoreStatus | null;
@@ -70,50 +71,71 @@ async function appendRule(): Promise<void> {
 
 <template>
   <section class="gitignore-status" aria-labelledby="gitignore-status-heading">
-    <p v-if="statusMessage" role="status" class="gitignore-status__message">{{ statusMessage }}</p>
+    <p v-if="statusMessage" role="status" class="gitignore-status__message">
+      <UiIcon name="check" />
+      <span>{{ statusMessage }}</span>
+    </p>
 
     <section v-if="status === null" class="inline-notice" role="status" aria-labelledby="gitignore-status-heading">
-      <h4 id="gitignore-status-heading">Checking export directory ignore status</h4>
-      <p>Export can continue while Diff Review checks whether Git ignores <code>/.diff-review/</code>.</p>
+      <span class="ui-spinner" aria-hidden="true" />
+      <div class="inline-notice__content">
+        <h4 id="gitignore-status-heading">Checking export directory ignore status</h4>
+        <p>Export can continue while Diff Review checks whether Git ignores <code>/.diff-review/</code>.</p>
+      </div>
     </section>
 
-    <section v-else-if="status.kind === 'ignored'" class="inline-notice" aria-labelledby="gitignore-status-heading">
-      <h4 id="gitignore-status-heading">Export directory ignored</h4>
-      <p>Git already ignores <code>/.diff-review/</code>.</p>
+    <section v-else-if="status.kind === 'ignored'" class="inline-notice inline-notice--success" aria-labelledby="gitignore-status-heading">
+      <UiIcon name="check" class="inline-notice__icon" />
+      <div class="inline-notice__content">
+        <h4 id="gitignore-status-heading">Export directory ignored</h4>
+        <p>Git already ignores <code>/.diff-review/</code>.</p>
+      </div>
     </section>
 
     <section v-else-if="status.kind === 'unavailable'" class="inline-notice inline-notice--error" role="alert" aria-labelledby="gitignore-status-heading">
-      <h4 id="gitignore-status-heading">Ignore status unavailable</h4>
-      <p>Diff Review could not check whether Git ignores <code>/.diff-review/</code>. Export can continue without changing <code>.gitignore</code>.</p>
+      <UiIcon name="error" class="inline-notice__icon" />
+      <div class="inline-notice__content">
+        <h4 id="gitignore-status-heading">Ignore status unavailable</h4>
+        <p>Diff Review could not check whether Git ignores <code>/.diff-review/</code>. Export can continue without changing <code>.gitignore</code>.</p>
+      </div>
     </section>
 
     <section v-else class="inline-notice inline-notice--warning" aria-labelledby="gitignore-status-heading">
-      <h4 id="gitignore-status-heading">Export directory is not ignored</h4>
-      <p>Export can continue. Diff Review always excludes <code>.diff-review/</code> from this review, but Git may show the generated files as untracked.</p>
-      <div v-if="!confirming" class="export-actions">
-        <button ref="addButton" type="button" class="ui-button" @click="beginAppendConfirmation">Add to .gitignore</button>
-        <button type="button" class="ui-button" @click="keepUnchanged">Keep .gitignore unchanged</button>
-      </div>
-
-      <section
-        v-else
-        class="gitignore-status__confirmation"
-        role="region"
-        aria-labelledby="gitignore-confirm-heading"
-        @keydown.escape.prevent.stop="keepUnchanged"
-      >
-        <h5 id="gitignore-confirm-heading">Add export directory to .gitignore?</h5>
-        <p>Diff Review will append exactly <code>/.diff-review/</code> to the repository-root <code>.gitignore</code>. Existing bytes and rules will be preserved.</p>
-        <p v-if="appending" role="status">Appending one ignore rule…</p>
-        <section v-if="appendOutcome !== null" class="inline-notice inline-notice--error" role="alert" aria-labelledby="gitignore-failed-heading">
-          <h6 id="gitignore-failed-heading">{{ appendFailureMessage(appendOutcome) }}</h6>
-          <p>Diff Review did not replace existing bytes or apply any rollback. Export can continue.</p>
-        </section>
-        <div class="export-actions">
-          <button ref="keepButton" type="button" class="ui-button" :disabled="appending" @click="keepUnchanged">Keep .gitignore unchanged</button>
-          <button type="button" class="ui-button" :disabled="appending" @click="appendRule">{{ appendOutcome === null ? 'Append ignore rule' : 'Try append again' }}</button>
+      <UiIcon name="warning" class="inline-notice__icon" />
+      <div class="inline-notice__content">
+        <h4 id="gitignore-status-heading">Export directory is not ignored</h4>
+        <p>Export can continue. Diff Review always excludes <code>.diff-review/</code> from this review, but Git may show the generated files as untracked.</p>
+        <div v-if="!confirming" class="export-actions">
+          <button ref="addButton" type="button" class="ui-button" @click="beginAppendConfirmation">Add to .gitignore</button>
+          <button type="button" class="ui-button" @click="keepUnchanged">Keep .gitignore unchanged</button>
         </div>
-      </section>
+
+        <section
+          v-else
+          class="gitignore-status__confirmation"
+          role="region"
+          aria-labelledby="gitignore-confirm-heading"
+          @keydown.escape.prevent.stop="keepUnchanged"
+        >
+          <h5 id="gitignore-confirm-heading">Add export directory to .gitignore?</h5>
+          <p>Diff Review will append exactly <code>/.diff-review/</code> to the repository-root <code>.gitignore</code>. Existing bytes and rules will be preserved.</p>
+          <p v-if="appending" role="status">Appending one ignore rule…</p>
+          <section v-if="appendOutcome !== null" class="inline-notice inline-notice--error" role="alert" aria-labelledby="gitignore-failed-heading">
+            <UiIcon name="error" class="inline-notice__icon" />
+            <div class="inline-notice__content">
+              <h6 id="gitignore-failed-heading">{{ appendFailureMessage(appendOutcome) }}</h6>
+              <p>Diff Review did not replace existing bytes or apply any rollback. Export can continue.</p>
+            </div>
+          </section>
+          <div class="export-actions">
+            <button ref="keepButton" type="button" class="ui-button" :disabled="appending" @click="keepUnchanged">Keep .gitignore unchanged</button>
+            <button type="button" class="ui-button" :class="{ 'ui-button--busy': appending }" :disabled="appending" :aria-busy="appending" @click="appendRule">
+              <span v-if="appending" class="ui-spinner" aria-hidden="true" />
+              {{ appendOutcome === null ? 'Append ignore rule' : 'Try append again' }}
+            </button>
+          </div>
+        </section>
+      </div>
     </section>
   </section>
 </template>

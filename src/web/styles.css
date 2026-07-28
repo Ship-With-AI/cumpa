@@ -1781,6 +1781,50 @@ h3.conversation-card__identity {
   border-style: dashed;
 }
 
+.export-receipt--current {
+  position: relative;
+}
+
+.export-receipt--current::before {
+  position: absolute;
+  inset-block: -1px;
+  inset-inline-start: -1px;
+  width: 3px;
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
+  background: var(--status-success-foreground);
+  content: "";
+}
+
+.export-receipt__status-icon {
+  flex: 0 0 16px;
+  color: var(--status-success-foreground);
+}
+
+.export-receipt__message,
+.receipt-file-row__message,
+.gitignore-status__message {
+  display: inline-flex;
+  min-width: 0;
+  align-items: flex-start;
+  gap: var(--space-xs);
+  padding-inline-start: var(--space-sm);
+  border-inline-start: 3px solid var(--status-success-foreground);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.export-receipt__message--error,
+.receipt-file-row__message--error {
+  border-inline-start-color: var(--status-error-foreground);
+  color: var(--status-error-foreground);
+}
+
+.export-receipt__message--success,
+.receipt-file-row__message--success,
+.gitignore-status__message {
+  color: var(--status-success-foreground);
+}
+
 .export-receipt__acknowledged-identities dl,
 .export-receipt__metadata,
 .receipt-file-row__metadata,

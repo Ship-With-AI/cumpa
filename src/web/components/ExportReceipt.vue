@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref } from 'vue';
 
 import type { ExportDirectoryRevealResult, ExportReviewResult } from '../../contracts/api.js';
 import ReceiptFileRow from './ReceiptFileRow.vue';
+import UiIcon from './ui/UiIcon.vue';
 
 type ConfirmedReceipt = Extract<ExportReviewResult, { readonly kind: 'exported' }>;
 
@@ -103,8 +104,9 @@ async function revealDirectory(): Promise<void> {
 </script>
 
 <template>
-  <section class="export-receipt" :class="{ 'export-receipt--previous': previous }" :aria-labelledby="previous ? 'previous-export-heading' : 'export-receipt-heading'">
+  <section class="export-receipt" :class="{ 'export-receipt--current': !previous, 'export-receipt--previous': previous }" :aria-labelledby="previous ? 'previous-export-heading' : 'export-receipt-heading'">
     <header class="export-receipt__heading">
+      <UiIcon v-if="!previous" name="check" class="export-receipt__status-icon" />
       <h4 :id="previous ? 'previous-export-heading' : 'export-receipt-heading'" ref="heading" tabindex="-1">{{ headingText }}</h4>
     </header>
     <p v-if="!previous" class="export-receipt__body">Both files were published together from accepted revision {{ receipt.draftRevision }}.</p>
@@ -167,7 +169,13 @@ async function revealDirectory(): Promise<void> {
       <button type="button" class="ui-button" @click="copyDetails">Copy all receipt details</button>
       <button type="button" class="ui-button" @click="revealDirectory">Reveal export directory</button>
     </div>
-    <p v-if="copyMessage !== ''" class="export-receipt__message" :class="{ 'inline-notice inline-notice--error': copyMessage.startsWith('Could not') }" :role="copyMessage.startsWith('Could not') ? 'alert' : 'status'">{{ copyMessage }}</p>
-    <p v-if="revealMessage !== ''" ref="revealAlert" class="export-receipt__message" :class="{ 'inline-notice inline-notice--error': revealFailed }" :role="revealFailed ? 'alert' : 'status'" tabindex="-1">{{ revealMessage }}</p>
+    <p v-if="copyMessage !== ''" class="export-receipt__message" :class="{ 'export-receipt__message--error': copyMessage.startsWith('Could not'), 'export-receipt__message--success': !copyMessage.startsWith('Could not') }" :role="copyMessage.startsWith('Could not') ? 'alert' : 'status'">
+      <UiIcon :name="copyMessage.startsWith('Could not') ? 'error' : 'check'" />
+      <span>{{ copyMessage }}</span>
+    </p>
+    <p v-if="revealMessage !== ''" ref="revealAlert" class="export-receipt__message" :class="{ 'export-receipt__message--error': revealFailed, 'export-receipt__message--success': !revealFailed }" :role="revealFailed ? 'alert' : 'status'" tabindex="-1">
+      <UiIcon :name="revealFailed ? 'error' : 'check'" />
+      <span>{{ revealMessage }}</span>
+    </p>
   </section>
 </template>

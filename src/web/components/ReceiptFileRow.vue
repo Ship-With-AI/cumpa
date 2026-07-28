@@ -2,6 +2,7 @@
 import { ref } from 'vue';
 
 import type { ExportReviewResult } from '../../contracts/api.js';
+import UiIcon from './ui/UiIcon.vue';
 
 type ReceiptFile = Extract<ExportReviewResult, { readonly kind: 'exported' }>['files'][number];
 
@@ -37,6 +38,9 @@ async function copyPath(): Promise<void> {
       <div><dt>Bytes</dt><dd>{{ file.bytes }}</dd></div>
     </dl>
     <span :id="descriptionId" class="visually-hidden">{{ accessibleDescription }}</span>
-    <p v-if="copyMessage !== ''" class="receipt-file-row__message" :class="{ 'inline-notice inline-notice--error': copyMessage.startsWith('Could not') }" :role="copyMessage.startsWith('Could not') ? 'alert' : 'status'">{{ copyMessage }}</p>
+    <p v-if="copyMessage !== ''" class="receipt-file-row__message" :class="{ 'receipt-file-row__message--error': copyMessage.startsWith('Could not'), 'receipt-file-row__message--success': !copyMessage.startsWith('Could not') }" :role="copyMessage.startsWith('Could not') ? 'alert' : 'status'">
+      <UiIcon :name="copyMessage.startsWith('Could not') ? 'error' : 'check'" />
+      <span>{{ copyMessage }}</span>
+    </p>
   </article>
 </template>
