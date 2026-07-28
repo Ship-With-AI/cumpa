@@ -43,7 +43,7 @@ const commentDescribedBy = computed(() => [
     <header class="conversation-card__header inline-comment-composer__header" title="Anchor fields are fixed for this comment.">
       <div class="conversation-card__identity">
         <PathText :display="path" />
-        <span>{{ sideLabel() }} line {{ line }}</span>
+        <span> · {{ sideLabel() }} line {{ line }}</span>
       </div>
       <span class="conversation-card__fixed">
         <UiIcon name="lock" />

@@ -1341,6 +1341,7 @@ h3.conversation-card__identity {
 }
 
 .inline-comment-composer textarea {
+  box-sizing: border-box;
   min-height: 76px;
   max-height: 240px;
   margin-top: var(--space-xs);

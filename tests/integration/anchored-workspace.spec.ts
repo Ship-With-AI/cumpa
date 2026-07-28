@@ -357,6 +357,18 @@ function expectAnchoringNotToReflow(before: MonacoGeometry, anchored: MonacoGeom
   expect(anchored.document.scrollWidth).toBeLessThanOrEqual(anchored.document.clientWidth);
 }
 
+function expectConversationCardNotToReflow(before: MonacoGeometry, anchored: MonacoGeometry): void {
+  expect(anchored.codeOrigin).toEqual(before.codeOrigin);
+  expect(anchored.gutters).toEqual(before.gutters);
+  expect(anchored.panes).toEqual(before.panes);
+  expect(anchored.sashes).toEqual(before.sashes);
+  expect(anchored.document).toEqual(before.document);
+  expect(anchored.reviewMain).toMatchObject(before.reviewMain ?? {});
+  expect(anchored.scrollOwners.map(({ clientHeight, clientWidth, scrollWidth }) => ({ clientHeight, clientWidth, scrollWidth })))
+    .toEqual(before.scrollOwners.map(({ clientHeight, clientWidth, scrollWidth }) => ({ clientHeight, clientWidth, scrollWidth })));
+  expect(anchored.document.scrollWidth).toBeLessThanOrEqual(anchored.document.clientWidth);
+}
+
 async function ensureReviewOpen(page: Page): Promise<void> {
   const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
   await expect(reviewButton).toBeVisible();
@@ -523,6 +535,121 @@ test('inline comment persistence', async ({ page }) => {
   await expect(page.locator('.comments-rail__comment[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]')).toBeVisible();
 });
 
+test('Phase 07 inline conversation states', async ({ page }) => {
+  resetAsyncSettlementFixture();
+  const targetText = 'export const changed = 3;';
+  const retainedText = `Keep this long comment ${'without-losing-words '.repeat(12)}after the failed save.`;
+  const resolvedText = 'A separately saved resolved comment.';
+  canonicalComments = [{
+    id: 'comment_223e4567-e89b-12d3-a456-426614174000',
+    state: 'resolved',
+    body: resolvedText,
+    anchor: {
+      version: 'durable-anchor-v1',
+      path: path('src/first.ts'),
+      safeDisplayPath: 'src/first.ts',
+      side: 'head',
+      line: 11,
+      blobOid: 'd'.repeat(40),
+      selectedText: 'const context11 = 11;',
+      context: { before: [], target: { line: 11, text: 'const context11 = 11;' }, after: [] },
+      contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
+      uniqueKey: '1'.repeat(64),
+    },
+    createdAt: '2026-07-21T00:00:00.000Z',
+    updatedAt: '2026-07-21T00:00:00.000Z',
+    resolvedAt: '2026-07-21T00:00:00.000Z',
+  }];
+
+  await page.setViewportSize({ width: 1280, height: 760 });
+  await openReview(page);
+  await hoverMonacoLine(page, 'head', targetText);
+  const before = await readMonacoGeometry(page, targetText);
+  await page.getByRole('button', { name: 'Add comment to head line 10' }).click({ force: true });
+
+  const composer = page.locator('.monaco-anchor-zone--composer .inline-comment-composer');
+  const textarea = composer.locator('textarea');
+  await expect(composer).toHaveClass(/conversation-card/);
+  await expect(composer.getByText('Fixed anchor', { exact: true })).toBeVisible();
+  await expect(composer).toContainText('src/first.ts · Head line 10');
+  await expect(textarea).toHaveAttribute('aria-label', 'Comment');
+  await expect(textarea).toHaveAttribute('aria-describedby', /comment-support-head-10/);
+  await expect(composer.locator('.conversation-card__header')).toBeVisible();
+  await expect(composer.locator('.conversation-card__body')).toBeVisible();
+  await expect(composer.locator('.conversation-card__support')).toBeVisible();
+  await expect(composer.locator('.conversation-card__footer')).toBeVisible();
+
+  const ready = await readMonacoGeometry(page, targetText);
+  expectConversationCardNotToReflow(before, ready);
+  expect(ready.zones).toHaveLength(2);
+  expect(Math.abs(ready.zones[0]!.y - ready.zones[1]!.y)).toBeLessThanOrEqual(1);
+  expect(ready.zones[0]!.height).toBe(ready.zones[1]!.height);
+
+  await composer.locator('button').filter({ hasText: 'Add comment' }).click();
+  await expect(composer.locator('[role="alert"]')).toHaveText('Write a comment before adding it.');
+  await expect(textarea).toHaveAttribute('aria-describedby', /comment-feedback-head-10/);
+
+  const delayedFailure = delayNextMutation('persistenceFailure');
+  const failureResponse = page.waitForResponse((candidate) =>
+    candidate.url().includes('/api/draft/mutations')
+      && candidate.request().postData()?.includes(retainedText) === true);
+  await textarea.fill(retainedText);
+  await composer.locator('button').filter({ hasText: 'Add comment' }).click();
+  await delayedFailure.received;
+  await expect(composer).toHaveAttribute('aria-busy', 'true');
+  const pendingButton = composer.locator('button').filter({ hasText: 'Adding comment…' });
+  await expect(pendingButton).toBeDisabled();
+  await expect(pendingButton).toHaveAttribute('aria-busy', 'true');
+  await expect(composer.locator('.ui-spinner[aria-hidden="true"]')).toHaveCount(1);
+  const pending = await readMonacoGeometry(page, targetText);
+  expectConversationCardNotToReflow(before, pending);
+  expect(Math.abs(pending.zones[0]!.y - pending.zones[1]!.y)).toBeLessThanOrEqual(1);
+  expect(pending.zones[0]!.height).toBe(pending.zones[1]!.height);
+  delayedFailure.release();
+  expect((await failureResponse).status()).toBe(500);
+  await expect(composer.locator('[role="alert"]')).toHaveText(
+    'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.',
+  );
+  await expect(textarea).toHaveValue(retainedText);
+  await expect(composer).not.toHaveAttribute('aria-busy', 'true');
+
+  await composer.locator('.conversation-card__footer > .conversation-card__actions > .ui-button--destructive').click();
+  await textarea.focus();
+  await page.keyboard.press('Escape');
+  await expect(textarea).toHaveValue(retainedText);
+  await expect(textarea).toBeFocused();
+
+  const acceptedResponse = page.waitForResponse((candidate) =>
+    candidate.url().includes('/api/draft/mutations')
+      && candidate.request().postData()?.includes(retainedText) === true);
+  await composer.locator('button').filter({ hasText: 'Add comment' }).click();
+  expect((await acceptedResponse).status()).toBe(201);
+  const inlineAccepted = page.locator('.monaco-anchor-zone--composer .inline-accepted-comment');
+  const acceptedHeading = inlineAccepted.locator('h3.conversation-card__identity');
+  await expect(inlineAccepted).toHaveCount(1);
+  await expect(acceptedHeading).toHaveText('src/first.ts · Head · line 10');
+  await expect(acceptedHeading).toBeFocused();
+  await expect(inlineAccepted.getByText('Open', { exact: true })).toBeVisible();
+  await expect(inlineAccepted.getByText('Verified', { exact: true })).toBeVisible();
+  await expect(inlineAccepted.getByText('Saved locally', { exact: true })).toBeVisible();
+  await expect(inlineAccepted.locator('.review-state-badge svg[aria-hidden="true"]')).toHaveCount(2);
+  await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(1);
+  await expect(page.locator('.monaco-anchor-zone--spacer')).toHaveCount(1);
+
+  await ensureReviewOpen(page);
+  await page.getByRole('button', { name: /^Resolved comments/ }).click();
+  const resolvedRow = page.locator('.comments-rail__comment').filter({ hasText: resolvedText });
+  await resolvedRow.getByRole('button', { name: 'Show comment' }).click();
+  await expect(inlineAccepted).toHaveCount(1);
+  await expect(inlineAccepted.getByText('Resolved', { exact: true })).toBeVisible();
+  await expect(inlineAccepted.getByText('Verified', { exact: true })).toBeVisible();
+
+  const restored = await readMonacoGeometry(page, targetText);
+  expectConversationCardNotToReflow(before, restored);
+  expect(Math.abs(restored.zones[0]!.y - restored.zones[1]!.y)).toBeLessThanOrEqual(1);
+  expect(restored.zones[0]!.height).toBe(restored.zones[1]!.height);
+});
+
 test('draft resume and anchor states', async ({ page }) => {
   const pageErrors: Error[] = [];
   const consoleErrors: string[] = [];
@@ -530,7 +657,6 @@ test('draft resume and anchor states', async ({ page }) => {
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
-  await openReview(page);
   await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
     'Local draft resumed. Accepted comments for this pinned comparison are ready.',
   );
@@ -744,7 +870,7 @@ test.describe('async comment settlement', () => {
     await page.getByRole('treeitem', { name: /src\/first\.ts/ }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
     await ensureReviewOpen(page);
-    await expect(page.locator('[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]')).toContainText(body);
+    await expect(page.locator('.comments-rail__comment[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]')).toContainText(body);
     await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(0);
   });
 
@@ -778,7 +904,7 @@ test.describe('async comment settlement', () => {
     await hoverMonacoLine(page, 'head', 'export const changed = 3;');
     const retryComposer = page.locator('.monaco-anchor-zone--composer');
     await expect(retryComposer.locator('textarea')).toHaveValue(body);
-    await expect(retryComposer).toContainText('src/first.ts · Head · line 10');
+    await expect(retryComposer).toContainText('src/first.ts · Head line 10');
     await expect(retryComposer.locator('[role="alert"]')).toHaveText(message);
     await expect(retryComposer.locator('button').filter({ hasText: 'Add comment' })).toBeEnabled();
   });
