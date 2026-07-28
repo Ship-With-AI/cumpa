@@ -104,18 +104,18 @@ test('2. anchors both base and head model lines through one active composer', as
   await openPrototype(page);
   await page.getByRole('button', { name: 'Add base comment' }).click();
   await expect(page.locator('textarea[aria-label=\"Comment\"]')).toHaveCount(1);
-  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Base · line 10');
+  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Base line 10');
   await expectPairedZonesAligned(page);
 
   await page.getByRole('button', { name: 'Add head comment' }).click();
-  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Head · line 16');
+  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Head line 16');
   await expect.poll(() => readState(page)).toMatchObject({ pairedZones: 2, activeComposers: 1 });
 });
 
 test('3. reveals a hidden durable anchor only through the public all-context fallback', async ({ page }) => {
   await openPrototype(page);
   await page.getByRole('button', { name: 'Show hidden comment' }).click();
-  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Head · line 5');
+  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Head line 5');
   await expect.poll(() => readState(page)).toMatchObject({ contextMode: 'all-revealed', pairedZones: 2 });
   await expectPairedZonesAligned(page);
 });
@@ -157,7 +157,7 @@ test('6. restores A → B → A composer text, focus side, and model state after
   await page.getByRole('button', { name: 'Next file' }).click();
   await page.getByRole('button', { name: 'Previous file' }).click();
   await expect(page.locator('textarea[aria-label=\"Comment\"]')).toHaveValue('preserved composer text');
-  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Base · line 10');
+  await expect(page.locator('.monaco-anchor-zone--composer')).toContainText('Base line 10');
   await expect.poll(() => readState(page)).toMatchObject({ fileId: 'fixture-a', liveModels: 2, pairedZones: 2 });
 });
 

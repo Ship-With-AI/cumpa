@@ -588,7 +588,7 @@ test('responsive keyboard and accessibility contract', async ({
         fixture.innerHTML = [
           '<aside class="inline-notice inline-notice--warning">Warning</aside>',
           '<aside class="inline-notice inline-notice--error">Error</aside>',
-          '<aside class="draft-recovery__notice">Information</aside>',
+          '<aside class="inline-notice inline-notice--information draft-recovery__notice">Information</aside>',
           '<button class="ui-button">Neutral</button>',
           '<button class="ui-button ui-button--primary">Primary</button>',
           '<button class="ui-button ui-button--destructive">Delete</button>',
@@ -626,14 +626,14 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(fixture.getByLabel('Semantic textarea')).toHaveCSS('caret-color', 'rgb(230, 237, 243)');
 
       const typography = await page.evaluate(() => [
-        '.session-header h1', '.active-file-strip h1', '[data-normal-file]', '.availability-marker', '.pin-cue',
+        '.session-header h1', '.review-context-header__file h1', '[data-normal-file]', '.availability-marker', '.pin-cue',
       ].map((selector) => {
         const style = getComputedStyle(document.querySelector(selector)!);
         return [selector, style.fontSize, style.fontWeight, style.lineHeight, style.fontFamily];
       }));
       expect(typography).toEqual([
         ['.session-header h1', '20px', '600', '28px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.active-file-strip h1', '16px', '600', '24px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.review-context-header__file h1', '16px', '600', '24px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['[data-normal-file]', '14px', '400', '20px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['.availability-marker', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['.pin-cue', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],

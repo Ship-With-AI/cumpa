@@ -729,12 +729,33 @@ test('Phase 07 rail selection follows focus-comment', async ({ page }) => {
 });
 
 test('draft resume and anchor states', async ({ page }) => {
+  canonicalComments = [{
+    id: 'comment_123e4567-e89b-12d3-a456-426614174000',
+    state: 'open',
+    body: 'Please explain this context.',
+    anchor: {
+      version: 'durable-anchor-v1',
+      path: path('src/first.ts'),
+      safeDisplayPath: 'src/first.ts',
+      side: 'head',
+      line: 10,
+      blobOid: 'd'.repeat(40),
+      selectedText: 'export const changed = 2;',
+      context: { before: [], target: { line: 10, text: 'export const changed = 2;' }, after: [] },
+      contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
+      uniqueKey: '0'.repeat(64),
+    },
+    createdAt: '2026-07-21T00:00:00.000Z',
+    updatedAt: '2026-07-21T00:00:00.000Z',
+  }];
+
   const pageErrors: Error[] = [];
   const consoleErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(error));
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
+  await page.goto(`${origin}#token=${token}`);
   await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
     'Local draft resumed. Accepted comments for this pinned comparison are ready.',
   );
