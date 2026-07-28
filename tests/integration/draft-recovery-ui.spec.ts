@@ -142,7 +142,10 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
 
   await openDraft(page);
   await expect(page.getByRole('heading', { name: 'Local review draft needs recovery' })).toBeVisible();
-  await expect(page.getByText('Read only', { exact: true })).toBeVisible();
+  const readOnlyStatus = page.locator('.draft-recovery__status');
+  await expect(readOnlyStatus).toContainText('Read only');
+  await expect(readOnlyStatus).toHaveClass(/review-state-badge--disabled/);
+  await expect(readOnlyStatus.locator('.ui-icon')).toHaveCount(1);
   await expect(page.getByText(safeDraftPath, { exact: true })).toBeVisible();
   await expect(page.getByText('Unexpected token at byte 1.', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reveal draft file' })).toBeVisible();
@@ -153,15 +156,15 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   await expect(page.locator('body')).not.toContainText(absolutePath);
   const recovery = page.locator('.draft-recovery');
   const card = page.locator('.draft-recovery__card');
-  const badge = page.locator('.draft-recovery__badge');
+  const badge = readOnlyStatus;
   const recoveryAction = page.getByRole('button', { name: 'Back up and start new' });
   await expect(recovery).toHaveCSS('background-color', 'rgb(13, 17, 23)');
   await expect(card).toHaveCSS('background-color', 'rgb(22, 27, 34)');
   await expect(card).toHaveCSS('border-color', 'rgb(48, 54, 61)');
   await expect(card).toHaveCSS('border-radius', '6px');
   await expect(card).toHaveCSS('box-shadow', 'none');
-  await expect(badge).toHaveCSS('background-color', 'rgba(56, 139, 253, 0.15)');
-  await expect(badge).toHaveCSS('color', 'rgb(230, 237, 243)');
+  await expect(badge).toHaveCSS('border-style', 'solid');
+  await expect(badge).toHaveCSS('border-width', '1px');
   await recoveryAction.focus();
   await expect(recoveryAction).toHaveCSS('outline-color', 'rgb(88, 166, 255)');
   await expect(recoveryAction).toHaveCSS('outline-width', '2px');
@@ -189,8 +192,22 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   expect(recoveryBodies).toEqual([]);
 
   await startNew.click();
-  await page.getByRole('button', { name: 'Back up and start new' }).last().click();
+  const confirmationAction = page.locator('.draft-recovery__recovery-action');
+  const confirmationBounds = await confirmationAction.boundingBox();
+  await expect(confirmationAction).toHaveAttribute('aria-busy', 'false');
+  await confirmationAction.click();
+  await expect(confirmationAction).toHaveClass(/draft-recovery__action--busy/);
+  await expect(confirmationAction).toHaveAttribute('aria-busy', 'true');
+  await expect(confirmationAction.locator('.ui-spinner')).toHaveCount(1);
+  expect(await confirmationAction.boundingBox()).toMatchObject({
+    height: confirmationBounds?.height,
+    width: confirmationBounds?.width,
+  });
+  await expect(page.getByRole('button', { name: 'Reveal draft file' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Copy draft path' })).toBeDisabled();
+  await expect(page.locator('.draft-recovery .ui-spinner')).toHaveCount(1);
   await expect(page.getByText('Backing up existing draft…', { exact: true })).toBeVisible();
+  await expect.poll(() => recoveryBodies).toEqual([JSON.stringify({ expectedFingerprint: fingerprint })]);
   releaseRecovery?.();
   await expect(page.getByRole('heading', { name: 'Recovery did not complete' })).toBeVisible();
   await expect(page.getByText('The existing draft is still read only and has not been replaced. Check the terminal details, then try again.', { exact: true })).toBeVisible();
@@ -211,6 +228,8 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   releaseRecovery?.();
   await expect(page.getByRole('heading', { name: 'New draft started' })).toBeVisible();
   await expect(page.getByText(safeBackupPath, { exact: true })).toBeVisible();
+  await expect(page.locator('.draft-recovery__receipt-status')).toContainText('Recovered');
+  await expect(page.locator('.draft-recovery__receipt-status .ui-icon')).toHaveCount(1);
   await expect(page.getByRole('heading', { name: 'Comments' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Open new draft' }).click();
   await expect(page.getByRole('heading', { name: 'No PR-style changes in this pinned comparison' })).toBeVisible();
@@ -226,6 +245,9 @@ test('schema-invalid drafts remain read only while exposing only bounded validat
 
   await openDraft(page);
   await expect(page.getByRole('heading', { name: 'Local review draft needs recovery' })).toBeVisible();
+  await expect(page.locator('.draft-recovery__status')).toContainText('Read only');
+  await expect(page.locator('.draft-recovery__status .ui-icon')).toHaveCount(1);
+  await expect(page.locator('.draft-recovery__notice.inline-notice--warning')).toHaveCount(1);
   await expect(page.getByText('Draft data does not match the supported schema', { exact: true })).toBeVisible();
   await expect(page.getByText('comments.0.body', { exact: true })).toBeVisible();
   await expect(page.getByText('Required', { exact: true })).toBeVisible();
@@ -247,6 +269,9 @@ test('newer drafts are upgrade-only and expose only fixed reveal and safe copy a
   await expect(page.getByRole('heading', { name: 'This draft needs a newer Diff Review' })).toBeVisible();
   await expect(page.getByText('Draft schema version 2 is newer than supported version 1. Upgrade Diff Review to open it. The file has not been changed.', { exact: true })).toBeVisible();
   await expect(page.getByText('Read only', { exact: true })).toBeVisible();
+  await expect(page.locator('.draft-recovery__status')).toContainText('Read only');
+  await expect(page.locator('.draft-recovery__status .ui-icon')).toHaveCount(1);
+  await expect(page.locator('.draft-recovery__notice.inline-notice--error')).toHaveCount(1);
   await expect(page.getByText(safeDraftPath, { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reveal draft file' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Copy draft path' })).toBeVisible();

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
 
+import InlineNotice from './InlineNotice.vue';
+import ReviewStateBadge from './ui/ReviewStateBadge.vue';
+
 import type { DraftRecoveryResult, DraftRevealResult } from '../../contracts/api.js';
 import type { ReadOnlyDraftLoad } from '../model/review-draft-state.js';
 
@@ -19,9 +22,14 @@ const confirming = ref(false);
 const pending = ref(false);
 const actionMessage = ref('');
 const failed = ref(false);
+const actionTone = ref<'success' | 'error'>('success');
 const recovered = ref<Extract<DraftRecoveryResult, { readonly kind: 'recovered' }>>();
 const recoveryTrigger = ref<HTMLButtonElement>();
 const keepExisting = ref<HTMLButtonElement>();
+
+const vFocus = {
+  mounted: (element: HTMLElement) => element.focus(),
+};
 
 const isRecoverable = computed(() => props.load.kind === 'malformed' || props.load.kind === 'schemaInvalid');
 const problem = computed(() => props.load.kind === 'malformed'
@@ -37,7 +45,7 @@ function startConfirmation(): void {
   confirming.value = true;
   failed.value = false;
   actionMessage.value = '';
-  void nextTick(() => keepExisting.value?.focus());
+  actionTone.value = 'success';
 }
 
 function cancelConfirmation(): void {
@@ -49,10 +57,12 @@ async function reveal(): Promise<void> {
   actionMessage.value = '';
   try {
     const result = await props.revealDraftFile();
+    actionTone.value = result.kind === 'revealed' ? 'success' : 'error';
     actionMessage.value = result.kind === 'revealed'
       ? 'Draft file revealed in the system file browser.'
       : 'Could not reveal the draft file. Check the terminal details.';
   } catch {
+    actionTone.value = 'error';
     actionMessage.value = 'Could not reveal the draft file. Check the terminal details.';
   }
 }
@@ -61,8 +71,10 @@ async function copyPath(path: string, label: string): Promise<void> {
   actionMessage.value = '';
   try {
     await navigator.clipboard.writeText(path);
+    actionTone.value = 'success';
     actionMessage.value = `${label} copied.`;
   } catch {
+    actionTone.value = 'error';
     actionMessage.value = `Could not copy the ${label.toLowerCase()}.`;
   }
 }
@@ -96,9 +108,11 @@ async function recover(): Promise<void> {
 <template>
   <main class="draft-recovery" aria-labelledby="draft-recovery-heading" @keydown.escape="confirming ? cancelConfirmation() : undefined">
     <section v-if="recovered !== undefined" class="draft-recovery__card" aria-live="polite">
-      <span class="draft-recovery__badge">Read only</span>
-      <h1 id="draft-recovery-heading">New draft started</h1>
-      <p>The original draft was preserved before the new empty draft was created.</p>
+      <ReviewStateBadge class="draft-recovery__receipt-status" kind="success" label="Recovered" />
+      <InlineNotice class="draft-recovery__notice" tone="success" role="status">
+        <h1 id="draft-recovery-heading">New draft started</h1>
+        <p>The original draft was preserved before the new empty draft was created.</p>
+      </InlineNotice>
       <dl class="draft-recovery__details">
         <div>
           <dt>Backup file</dt>
@@ -111,16 +125,22 @@ async function recover(): Promise<void> {
       </div>
     </section>
 
-    <section v-else class="draft-recovery__card" :role="isRecoverable ? undefined : 'alert'">
-      <span class="draft-recovery__badge">Read only</span>
-      <template v-if="isRecoverable">
-        <h1 id="draft-recovery-heading">Local review draft needs recovery</h1>
-        <p>Diff Review could not safely read this draft. The existing file has not been changed.</p>
-      </template>
-      <template v-else>
-        <h1 id="draft-recovery-heading">This draft needs a newer Diff Review</h1>
-        <p>Draft schema version {{ load.foundVersion }} is newer than supported version {{ load.supportedVersion }}. Upgrade Diff Review to open it. The file has not been changed.</p>
-      </template>
+    <section v-else class="draft-recovery__card">
+      <ReviewStateBadge class="draft-recovery__status" kind="disabled" label="Read only" />
+      <InlineNotice
+        class="draft-recovery__notice"
+        :tone="isRecoverable ? 'warning' : 'error'"
+        :role="isRecoverable ? 'note' : 'alert'"
+      >
+        <template v-if="isRecoverable">
+          <h1 id="draft-recovery-heading">Local review draft needs recovery</h1>
+          <p>Diff Review could not safely read this draft. The existing file has not been changed.</p>
+        </template>
+        <template v-else>
+          <h1 id="draft-recovery-heading">This draft needs a newer Diff Review</h1>
+          <p>Draft schema version {{ load.foundVersion }} is newer than supported version {{ load.supportedVersion }}. Upgrade Diff Review to open it. The file has not been changed.</p>
+        </template>
+      </InlineNotice>
 
       <dl class="draft-recovery__details">
         <div>
@@ -139,10 +159,14 @@ async function recover(): Promise<void> {
         </template>
       </dl>
 
-      <p v-if="actionMessage !== ''" class="draft-recovery__notice" role="status">{{ actionMessage }}</p>
+      <InlineNotice v-if="actionMessage !== ''" class="draft-recovery__notice" :tone="actionTone" role="status">
+        <p>{{ actionMessage }}</p>
+      </InlineNotice>
       <template v-if="failed">
         <h2>Recovery did not complete</h2>
-        <p class="draft-recovery__notice draft-recovery__notice--error" role="alert">The existing draft is still read only and has not been replaced. Check the terminal details, then try again.</p>
+        <InlineNotice class="draft-recovery__notice" tone="error" role="alert">
+          <p>The existing draft is still read only and has not been replaced. Check the terminal details, then try again.</p>
+        </InlineNotice>
       </template>
 
       <div class="draft-recovery__actions">
@@ -165,8 +189,17 @@ async function recover(): Promise<void> {
         <p>Diff Review will first create and verify a byte-for-byte backup of {{ load.path }}. If the backup cannot be verified, the existing draft will not be replaced. The new draft will have no summary or comments.</p>
         <p>This action has no undo inside Diff Review.</p>
         <div class="draft-recovery__actions">
-          <button ref="keepExisting" type="button" class="ui-button" :disabled="pending" @click="cancelConfirmation">Keep existing draft</button>
-          <button type="button" class="ui-button ui-button--destructive" :disabled="pending" @click="recover">{{ pending ? 'Backing up existing draft…' : 'Back up and start new' }}</button>
+          <button ref="keepExisting" v-focus type="button" class="ui-button" :disabled="pending" @click="cancelConfirmation">Keep existing draft</button>
+          <button
+            class="ui-button ui-button--destructive draft-recovery__recovery-action"
+            :class="{ 'ui-button--busy draft-recovery__action--busy': pending }"
+            :aria-busy="pending"
+            :disabled="pending"
+            @click="recover"
+          >
+            <span v-if="pending" class="ui-spinner" aria-hidden="true" />
+            {{ pending ? 'Backing up existing draft…' : 'Back up and start new' }}
+          </button>
         </div>
       </section>
     </section>
