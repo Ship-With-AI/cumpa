@@ -67,6 +67,7 @@ status: complete
 
 - `src/web/styles.css` — defines the shared control-boundary role and targeted public forced-color mappings for controls, status surfaces, selected rails, Base/Head provenance, anchors, and Monaco focus.
 - `tests/e2e/responsive-session.spec.ts` — measures rendered source-over contrast, validates keyboard focus perimeter geometry, and drives forced-color assertions through real packaged workspace states.
+- `scripts/verify-semantic-css.mjs` — recognizes only the approved direct-root control-boundary role and exact `#8B949E` value while preserving every existing direct-color and legacy-token audit restriction.
 
 ## Decisions Made
 
@@ -78,6 +79,7 @@ status: complete
 
 - `npm run test:package -- tests/e2e/responsive-session.spec.ts --grep "responsive keyboard and accessibility contract"` — passed: 1/1 Chromium packaged browser test.
 - `npm run test:package -- tests/e2e/responsive-session.spec.ts --grep "responsive keyboard and accessibility contract" --headed` — passed: 1/1 headed Chromium packaged browser test.
+- `npm run build:web && node scripts/verify-semantic-css.mjs` — passed after the regression repair; generated CSS retains the exact canonical root and direct-color audit.
 
 ## Deviations from Plan
 
@@ -91,10 +93,18 @@ status: complete
 - **Verification:** Headless and headed focused packaged browser commands passed.
 - **Committed in:** `0f32291`
 
+**2. [Rule 1 - Regression] Kept the semantic CSS root audit synchronized with the approved control-boundary role.**
+- **Found during:** Post-plan regression gate.
+- **Issue:** The exact root audit rejected the planned `--control-boundary` declaration because its canonical token and expected-value tables were not updated.
+- **Fix:** Added only `--control-boundary` and its exact `#8B949E` value to the audit's canonical root contract.
+- **Files modified:** `scripts/verify-semantic-css.mjs`
+- **Verification:** `npm run build:web && node scripts/verify-semantic-css.mjs` passed.
+- **Committed in:** `6067464`
+
 ---
 
-**Total deviations:** 1 auto-fixed (1 Rule 3 blocking test-contract repair).
-**Impact on plan:** Preserves the final 08-01 responsive ownership contract; no production behavior, state, API, persistence, export, or Monaco change was introduced.
+**Total deviations:** 2 auto-fixed (1 Rule 1 regression repair; 1 Rule 3 blocking test-contract repair).
+**Impact on plan:** Both repairs preserve the approved semantic CSS and 08-01 responsive contracts; no production behavior, state, API, persistence, export, or Monaco change was introduced.
 
 ## Issues Encountered
 
@@ -115,9 +125,9 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- Task commits `0f32291` and `3a545d2` were created for the two plan tasks.
-- `src/web/styles.css`, `tests/e2e/responsive-session.spec.ts`, and this summary exist.
-- The exact focused packaged Chromium check passed headless and headed; no API, state, persistence, export, package, remote asset, or test-only production hook was introduced.
+- Task commits `0f32291` and `3a545d2` were created for the two plan tasks; regression repair `6067464` exists.
+- `src/web/styles.css`, `tests/e2e/responsive-session.spec.ts`, `scripts/verify-semantic-css.mjs`, and this summary exist.
+- The exact focused packaged Chromium check passed headless and headed, and `npm run build:web && node scripts/verify-semantic-css.mjs` passed; no API, state, persistence, export, package, remote asset, or test-only production hook was introduced.
 
 ---
 *Phase: 08-accessible-responsive-continuity*
