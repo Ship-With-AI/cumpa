@@ -272,23 +272,27 @@ onBeforeUnmount(() => {
 
 <template>
   <section class="diff-workspace" :aria-label="`${path}: base and head side-by-side diff`">
-    <div class="diff-workspace__side-labels" aria-hidden="true">
-      <span>BASE</span>
-      <span>HEAD</span>
+    <div class="diff-workspace__viewport">
+      <div class="diff-workspace__canvas">
+        <div class="diff-workspace__side-labels" aria-hidden="true">
+          <span>BASE</span>
+          <span>HEAD</span>
+        </div>
+        <button
+          v-if="anchorAffordance"
+          type="button"
+          class="diff-workspace__gutter-action"
+          :class="{ 'diff-workspace__gutter-action--base': anchorAffordance.side === 'base' }"
+          :style="{ top: `${anchorAffordance.top}px` }"
+          :data-anchor-side="anchorAffordance.side"
+          :data-anchor-line="anchorAffordance.line"
+          :aria-label="`Add comment to ${anchorAffordance.side} line ${anchorAffordance.line}`"
+          :title="`Add comment to ${anchorAffordance.side} line ${anchorAffordance.line} · Option+Enter`"
+          @click="addComment(anchorAffordance)"
+        >+</button>
+        <div ref="host" class="diff-workspace__editor" />
+      </div>
     </div>
-    <button
-      v-if="anchorAffordance"
-      type="button"
-      class="diff-workspace__gutter-action"
-      :class="{ 'diff-workspace__gutter-action--base': anchorAffordance.side === 'base' }"
-      :style="{ top: `${anchorAffordance.top}px` }"
-      :data-anchor-side="anchorAffordance.side"
-      :data-anchor-line="anchorAffordance.line"
-      :aria-label="`Add comment to ${anchorAffordance.side} line ${anchorAffordance.line}`"
-      :title="`Add comment to ${anchorAffordance.side} line ${anchorAffordance.line} · Option+Enter`"
-      @click="addComment(anchorAffordance)"
-    >+</button>
-    <div ref="host" class="diff-workspace__editor" />
     <p class="diff-workspace__context-help">
       Unchanged regions begin collapsed. Use Monaco’s context controls to reveal bounded context or all remaining context.
     </p>

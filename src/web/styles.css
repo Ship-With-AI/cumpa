@@ -803,28 +803,27 @@ input:-webkit-autofill:focus {
   text-align: center;
 }
 
-.directory-row__path,
-.path-display {
+.directory-row__path {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.file-row {
-  grid-template-columns: 40px minmax(0, 1fr) auto auto;
-}
-
 .path-display {
   display: flex;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
   gap: var(--space-xs);
+  overflow-wrap: anywhere;
 }
 
 .path-display__old,
 .path-display__new {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
 }
 
 .path-display__arrow {
@@ -834,9 +833,8 @@ input:-webkit-autofill:focus {
 
 .path-text {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .path-text__directory {
@@ -1054,11 +1052,12 @@ input:-webkit-autofill:focus {
 }
 
 .review-shell {
+  position: relative;
   display: grid;
   min-width: 0;
+  max-width: 100%;
   min-height: 0;
-  grid-template-columns: 288px minmax(640px, 1fr) 360px;
-  overflow: hidden;
+  grid-template-columns: 288px minmax(0, 1fr) 360px;
 }
 
 .review-files,
@@ -1088,10 +1087,11 @@ input:-webkit-autofill:focus {
 
 .review-main {
   display: grid;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
   min-height: 0;
   grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
 }
 
 .review-context-header {
@@ -1105,9 +1105,22 @@ input:-webkit-autofill:focus {
   display: grid;
   min-width: 0;
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-areas: "base file head";
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-sm) var(--space-md);
+}
+
+.review-context-header__endpoint--base {
+  grid-area: base;
+}
+
+.review-context-header__file {
+  grid-area: file;
+}
+
+.review-context-header__endpoint--head {
+  grid-area: head;
 }
 
 .review-context-header__endpoint {
@@ -1136,9 +1149,8 @@ input:-webkit-autofill:focus {
 .review-context-header__endpoint-name,
 .review-context-header__endpoint-oid {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .review-context-header__endpoint-name {
@@ -1160,9 +1172,7 @@ input:-webkit-autofill:focus {
 .review-context-header__file h1 {
   min-width: 0;
   max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .review-context-header__toolbar {
@@ -1176,6 +1186,11 @@ input:-webkit-autofill:focus {
   border-bottom: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.review-toolbar__group {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
 }
 
 .review-toolbar__group + .review-toolbar__group {
@@ -1231,14 +1246,30 @@ input:-webkit-autofill:focus {
 }
 
 .diff-workspace {
-  position: relative;
   display: grid;
-  min-width: 640px;
+  min-width: 0;
+  max-width: 100%;
   min-height: 0;
-  grid-template-rows: 32px minmax(0, 1fr) auto;
-  overflow: hidden;
+  grid-template-rows: minmax(0, 1fr) auto;
   border-color: var(--diff-region-border);
   background: var(--diff-empty-background);
+}
+
+.diff-workspace__viewport {
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.diff-workspace__canvas {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 640px;
+  min-height: 100%;
+  grid-template-rows: 32px minmax(0, 1fr);
 }
 
 .diff-workspace__side-labels {
@@ -1895,17 +1926,17 @@ h3.conversation-card__identity {
 
 @media (max-width: 1439px) {
   .review-shell {
-    grid-template-columns: 256px minmax(640px, 1fr);
+    grid-template-columns: 256px minmax(0, 1fr);
   }
 
   .comments-rail {
     position: absolute;
     z-index: 7;
-    top: 64px;
-    right: 0;
-    bottom: 0;
-    width: 360px;
-    transform: translateX(100%);
+    inset-block: 0;
+    right: 8px;
+    width: min(360px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+    transform: translateX(calc(100% + 8px));
     transition: transform 120ms ease-out;
     box-shadow: none;
   }
@@ -1919,28 +1950,33 @@ h3.conversation-card__identity {
 @media (max-width: 1099px) {
   .review-shell {
     display: block;
-    overflow: auto;
   }
 
   .review-main {
     height: 100%;
-    min-width: 640px;
+  }
+
+  .review-context-header__context {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "file file"
+      "base head";
   }
 
   .review-files {
     position: absolute;
     z-index: 7;
-    top: 64px;
-    bottom: 0;
-    left: 0;
-    width: 288px;
-    transform: translateX(-100%);
+    inset-block: 0;
+    left: 8px;
+    width: min(288px, calc(100vw - 16px));
+    max-width: calc(100vw - 16px);
+    transform: translateX(calc(-100% - 8px));
     transition: transform 120ms ease-out;
     box-shadow: none;
   }
 
   .comments-rail {
-    width: min(360px, calc(100vw - 32px));
+    width: min(360px, calc(100vw - 16px));
   }
 
   .review-files--open {
@@ -2087,6 +2123,25 @@ h3.conversation-card__identity {
     overflow-wrap: anywhere;
   }
 
+  .review-context-header__context {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "file file"
+      "base head";
+  }
+
+  .review-context-header__context {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "file"
+      "base"
+      "head";
+  }
+
+  .review-context-header__endpoint--head {
+    text-align: left;
+  }
+
   .review-toolbar {
     flex-wrap: wrap;
     min-height: 48px;
@@ -2097,27 +2152,8 @@ h3.conversation-card__identity {
   }
 
   .review-main {
-    width: 640px;
-  }
-
-  .comments-rail {
-    width: calc(100vw - 32px);
-  }
-
-  .review-shell::after {
-    position: fixed;
-    z-index: 6;
-    right: var(--space-sm);
-    bottom: var(--space-sm);
-    max-width: 250px;
-    padding: var(--space-xs) var(--space-sm);
-    border: 1px solid var(--border-default);
-    border-radius: var(--radius-compact);
-    background: var(--surface-raised);
-    color: var(--text-muted);
-    content: "Widen the window for the clearest side-by-side review.";
-    font-size: var(--font-size-metadata);
-    line-height: var(--line-height-metadata);
+    width: 100%;
+    min-width: 0;
   }
 
   .draft-recovery {

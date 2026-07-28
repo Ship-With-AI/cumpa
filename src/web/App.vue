@@ -814,11 +814,6 @@ onBeforeUnmount(() => {
       <main class="review-main" aria-labelledby="diff-review-heading">
         <header class="review-context-header">
           <div class="review-context-header__context">
-            <div class="review-context-header__endpoint">
-              <span class="review-context-header__endpoint-label">BASE</span>
-              <span class="review-context-header__endpoint-name" :title="session.base.label">{{ session.base.label }}</span>
-              <span class="review-context-header__endpoint-oid" :title="session.base.oid">{{ baseShortOid }}</span>
-            </div>
             <div class="review-context-header__file">
               <div>
                 <p class="active-file-strip__eyebrow">Diff review</p>
@@ -828,6 +823,11 @@ onBeforeUnmount(() => {
                 </h1>
               </div>
               <button v-if="isFilesDrawer" type="button" class="ui-button" @click="openFiles">Files</button>
+            </div>
+            <div class="review-context-header__endpoint review-context-header__endpoint--base">
+              <span class="review-context-header__endpoint-label">BASE</span>
+              <span class="review-context-header__endpoint-name" :title="session.base.label">{{ session.base.label }}</span>
+              <span class="review-context-header__endpoint-oid" :title="session.base.oid">{{ baseShortOid }}</span>
             </div>
             <div class="review-context-header__endpoint review-context-header__endpoint--head">
               <span class="review-context-header__endpoint-label">HEAD</span>
