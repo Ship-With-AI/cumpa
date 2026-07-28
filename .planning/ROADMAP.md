@@ -141,11 +141,11 @@ Plans:
   5. User can complete existing file navigation, side-by-side review, commenting, summary, and export with unchanged information architecture, keyboard commands, persistence, and review mechanics.
 
 **Planning detail**: Validate representative desktop, narrow, zoomed, overlapping-state, grayscale, and forced-color scenarios after all real review surfaces are styled. Keep the diff viewport as the sole localized two-dimensional scroll owner and use the existing end-to-end workflow as the behavioral regression boundary.
-**Plans:** 3 plans
+**Plans:** 1/3 plans executed
 
 **Wave 1**
 
-- [ ] 08-01-PLAN.md — Reflow the existing header, drawers, and workspace around one localized 640px diff canvas without changing Monaco or review mechanics.
+- [x] 08-01-PLAN.md — Reflow the existing header, drawers, and workspace around one localized 640px diff canvas without changing Monaco or review mechanics.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -154,6 +154,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [ ] 08-03-PLAN.md — Prove the full responsive, zoom, grayscale, forced-color, keyboard, persistence, and export continuity matrix.
+
 **UI hint**: yes
 
 ## Progress
@@ -170,6 +171,6 @@ Plans:
 | 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
 | 06. Monaco Diff Semantics | v1.1 | 3/3 | Complete    | 2026-07-27 |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 9/9 | Complete    | 2026-07-28 |
-| 08. Accessible Responsive Continuity | v1.1 | 0/TBD | Not started | - |
+| 08. Accessible Responsive Continuity | v1.1 | 1/3 | In Progress|  |
 
 **v1.1 coverage:** 4 phases, 18 requirements, 18 mapped, 0 unmapped.

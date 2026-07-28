@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: GitHub Dark Diff
 current_phase: 08
-current_phase_name: Accessible Responsive Continuity
-status: ready
+current_phase_name: accessible-responsive-continuity
+status: executing
 stopped_at: Phase 08 UI-SPEC approved
-last_updated: "2026-07-28T13:50:07.867Z"
+last_updated: "2026-07-28T16:11:27.302Z"
 last_activity: 2026-07-28
-last_activity_desc: Phase 07 complete, transitioned to Phase 08
+last_activity_desc: Phase 08 execution started
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 13
-  completed_plans: 13
+  total_plans: 16
+  completed_plans: 14
   percent: 75
 ---
 
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-28)
 
 ## Current Position
 
-Phase: 08 — Accessible Responsive Continuity
-Plan: Not started
-Status: Not started — ready for planning
-Last activity: 2026-07-28 — Phase 07 complete, transitioned to Phase 08
+Phase: 08 (accessible-responsive-continuity) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-07-28 — Phase 08 execution started
 
 Progress: [█████████░] 85%
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 85%
 | Phase 07 P07 | not recorded | 1 tasks | 2 files |
 | Phase 07 P08 | 9min | 1 tasks | 3 files |
 | Phase 07 P09 | not-recorded | 2 tasks | 4 files |
+| Phase 08 P01 | 41min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Keep DiffReviewIgnoreStatus | null as the sole readiness authority; null is pending and unavailable requires the concrete discriminant. — Keeps both export status surfaces truthful without adding polling or mutation state.
 - [Phase 07]: Keep the success InlineNotice as the recovered result's sole status owner because it contains the complete visible receipt and non-color success anatomy. — Removes duplicate polite ownership without changing recovery authority or presentation.
 - [Phase 07]: Keep the parent selector-drift notice as the copy feedback's sole status owner because it preserves fixed pinned-source context and warning structure. — Removes nested copy feedback ownership without changing pinned-selector authority.
+- [Phase 08]: Keep active file Base Head source order and use grid areas only for responsive visual placement. — Preserves semantic reading order while retaining the established desktop composition.
+- [Phase 08]: Keep the 640px comparison floor on one positioned canvas and compare Monaco geometry relative to that canvas. — Separates local overflow from Monaco reflow without changing adapter ownership.
 
 ### Pending Todos
 
@@ -132,6 +135,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-28T13:50:07.863Z
+Last session: 2026-07-28T16:10:28.805Z
 Stopped at: Phase 08 UI-SPEC approved
 Resume file: .planning/phases/08-accessible-responsive-continuity/08-UI-SPEC.md
