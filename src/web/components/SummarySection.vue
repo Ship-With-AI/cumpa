@@ -127,7 +127,7 @@ watch(() => props.failure, (failed) => {
 </script>
 
 <template>
-  <section class="review-summary" aria-labelledby="review-summary-heading">
+  <section class="review-summary" role="region" :aria-label="`Summary ${status}`">
     <header class="review-summary__header">
       <h3>
         <button

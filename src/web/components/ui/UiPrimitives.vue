@@ -19,7 +19,7 @@ function dismiss(): void {
     @focusout="dismiss"
     @mouseenter="open = true"
     @mouseleave="dismiss"
-    @keydown.escape.stop="dismiss"
+    @keydown.escape="dismiss"
   >
     <slot />
     <span v-if="open" class="ui-tooltip__content" role="tooltip">{{ text }}</span>

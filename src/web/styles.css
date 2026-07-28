@@ -782,6 +782,10 @@ input:-webkit-autofill:focus {
   line-height: var(--line-height-body);
 }
 
+.review-files .tree-row:focus-visible {
+  outline-offset: -2px;
+}
+
 .tree-row:hover {
   background: var(--surface-interactive-hover);
 }
@@ -1156,6 +1160,7 @@ input:-webkit-autofill:focus {
   color: var(--text-secondary);
   font-weight: var(--font-weight-semibold);
   letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .review-context-header__endpoint-name,

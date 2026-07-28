@@ -1032,6 +1032,51 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(tooltip).toHaveCount(0);
       await expect(page.locator('.review-toolbar')).toHaveCSS('box-shadow', 'none');
     });
+    await test.step('keyboard-only 320px journey keeps existing destinations and discard flow reachable', async () => {
+      await page.setViewportSize({ width: 320, height: 640 });
+
+      for (const [name, destination] of [
+        ['Skip to changed files', 'changed-files-heading'],
+        ['Skip to diff', 'diff-review-heading'],
+        ['Skip review', 'review-heading'],
+      ] as const) {
+        const skipLink = page.getByRole('link', { name, exact: true });
+        await skipLink.focus();
+        await expectFocusIndicatorUnclipped(skipLink);
+        await page.keyboard.press('Enter');
+        await expect.poll(() => new URL(page.url()).hash).toBe(`#${destination}`);
+      }
+
+      const files = page.getByRole('button', { name: 'Files', exact: true });
+      await files.focus();
+      await expectFocusIndicatorUnclipped(files);
+      await page.keyboard.press('Enter');
+      const firstFile = page.locator('.file-tree .file-row').first();
+      await firstFile.focus();
+      await expectFocusIndicatorUnclipped(firstFile);
+      await page.keyboard.press('Enter');
+      await expect(page.locator('.review-files')).not.toHaveClass(/review-files--open/);
+
+      await page.keyboard.press('Alt+Shift+]');
+      await expect(page.locator('.review-context-header__file')).toContainText('beta-after-a-very-long-rename.ts');
+      await page.keyboard.press('Alt+Shift+[');
+      await expect(page.locator('.review-context-header__file')).toContainText('alpha.ts');
+
+      const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
+      await keyboardHelp.focus();
+      await expectFocusIndicatorUnclipped(keyboardHelp);
+      await page.keyboard.press('?');
+      await expect(page.getByRole('heading', { name: 'Keyboard actions', exact: true })).toBeVisible();
+      await expect(page.getByText('Add or focus comment on current line — Option+Enter on macOS; Alt+Enter on Windows and Linux')).toBeVisible();
+      await expect(keyboardHelp).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(page.getByRole('heading', { name: 'Keyboard actions', exact: true })).toHaveCount(0);
+
+      await page.keyboard.press('F7');
+      await page.keyboard.press('Shift+F7');
+      await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+      await assertNoPageOverflow(page);
+    });
 
     await test.step('Phase 08 boundary matrix preserves local diff overflow and complete identities', async () => {
       for (const width of phase08Widths) {

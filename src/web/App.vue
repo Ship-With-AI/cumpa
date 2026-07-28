@@ -825,12 +825,12 @@ onBeforeUnmount(() => {
               <button v-if="isFilesDrawer" type="button" class="ui-button" @click="openFiles">Files</button>
             </div>
             <div class="review-context-header__endpoint review-context-header__endpoint--base">
-              <span class="review-context-header__endpoint-label">BASE</span>
+              <span class="review-context-header__endpoint-label">Base</span>
               <span class="review-context-header__endpoint-name" :title="session.base.label">{{ session.base.label }}</span>
               <span class="review-context-header__endpoint-oid" :title="session.base.oid">{{ baseShortOid }}</span>
             </div>
             <div class="review-context-header__endpoint review-context-header__endpoint--head">
-              <span class="review-context-header__endpoint-label">HEAD</span>
+              <span class="review-context-header__endpoint-label">Head</span>
               <span class="review-context-header__endpoint-name" :title="session.head.label">{{ session.head.label }}</span>
               <span class="review-context-header__endpoint-oid" :title="session.head.oid">{{ headShortOid }}</span>
             </div>
