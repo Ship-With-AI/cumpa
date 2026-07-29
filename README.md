@@ -1,8 +1,8 @@
-# Diff Review
+# Compare
 
-Diff Review gives committed local Git comparisons a pull-request-style review workspace without publishing a branch or worktree. Choose local branches or registered worktrees, leave durable feedback, and export it for an agent or teammate to use.
+Compare gives committed local Git comparisons a pull-request-style review workspace without publishing a branch or worktree. Choose local branches or registered worktrees, leave durable feedback, and export it for an agent or teammate to use.
 
-This is a **local source setup** for the private `diff-review@0.0.0` package. It is not a published npm package.
+This is a **local source setup** for the private `compare@0.0.0` package. It is not a published npm package.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ You need:
 
 ## Install and build from this checkout
 
-Run these commands in the Diff Review source checkout:
+Run these commands in the Compare source checkout:
 
 ```sh
 npm ci
@@ -23,7 +23,7 @@ npm run build
 npm link
 ```
 
-`npm run build` creates the `dist/bin/diff-review.mjs` executable, and `npm link` makes this locally built `diff-review` command available from your shell.
+`npm run build` creates the `dist/bin/compare.mjs` executable, and `npm link` makes this locally built `compare` command available from your shell.
 
 ## Start a review
 
@@ -31,16 +31,16 @@ Change to the Git worktree whose local branches or registered worktrees you want
 
 ```sh
 cd /path/to/repository-to-review
-diff-review
+compare
 ```
 
-Diff Review first asks you to choose the **base**, then the **head**, using searchable lists of local branches and registered worktrees. The base is the reference point; the selected head is the committed state under review.
+Compare first asks you to choose the **base**, then the **head**, using searchable lists of local branches and registered worktrees. The base is the reference point; the selected head is the committed state under review.
 
-The comparison is a diff from the selected base and head’s merge base to the selected head. If a selected worktree is dirty, Diff Review uses its committed HEAD only; uncommitted worktree bytes are not reviewed.
+The comparison is a diff from the selected base and head’s merge base to the selected head. If a selected worktree is dirty, Compare uses its committed HEAD only; uncommitted worktree bytes are not reviewed.
 
 Before launch, the confirmation screen shows the full base, head, and merge base OIDs. Confirm only after checking them: the session is pinned to those commits and does not follow later ref movement.
 
-Diff Review listens only on an ephemeral `127.0.0.1` loopback port. It prints the review URL before attempting to open your default browser. If no browser opens, use the printed URL directly.
+Compare listens only on an ephemeral `127.0.0.1` loopback port. It prints the review URL before attempting to open your default browser. If no browser opens, use the printed URL directly.
 
 ## Review in the browser
 
@@ -55,10 +55,10 @@ Saved comments and the saved summary are repository-local, versioned JSON state.
 
 ### Draft location
 
-Diff Review stores a draft at:
+Compare stores a draft at:
 
 ```text
-.diff-review/drafts/<comparison-key>.json
+.compare/drafts/<comparison-key>.json
 ```
 
 `<comparison-key>` is a 64-hex SHA-256 hash derived from the ordered, pinned base and head commit OIDs. It is an application-generated draft identity, not a filename you choose or a literal base/head path.
@@ -68,17 +68,17 @@ Diff Review stores a draft at:
 Export creates this pair together from the accepted draft revision:
 
 ```text
-.diff-review/exports/<baseOid>..<headOid>/review.json
-.diff-review/exports/<baseOid>..<headOid>/review.md
+.compare/exports/<baseOid>..<headOid>/review.json
+.compare/exports/<baseOid>..<headOid>/review.md
 ```
 
 `review.json` is the canonical export; `review.md` is derived from it. Export does not apply, stage, commit, or push changes.
 
-After a successful export, the receipt offers **Reveal export directory**. The export area also shows `.gitignore` status and offers an optional flow to append the Diff Review ignore rule. Ignore status is not a prerequisite for reviewing or exporting.
+After a successful export, the receipt offers **Reveal export directory**. The export area also shows `.gitignore` status and offers an optional flow to append the Compare ignore rule. Ignore status is not a prerequisite for reviewing or exporting.
 
-## Stop Diff Review
+## Stop Compare
 
-Return to the terminal where you launched `diff-review` and press `Ctrl+C`. This stops the local loopback server.
+Return to the terminal where you launched `compare` and press `Ctrl+C`. This stops the local loopback server.
 
 ## Keyboard shortcuts
 
@@ -99,6 +99,6 @@ Visible controls remain available for every action. These shortcuts are addition
 
 ## v1 file limits
 
-Diff Review reviews regular UTF-8 text files only. Each inspected blob side must be at most 1,048,576 bytes (1 MiB).
+Compare reviews regular UTF-8 text files only. Each inspected blob side must be at most 1,048,576 bytes (1 MiB).
 
-Binary, non-UTF-8, oversized, symlink, submodule, and unsupported mode/type entries stay visible but are not reviewable. Missing-object cases (missing objects) are separately unavailable rather than unsupported file kinds. Diff Review does not separately detect arbitrary generated source files. Its own `.diff-review/` internal output is always excluded from the review inventory.
+Binary, non-UTF-8, oversized, symlink, submodule, and unsupported mode/type entries stay visible but are not reviewable. Missing-object cases (missing objects) are separately unavailable rather than unsupported file kinds. Compare does not separately detect arbitrary generated source files. Its own `.compare/` internal output is always excluded from the review inventory.

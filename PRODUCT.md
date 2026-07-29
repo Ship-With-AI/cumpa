@@ -2,7 +2,8 @@
 
 ## Product
 
-Diff Review is a local-first code review application for committed changes between two local Git branch or registered-worktree heads. Its core value is precise review feedback without publishing the comparison to a remote host.
+Compare is a local-first code review application for committed changes between two local Git branch or registered-worktree heads. Its core value is precise review feedback without publishing the comparison to a remote host.
+Compare reads as English “compare” and Italian “comrade/friend”.
 
 ## Audience
 
@@ -16,7 +17,7 @@ Diff Review is a local-first code review application for committed changes betwe
 - A Fastify server binds to loopback only and opens a browser workspace.
 - The Vue interface uses Monaco for side-by-side text diffs, syntax highlighting, line mapping, and inline review controls.
 - Reviewers can leave line comments and an overall summary.
-- Versioned JSON drafts live in the repository-local, gitignored `.diff-review/` directory.
+- Versioned JSON drafts live in the repository-local, gitignored `.compare/` directory.
 - Exports provide Markdown and canonical JSON for a coding agent.
 - Version 1 reviews text files; binary, generated, oversized, and unsupported files remain visible but non-reviewable.
 
