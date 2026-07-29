@@ -4,6 +4,8 @@ Compare gives committed local Git comparisons a pull-request-style review worksp
 
 This is a **local source setup** for the private `compare@0.0.0` package. It is not a published npm package.
 
+Compare is the project and product; `compare` is its private npm package; `cumpa` is the command. `cumpa` is the ASCII terminal spelling of Neapolitan `cumpà`, used colloquially for a friend, mate, or comrade.
+
 ## Prerequisites
 
 You need:
@@ -23,7 +25,7 @@ npm run build
 npm link
 ```
 
-`npm run build` creates the `dist/bin/compare.mjs` executable, and `npm link` makes this locally built `compare` command available from your shell.
+`npm run build` creates the `dist/bin/cumpa.mjs` executable, and `npm link` makes this locally built `cumpa` command available from your shell.
 
 ## Start a review
 
@@ -31,7 +33,7 @@ Change to the Git worktree whose local branches or registered worktrees you want
 
 ```sh
 cd /path/to/repository-to-review
-compare
+cumpa
 ```
 
 Compare first asks you to choose the **base**, then the **head**, using searchable lists of local branches and registered worktrees. The base is the reference point; the selected head is the committed state under review.
@@ -78,7 +80,7 @@ After a successful export, the receipt offers **Reveal export directory**. The e
 
 ## Stop Compare
 
-Return to the terminal where you launched `compare` and press `Ctrl+C`. This stops the local loopback server.
+Return to the terminal where you launched `cumpa` and press `Ctrl+C`. This stops the local loopback server.
 
 ## Keyboard shortcuts
 
