@@ -816,7 +816,7 @@ onBeforeUnmount(() => {
           <div class="review-context-header__context">
             <div class="review-context-header__file">
               <div>
-                <p class="active-file-strip__eyebrow">Diff review</p>
+                <p class="active-file-strip__eyebrow">Comparison</p>
                 <h1 id="compare-heading">
                   <PathDisplay v-if="selectedFile !== undefined" :file="selectedFile" />
                   <template v-else>{{ selectedPath }}</template>
