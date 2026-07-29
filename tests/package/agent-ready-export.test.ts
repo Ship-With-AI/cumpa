@@ -9,7 +9,7 @@ import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.
 
 
 const projectRoot = resolve(import.meta.dirname, '../..');
-const packagedCli = join(projectRoot, 'dist', 'bin', 'compare.mjs');
+const packagedCli = join(projectRoot, 'dist', 'bin', 'cumpa.mjs');
 const playwrightExecutable = join(projectRoot, 'node_modules', '.bin', 'playwright');
 const scenarioCommand = ['test', 'tests/e2e'] as const;
 const resumeTest = 'packaged-resume-after-relaunch preserves accepted review state, completes target-aware second export, and recovers exact bytes';
@@ -106,7 +106,7 @@ function runPackagedScenario(): ScenarioEvidenceReport {
       title: resumeTest,
       testFile: 'tests/e2e/agent-ready-export.spec.ts',
     });
-    expect(report.packageArtifact.path).toBe('dist/bin/compare.mjs');
+    expect(report.packageArtifact.path).toBe('dist/bin/cumpa.mjs');
     assertSha256(report.packageArtifact.sourceSha256);
     assertSha256(report.packageArtifact.packedSha256);
     expect(report.packageArtifact.packedSha256).toBe(report.packageArtifact.sourceSha256);
@@ -182,7 +182,7 @@ function assertUniqueExecutedCoverage(records: readonly EvidenceRecord[]): void 
   for (const record of records) {
     expect(record.executed).toBe(true);
     expect(record.command).toBe(`${playwrightExecutable} ${scenarioCommand.join(' ')}`);
-    expect(record.packageArtifact).toBe('dist/bin/compare.mjs');
+    expect(record.packageArtifact).toBe('dist/bin/cumpa.mjs');
   }
 }
 

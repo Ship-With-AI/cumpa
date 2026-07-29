@@ -8,7 +8,7 @@
     "node": ">=24"
   },
   "bin": {
-    "compare": "dist/bin/compare.mjs"
+    "cumpa": "dist/bin/cumpa.mjs"
   },
   "files": [
     "dist/"
