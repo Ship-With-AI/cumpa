@@ -171,6 +171,6 @@ Plans:
 | 05. Semantic Dark Foundation | v1.1 | 1/1 | Complete    | 2026-07-26 |
 | 06. Monaco Diff Semantics | v1.1 | 3/3 | Complete    | 2026-07-27 |
 | 07. GitHub-Familiar Review Surfaces | v1.1 | 9/9 | Complete    | 2026-07-28 |
-| 08. Accessible Responsive Continuity | v1.1 | 3/3 | Complete   | 2026-07-28 |
+| 08. Accessible Responsive Continuity | v1.1 | 3/3 | Complete    | 2026-07-28 |
 
 **v1.1 coverage:** 4 phases, 18 requirements, 18 mapped, 0 unmapped.

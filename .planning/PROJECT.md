@@ -43,11 +43,11 @@ Validated in Phase 05: Semantic Dark Foundation established the dark semantic pa
 
 Validated in Phase 07: GitHub-Familiar Review Surfaces adapted the file header, controls, inline conversations, review rail, recovery, notices, and export feedback without changing review mechanics.
 
+Validated in Phase 08: Accessible Responsive Continuity completed the GitHub-dark workspace adaptation with composited WCAG contrast, durable focus and forced-color cues, localized side-by-side diff overflow, responsive reflow through true 400% zoom, and unchanged review/export behavior.
+
 ### Active
 
-- [ ] User experiences a close adaptation of GitHub's dark-default pull-request diff palette throughout the diff workspace.
-- [ ] User can distinguish additions, deletions, selected lines, comments, focus, errors, and disabled states through accessible color and non-color cues.
-- [ ] User retains the existing review workflow and information architecture across desktop and narrow layouts.
+No active v1.1 requirements. All 18 GitHub Dark Diff requirements are validated.
 
 ### Out of Scope
 
@@ -60,7 +60,7 @@ Validated in Phase 07: GitHub-Familiar Review Surfaces adapted the file header, 
 
 ## Context
 
-Phase 05 v1.1 complete: application chrome and workflow states consume one verified semantic dark vocabulary. Phase 06 complete: real Monaco now applies the typed `diff-review-dark` theme, bounded Base/Head bars and signs, selection/anchor/focus layers, and flat empty/hunk regions while preserving immutable diff mechanics and geometry. Phase 07 complete: every existing review surface now uses the GitHub-familiar hierarchy and explicit interaction-state language, with paired Monaco comment-zone containment and single-owner live feedback verified in Chromium.
+Phase 05 established one verified semantic dark vocabulary. Phase 06 applied it to Monaco diff semantics without changing immutable diff mechanics. Phase 07 adapted every existing review surface with explicit interaction-state language and single-owner live feedback. Phase 08 completed the milestone: the packaged workspace now preserves contrast, non-color meaning, keyboard focus, responsive reflow, local diff scrolling, and the full review/export workflow across desktop, 320 CSS px, true 400% zoom, grayscale, and forced colors.
 
 Diff Review v1.0 shipped the complete local browser-review-to-agent loop. A developer can select ordered local branches or registered worktrees, inspect the immutable merge-base-to-head change set, maintain a repository-local review draft, and export canonical JSON plus derived Markdown without publishing refs or modifying source control.
 
@@ -108,6 +108,9 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 | Keep Phase 07 presentation derived from existing session, review, export, recovery, and selector state | Prevent a visual adaptation from creating a second behavior, persistence, or filesystem authority | Good — all five roadmap criteria and 42/42 plan must-haves passed goal verification |
 | Resize accepted and composing inline cards through one post-render paired-zone helper | Keep Base/Head Monaco zones equal while long accepted content remains contained without changing adapter or anchor authority | Good — production Chromium proves long-card containment and following-code separation |
 | Give each dynamic recovery and selector-copy outcome one authoritative live-region owner | Prevent duplicate assistive announcements while retaining visible feedback, actions, and focus behavior | Good — focused browser checks count exactly one owner after each real state transition |
+| Keep responsive visual placement separate from semantic source order | Preserve file → Base → Head reading order while matching the desktop composition and narrow reflow | Good — exact-width and keyboard browser evidence passed without duplicate controls or state paths |
+| Keep the 640px side-by-side comparison floor inside one localized viewport | Prevent page-wide overflow without reflowing Monaco or changing Base/Head geometry | Good — 320px and true 400% zoom evidence retained a 640px locally scrollable canvas with document fit |
+| Measure composited rendered contrast and focus geometry against actual browser states | Token-only checks cannot prove translucent diff, selection, status, or clipping behavior | Good — completed UAT accepted the full contrast, focus-inventory, and true-zoom gates |
 
 ## Evolution
 
@@ -127,4 +130,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-28 after completing Phase 07 GitHub-Familiar Review Surfaces*
+*Last updated: 2026-07-29 after completing Phase 08 Accessible Responsive Continuity*
