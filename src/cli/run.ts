@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { Command } from 'commander';
 
 import open from 'open';
 import { z } from 'zod';
@@ -447,13 +448,19 @@ export async function run(
     return await createComparisonLaunchDescriptor(options);
   }
 
-  const serializedLaunchOptions = process.env.COMPARE_LAUNCH_OPTIONS;
-  if (serializedLaunchOptions === undefined) {
-    await runCli({ cwd: process.cwd() });
-    return;
-  }
-  const launchOptions = packagedLaunchOptionsSchema.parse(
-    JSON.parse(serializedLaunchOptions),
-  );
-  await launchPinnedSession(launchOptions);
+  await new Command()
+    .name('cumpa')
+    .description('Local-first review of pinned Git comparisons')
+    .action(async () => {
+      const serializedLaunchOptions = process.env.COMPARE_LAUNCH_OPTIONS;
+      if (serializedLaunchOptions === undefined) {
+        await runCli({ cwd: process.cwd() });
+        return;
+      }
+      const launchOptions = packagedLaunchOptionsSchema.parse(
+        JSON.parse(serializedLaunchOptions),
+      );
+      await launchPinnedSession(launchOptions);
+    })
+    .parseAsync(process.argv);
 }
