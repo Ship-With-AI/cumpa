@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-29)
 Phase: Milestone v1.1 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-29 — Milestone v1.1 completed and archived
+Last activity: 2026-07-29 - Completed quick task 260729-pkw: create a --help command for the cli
 
 ## Performance Metrics
 
@@ -126,6 +126,7 @@ None yet.
 | 260729-gzm | Refine changed-files sidebar, diff clarity, and design contracts | 2026-07-29 | 3b72649 | [260729-gzm](./quick/260729-gzm-refine-diff-sidebar-and-clarity/) |
 | 260729-lga | Rename entire project to Compare | 2026-07-29 | 9fac4fa | [260729-lga](./quick/260729-lga-rename-the-entire-project-from-diff-revi/) |
 | 260729-ohr | Rename Compare CLI command to cumpa | 2026-07-29 | 322d8ac | [260729-ohr](./quick/260729-ohr-change-the-compare-cli-command-and-gener/) |
+| 260729-pkw | create a --help command for the cli | 2026-07-29 | b40e6e0 | [260729-pkw](./quick/260729-pkw-create-help-command/) |
 
 ## Deferred Items
 
