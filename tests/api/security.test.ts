@@ -121,6 +121,9 @@ function expectSecurityHeaders(headers: Record<string, string | string[] | undef
   expect(headers['x-frame-options']).toBe('DENY');
   expect(headers['content-security-policy']).toContain("default-src 'self'");
   expect(headers['content-security-policy']).toContain("connect-src 'self'");
+  expect(headers['content-security-policy']).toContain(
+    "style-src 'self'; style-src-elem 'self' 'unsafe-inline'; style-src-attr 'unsafe-inline'",
+  );
   expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
   expect(headers['content-security-policy']).toContain("base-uri 'none'");
   expect(headers['access-control-allow-origin']).toBeUndefined();

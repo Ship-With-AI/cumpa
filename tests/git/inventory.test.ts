@@ -74,7 +74,7 @@ async function createInventoryFixture(
 
   git(['init', '--initial-branch=main']);
   git(['config', '--local', 'user.name', 'Diff Review Inventory Fixture']);
-  git(['config', '--local', 'user.email', 'inventory@diff-review.invalid']);
+  git(['config', '--local', 'user.email', 'inventory@test.invalid']);
   git(['config', '--local', 'commit.gpgSign', 'false']);
 
 

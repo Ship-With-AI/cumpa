@@ -66,7 +66,7 @@ async function createAvailabilityFixture(): Promise<AvailabilityFixture> {
     'config',
     '--local',
     'user.email',
-    'availability@diff-review.invalid',
+    'availability@test.invalid',
   ]);
   git(['config', '--local', 'commit.gpgSign', 'false']);
   git(['commit', '--allow-empty', '-m', 'availability base']);

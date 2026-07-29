@@ -27,7 +27,7 @@ async function createFixture(): Promise<{ readonly root: string }> {
   roots.push(root);
   git(root, ['init', '--initial-branch=main']);
   git(root, ['config', 'user.name', 'Diff Review Anchor Fixture']);
-  git(root, ['config', 'user.email', 'anchor@diff-review.invalid']);
+  git(root, ['config', 'user.email', 'anchor@test.invalid']);
   await writeFile(join(root, 'old-name.ts'), 'shared\nbase only\nunchanged\n');
   await writeFile(join(root, 'deleted.ts'), 'delete me\n');
   await writeFile(join(root, 'modified.ts'), 'before\nshared\n');

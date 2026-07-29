@@ -120,7 +120,10 @@ export async function captureSourceControlSnapshot(repositoryRoot: string): Prom
   return Object.freeze({
     head: git(repositoryRoot, ['rev-parse', 'HEAD']).toString('utf8').trim(),
     ref,
-    refs: git(repositoryRoot, ['for-each-ref', '--format=%(refname)%00%(objectname)%00']),
+    refs: git(repositoryRoot, [
+      'for-each-ref',
+      ['--format=%(refname)', '%(objectname)', ''].join('%00'),
+    ]),
     remotes: git(repositoryRoot, ['remote', '-v']),
     index,
     indexSha256: createHash('sha256').update(index).digest('hex'),

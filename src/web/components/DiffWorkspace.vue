@@ -275,8 +275,14 @@ onBeforeUnmount(() => {
     <div class="diff-workspace__viewport">
       <div class="diff-workspace__canvas">
         <div class="diff-workspace__side-labels" aria-hidden="true">
-          <span>BASE</span>
-          <span>HEAD</span>
+          <span>
+            <span>BASE</span>
+            <span class="diff-workspace__side-cue diff-workspace__side-cue--base">− REMOVED</span>
+          </span>
+          <span>
+            <span>HEAD</span>
+            <span class="diff-workspace__side-cue diff-workspace__side-cue--head">+ ADDED</span>
+          </span>
         </div>
         <button
           v-if="anchorAffordance"

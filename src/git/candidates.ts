@@ -8,8 +8,12 @@ import {
 import { discoverGitRepository } from './repository.js';
 import { createGitRunner, type GitRunner } from './runner.js';
 
-const BRANCH_FORMAT =
-  '%(refname)%00%(refname:short)%00%(objectname)%00';
+const BRANCH_FORMAT = [
+  '%(refname)',
+  '%(refname:short)',
+  '%(objectname)',
+  '',
+].join('%00');
 
 interface CandidateDiscoveryOptions {
   readonly cwd: string;

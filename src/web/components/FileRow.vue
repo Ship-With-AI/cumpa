@@ -64,7 +64,10 @@ const availabilityLabel = computed(() => {
       </span>
       <span
         class="availability-marker"
-        :class="`availability-marker--${leaf.file.availability.kind}`"
+        :class="[
+          `availability-marker--${leaf.file.availability.kind}`,
+          { 'visually-hidden': leaf.file.availability.kind === 'text' },
+        ]"
       >
         {{ availabilityLabel }}
       </span>

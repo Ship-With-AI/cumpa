@@ -533,14 +533,35 @@ async function expectPhase08ReflowAtWidth(page: Page, width: Phase08Width): Prom
 async function expectNonColorStateCues(page: Page): Promise<void> {
   const review = page.getByRole('button', { name: 'Review', exact: true });
   const selected = page.locator('.tree-row--selected').first();
+  const filesPane = page.locator('.review-files');
   const baseBar = page.locator('.monaco-editor .monaco-diff-change-bar--base').first();
   const headBar = page.locator('.monaco-editor .monaco-diff-change-bar--head').first();
   const baseSign = page.locator('.monaco-editor .monaco-diff-change-sign--base').first();
   const headSign = page.locator('.monaco-editor .monaco-diff-change-sign--head').first();
+  const sideLabels = page.locator('.diff-workspace__side-labels');
+  const modifiedLines = page.locator('.monaco-diff-editor .modified .view-line');
 
-  await expect(page.locator('.diff-workspace__side-labels')).toHaveText(/BASEHEAD/);
+  await expect(sideLabels).toHaveText(/BASE− REMOVEDHEAD\+ ADDED/);
+  await expect(sideLabels.locator(':scope > span').first()).toHaveCSS('font-weight', '600');
   await expect(selected).toBeVisible();
   await expect(selected).toHaveCSS('border-left-width', '3px');
+  await expect(selected.locator('.availability-marker--text')).toHaveClass(/visually-hidden/);
+  const [selectedBox, filesBox, countsBox] = await Promise.all([
+    selected.boundingBox(),
+    filesPane.boundingBox(),
+    selected.locator('.line-counts').boundingBox(),
+  ]);
+  expect(selectedBox?.height).toBeLessThanOrEqual(48);
+  expect(selectedBox!.x + selectedBox!.width).toBeLessThanOrEqual(filesBox!.x + filesBox!.width);
+  expect(countsBox!.x + countsBox!.width).toBeLessThanOrEqual(filesBox!.x + filesBox!.width);
+  const lineBoxes = await modifiedLines.evaluateAll((lines) =>
+    lines.slice(0, 2).map((line) => {
+      const box = line.getBoundingClientRect();
+      return { height: box.height, y: box.y };
+    }),
+  );
+  expect(lineBoxes[0]!.height).toBeGreaterThan(0);
+  expect(lineBoxes[1]!.y).toBeGreaterThan(lineBoxes[0]!.y);
   await expect(baseBar).toHaveCSS('border-left-style', 'dashed');
   await expect(headBar).toHaveCSS('border-left-style', 'solid');
   expect(await baseSign.evaluate((element) => getComputedStyle(element, '::before').content)).toContain('−');
@@ -848,11 +869,11 @@ test('responsive keyboard and accessibility contract', async ({
         '--status-pending-background': '#21262d',
         '--status-disabled-background': '#161b22',
         '--diff-addition-foreground': '#3fb950',
-        '--diff-addition-background': '#2ea04326',
-        '--diff-addition-intraline-background': '#2ea04359',
+        '--diff-addition-background': '#2ea04338',
+        '--diff-addition-intraline-background': '#2ea04373',
         '--diff-deletion-foreground': '#f85149',
-        '--diff-deletion-background': '#f8514926',
-        '--diff-deletion-intraline-background': '#f8514959',
+        '--diff-deletion-background': '#f8514938',
+        '--diff-deletion-intraline-background': '#f8514973',
         '--diff-hunk-foreground': '#a371f7',
         '--diff-hunk-background': '#a371f726',
         '--diff-empty-background': '#010409',
@@ -1176,7 +1197,9 @@ test('responsive keyboard and accessibility contract', async ({
 
         await expect(baseBar).toHaveCSS('border-left-style', 'dashed');
         await expect(headBar).toHaveCSS('border-left-style', 'solid');
-        await expect(page.locator('.diff-workspace__side-labels')).toHaveText(/BASEHEAD/);
+        await expect(page.locator('.diff-workspace__side-labels')).toHaveText(
+          /BASE− REMOVEDHEAD\+ ADDED/,
+        );
         expect(await baseSign.evaluate((element) =>
           getComputedStyle(element, '::before').content,
         )).toContain('−');
@@ -1477,13 +1500,13 @@ test('responsive keyboard and accessibility contract', async ({
 
     if (process.env.DIFF_REVIEW_TRUE_ZOOM === '1') {
       test.setTimeout(90_000);
-      await test.step('headed true 400% browser zoom preserves the effective 320px contract', async () => {
+      await test.step('headed true 4× browser zoom preserves the effective 320px contract', async () => {
         await page.setViewportSize({ width: 1280, height: 640 });
         const review = page.getByRole('button', { name: 'Review', exact: true });
         await review.focus();
         await expect(review).toBeFocused();
         await page.bringToFront();
-        console.log('[manual] Apply Chromium browser zoom to 400% with the browser zoom shortcut.');
+        console.log('[manual] Apply Chromium browser zoom to 4× with the browser zoom shortcut.');
         await expect.poll(
           () => page.evaluate(() => document.documentElement.clientWidth),
           { message: '[manual] waiting for true browser zoom to create a 320 CSS px viewport', timeout: 60_000 },

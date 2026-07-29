@@ -257,11 +257,11 @@ onBeforeUnmount(() => {
 
               <div class="phase6-prototype__row">
                 <div class="phase6-prototype__cell phase6-prototype__cell--unchanged">
-                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>41</span></div>
+                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>L41</span></div>
                   <pre class="phase6-prototype__code"><span class="phase6-prototype__token-keyword">const</span> reviewState = <span class="phase6-prototype__token-function">computeReviewState</span>(draft);</pre>
                 </div>
                 <div class="phase6-prototype__cell phase6-prototype__cell--unchanged">
-                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>41</span></div>
+                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>L41</span></div>
                   <pre class="phase6-prototype__code"><span class="phase6-prototype__token-keyword">const</span> reviewState = <span class="phase6-prototype__token-function">computeReviewState</span>(draft);</pre>
                 </div>
               </div>
@@ -269,14 +269,14 @@ onBeforeUnmount(() => {
               <div class="phase6-prototype__row">
                 <div class="phase6-prototype__cell phase6-prototype__cell--deletion phase6-prototype__cell--block-start phase6-prototype__cell--active">
                   <div class="phase6-prototype__gutter" aria-hidden="true">
-                    <span>42</span>
+                    <span>L42</span>
                     <span class="phase6-prototype__sign">−</span>
                   </div>
                   <pre class="phase6-prototype__code"><span class="phase6-prototype__token-keyword">const</span> semanticState = <mark class="phase6-prototype__intraline phase6-prototype__intraline--deletion">renderLegacyDiffFill</mark>(selection);</pre>
                 </div>
                 <div class="phase6-prototype__cell phase6-prototype__cell--addition phase6-prototype__cell--block-start phase6-prototype__cell--selection">
                   <div class="phase6-prototype__gutter" aria-hidden="true">
-                    <span>42</span>
+                    <span>L42</span>
                     <span class="phase6-prototype__sign">+</span>
                   </div>
                   <pre class="phase6-prototype__code"><span class="phase6-prototype__token-keyword">const</span> semanticState = <mark class="phase6-prototype__intraline phase6-prototype__intraline--addition">renderSemanticLayers</mark>(selection);</pre>
@@ -286,14 +286,14 @@ onBeforeUnmount(() => {
               <div class="phase6-prototype__row">
                 <div class="phase6-prototype__cell phase6-prototype__cell--deletion phase6-prototype__cell--block-mid">
                   <div class="phase6-prototype__gutter" aria-hidden="true">
-                    <span>43</span>
+                    <span>L43</span>
                     <span class="phase6-prototype__sign phase6-prototype__sign--muted">−</span>
                   </div>
                   <pre class="phase6-prototype__code">applySelectionFill(editor, <mark class="phase6-prototype__intraline phase6-prototype__intraline--deletion">diffRow</mark>);</pre>
                 </div>
                 <div class="phase6-prototype__cell phase6-prototype__cell--addition phase6-prototype__cell--block-mid phase6-prototype__cell--selection">
                   <div class="phase6-prototype__gutter" aria-hidden="true">
-                    <span>43</span>
+                    <span>L43</span>
                     <span class="phase6-prototype__sign phase6-prototype__sign--muted">+</span>
                   </div>
                   <pre class="phase6-prototype__code">applySelectionEdge(editor, <mark class="phase6-prototype__intraline phase6-prototype__intraline--addition">semanticRow</mark>);</pre>
@@ -303,14 +303,14 @@ onBeforeUnmount(() => {
               <div class="phase6-prototype__row">
                 <div class="phase6-prototype__cell phase6-prototype__cell--deletion phase6-prototype__cell--block-end phase6-prototype__cell--empty-note">
                   <div class="phase6-prototype__gutter" aria-hidden="true">
-                    <span>44</span>
+                    <span>L44</span>
                     <span class="phase6-prototype__sign">−</span>
                   </div>
                   <pre class="phase6-prototype__code">highlightHoveredRows(editor, hoverLine);</pre>
                 </div>
                 <div class="phase6-prototype__cell phase6-prototype__cell--addition phase6-prototype__cell--block-end phase6-prototype__cell--selection phase6-prototype__cell--hover">
                   <div class="phase6-prototype__gutter" aria-hidden="true">
-                    <span>44</span>
+                    <span>L44</span>
                     <span class="phase6-prototype__sign">+</span>
                   </div>
                   <pre class="phase6-prototype__code">highlightHoveredAffordance(editor, hoverLine);<span class="phase6-prototype__comment-affordance" aria-hidden="true">+</span></pre>
@@ -319,23 +319,23 @@ onBeforeUnmount(() => {
 
               <div class="phase6-prototype__row">
                 <div class="phase6-prototype__cell phase6-prototype__cell--unchanged phase6-prototype__cell--anchor">
-                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>45</span></div>
+                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>L45</span></div>
                   <pre class="phase6-prototype__code">syncAnchorRail(baseEditor, anchorLine);</pre>
                 </div>
                 <div class="phase6-prototype__cell phase6-prototype__cell--unchanged phase6-prototype__cell--anchor phase6-prototype__cell--focus-target">
-                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>45</span></div>
+                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>L45</span></div>
                   <pre class="phase6-prototype__code">syncAnchorRail(headEditor, anchorLine);</pre>
                 </div>
               </div>
 
               <div class="phase6-prototype__row">
                 <div class="phase6-prototype__cell phase6-prototype__cell--empty">
-                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>46</span></div>
+                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>L46</span></div>
                   <pre class="phase6-prototype__code">∅ empty counterpart stays recessed</pre>
                 </div>
                 <div class="phase6-prototype__cell phase6-prototype__cell--addition phase6-prototype__cell--block-start">
                   <div class="phase6-prototype__gutter" aria-hidden="true">
-                    <span>46</span>
+                    <span>L46</span>
                     <span class="phase6-prototype__sign">+</span>
                   </div>
                   <pre class="phase6-prototype__code"><span class="phase6-prototype__token-keyword">if</span> (isFocused) <span class="phase6-prototype__token-function">showOuterFocusRing</span>();</pre>
@@ -344,12 +344,12 @@ onBeforeUnmount(() => {
 
               <div class="phase6-prototype__row">
                 <div class="phase6-prototype__cell phase6-prototype__cell--empty">
-                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>47</span></div>
+                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>L47</span></div>
                   <pre class="phase6-prototype__code">∅ no base counterpart</pre>
                 </div>
                 <div class="phase6-prototype__cell phase6-prototype__cell--addition phase6-prototype__cell--block-end phase6-prototype__cell--selection">
                   <div class="phase6-prototype__gutter" aria-hidden="true">
-                    <span>47</span>
+                    <span>L47</span>
                     <span class="phase6-prototype__sign">+</span>
                   </div>
                   <pre class="phase6-prototype__code">persistSelectionGeometry(editor, focusedSide);</pre>
@@ -362,11 +362,11 @@ onBeforeUnmount(() => {
 
               <div class="phase6-prototype__row">
                 <div class="phase6-prototype__cell phase6-prototype__cell--unchanged phase6-prototype__cell--selection">
-                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>60</span></div>
+                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>L60</span></div>
                   <pre class="phase6-prototype__code"><span class="phase6-prototype__token-keyword">return</span> currentSelection.<span class="phase6-prototype__token-property">lineCount</span> &gt; 0;</pre>
                 </div>
                 <div class="phase6-prototype__cell phase6-prototype__cell--unchanged phase6-prototype__cell--selection phase6-prototype__cell--hover">
-                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>63</span></div>
+                  <div class="phase6-prototype__gutter" aria-hidden="true"><span>L63</span></div>
                   <pre class="phase6-prototype__code"><span class="phase6-prototype__token-keyword">return</span> currentSelection.<span class="phase6-prototype__token-property">lineCount</span> &gt; 0;</pre>
                 </div>
               </div>

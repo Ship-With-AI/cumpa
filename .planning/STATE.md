@@ -5,9 +5,9 @@ milestone_name: GitHub Dark Diff
 current_phase: 08
 status: complete
 stopped_at: Phase 08 complete, ready to complete v1.1 milestone
-last_updated: "2026-07-29T08:02:44Z"
+last_updated: "2026-07-29T11:22:53Z"
 last_activity: 2026-07-29
-last_activity_desc: Phase 08 complete
+last_activity_desc: Quick task 260729-gzm completed diff clarity and designer taste-review cleanup
 progress:
   total_phases: 4
   completed_phases: 4
@@ -125,6 +125,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260726-q8a | Generate interactive Phase 6 Monaco diff semantics mockup | 2026-07-26 | 2582170 | [260726-q8a](./quick/260726-q8a-PLAN.md) |
+| 260729-gzm | Refine changed-files sidebar, diff clarity, and design contracts | 2026-07-29 | uncommitted | [260729-gzm](./quick/260729-gzm-refine-diff-sidebar-and-clarity/) |
 
 ## Deferred Items
 
@@ -134,6 +135,7 @@ None yet.
 | Review | Ranges, file comments, suggestions, replies, viewed state, filters, unified layout, and additional themes | v2 | Initialization |
 | Delivery | Clipboard, direct agent delivery, rich formats, extensions, and forge integration | v2 | Initialization |
 | Cleanup | Retire or intentionally consume the authenticated orphan file-metadata route/client method | Deferred | v1.0 close |
+| Verification | Phase 08 `08-VERIFICATION.md` manual verification disposition | human_needed acknowledged after 3/3 UAT passed | v1.1 close 2026-07-29 |
 
 ## Session Continuity
 

@@ -80,7 +80,7 @@ export async function createGitFixture(
     },
   );
   invokeGit(['config', '--local', 'user.name', 'Diff Review Fixture']);
-  invokeGit(['config', '--local', 'user.email', 'fixture@diff-review.invalid']);
+  invokeGit(['config', '--local', 'user.email', 'fixture@test.invalid']);
   invokeGit(['config', '--local', 'commit.gpgSign', 'false']);
 
   await writeFile(join(repositoryRoot, 'tracked.txt'), 'base\n');
@@ -273,7 +273,7 @@ export async function createValidationGitFixture(
 
   if (kind !== 'bare' && kind !== 'non-repository') {
     invokeGit(['config', '--local', 'user.name', 'Diff Review Fixture']);
-    invokeGit(['config', '--local', 'user.email', 'fixture@diff-review.invalid']);
+    invokeGit(['config', '--local', 'user.email', 'fixture@test.invalid']);
     invokeGit(['config', '--local', 'commit.gpgSign', 'false']);
   }
 

@@ -142,6 +142,12 @@ describe('diff-review Monaco theme', () => {
       expect(colors[color as keyof typeof colors]).toBe(themeHex(tokens, mapping));
     }
     expect(Object.fromEntries(Object.entries(UNPAINTED_THEME_COLORS).map(([color, value]) => [color, colors[color as keyof typeof colors]]))).toEqual(UNPAINTED_THEME_COLORS);
+    expect(Number.parseInt(colors['diffEditor.insertedTextBackground'].slice(-2), 16)).toBeGreaterThan(
+      Number.parseInt(colors['diffEditor.insertedLineBackground'].slice(-2), 16),
+    );
+    expect(Number.parseInt(colors['diffEditor.removedTextBackground'].slice(-2), 16)).toBeGreaterThan(
+      Number.parseInt(colors['diffEditor.removedLineBackground'].slice(-2), 16),
+    );
 
     const rules = new Map(DIFF_REVIEW_THEME.rules.map((rule) => [rule.token, rule]));
     expect([...rules.keys()].sort()).toEqual(Object.keys(TOKEN_ROOT_MAP).sort());

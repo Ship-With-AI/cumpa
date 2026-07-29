@@ -16,6 +16,8 @@ const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self'",
+  "style-src-elem 'self' 'unsafe-inline'",
+  "style-src-attr 'unsafe-inline'",
   "connect-src 'self'",
   "img-src 'self'",
   "font-src 'self'",
