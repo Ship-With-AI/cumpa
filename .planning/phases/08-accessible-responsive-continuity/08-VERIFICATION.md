@@ -133,6 +133,10 @@ No `TBD`, `FIXME`, `XXX`, `TODO`, `HACK`, placeholder implementation, or `forced
 **Expected:** `document.scrollWidth === document.clientWidth`; `.diff-workspace__viewport` is the sole horizontal scroll owner around its 640px canvas.  
 **Why human:** The UI-SPEC expressly rejects substituting a 320px viewport or transform/screenshot scaling. The branch waits for an operator gesture and only logs its observation; summary narration alone is not independently auditable evidence.
 
+## Acknowledged Gaps
+
+- On 2026-07-29, the user directed the Phase 08 UAT to consider all three manual checks passed. `.planning/phases/08-accessible-responsive-continuity/08-UAT.md` records 3/3 passing results with no issues. This acknowledges and closes the report's three `human_needed` evidence gates for phase transition; the verifier frontmatter remains the original pre-UAT automated-verification snapshot.
+
 ## Next Action
 
 Perform and record the three headed human checks above, especially the true 400% zoom observation. Re-run verification afterward; no production or test-code closure plan is indicated by current evidence.
