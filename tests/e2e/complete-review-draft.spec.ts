@@ -31,7 +31,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const packedRoot = mkdtempSync(join(tmpdir(), 'compare-complete-draft-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
-const executablePath = join(extractedPackageRoot, 'dist/bin/compare.mjs');
+const executablePath = join(extractedPackageRoot, 'dist/bin/cumpa.mjs');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 test.setTimeout(90_000);
 

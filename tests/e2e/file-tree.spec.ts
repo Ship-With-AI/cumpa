@@ -32,7 +32,7 @@ const extractedPackageRoot = join(packedRoot, 'package');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 const executablePath = join(
   extractedPackageRoot,
-  'dist/bin/compare.mjs',
+  'dist/bin/cumpa.mjs',
 );
 const safeGitArguments = [
   '--no-optional-locks',

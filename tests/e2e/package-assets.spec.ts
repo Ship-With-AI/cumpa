@@ -60,7 +60,7 @@ test('packed artifact contains runtime and production Vue assets', () => {
     const [packResult] = JSON.parse(packOutput) as PackResult[];
     const inventory = packResult.files.map((file) => file.path);
 
-    expect(inventory).toContain('dist/bin/compare.mjs');
+    expect(inventory).toContain('dist/bin/cumpa.mjs');
     expect(inventory).toContain('dist/cli/run.js');
     expect(inventory).not.toContainEqual(expect.stringMatching(/^src\//));
     expect(inventory).not.toContainEqual(expect.stringMatching(/\.(?:ts|vue)$/));

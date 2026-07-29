@@ -35,7 +35,7 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const packedRoot = mkdtempSync(join(tmpdir(), 'compare-agent-ready-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
-const executablePath = join(extractedPackageRoot, 'dist/bin/compare.mjs');
+const executablePath = join(extractedPackageRoot, 'dist/bin/cumpa.mjs');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 const scenarioEvidencePath = process.env.COMPARE_AGENT_READY_EVIDENCE_REPORT;
 const scenarioEvidenceRunId = process.env.COMPARE_AGENT_READY_EVIDENCE_RUN_ID;
@@ -391,8 +391,8 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
         testFile: 'tests/e2e/agent-ready-export.spec.ts',
       },
       packageArtifact: {
-        path: 'dist/bin/compare.mjs',
-        sourceSha256: createHash('sha256').update(readFileSync(join(repositoryRoot, 'dist', 'bin', 'compare.mjs'))).digest('hex'),
+        path: 'dist/bin/cumpa.mjs',
+        sourceSha256: createHash('sha256').update(readFileSync(join(repositoryRoot, 'dist', 'bin', 'cumpa.mjs'))).digest('hex'),
         packedSha256: createHash('sha256').update(readFileSync(executablePath)).digest('hex'),
       },
       execution: {
