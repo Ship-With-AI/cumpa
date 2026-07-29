@@ -8,15 +8,28 @@ Diff Review is a local-first code review application for developers who want a G
 
 A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
 
-## Current Milestone: v1.1 GitHub Dark Diff
+## Current State: v1.1 GitHub Dark Diff
+
+**Shipped:** 2026-07-29
+
+Diff Review now delivers its complete local browser-review-to-agent workflow through one GitHub-dark-inspired semantic interface. The shipped workspace includes coordinated Monaco diff semantics, compact review surfaces, explicit non-color state cues, accessible focus and contrast, responsive reflow, and localized side-by-side diff scrolling.
+
+<details>
+<summary>v1.1 milestone intent</summary>
 
 **Goal:** Make the existing diff-review workspace feel substantially closer to GitHub's dark pull-request diff experience without changing review mechanics.
 
-**Target features:**
-- Apply a GitHub dark-default-inspired semantic palette to the diff workspace.
-- Restyle the file header, Monaco diff, gutters, controls, inline comments, and review rail.
-- Improve visual hierarchy, spacing, typography, interaction states, contrast, non-color cues, and responsive behavior.
-- Preserve Diff Review's identity, information architecture, and existing review workflow.
+**Delivered features:**
+- Applied one GitHub dark-default-inspired semantic palette to the diff workspace.
+- Restyled the file header, Monaco diff, gutters, controls, inline comments, and review rail.
+- Improved visual hierarchy, spacing, typography, interaction states, contrast, non-color cues, and responsive behavior.
+- Preserved Diff Review's identity, information architecture, and existing review workflow.
+
+</details>
+
+## Next Milestone Goals
+
+Not defined. Light themes and additional review mechanics remain future candidates, not committed scope. Start the next milestone with fresh requirements and roadmap decisions.
 
 ## Requirements
 
@@ -40,10 +53,13 @@ Validated in Phase 04: Agent-Ready Export.
 Phase 04.1 closed the audited CMT-01 async cross-file settlement gap without changing the validated product scope.
 
 Validated in Phase 05: Semantic Dark Foundation established the dark semantic palette, typography, interaction-state, surface, and responsive foundation; Monaco diff semantics and later review-surface adaptation remain active.
+Validated in Phase 06: Monaco Diff Semantics coordinated editor, syntax, diff, gutter, selection, comment-anchor, and focus layers while preserving Monaco as diff authority.
 
 Validated in Phase 07: GitHub-Familiar Review Surfaces adapted the file header, controls, inline conversations, review rail, recovery, notices, and export feedback without changing review mechanics.
 
 Validated in Phase 08: Accessible Responsive Continuity completed the GitHub-dark workspace adaptation with composited WCAG contrast, durable focus and forced-color cues, localized side-by-side diff overflow, responsive reflow through true 400% zoom, and unchanged review/export behavior.
+
+The final v1.1 clarity pass compacted the changed-files sidebar, made removed/added semantics explicit, strengthened diff fills, preserved Monaco positioning under the production CSP, and recorded the shipped product and visual contracts.
 
 ### Active
 
@@ -60,7 +76,7 @@ No active v1.1 requirements. All 18 GitHub Dark Diff requirements are validated.
 
 ## Context
 
-Phase 05 established one verified semantic dark vocabulary. Phase 06 applied it to Monaco diff semantics without changing immutable diff mechanics. Phase 07 adapted every existing review surface with explicit interaction-state language and single-owner live feedback. Phase 08 completed the milestone: the packaged workspace now preserves contrast, non-color meaning, keyboard focus, responsive reflow, local diff scrolling, and the full review/export workflow across desktop, 320 CSS px, true 400% zoom, grayscale, and forced colors.
+Phases 05–08 and the final clarity pass now form one shipped GitHub-dark review workspace: a single semantic vocabulary drives application surfaces and Monaco; every existing review state uses explicit interaction and non-color meaning; the responsive shell preserves one localized 640px side-by-side canvas; and loading, empty, sidebar, comment, recovery, summary, and export surfaces share documented product and design contracts.
 
 Diff Review v1.0 shipped the complete local browser-review-to-agent loop. A developer can select ordered local branches or registered worktrees, inspect the immutable merge-base-to-head change set, maintain a repository-local review draft, and export canonical JSON plus derived Markdown without publishing refs or modifying source control.
 
@@ -70,7 +86,7 @@ The browser workspace now provides an exact changed-file tree, real Monaco side-
 
 Exports are versioned and machine-validated. Canonical JSON owns comparison identities, accepted summary and comments, timestamps, blob identities, and context anchors; Markdown is derived from that same validated model. Publication is an atomic pair beneath `.diff-review/exports/`, with hashes and a bounded receipt.
 
-The shipped repository contains 30,428 tracked TypeScript, Vue, and MJS lines. v1.0 completed 51/51 requirements, 22/22 integrations, eight end-to-end flows, and a final 56/56 configured Playwright run.
+The shipped repository contains 35,282 tracked TypeScript, Vue, and MJS lines. v1.1 completed 18/18 requirements, 12/12 cross-phase integrations, and seven end-to-end flows; Phase 08 UAT accepted all three manual accessibility and true-zoom gates.
 
 Retained debt is bounded: one authenticated orphan metadata route/client method, Phase 3 UI polish, and accepted Phase 4 filesystem/power-loss durability limits. No v1.0 requirement or user flow remains blocked.
 
@@ -111,6 +127,9 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 | Keep responsive visual placement separate from semantic source order | Preserve file → Base → Head reading order while matching the desktop composition and narrow reflow | Good — exact-width and keyboard browser evidence passed without duplicate controls or state paths |
 | Keep the 640px side-by-side comparison floor inside one localized viewport | Prevent page-wide overflow without reflowing Monaco or changing Base/Head geometry | Good — 320px and true 400% zoom evidence retained a 640px locally scrollable canvas with document fit |
 | Measure composited rendered contrast and focus geometry against actual browser states | Token-only checks cannot prove translucent diff, selection, status, or clipping behavior | Good — completed UAT accepted the full contrast, focus-inventory, and true-zoom gates |
+| Keep the review sidebar at 288px and compact rows within it | Preserve diff space while keeping status, path, counts, and exceptional availability readable | Good — wide and narrow browser evidence shows contained rows without page overflow |
+| Pair Base/Head identity with explicit removed/added text, signed gutters, and structural bars | Make diff meaning clear without relying on red and green | Good — stronger line/intraline fills and CSP-safe Monaco positioning passed focused browser and theme checks |
+| Record shipped product facts and visual rules in root contracts | Prevent future copy and styling work from inventing a second product or design language | Good — final designer checks report no contract, display-scale, numeric-claim, or contact-detail blockers |
 
 ## Evolution
 
@@ -130,4 +149,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-29 after completing Phase 08 Accessible Responsive Continuity*
+*Last updated: 2026-07-29 after shipping v1.1 GitHub Dark Diff*

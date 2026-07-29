@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: GitHub Dark Diff
-current_phase: 08
-status: complete
-stopped_at: Phase 08 complete, ready to complete v1.1 milestone
-last_updated: "2026-07-29T11:22:53Z"
+current_phase: null
+status: Awaiting next milestone
+stopped_at: Milestone v1.1 archived, awaiting next milestone
+last_updated: "2026-07-29T13:02:03.579Z"
 last_activity: 2026-07-29
-last_activity_desc: Quick task 260729-gzm completed diff clarity and designer taste-review cleanup
+last_activity_desc: Milestone v1.1 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
   total_plans: 16
   completed_plans: 16
   percent: 100
-current_phase_name: accessible-responsive-continuity
+current_phase_name: null
 ---
 
 # Project State
@@ -24,16 +24,14 @@ current_phase_name: accessible-responsive-continuity
 See: .planning/PROJECT.md (updated 2026-07-29)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Complete and archive the v1.1 GitHub Dark Diff milestone
+**Current focus:** Plan the next milestone
 
 ## Current Position
 
-Phase: 08 (accessible-responsive-continuity) — COMPLETE
-Plan: 3 of 3
-Status: Milestone phases complete — ready to archive v1.1
-Last activity: 2026-07-29 — Phase 08 UAT and security disposition complete
-
-Progress: [████████████████████] 16/16 plans (100%)
+Phase: Milestone v1.1 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-29 — Milestone v1.1 completed and archived
 
 ## Performance Metrics
 
@@ -125,7 +123,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260726-q8a | Generate interactive Phase 6 Monaco diff semantics mockup | 2026-07-26 | 2582170 | [260726-q8a](./quick/260726-q8a-PLAN.md) |
-| 260729-gzm | Refine changed-files sidebar, diff clarity, and design contracts | 2026-07-29 | uncommitted | [260729-gzm](./quick/260729-gzm-refine-diff-sidebar-and-clarity/) |
+| 260729-gzm | Refine changed-files sidebar, diff clarity, and design contracts | 2026-07-29 | 3b72649 | [260729-gzm](./quick/260729-gzm-refine-diff-sidebar-and-clarity/) |
 
 ## Deferred Items
 
@@ -136,9 +134,16 @@ None yet.
 | Delivery | Clipboard, direct agent delivery, rich formats, extensions, and forge integration | v2 | Initialization |
 | Cleanup | Retire or intentionally consume the authenticated orphan file-metadata route/client method | Deferred | v1.0 close |
 | Verification | Phase 08 `08-VERIFICATION.md` manual verification disposition | human_needed acknowledged after 3/3 UAT passed | v1.1 close 2026-07-29 |
+| Verification | Instantiate unsupported/unavailable rows in responsive fixture coverage if this path changes | Deferred | v1.1 close |
+| Design | Align 7px icon-button padding with the documented spacing scale when control geometry changes | Deferred | v1.1 close |
+| Cleanup | Remove unused `EmptyState.vue` | Deferred | v1.1 close |
 
 ## Session Continuity
 
-Last session: 2026-07-29T08:02:44Z
-Stopped at: Phase 08 complete, ready to complete v1.1 milestone
+Last session: 2026-07-29T13:02:03Z
+Stopped at: Milestone v1.1 archived, awaiting next milestone
 Resume file: None
+
+## Operator Next Steps
+
+- Start the next milestone with $gsd-new-milestone

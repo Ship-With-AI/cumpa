@@ -56,6 +56,55 @@
 
 ---
 
+## Milestone: v1.1 — GitHub Dark Diff
+
+**Shipped:** 2026-07-29
+**Phases:** 4 | **Plans:** 16 | **Executed tasks:** 29
+
+### What Was Built
+
+- One semantic GitHub-dark-inspired workspace spanning application surfaces, Monaco syntax and diff layers, controls, comments, notices, recovery, summary, and export.
+- Persistent Base/deletion and Head/addition cues, stronger line and intraline fills, stable comment anchors, and CSP-compatible Monaco positioning.
+- Responsive and accessible review continuity across desktop, narrow layouts, true 400% zoom, keyboard navigation, grayscale, and forced colors.
+- A final compact sidebar and diff-clarity pass, plus root product and visual-system contracts.
+
+### What Worked
+
+- A single semantic CSS root and byte-parity Monaco theme tests prevented palette drift.
+- Existing state, persistence, export, and Monaco authorities stayed unchanged; presentation derived from them instead of creating parallel models.
+- Browser evidence used generated-package sessions and real Monaco geometry for layout, focus, contrast, and workflow continuity.
+- Phase verification, UAT, security, UI review, and the milestone integration audit together closed stale evidence states before archival.
+
+### What Was Inefficient
+
+- Phase 06 and Phase 08 verification frontmatter remained stale after UAT accepted their human gates, requiring milestone-level interpretation.
+- Nine Phase 07 plans fragmented one coherent surface adaptation and made automatic accomplishment extraction too verbose.
+- The final designer pass found missing product/design contracts and ambiguous fixture/prototype strings only after phase completion.
+- A standalone 320px file-tree width and production CSP interaction were discovered during final visual inspection rather than the original responsive plan.
+
+### Patterns Established
+
+- Keep one semantic CSS vocabulary and map Monaco colors directly to it.
+- Preserve source order and behavioral ownership; use CSS placement and presentation-only derivation for responsive adaptation.
+- Pair hue with explicit text, signs, line styles, borders, and focus geometry.
+- Measure final browser composites and geometry rather than inferring accessibility from source tokens.
+- Keep product facts and visual rules in explicit root contracts.
+
+### Key Lessons
+
+1. Human UAT completion must update or clearly supersede verifier frontmatter so close-time audits do not report resolved gates as open.
+2. Visual review must exercise the packaged CSP path; development rendering can hide Monaco positioning failures.
+3. Dense code-review surfaces benefit more from clearer semantic hierarchy and compact alignment than from wider panels or additional badges.
+4. Product and design contracts should exist before automated taste checks become a release gate.
+
+### Cost Observations
+
+- Model mix: Not measured.
+- Sessions: Not measured in planning artifacts.
+- Notable: 136 commits after the v1.0 close changed 277 files (+23,900 / -2,600); focused generated-browser evidence caught the final layout and CSP defects.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -63,13 +112,17 @@
 | Milestone | Phases | Plans | Key Change |
 |-----------|--------|-------|------------|
 | v1.0 | 5 | 40 | Established TDD, threat registers, package-first browser acceptance, cross-phase integration audit, and closure-phase remediation |
+| v1.1 | 4 | 16 | Established one semantic UI/Monaco contract, browser-composite accessibility evidence, and final product/design contracts |
 
 ### Cumulative Quality
 
 | Milestone | Unit | Git | API | Playwright | Requirements | Integrations | Flows |
 |-----------|------|-----|-----|------------|--------------|--------------|-------|
 | v1.0 | 108 | 35 | 98 | 56 | 51/51 | 22/22 | 8/8 |
+| v1.1 | Not recorded | Not recorded | Not recorded | Focused release gates passed | 18/18 | 12/12 | 7/7 |
 
 ### Top Lessons (Verified Across Milestones)
 
-1. Cross-milestone trends require another shipped milestone before any lesson can be called repeated.
+1. Package-boundary browser evidence remains the strongest detector of integration, CSP, layout, and accessibility defects.
+2. Cross-source milestone audits are necessary because phase frontmatter can lag accepted UAT evidence.
+3. One canonical authority per state or visual role reduces both correctness risk and review complexity.
