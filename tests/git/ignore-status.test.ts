@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
-  inspectDiffReviewIgnore,
-  type DiffReviewIgnoreStatus,
+  inspectCompareIgnore,
+  type CompareIgnoreStatus,
 } from '../../src/git/ignore-status.js';
 import { GitRunnerError, type GitRunner } from '../../src/git/runner.js';
 
@@ -33,7 +33,7 @@ const gitEnvironment = {
 const fixtures: string[] = [];
 
 async function createRepository(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'diff-review-ignore-status-'));
+  const root = await mkdtemp(join(tmpdir(), 'compare-ignore-status-'));
   fixtures.push(root);
   execFileSync('git', [...safeGitArguments, 'init', '--initial-branch=main'], {
     cwd: root,
@@ -47,40 +47,40 @@ afterEach(async () => {
   await Promise.all(fixtures.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-describe('effective Diff Review ignore inspection', () => {
+describe('effective Compare ignore inspection', () => {
   it('uses Git effective-ignore semantics for root, nested, info, global, and negated rules', async () => {
     const rootRule = await createRepository();
-    await writeFile(join(rootRule, '.gitignore'), '/.diff-review/\n');
-    expect((await inspectDiffReviewIgnore({ repositoryRoot: rootRule })).kind).toBe('ignored');
+    await writeFile(join(rootRule, '.gitignore'), '/.compare/\n');
+    expect((await inspectCompareIgnore({ repositoryRoot: rootRule })).kind).toBe('ignored');
 
     const nestedRule = await createRepository();
-    await mkdir(join(nestedRule, '.diff-review'));
+    await mkdir(join(nestedRule, '.compare'));
     await writeFile(
-      join(nestedRule, '.diff-review', '.gitignore'),
-      '/.diff-review-ignore-probe\n',
+      join(nestedRule, '.compare', '.gitignore'),
+      '/.compare-ignore-probe\n',
     );
-    expect((await inspectDiffReviewIgnore({ repositoryRoot: nestedRule })).kind).toBe('ignored');
+    expect((await inspectCompareIgnore({ repositoryRoot: nestedRule })).kind).toBe('ignored');
 
     const infoRule = await createRepository();
-    await writeFile(join(infoRule, '.git', 'info', 'exclude'), '/.diff-review/\n');
-    expect((await inspectDiffReviewIgnore({ repositoryRoot: infoRule })).kind).toBe('ignored');
+    await writeFile(join(infoRule, '.git', 'info', 'exclude'), '/.compare/\n');
+    expect((await inspectCompareIgnore({ repositoryRoot: infoRule })).kind).toBe('ignored');
 
     const globalRule = await createRepository();
     const globalExclude = join(globalRule, 'global-excludes');
-    await writeFile(globalExclude, '/.diff-review/\n');
+    await writeFile(globalExclude, '/.compare/\n');
     execFileSync('git', ['config', '--local', 'core.excludesFile', globalExclude], {
       cwd: globalRule,
       env: gitEnvironment,
       stdio: 'ignore',
     });
-    expect((await inspectDiffReviewIgnore({ repositoryRoot: globalRule })).kind).toBe('ignored');
+    expect((await inspectCompareIgnore({ repositoryRoot: globalRule })).kind).toBe('ignored');
 
     const negatedRule = await createRepository();
     await writeFile(
       join(negatedRule, '.gitignore'),
-      '/.diff-review/*\n!/.diff-review/.diff-review-ignore-probe\n',
+      '/.compare/*\n!/.compare/.compare-ignore-probe\n',
     );
-    expect((await inspectDiffReviewIgnore({ repositoryRoot: negatedRule })).kind).toBe('not-ignored');
+    expect((await inspectCompareIgnore({ repositoryRoot: negatedRule })).kind).toBe('not-ignored');
   });
 
   it('exposes only fixed probe outcomes and fixed runner authority', async () => {
@@ -92,7 +92,7 @@ describe('effective Diff Review ignore inspection', () => {
       },
     };
 
-    const status: DiffReviewIgnoreStatus = await inspectDiffReviewIgnore(
+    const status: CompareIgnoreStatus = await inspectCompareIgnore(
       { repositoryRoot: '/fixed-repository-root' },
       { runner },
     );
@@ -105,7 +105,7 @@ describe('effective Diff Review ignore inspection', () => {
           '--no-index',
           '--quiet',
           '--',
-          '.diff-review/.diff-review-ignore-probe',
+          '.compare/.compare-ignore-probe',
         ],
         cwd: '/fixed-repository-root',
       },
@@ -120,7 +120,7 @@ describe('effective Diff Review ignore inspection', () => {
     };
 
     await expect(
-      inspectDiffReviewIgnore({ repositoryRoot: '/fixed-repository-root' }, { runner }),
+      inspectCompareIgnore({ repositoryRoot: '/fixed-repository-root' }, { runner }),
     ).resolves.toEqual({ kind: 'unavailable' });
   });
 });

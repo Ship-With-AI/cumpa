@@ -90,7 +90,7 @@ async function startAppServer(): Promise<string> {
       name: 'selector-drift-ui-api',
       configureServer(viteServer) {
         viteServer.middlewares.use('/api/session', (_request, response) => json(response, session));
-        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, { kind: 'missing', path: '.diff-review/drafts/active-review.json' }));
+        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, { kind: 'missing', path: '.compare/drafts/active-review.json' }));
         viteServer.middlewares.use('/api/selector-drift', async (request, response) => {
           driftRequests.push({ body: await readBody(request), method: request.method ?? '', url: request.url ?? '' });
           json(response, driftResponse);
@@ -105,7 +105,7 @@ async function startAppServer(): Promise<string> {
 
 async function openReview(page: Page): Promise<void> {
   await page.goto(`${origin}#token=${token}`);
-  await expect(page.getByRole('heading', { name: /Diff Review:/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Compare:/ })).toBeVisible();
 }
 
 test.beforeAll(async () => {
@@ -241,7 +241,7 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   await expect(notice).toContainText(headOid);
   await expect(notice).toContainText('This source is no longer available.');
   await page.getByRole('button', { name: 'Launch new comparison' }).click();
-  await expect(notice).toContainText('Return to the terminal and launch Diff Review again, then choose the current sources. This open review will remain pinned.');
+  await expect(notice).toContainText('Return to the terminal and launch Compare again, then choose the current sources. This open review will remain pinned.');
 
   for (const request of browserRequests) {
     expect(request.method).toBe('GET');

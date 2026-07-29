@@ -44,7 +44,7 @@ describe('agent-ready export source-control safety evidence', () => {
 
     for (const fixture of matrix) {
       const before = await captureSourceControlSnapshot(fixture.root);
-      await fixture.write('.diff-review/exports/evidence.txt', 'generated export evidence\n');
+      await fixture.write('.compare/exports/evidence.txt', 'generated export evidence\n');
       await expect(
         assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root)),
       ).resolves.toBeUndefined();
@@ -111,7 +111,7 @@ describe('agent-ready export source-control safety evidence', () => {
 function candidatePair(marker: string): Readonly<{ readonly json: Buffer; readonly markdown: Buffer }> {
   const json = Buffer.from(canonicalizeReviewExport(ReviewExportV1Schema.parse({
     schemaVersion: 1,
-    kind: 'diff-review/export',
+    kind: 'compare/export',
     exportedAt: '2026-07-23T00:00:00.000Z',
     acceptedDraftRevision: 1,
     comparison: {
@@ -142,7 +142,7 @@ describe('generated publication and recovery safety evidence', () => {
     const newPair = candidatePair('new rejected generation');
 
     await expect(runGeneratedExport(fixture.root, oldPair, 'unsupported')).resolves.toMatchObject({ kind: 'exported' });
-    const stable = join(fixture.root, '.diff-review', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
+    const stable = join(fixture.root, '.compare', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
     const [oldJson, oldMarkdown] = await Promise.all([readFile(join(stable, 'review.json')), readFile(join(stable, 'review.md'))]);
     const stableStat = await lstat(stable);
 
@@ -170,7 +170,7 @@ describe('generated publication and recovery safety evidence', () => {
   test('leaves failed first export absent and preserves ambiguous candidate remnants on child-process restart', async () => {
     const fixture = await createDirtyGitFixture();
     fixtures.push(fixture);
-    const stable = join(fixture.root, '.diff-review', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
+    const stable = join(fixture.root, '.compare', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
     const invalid = Object.freeze({ json: Buffer.from('{invalid'), markdown: Buffer.from('not derived\n') });
 
     await expect(runGeneratedExport(fixture.root, invalid, 'unsupported')).resolves.toEqual({ kind: 'publicationFailed' });
@@ -183,25 +183,25 @@ describe('generated publication and recovery safety evidence', () => {
     await expect(readFile(join(remnant, 'preserve-me'), 'utf8')).resolves.toBe('ambiguous restart evidence\n');
   }, 30_000);
 
-  test.each(['.diff-review', 'exports'] as const)(
+  test.each(['.compare', 'exports'] as const)(
     'generated publisher and recovery reject externally directed %s parent symlink',
     async (managedParent) => {
       const fixture = await createDirtyGitFixture();
       fixtures.push(fixture);
-      const outside = await mkdtemp(join(tmpdir(), 'diff-review-export-outside-'));
+      const outside = await mkdtemp(join(tmpdir(), 'compare-export-outside-'));
       outsideRoots.push(outside);
       const stableName = `${'1'.repeat(40)}..${'2'.repeat(40)}`;
       const oldPair = candidatePair(`outside ${managedParent}`);
-      const outsideExportsRoot = managedParent === '.diff-review' ? join(outside, 'exports') : outside;
+      const outsideExportsRoot = managedParent === '.compare' ? join(outside, 'exports') : outside;
       const outsideStable = join(outsideExportsRoot, stableName);
       await mkdir(outsideStable, { recursive: true });
       await writeFile(join(outsideStable, 'review.json'), oldPair.json);
       await writeFile(join(outsideStable, 'review.md'), oldPair.markdown);
-      if (managedParent === '.diff-review') {
-        await symlink(outside, join(fixture.root, '.diff-review'), 'dir');
+      if (managedParent === '.compare') {
+        await symlink(outside, join(fixture.root, '.compare'), 'dir');
       } else {
-        await mkdir(join(fixture.root, '.diff-review'));
-        await symlink(outside, join(fixture.root, '.diff-review', 'exports'), 'dir');
+        await mkdir(join(fixture.root, '.compare'));
+        await symlink(outside, join(fixture.root, '.compare', 'exports'), 'dir');
       }
 
       await expect(runGeneratedExport(fixture.root, candidatePair('new'), 'unsupported')).resolves.toEqual({

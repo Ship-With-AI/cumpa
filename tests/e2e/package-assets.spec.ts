@@ -39,7 +39,7 @@ function runPrerequisite(command: string, args: string[], cwd = repositoryRoot):
 }
 
 test('packed artifact contains runtime and production Vue assets', () => {
-  const temporaryDirectory = mkdtempSync(join(tmpdir(), 'diff-review-pack-'));
+  const temporaryDirectory = mkdtempSync(join(tmpdir(), 'compare-pack-'));
 
   try {
     const hasProductionBootstrap = existsSync(
@@ -60,7 +60,7 @@ test('packed artifact contains runtime and production Vue assets', () => {
     const [packResult] = JSON.parse(packOutput) as PackResult[];
     const inventory = packResult.files.map((file) => file.path);
 
-    expect(inventory).toContain('dist/bin/diff-review.mjs');
+    expect(inventory).toContain('dist/bin/compare.mjs');
     expect(inventory).toContain('dist/cli/run.js');
     expect(inventory).not.toContainEqual(expect.stringMatching(/^src\//));
     expect(inventory).not.toContainEqual(expect.stringMatching(/\.(?:ts|vue)$/));
@@ -85,7 +85,7 @@ test('packed artifact contains runtime and production Vue assets', () => {
         readFileSync(join(temporaryDirectory, 'package', path), 'utf8'),
       )
       .join('\n');
-    expect(packagedJavaScript).toContain('Diff Review: loading pinned comparison');
+    expect(packagedJavaScript).toContain('Compare: loading pinned comparison');
     expect(packagedJavaScript).toContain('Opening local draft…');
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });

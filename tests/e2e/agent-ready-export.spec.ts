@@ -33,12 +33,12 @@ import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'diff-review-agent-ready-pack-'));
+const packedRoot = mkdtempSync(join(tmpdir(), 'compare-agent-ready-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
-const executablePath = join(extractedPackageRoot, 'dist/bin/diff-review.mjs');
+const executablePath = join(extractedPackageRoot, 'dist/bin/compare.mjs');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
-const scenarioEvidencePath = process.env.DIFF_REVIEW_AGENT_READY_EVIDENCE_REPORT;
-const scenarioEvidenceRunId = process.env.DIFF_REVIEW_AGENT_READY_EVIDENCE_RUN_ID;
+const scenarioEvidencePath = process.env.COMPARE_AGENT_READY_EVIDENCE_REPORT;
+const scenarioEvidenceRunId = process.env.COMPARE_AGENT_READY_EVIDENCE_RUN_ID;
 
 test.setTimeout(120_000);
 
@@ -102,8 +102,8 @@ function startGeneratedCli(
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${environment.PATH ?? ''}`,
-      DIFF_REVIEW_BROWSER_OPEN_MARKER: markerPath,
-      DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({
+      COMPARE_BROWSER_OPEN_MARKER: markerPath,
+      COMPARE_LAUNCH_OPTIONS: JSON.stringify({
         cwd: fixture.nestedCwd,
         base: { label: selections.base.slice('refs/heads/'.length), revision: selections.base },
         head: { label: selections.head.slice('refs/heads/'.length), revision: selections.head },
@@ -182,9 +182,9 @@ async function saveSummary(page: Page, summary: string): Promise<void> {
 }
 
 function readOnlyDraft(fixture: DirtyGitFixture): Readonly<{ readonly bytes: Buffer; readonly draft: PersistedDraft }> {
-  const drafts = readdirSync(join(fixture.root, '.diff-review', 'drafts')).filter((entry) => entry.endsWith('.json'));
+  const drafts = readdirSync(join(fixture.root, '.compare', 'drafts')).filter((entry) => entry.endsWith('.json'));
   expect(drafts).toHaveLength(1);
-  const bytes = readFileSync(join(fixture.root, '.diff-review', 'drafts', drafts[0]!));
+  const bytes = readFileSync(join(fixture.root, '.compare', 'drafts', drafts[0]!));
   const raw = JSON.parse(bytes.toString('utf8')) as { revision: number; summary: string; comments: PersistedDraft['comments'] };
   return Object.freeze({ bytes, draft: Object.freeze(raw) });
 }
@@ -206,7 +206,7 @@ test.beforeAll(() => {
   writeFileSync(opener, [
     '#!/usr/bin/env node',
     "const { appendFileSync } = require('node:fs');",
-    "if (process.env.DIFF_REVIEW_BROWSER_OPEN_MARKER) appendFileSync(process.env.DIFF_REVIEW_BROWSER_OPEN_MARKER, `${JSON.stringify(process.argv.slice(2))}\\n`);",
+    "if (process.env.COMPARE_BROWSER_OPEN_MARKER) appendFileSync(process.env.COMPARE_BROWSER_OPEN_MARKER, `${JSON.stringify(process.argv.slice(2))}\\n`);",
     'process.exitCode = 1;',
     '',
   ].join('\n'));
@@ -273,7 +273,7 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
 
     const stablePairDirectory = join(
       fixture.root,
-      '.diff-review',
+      '.compare',
       'exports',
       `${fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim()}..${fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim()}`,
     );
@@ -348,7 +348,7 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
   const baseOid = fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim();
   const headOid = fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim();
   const alternateHeadOid = fixture.git(['rev-parse', fixture.alternateHeadRef!]).toString('ascii').trim();
-  const pairDirectory = join(fixture.root, '.diff-review', 'exports', `${baseOid}..${headOid}`);
+  const pairDirectory = join(fixture.root, '.compare', 'exports', `${baseOid}..${headOid}`);
   const [json, markdown, names] = await Promise.all([
     import('node:fs/promises').then(({ readFile }) => readFile(join(pairDirectory, 'review.json'))),
     import('node:fs/promises').then(({ readFile }) => readFile(join(pairDirectory, 'review.md'))),
@@ -391,8 +391,8 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
         testFile: 'tests/e2e/agent-ready-export.spec.ts',
       },
       packageArtifact: {
-        path: 'dist/bin/diff-review.mjs',
-        sourceSha256: createHash('sha256').update(readFileSync(join(repositoryRoot, 'dist', 'bin', 'diff-review.mjs'))).digest('hex'),
+        path: 'dist/bin/compare.mjs',
+        sourceSha256: createHash('sha256').update(readFileSync(join(repositoryRoot, 'dist', 'bin', 'compare.mjs'))).digest('hex'),
         packedSha256: createHash('sha256').update(readFileSync(executablePath)).digest('hex'),
       },
       execution: {

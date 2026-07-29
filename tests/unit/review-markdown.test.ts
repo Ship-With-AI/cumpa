@@ -64,7 +64,7 @@ function bytes(
   };
   return canonicalizeReviewExport(ReviewExportV1Schema.parse({
     schemaVersion: 1,
-    kind: 'diff-review/export',
+    kind: 'compare/export',
     exportedAt: '2026-07-23T08:02:00.000Z',
     acceptedDraftRevision: 4,
     comparison: {

@@ -9,7 +9,7 @@ import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.
 
 
 const projectRoot = resolve(import.meta.dirname, '../..');
-const packagedCli = join(projectRoot, 'dist', 'bin', 'diff-review.mjs');
+const packagedCli = join(projectRoot, 'dist', 'bin', 'compare.mjs');
 const playwrightExecutable = join(projectRoot, 'node_modules', '.bin', 'playwright');
 const scenarioCommand = ['test', 'tests/e2e'] as const;
 const resumeTest = 'packaged-resume-after-relaunch preserves accepted review state, completes target-aware second export, and recovers exact bytes';
@@ -84,7 +84,7 @@ function assertSha256(value: string): void {
 }
 
 function runPackagedScenario(): ScenarioEvidenceReport {
-  const reportDirectory = mkdtempSync(join(tmpdir(), 'diff-review-agent-ready-evidence-'));
+  const reportDirectory = mkdtempSync(join(tmpdir(), 'compare-agent-ready-evidence-'));
   const reportPath = join(reportDirectory, 'scenario.json');
   const runId = randomUUID();
   try {
@@ -92,8 +92,8 @@ function runPackagedScenario(): ScenarioEvidenceReport {
       cwd: projectRoot,
       env: {
         ...process.env,
-        DIFF_REVIEW_AGENT_READY_EVIDENCE_REPORT: reportPath,
-        DIFF_REVIEW_AGENT_READY_EVIDENCE_RUN_ID: runId,
+        COMPARE_AGENT_READY_EVIDENCE_REPORT: reportPath,
+        COMPARE_AGENT_READY_EVIDENCE_RUN_ID: runId,
       },
       stdio: 'inherit',
     });
@@ -106,7 +106,7 @@ function runPackagedScenario(): ScenarioEvidenceReport {
       title: resumeTest,
       testFile: 'tests/e2e/agent-ready-export.spec.ts',
     });
-    expect(report.packageArtifact.path).toBe('dist/bin/diff-review.mjs');
+    expect(report.packageArtifact.path).toBe('dist/bin/compare.mjs');
     assertSha256(report.packageArtifact.sourceSha256);
     assertSha256(report.packageArtifact.packedSha256);
     expect(report.packageArtifact.packedSha256).toBe(report.packageArtifact.sourceSha256);
@@ -117,8 +117,8 @@ function runPackagedScenario(): ScenarioEvidenceReport {
     });
     expect(report.execution.selectorKind).toBe('branch-to-worktree');
     const expectedReceiptPaths = [
-      `.diff-review/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.json`,
-      `.diff-review/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.md`,
+      `.compare/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.json`,
+      `.compare/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.md`,
     ];
     expect(report.execution.export.firstReceiptPaths).toEqual(expectedReceiptPaths);
     assertSha256(report.execution.export.firstStablePairSha256.json);
@@ -182,7 +182,7 @@ function assertUniqueExecutedCoverage(records: readonly EvidenceRecord[]): void 
   for (const record of records) {
     expect(record.executed).toBe(true);
     expect(record.command).toBe(`${playwrightExecutable} ${scenarioCommand.join(' ')}`);
-    expect(record.packageArtifact).toBe('dist/bin/diff-review.mjs');
+    expect(record.packageArtifact).toBe('dist/bin/compare.mjs');
   }
 }
 

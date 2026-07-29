@@ -64,7 +64,7 @@ function oid(git: GitFixture, revision: string): string {
 }
 
 async function detachedWorktree(git: GitFixture, revision: string): Promise<string> {
-  const path = await mkdtemp(join(tmpdir(), 'diff-review-selector-worktree-'));
+  const path = await mkdtemp(join(tmpdir(), 'compare-selector-worktree-'));
   temporaryRoots.push(path);
   git.git(['worktree', 'add', '--detach', path, revision]);
   return await realpath(path);

@@ -16,10 +16,10 @@ const comparison = {
 const roots: string[] = [];
 
 async function fixture(bytes?: Buffer): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'diff-review-draft-load-'));
+  const root = await mkdtemp(join(tmpdir(), 'compare-draft-load-'));
   roots.push(root);
   if (bytes !== undefined) {
-    const directory = join(root, '.diff-review', 'drafts');
+    const directory = join(root, '.compare', 'drafts');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, `${comparisonKey(comparison.baseCommitOid, comparison.headCommitOid)}.json`), bytes);
   }
@@ -50,7 +50,7 @@ describe('raw draft load classification', () => {
     const missing = await fixture();
     await expect(createDraftLoader({ repositoryRoot: missing, comparison }).load()).resolves.toMatchObject({
       kind: 'missing',
-      path: '.diff-review/drafts/' + comparisonKey(comparison.baseCommitOid, comparison.headCommitOid) + '.json',
+      path: '.compare/drafts/' + comparisonKey(comparison.baseCommitOid, comparison.headCommitOid) + '.json',
     });
 
     const bytes = Buffer.from(`{\n  "comments": [], "summary": "", "revision": 0,\n  "comparison": ${JSON.stringify(comparison)}, "schemaVersion": 1\n}\n`, 'utf8');

@@ -16,7 +16,7 @@ type DirectoryExchangeAddon = Readonly<{
 }>;
 
 async function buildAddon(): Promise<DirectoryExchangeAddon> {
-  const root = await mkdtemp(join(tmpdir(), 'diff-review-native-exchange-'));
+  const root = await mkdtemp(join(tmpdir(), 'compare-native-exchange-'));
   roots.push(root);
   const source = join(process.cwd(), 'src/native/directory-exchange.cc');
   const output = join(root, 'directory_exchange.node');
@@ -43,7 +43,7 @@ afterEach(async () => {
 
 describe('native directory exchange probe', () => {
   test.runIf(declaredNativeTarget)('compiles the actual adapter and proves one complete sibling pair swaps without stable absence', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'diff-review-native-probe-'));
+    const root = await mkdtemp(join(tmpdir(), 'compare-native-probe-'));
     roots.push(root);
 
 

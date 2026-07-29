@@ -27,12 +27,12 @@ import {
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'diff-review-tree-pack-'));
+const packedRoot = mkdtempSync(join(tmpdir(), 'compare-tree-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 const executablePath = join(
   extractedPackageRoot,
-  'dist/bin/diff-review.mjs',
+  'dist/bin/compare.mjs',
 );
 const safeGitArguments = [
   '--no-optional-locks',
@@ -167,13 +167,13 @@ function startGeneratedCli(repository: GitFixture): RunningCli {
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
-      DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({
+      COMPARE_LAUNCH_OPTIONS: JSON.stringify({
         cwd: repository.nestedCwd,
         base: { label: 'Base tree fixture', revision: repository.baseRef },
         head: { label: 'Head tree fixture', revision: repository.headRef },
       }),
-      DIFF_REVIEW_OPENER_LOG: openerLogPath,
-      DIFF_REVIEW_TERMINAL_CAPTURE: outputPath,
+      COMPARE_OPENER_LOG: openerLogPath,
+      COMPARE_TERMINAL_CAPTURE: outputPath,
     },
     stdio: ['ignore', outputDescriptor, outputDescriptor],
   });

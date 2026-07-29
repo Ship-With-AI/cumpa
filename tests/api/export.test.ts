@@ -15,7 +15,7 @@ const apps = new Set<FastifyInstance>();
 const roots: string[] = [];
 
 async function buildApp() {
-  const repositoryRoot = await mkdtemp(join(tmpdir(), 'diff-review-export-api-'));
+  const repositoryRoot = await mkdtemp(join(tmpdir(), 'compare-export-api-'));
   roots.push(repositoryRoot);
   const revealDraftFile = vi.fn(async () => undefined);
   const app = createSessionApp({
@@ -52,7 +52,7 @@ async function buildApp() {
 }
 
 async function writeCompleteExport(repositoryRoot: string): Promise<void> {
-  const directory = join(repositoryRoot, '.diff-review', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
+  const directory = join(repositoryRoot, '.compare', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
   await mkdir(directory, { recursive: true });
   await writeFile(join(directory, 'review.json'), '{}');
   await writeFile(join(directory, 'review.md'), 'review\n');
@@ -126,8 +126,8 @@ describe('secured export and fixed export-directory reveal APIs', () => {
         head: { label: 'head', oid: '2'.repeat(40) },
       },
       files: [
-        { path: `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}/review.json` },
-        { path: `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}/review.md` },
+        { path: `.compare/exports/${'1'.repeat(40)}..${'2'.repeat(40)}/review.json` },
+        { path: `.compare/exports/${'1'.repeat(40)}..${'2'.repeat(40)}/review.md` },
       ],
     });
     expect(JSON.stringify(response.json())).not.toContain(repositoryRoot);
@@ -157,13 +157,13 @@ describe('secured export and fixed export-directory reveal APIs', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ kind: 'revealed' });
-    expect(revealDraftFile).toHaveBeenCalledWith(join(repositoryRoot, '.diff-review', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`));
+    expect(revealDraftFile).toHaveBeenCalledWith(join(repositoryRoot, '.compare', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`));
     expect(JSON.stringify(response.json())).not.toContain(repositoryRoot);
   });
 
   test('rejects malformed confirmed receipts before API clients can mislabel the pair', () => {
-    const firstDirectory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
-    const secondDirectory = `.diff-review/exports/${'3'.repeat(40)}..${'4'.repeat(40)}`;
+    const firstDirectory = `.compare/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
+    const secondDirectory = `.compare/exports/${'3'.repeat(40)}..${'4'.repeat(40)}`;
     const json = { path: `${firstDirectory}/review.json`, sha256: 'a'.repeat(64), bytes: 128 };
     const markdown = { path: `${firstDirectory}/review.md`, sha256: 'b'.repeat(64), bytes: 256 };
 
@@ -178,7 +178,7 @@ describe('secured export and fixed export-directory reveal APIs', () => {
   });
 
   test('accepts only server-confirmed receipt drift identities and the distinct recovery-required result', () => {
-    const directory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
+    const directory = `.compare/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
     const receipt = exportedReceipt([
       { path: `${directory}/review.json`, sha256: 'a'.repeat(64), bytes: 128 },
       { path: `${directory}/review.md`, sha256: 'b'.repeat(64), bytes: 256 },
@@ -210,7 +210,7 @@ describe('secured export and fixed export-directory reveal APIs', () => {
   });
 
   test('rejects acknowledged receipt drift that does not map one-to-one to the pinned comparison', () => {
-    const directory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
+    const directory = `.compare/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
     const receipt = exportedReceipt([
       { path: `${directory}/review.json`, sha256: 'a'.repeat(64), bytes: 128 },
       { path: `${directory}/review.md`, sha256: 'b'.repeat(64), bytes: 256 },
@@ -249,7 +249,7 @@ describe('secured export and fixed export-directory reveal APIs', () => {
   });
 
   test('requires server-confirmed pinned comparison identities on every receipt', () => {
-    const directory = `.diff-review/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
+    const directory = `.compare/exports/${'1'.repeat(40)}..${'2'.repeat(40)}`;
     expect(ExportReviewResultSchema.safeParse({
       ...exportedReceipt([
         { path: `${directory}/review.json`, sha256: 'a'.repeat(64), bytes: 128 },
@@ -262,23 +262,23 @@ describe('secured export and fixed export-directory reveal APIs', () => {
     }).success).toBe(true);
   });
 
-  test.each(['.diff-review', 'exports'] as const)(
+  test.each(['.compare', 'exports'] as const)(
     'refuses reveal through an externally directed %s parent symlink',
     async (managedParent) => {
       const { app, repositoryRoot, revealDraftFile } = await buildApp();
-      const outside = await mkdtemp(join(tmpdir(), 'diff-review-export-reveal-outside-'));
+      const outside = await mkdtemp(join(tmpdir(), 'compare-export-reveal-outside-'));
       roots.push(outside);
       const stableName = `${'1'.repeat(40)}..${'2'.repeat(40)}`;
-      const outsideExportsRoot = managedParent === '.diff-review' ? join(outside, 'exports') : outside;
+      const outsideExportsRoot = managedParent === '.compare' ? join(outside, 'exports') : outside;
       const outsideStable = join(outsideExportsRoot, stableName);
       await mkdir(outsideStable, { recursive: true });
       await writeFile(join(outsideStable, 'review.json'), '{}');
       await writeFile(join(outsideStable, 'review.md'), 'review\n');
-      if (managedParent === '.diff-review') {
-        await symlink(outside, join(repositoryRoot, '.diff-review'), 'dir');
+      if (managedParent === '.compare') {
+        await symlink(outside, join(repositoryRoot, '.compare'), 'dir');
       } else {
-        await mkdir(join(repositoryRoot, '.diff-review'));
-        await symlink(outside, join(repositoryRoot, '.diff-review', 'exports'), 'dir');
+        await mkdir(join(repositoryRoot, '.compare'));
+        await symlink(outside, join(repositoryRoot, '.compare', 'exports'), 'dir');
       }
 
       const response = await app.inject({ method: 'POST', url: '/api/export/reveal', headers });

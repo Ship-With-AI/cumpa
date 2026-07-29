@@ -8,7 +8,7 @@ const repositoryRoot = resolve(import.meta.dirname, '../..');
 const token = 't'.repeat(43);
 const baseOid = 'a'.repeat(40);
 const headOid = 'b'.repeat(40);
-const exportDirectory = `.diff-review/exports/${baseOid}..${headOid}`;
+const exportDirectory = `.compare/exports/${baseOid}..${headOid}`;
 
 let server: ViteDevServer | undefined;
 let origin = '';
@@ -95,7 +95,7 @@ async function startAppServer(): Promise<string> {
         viteServer.middlewares.use('/api/session', (_request, response) => json(response, session));
         viteServer.middlewares.use('/api/draft', (_request, response) => json(response, {
           kind: 'current',
-          path: '.diff-review/drafts/export-receipt.json',
+          path: '.compare/drafts/export-receipt.json',
           draft: {
             schemaVersion: 1,
             comparison: { baseCommitOid: baseOid, headCommitOid: headOid, mergeBaseOid: 'c'.repeat(40) },
@@ -297,7 +297,7 @@ test('keeps the required recovery surface open and labels the retained receipt a
 
   const failure = page.getByRole('alert');
   await expect(failure).toContainText('Export needs recovery');
-  await expect(failure).toContainText('Diff Review could not confirm a complete new export pair. No success receipt is available. Check terminal details, then try again after recovery.');
+  await expect(failure).toContainText('Compare could not confirm a complete new export pair. No success receipt is available. Check terminal details, then try again after recovery.');
   await expect(failure.getByRole('region', { name: 'Previous confirmed export' })).toBeVisible();
 
   await page.keyboard.press('Escape');

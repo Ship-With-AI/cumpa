@@ -12,7 +12,7 @@ import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../h
 function pair(summary: string): Readonly<{ readonly json: Buffer; readonly markdown: Buffer }> {
   const json = Buffer.from(canonicalizeReviewExport(ReviewExportV1Schema.parse({
     schemaVersion: 1,
-    kind: 'diff-review/export',
+    kind: 'compare/export',
     exportedAt: '2026-07-23T00:00:00.000Z',
     acceptedDraftRevision: 1,
     comparison: {
@@ -38,7 +38,7 @@ test('forced unavailable capability refuses re-export before touching the comple
   const fixture = await createDirtyGitFixture();
   try {
     const before = await captureSourceControlSnapshot(fixture.root);
-    const stable = join(fixture.root, '.diff-review', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
+    const stable = join(fixture.root, '.compare', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
     const oldPair = pair('old generation');
 
     await expect(runGeneratedExport(fixture.root, oldPair, 'unsupported')).resolves.toMatchObject({ kind: 'exported' });

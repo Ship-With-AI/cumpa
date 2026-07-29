@@ -39,7 +39,7 @@ function comparison(repositoryRoot: string): PinnedComparison {
 }
 
 async function buildApp(observer: SelectorDriftObserver) {
-  const repositoryRoot = await mkdtemp(join(tmpdir(), 'diff-review-selector-drift-api-'));
+  const repositoryRoot = await mkdtemp(join(tmpdir(), 'compare-selector-drift-api-'));
   roots.push(repositoryRoot);
   const app = createSessionApp(comparison(repositoryRoot), {
     sessionToken: token,

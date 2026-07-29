@@ -38,12 +38,12 @@ import type {
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'diff-review-session-pack-'));
+const packedRoot = mkdtempSync(join(tmpdir(), 'compare-session-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 const executablePath = join(
   extractedPackageRoot,
-  'dist/bin/diff-review.mjs',
+  'dist/bin/compare.mjs',
 );
 
 const metadataHarnessModule = `
@@ -226,12 +226,12 @@ function startGeneratedCli(
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
-      DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({
+      COMPARE_LAUNCH_OPTIONS: JSON.stringify({
         cwd: repository.nestedCwd,
         ...selections,
       }),
-      DIFF_REVIEW_OPENER_LOG: openerLogPath,
-      DIFF_REVIEW_TERMINAL_CAPTURE: outputPath,
+      COMPARE_OPENER_LOG: openerLogPath,
+      COMPARE_TERMINAL_CAPTURE: outputPath,
     },
     stdio: ['ignore', outputDescriptor, outputDescriptor],
   });
@@ -308,8 +308,8 @@ test.beforeAll(() => {
     join(packedRoot, 'fake-open.mjs'),
     `#!/usr/bin/env node
 import { appendFileSync, readFileSync } from 'node:fs';
-const terminal = readFileSync(process.env.DIFF_REVIEW_TERMINAL_CAPTURE, 'utf8');
-appendFileSync(process.env.DIFF_REVIEW_OPENER_LOG, JSON.stringify({ arguments: process.argv.slice(2), terminal }) + '\\n');
+const terminal = readFileSync(process.env.COMPARE_TERMINAL_CAPTURE, 'utf8');
+appendFileSync(process.env.COMPARE_OPENER_LOG, JSON.stringify({ arguments: process.argv.slice(2), terminal }) + '\\n');
 process.exitCode = 1;
 `,
     'utf8',
@@ -367,7 +367,7 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
 
     await proveLoadingTransition(page, url);
   await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-    `Diff Review: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
+    `Compare: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
   );
     await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
     await page
@@ -641,7 +641,7 @@ test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) 
 
         await page.goto(launchUrl, { waitUntil: 'domcontentloaded' });
         await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-          `Diff Review: ${matrixCase.selections.base.label} · ${expectedBase.slice(0, 7)} → ${matrixCase.selections.head.label} · ${expectedHead.slice(0, 7)}`,
+          `Compare: ${matrixCase.selections.base.label} · ${expectedBase.slice(0, 7)} → ${matrixCase.selections.head.label} · ${expectedHead.slice(0, 7)}`,
         );
         await expect(
           page.getByRole('heading', { name: 'Changed files (3)' }),
@@ -743,7 +743,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     await proveLoadingTransition(page, url);
     await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-      `Diff Review: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
+      `Compare: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
     );
     await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
 
@@ -834,7 +834,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       'Pinned session unavailable',
     );
     await expect(securityPage.getByRole('alert')).toHaveText(
-      'This request is not available in the current session. Relaunch Diff Review from the terminal.',
+      'This request is not available in the current session. Relaunch Compare from the terminal.',
     );
     await expect(securityPage.locator('body')).not.toContainText(repository.root);
     await expect(securityPage.locator('.unavailable-shell')).toHaveCSS('background-color', 'rgb(13, 17, 23)');
@@ -861,7 +861,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       'Review unavailable',
     );
     await expect(errorPage.getByRole('alert')).toHaveText(
-      'This pinned session is unavailable. Return to the terminal and launch Diff Review again. Diagnostic details are shown in the terminal.',
+      'This pinned session is unavailable. Return to the terminal and launch Compare again. Diagnostic details are shown in the terminal.',
     );
     await expect(errorPage.locator('body')).not.toContainText(repository.root);
     await expect(errorPage.getByRole('button', { name: /retry/i })).toHaveCount(0);
@@ -876,7 +876,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       'Review unavailable',
     );
     await expect(stoppedPage.getByRole('alert')).toHaveText(
-      'This pinned session has stopped. Relaunch Diff Review from the terminal to continue.',
+      'This pinned session has stopped. Relaunch Compare from the terminal to continue.',
     );
     await expect(stoppedPage.getByRole('button', { name: /retry/i })).toHaveCount(0);
     await expect(stoppedPage.getByRole('navigation', { name: 'Changed files' })).toHaveCount(0);
@@ -954,7 +954,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     const emptyUrl = await waitForLoopbackUrl(emptyRunning);
     await emptyPage.goto(emptyUrl, { waitUntil: 'domcontentloaded' });
     await expect(emptyPage.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-      /Diff Review: Base fixture · [0-9a-f]{7} → Head fixture · [0-9a-f]{7}/,
+      /Compare: Base fixture · [0-9a-f]{7} → Head fixture · [0-9a-f]{7}/,
     );
     await expect(
       emptyPage.getByRole('heading', { level: 2, name: 'No PR-style changes in this pinned comparison' }),
@@ -1247,7 +1247,7 @@ test('fragment token protects loopback API', async ({ browser, page, request }, 
     const apiResponse = await apiResponsePromise;
 
     await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toContainText(
-      'Diff Review: Base fixture',
+      'Compare: Base fixture',
     );
     expect(new URL(page.url()).hash).toBe('');
     expect(apiRequest.url()).not.toContain(token);
@@ -1311,7 +1311,7 @@ test('fragment token protects loopback API', async ({ browser, page, request }, 
     ]) {
       const body = await response.text();
       expect(body).toContain(
-        'This request is not available in the current session. Relaunch Diff Review from the terminal.',
+        'This request is not available in the current session. Relaunch Compare from the terminal.',
       );
       expect(body).not.toContain(token);
       expect(body).not.toContain(repository.root);

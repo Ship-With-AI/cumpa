@@ -79,7 +79,7 @@ describe('ReviewExportV1 canonical contract', () => {
 
     expect(document).toMatchObject({
       schemaVersion: 1,
-      kind: 'diff-review/export',
+      kind: 'compare/export',
       acceptedDraftRevision: 4,
       summary: { markdown: null },
       counts: { all: 1, openActionable: 1, openNeedsAttention: 0, resolved: 0 },

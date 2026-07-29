@@ -28,7 +28,7 @@ const anchor = buildDurableAnchor({
 });
 
 async function root(): Promise<string> {
-  const value = await fs.mkdtemp(join(tmpdir(), 'diff-review-atomic-'));
+  const value = await fs.mkdtemp(join(tmpdir(), 'compare-atomic-'));
   roots.push(value);
   return value;
 }
@@ -96,7 +96,7 @@ describe('atomic draft persistence', () => {
       expect(await initialStore.mutate({ expectedRevision: 0, mutation: { type: 'addComment', body: 'already persisted', anchor } })).toMatchObject({ kind: 'accepted' });
       const canonicalPath = join(
         repositoryRoot,
-        '.diff-review',
+        '.compare',
         'drafts',
         `${comparisonKey(comparison.baseCommitOid, comparison.headCommitOid)}.json`,
       );

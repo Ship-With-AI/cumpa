@@ -53,9 +53,9 @@ async function buildApp(repositoryRoot: string) {
 }
 
 async function corruptDraft(bytes: Buffer): Promise<{ root: string; path: string }> {
-  const root = await mkdtemp(join(tmpdir(), 'diff-review-draft-recovery-'));
+  const root = await mkdtemp(join(tmpdir(), 'compare-draft-recovery-'));
   roots.push(root);
-  const directory = join(root, '.diff-review', 'drafts');
+  const directory = join(root, '.compare', 'drafts');
   const path = join(directory, `${comparisonKey('1'.repeat(40), '2'.repeat(40))}.json`);
   await mkdir(directory, { recursive: true });
   await writeFile(path, bytes);
@@ -78,7 +78,7 @@ describe('corrupt draft recovery API', () => {
     expect(loaded.statusCode).toBe(200);
     expect(loaded.json()).toMatchObject({
       kind: 'malformed',
-      path: '.diff-review/drafts/' + comparisonKey('1'.repeat(40), '2'.repeat(40)) + '.json',
+      path: '.compare/drafts/' + comparisonKey('1'.repeat(40), '2'.repeat(40)) + '.json',
       fingerprint: createHash('sha256').update(bytes).digest('hex'),
     });
     expect(JSON.stringify(loaded.json())).not.toContain(bytes.toString('utf8'));
@@ -115,7 +115,7 @@ describe('corrupt draft recovery API', () => {
     expect(recovered.statusCode).toBe(201);
     expect(recovered.json()).toMatchObject({
       kind: 'recovered',
-      backupPath: '.diff-review/drafts/' + comparisonKey('1'.repeat(40), '2'.repeat(40)) + `.corrupt.${fingerprint}.bak`,
+      backupPath: '.compare/drafts/' + comparisonKey('1'.repeat(40), '2'.repeat(40)) + `.corrupt.${fingerprint}.bak`,
       draft: { schemaVersion: 1, revision: 0, summary: '', comments: [] },
     });
     const backup = join(root, recovered.json().backupPath);

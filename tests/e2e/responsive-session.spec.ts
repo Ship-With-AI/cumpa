@@ -30,10 +30,10 @@ import type { GitFixture } from '../helpers/git-fixture.js';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'diff-review-responsive-pack-'));
+const packedRoot = mkdtempSync(join(tmpdir(), 'compare-responsive-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
-const executablePath = join(extractedPackageRoot, 'dist/bin/diff-review.mjs');
+const executablePath = join(extractedPackageRoot, 'dist/bin/compare.mjs');
 
 interface PackResult {
   readonly filename: string;
@@ -121,16 +121,16 @@ function startGeneratedCli(repository: GitFixture): RunningCli {
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
-      DIFF_REVIEW_LAUNCH_OPTIONS: JSON.stringify({
+      COMPARE_LAUNCH_OPTIONS: JSON.stringify({
         cwd: repository.nestedCwd,
         base: { label: 'Base responsive fixture', revision: repository.baseRef },
         head: { label: 'Head responsive fixture', revision: repository.headRef },
       }),
-      DIFF_REVIEW_OPENER_LOG: join(
+      COMPARE_OPENER_LOG: join(
         packedRoot,
         `opener-${crypto.randomUUID()}.log`,
       ),
-      DIFF_REVIEW_TERMINAL_CAPTURE: outputPath,
+      COMPARE_TERMINAL_CAPTURE: outputPath,
     },
     stdio: ['ignore', outputDescriptor, outputDescriptor],
   });
@@ -796,7 +796,7 @@ test('responsive keyboard and accessibility contract', async ({
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toContainText(
-      'Diff Review: Base responsive fixture',
+      'Compare: Base responsive fixture',
     );
 
   await test.step('rendered real workspace contrast contract', async () => {
@@ -1058,7 +1058,7 @@ test('responsive keyboard and accessibility contract', async ({
 
       for (const [name, destination] of [
         ['Skip to changed files', 'changed-files-heading'],
-        ['Skip to diff', 'diff-review-heading'],
+        ['Skip to diff', 'compare-heading'],
         ['Skip review', 'review-heading'],
       ] as const) {
         const skipLink = page.getByRole('link', { name, exact: true });
@@ -1498,7 +1498,7 @@ test('responsive keyboard and accessibility contract', async ({
       await page.getByRole('button', { name: 'Close files' }).click();
     });
 
-    if (process.env.DIFF_REVIEW_TRUE_ZOOM === '1') {
+    if (process.env.COMPARE_TRUE_ZOOM === '1') {
       test.setTimeout(90_000);
       await test.step('headed true 4× browser zoom preserves the effective 320px contract', async () => {
         await page.setViewportSize({ width: 1280, height: 640 });

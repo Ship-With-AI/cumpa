@@ -44,7 +44,7 @@ function comparison(repositoryRoot: string): PinnedComparison {
 }
 
 async function app(): Promise<FastifyInstance> {
-  const repositoryRoot = await mkdtemp(join(tmpdir(), 'diff-review-lifecycle-'));
+  const repositoryRoot = await mkdtemp(join(tmpdir(), 'compare-lifecycle-'));
   roots.push(repositoryRoot);
   const value = createSessionApp(comparison(repositoryRoot), {
     sessionToken: token,

@@ -79,7 +79,7 @@ function buildApp(
 }
 
 async function root(): Promise<string> {
-  const value = await mkdtemp(join(tmpdir(), 'diff-review-draft-'));
+  const value = await mkdtemp(join(tmpdir(), 'compare-draft-'));
   roots.push(value);
   return value;
 }
@@ -97,7 +97,7 @@ describe('comparison-local draft routes', () => {
 
     expect((await first.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
       kind: 'missing',
-      path: '.diff-review/drafts/' + comparisonKey('1'.repeat(40), '2'.repeat(40)) + '.json',
+      path: '.compare/drafts/' + comparisonKey('1'.repeat(40), '2'.repeat(40)) + '.json',
     });
 
     const added = await first.inject({
@@ -195,7 +195,7 @@ describe('comparison-local draft routes', () => {
     expect(denied.statusCode).toBe(401);
     expect(onLookup).not.toHaveBeenCalled();
 
-    const directory = join(repositoryRoot, '.diff-review', 'drafts');
+    const directory = join(repositoryRoot, '.compare', 'drafts');
     await mkdir(directory, { recursive: true });
     const file = join(
       directory,

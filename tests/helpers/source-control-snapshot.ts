@@ -25,7 +25,7 @@ const safeGitArguments = [
   'protocol.file.allow=never',
 ] as const;
 
-export const approvedGitignoreAppend = Buffer.from('/.diff-review/\n', 'ascii');
+export const approvedGitignoreAppend = Buffer.from('/.compare/\n', 'ascii');
 
 type TrackedEntry = Readonly<{ readonly path: string; readonly mode: number; readonly bytes: Buffer }>;
 type UntrackedEntry = Readonly<{ readonly path: string; readonly bytes: Buffer }>;
@@ -84,7 +84,7 @@ function equalBytes(left: Buffer, right: Buffer): boolean {
 }
 
 function withoutExports<T extends { readonly path: string }>(entries_: readonly T[]): readonly T[] {
-  return entries_.filter((entry) => entry.path !== '.diff-review' && !entry.path.startsWith('.diff-review/'));
+  return entries_.filter((entry) => entry.path !== '.compare' && !entry.path.startsWith('.compare/'));
 }
 
 function replacePermittedGitignore(
