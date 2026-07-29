@@ -125,6 +125,7 @@ None yet.
 | 260726-q8a | Generate interactive Phase 6 Monaco diff semantics mockup | 2026-07-26 | 2582170 | [260726-q8a](./quick/260726-q8a-PLAN.md) |
 | 260729-gzm | Refine changed-files sidebar, diff clarity, and design contracts | 2026-07-29 | 3b72649 | [260729-gzm](./quick/260729-gzm-refine-diff-sidebar-and-clarity/) |
 | 260729-lga | Rename entire project to Compare | 2026-07-29 | 9fac4fa | [260729-lga](./quick/260729-lga-rename-the-entire-project-from-diff-revi/) |
+| 260729-ohr | Rename Compare CLI command to cumpa | 2026-07-29 | 322d8ac | [260729-ohr](./quick/260729-ohr-change-the-compare-cli-command-and-gener/) |
 
 ## Deferred Items
 
