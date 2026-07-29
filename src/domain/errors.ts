@@ -65,15 +65,15 @@ export function isLaunchError(error: unknown): error is LaunchError {
 
 export const FATAL_LAUNCH_MESSAGES = Object.freeze({
   gitMissing:
-    'Git is required but was not found. Install Git, then run Diff Review again.',
+    'Git is required but was not found. Install Git, then run Compare again.',
   gitUnsupported:
-    'Git 2.43.0 or newer with the required machine protocols is required. Upgrade Git, then run Diff Review again.',
+    'Git 2.43.0 or newer with the required machine protocols is required. Upgrade Git, then run Compare again.',
   notWorktree:
-    'This directory is not inside a Git worktree. Run Diff Review from a Git worktree.',
+    'This directory is not inside a Git worktree. Run Compare from a Git worktree.',
   bareRepository:
-    'Bare repositories are not supported. Run Diff Review from a non-bare Git worktree.',
+    'Bare repositories are not supported. Run Compare from a non-bare Git worktree.',
   emptyRepository:
-    'This repository has no commits yet. Create the first commit, then run Diff Review again.',
+    'This repository has no commits yet. Create the first commit, then run Compare again.',
 });
 
 export const HEAD_RECOVERY = Object.freeze({

@@ -2,12 +2,12 @@ import { constants } from 'node:fs';
 import { lstat, open, type FileHandle } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
-import { inspectDiffReviewIgnore } from '../git/ignore-status.js';
+import { inspectCompareIgnore } from '../git/ignore-status.js';
 
-const diffReviewIgnoreRule = Buffer.from('/.diff-review/\n', 'ascii');
+const compareIgnoreRule = Buffer.from('/.compare/\n', 'ascii');
 const appendQueues = new Map<string, Promise<void>>();
 
-export type AppendDiffReviewIgnoreResult =
+export type AppendCompareIgnoreResult =
   | Readonly<{ kind: 'appended' }>
   | Readonly<{ kind: 'alreadyIgnored' }>
   | Readonly<{ kind: 'unconfirmed' }>
@@ -15,11 +15,11 @@ export type AppendDiffReviewIgnoreResult =
   | Readonly<{ kind: 'appendUnconfirmed' }>
   | Readonly<{ kind: 'ambiguous' }>;
 
-export interface AppendDiffReviewIgnoreOptions {
+export interface AppendCompareIgnoreOptions {
   readonly repositoryRoot: string;
 }
 
-export interface AppendDiffReviewIgnoreDependencies {
+export interface AppendCompareIgnoreDependencies {
   readonly beforeAppend?: () => Promise<void>;
   readonly writeAddition?: (handle: FileHandle, addition: Buffer) => Promise<void>;
   readonly sync?: (handle: FileHandle) => Promise<void>;
@@ -32,11 +32,11 @@ function isMissingPath(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
 }
 
-function result(kind: AppendDiffReviewIgnoreResult['kind']): AppendDiffReviewIgnoreResult {
+function result(kind: AppendCompareIgnoreResult['kind']): AppendCompareIgnoreResult {
   return Object.freeze({ kind });
 }
 
-async function closeAsUnconfirmed(handle: FileHandle): Promise<AppendDiffReviewIgnoreResult> {
+async function closeAsUnconfirmed(handle: FileHandle): Promise<AppendCompareIgnoreResult> {
   try {
     await handle.close();
   } catch {
@@ -50,9 +50,9 @@ async function inspectFailedMutation(
   identity: FileIdentity,
   original: Buffer,
   addition: Buffer,
-): Promise<AppendDiffReviewIgnoreResult> {
+): Promise<AppendCompareIgnoreResult> {
   let confirmation: FileHandle | undefined;
-  let outcome: AppendDiffReviewIgnoreResult = result('ambiguous');
+  let outcome: AppendCompareIgnoreResult = result('ambiguous');
   try {
     confirmation = await open(ignorePath, constants.O_RDONLY | constants.O_NOFOLLOW);
     const stat = await confirmation.stat();
@@ -78,10 +78,10 @@ async function inspectFailedMutation(
   return outcome;
 }
 
-export async function appendDiffReviewIgnoreRule(
-  options: AppendDiffReviewIgnoreOptions,
-  dependencies: AppendDiffReviewIgnoreDependencies = {},
-): Promise<AppendDiffReviewIgnoreResult> {
+export async function appendCompareIgnoreRule(
+  options: AppendCompareIgnoreOptions,
+  dependencies: AppendCompareIgnoreDependencies = {},
+): Promise<AppendCompareIgnoreResult> {
   const repositoryRoot = resolve(options.repositoryRoot);
   const previous = appendQueues.get(repositoryRoot) ?? Promise.resolve();
   let release!: () => void;
@@ -93,7 +93,7 @@ export async function appendDiffReviewIgnoreRule(
   await previous;
 
   try {
-    const status = await inspectDiffReviewIgnore({ repositoryRoot });
+    const status = await inspectCompareIgnore({ repositoryRoot });
     if (status.kind === 'ignored') {
       return result('alreadyIgnored');
     }
@@ -171,8 +171,8 @@ export async function appendDiffReviewIgnoreRule(
     }
 
     const addition = original.byteLength === 0 || original.at(-1) === 0x0a
-      ? diffReviewIgnoreRule
-      : Buffer.concat([Buffer.from('\n', 'ascii'), diffReviewIgnoreRule]);
+      ? compareIgnoreRule
+      : Buffer.concat([Buffer.from('\n', 'ascii'), compareIgnoreRule]);
     let mutationFailed = false;
 
     try {
@@ -229,7 +229,7 @@ export async function appendDiffReviewIgnoreRule(
       return result('ambiguous');
     }
 
-    return (await inspectDiffReviewIgnore({ repositoryRoot })).kind === 'ignored'
+    return (await inspectCompareIgnore({ repositoryRoot })).kind === 'ignored'
       ? result('appended')
       : result('appendUnconfirmed');
   } catch {

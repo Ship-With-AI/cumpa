@@ -47,9 +47,9 @@ type CompletePair = Readonly<{ readonly json: Buffer; readonly markdown: Buffer 
 type DirectoryIdentity = Readonly<{ readonly dev: number; readonly ino: number }>;
 
 export type ManagedExportsRoot = Readonly<{
-  readonly diffReviewRoot: string;
+  readonly compareRoot: string;
   readonly exportsRoot: string;
-  readonly diffReviewIdentity: DirectoryIdentity;
+  readonly compareIdentity: DirectoryIdentity;
   readonly exportsIdentity: DirectoryIdentity;
 }>;
 
@@ -118,8 +118,8 @@ function receipt(exportsRoot: string, stable: string, pair: CompletePair): Expor
   const json = hashExportBytes(pair.json);
   const markdown = hashExportBytes(pair.markdown);
   const files: ExportReceipt['files'] = [
-    Object.freeze({ path: `.diff-review/exports/${stableRelative}/review.json`, ...json }),
-    Object.freeze({ path: `.diff-review/exports/${stableRelative}/review.md`, ...markdown }),
+    Object.freeze({ path: `.compare/exports/${stableRelative}/review.json`, ...json }),
+    Object.freeze({ path: `.compare/exports/${stableRelative}/review.md`, ...markdown }),
   ];
   return Object.freeze({ files: Object.freeze(files) as ExportReceipt['files'] });
 }
@@ -153,20 +153,20 @@ export async function ensureManagedExportsRoot(
   create: boolean,
 ): Promise<ManagedExportsRoot | undefined> {
   const root = resolve(repositoryRoot);
-  const diffReviewRoot = join(root, '.diff-review');
-  const diffReviewIdentity = await managedDirectory(diffReviewRoot, create);
-  if (diffReviewIdentity === undefined) return undefined;
-  const exportsRoot = join(diffReviewRoot, 'exports');
+  const compareRoot = join(root, '.compare');
+  const compareIdentity = await managedDirectory(compareRoot, create);
+  if (compareIdentity === undefined) return undefined;
+  const exportsRoot = join(compareRoot, 'exports');
   const exportsIdentity = await managedDirectory(exportsRoot, create);
   if (exportsIdentity === undefined) return undefined;
-  return Object.freeze({ diffReviewRoot, exportsRoot, diffReviewIdentity, exportsIdentity });
+  return Object.freeze({ compareRoot, exportsRoot, compareIdentity, exportsIdentity });
 }
 
 export async function assertManagedExportsRoot(managedRoot: ManagedExportsRoot): Promise<void> {
-  const diffReviewIdentity = await managedDirectory(managedRoot.diffReviewRoot, false);
+  const compareIdentity = await managedDirectory(managedRoot.compareRoot, false);
   if (
-    diffReviewIdentity === undefined
-    || !sameIdentity(diffReviewIdentity, managedRoot.diffReviewIdentity)
+    compareIdentity === undefined
+    || !sameIdentity(compareIdentity, managedRoot.compareIdentity)
   ) {
     throw new Error('Managed export directory identity changed.');
   }

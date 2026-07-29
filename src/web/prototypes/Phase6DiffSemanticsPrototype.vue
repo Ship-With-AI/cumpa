@@ -203,7 +203,7 @@ onBeforeUnmount(() => {
     <header class="session-header phase6-prototype__header">
       <div class="phase6-prototype__header-copy">
         <p class="phase6-prototype__eyebrow">PHASE 6 THROWAWAY MOCKUP</p>
-        <h1>Diff Review: Monaco diff semantics compare board</h1>
+        <h1>Compare: Monaco diff semantics compare board</h1>
         <p>
           Development-only shell for comparing three possible Phase 6 visual treatments before real Monaco theming.
           The production review workflow, persistence, and API behavior stay untouched.

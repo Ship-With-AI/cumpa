@@ -70,7 +70,7 @@ function copyPinnedCommit(status: Exclude<SelectorDriftStatus, { readonly kind: 
         Launch new comparison
       </button>
       <p v-if="relaunchInstructionsOpen">
-        Return to the terminal and launch Diff Review again, then choose the current sources. This open review will remain pinned.
+        Return to the terminal and launch Compare again, then choose the current sources. This open review will remain pinned.
       </p>
     </div>
   </aside>

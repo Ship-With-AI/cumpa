@@ -435,16 +435,16 @@ function cancelExport(): void {
 
 async function refreshIgnoreStatus(): Promise<void> {
   if (sessionClient === undefined) return;
-  const status = await sessionClient.getDiffReviewIgnoreStatus();
+  const status = await sessionClient.getCompareIgnoreStatus();
   reviewState?.setIgnoreStatus(status);
   refreshReviewSnapshot();
 }
 
-async function appendDiffReviewIgnoreRule() {
+async function appendCompareIgnoreRule() {
   if (sessionClient === undefined) {
     throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
   }
-  const result = await sessionClient.appendDiffReviewIgnoreRule();
+  const result = await sessionClient.appendCompareIgnoreRule();
   reviewState?.setIgnoreAppendResult(result);
   refreshReviewSnapshot();
   return result;
@@ -550,7 +550,7 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
           }
           const comment = result.draft.comments.at(-1);
           if (comment === undefined) {
-            throw new SessionClientError('draft', 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.');
+            throw new SessionClientError('draft', 'Comment wasn’t added. Your text is still here. Check that Compare is running, then try again.');
           }
           const workspaceComment: WorkspaceComment = {
             id: comment.id,
@@ -576,14 +576,14 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
           if (workspace !== originWorkspace) {
             return;
           }
-          const message = 'Comment wasn’t added. Your text is still here. Check that Diff Review is running, then try again.';
+          const message = 'Comment wasn’t added. Your text is still here. Check that Compare is running, then try again.';
           dispatchWorkspace({
             type: 'add-failed',
             fileId: command.fileId,
             requestId: command.requestId,
             message,
           });
-          announce(`Comment on ${commentLocation} wasn’t added. Your text is still here. Check that Diff Review is running, then try again.`);
+          announce(`Comment on ${commentLocation} wasn’t added. Your text is still here. Check that Compare is running, then try again.`);
         });
         break;
       case 'reveal-comment-context':
@@ -767,7 +767,7 @@ onBeforeUnmount(() => {
 <template>
   <main v-if="primarySurface === 'loading' && errorMessage === ''" class="loading-shell">
     <section class="state-card" aria-labelledby="loading-heading">
-      <h1 id="loading-heading">Diff Review: loading pinned comparison</h1>
+      <h1 id="loading-heading">Compare: loading pinned comparison</h1>
       <p role="status">Opening local draft…</p>
     </section>
   </main>
@@ -779,7 +779,7 @@ onBeforeUnmount(() => {
 
   <div v-else class="session-shell">
     <a class="skip-link" href="#changed-files-heading">Skip to changed files</a>
-    <a class="skip-link" href="#diff-review-heading">Skip to diff</a>
+    <a class="skip-link" href="#compare-heading">Skip to diff</a>
     <a class="skip-link" href="#review-heading">Skip review</a>
     <IdentityHeader ref="identityHeader" :session="session" :expanded="identityOpen" @toggle="toggleIdentity" />
     <SelectorDriftNotice :drift="selectorDriftStatus" />
@@ -811,13 +811,13 @@ onBeforeUnmount(() => {
         </section>
       </nav>
 
-      <main class="review-main" aria-labelledby="diff-review-heading">
+      <main class="review-main" aria-labelledby="compare-heading">
         <header class="review-context-header">
           <div class="review-context-header__context">
             <div class="review-context-header__file">
               <div>
                 <p class="active-file-strip__eyebrow">Diff review</p>
-                <h1 id="diff-review-heading">
+                <h1 id="compare-heading">
                   <PathDisplay v-if="selectedFile !== undefined" :file="selectedFile" />
                   <template v-else>{{ selectedPath }}</template>
                 </h1>
@@ -865,7 +865,7 @@ onBeforeUnmount(() => {
         <section v-else-if="diffLoading" class="diff-state" aria-live="polite">Loading diff…</section>
         <section v-else-if="diffError !== ''" class="empty-state">
           <h2>Diff couldn’t be loaded</h2>
-          <p>The pinned file content is unavailable. Try again, or relaunch Diff Review if the session ended.</p>
+          <p>The pinned file content is unavailable. Try again, or relaunch Compare if the session ended.</p>
           <button type="button" class="ui-button" @click="retryDiff">Try loading diff again</button>
         </section>
         <DiffWorkspace
@@ -917,7 +917,7 @@ onBeforeUnmount(() => {
           @reopen="mutateComment($event, 'reopenComment')"
           @copy-recorded-anchor="copyRecordedAnchor"
           :export-state="reviewDraft.export"
-          :append-ignore-rule="appendDiffReviewIgnoreRule"
+          :append-ignore-rule="appendCompareIgnoreRule"
           :refresh-ignore-status="refreshIgnoreStatus"
           :reveal-export-directory="revealExportDirectory"
           @resolve="mutateComment($event, 'resolveComment')"

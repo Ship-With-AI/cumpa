@@ -3,7 +3,7 @@ import { constants } from 'node:fs';
 import { resolve } from 'node:path';
 
 const repositoryRoot = resolve(import.meta.dirname, '..');
-const executablePath = resolve(repositoryRoot, 'dist/bin/diff-review.mjs');
+const executablePath = resolve(repositoryRoot, 'dist/bin/compare.mjs');
 const indexPath = resolve(repositoryRoot, 'dist/web/index.html');
 const assetsPath = resolve(repositoryRoot, 'dist/web/assets');
 

@@ -2,10 +2,10 @@ import {
   DraftLoadResponseSchema,
   DraftMutationResultSchema,
   DraftMutationRequestSchema,
-  AppendDiffReviewIgnoreResultSchema,
+  AppendCompareIgnoreResultSchema,
   ExportDirectoryRevealResultSchema,
   DraftRecoveryRequestSchema,
-  DiffReviewIgnoreStatusSchema,
+  CompareIgnoreStatusSchema,
   DraftRecoveryResultSchema,
   DraftRevealResultSchema,
   ExportReviewRequestSchema,
@@ -13,12 +13,12 @@ import {
   FileContentResponseSchema,
   FileMetadataResponseSchema,
   type DraftLoadResponse,
-  type AppendDiffReviewIgnoreResult,
+  type AppendCompareIgnoreResult,
   type DraftMutationRequest,
   type DraftMutationResult,
   type DraftRecoveryResult,
   type DraftRevealResult,
-  type DiffReviewIgnoreStatus,
+  type CompareIgnoreStatus,
   type ExportDirectoryRevealResult,
   type ExportReviewRequest,
   type ExportReviewResult,
@@ -31,15 +31,15 @@ import {
 } from '../../contracts/api.js';
 
 export const SECURITY_FAILURE_MESSAGE =
-  'This request is not available in the current session. Relaunch Diff Review from the terminal.';
+  'This request is not available in the current session. Relaunch Compare from the terminal.';
 export const SESSION_UNAVAILABLE_MESSAGE =
-  'This pinned session is unavailable. Return to the terminal and launch Diff Review again. Diagnostic details are shown in the terminal.';
+  'This pinned session is unavailable. Return to the terminal and launch Compare again. Diagnostic details are shown in the terminal.';
 export const SESSION_STOPPED_MESSAGE =
-  'This pinned session has stopped. Relaunch Diff Review from the terminal to continue.';
+  'This pinned session has stopped. Relaunch Compare from the terminal to continue.';
 export const FILE_UNAVAILABLE_MESSAGE =
   'File details could not be loaded. Retry this file. If the problem continues, check the terminal diagnostic.';
 export const DRAFT_UNAVAILABLE_MESSAGE =
-  'Local draft couldn’t be opened. Existing review data was left unchanged. Relaunch Diff Review or check the terminal for details.';
+  'Local draft couldn’t be opened. Existing review data was left unchanged. Relaunch Compare or check the terminal for details.';
 export type DraftView = Extract<DraftLoadResponse, { readonly kind: 'current' }>['draft'];
 export type SessionClientErrorKind = 'security' | 'session' | 'stopped' | 'file' | 'draft';
 
@@ -57,8 +57,8 @@ export interface SessionClient {
   mutate(request: DraftMutationRequest): Promise<DraftMutationResult>;
   exportReview(request: ExportReviewRequest): Promise<ExportReviewResult>;
   getDraft(): Promise<DraftLoadResponse>;
-  appendDiffReviewIgnoreRule(): Promise<AppendDiffReviewIgnoreResult>;
-  getDiffReviewIgnoreStatus(): Promise<DiffReviewIgnoreStatus>;
+  appendCompareIgnoreRule(): Promise<AppendCompareIgnoreResult>;
+  getCompareIgnoreStatus(): Promise<CompareIgnoreStatus>;
   recoverDraft(expectedFingerprint: string): Promise<DraftRecoveryResult>;
   revealDraftFile(): Promise<DraftRevealResult>;
   revealExportDirectory(): Promise<ExportDirectoryRevealResult>;
@@ -166,8 +166,8 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       }
       return result.data;
     },
-    async appendDiffReviewIgnoreRule() {
-      const result = AppendDiffReviewIgnoreResultSchema.safeParse(
+    async appendCompareIgnoreRule() {
+      const result = AppendCompareIgnoreResultSchema.safeParse(
         await requestJson('/api/export/gitignore', 'POST', 'draft'),
       );
       if (!result.success) {
@@ -175,8 +175,8 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       }
       return result.data;
     },
-    async getDiffReviewIgnoreStatus() {
-      const result = DiffReviewIgnoreStatusSchema.safeParse(
+    async getCompareIgnoreStatus() {
+      const result = CompareIgnoreStatusSchema.safeParse(
         await requestJson('/api/export/gitignore', 'GET', 'draft'),
       );
       if (!result.success) {

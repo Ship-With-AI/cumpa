@@ -1,8 +1,8 @@
 import * as monaco from 'monaco-editor';
 
-export const DIFF_REVIEW_THEME_ID = 'diff-review-dark';
+export const COMPARE_THEME_ID = 'compare-dark';
 
-export const DIFF_REVIEW_THEME = {
+export const COMPARE_THEME = {
   base: 'vs-dark',
   inherit: true,
   rules: [
@@ -87,7 +87,7 @@ export const DIFF_REVIEW_THEME = {
   },
 } satisfies monaco.editor.IStandaloneThemeData;
 
-export function applyDiffReviewTheme(): void {
-  monaco.editor.defineTheme(DIFF_REVIEW_THEME_ID, DIFF_REVIEW_THEME);
-  monaco.editor.setTheme(DIFF_REVIEW_THEME_ID);
+export function applyCompareTheme(): void {
+  monaco.editor.defineTheme(COMPARE_THEME_ID, COMPARE_THEME);
+  monaco.editor.setTheme(COMPARE_THEME_ID);
 }

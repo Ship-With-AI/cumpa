@@ -173,7 +173,7 @@ function createLaunchRuntime(
     },
     setExitStatus: dependencies.setExitStatus,
     reportError: (error) => {
-      console.error('Diff Review shutdown failed.', error);
+      console.error('Compare shutdown failed.', error);
     },
   });
 
@@ -201,7 +201,7 @@ function createLaunchRuntime(
         sessionToken: token,
         revealDraftFile,
         diagnostics: ({ correlationId, reason }) => {
-          console.error(`Diff Review request denied [${correlationId}]: ${reason}.`);
+          console.error(`Compare request denied [${correlationId}]: ${reason}.`);
         },
       });
       await app.listen({ host: '127.0.0.1', port: 0 });
@@ -447,7 +447,7 @@ export async function run(
     return await createComparisonLaunchDescriptor(options);
   }
 
-  const serializedLaunchOptions = process.env.DIFF_REVIEW_LAUNCH_OPTIONS;
+  const serializedLaunchOptions = process.env.COMPARE_LAUNCH_OPTIONS;
   if (serializedLaunchOptions === undefined) {
     await runCli({ cwd: process.cwd() });
     return;

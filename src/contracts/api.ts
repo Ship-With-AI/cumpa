@@ -106,7 +106,7 @@ export const DraftViewSchema = z
 
 export const SafeDraftPathSchema = z
   .string()
-  .regex(/^\.diff-review\/drafts\/[A-Za-z0-9._-]+$/u);
+  .regex(/^\.compare\/drafts\/[A-Za-z0-9._-]+$/u);
 
 const DraftMalformedLoadSchema = z
   .strictObject({
@@ -222,7 +222,7 @@ export const ExportDirectoryRevealResultSchema = z
   ])
   .readonly();
 
-export const DiffReviewIgnoreStatusSchema = z
+export const CompareIgnoreStatusSchema = z
   .discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('ignored') }).readonly(),
     z.strictObject({ kind: z.literal('notIgnored') }).readonly(),
@@ -230,7 +230,7 @@ export const DiffReviewIgnoreStatusSchema = z
   ])
   .readonly();
 
-export const AppendDiffReviewIgnoreResultSchema = z
+export const AppendCompareIgnoreResultSchema = z
   .discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('appended') }).readonly(),
     z.strictObject({ kind: z.literal('alreadyIgnored') }).readonly(),
@@ -240,10 +240,9 @@ export const AppendDiffReviewIgnoreResultSchema = z
     z.strictObject({ kind: z.literal('ambiguous') }).readonly(),
   ])
   .readonly();
-
-export type DiffReviewIgnoreStatus = z.infer<typeof DiffReviewIgnoreStatusSchema>;
-export type AppendDiffReviewIgnoreResult = z.infer<
-  typeof AppendDiffReviewIgnoreResultSchema
+export type CompareIgnoreStatus = z.infer<typeof CompareIgnoreStatusSchema>;
+export type AppendCompareIgnoreResult = z.infer<
+  typeof AppendCompareIgnoreResultSchema
 >;
 
 export type ExportReviewRequest = z.infer<typeof ExportReviewRequestSchema>;
@@ -359,11 +358,11 @@ export const SelectorDriftResponseSchema = z
   })
   .readonly();
 
-const ExportReceiptDirectoryPattern = /^\.diff-review\/exports\/([0-9a-f]+\.\.[0-9a-f]+)\/review\.(?:json|md)$/u;
+const ExportReceiptDirectoryPattern = /^\.compare\/exports\/([0-9a-f]+\.\.[0-9a-f]+)\/review\.(?:json|md)$/u;
 
 const ExportReceiptJsonFileSchema = z
   .strictObject({
-    path: z.string().regex(/^\.diff-review\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.json$/u),
+    path: z.string().regex(/^\.compare\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.json$/u),
     algorithm: z.literal('sha256'),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),
     bytes: z.number().int().nonnegative(),
@@ -372,7 +371,7 @@ const ExportReceiptJsonFileSchema = z
 
 const ExportReceiptMarkdownFileSchema = z
   .strictObject({
-    path: z.string().regex(/^\.diff-review\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.md$/u),
+    path: z.string().regex(/^\.compare\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.md$/u),
     algorithm: z.literal('sha256'),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),
     bytes: z.number().int().nonnegative(),

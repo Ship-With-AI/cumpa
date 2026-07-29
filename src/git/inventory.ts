@@ -65,21 +65,21 @@ const sharedDiffOptions = [
   '--no-textconv',
 ] as const;
 
-const diffReviewPath = Buffer.from('.diff-review', 'ascii');
-const diffReviewPathPrefix = Buffer.from('.diff-review/', 'ascii');
+const comparePath = Buffer.from('.compare', 'ascii');
+const comparePathPrefix = Buffer.from('.compare/', 'ascii');
 
-function isDiffReviewInternalPath(path: ExactPath | undefined): boolean {
+function isCompareInternalPath(path: ExactPath | undefined): boolean {
   if (path === undefined) {
     return false;
   }
 
   const bytes = decodeBase64url(path.bytesBase64url);
-  if (bytes.byteLength === diffReviewPath.byteLength) {
-    return bytes.every((byte, index) => byte === diffReviewPath[index]);
+  if (bytes.byteLength === comparePath.byteLength) {
+    return bytes.every((byte, index) => byte === comparePath[index]);
   }
   return (
-    bytes.byteLength > diffReviewPathPrefix.byteLength &&
-    diffReviewPathPrefix.every((byte, index) => byte === bytes[index])
+    bytes.byteLength >= comparePathPrefix.byteLength &&
+    comparePathPrefix.every((byte, index) => byte === comparePathPrefix[index])
   );
 }
 
@@ -172,7 +172,7 @@ export async function createChangedFileInventory(
   );
   const reviewable = joined.filter(({ diff }) => {
     const { oldPath, newPath } = inventoryPaths(diff);
-    return !isDiffReviewInternalPath(oldPath) && !isDiffReviewInternalPath(newPath);
+    return !isCompareInternalPath(oldPath) && !isCompareInternalPath(newPath);
   });
   const namespace = options.fileIdNamespace ?? processFileIdNamespace;
   if (namespace.byteLength === 0) {

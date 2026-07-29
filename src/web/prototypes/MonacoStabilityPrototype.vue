@@ -18,7 +18,7 @@ const FILES: readonly ImmutableDiffFile[] = [
     base: {
       path: 'src/review.ts',
       text: `export function renderReview() {
-  const title = 'Diff Review';
+  const title = 'Compare';
   const stable01 = 'one';
   const stable02 = 'two';
   const stable03 = 'three';
@@ -40,7 +40,7 @@ const FILES: readonly ImmutableDiffFile[] = [
     head: {
       path: 'src/review.ts',
       text: `export function renderReview() {
-  const title = 'Diff Review';
+  const title = 'Compare';
   const stable01 = 'one';
   const stable02 = 'two';
   const stable03 = 'three';
@@ -68,7 +68,7 @@ const FILES: readonly ImmutableDiffFile[] = [
     base: {
       path: 'config/review.json',
       text: `{
-  "name": "diff-review",
+  "name": "compare",
   "stable01": true,
   "stable02": true,
   "stable03": true,
@@ -93,7 +93,7 @@ const FILES: readonly ImmutableDiffFile[] = [
     head: {
       path: 'config/review.json',
       text: `{
-  "name": "diff-review",
+  "name": "compare",
   "stable01": true,
   "stable02": true,
   "stable03": true,

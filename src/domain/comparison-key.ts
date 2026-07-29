@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-const DOMAIN = Buffer.from('diff-review-comparison-key-v1', 'utf8');
+const DOMAIN = Buffer.from('compare-comparison-key-v1', 'utf8');
 const encoder = new TextEncoder();
 
 function frame(value: string): Buffer {

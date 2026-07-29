@@ -109,7 +109,7 @@ export function buildReviewExportV1(snapshot: AcceptedReviewSnapshotV1, exported
   const allComments = files.flatMap((file) => file.comments);
   const document = {
     schemaVersion: 1 as const,
-    kind: 'diff-review/export' as const,
+    kind: 'compare/export' as const,
     exportedAt,
     acceptedDraftRevision: draft.revision,
     comparison: snapshot.comparison,

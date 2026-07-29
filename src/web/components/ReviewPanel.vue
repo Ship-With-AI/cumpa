@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 
 import type { ReviewPendingOperation } from '../model/review-draft-state.js';
 import type { ReviewExportState } from '../model/review-draft-state.js';
-import type { AppendDiffReviewIgnoreResult, ExportDirectoryRevealResult } from '../../contracts/api.js';
+import type { AppendCompareIgnoreResult, ExportDirectoryRevealResult } from '../../contracts/api.js';
 import { projectCommentGroups } from '../model/comment-groups.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import SummarySection from './SummarySection.vue';
@@ -31,7 +31,7 @@ const props = defineProps<{
   failure: ReviewFailure | null;
   retainedSummary: boolean;
   exportState: ReviewExportState;
-  appendIgnoreRule: () => Promise<AppendDiffReviewIgnoreResult>;
+  appendIgnoreRule: () => Promise<AppendCompareIgnoreResult>;
   refreshIgnoreStatus: () => Promise<void>;
   revealExportDirectory: () => Promise<ExportDirectoryRevealResult>;
   selectedCommentId?: string | null;
@@ -314,7 +314,7 @@ watch(reviewFailure, (failed) => {
       <div class="inline-notice__content">
         <h3 id="review-operation-failed-heading">Review change failed</h3>
         <p v-if="failure?.operation === 'comment'">Comment wasn’t saved. Your text is still here in this tab.</p>
-        <p v-else>The review change wasn’t saved. The accepted local draft is unchanged. Try again after checking Diff Review is running.</p>
+        <p v-else>The review change wasn’t saved. The accepted local draft is unchanged. Try again after checking Compare is running.</p>
       </div>
     </section>
 
@@ -458,7 +458,7 @@ watch(reviewFailure, (failed) => {
               <h6 :id="`delete-comment-heading-${comment.id}`">Delete comment?</h6>
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p>
               <p>{{ comment.body }}</p>
-              <p>This permanently removes the comment from this local draft. Diff Review has no undo history.</p>
+              <p>This permanently removes the comment from this local draft. Compare has no undo history.</p>
               <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null" @click="cancelDelete(comment.id)">Keep comment</button>
               <button
                 type="button"
@@ -572,7 +572,7 @@ watch(reviewFailure, (failed) => {
               <h6 :id="`delete-comment-heading-${comment.id}`">Delete comment?</h6>
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p>
               <p>{{ comment.body }}</p>
-              <p>This permanently removes the comment from this local draft. Diff Review has no undo history.</p>
+              <p>This permanently removes the comment from this local draft. Compare has no undo history.</p>
               <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null" @click="cancelDelete(comment.id)">Keep comment</button>
               <button type="button" class="ui-button ui-button--destructive" :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null" @click="confirmDelete(comment.id)"><span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'delete' && pendingFocus?.commentId === comment.id ? 'Deleting…' : 'Delete comment' }}</button>
             </section>

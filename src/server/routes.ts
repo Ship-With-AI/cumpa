@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
-  AppendDiffReviewIgnoreResultSchema,
-  DiffReviewIgnoreStatusSchema,
+  AppendCompareIgnoreResultSchema,
+  CompareIgnoreStatusSchema,
   DraftLoadResponseSchema,
   DraftMutationRequestSchema,
   DraftMutationResultSchema,
@@ -323,8 +323,8 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       ) {
         return unavailable(reply, 400);
       }
-      return DiffReviewIgnoreStatusSchema.parse(
-        await capabilities.inspectDiffReviewIgnore(),
+      return CompareIgnoreStatusSchema.parse(
+        await capabilities.inspectCompareIgnore(),
       );
     },
   );
@@ -342,8 +342,8 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
         return unavailable(reply, 400);
       }
       return reply.code(200).send(
-        AppendDiffReviewIgnoreResultSchema.parse(
-          await capabilities.appendDiffReviewIgnoreRule(),
+        AppendCompareIgnoreResultSchema.parse(
+          await capabilities.appendCompareIgnoreRule(),
         ),
       );
     },

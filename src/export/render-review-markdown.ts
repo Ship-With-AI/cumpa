@@ -34,7 +34,7 @@ function appendComment(lines: string[], comment: ReviewExportV1['files'][number]
 export function renderReviewMarkdown(canonicalBytes: Uint8Array): string {
   const document = parseCanonicalReviewExport(canonicalBytes);
   const lines: string[] = [
-    '# Diff Review Export',
+    '# Compare Export',
     '',
     '## Pinned comparison',
     `Accepted draft revision: ${document.acceptedDraftRevision}`,

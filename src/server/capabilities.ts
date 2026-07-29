@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import type { PinnedComparison, ChangedFile } from '../contracts/comparison.js';
 import {
   ExportReviewResultSchema,
-  AppendDiffReviewIgnoreResultSchema,
-  DiffReviewIgnoreStatusSchema,
+  AppendCompareIgnoreResultSchema,
+  CompareIgnoreStatusSchema,
   FileContentResponseSchema,
   FileMetadataResponseSchema,
   SessionResponseSchema,
@@ -15,8 +15,8 @@ import {
   type FileContentResponse,
   type FileMetadataResponse,
   type SessionResponse,
-  type AppendDiffReviewIgnoreResult,
-  type DiffReviewIgnoreStatus,
+  type AppendCompareIgnoreResult,
+  type CompareIgnoreStatus,
   type SelectorDriftResponse,
 } from '../contracts/api.js';
 import {
@@ -41,8 +41,8 @@ import {
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
 import { getObservedNativeExchangeCapability } from './native-exchange-capability.js';
 import { assertManagedExportsRoot, ensureManagedExportsRoot, publishReviewExport } from './export-store.js';
-import { inspectDiffReviewIgnore } from '../git/ignore-status.js';
-import { appendDiffReviewIgnoreRule } from './gitignore-capability.js';
+import { inspectCompareIgnore } from '../git/ignore-status.js';
+import { appendCompareIgnoreRule } from './gitignore-capability.js';
 
 export type AnchorAddPort = (
   input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
@@ -101,8 +101,8 @@ export type CapabilityRegistry = Readonly<{
   readonly revealDraftFile: () => Promise<void>;
   readonly revealExportDirectory: () => Promise<void>;
   readonly exportReview: (input: ExportReviewRequest) => Promise<ExportReviewResult>;
-  readonly inspectDiffReviewIgnore: () => Promise<DiffReviewIgnoreStatus>;
-  readonly appendDiffReviewIgnoreRule: () => Promise<AppendDiffReviewIgnoreResult>;
+  readonly inspectCompareIgnore: () => Promise<CompareIgnoreStatus>;
+  readonly appendCompareIgnoreRule: () => Promise<AppendCompareIgnoreResult>;
 }>;
 
 function toSessionEndpoint(endpoint: PinnedComparison['base']) {
@@ -321,17 +321,17 @@ export function createCapabilityRegistry(
       await assertManagedExportsRoot(managedRoot);
       await options.revealDraftFile(exportDirectory);
     },
-    async inspectDiffReviewIgnore() {
-      const status = await inspectDiffReviewIgnore({
+    async inspectCompareIgnore() {
+      const status = await inspectCompareIgnore({
         repositoryRoot: comparison.repositoryRoot,
       });
-      return DiffReviewIgnoreStatusSchema.parse({
+      return CompareIgnoreStatusSchema.parse({
         kind: status.kind === 'not-ignored' ? 'notIgnored' : status.kind,
       });
     },
-    async appendDiffReviewIgnoreRule() {
-      return AppendDiffReviewIgnoreResultSchema.parse(
-        await appendDiffReviewIgnoreRule({
+    async appendCompareIgnoreRule() {
+      return AppendCompareIgnoreResultSchema.parse(
+        await appendCompareIgnoreRule({
           repositoryRoot: comparison.repositoryRoot,
         }),
       );

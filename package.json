@@ -1,5 +1,5 @@
 {
-  "name": "diff-review",
+  "name": "compare",
   "version": "0.0.0",
   "private": true,
   "description": "Local-first review of pinned Git comparisons",
@@ -8,7 +8,7 @@
     "node": ">=24"
   },
   "bin": {
-    "diff-review": "dist/bin/diff-review.mjs"
+    "compare": "dist/bin/compare.mjs"
   },
   "files": [
     "dist/"

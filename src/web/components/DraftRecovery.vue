@@ -134,11 +134,11 @@ async function recover(): Promise<void> {
       >
         <template v-if="isRecoverable">
           <h1 id="draft-recovery-heading">Local review draft needs recovery</h1>
-          <p>Diff Review could not safely read this draft. The existing file has not been changed.</p>
+          <p>Compare could not safely read this draft. The existing file has not been changed.</p>
         </template>
         <template v-else>
-          <h1 id="draft-recovery-heading">This draft needs a newer Diff Review</h1>
-          <p>Draft schema version {{ load.foundVersion }} is newer than supported version {{ load.supportedVersion }}. Upgrade Diff Review to open it. The file has not been changed.</p>
+          <h1 id="draft-recovery-heading">This draft needs a newer Compare</h1>
+          <p>Draft schema version {{ load.foundVersion }} is newer than supported version {{ load.supportedVersion }}. Upgrade Compare to open it. The file has not been changed.</p>
         </template>
       </InlineNotice>
 
@@ -186,8 +186,8 @@ async function recover(): Promise<void> {
 
       <section v-if="isRecoverable && confirming" class="draft-recovery__confirmation" aria-labelledby="draft-recovery-confirmation-heading">
         <h2 id="draft-recovery-confirmation-heading">Start a new draft?</h2>
-        <p>Diff Review will first create and verify a byte-for-byte backup of {{ load.path }}. If the backup cannot be verified, the existing draft will not be replaced. The new draft will have no summary or comments.</p>
-        <p>This action has no undo inside Diff Review.</p>
+        <p>Compare will first create and verify a byte-for-byte backup of {{ load.path }}. If the backup cannot be verified, the existing draft will not be replaced. The new draft will have no summary or comments.</p>
+        <p>This action has no undo inside Compare.</p>
         <div class="draft-recovery__actions">
           <button ref="keepExisting" v-focus type="button" class="ui-button" :disabled="pending" @click="cancelConfirmation">Keep existing draft</button>
           <button

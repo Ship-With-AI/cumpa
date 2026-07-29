@@ -1,21 +1,21 @@
 import { createGitRunner, GitRunnerError } from './runner.js';
 import type { GitRunner } from './runner.js';
 
-const diffReviewIgnoreProbe = '.diff-review/.diff-review-ignore-probe';
-const diffReviewIgnoreArguments = [
+const compareIgnoreProbe = '.compare/.compare-ignore-probe';
+const compareIgnoreArguments = [
   'check-ignore',
   '--no-index',
   '--quiet',
   '--',
-  diffReviewIgnoreProbe,
+  compareIgnoreProbe,
 ] as const;
 
-export type DiffReviewIgnoreStatus =
+export type CompareIgnoreStatus =
   | Readonly<{ kind: 'ignored' }>
   | Readonly<{ kind: 'not-ignored' }>
   | Readonly<{ kind: 'unavailable' }>;
 
-export interface InspectDiffReviewIgnoreOptions {
+export interface InspectCompareIgnoreOptions {
   readonly repositoryRoot: string;
 }
 
@@ -23,13 +23,13 @@ export interface IgnoreStatusDependencies {
   readonly runner?: GitRunner;
 }
 
-export async function inspectDiffReviewIgnore(
-  options: InspectDiffReviewIgnoreOptions,
+export async function inspectCompareIgnore(
+  options: InspectCompareIgnoreOptions,
   dependencies: IgnoreStatusDependencies = {},
-): Promise<DiffReviewIgnoreStatus> {
+): Promise<CompareIgnoreStatus> {
   const runner = dependencies.runner ?? createGitRunner();
   try {
-    await runner.run(diffReviewIgnoreArguments, { cwd: options.repositoryRoot });
+    await runner.run(compareIgnoreArguments, { cwd: options.repositoryRoot });
     return Object.freeze({ kind: 'ignored' });
   } catch (error) {
     if (error instanceof GitRunnerError && error.kind === 'exit' && error.exitCode === 1) {

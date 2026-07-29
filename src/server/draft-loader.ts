@@ -11,7 +11,7 @@ import {
 import { comparisonKey } from '../domain/comparison-key.js';
 import type { DraftComparison, DraftFileSystem } from './draft-store.js';
 
-const draftsDirectory = '.diff-review/drafts';
+const draftsDirectory = '.compare/drafts';
 const strictUtf8 = new TextDecoder('utf-8', { fatal: true });
 
 export type DraftIssue = Readonly<{ readonly path: string; readonly message: string }>;

@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 
 const outputRoot = resolve(import.meta.dirname, '../dist');
 const binDirectory = resolve(outputRoot, 'bin');
-const executablePath = resolve(binDirectory, 'diff-review.mjs');
+const executablePath = resolve(binDirectory, 'compare.mjs');
 const executable = `#!/usr/bin/env node
 import { run } from '../cli/run.js';
 

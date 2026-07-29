@@ -12,7 +12,7 @@ const BASE_PROMPT =
   'Choose base — changes will be compared from its merge base with head';
 const HEAD_PROMPT =
   'Choose head — this committed state will be reviewed';
-const BACK_TO_BASE = 'diff-review:back-to-base';
+const BACK_TO_BASE = 'compare:back-to-base';
 
 export interface SourceCandidateSearchItem {
   readonly kind: 'candidate';

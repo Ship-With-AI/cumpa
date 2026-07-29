@@ -16,7 +16,7 @@ const emit = defineEmits<{
 const disclosure = ref<HTMLButtonElement>();
 const heading = computed(
   () =>
-    `Diff Review: ${controlSafeDisplay(props.session.base.label)} · ${props.session.base.oid.slice(0, 7)} → ${controlSafeDisplay(props.session.head.label)} · ${props.session.head.oid.slice(0, 7)}`,
+    `Compare: ${controlSafeDisplay(props.session.base.label)} · ${props.session.base.oid.slice(0, 7)} → ${controlSafeDisplay(props.session.head.label)} · ${props.session.head.oid.slice(0, 7)}`,
 );
 const dirtyEndpoints = computed(() =>
   [

@@ -246,7 +246,7 @@ const ExportDriftEndpointSchema = z
 export const ReviewExportV1Schema = z
   .strictObject({
     schemaVersion: z.literal(1),
-    kind: z.literal('diff-review/export'),
+    kind: z.literal('compare/export'),
     exportedAt: z.string().datetime(),
     acceptedDraftRevision: RevisionSchema,
     comparison: z
