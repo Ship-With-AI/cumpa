@@ -161,6 +161,48 @@ describe('comparison validation matrix', () => {
     });
     expect(commands).toEqual([['--version']]);
   });
+  it('preserves abort errors during repository root and bare probes', async () => {
+    for (const abortAt of ['top-level', 'bare'] as const) {
+      const controller = new AbortController();
+      const aborted = new GitRunnerError('aborted', 'Git command was cancelled');
+      const fallbackAbort = new GitRunnerError(
+        'aborted',
+        'Git command was cancelled',
+      );
+
+      const runner: GitRunner = {
+        async run(arguments_) {
+          if (arguments_[0] === '--version') {
+            return {
+              stdout: Buffer.from('git version 2.43.0\n'),
+              stderr: Buffer.alloc(0),
+            };
+          }
+          if (arguments_.includes('--show-toplevel')) {
+            if (abortAt === 'top-level') {
+              controller.abort();
+              throw aborted;
+            }
+            throw new GitRunnerError('exit', 'Not a worktree');
+          }
+          controller.abort();
+          throw abortAt === 'top-level' ? fallbackAbort : aborted;
+        },
+      };
+
+      await expect(
+        createPinnedComparison(
+          {
+            cwd: '/repo',
+            base: { label: 'main', revision: 'refs/heads/main' },
+            head: { label: 'feature', revision: 'refs/heads/feature' },
+          },
+          { runner, signal: controller.signal },
+        ),
+      ).rejects.toBe(aborted);
+    }
+  });
+
 
   it.each([
     [

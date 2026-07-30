@@ -145,6 +145,10 @@ export async function discoverGitRepository(
       { cwd, signal },
     );
   } catch (topLevelError) {
+    if (signal?.aborted) {
+      throw topLevelError;
+    }
+
     try {
       const bare = await runner.run(['rev-parse', '--is-bare-repository'], {
         cwd,
@@ -158,7 +162,7 @@ export async function discoverGitRepository(
         );
       }
     } catch (bareError) {
-      if (bareError instanceof LaunchError) {
+      if (bareError instanceof LaunchError || signal?.aborted) {
         throw bareError;
       }
     }
