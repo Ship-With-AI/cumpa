@@ -307,6 +307,56 @@ describe('truthful native-Git source candidate discovery', () => {
       await expect(discovery.searchBranches('target'), failure.name).rejects.toThrow();
     }
   });
+  it('rejects invalid UTF-8 branch identities before abbreviation or publication', async () => {
+    const repository = await fixture();
+    const oid = 'a'.repeat(40);
+    const failures = [
+      {
+        name: 'invalid ref suffix',
+        branch: Buffer.concat([
+          Buffer.from('refs/heads/target', 'utf8'),
+          Buffer.of(0x80),
+          Buffer.from(`\0target\0${oid}\0`, 'ascii'),
+        ]),
+      },
+      {
+        name: 'invalid label',
+        branch: Buffer.concat([
+          Buffer.from('refs/heads/target\0', 'utf8'),
+          Buffer.of(0x80),
+          Buffer.from(`\0${oid}\0`, 'ascii'),
+        ]),
+      },
+    ];
+
+    for (const failure of failures) {
+      let abbreviationCalls = 0;
+      const nativeRunner = createGitRunner();
+      const controlledRunner: GitRunner = {
+        async run(arguments_, options) {
+          if (arguments_[0] === 'branch') {
+            return { stdout: failure.branch, stderr: Buffer.alloc(0) };
+          }
+          if (arguments_[0] === 'log') {
+            abbreviationCalls += 1;
+            return {
+              stdout: Buffer.from(`${oid}\0${oid.slice(0, 12)}\0`, 'ascii'),
+              stderr: Buffer.alloc(0),
+            };
+          }
+          return await nativeRunner.run(arguments_, options);
+        },
+      };
+      const discovery = await discoverSourceCandidates(
+        { cwd: repository.nestedCwd },
+        { runner: controlledRunner },
+      );
+
+      await expect(discovery.searchBranches('target'), failure.name).rejects.toThrow();
+      expect(abbreviationCalls, failure.name).toBe(0);
+    }
+  });
+
 
   it('uses only byte-safe native-Git candidate protocols through the bounded runner', async () => {
     const repository = await fixture();
