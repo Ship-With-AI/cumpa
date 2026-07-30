@@ -410,6 +410,115 @@ describe('pre-session terminal failure ownership', () => {
     });
   });
 
+  it('freshly re-resolves a searched failed branch by exact ID while retaining its opposite endpoint', async () => {
+    const freshHead = {
+      ...headCandidate,
+      label: 'feature refreshed',
+      shortOid: '333333333333',
+    } as const satisfies SourceCandidate;
+    const pickCalls: Parameters<NonNullable<RunCliDependencies['pickSources']>>[0][] = [];
+    let discoveries = 0;
+    let attempts = 0;
+
+    await runCli(
+      { cwd: '/repo' },
+      {
+        discoverCandidates: (async () => {
+          discoveries += 1;
+          return {
+            initialCandidates: [baseCandidate],
+            searchBranches: async (term) => {
+              expect(term).toBe(headCandidate.label);
+              return [freshHead];
+            },
+          };
+        }) as never,
+        pickSources: async (options) => {
+          pickCalls.push(options);
+          return attempts === 0
+            ? { base: baseCandidate, head: headCandidate }
+            : { base: baseCandidate, head: freshHead };
+        },
+        createDescriptor: async () => {
+          attempts += 1;
+          if (attempts === 1) {
+            throw plannedFailure('endpoint-unavailable', 'Head moved', {
+              kind: 'return',
+              role: 'head',
+              preserve: 'base',
+              focus: 'previous-row',
+            });
+          }
+          return comparison;
+        },
+        confirmComparison: async () => 'launch',
+        launchComparison: async () => undefined,
+        output: vi.fn(),
+      } as RunCliDependencies,
+    );
+
+    expect(discoveries).toBe(2);
+    expect(pickCalls[1]).toMatchObject({
+      candidates: [baseCandidate, freshHead],
+      initialBase: baseCandidate,
+      recovery: {
+        role: 'head',
+        focusedCandidateId: headCandidate.id,
+        searchTerm: headCandidate.label,
+      },
+    });
+    expect(pickCalls[1]?.candidates[1]).toBe(freshHead);
+  });
+
+  it('falls back to an unfocused searched branch recovery when its exact ID disappeared', async () => {
+    const pickCalls: Parameters<NonNullable<RunCliDependencies['pickSources']>>[0][] = [];
+    let discoveries = 0;
+    let attempts = 0;
+
+    await runCli(
+      { cwd: '/repo' },
+      {
+        discoverCandidates: (async () => {
+          discoveries += 1;
+          return {
+            initialCandidates: [baseCandidate],
+            searchBranches: async () => [],
+          };
+        }) as never,
+        pickSources: async (options) => {
+          pickCalls.push(options);
+          return { base: baseCandidate, head: headCandidate };
+        },
+        createDescriptor: async () => {
+          attempts += 1;
+          if (attempts === 1) {
+            throw plannedFailure('endpoint-unavailable', 'Head disappeared', {
+              kind: 'return',
+              role: 'head',
+              preserve: 'base',
+              focus: 'search-input',
+            });
+          }
+          return comparison;
+        },
+        confirmComparison: async () => 'launch',
+        launchComparison: async () => undefined,
+        output: vi.fn(),
+      } as RunCliDependencies,
+    );
+
+    expect(discoveries).toBe(2);
+    expect(pickCalls[1]).toMatchObject({
+      candidates: [baseCandidate],
+      initialBase: baseCandidate,
+      recovery: {
+        role: 'head',
+        focusedCandidateId: undefined,
+        searchTerm: headCandidate.label,
+      },
+    });
+  });
+
   it('keeps the fragment bearer out of browser-opener failure diagnostics', async () => {
     const output = vi.fn();
     let rejectedUrl = '';
