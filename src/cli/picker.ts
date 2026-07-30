@@ -105,7 +105,7 @@ export function escapeTerminalText(value: string): string {
         break;
       default:
         result +=
-          codePoint < 0x20 || codePoint === 0x7f
+          codePoint < 0x20 || (codePoint >= 0x7f && codePoint <= 0x9f)
             ? `\\x${codePoint.toString(16).toUpperCase().padStart(2, '0')}`
             : character;
     }

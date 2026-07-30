@@ -4,6 +4,7 @@ import { Separator } from '@inquirer/search';
 import { confirmPinnedComparison } from '../../src/cli/confirm.js';
 import {
   buildSourceSearchItems,
+  escapeTerminalText,
   pickOrderedSources,
 } from '../../src/cli/picker.js';
 import type {
@@ -103,6 +104,10 @@ const comparison: PinnedComparison = {
 };
 
 describe('ordered searchable source picker', () => {
+  it('escapes C1 terminal controls', () => {
+    expect(escapeTerminalText('\u009B')).toBe('\\x9B');
+  });
+
   it('groups branch and worktree rows while searching every identifying field', () => {
     const unfiltered = buildSourceSearchItems(candidates, '', {
       role: 'head',
