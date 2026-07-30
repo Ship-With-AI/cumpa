@@ -31,7 +31,10 @@ Existing picker identity, ordering, worktree truthfulness, selection, recovery, 
   1. User can interact with the ordered source picker before Compare enumerates the remaining local branches.
   2. User initially sees the attached current branch and every registered worktree as source choices.
   3. User can choose an eager source for either ordered Base or Head selection without waiting for the remaining branch namespace.
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 09-01-PLAN.md — Stage native-Git discovery into eager current-branch/worktree candidates plus deferred branch lookup.
+- [ ] 09-02-PLAN.md — Make the ordered picker interactive from eager candidates with exact-ID lazy selection and recovery.
 
 ### Phase 10: On-Demand Branch Search
 
