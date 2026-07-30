@@ -47,18 +47,32 @@ describe('truthful native-Git source candidate discovery', () => {
     repository.git(['add', '--', 'staged.txt']);
     await repository.write('untracked.txt', 'untracked dirty bytes\n');
 
-    const candidates = await discoverSourceCandidates({
+    const discovery = await discoverSourceCandidates({
       cwd: repository.nestedCwd,
     });
-    const branches = candidates.filter((candidate) => candidate.kind === 'branch');
-    const worktrees = candidates.filter(
+    const branches = discovery.initialCandidates.filter(
+      (candidate) => candidate.kind === 'branch',
+    );
+    const worktrees = discovery.initialCandidates.filter(
       (candidate) => candidate.kind === 'worktree',
     );
 
-    expect(branches.map((candidate) => candidate.label)).toEqual(
-      expect.arrayContaining(['feature', 'linked', 'main', 'unavailable']),
-    );
+    expect(Object.isFrozen(discovery)).toBe(true);
+    expect(Object.isFrozen(discovery.initialCandidates)).toBe(true);
+    expect(branches).toMatchObject([
+      {
+        id: `branch:${repository.headRef}`,
+        label: 'feature',
+        refName: repository.headRef,
+      },
+    ]);
     expect(worktrees).toHaveLength(4);
+    expect(worktrees.map((candidate) => candidate.path)).toEqual([
+      repository.root,
+      linkedPath,
+      detachedPath,
+      unavailablePath,
+    ]);
 
     const current = worktrees.find((candidate) => candidate.path === repository.root);
     expect(current).toMatchObject({
@@ -96,11 +110,11 @@ describe('truthful native-Git source candidate discovery', () => {
       '--short=12',
       expectedFeatureOid,
     ]);
-    const duplicateOidRows = candidates.filter(
+    const duplicateOidRows = discovery.initialCandidates.filter(
       (candidate) => candidate.commitOid === expectedFeatureOid,
     );
 
-    expect(duplicateOidRows.length).toBeGreaterThanOrEqual(3);
+    expect(duplicateOidRows).toHaveLength(3);
     expect(duplicateOidRows.map((candidate) => candidate.id)).toHaveLength(
       new Set(duplicateOidRows.map((candidate) => candidate.id)).size,
     );
@@ -110,6 +124,96 @@ describe('truthful native-Git source candidate discovery', () => {
     expect(duplicateOidRows.every((candidate) => candidate.id !== candidate.commitOid)).toBe(
       true,
     );
+  });
+
+  it('does not fabricate an attached branch for a detached current checkout', async () => {
+    const repository = await fixture();
+    repository.git(['switch', '--detach', repository.headRef]);
+
+    const discovery = await discoverSourceCandidates({
+      cwd: repository.nestedCwd,
+    });
+
+    expect(
+      discovery.initialCandidates.filter((candidate) => candidate.kind === 'branch'),
+    ).toEqual([]);
+    expect(discovery.initialCandidates).toContainEqual(
+      expect.objectContaining({
+        id: `worktree:${repository.root}`,
+        detached: true,
+        isCurrentCheckout: true,
+      }),
+    );
+  });
+
+  it('defers complete branch discovery to uncached non-empty searches', async () => {
+    const repository = await fixture();
+    const calls: Array<{
+      readonly arguments_: readonly string[];
+      readonly cwd: string;
+    }> = [];
+    const nativeRunner = createGitRunner();
+    const recordingRunner: GitRunner = {
+      async run(arguments_, options) {
+        calls.push({ arguments_, cwd: options.cwd });
+        return await nativeRunner.run(arguments_, options);
+      },
+    };
+
+    const discovery = await discoverSourceCandidates(
+      { cwd: repository.nestedCwd },
+      { runner: recordingRunner },
+    );
+    expect(
+      calls
+        .filter(
+          ({ arguments_ }) =>
+            arguments_[0] === 'for-each-ref' &&
+            arguments_.includes('refs/heads'),
+        )
+        .every(({ arguments_ }) => arguments_.includes('--count=1')),
+    ).toBe(true);
+
+    const eagerCallCount = calls.length;
+    await expect(discovery.searchBranches('')).resolves.toEqual([]);
+    expect(calls).toHaveLength(eagerCallCount);
+
+    await expect(discovery.searchBranches('FEATURE')).resolves.toMatchObject([
+      {
+        id: `branch:${repository.headRef}`,
+        label: 'feature',
+        refName: repository.headRef,
+      },
+    ]);
+    expect(
+      calls.filter(
+        ({ arguments_ }) =>
+          arguments_[0] === 'for-each-ref' &&
+          arguments_.includes('--sort=refname'),
+      ),
+    ).toHaveLength(1);
+
+    await expect(discovery.searchBranches('local branch')).resolves.toHaveLength(2);
+    expect(
+      calls.filter(
+        ({ arguments_ }) =>
+          arguments_[0] === 'for-each-ref' &&
+          arguments_.includes('--sort=refname'),
+      ),
+    ).toHaveLength(2);
+
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      discovery.searchBranches('feature', controller.signal),
+    ).rejects.toMatchObject({ kind: 'aborted' });
+    expect(
+      calls.filter(
+        ({ arguments_ }) =>
+          arguments_[0] === 'for-each-ref' &&
+          arguments_.includes('--sort=refname'),
+      ),
+    ).toHaveLength(2);
   });
 
   it('uses only byte-safe native-Git candidate protocols through the bounded runner', async () => {
@@ -154,3 +258,4 @@ describe('truthful native-Git source candidate discovery', () => {
     )).toBe(true);
   });
 });
+

@@ -94,7 +94,16 @@ describe('comparison validation matrix', () => {
         ['cat-file', '--batch-command', '-Z'],
       ]),
     );
+    expect(commands).toContainEqual(
+      expect.arrayContaining([
+        'for-each-ref',
+        '--count=1',
+        '--format=%(refname)%00',
+        'refs/heads',
+      ]),
+    );
   });
+
 
   it('rejects Git below 2.43 with one actionable prerequisite failure and no parser fallback', async () => {
     const repository = await fixture('removed-object');
