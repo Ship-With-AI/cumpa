@@ -17,6 +17,9 @@ Patterns established across spike sessions. New spikes follow these unless the q
 - Keep fixture creation outside measured intervals.
 - Measure process-start boundaries from a parent process; emit machine-readable JSON from the child probe.
 - Report Git subprocess counts alongside elapsed time so constant-process and per-item designs remain distinguishable.
+- Stage large Git candidate sets: show the current branch and registered worktrees before on-demand branch search.
+- Batch object metadata lookup; never run one Git subprocess per branch.
+- Benchmark both packed and loose refs without mutating the fixture during the measured path.
 
 ## Tools & Libraries
 
