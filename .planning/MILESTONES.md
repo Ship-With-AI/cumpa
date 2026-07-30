@@ -1,5 +1,18 @@
 # Milestones
 
+## v1.2 Fast Source Discovery (Shipped: 2026-07-30)
+
+**Phases completed:** 3 phases, 4 plans, 9 tasks
+
+**Key accomplishments:**
+
+- A frozen eager snapshot now exposes the attached current branch and truthful registered worktrees without complete local-branch enumeration; non-empty searches perform the uncached native-Git branch lookup.
+- The terminal picker now opens from the eager current branch and registered worktrees, then installs abort-safe lazy branch results by exact ID across Base/Head selection and drift recovery.
+- Non-empty picker terms now perform a literal, case-insensitive local-branch Git query, validate complete Git protocols, and publish only fresh exact-ID branch rows alongside truthful worktrees.
+- A standalone compiled-production picker gate proves packed-10,000-ref readiness and branch-search budgets with exact rendered-row timing.
+
+---
+
 ## v1.1 GitHub Dark Diff (Shipped: 2026-07-29)
 
 **Phases completed:** 4 phases, 16 plans, 29 tasks

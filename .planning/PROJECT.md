@@ -8,36 +8,28 @@ Compare is a local-first code review application for developers who want a GitHu
 
 A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
 
-## Current State: v1.1 GitHub Dark Diff
+## Current State: v1.2 Fast Source Discovery
 
-**Shipped:** 2026-07-29
+**Shipped:** 2026-07-30
 
-Compare now delivers its complete local browser-review-to-agent workflow through one GitHub-dark-inspired semantic interface. The shipped workspace includes coordinated Monaco diff semantics, compact review surfaces, explicit non-color state cues, accessible focus and contrast, responsive reflow, and localized side-by-side diff scrolling.
+Compare now opens its ordered source picker from an immutable eager snapshot of the attached current branch and registered worktrees, then searches remaining local branches only after the user enters a term. The shipped path preserves exact source identity, worktree truthfulness, selection ordering, drift recovery, and native-Git authority without a persistent branch index or repository mutation.
 
 <details>
-<summary>v1.1 milestone intent</summary>
-
-**Goal:** Make the existing diff-review workspace feel substantially closer to GitHub's dark pull-request diff experience without changing review mechanics.
-
-**Delivered features:**
-- Applied one GitHub dark-default-inspired semantic palette to the diff workspace.
-- Restyled the file header, Monaco diff, gutters, controls, inline comments, and review rail.
-- Improved visual hierarchy, spacing, typography, interaction states, contrast, non-color cues, and responsive behavior.
-- Preserved Diff Review's identity, information architecture, and existing review workflow.
-
-</details>
-
-## Current Milestone: v1.2 Fast Source Discovery
+<summary>v1.2 milestone intent</summary>
 
 **Goal:** Make the ordered source picker interactive quickly and keep branch search scalable in repositories with 10,000 local branches.
 
-**Target features:**
-- Expose the current branch and registered worktrees before enumerating all local branches.
-- Load matching local branches only after the user starts searching.
-- Replace serial per-branch Git subprocesses with bounded or batched native-Git calls.
-- Verify a 400 ms picker-readiness budget and a 500 ms packed-ref search budget with the existing large-repository benchmark.
-- Preserve correct loose-ref search without mutating Git state or adding persistent or recency state.
+**Delivered features:**
+- Exposed the attached current branch and registered worktrees before complete local-branch enumeration.
+- Added case-insensitive literal local-branch search on non-empty picker input.
+- Batched branch metadata and abbreviation work through bounded native-Git protocols.
+- Verified the compiled production path with exactly 10,000 packed local refs: readiness median 221.532417 ms and search median 38.266167 ms.
+- Preserved correct identity, ordering, worktree state, cancellation, recovery, and failure behavior without mutating refs.
 
+</details>
+## Next Milestone Goals
+
+No next milestone is active. Run `/gsd-new-milestone` to define the next goal, requirements, and roadmap.
 ## Requirements
 
 ### Validated
@@ -68,12 +60,15 @@ Validated in Phase 08: Accessible Responsive Continuity completed the GitHub-dar
 
 The final v1.1 clarity pass compacted the changed-files sidebar, made removed/added semantics explicit, strengthened diff fills, preserved Monaco positioning under the production CSP, and recorded the shipped product and visual contracts.
 
+Validated in Phase 09: Immediate Source Picker exposed the attached current branch and truthful registered worktrees before complete local-branch enumeration.
+
+Validated in Phase 10: On-Demand Branch Search added fresh case-insensitive literal local-head search through bounded native-Git protocols.
+
+Validated in Phase 11: Production Performance Gate proved the compiled picker path within fixed readiness and search budgets against exactly 10,000 packed local refs.
+
 ### Active
 
-- [ ] User can interact with the ordered source picker before all local branches are enumerated, with the current branch and registered worktrees initially available.
-- [ ] User can search matching local branches through bounded or batched native-Git calls without a serial subprocess per branch.
-- [ ] User receives correct search results without Compare mutating repository refs or maintaining persistent branch-recency state.
-- [ ] The picker is usable within 400 ms and packed-ref search results appear within 500 ms in the 10,000-branch benchmark.
+No active requirements. v1.2 shipped all five milestone requirements.
 
 ### Out of Scope
 
@@ -86,20 +81,17 @@ The final v1.1 clarity pass compacted the changed-files sidebar, made removed/ad
 
 ## Context
 
-Phases 05–08 and the final clarity pass now form one shipped GitHub-dark review workspace: a single semantic vocabulary drives application surfaces and Monaco; every existing review state uses explicit interaction and non-color meaning; the responsive shell preserves one localized 640px side-by-side canvas; and loading, empty, sidebar, comment, recovery, summary, and export surfaces share documented product and design contracts.
+Compare has shipped three milestones: the complete local browser-review-to-agent loop, a GitHub-dark accessible review workspace, and scalable local source discovery. The CLI now opens source selection from the attached current branch and registered worktrees without waiting for a complete local-branch scan; non-empty input performs fresh, literal, case-insensitive local-head search through native Git.
 
-Diff Review v1.0 shipped the complete local browser-review-to-agent loop. A developer can select ordered local branches or registered worktrees, inspect the immutable merge-base-to-head change set, maintain a repository-local review draft, and export canonical JSON plus derived Markdown without publishing refs or modifying source control.
+Each comparison remains ordered and frozen to full commit IDs. The displayed change is the merge base of those commits compared with the selected head; selected worktrees resolve to committed `HEAD` values and dirty bytes never enter the review.
 
-Each comparison is ordered and frozen to full commit IDs. The displayed change is the merge base of those commits compared with the selected head; selected worktrees resolve to committed `HEAD` values and dirty bytes never enter the review.
-
-The browser workspace now provides an exact changed-file tree, real Monaco side-by-side text diffs, expandable context, keyboard navigation, durable line comments, review summary and comment lifecycle, conflict recovery, selector-drift reporting, and explicit unsupported, stale, and orphaned states.
+The browser workspace provides an exact changed-file tree, real Monaco side-by-side text diffs, expandable context, keyboard navigation, durable line comments, review summary and comment lifecycle, conflict recovery, selector-drift reporting, and explicit unsupported, stale, and orphaned states.
 
 Exports are versioned and machine-validated. Canonical JSON owns comparison identities, accepted summary and comments, timestamps, blob identities, and context anchors; Markdown is derived from that same validated model. Publication is an atomic pair beneath `.compare/exports/`, with hashes and a bounded receipt.
 
-The shipped repository contains 35,282 tracked TypeScript, Vue, and MJS lines. v1.1 completed 18/18 requirements, 12/12 cross-phase integrations, and seven end-to-end flows; Phase 08 UAT accepted all three manual accessibility and true-zoom gates.
+v1.2 completed 5/5 requirements, 12/12 cross-phase integrations, and 5/5 end-to-end flows. Its compiled production gate proved exactly 10,000 packed local heads with zero loose heads, one discarded warmup, five serial measurements, readiness median 221.532417 ms against a 400 ms budget, and search median 38.266167 ms against a 500 ms budget.
 
-Retained debt is bounded: one authenticated orphan metadata route/client method, Phase 3 UI polish, and accepted Phase 4 filesystem/power-loss durability limits. No v1.0 requirement or user flow remains blocked.
-
+Retained debt is bounded: one authenticated orphan metadata route/client method, Phase 3 UI polish, accepted Phase 4 filesystem/power-loss durability limits, focused rather than compiled black-box coverage for uncommon worktree recovery states, and host-sensitive absolute performance evidence. No shipped requirement or user flow remains blocked.
 ## Constraints
 
 - **Runtime**: Node.js 24 LTS with TypeScript end to end — one language across CLI, server, shared contracts, and UI, using the current supported LTS baseline.
@@ -141,6 +133,10 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 | Pair Base/Head identity with explicit removed/added text, signed gutters, and structural bars | Make diff meaning clear without relying on red and green | Good — stronger line/intraline fills and CSP-safe Monaco positioning passed focused browser and theme checks |
 | Record shipped product facts and visual rules in root contracts | Prevent future copy and styling work from inventing a second product or design language | Good — final designer checks report no contract, display-scale, numeric-claim, or contact-detail blockers |
 
+| Freeze eager source discovery before deferred branch search | Make the picker usable without enumerating every local branch while retaining a stable initial authority | Good — the attached branch and registered worktrees render immediately; fresh branch results arrive only for non-empty input |
+| Share one prompt-lifetime exact-ID registry across Base and Head selection | Keep eager, lazy, and recovered candidates unambiguous across ordered selection | Good — abort-safe lazy results and descriptor recovery preserve exact source identity |
+| Use bounded native-Git protocols for literal local-head search and metadata | Avoid a persistent index and one subprocess per branch while retaining Git semantics | Good — strict protocol validation and batched abbreviation pass real-Git coverage |
+| Gate discovery performance through the compiled production binary | Prevent injected seams or spike-only measurements from claiming release budgets | Good — the packed-10,000-ref gate passes fixed 400 ms readiness and 500 ms search medians |
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -159,4 +155,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-30 after starting v1.2 Fast Source Discovery*
+*Last updated: 2026-07-30 after shipping v1.2 Fast Source Discovery*
