@@ -11,6 +11,7 @@ import { discoverGitRepository } from './repository.js';
 import {
   createGitRunner,
   GitRunnerError,
+  type GitRunResult,
   type GitRunner,
 } from './runner.js';
 
@@ -51,6 +52,13 @@ interface WorktreeRecord {
   detached: boolean;
   prunable: boolean;
   bare: boolean;
+}
+
+function stripGitLineTerminator(buffer: Buffer): Buffer {
+  if (buffer.at(-1) !== 0x0a) {
+    throw new Error('Git line output ended without a line terminator');
+  }
+  return buffer.subarray(0, -1);
 }
 
 function splitNul(buffer: Buffer): Buffer[] {
@@ -236,7 +244,14 @@ export async function discoverSourceCandidates(
       cwd: repository.root,
       signal: options.signal,
     });
-    const shortOid = result.stdout.toString('ascii').trim();
+    const shortOid = stripGitLineTerminator(result.stdout).toString('latin1');
+    if (
+      !/^[0-9a-f]{12,}$/.test(shortOid) ||
+      shortOid.length > oid.length ||
+      !oid.startsWith(shortOid)
+    ) {
+      throw new Error('Git worktree abbreviation output contained an invalid OID');
+    }
     shortOidByFullOid.set(oid, shortOid);
     return shortOid;
   };
@@ -259,29 +274,39 @@ export async function discoverSourceCandidates(
       record.prunable || record.bare ? 'unavailable' : 'clean';
 
     if (availability !== 'unavailable') {
+      let headResult: GitRunResult | undefined;
       try {
-        const headResult = await runner.run(
+        headResult = await runner.run(
           ['rev-parse', '--verify', '--end-of-options', 'HEAD^{commit}'],
           { cwd: record.path, signal: options.signal },
         );
-        commitOid = GitObjectIdSchema.parse(
-          headResult.stdout.toString('ascii').trim(),
-        );
-        const statusResult = await runner.run(
-          [
-            'status',
-            '--porcelain=v1',
-            '-z',
-            '--untracked-files=normal',
-          ],
-          { cwd: record.path, signal: options.signal },
-        );
-        availability = statusResult.stdout.length === 0 ? 'clean' : 'dirty';
       } catch (error) {
         if (options.signal?.aborted) {
           throw error;
         }
         availability = 'unavailable';
+      }
+      if (headResult !== undefined) {
+        commitOid = GitObjectIdSchema.parse(
+          stripGitLineTerminator(headResult.stdout).toString('latin1'),
+        );
+        try {
+          const statusResult = await runner.run(
+            [
+              'status',
+              '--porcelain=v1',
+              '-z',
+              '--untracked-files=normal',
+            ],
+            { cwd: record.path, signal: options.signal },
+          );
+          availability = statusResult.stdout.length === 0 ? 'clean' : 'dirty';
+        } catch (error) {
+          if (options.signal?.aborted) {
+            throw error;
+          }
+          availability = 'unavailable';
+        }
       }
     }
 

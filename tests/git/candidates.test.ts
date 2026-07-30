@@ -417,6 +417,74 @@ describe('truthful native-Git source candidate discovery', () => {
     expect(worktreeListingCalls).toBe(2);
     expect(ranAfterInvalidWorktreeListing).toBe(false);
   });
+
+  it('rejects malformed current-worktree OID output before publication', async () => {
+    const repository = await fixture();
+    const oid = 'a'.repeat(40);
+    const shortOid = oid.slice(0, 12);
+    const fullOid = Buffer.from(`${oid}\n`, 'ascii');
+    const abbreviatedOid = Buffer.from(`${shortOid}\n`, 'ascii');
+    const highBitFullOid = Buffer.from(fullOid);
+    highBitFullOid[0] = 0xe1;
+    const highBitShortOid = Buffer.from(abbreviatedOid);
+    highBitShortOid[0] = 0xe1;
+    const failures = [
+      {
+        name: 'high-bit full OID',
+        head: highBitFullOid,
+        short: abbreviatedOid,
+      },
+      {
+        name: 'high-bit short OID',
+        head: fullOid,
+        short: highBitShortOid,
+      },
+      {
+        name: 'non-prefix short OID',
+        head: fullOid,
+        short: Buffer.from(`${'b'.repeat(12)}\n`, 'ascii'),
+      },
+      {
+        name: 'short short OID',
+        head: fullOid,
+        short: Buffer.from(`${shortOid.slice(0, 11)}\n`, 'ascii'),
+      },
+    ];
+
+    for (const failure of failures) {
+      const nativeRunner = createGitRunner();
+      const controlledRunner: GitRunner = {
+        async run(arguments_, options) {
+          if (
+            JSON.stringify(arguments_) ===
+            JSON.stringify([
+              'rev-parse',
+              '--verify',
+              '--end-of-options',
+              'HEAD^{commit}',
+            ])
+          ) {
+            return { stdout: failure.head, stderr: Buffer.alloc(0) };
+          }
+          if (
+            arguments_[0] === 'rev-parse' &&
+            arguments_[1] === '--short=12'
+          ) {
+            return { stdout: failure.short, stderr: Buffer.alloc(0) };
+          }
+          return await nativeRunner.run(arguments_, options);
+        },
+      };
+
+      await expect(
+        discoverSourceCandidates(
+          { cwd: repository.nestedCwd },
+          { runner: controlledRunner },
+        ),
+        failure.name,
+      ).rejects.toThrow();
+    }
+  });
   it('propagates caller cancellation through both branch-search Git stages', async () => {
     const repository = await fixture();
     const oid = 'a'.repeat(40);
