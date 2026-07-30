@@ -264,6 +264,12 @@ describe('truthful native-Git source candidate discovery', () => {
       'utf8',
     );
     const validAbbreviation = Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0`, 'ascii');
+    const highBitBranchOid = Buffer.from(validBranch);
+    highBitBranchOid[highBitBranchOid.length - 2] = 0xe1;
+    const highBitAbbreviationFullOid = Buffer.from(validAbbreviation);
+    highBitAbbreviationFullOid[0] = 0xe1;
+    const highBitAbbreviationShortOid = Buffer.from(validAbbreviation);
+    highBitAbbreviationShortOid[firstOid.length + 1] = 0xe1;
     const failures: Array<{
       readonly name: string;
       readonly branch: Buffer;
@@ -277,11 +283,14 @@ describe('truthful native-Git source candidate discovery', () => {
       { name: 'empty label', branch: Buffer.from(`refs/heads/target\0\0${firstOid}\0`) },
       { name: 'empty OID', branch: Buffer.from('refs/heads/target\0target\0\0') },
       { name: 'invalid OID', branch: Buffer.from('refs/heads/target\0target\0not-an-oid\0') },
+      { name: 'high-bit branch OID', branch: highBitBranchOid },
       { name: 'remote ref', branch: Buffer.from(`refs/remotes/origin/target\0target\0${firstOid}\0`) },
       { name: 'non-hex short OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0zzzzzzzzzzzz\0`) },
       { name: 'uppercase short OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${'A'.repeat(12)}\0`) },
       { name: 'non-prefix short OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${'b'.repeat(12)}\0`) },
       { name: 'short short OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 11)}\0`) },
+      { name: 'high-bit abbreviation full OID', branch: validBranch, abbreviation: highBitAbbreviationFullOid },
+      { name: 'high-bit abbreviation short OID', branch: validBranch, abbreviation: highBitAbbreviationShortOid },
       { name: 'identical duplicate OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0\n${firstOid}\0${firstOid.slice(0, 12)}\0`) },
       { name: 'conflicting duplicate OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0\n${firstOid}\0${firstOid.slice(0, 13)}\0`) },
       { name: 'unrequested OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0\n${secondOid}\0${secondOid.slice(0, 12)}\0`) },

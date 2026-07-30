@@ -101,7 +101,7 @@ function parseBranchRecords(buffer: Buffer): BranchRecord[] {
     const refName = refField.toString('utf8');
     const label = labelField.toString('utf8');
     const commitOid = GitObjectIdSchema.parse(
-      fields[index + 2]!.toString('ascii'),
+      fields[index + 2]!.toString('latin1'),
     );
     if (
       refName.length === 0 ||
@@ -138,8 +138,8 @@ function parseAbbreviationRecords(buffer: Buffer): Map<string, string> {
       }
       fullField = fullField.subarray(1);
     }
-    const fullOid = GitObjectIdSchema.parse(fullField.toString('ascii'));
-    const shortOid = fields[index + 1]!.toString('ascii');
+    const fullOid = GitObjectIdSchema.parse(fullField.toString('latin1'));
+    const shortOid = fields[index + 1]!.toString('latin1');
     if (
       !/^[0-9a-f]{12,}$/.test(shortOid) ||
       shortOid.length > fullOid.length ||
