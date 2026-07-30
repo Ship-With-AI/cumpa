@@ -19,8 +19,8 @@ These requirements extend the validated ordered-picker contract. Existing source
 
 ### Performance
 
-- [ ] **PERF-01**: User can use the ordered source picker within 400 ms of process start in the production-path benchmark containing 10,000 packed local branch refs.
-- [ ] **PERF-02**: User receives matching local branch search results within 500 ms of entering a term in the production-path benchmark containing 10,000 packed local branch refs.
+- [x] **PERF-01**: User can use the ordered source picker within 400 ms of process start in the production-path benchmark containing 10,000 packed local branch refs.
+- [x] **PERF-02**: User receives matching local branch search results within 500 ms of entering a term in the production-path benchmark containing 10,000 packed local branch refs.
 
 ## Future Requirements
 
@@ -46,8 +46,8 @@ These requirements extend the validated ordered-picker contract. Existing source
 | PICK-01 | Phase 09 | Complete |
 | PICK-02 | Phase 09 | Complete |
 | SRCH-01 | Phase 10 | Complete |
-| PERF-01 | Phase 11 | Pending |
-| PERF-02 | Phase 11 | Pending |
+| PERF-01 | Phase 11 | Complete |
+| PERF-02 | Phase 11 | Complete |
 
 ---
 *Requirements defined: 2026-07-30*
