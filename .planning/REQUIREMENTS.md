@@ -10,8 +10,8 @@ These requirements extend the validated ordered-picker contract. Existing source
 
 ### Initial Picker
 
-- [ ] **PICK-01**: User can interact with the ordered source picker before Compare enumerates all remaining local branches.
-- [ ] **PICK-02**: User initially sees the attached current branch and registered worktrees as selectable sources.
+- [x] **PICK-01**: User can interact with the ordered source picker before Compare enumerates all remaining local branches.
+- [x] **PICK-02**: User initially sees the attached current branch and registered worktrees as selectable sources.
 
 ### Branch Search
 
@@ -43,8 +43,8 @@ These requirements extend the validated ordered-picker contract. Existing source
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PICK-01 | Phase 09 | Pending |
-| PICK-02 | Phase 09 | Pending |
+| PICK-01 | Phase 09 | Complete |
+| PICK-02 | Phase 09 | Complete |
 | SRCH-01 | Phase 10 | Pending |
 | PERF-01 | Phase 11 | Pending |
 | PERF-02 | Phase 11 | Pending |

@@ -33,11 +33,11 @@ Existing picker identity, ordering, worktree truthfulness, selection, recovery, 
   2. User initially sees the attached current branch and every registered worktree as source choices.
   3. User can choose an eager source for either ordered Base or Head selection without waiting for the remaining branch namespace.
 
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 Plans:
 **Wave 1**
 
-- [ ] 09-01-PLAN.md — Stage native-Git discovery into eager current-branch/worktree candidates plus deferred branch lookup.
+- [x] 09-01-PLAN.md — Stage native-Git discovery into eager current-branch/worktree candidates plus deferred branch lookup.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -87,6 +87,6 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 09. Immediate Source Picker | v1.2 | 0/TBD | Not started | - |
+| 09. Immediate Source Picker | v1.2 | 1/2 | In Progress|  |
 | 10. On-Demand Branch Search | v1.2 | 0/TBD | Not started | - |
 | 11. Production Performance Gate | v1.2 | 0/TBD | Not started | - |
