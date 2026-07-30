@@ -11,6 +11,28 @@
 - Non-empty picker terms now perform a literal, case-insensitive local-branch Git query, validate complete Git protocols, and publish only fresh exact-ID branch rows alongside truthful worktrees.
 - A standalone compiled-production picker gate proves packed-10,000-ref readiness and branch-search budgets with exact rendered-row timing.
 
+### Final Evidence
+
+- Requirements: 5/5
+- Cross-phase integrations: 12/12
+- End-to-end flows: 5/5
+- Plans and summaries: 4/4
+- Production gate: 10,000 packed refs, 0 loose refs; readiness median 221.532417 ms ≤ 400 ms; search median 38.266167 ms ≤ 500 ms
+- Final build and regression suites: 322 tests passed across unit, Git, API, and focused Phase 11 verification
+- Phase 11 code review: clean
+
+### Retained Technical Debt
+
+- Keep uncommon worktree recovery states at focused real-Git/CLI integration seams unless production-path risk changes.
+- Re-run the absolute picker budgets when the supported Node 24 runner or host characteristics change.
+
+### Archives
+
+- Roadmap: `.planning/milestones/v1.2-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.2-REQUIREMENTS.md`
+- Milestone audit: `.planning/milestones/v1.2-MILESTONE-AUDIT.md`
+- Phase history: `.planning/milestones/v1.2-phases/`
+
 ---
 
 ## v1.1 GitHub Dark Diff (Shipped: 2026-07-29)
