@@ -48,7 +48,11 @@ function fastImportStream(branchCount) {
   return chunks.join('');
 }
 
-export async function createLargeRepository({ branchCount, worktreeCount }) {
+export async function createLargeRepository({
+  branchCount,
+  worktreeCount,
+  packRefs = false,
+}) {
   const tempRoot = await mkdtemp(join(tmpdir(), 'cumpa-startup-'));
   const repository = join(tempRoot, 'repo');
   await mkdir(repository);
@@ -58,6 +62,9 @@ export async function createLargeRepository({ branchCount, worktreeCount }) {
     input: fastImportStream(branchCount),
   });
   await run('git', ['reset', '--hard', '-q', 'main'], { cwd: repository });
+  if (packRefs) {
+    await run('git', ['pack-refs', '--all'], { cwd: repository });
+  }
   for (let index = 1; index < worktreeCount; index += 1) {
     await run(
       'git',

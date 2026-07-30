@@ -17,4 +17,4 @@ Measure current CLI startup against a representative repository with 10,000 loca
 | # | Name | Type | Validates | Verdict | Tags |
 |---|------|------|-----------|---------|------|
 | 001 | large-repo-startup-baseline | standard | Given 10,000 local branches, when the current CLI reaches its picker, then fixed and scaled latency plus Git subprocess counts are measured separately. | VALIDATED | cli, git, performance |
-| 002 | staged-source-discovery | comparison | Given the same repository, when eager discovery is compared with current-branch/worktree-first discovery, then both latency budgets hold without serial per-branch Git calls. | PENDING | cli, git, performance, search |
+| 002 | staged-source-discovery | comparison | Given the same repository, when eager discovery is compared with current-branch/worktree-first discovery, then both latency budgets hold without serial per-branch Git calls. | PARTIAL | cli, git, performance, search |
