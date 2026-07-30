@@ -328,6 +328,47 @@ describe('truthful native-Git source candidate discovery', () => {
       await expect(discovery.searchBranches('target'), failure.name).rejects.toThrow();
     }
   });
+
+  it('rejects duplicate deferred branch identities before abbreviation', async () => {
+    const repository = await fixture();
+    const firstOid = 'a'.repeat(40);
+    const secondOid = 'b'.repeat(40);
+
+    for (const [name, duplicateOid] of [
+      ['identical OID', firstOid],
+      ['conflicting OID', secondOid],
+    ] as const) {
+      let logCalls = 0;
+      const nativeRunner = createGitRunner();
+      const controlledRunner: GitRunner = {
+        async run(arguments_, options) {
+          if (arguments_[0] === 'branch') {
+            return {
+              stdout: Buffer.from(
+                `refs/heads/target\0target\0${firstOid}\0\nrefs/heads/target\0target\0${duplicateOid}\0\n`,
+                'ascii',
+              ),
+              stderr: Buffer.alloc(0),
+            };
+          }
+          if (arguments_[0] === 'log') {
+            logCalls += 1;
+          }
+          return await nativeRunner.run(arguments_, options);
+        },
+      };
+      const discovery = await discoverSourceCandidates(
+        { cwd: repository.nestedCwd },
+        { runner: controlledRunner },
+      );
+
+      await expect(discovery.searchBranches('target'), name).rejects.toThrow(
+        'Git branch output contained duplicate local branch identity',
+      );
+      expect(logCalls, name).toBe(0);
+    }
+  });
+
   it('rejects invalid UTF-8 branch identities before abbreviation or publication', async () => {
     const repository = await fixture();
     const oid = 'a'.repeat(40);
@@ -446,6 +487,13 @@ describe('truthful native-Git source candidate discovery', () => {
         ),
       },
       {
+        name: 'duplicate locked field',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0locked\0locked reason\0\0`,
+          'utf8',
+        ),
+      },
+      {
         name: 'missing HEAD value',
         stdout: Buffer.from(`worktree ${repository.root}\0HEAD\0\0`, 'utf8'),
       },
@@ -462,6 +510,17 @@ describe('truthful native-Git source candidate discovery', () => {
           `worktree ${repository.root}\0HEAD not-an-oid\0\0`,
           'utf8',
         ),
+      },
+      {
+        name: 'HEAD before worktree',
+        stdout: Buffer.from(
+          `HEAD ${oid}\0worktree ${repository.root}\0\0`,
+          'utf8',
+        ),
+      },
+      {
+        name: 'relative worktree path',
+        stdout: Buffer.from(`worktree relative-repo\0HEAD ${oid}\0\0`, 'utf8'),
       },
       {
         name: 'missing branch value',
@@ -519,6 +578,48 @@ describe('truthful native-Git source candidate discovery', () => {
       ).rejects.toThrow();
       expect(worktreeListingCalls, failure.name).toBe(2);
       expect(ranAfterMalformedListing, failure.name).toBe(false);
+    }
+  });
+
+  it('accepts locked worktree porcelain attributes', async () => {
+    const repository = await fixture();
+
+    for (const lockedField of ['locked', 'locked maintenance'] as const) {
+      const nativeRunner = createGitRunner();
+      let worktreeListingCalls = 0;
+      const controlledRunner: GitRunner = {
+        async run(arguments_, options) {
+          if (
+            JSON.stringify(arguments_) ===
+            JSON.stringify(['worktree', 'list', '--porcelain', '-z'])
+          ) {
+            worktreeListingCalls += 1;
+            if (worktreeListingCalls === 2) {
+              return {
+                stdout: Buffer.from(
+                  `worktree ${repository.root}\0branch ${repository.headRef}\0${lockedField}\0\0`,
+                  'utf8',
+                ),
+                stderr: Buffer.alloc(0),
+              };
+            }
+          }
+          return await nativeRunner.run(arguments_, options);
+        },
+      };
+
+      const discovery = await discoverSourceCandidates(
+        { cwd: repository.nestedCwd },
+        { runner: controlledRunner },
+      );
+
+      expect(worktreeListingCalls, lockedField).toBe(2);
+      expect(discovery.initialCandidates).toContainEqual(
+        expect.objectContaining({
+          id: `worktree:${repository.root}`,
+          branchRef: repository.headRef,
+        }),
+      );
     }
   });
   it('accepts an unborn worktree record without a porcelain HEAD field', async () => {

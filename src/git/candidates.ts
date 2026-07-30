@@ -1,4 +1,5 @@
 import { isUtf8 } from 'node:buffer';
+import { isAbsolute } from 'node:path';
 
 import { GitObjectIdSchema } from '../contracts/comparison.js';
 import {
@@ -101,8 +102,8 @@ function parseBranchRecords(buffer: Buffer): BranchRecord[] {
   if (fields.length % 3 !== 0) {
     throw new Error('Git branch output ended with an incomplete record');
   }
-
   const records: BranchRecord[] = [];
+  const seenRefNames = new Set<string>();
   for (let index = 0; index < fields.length; index += 3) {
     let refField = fields[index]!;
     if (index > 0) {
@@ -116,6 +117,10 @@ function parseBranchRecords(buffer: Buffer): BranchRecord[] {
       throw new Error('Git branch output contained invalid UTF-8');
     }
     const refName = parseLocalBranchRef(refField, 'Git branch output');
+    if (seenRefNames.has(refName)) {
+      throw new Error('Git branch output contained duplicate local branch identity');
+    }
+    seenRefNames.add(refName);
     const label = labelField.toString('utf8');
     const commitOid = GitObjectIdSchema.parse(
       fields[index + 2]!.toString('latin1'),
@@ -183,26 +188,34 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
       seen.clear();
       continue;
     }
-
     open = true;
+
     const separator = field.indexOf(0x20);
     const key =
       separator === -1
         ? field.toString('ascii')
         : field.subarray(0, separator).toString('ascii');
     const value = separator === -1 ? undefined : field.subarray(separator + 1);
+    if (seen.size === 0 && key !== 'worktree') {
+      throw new Error('Git worktree output omitted leading worktree field');
+    }
     if (seen.has(key)) {
       throw new Error('Git worktree output contained a duplicate field');
     }
     seen.add(key);
 
     switch (key) {
-      case 'worktree':
+      case 'worktree': {
         if (value === undefined || value.length === 0 || !isUtf8(value)) {
           throw new Error('Git worktree output contained an invalid worktree path');
         }
-        current.path = value.toString('utf8');
+        const path = value.toString('utf8');
+        if (!isAbsolute(path)) {
+          throw new Error('Git worktree output contained a non-absolute worktree path');
+        }
+        current.path = path;
         break;
+      }
       case 'HEAD':
         if (value === undefined || value.length === 0) {
           throw new Error('Git worktree output omitted a HEAD value');
@@ -226,6 +239,8 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
         break;
       case 'bare':
         current.bare = true;
+        break;
+      case 'locked':
         break;
       default:
         throw new Error('Git worktree output contained an unknown field');
