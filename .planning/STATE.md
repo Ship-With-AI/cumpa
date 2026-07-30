@@ -1,20 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
-milestone_name: GitHub Dark Diff
-current_phase: null
-status: Awaiting next milestone
-stopped_at: Milestone v1.1 archived, awaiting next milestone
-last_updated: "2026-07-29T13:02:03.579Z"
-last_activity: 2026-07-29
-last_activity_desc: Milestone v1.1 completed and archived
+milestone: v1.2
+milestone_name: Fast Source Discovery
+status: planning
+last_updated: "2026-07-30T08:10:41.036Z"
+last_activity: 2026-07-30
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 16
-  completed_plans: 16
-  percent: 100
-current_phase_name: null
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -28,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-29)
 
 ## Current Position
 
-Phase: Milestone v1.1 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-07-29 - Completed quick task 260729-pkw: create a --help command for the cli
+Status: Defining requirements
+Last activity: 2026-07-30 — Milestone v1.2 started
 
 ## Performance Metrics
 

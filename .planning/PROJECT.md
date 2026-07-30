@@ -27,9 +27,16 @@ Compare now delivers its complete local browser-review-to-agent workflow through
 
 </details>
 
-## Next Milestone Goals
+## Current Milestone: v1.2 Fast Source Discovery
 
-Not defined. Light themes and additional review mechanics remain future candidates, not committed scope. Start the next milestone with fresh requirements and roadmap decisions.
+**Goal:** Make the ordered source picker interactive quickly and keep branch search scalable in repositories with 10,000 local branches.
+
+**Target features:**
+- Expose the current branch and registered worktrees before enumerating all local branches.
+- Load matching local branches only after the user starts searching.
+- Replace serial per-branch Git subprocesses with bounded or batched native-Git calls.
+- Verify a 400 ms picker-readiness budget and a 500 ms packed-ref search budget with the existing large-repository benchmark.
+- Preserve correct loose-ref search without mutating Git state or adding persistent or recency state.
 
 ## Requirements
 
@@ -63,7 +70,10 @@ The final v1.1 clarity pass compacted the changed-files sidebar, made removed/ad
 
 ### Active
 
-No active v1.1 requirements. All 18 GitHub Dark Diff requirements are validated.
+- [ ] User can interact with the ordered source picker before all local branches are enumerated, with the current branch and registered worktrees initially available.
+- [ ] User can search matching local branches through bounded or batched native-Git calls without a serial subprocess per branch.
+- [ ] User receives correct search results without Compare mutating repository refs or maintaining persistent branch-recency state.
+- [ ] The picker is usable within 400 ms and packed-ref search results appear within 500 ms in the 10,000-branch benchmark.
 
 ### Out of Scope
 
@@ -149,4 +159,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-29 after shipping v1.1 GitHub Dark Diff*
+*Last updated: 2026-07-30 after starting v1.2 Fast Source Discovery*
