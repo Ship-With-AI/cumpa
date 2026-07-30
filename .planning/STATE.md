@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Fast Source Discovery
-current_phase: 09
-current_phase_name: Immediate Source Picker; 1 of 3 in v1.2
-status: executing
-stopped_at: v1.2 roadmap created; Phase 09 ready to plan
-last_updated: "2026-07-30T10:31:29.307Z"
+current_phase: 10
+current_phase_name: On-Demand Branch Search
+status: verifying
+stopped_at: Completed 09-02-PLAN.md
+last_updated: "2026-07-30T12:09:05.190Z"
 last_activity: 2026-07-30
-last_activity_desc: Created the v1.2 roadmap and reset state to Phase 09 planning.
+last_activity_desc: Phase 09 complete, transitioned to Phase 10
 progress:
   total_phases: 3
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 2
+  completed_plans: 2
+  percent: 33
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-30)
 
 ## Current Position
 
-Phase: 09 of 11 (Immediate Source Picker; 1 of 3 in v1.2)
-Plan: — (not planned)
-Status: Ready to execute
-Last activity: 2026-07-30 — Created the v1.2 roadmap and reset state to Phase 09 planning.
+Phase: 10 — On-Demand Branch Search
+Plan: Not started
+Status: Phase complete — ready for verification
+Last activity: 2026-07-30 — Phase 09 complete, transitioned to Phase 10
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -39,7 +39,7 @@ Progress: [░░░░░░░░░░] 0%
 
 **Velocity:**
 
-- Total plans completed: 56
+- Total plans completed: 58
 - Average duration: 23 min
 - Total execution time: 4.7 hours
 
@@ -52,6 +52,8 @@ Progress: [░░░░░░░░░░] 0%
 | v1.2 Fast Source Discovery | 3 | 0/TBD | Ready to plan |
 
 *Updated after each plan completion.*
+| Phase 09 P01 | 6min | 2 tasks | 4 files |
+| Phase 09 P02 | 20min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -64,6 +66,10 @@ Decisions are logged in PROJECT.md Key Decisions.
 - Phase 10 performs case-insensitive literal local-branch search only after non-empty input, with Git as the sole source authority.
 - Phase 11 gates milestone completion on production-path measurements; spike-only timing evidence is insufficient.
 - v1.2 adds no repository mutation, persistent branch index, background full enumeration, remote refs, fuzzy ranking, or speculative debounce.
+- [Phase 09]: Eager discovery derives only the attached current branch from its worktree record. — Avoids a complete local-ref scan before source selection.
+- [Phase 09]: Startup ref protocol validation uses --count=1. — Preserves capability validation without unbounded refs/heads enumeration.
+- [Phase 09]: Picker selection authority is a prompt-lifetime exact-ID registry shared by Base and Head. — Lazy branch candidates install only after non-aborted completion.
+- [Phase 09]: Descriptor recovery uses fresh discovery authority for searched branches. — A stale failed candidate is never seeded; missing exact IDs leave picker focus unset.
 
 ### Pending Todos
 
@@ -89,8 +95,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-07-30T08:58:05Z
-Stopped at: v1.2 roadmap created; Phase 09 ready to plan
+Last session: 2026-07-30T11:15:50.043Z
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
