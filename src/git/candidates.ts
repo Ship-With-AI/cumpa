@@ -52,6 +52,14 @@ interface WorktreeRecord {
 }
 
 function splitNul(buffer: Buffer): Buffer[] {
+  const hasRecordTerminator =
+    buffer.length === 0 ||
+    buffer.at(-1) === 0 ||
+    (buffer.at(-1) === 0x0a && buffer.at(-2) === 0);
+  if (!hasRecordTerminator) {
+    throw new Error('Git NUL output ended without a record terminator');
+  }
+
   const fields: Buffer[] = [];
   let start = 0;
   for (let index = 0; index < buffer.length; index += 1) {
