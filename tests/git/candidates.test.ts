@@ -148,12 +148,22 @@ describe('truthful native-Git source candidate discovery', () => {
     );
   });
 
-  it('defers complete branch discovery to uncached non-empty searches', async () => {
+  it('searches local branch names literally on demand with one keyed abbreviation batch', async () => {
     const repository = await fixture();
-    const calls: Array<{
-      readonly arguments_: readonly string[];
-      readonly cwd: string;
-    }> = [];
+    repository.git(['branch', 'AlphaTarget', repository.baseRef]);
+    repository.git(['branch', 'alpha-target', repository.baseRef]);
+    repository.git(['branch', 'target-zulu', repository.baseRef]);
+    const sharedOid = output(repository, [
+      'rev-parse',
+      '--verify',
+      `${repository.baseRef}^{commit}`,
+    ]);
+    repository.git([
+      'update-ref',
+      'refs/remotes/origin/target-remote',
+      output(repository, ['rev-parse', '--verify', `${repository.headRef}^{commit}`]),
+    ]);
+    const calls: Array<{ readonly arguments_: readonly string[]; readonly cwd: string }> = [];
     const nativeRunner = createGitRunner();
     const recordingRunner: GitRunner = {
       async run(arguments_, options) {
@@ -161,61 +171,139 @@ describe('truthful native-Git source candidate discovery', () => {
         return await nativeRunner.run(arguments_, options);
       },
     };
-
     const discovery = await discoverSourceCandidates(
       { cwd: repository.nestedCwd },
       { runner: recordingRunner },
     );
-    expect(
-      calls
-        .filter(
-          ({ arguments_ }) =>
-            arguments_[0] === 'for-each-ref' &&
-            arguments_.includes('refs/heads'),
-        )
-        .every(({ arguments_ }) => arguments_.includes('--count=1')),
-    ).toBe(true);
-
     const eagerCallCount = calls.length;
-    await expect(discovery.searchBranches('')).resolves.toEqual([]);
+
+    const empty = await discovery.searchBranches('');
+    expect(empty).toEqual([]);
+    expect(Object.isFrozen(empty)).toBe(true);
     expect(calls).toHaveLength(eagerCallCount);
 
-    await expect(discovery.searchBranches('FEATURE')).resolves.toMatchObject([
-      {
-        id: `branch:${repository.headRef}`,
-        label: 'feature',
-        refName: repository.headRef,
-      },
+    const matches = await discovery.searchBranches('TaRgEt');
+    expect(matches.map((candidate) => candidate.label)).toEqual(
+      expect.arrayContaining(['AlphaTarget', 'alpha-target', 'target-zulu']),
+    );
+    expect(matches.map((candidate) => candidate.refName)).toEqual(
+      [...matches]
+        .map((candidate) => candidate.refName)
+        .sort((left, right) =>
+          Buffer.compare(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8')),
+        ),
+    );
+    expect(matches.every((candidate) => candidate.id !== candidate.commitOid)).toBe(
+      true,
+    );
+    expect(matches.filter((candidate) => candidate.commitOid === sharedOid)).toHaveLength(3);
+    expect(Object.isFrozen(matches)).toBe(true);
+
+    const branchCalls = calls.filter(({ arguments_ }) => arguments_[0] === 'branch');
+    expect(branchCalls).toHaveLength(1);
+    expect(branchCalls[0]?.arguments_).toEqual([
+      'branch',
+      '--list',
+      '--ignore-case',
+      '--no-color',
+      '--sort=refname',
+      expect.stringContaining('--format='),
+      '--',
+      '*TaRgEt*',
     ]);
-    expect(
-      calls.filter(
-        ({ arguments_ }) =>
-          arguments_[0] === 'for-each-ref' &&
-          arguments_.includes('--sort=refname'),
-      ),
-    ).toHaveLength(1);
+    const logCalls = calls.filter(({ arguments_ }) => arguments_[0] === 'log');
+    expect(logCalls).toHaveLength(1);
+    expect(logCalls[0]?.arguments_).toEqual([
+      'log',
+      '--no-walk=unsorted',
+      '--abbrev=12',
+      '--format=%H%x00%h%x00',
+      '--stdin',
+    ]);
 
-    await expect(discovery.searchBranches('local branch')).resolves.toHaveLength(2);
-    expect(
-      calls.filter(
-        ({ arguments_ }) =>
-          arguments_[0] === 'for-each-ref' &&
-          arguments_.includes('--sort=refname'),
-      ),
-    ).toHaveLength(2);
+    for (const [term, escapedPattern] of [
+      ['*', '*\\**'],
+      ['?', '*\\?*'],
+      ['[', '*\\[*'],
+      [']', '*\\]*'],
+      ['\\', '*\\\\*'],
+      ['--target', '*--target*'],
+    ] as const) {
+      const before = calls.length;
+      const literal = await discovery.searchBranches(term);
+      expect(literal).toEqual([]);
+      const searchCalls = calls.slice(before).filter(({ arguments_ }) => arguments_[0] === 'branch');
+      expect(searchCalls).toHaveLength(1);
+      expect(searchCalls[0]?.arguments_.at(-2)).toBe('--');
+      expect(searchCalls[0]?.arguments_.at(-1)).toBe(escapedPattern);
+      expect(calls.slice(before).some(({ arguments_ }) => arguments_[0] === 'log')).toBe(false);
+    }
 
-    const controller = new AbortController();
-    controller.abort();
-    await expect(
-      discovery.searchBranches('feature', controller.signal),
-    ).rejects.toMatchObject({ kind: 'aborted' });
-    expect(
-      calls.filter(
-        ({ arguments_ }) =>
-          arguments_[0] === 'for-each-ref' &&
-          arguments_.includes('--sort=refname'),
-      ),
-    ).toHaveLength(2);
+    const metadata = await discovery.searchBranches(sharedOid);
+    expect(metadata).toEqual([]);
+    expect(Object.isFrozen(metadata)).toBe(true);
+  });
+
+  it('rejects malformed complete branch and abbreviation protocols before publishing candidates', async () => {
+    const repository = await fixture();
+    const firstOid = 'a'.repeat(40);
+    const secondOid = 'b'.repeat(40);
+    const validBranch = Buffer.from(
+      `refs/heads/target-one\0target-one\0${firstOid}\0`,
+      'utf8',
+    );
+    const validPair = Buffer.from(
+      `refs/heads/target-one\0target-one\0${firstOid}\0\nrefs/heads/target-two\0target-two\0${secondOid}\0`,
+      'utf8',
+    );
+    const validAbbreviation = Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0`, 'ascii');
+    const failures: Array<{
+      readonly name: string;
+      readonly branch: Buffer;
+      readonly abbreviation?: Buffer;
+    }> = [
+      { name: 'truncated after ref', branch: Buffer.from('refs/heads/target\0') },
+      { name: 'truncated after label', branch: Buffer.from('refs/heads/target\0target\0') },
+      { name: 'extra branch field', branch: Buffer.from(`refs/heads/target\0target\0${firstOid}\0extra`) },
+      { name: 'empty ref', branch: Buffer.from(`\0target\0${firstOid}\0`) },
+      { name: 'empty label', branch: Buffer.from(`refs/heads/target\0\0${firstOid}\0`) },
+      { name: 'empty OID', branch: Buffer.from('refs/heads/target\0target\0\0') },
+      { name: 'invalid OID', branch: Buffer.from('refs/heads/target\0target\0not-an-oid\0') },
+      { name: 'remote ref', branch: Buffer.from(`refs/remotes/origin/target\0target\0${firstOid}\0`) },
+      { name: 'non-hex short OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0zzzzzzzzzzzz\0`) },
+      { name: 'uppercase short OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${'A'.repeat(12)}\0`) },
+      { name: 'non-prefix short OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${'b'.repeat(12)}\0`) },
+      { name: 'short short OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 11)}\0`) },
+      { name: 'identical duplicate OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0\n${firstOid}\0${firstOid.slice(0, 12)}\0`) },
+      { name: 'conflicting duplicate OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0\n${firstOid}\0${firstOid.slice(0, 13)}\0`) },
+      { name: 'unrequested OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0\n${secondOid}\0${secondOid.slice(0, 12)}\0`) },
+      { name: 'missing only OID', branch: validBranch, abbreviation: Buffer.alloc(0) },
+      { name: 'missing one multi-OID key', branch: validPair, abbreviation: validAbbreviation },
+    ];
+
+    for (const failure of failures) {
+      const nativeRunner = createGitRunner();
+      const controlledRunner: GitRunner = {
+        async run(arguments_, options) {
+          if (arguments_[0] === 'branch') {
+            return { stdout: failure.branch, stderr: Buffer.alloc(0) };
+          }
+          if (arguments_[0] === 'log') {
+            return {
+              stdout: failure.abbreviation ?? validAbbreviation,
+              stderr: Buffer.alloc(0),
+            };
+          }
+          return await nativeRunner.run(arguments_, options);
+        },
+      };
+      const discovery = await discoverSourceCandidates(
+        { cwd: repository.nestedCwd },
+        { runner: controlledRunner },
+      );
+
+      await expect(discovery.searchBranches('target'), failure.name).rejects.toThrow();
+    }
   });
 
   it('uses only byte-safe native-Git candidate protocols through the bounded runner', async () => {

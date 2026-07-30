@@ -325,14 +325,14 @@ describe('staged source discovery', () => {
     expect(selected).toEqual({ base: alphaCandidate, head: zuluCandidate });
   });
 
-  it('merges lazy branches in search order with eager duplicates in place before porcelain worktrees', async () => {
+  it('renders only fresh branch rows in returned order before porcelain worktrees', async () => {
     let source: SourceSearchPromptConfig['source'] | undefined;
     let promptCalls = 0;
     await expect(
       pickOrderedSources(
         {
           candidates: eagerCandidates,
-          searchBranches: async () => [alphaCandidate, candidates[1], zuluCandidate],
+          searchBranches: async () => [zuluCandidate, alphaCandidate, zuluCandidate],
         } as never,
         {
           prompt: async (config) => {
@@ -360,47 +360,61 @@ describe('staged source discovery', () => {
         )
         .map((item) => item.value),
     ).toEqual([
-      alphaCandidate.id,
-      candidates[1].id,
       zuluCandidate.id,
+      alphaCandidate.id,
       candidates[2].id,
       candidates[3].id,
     ]);
+    expect(items?.some((item) =>
+      !(item instanceof Separator) && item.value === candidates[1].id,
+    )).toBe(false);
   });
 
-  it('rejects aborted lookup results before they can install stale exact IDs', async () => {
+  it('rejects superseded rows while current exact IDs remain selectable for Base and Head', async () => {
     const oldLookup = Promise.withResolvers<readonly SourceCandidate[]>();
     const newLookup = Promise.withResolvers<readonly SourceCandidate[]>();
     let calls = 0;
-    const answers = [zuluCandidate.id, alphaCandidate.id];
+    let promptCalls = 0;
+    const answers = [zuluCandidate.id, zuluCandidate.id];
 
-    await expect(
-      pickOrderedSources(
-        {
-          candidates: eagerCandidates,
-          searchBranches: async () => {
-            calls += 1;
-            return calls === 1 ? oldLookup.promise : newLookup.promise;
-          },
-        } as never,
-        {
-          prompt: async (config) => {
-            if (calls === 0) {
-              const obsolete = new AbortController();
-              const current = new AbortController();
-              const stale = config.source('old', { signal: obsolete.signal });
-              obsolete.abort();
-              const fresh = config.source('new', { signal: current.signal });
-              newLookup.resolve([zuluCandidate]);
-              expect(await fresh).toEqual(expect.any(Array));
-              oldLookup.resolve([alphaCandidate]);
-              await expect(stale).rejects.toThrow();
-            }
-            return answers.shift();
-          },
+    const selected = await pickOrderedSources(
+      {
+        candidates: eagerCandidates,
+        searchBranches: async () => {
+          calls += 1;
+          return calls === 1 ? oldLookup.promise : newLookup.promise;
         },
-      ),
-    ).rejects.toThrow('Head selection did not identify an available source');
+      } as never,
+      {
+        prompt: async (config) => {
+          promptCalls += 1;
+          if (promptCalls === 1) {
+            const obsolete = new AbortController();
+            const current = new AbortController();
+            const stale = config.source('old', { signal: obsolete.signal });
+            obsolete.abort();
+            const fresh = config.source('new', { signal: current.signal });
+            newLookup.resolve([zuluCandidate]);
+            const items = await fresh;
+            expect(
+              items
+                .filter(
+                  (item) =>
+                    !(item instanceof Separator) &&
+                    (item.value.startsWith('branch:') ||
+                      item.value.startsWith('worktree:')),
+                )
+                .map((item) => item.value),
+            ).toEqual([zuluCandidate.id, candidates[2].id, candidates[3].id]);
+            oldLookup.resolve([alphaCandidate]);
+            await expect(stale).rejects.toThrow();
+          }
+          return answers.shift();
+        },
+      },
+    );
+
+    expect(selected).toEqual({ base: zuluCandidate, head: zuluCandidate });
   });
 
   it('passes only eager candidates into runCli before deferred discovery starts', async () => {
