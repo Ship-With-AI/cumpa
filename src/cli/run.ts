@@ -22,6 +22,7 @@ import type {
 } from '../domain/source.js';
 import { isLaunchError, type LaunchError } from '../domain/errors.js';
 import { discoverSourceCandidates } from '../git/candidates.js';
+import type { SourceDiscovery } from '../git/candidates.js';
 import {
   createPinnedComparison,
   type CreatePinnedComparisonOptions,
@@ -107,10 +108,11 @@ export interface RunCliOptions {
 export interface RunCliDependencies {
   readonly discoverCandidates?: (
     options: RunCliOptions,
-  ) => Promise<readonly SourceCandidate[]>;
+  ) => Promise<SourceDiscovery>;
   readonly pickSources?: (
     options: {
       readonly candidates: readonly SourceCandidate[];
+      readonly searchBranches: SourceDiscovery['searchBranches'];
       readonly suggestedHeadId?: string;
       readonly initialBase?: SourceCandidate;
       readonly initialHead?: SourceCandidate;
@@ -345,9 +347,9 @@ export async function runCli(
       process.exitCode = status;
     });
 
-  let candidates: readonly SourceCandidate[];
+  let discovery: SourceDiscovery;
   try {
-    candidates = await discoverCandidates(options);
+    discovery = await discoverCandidates(options);
   } catch (error) {
     if (!isLaunchError(error) || error.recovery.kind !== 'exit') {
       throw error;
@@ -356,19 +358,22 @@ export async function runCli(
     return;
   }
 
-  const suggestedHead = candidates.find(
-    (candidate) =>
-      candidate.kind === 'worktree' &&
-      candidate.isCurrentCheckout &&
-      candidate.availability !== 'unavailable',
-  );
+  let candidates = discovery.initialCandidates;
+  let searchBranches = discovery.searchBranches;
   let initialBase: SourceCandidate | undefined;
   let initialHead: SourceCandidate | undefined;
   let recovery: PickerRecoveryOptions | undefined;
 
   while (true) {
+    const suggestedHead = candidates.find(
+      (candidate) =>
+        candidate.kind === 'worktree' &&
+        candidate.isCurrentCheckout &&
+        candidate.availability !== 'unavailable',
+    );
     const selected = await pickSources({
       candidates,
+      searchBranches,
       ...(suggestedHead === undefined
         ? {}
         : { suggestedHeadId: suggestedHead.id }),
@@ -394,7 +399,7 @@ export async function runCli(
       }
 
       try {
-        candidates = await discoverCandidates(options);
+        discovery = await discoverCandidates(options);
       } catch (discoveryError) {
         if (
           !isLaunchError(discoveryError) ||
@@ -407,19 +412,30 @@ export async function runCli(
       }
 
       const failedCandidate = selected[error.recovery.role];
-      const focusedCandidateId = candidates.some(
+      const eagerCandidate = discovery.initialCandidates.find(
         (candidate) => candidate.id === failedCandidate.id,
-      )
-        ? failedCandidate.id
-        : undefined;
+      );
+      let recoveredCandidate = eagerCandidate;
+      if (recoveredCandidate === undefined && failedCandidate.kind === 'branch') {
+        const branches = await discovery.searchBranches(failedCandidate.label);
+        recoveredCandidate = branches.find(
+          (candidate) => candidate.id === failedCandidate.id,
+        );
+      }
+      candidates =
+        recoveredCandidate === undefined || eagerCandidate !== undefined
+          ? discovery.initialCandidates
+          : Object.freeze([...discovery.initialCandidates, recoveredCandidate]);
+      searchBranches = discovery.searchBranches;
       initialBase =
         error.recovery.preserve === 'base' ? selected.base : undefined;
       initialHead =
         error.recovery.preserve === 'head' ? selected.head : undefined;
       recovery = {
         role: error.recovery.role,
-        focusedCandidateId,
-        searchTerm: '',
+        focusedCandidateId: recoveredCandidate?.id,
+        searchTerm:
+          failedCandidate.kind === 'branch' ? failedCandidate.label : '',
       };
       continue;
     }

@@ -57,6 +57,15 @@ const comparison: PinnedComparison = {
   hasCommittedChanges: true,
 };
 
+function sourceDiscovery(
+  initialCandidates: readonly SourceCandidate[],
+) {
+  return {
+    initialCandidates,
+    searchBranches: async () => [],
+  };
+}
+
 type FailureRecovery =
   | { readonly kind: 'exit' }
   | {
@@ -167,7 +176,8 @@ describe('pre-session terminal failure ownership', () => {
       await runCli(
         { cwd: '/repo' },
         {
-          discoverCandidates: async () => [baseCandidate, headCandidate],
+          discoverCandidates: async () =>
+            sourceDiscovery([baseCandidate, headCandidate]),
           pickSources,
           createDescriptor: async () => {
             attempts += 1;
@@ -196,7 +206,7 @@ describe('pre-session terminal failure ownership', () => {
         recovery: {
           role: 'head',
           focusedCandidateId: headCandidate.id,
-          searchTerm: '',
+          searchTerm: headCandidate.label,
         },
       });
       expect(pickCalls[1]).not.toHaveProperty('initialHead');
@@ -214,7 +224,8 @@ describe('pre-session terminal failure ownership', () => {
     await runCli(
       { cwd: '/repo' },
       {
-        discoverCandidates: async () => [baseCandidate, headCandidate],
+        discoverCandidates: async () =>
+          sourceDiscovery([baseCandidate, headCandidate]),
         pickSources: async (options) => {
           pickCalls.push(options);
           return { base: baseCandidate, head: headCandidate };
@@ -243,7 +254,7 @@ describe('pre-session terminal failure ownership', () => {
       recovery: {
         role: 'base',
         focusedCandidateId: baseCandidate.id,
-        searchTerm: '',
+        searchTerm: baseCandidate.label,
       },
     });
     expect(pickCalls[1]).not.toHaveProperty('initialBase');
@@ -262,9 +273,11 @@ describe('pre-session terminal failure ownership', () => {
       {
         discoverCandidates: async () => {
           discoveries += 1;
-          return discoveries === 1
-            ? [baseCandidate, worktreeCandidate]
-            : [baseCandidate, headCandidate];
+          return sourceDiscovery(
+            discoveries === 1
+              ? [baseCandidate, worktreeCandidate]
+              : [baseCandidate, headCandidate],
+          );
         },
         pickSources: async (options) => {
           pickCalls.push(options);
@@ -312,7 +325,8 @@ describe('pre-session terminal failure ownership', () => {
     await runCli(
       { cwd: '/repo' },
       {
-        discoverCandidates: async () => [baseCandidate, headCandidate],
+        discoverCandidates: async () =>
+          sourceDiscovery([baseCandidate, headCandidate]),
         pickSources: async (options) => {
           pickCalls.push(options);
           return { base: baseCandidate, head: headCandidate };
@@ -351,6 +365,7 @@ describe('pre-session terminal failure ownership', () => {
     const recoveredHead = await pickOrderedSources(
       {
         candidates: [baseCandidate, headCandidate],
+        searchBranches: async () => [],
         initialBase: baseCandidate,
         recovery: {
           role: 'head',
@@ -382,6 +397,7 @@ describe('pre-session terminal failure ownership', () => {
     const recoveredBase = await pickOrderedSources(
       {
         candidates: [baseCandidate, headCandidate],
+        searchBranches: async () => [],
         initialHead: headCandidate,
         recovery: {
           role: 'base',

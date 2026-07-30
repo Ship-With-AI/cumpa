@@ -202,7 +202,11 @@ describe('ordered searchable source picker', () => {
     };
 
     const selected = await pickOrderedSources(
-      { candidates, suggestedHeadId: 'worktree:/repo' },
+      {
+        candidates,
+        searchBranches: async () => [],
+        suggestedHeadId: 'worktree:/repo',
+      },
       { prompt },
     );
 
@@ -341,7 +345,16 @@ describe('staged source discovery', () => {
     const items = await source?.('branch', {
       signal: new AbortController().signal,
     });
-    expect(items?.filter((item) => !(item instanceof Separator)).map((item) => item.value)).toEqual([
+    expect(
+      items
+        ?.filter(
+          (item) =>
+            !(item instanceof Separator) &&
+            (item.value.startsWith('branch:') ||
+              item.value.startsWith('worktree:')),
+        )
+        .map((item) => item.value),
+    ).toEqual([
       alphaCandidate.id,
       candidates[1].id,
       zuluCandidate.id,
@@ -468,7 +481,10 @@ describe('pinned comparison confirmation and CLI integration', () => {
       {
         discoverCandidates: async () => {
           events.push('discover');
-          return [...candidates];
+          return {
+            initialCandidates: [...candidates],
+            searchBranches: async () => [],
+          };
         },
         pickSources: async () => {
           events.push('pick-base-head');

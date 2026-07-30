@@ -3,10 +3,12 @@ import search, { Separator } from '@inquirer/search';
 import {
   DIRTY_ROW_LABEL,
   UNAVAILABLE_WORKTREE_REASON,
+  type BranchCandidate,
   type OrderedSources,
   type SourceCandidate,
   type WorktreeCandidate,
 } from '../domain/source.js';
+import type { SourceDiscovery } from '../git/candidates.js';
 
 const BASE_PROMPT =
   'Choose base — changes will be compared from its merge base with head';
@@ -44,11 +46,16 @@ export interface SourceSearchPromptConfig {
   readonly source: (
     term: string | undefined,
     options: { readonly signal: AbortSignal },
-  ) => readonly (Separator | {
-    readonly value: string;
-    readonly name: string;
-    readonly disabled?: string;
-  })[];
+  ) => Promise<
+    readonly (
+      | Separator
+      | {
+          readonly value: string;
+          readonly name: string;
+          readonly disabled?: string;
+        }
+    )[]
+  >;
 }
 
 export type SourceSearchPrompt = (
@@ -68,6 +75,7 @@ export interface PickerRecoveryOptions {
 
 export interface PickOrderedSourcesOptions {
   readonly candidates: readonly SourceCandidate[];
+  readonly searchBranches: SourceDiscovery['searchBranches'];
   readonly suggestedHeadId?: string;
   readonly initialBase?: SourceCandidate;
   readonly initialHead?: SourceCandidate;
@@ -211,28 +219,93 @@ export function buildSourceSearchItems(
   return items;
 }
 
+function promptItems(
+  items: readonly SourceSearchItem[],
+): readonly (
+  | Separator
+  | {
+      readonly value: string;
+      readonly name: string;
+      readonly disabled?: string;
+    }
+)[] {
+  return items.map((item) =>
+    item.kind === 'separator'
+      ? new Separator(item.label)
+      : {
+          value: item.value,
+          name: item.name,
+          ...(item.kind === 'candidate' && item.disabled !== undefined
+            ? { disabled: item.disabled }
+            : {}),
+        },
+  );
+}
+
+function mergedCandidates(
+  candidates: readonly SourceCandidate[],
+  branches: readonly BranchCandidate[],
+  term: string,
+): readonly SourceCandidate[] {
+  const branchIds = new Set<string>();
+  const mergedBranches = branches.filter((candidate) => {
+    if (branchIds.has(candidate.id)) {
+      return false;
+    }
+    branchIds.add(candidate.id);
+    return true;
+  });
+
+  for (const candidate of candidates) {
+    if (
+      candidate.kind !== 'branch' ||
+      branchIds.has(candidate.id) ||
+      !candidateMatches(candidate, term)
+    ) {
+      continue;
+    }
+    const insertionIndex = mergedBranches.findIndex(
+      (branch) => branch.refName > candidate.refName,
+    );
+    if (insertionIndex === -1) {
+      mergedBranches.push(candidate);
+    } else {
+      mergedBranches.splice(insertionIndex, 0, candidate);
+    }
+    branchIds.add(candidate.id);
+  }
+
+  return [...mergedBranches, ...candidates.filter((candidate) => candidate.kind === 'worktree')];
+}
+
 function sourceForPrompt(
   candidates: readonly SourceCandidate[],
+  searchBranches: SourceDiscovery['searchBranches'],
+  candidateById: Map<string, SourceCandidate>,
   options: BuildSourceSearchOptions,
   initialSearchTerm = '',
 ): SourceSearchPromptConfig['source'] {
   let firstRequest = true;
-  return (term, { signal }) => {
+  return async (term, { signal }) => {
     signal.throwIfAborted();
     const effectiveTerm =
       firstRequest && term === undefined ? initialSearchTerm : term;
     firstRequest = false;
-    return buildSourceSearchItems(candidates, effectiveTerm, options).map(
-      (item) =>
-        item.kind === 'separator'
-          ? new Separator(item.label)
-          : {
-              value: item.value,
-              name: item.name,
-              ...(item.kind === 'candidate' && item.disabled !== undefined
-                ? { disabled: item.disabled }
-                : {}),
-            },
+    if ((effectiveTerm ?? '').length === 0) {
+      return promptItems(buildSourceSearchItems(candidates, effectiveTerm, options));
+    }
+
+    const branches = await searchBranches(effectiveTerm!, signal);
+    signal.throwIfAborted();
+    for (const candidate of branches) {
+      candidateById.set(candidate.id, candidate);
+    }
+    return promptItems(
+      buildSourceSearchItems(
+        mergedCandidates(candidates, branches, effectiveTerm!),
+        undefined,
+        options,
+      ),
     );
   };
 }
@@ -264,6 +337,8 @@ export async function pickOrderedSources(
             : `${BASE_PROMPT}\nHead retained: ${escapeTerminalText(retainedHead.label)} · ${retainedHead.shortOid ?? 'unavailable'}`,
         source: sourceForPrompt(
           options.candidates,
+          options.searchBranches,
+          candidateById,
           { role: 'base' },
           options.recovery?.role === 'base'
             ? options.recovery.searchTerm
@@ -293,6 +368,8 @@ export async function pickOrderedSources(
           : HEAD_PROMPT,
       source: sourceForPrompt(
         options.candidates,
+        options.searchBranches,
+        candidateById,
         {
           role: 'head',
           suggestedHeadId: options.suggestedHeadId,
