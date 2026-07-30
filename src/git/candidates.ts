@@ -176,12 +176,26 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
   };
   let open = false;
   const seen = new Set<string>();
+  const seenPaths = new Set<string>();
 
   for (const field of splitNul(buffer)) {
     if (field.length === 0) {
       if (!open || current.path === undefined) {
         throw new Error('Git worktree output contained an incomplete record');
       }
+      if (
+        (current.detached && current.branchRef !== undefined) ||
+        (current.bare &&
+          (current.headOid !== undefined ||
+            current.branchRef !== undefined ||
+            current.detached))
+      ) {
+        throw new Error('Git worktree output contained a contradictory record');
+      }
+      if (seenPaths.has(current.path)) {
+        throw new Error('Git worktree output contained a duplicate worktree identity');
+      }
+      seenPaths.add(current.path);
       records.push(current);
       current = { detached: false, prunable: false, bare: false };
       open = false;
@@ -232,12 +246,18 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
         );
         break;
       case 'detached':
+        if (value !== undefined) {
+          throw new Error('Git worktree output contained an invalid detached field');
+        }
         current.detached = true;
         break;
       case 'prunable':
         current.prunable = true;
         break;
       case 'bare':
+        if (value !== undefined) {
+          throw new Error('Git worktree output contained an invalid bare field');
+        }
         current.bare = true;
         break;
       case 'locked':

@@ -59,6 +59,8 @@ describe('truthful native-Git source candidate discovery', () => {
 
     expect(Object.isFrozen(discovery)).toBe(true);
     expect(Object.isFrozen(discovery.initialCandidates)).toBe(true);
+    expect(branches.every((candidate) => Object.isFrozen(candidate))).toBe(true);
+    expect(worktrees.every((candidate) => Object.isFrozen(candidate))).toBe(true);
     expect(branches).toMatchObject([
       {
         id: `branch:${repository.headRef}`,
@@ -203,6 +205,7 @@ describe('truthful native-Git source candidate discovery', () => {
     );
     expect(matches.filter((candidate) => candidate.commitOid === sharedOid)).toHaveLength(3);
     expect(Object.isFrozen(matches)).toBe(true);
+    expect(matches.every((candidate) => Object.isFrozen(candidate))).toBe(true);
 
     const branchCalls = calls.filter(({ arguments_ }) => arguments_[0] === 'branch');
     expect(branchCalls).toHaveLength(1);
@@ -487,6 +490,13 @@ describe('truthful native-Git source candidate discovery', () => {
         ),
       },
       {
+        name: 'duplicate worktree identity',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0HEAD ${oid}\0branch ${repository.headRef}\0\0worktree ${repository.root}\0HEAD ${'b'.repeat(40)}\0detached\0\0`,
+          'utf8',
+        ),
+      },
+      {
         name: 'duplicate locked field',
         stdout: Buffer.from(
           `worktree ${repository.root}\0locked\0locked reason\0\0`,
@@ -537,6 +547,42 @@ describe('truthful native-Git source candidate discovery', () => {
           'utf8',
         ),
       },
+      {
+        name: 'valued detached field',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0detached reason\0\0`,
+          'utf8',
+        ),
+      },
+      {
+        name: 'valued bare field',
+        stdout: Buffer.from(`worktree ${repository.root}\0bare reason\0\0`, 'utf8'),
+      },
+      {
+        name: 'attached detached worktree',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0branch ${repository.headRef}\0detached\0\0`,
+          'utf8',
+        ),
+      },
+      {
+        name: 'bare worktree with HEAD metadata',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0bare\0HEAD ${oid}\0\0`,
+          'utf8',
+        ),
+      },
+      {
+        name: 'bare worktree with branch metadata',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0bare\0branch ${repository.headRef}\0\0`,
+          'utf8',
+        ),
+      },
+      {
+        name: 'bare detached worktree',
+        stdout: Buffer.from(`worktree ${repository.root}\0bare\0detached\0\0`, 'utf8'),
+      },
     ];
     failures.push({
       name: 'invalid UTF-8 worktree path',
@@ -581,10 +627,17 @@ describe('truthful native-Git source candidate discovery', () => {
     }
   });
 
-  it('accepts locked worktree porcelain attributes', async () => {
+  it('accepts locked and prunable worktree porcelain attributes', async () => {
     const repository = await fixture();
 
-    for (const lockedField of ['locked', 'locked maintenance'] as const) {
+    for (
+      const optionalField of [
+        'locked',
+        'locked maintenance',
+        'prunable',
+        'prunable maintenance',
+      ] as const
+    ) {
       const nativeRunner = createGitRunner();
       let worktreeListingCalls = 0;
       const controlledRunner: GitRunner = {
@@ -597,7 +650,7 @@ describe('truthful native-Git source candidate discovery', () => {
             if (worktreeListingCalls === 2) {
               return {
                 stdout: Buffer.from(
-                  `worktree ${repository.root}\0branch ${repository.headRef}\0${lockedField}\0\0`,
+                  `worktree ${repository.root}\0branch ${repository.headRef}\0${optionalField}\0\0`,
                   'utf8',
                 ),
                 stderr: Buffer.alloc(0),
@@ -613,7 +666,7 @@ describe('truthful native-Git source candidate discovery', () => {
         { runner: controlledRunner },
       );
 
-      expect(worktreeListingCalls, lockedField).toBe(2);
+      expect(worktreeListingCalls, optionalField).toBe(2);
       expect(discovery.initialCandidates).toContainEqual(
         expect.objectContaining({
           id: `worktree:${repository.root}`,
@@ -621,6 +674,42 @@ describe('truthful native-Git source candidate discovery', () => {
         }),
       );
     }
+  });
+  it('accepts a bare worktree porcelain record', async () => {
+    const repository = await fixture();
+    const nativeRunner = createGitRunner();
+    let worktreeListingCalls = 0;
+    const controlledRunner: GitRunner = {
+      async run(arguments_, options) {
+        if (
+          JSON.stringify(arguments_) ===
+          JSON.stringify(['worktree', 'list', '--porcelain', '-z'])
+        ) {
+          worktreeListingCalls += 1;
+          if (worktreeListingCalls === 2) {
+            return {
+              stdout: Buffer.from(`worktree ${repository.root}\0bare\0\0`, 'utf8'),
+              stderr: Buffer.alloc(0),
+            };
+          }
+        }
+        return await nativeRunner.run(arguments_, options);
+      },
+    };
+
+    const discovery = await discoverSourceCandidates(
+      { cwd: repository.nestedCwd },
+      { runner: controlledRunner },
+    );
+
+    expect(worktreeListingCalls).toBe(2);
+    expect(discovery.initialCandidates).toContainEqual(
+      expect.objectContaining({
+        id: `worktree:${repository.root}`,
+        availability: 'unavailable',
+        detached: true,
+      }),
+    );
   });
   it('accepts an unborn worktree record without a porcelain HEAD field', async () => {
     const repository = await fixture();
