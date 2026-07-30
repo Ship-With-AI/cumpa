@@ -256,14 +256,17 @@ describe('truthful native-Git source candidate discovery', () => {
     const firstOid = 'a'.repeat(40);
     const secondOid = 'b'.repeat(40);
     const validBranch = Buffer.from(
-      `refs/heads/target-one\0target-one\0${firstOid}\0`,
+      `refs/heads/target-one\0target-one\0${firstOid}\0\n`,
       'utf8',
     );
     const validPair = Buffer.from(
-      `refs/heads/target-one\0target-one\0${firstOid}\0\nrefs/heads/target-two\0target-two\0${secondOid}\0`,
+      `refs/heads/target-one\0target-one\0${firstOid}\0\nrefs/heads/target-two\0target-two\0${secondOid}\0\n`,
       'utf8',
     );
-    const validAbbreviation = Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0`, 'ascii');
+    const validAbbreviation = Buffer.from(
+      `${firstOid}\0${firstOid.slice(0, 12)}\0\n`,
+      'ascii',
+    );
     const highBitBranchOid = Buffer.from(validBranch);
     highBitBranchOid[highBitBranchOid.length - 2] = 0xe1;
     const highBitAbbreviationFullOid = Buffer.from(validAbbreviation);
@@ -277,7 +280,8 @@ describe('truthful native-Git source candidate discovery', () => {
     }> = [
       { name: 'truncated after ref', branch: Buffer.from('refs/heads/target\0') },
       { name: 'truncated after label', branch: Buffer.from('refs/heads/target\0target\0') },
-      { name: 'unterminated final branch field', branch: validBranch.subarray(0, -1) },
+      { name: 'missing final branch newline', branch: validBranch.subarray(0, -1) },
+      { name: 'unterminated final branch field', branch: validBranch.subarray(0, -2) },
       { name: 'extra branch field', branch: Buffer.from(`refs/heads/target\0target\0${firstOid}\0extra`) },
       { name: 'empty ref', branch: Buffer.from(`\0target\0${firstOid}\0`) },
       { name: 'empty label', branch: Buffer.from(`refs/heads/target\0\0${firstOid}\0`) },
@@ -296,7 +300,8 @@ describe('truthful native-Git source candidate discovery', () => {
       { name: 'unrequested OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0\n${secondOid}\0${secondOid.slice(0, 12)}\0`) },
       { name: 'missing only OID', branch: validBranch, abbreviation: Buffer.alloc(0) },
       { name: 'missing one multi-OID key', branch: validPair, abbreviation: validAbbreviation },
-      { name: 'unterminated final abbreviation field', branch: validBranch, abbreviation: validAbbreviation.subarray(0, -1) },
+      { name: 'missing final abbreviation newline', branch: validBranch, abbreviation: validAbbreviation.subarray(0, -1) },
+      { name: 'unterminated final abbreviation field', branch: validBranch, abbreviation: validAbbreviation.subarray(0, -2) },
     ];
 
     for (const failure of failures) {
@@ -332,7 +337,7 @@ describe('truthful native-Git source candidate discovery', () => {
         branch: Buffer.concat([
           Buffer.from('refs/heads/target', 'utf8'),
           Buffer.of(0x80),
-          Buffer.from(`\0target\0${oid}\0`, 'ascii'),
+          Buffer.from(`\0target\0${oid}\0\n`, 'ascii'),
         ]),
       },
       {
@@ -340,7 +345,7 @@ describe('truthful native-Git source candidate discovery', () => {
         branch: Buffer.concat([
           Buffer.from('refs/heads/target\0', 'utf8'),
           Buffer.of(0x80),
-          Buffer.from(`\0${oid}\0`, 'ascii'),
+          Buffer.from(`\0${oid}\0\n`, 'ascii'),
         ]),
       },
     ];
@@ -417,6 +422,143 @@ describe('truthful native-Git source candidate discovery', () => {
     expect(worktreeListingCalls).toBe(2);
     expect(ranAfterInvalidWorktreeListing).toBe(false);
   });
+  it('rejects incomplete or malformed worktree porcelain before publication', async () => {
+    const repository = await fixture();
+    const oid = 'a'.repeat(40);
+    const failures = [
+      {
+        name: 'open record at EOF',
+        stdout: Buffer.from(`worktree ${repository.root}\0`, 'utf8'),
+      },
+      {
+        name: 'missing worktree value',
+        stdout: Buffer.from('worktree\0\0', 'ascii'),
+      },
+      {
+        name: 'empty worktree path',
+        stdout: Buffer.from('worktree \0\0', 'ascii'),
+      },
+      {
+        name: 'duplicate worktree path',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0worktree ${repository.root}\0\0`,
+          'utf8',
+        ),
+      },
+      {
+        name: 'missing HEAD value',
+        stdout: Buffer.from(`worktree ${repository.root}\0HEAD\0\0`, 'utf8'),
+      },
+      {
+        name: 'duplicate HEAD value',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0HEAD ${oid}\0HEAD ${oid}\0\0`,
+          'utf8',
+        ),
+      },
+      {
+        name: 'malformed HEAD OID',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0HEAD not-an-oid\0\0`,
+          'utf8',
+        ),
+      },
+      {
+        name: 'missing branch value',
+        stdout: Buffer.from(`worktree ${repository.root}\0branch\0\0`, 'utf8'),
+      },
+      {
+        name: 'empty branch identity',
+        stdout: Buffer.from(`worktree ${repository.root}\0branch \0\0`, 'utf8'),
+      },
+      {
+        name: 'remote branch identity',
+        stdout: Buffer.from(
+          `worktree ${repository.root}\0branch refs/remotes/origin/topic\0\0`,
+          'utf8',
+        ),
+      },
+    ];
+    failures.push({
+      name: 'invalid UTF-8 worktree path',
+      stdout: Buffer.concat([
+        Buffer.from('worktree ', 'ascii'),
+        Buffer.of(0x80),
+        Buffer.from('\0\0', 'ascii'),
+      ]),
+    });
+
+    for (const failure of failures) {
+      const nativeRunner = createGitRunner();
+      let worktreeListingCalls = 0;
+      let ranAfterMalformedListing = false;
+      const controlledRunner: GitRunner = {
+        async run(arguments_, options) {
+          if (
+            JSON.stringify(arguments_) ===
+            JSON.stringify(['worktree', 'list', '--porcelain', '-z'])
+          ) {
+            worktreeListingCalls += 1;
+            if (worktreeListingCalls === 2) {
+              return { stdout: failure.stdout, stderr: Buffer.alloc(0) };
+            }
+          }
+          if (worktreeListingCalls === 2) {
+            ranAfterMalformedListing = true;
+          }
+          return await nativeRunner.run(arguments_, options);
+        },
+      };
+
+      await expect(
+        discoverSourceCandidates(
+          { cwd: repository.nestedCwd },
+          { runner: controlledRunner },
+        ),
+        failure.name,
+      ).rejects.toThrow();
+      expect(worktreeListingCalls, failure.name).toBe(2);
+      expect(ranAfterMalformedListing, failure.name).toBe(false);
+    }
+  });
+  it('accepts an unborn worktree record without a porcelain HEAD field', async () => {
+    const repository = await fixture();
+    const nativeRunner = createGitRunner();
+    let worktreeListingCalls = 0;
+    const controlledRunner: GitRunner = {
+      async run(arguments_, options) {
+        if (
+          JSON.stringify(arguments_) ===
+          JSON.stringify(['worktree', 'list', '--porcelain', '-z'])
+        ) {
+          worktreeListingCalls += 1;
+          if (worktreeListingCalls === 2) {
+            return {
+              stdout: Buffer.from(
+                `worktree ${repository.root}\0branch ${repository.headRef}\0\0`,
+                'utf8',
+              ),
+              stderr: Buffer.alloc(0),
+            };
+          }
+        }
+        return await nativeRunner.run(arguments_, options);
+      },
+    };
+
+    const discovery = await discoverSourceCandidates(
+      { cwd: repository.nestedCwd },
+      { runner: controlledRunner },
+    );
+
+    expect(worktreeListingCalls).toBe(2);
+    expect(discovery.initialCandidates).toContainEqual(
+      expect.objectContaining({
+        id: `worktree:${repository.root}`,
+        branchRef: repository.headRef,
+      }),
+    );
+  });
 
   it('rejects malformed current-worktree OID output before publication', async () => {
     const repository = await fixture();
@@ -485,14 +627,46 @@ describe('truthful native-Git source candidate discovery', () => {
       ).rejects.toThrow();
     }
   });
+  it('does not publish eager candidates after cancellation following valid Git output', async () => {
+    const repository = await fixture();
+    const controller = new AbortController();
+    const nativeRunner = createGitRunner();
+    let abbreviationCalls = 0;
+    const controlledRunner: GitRunner = {
+      async run(arguments_, options) {
+        if (
+          arguments_[0] === 'rev-parse' &&
+          arguments_[1] === '--short=12'
+        ) {
+          abbreviationCalls += 1;
+          expect(options.signal).toBe(controller.signal);
+          const result = await nativeRunner.run(arguments_, options);
+          controller.abort(new Error('eager abbreviation completed after abort'));
+          return result;
+        }
+        return await nativeRunner.run(arguments_, options);
+      },
+    };
+
+    await expect(
+      discoverSourceCandidates(
+        { cwd: repository.nestedCwd, signal: controller.signal },
+        { runner: controlledRunner },
+      ),
+    ).rejects.toThrow();
+    expect(abbreviationCalls).toBe(1);
+  });
   it('propagates caller cancellation through both branch-search Git stages', async () => {
     const repository = await fixture();
     const oid = 'a'.repeat(40);
     const branch = Buffer.from(
-      `refs/heads/target\0target\0${oid}\0`,
+      `refs/heads/target\0target\0${oid}\0\n`,
       'ascii',
     );
-    const abbreviation = Buffer.from(`${oid}\0${oid.slice(0, 12)}\0`, 'ascii');
+    const abbreviation = Buffer.from(
+      `${oid}\0${oid.slice(0, 12)}\0\n`,
+      'ascii',
+    );
 
     for (const abortedStage of ['branch', 'log'] as const) {
       const controller = new AbortController();
