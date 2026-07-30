@@ -12,7 +12,7 @@ v1.2 makes the ordered source picker useful before Compare scans a large local b
 
 ## Phases
 
-- [ ] **Phase 09: Immediate Source Picker** — Make current branch and registered worktrees usable before remaining local branches are enumerated.
+- [x] **Phase 09: Immediate Source Picker** — Make current branch and registered worktrees usable before remaining local branches are enumerated. (completed 2026-07-30)
 - [ ] **Phase 10: On-Demand Branch Search** — Discover literal local-branch matches only after the user starts searching.
 - [ ] **Phase 11: Production Performance Gate** — Accept the milestone only when the production picker path meets both packed-ref latency budgets.
 
@@ -33,7 +33,7 @@ Existing picker identity, ordering, worktree truthfulness, selection, recovery, 
   2. User initially sees the attached current branch and every registered worktree as source choices.
   3. User can choose an eager source for either ordered Base or Head selection without waiting for the remaining branch namespace.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 Plans:
 **Wave 1**
 
@@ -41,7 +41,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 09-02-PLAN.md — Make the ordered picker interactive from eager candidates with exact-ID lazy selection and recovery.
+- [x] 09-02-PLAN.md — Make the ordered picker interactive from eager candidates with exact-ID lazy selection and recovery.
 
 ### Phase 10: On-Demand Branch Search
 
@@ -87,6 +87,6 @@ Plans:
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 09. Immediate Source Picker | v1.2 | 1/2 | In Progress|  |
+| 09. Immediate Source Picker | v1.2 | 2/2 | Complete   | 2026-07-30 |
 | 10. On-Demand Branch Search | v1.2 | 0/TBD | Not started | - |
 | 11. Production Performance Gate | v1.2 | 0/TBD | Not started | - |
