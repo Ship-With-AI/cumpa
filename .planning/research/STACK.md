@@ -1,29 +1,32 @@
 # Stack Research
 
-**Domain:** Dark-only, GitHub dark-default-inspired pull-request diff workspace for an existing local Vue/Monaco application
-**Researched:** 2026-07-24
-**Confidence:** MEDIUM — recommendations are cross-checked against the installed packages, their published type definitions, current official documentation, Primer Primitives 11.9.0, and WCAG 2.2; visual parity still requires implementation-time browser inspection because GitHub's production CSS is not a stable public API.
+**Domain:** Staged source discovery for Compare's local-first TypeScript/Node CLI
+**Milestone:** v1.2 Fast Source Discovery
+**Researched:** 2026-07-30
+**Confidence:** MEDIUM — the recommendation is supported by current official Node, Git, Inquirer, and npm sources plus the repository's measured 10,000-ref spike; implementation still needs benchmark proof on Compare's supported Git 2.43.0 floor.
 
 ## Executive Recommendation
 
-The current stack is sufficient. Keep Vue 3.5.39, Monaco Editor 0.55.1, Vite 8.1.4, and plain CSS. Add **no npm package** for v1.1.
+**Add and upgrade nothing for v1.2.** The existing stack already contains every required capability:
 
-Implement the milestone as two coordinated presentation layers:
+- Node.js 24 provides cancellable, bounded native subprocess execution through `node:child_process` and `AbortSignal`.
+- Installed Git remains the source of truth for current-branch, worktree, ref, and object-ID discovery.
+- `@inquirer/search@4.2.1` already supports an asynchronous `source(term, { signal })` function, which is the exact seam needed to return eager choices immediately and defer branch lookup until typing begins.
+- The existing `GitRunner` already centralizes argument-array spawning, `shell: false`, cancellation, timeout, stdout/stderr limits, and non-interactive Git configuration.
 
-1. Consolidate the application shell onto one dark-only set of semantic CSS custom properties in the existing global `src/web/styles.css`.
-2. Define one Monaco standalone theme with `monaco.editor.defineTheme(...)`, based on `vs-dark`, and pass that theme to the existing `createDiffEditor(...)` call.
+The v1.2 work is therefore an integration and query-shaping change, not a stack change. Keep all validated comparison, picker ordering, identity, dirty-state, unavailable-worktree, and recovery behavior behind the same existing boundaries.
 
-Use the current published `@primer/primitives` dark values as a **design reference**, not as a dependency. This gives the app a close GitHub dark-default adaptation while preserving Diff Review's Vue components, Monaco integration, information architecture, and review behavior.
+## Stack Decision Summary
 
-## Current-State Findings
-
-- `package.json` pins Vue `3.5.39`, Monaco Editor `0.55.1`, Vite `8.1.4`, `@vitejs/plugin-vue` `6.0.7`, and TypeScript `7.0.2`. No styling system, preprocessor, or component library is installed.
-- `App.vue` already loads the global stylesheet with `<style src="./styles.css"></style>`. Vue's non-scoped SFC style block and Vite's native CSS pipeline are enough for application-wide tokens.
-- `styles.css` currently contains **two competing root palettes**. Lines 1–26 begin with GitHub-like dark values, but the later Phase 2 `:root` block at lines 970–1003 overrides them with a light workbench palette. The milestone should replace these layers with one semantic dark token system rather than adding a third layer or compatibility aliases.
-- `DiffWorkspace.vue` creates the Monaco adapter once and already uses a `ResizeObserver`; no Vue wrapper or resize package is needed.
-- `diff-adapter.ts` already uses the relevant native Monaco APIs: `createDiffEditor`, `getOriginalEditor`, `getModifiedEditor`, `onDidUpdateDiff`, `createDecorationsCollection`, view zones, `updateOptions`, and `hideUnchangedRegions`.
-- The current Monaco construction is read-only and side-by-side, with `ariaLabel`, `glyphMargin`, disabled minimap, and `renderSideBySideInlineBreakpoint: 0`. It does **not** set a theme, original/modified labels, explicit diff indicators, or custom diff colors.
-- The active anchor decoration already emits the class `monaco-anchor-line`, but the global stylesheet has no matching rule. That is the existing seam for an accessible selected-line treatment; no decoration library is required.
+| Area | Existing Choice | v1.2 Decision | Addition or Change |
+|------|-----------------|---------------|--------------------|
+| Runtime | Node.js `>=24` | Keep Node 24 LTS; latest Node 24 release is 24.18.1 on the research date | None |
+| Language | TypeScript 7.0.2 | Keep existing strict TypeScript implementation | None |
+| Git authority | Installed Git `>=2.43.0` with positive capability probes | Keep native Git; add only read-only filtered and batched invocations through the existing runner | No new executable or library |
+| Interactive picker | `@inquirer/search@4.2.1` | Keep the pinned package; 4.2.1 is also the current npm `latest` release | None |
+| Process boundary | `node:child_process.spawn` through `createGitRunner()` | Reuse it and forward Inquirer's search `AbortSignal` | None |
+| Performance evidence | Existing large-repository benchmark and spike scripts | Extend production planning around the same 10,000-ref fixture and separate readiness/search budgets | No benchmark package |
+| Persistence/indexing | No branch index or recency state | Keep none | None |
 
 ## Recommended Stack
 
@@ -31,235 +34,145 @@ Use the current published `@primer/primitives` dark values as a **design referen
 
 | Technology | Version | Status | Purpose | Why Recommended |
 |------------|---------|--------|---------|-----------------|
-| Vue | 3.5.39 | Existing; keep | Existing component templates, ARIA attributes, responsive drawers, and state rendering | The milestone changes presentation rather than component mechanics. Vue already renders every surface that needs restyling. |
-| Monaco Editor | 0.55.1 | Existing; keep | Side-by-side code diff, gutters, line mapping, decorations, view zones, syntax tokens, and accessible diff viewer | Its public theming and diff APIs cover the required line, word, gutter, selection, focus, and unchanged-region visuals. Replacing it would risk the validated comment/anchor workflow. |
-| Vite | 8.1.4 | Existing; keep | Vue SFC and CSS bundling, worker imports, CSS HMR | Vite injects ordinary CSS and recommends native CSS variables for modern-browser projects. No Sass, Less, PostCSS plugin, or theme plugin is needed. |
-| Native CSS custom properties and media queries | Browser platform | Existing; expand | Semantic palette, component states, responsive layout, and reduced motion | The theme is fixed and dark-only. Native variables provide the smallest and most maintainable source of truth for the shell. |
-| Node.js | 24 LTS baseline | Existing; keep | Existing build/package runtime | No server, CLI, contract, or persistence change is required for a visual milestone. |
+| Node.js | `>=24`; 24.18.1 is current LTS release | Existing; keep | CLI runtime, subprocess lifecycle, cancellation, byte buffers | Node 24 `spawn(command, args, options)` defaults to no shell and supports `AbortSignal`, timeouts, and pipe-based stdio. This already covers bounded Git work without another process library. |
+| Git CLI | `>=2.43.0` project baseline; current official docs are 2.55.0 | Existing external prerequisite; keep | Repository, current branch, registered worktree, filtered local-ref, full-OID, and abbreviated-OID authority | The product already requires Git and positively probes machine protocols. `git branch --list` supports patterns, `--ignore-case`, and custom ref formatting; `git log` supports `--stdin`, `--no-walk`, and abbreviated commit formats. |
+| TypeScript | 7.0.2 | Existing; keep | Typed staged-discovery and prompt contracts | The source function, cancellation, candidate union, and recovery contracts are already typed. A new abstraction or language would only create a second boundary. |
 
-### Supporting Libraries and APIs
+### Supporting Libraries and Native APIs
 
 | Library or API | Version | Status | Purpose | When to Use |
 |----------------|---------|--------|---------|-------------|
-| `monaco.editor.defineTheme` + `IStandaloneThemeData` | Monaco 0.55.1 | Existing API | Register `diff-review-dark` with `base: 'vs-dark'`, `inherit: true`, token rules, and editor color IDs | Define once before the existing diff editor is created. Pass `theme: 'diff-review-dark'` at construction; reserve `setTheme` for an already-created editor. |
-| `IDiffEditorConstructionOptions` | Monaco 0.55.1 | Existing API | Configure `originalAriaLabel`, `modifiedAriaLabel`, side-by-side rendering, indicators, overview, and unchanged regions | Extend the existing options object; do not introduce a wrapper component. |
-| `createDecorationsCollection` | Monaco 0.55.1 | Existing API | Selected/anchored-line styling through the existing `monaco-anchor-line` class | Add a non-color cue such as an inset accent bar or border in addition to a selected background. |
-| CSS `:focus-visible` | Browser platform | Existing; strengthen | Persistent keyboard-focus indication | Keep a visible 2px outline with offset and sufficient adjacent contrast across buttons, tree rows, inputs, drawers, and comment actions. |
-| `@media (prefers-reduced-motion: reduce)` | Browser platform | Existing; keep | Disable drawer/spinner transitions for users requesting reduced motion | The stylesheet already contains this mechanism; migrate it into the final consolidated layer rather than duplicating it. |
-| `@primer/primitives` | 11.9.0 published reference | Reference only; **do not install** | Source of current GitHub dark-default semantic and diff color values | Pin the provenance in a code comment or milestone note, then copy only the narrowly used values into Diff Review-owned semantic tokens. |
+| `@inquirer/search` | 4.2.1, current npm `latest` | Existing; keep | Ordered searchable base/head prompt | Use its async `source(term, { signal })`: return eager current-branch/worktree choices for empty input; query branches only for a non-empty term. |
+| `node:child_process` | Node 24 built-in | Existing; keep | Spawn Git with argument arrays and no shell | Use only through the existing `GitRunner`, not directly from picker code. Forward the current prompt signal so superseded searches stop promptly. |
+| `AbortController` / `AbortSignal` | Node 24 built-in | Existing; keep | Cancellation ownership between Inquirer and Git | Treat each source invocation as replaceable work. A newer term must be able to abort the older Git request without surfacing a user-facing Git failure. |
+| Existing `GitRunner` | Internal project module | Existing; extend call sites, not architecture | Safe environment, `shell: false`, input bytes, timeout, abort, and output caps | Reuse for eager discovery and both search calls. Set an explicit bounded stdout allowance only if the broad 10,000-result fixture proves the current cap insufficient. |
 
-### Development Tools
+### Development and Verification Tools
 
-| Tool | Version | Status | Purpose | Notes |
-|------|---------|--------|---------|-------|
-| TypeScript | 7.0.2 | Existing; keep | Type-check Monaco theme data and options | Type the theme object as `monaco.editor.IStandaloneThemeData`; avoid untyped color-key maps. |
-| `@vitejs/plugin-vue` | 6.0.7 | Existing; keep | Compile Vue SFCs and the existing external global style block | No CSS plugin configuration is needed. |
-| Browser DevTools accessibility/contrast inspection | Browser built-in | No package | Inspect computed token values, focus visibility, and responsive layout | Use during implementation verification; do not ship a runtime contrast checker. |
+| Tool | Version | Status | Purpose | Planning Guidance |
+|------|---------|--------|---------|-------------------|
+| Existing staged-discovery benchmark | Repository script | Existing; keep | Process-start-to-picker-ready and search round-trip measurement | Preserve separate 400 ms picker-readiness and 500 ms packed-ref search budgets. Run packed, loose, broad-query, and many-worktree scenarios. |
+| Vitest | 4.1.10 | Existing; keep | Focused observable-contract coverage | Cover async source behavior, stale-query cancellation, literal pattern escaping, stable ordering, error/recovery ownership, and branch/worktree deduplication. Add no test framework. |
+| Native Git fixtures | Git `>=2.43.0` | Existing; keep | Real packed/loose ref behavior | `git pack-refs` belongs only in fixture setup. Compare must never invoke it against a user's repository. |
 
-## Theme Mechanism
+## Native Node/Git/Inquirer Integration
 
-### Application CSS: one semantic token layer
+Plan the implementation around one existing prompt seam and one existing Git boundary:
 
-Replace both current root color families (`--color-*` and the later light `--canvas`/`--panel` family) with one Diff Review-owned semantic namespace, then migrate all call sites and delete the superseded names. Suggested roles:
+1. **Open the picker without full branch enumeration.** The Inquirer source receives `term === undefined` for empty input. Return choices built from the already requested eager set: current branch plus registered worktrees. Do not start background enumeration merely because the prompt opened.
+2. **Start branch search only for a non-empty term.** Escape Git wildcard metacharacters so the user's text remains a literal case-insensitive substring, then issue one read-only filtered listing equivalent to `git branch --list --ignore-case "*<escaped-term>*" --format=...`.
+3. **Preserve byte-safe project conventions.** Request full OIDs and full ref names from Git, use explicit machine delimiters, validate output, and retain existing terminal-text escaping. Do not copy the spike's human-oriented parsing into production unchanged.
+4. **Batch abbreviation.** Deduplicate matching full OIDs, send them through stdin to one `git log --no-walk=unsorted --abbrev=12 --format=%H%x00%h%x00 --stdin` process, then join abbreviations back by full OID. This keeps Git authoritative and process count constant with respect to branch count.
+5. **Propagate cancellation.** Forward Inquirer's `signal` to `GitRunner.run`. A new keystroke can cancel obsolete work rather than allowing stale results to win or accumulating subprocesses.
+6. **Return existing candidate shapes.** Merge matching branches with the eager current-branch/worktree candidates using the existing identity and ordering rules. Do not alter branch/worktree labels, dirty or unavailable states, ordered base/head selection, or recovery focus behavior.
+7. **Keep resource use explicit.** Maintain timeout and stderr/stdout caps. Verify the widest 9,999-match benchmark against the production runner's byte cap; change the per-call cap only from measured output, not by removing the bound.
 
-- Surfaces: `--dr-bg-canvas`, `--dr-bg-muted`, `--dr-bg-overlay`, `--dr-bg-control`, `--dr-bg-disabled`
-- Foregrounds: `--dr-fg-default`, `--dr-fg-muted`, `--dr-fg-disabled`, `--dr-fg-on-emphasis`
-- Borders: `--dr-border-default`, `--dr-border-muted`, `--dr-border-emphasis`, `--dr-border-focus`
-- Semantic states: `--dr-accent-*`, `--dr-success-*`, `--dr-attention-*`, `--dr-danger-*`
-- Diff roles: `--dr-diff-add-line`, `--dr-diff-add-number`, `--dr-diff-add-word`, `--dr-diff-delete-line`, `--dr-diff-delete-number`, `--dr-diff-delete-word`
-- Interaction roles: `--dr-control-rest`, `--dr-control-hover`, `--dr-control-active`, `--dr-control-selected`, `--dr-control-disabled`
-
-Do not name application tokens after a particular component (`--green`, `--file-header-gray`) or expose raw palette scales. Semantic roles allow the same accessible state to remain consistent across the file tree, header, toolbar, inline composer, notices, and review rail.
-
-### Reference palette
-
-The following values are resolved from the current published `@primer/primitives@11.9.0` dark functional theme. They are suitable starting points, not a mandate to reproduce every GitHub token:
-
-| Diff Review role | Primer 11.9.0 reference | Value |
-|------------------|--------------------------|-------|
-| Canvas | `--bgColor-default` | `#0d1117` |
-| Muted surface | `--bgColor-muted` | `#151b23` |
-| Control surface | `--control-bgColor-rest` | `#212830` |
-| Emphasis surface | `--bgColor-emphasis` | `#3d444d` |
-| Default text | `--fgColor-default` | `#f0f6fc` |
-| Muted text | `--fgColor-muted` | `#9198a1` |
-| Disabled text | `--fgColor-disabled` | `#656c76` |
-| Default border | `--borderColor-default` | `#3d444d` |
-| Muted border | `--borderColor-muted` | `#3d444db3` |
-| Accent text | `--fgColor-accent` | `#4493f8` |
-| Accent/focus emphasis | `--borderColor-accent-emphasis` | `#1f6feb` |
-| Success | `--fgColor-success` | `#3fb950` |
-| Attention | `--fgColor-attention` | `#d29922` |
-| Danger | `--fgColor-danger` | `#f85149` |
-| Added line | `--diffBlob-additionLine-bgColor` | `#2ea04326` |
-| Added line number/gutter | `--diffBlob-additionNum-bgColor` | `#3fb9504d` |
-| Added word | `--diffBlob-additionWord-bgColor` | `#2ea04366` |
-| Deleted line | `--diffBlob-deletionLine-bgColor` | `#f851491a` |
-| Deleted line number/gutter | `--diffBlob-deletionNum-bgColor` | `#f851494d` |
-| Deleted word | `--diffBlob-deletionWord-bgColor` | `#f8514966` |
-
-The eight-digit colors intentionally retain alpha. Monaco's official color reference says inserted/removed line and text backgrounds must not be opaque, so underlying selection and decoration states remain visible.
-
-### Monaco: dedicated standalone theme
-
-Create a small internal theme configurator adjacent to the existing Monaco configuration, not a new dependency. Define the theme before `createMonacoDiffAdapter` constructs the editor:
-
-```typescript
-monaco.editor.defineTheme('diff-review-dark', {
-  base: 'vs-dark',
-  inherit: true,
-  rules: [
-    // Keep rules narrow; inherit language coverage from vs-dark.
-  ],
-  colors: {
-    'editor.background': '#0d1117',
-    'editor.foreground': '#f0f6fc',
-    'editorGutter.background': '#0d1117',
-    'editorLineNumber.foreground': '#9198a1',
-    'editorLineNumber.activeForeground': '#f0f6fc',
-    'editor.selectionBackground': '#388bfd66',
-    'editor.inactiveSelectionBackground': '#388bfd33',
-    'diffEditor.insertedLineBackground': '#2ea04326',
-    'diffEditor.insertedTextBackground': '#2ea04366',
-    'diffEditor.removedLineBackground': '#f851491a',
-    'diffEditor.removedTextBackground': '#f8514966',
-    'diffEditorGutter.insertedLineBackground': '#3fb9504d',
-    'diffEditorGutter.removedLineBackground': '#f851494d',
-    'diffEditor.border': '#3d444d',
-  },
-});
-```
-
-The implementation should also deliberately map these supported Monaco color IDs where visible: `editor.lineHighlightBackground`, `editor.lineHighlightBorder`, `editorCursor.foreground`, `focusBorder`, `diffEditor.diagonalFill`, `diffEditorOverview.insertedForeground`, `diffEditorOverview.removedForeground`, `diffEditor.unchangedRegionBackground`, `diffEditor.unchangedRegionForeground`, `diffEditor.unchangedRegionShadow`, and `diffEditor.unchangedCodeBackground`.
-
-Use `base: 'vs-dark'` with `inherit: true`. Do not replace Monaco's complete per-language token rules. If syntax colors are tuned, keep the overrides small and use Primer's published code colors as references (comment `#656c76`, keyword `#ff7b72`, string `#a5d6ff`, constant/support `#79c0ff`, entity/type `#d2a8ff`, variable `#ffa657`). Broadly replacing token rules would create language-specific regressions unrelated to this milestone.
-
-For one source of truth, application code may read resolved `--dr-*` values with `getComputedStyle(document.documentElement)` and pass concrete color strings into `defineTheme`. Do **not** pass unresolved `var(...)` expressions as Monaco theme values. Fail explicitly during development if a required token resolves empty.
-
-## Exact Monaco Options Relevant to v1.1
-
-These are present in the installed 0.55.1 type definitions:
-
-| API/option | Recommendation | Integration note |
-|------------|----------------|------------------|
-| `theme` | Set to `diff-review-dark` when constructing the diff editor | Presentation only; models and anchors are unchanged. |
-| `originalAriaLabel` / `modifiedAriaLabel` | Add concise Base and Head labels including the current file context where practical | More specific than the existing shared `ariaLabel`; does not alter visible IA. |
-| `renderIndicators` | Set explicitly to `true` | Preserves `+`/`−` non-color cues for additions and deletions. |
-| `renderSideBySide` | Keep `true` | Preserves the validated side-by-side review model. |
-| `renderSideBySideInlineBreakpoint` | Keep `0` for v1.1 | The current external BASE/HEAD labels and comment-gutter action positioning assume a 50/50 split. Enabling inline fallback without coordinating those elements would create visual and anchoring defects. |
-| `useInlineViewWhenSpaceIsLimited` | Do not enable independently | It is available if a later phase intentionally redesigns the narrow diff presentation; it is not a stack requirement. |
-| `compactMode` | Leave off unless narrow visual inspection proves it necessary | It changes Monaco's small-view presentation but adds no capability needed now. |
-| `accessibilityVerbose` | Evaluate with the existing keyboard-help text; do not enable blindly | Avoid duplicate or noisy screen-reader instructions. |
-| `onlyShowAccessibleDiffViewer` | Do not force | Monaco should expose its accessible viewer without replacing the visual diff for all users. |
-| `hideUnchangedRegions` | Keep the current configuration and context controls | Existing behavior is validated and themable through the unchanged-region color IDs. |
-| `diffAlgorithm` | Do not change for a visual milestone | Diff computation is product behavior, not theming. |
-
-## Accessible State Strategy
-
-WCAG 2.2 requires normal text at 4.5:1, meaningful non-text component/state cues at 3:1 against adjacent colors, visible keyboard focus, and a visible alternative whenever color conveys information. Apply those constraints to both the CSS shell and Monaco:
-
-| State | Color treatment | Required non-color/programmatic cue |
-|-------|-----------------|-------------------------------------|
-| Addition/deletion | Green/red transparent line, number, and word layers | Keep Monaco's `+`/`−` indicators, separate gutters, and Base/Head labels. |
-| Selected/anchored line | Accent-muted background distinct from diff colors | Style existing `monaco-anchor-line` with an inset bar/border; keep the visible `+` comment action and its accessible label. |
-| Saved/open/resolved comment | Semantic accent/success/muted surface | Retain text badges/status labels and action labels; never encode lifecycle only with border hue. |
-| Keyboard focus | Accent focus outline with sufficient adjacent contrast | Persistent `:focus-visible` outline, normally 2px with offset; never remove Monaco's internal focus indication. |
-| Error/warning | Danger/attention surface and border | Retain headings, visible text, icon/shape where present, `role="alert"` or live-region semantics, and explicit recovery action. |
-| Disabled | Disabled surface/foreground/border | Native `disabled`/`inert`, cursor change, and stable control geometry. WCAG exempts inactive controls from contrast thresholds, but muted styling alone must not be the only indication. |
-| Hover/active | Subtle surface and border changes | Do not make essential actions discoverable only on hover; keep control text/icon visible at rest. |
-
-The current app already has skip links, labelled drawers, alerts/live regions, disabled attributes, and reduced-motion rules. Preserve those mechanisms while changing their visual tokens.
-
-## Responsive Implications
-
-No responsive library is necessary. The existing CSS already changes the three-column desktop shell into file/review drawers and uses `ResizeObserver` to re-layout Monaco.
-
-For v1.1:
-
-- Keep Monaco side-by-side and the current `640px` minimum diff canvas, allowing horizontal scrolling on genuinely narrow viewports. This preserves the external two-column side labels and gutter-action geometry.
-- Polish the shell around that canvas: drawer widths, overlays, fixed controls, touch target size, overflow wrapping, and focus containment can remain ordinary media-query CSS.
-- Do not turn on Monaco's inline fallback as an isolated option. If a future milestone chooses unified diff on narrow screens, it must also redesign Base/Head labels, comment action placement, side mapping, and visual verification together.
-- Retain `prefers-reduced-motion: reduce` for drawer transforms and progress animation.
+The measured spike validates this composition: two search subprocesses produced median packed-ref results in 20.4 ms for 100 matches and 63.8 ms for 9,999 matches. Loose-ref search remained correct at 798.5 ms. That is an accepted storage-layout limitation for v1.2, not evidence for a new dependency.
 
 ## Installation
 
-No new installation is required.
+No dependency or version change is required.
 
 ```bash
-# Keep the existing lockfile and dependencies.
-npm install
-
-# Intentionally do not install @primer/primitives, a CSS framework,
-# a Monaco wrapper, a preprocessor, or another diff renderer.
+# Intentionally no npm install command for v1.2 source discovery.
+# Keep package.json and package-lock.json unchanged.
 ```
+
+The surrounding stack also remains unchanged: Commander, Fastify, Vue, Vite, Monaco, Zod, repository-local JSON persistence, and Playwright do not participate in branch search and must not be changed for this milestone.
 
 ## Alternatives Considered
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| Diff Review-owned semantic CSS variables | Install/import `@primer/primitives` CSS | Only if the product adopts Primer as a maintained design-system dependency across multiple themes and components. v1.1 needs a small fixed palette, so the dependency and global selectors are unnecessary. |
-| Monaco `defineTheme` on existing editor | CSS selectors against Monaco's generated DOM | Never for supported colors. Generated DOM classes are implementation details; use theme color IDs and only use CSS for Diff Review's own decoration/view-zone classes. |
-| Existing Monaco integration | Vue Monaco wrapper | Only for a new app without an established adapter. Here it adds a second lifecycle abstraction around validated models, zones, and anchors. |
-| Plain CSS | Sass/Less/PostCSS plugin/Tailwind | Only when the project needs language features that native CSS cannot express. This dark-only semantic token layer does not. |
-| `vs-dark` inheritance with narrow syntax overrides | Full custom syntax grammar/theme | Only if syntax fidelity becomes a separate requirement with per-language validation. It is unnecessary for GitHub-like diff surfaces. |
-| Existing side-by-side responsive canvas | Enable Monaco inline fallback immediately | Only after the app's external labels, comment affordance, side mapping, and narrow interaction design are intentionally adapted together. |
+| Recommended | Alternative | When the Alternative Would Be Appropriate | Why Not for v1.2 |
+|-------------|-------------|-------------------------------------------|------------------|
+| Existing `GitRunner` + native Git | `simple-git` | A new application that wants a convenience wrapper and accepts its abstraction | Compare already owns safer bounded byte protocols and native-Git semantics. A wrapper would not eliminate subprocesses and would add a second error/cancellation model. |
+| Native Git | `isomorphic-git` or direct `.git` ref-file parsing | A browser-only product without an installed Git executable | It would duplicate Git semantics, mishandle repository storage/config variants, and violate the installed-Git authority constraint. |
+| Inquirer's async `source` | Load every branch into memory, then use Fuse.js or another fuzzy-search library | A small static catalog already available in memory where fuzzy ranking is a product requirement | Enumeration is the scaling problem. A client-side matcher cannot make 10,000 loose refs cheaper to discover and would change established substring semantics. |
+| One filtered list + one batched abbreviation call | Per-branch `rev-parse --short` | Never for this milestone | Serial subprocess count grows with matches and is the measured 96-second failure mode. |
+| Git-side filtered lookup | Eager `for-each-ref` of all branches | Only if full inventory is required before interaction and measured repositories are small | It delays the picker and measured roughly 872 ms for 10,000 loose refs before any useful filtering. |
+| No persistent state | SQLite, JSON index, recency cache, filesystem watcher | A future explicitly approved milestone requiring cross-session ranking or indexed loose-ref latency | It introduces invalidation, mutation, privacy, and lifecycle responsibilities explicitly excluded from v1.2. |
+| Read-only queries | Running `git pack-refs` to meet the search budget | Fixture preparation only | It mutates repository ref storage. Compare must report correct loose-ref results without changing user state, even when they exceed 500 ms. |
+| `spawn('git', argv, { shell: false })` | Shell command strings, `exec`, or interpolation | None at this trust boundary | Search text and repository data must never enter shell syntax; argument arrays preserve the existing security and portability boundary. |
+| Direct `@inquirer/search` package | Replace with the `@inquirer/prompts` umbrella or another TUI | A broader prompt migration with independent product value | The installed direct package already exposes the required API. Migration adds no source-discovery capability. |
+| Main event loop plus async subprocesses | Worker threads or a job-queue package | CPU-bound parsing proven to block interaction after subprocess work is fixed | Discovery is I/O-bound and the measured packed-ref path is already far below budget. Cancellation and bounded output are sufficient. |
 
-## What NOT to Add
+## What NOT to Add or Change
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `@primer/primitives` as a runtime dependency | The package is a large cross-product token system; Diff Review needs a small, dark-only adapted subset and should retain its own identity. | Record 11.9.0 as palette provenance and own semantic `--dr-*` tokens. |
-| Primer React, Primer CSS, or another component library | Wrong framework or unnecessary global component reset; would duplicate existing Vue controls and IA. | Restyle existing Vue components. |
-| Tailwind, UnoCSS, CSS-in-JS, Sass, or Less | Adds a second styling convention and build surface for values native CSS already expresses. | Existing global stylesheet plus CSS custom properties/media queries. |
-| `monaco-themes` or a downloaded VS Code theme bundle | General editor themes do not map GitHub PR diff semantics or Diff Review's shell states. | A small typed `IStandaloneThemeData` owned by the app. |
-| `monaco-editor-vue3` or another Monaco wrapper | Risks lifecycle, model disposal, view-zone, and anchor behavior that the existing adapter already handles. | Extend `diff-adapter.ts` and existing Monaco configuration directly. |
-| Shiki, Prism, CodeMirror, or another diff renderer | Duplicates syntax/diff responsibilities and would threaten stable line mapping and comments. | Monaco's built-in tokenization and diff theming. |
-| A light-theme switcher or system-color-mode library | v1.1 is explicitly dark-only; it doubles state and verification without serving the milestone. | One fixed dark theme. |
-| Runtime contrast-checking library | Contrast is a design/verification concern, not application behavior. | Precompute token pairings and inspect them during implementation. |
-| New review mechanics | The milestone is visual; replies, suggestions, approvals, and submission workflows remain out of scope. | Preserve current comments, summary, persistence, and export behavior. |
+| Avoid | Specific Problem | Use Instead |
+|-------|------------------|-------------|
+| Any Git JavaScript library | Duplicates native authority and existing runner behavior | Installed Git through `GitRunner` |
+| Search/fuzzy-index dependency | Does not avoid ref enumeration; risks changing matching behavior | Git `branch --list --ignore-case` with escaped literal substring pattern |
+| Generic concurrency limiter | Search requires a constant two-process pipeline, not a variable worker pool | Sequential list then one batch-abbreviation call, with prompt cancellation |
+| Persistent or recency index | New state, invalidation, and mutation contract outside milestone | Stateless query per entered term |
+| Automatic `git pack-refs` | Mutates user repository storage | Correct loose-ref search with relaxed latency |
+| Per-branch subprocesses | O(branches) or O(matches) launch cost | One filtered list and one batched abbreviation process |
+| Unbounded buffers or disabled timeouts | Broad searches can consume uncontrolled memory or hang the prompt | Existing runner limits, measured per-call sizing, and `AbortSignal` |
+| Changes to comparison/session contracts | Risks already validated identities and recovery behavior | Confine changes to discovery timing and prompt-source data loading |
+| Node 26 Current | Project requires an LTS baseline; Node 24 is the latest LTS line on the research date | Keep Node `>=24` for v1.2 |
+
+## Stack Patterns by Repository Variant
+
+**Empty search input:**
+- Return only the eager current branch and registered worktrees.
+- Do not enumerate all local branches or create a hidden cache.
+
+**Non-empty search input:**
+- Escape the term, query matching local branches with Git, then batch abbreviate unique OIDs.
+- Cancel superseded work through the Inquirer-provided signal.
+
+**Packed refs:**
+- Enforce the 500 ms search budget in the 10,000-branch benchmark.
+- Keep subprocess count constant regardless of result count.
+
+**Loose refs:**
+- Preserve complete, correct results through the same read-only commands.
+- Record latency separately; do not mutate refs or introduce an index to force the packed-ref budget.
+
+**Broad query:**
+- Preserve all matching candidates and existing ordering.
+- Verify bounded production output and memory against the 9,999-match fixture.
 
 ## Version Compatibility
 
-| Package/API | Compatible With | Notes |
-|-------------|-----------------|-------|
-| `monaco-editor@0.55.1` | Existing Vite worker imports and adapter | Installed published types include `defineTheme`, `setTheme`, `IStandaloneThemeData`, diff color-supporting theme map, `originalAriaLabel`, `modifiedAriaLabel`, responsive diff options, and accessible viewer options. Keep pinned for the milestone. |
-| `vue@3.5.39` | `@vitejs/plugin-vue@6.0.7` | Existing SFC external non-scoped style block remains the global CSS entry point. No Vue-specific theme package is required. |
-| `vite@8.1.4` | Node 24 baseline | Vite supports imported plain CSS and native variables directly. Preprocessor packages are only needed if preprocessor syntax is introduced, which is not recommended. |
-| `@primer/primitives@11.9.0` | Reference only | Values were verified from the published dark functional CSS. Do not add it to `package.json`; re-check provenance only if implementation occurs after a deliberate token refresh. |
-| WCAG 2.2 | CSS and Monaco states | Target Level AA contrast/use-of-color/focus requirements; inactive controls are contrast-exempt but still need clear native disabled semantics. |
+| Package/API | Compatible With | v1.2 Guidance |
+|-------------|-----------------|---------------|
+| Node.js `>=24` | `@inquirer/search@4.2.1` requires Node `>=23.5.0 || ^22.13.0 || ^20.17.0` | Node 24 satisfies the package engine range. Keep the project engine floor. |
+| Node.js 24 `child_process.spawn` | Standard `AbortSignal` | Existing runner already uses `signal`, `shell: false`, and piped stdio; no polyfill is needed. |
+| Git `>=2.43.0` | Existing positive startup protocol probes | Preserve the minimum and capability probes. Add focused proof for the exact `branch --list --ignore-case --format` and `log --no-walk --stdin` forms at the supported floor rather than raising it without evidence. |
+| TypeScript 7.0.2 | `@types/node@24.11.1` | Existing types cover `AbortSignal` and child-process options. Keep pinned versions. |
+| `@inquirer/search@4.2.1` | Async source returning a promise of choices/separators | Update Compare's local source type to permit the documented promise result when implementing staged discovery; do not wrap the prompt in another library. |
+| Vitest 4.1.10 | Existing Node 24 test environment | Reuse focused CLI/Git suites; no benchmark or mocking dependency is needed. |
+
+## Downstream Planning Guidance
+
+1. **Change the discovery contract before optimizing Git commands.** Split eager candidates from searchable branches while preserving the final `SourceCandidate` identity and picker ordering contract.
+2. **Wire the async Inquirer source to the existing runner.** Forward cancellation and classify an abort as superseded prompt work, not repository failure.
+3. **Implement the two-call search pipeline.** Escape literal terms, request byte-safe records, deduplicate OIDs, batch abbreviation, and reject malformed joins.
+4. **Prove unchanged behavior.** Keep current branch/worktree visibility, duplicate suppression, dirty/unavailable labels, base/head order, retained selections, and recovery behavior.
+5. **Measure the production path.** Verify process-start-to-ready and search round-trip separately in packed, loose, broad-query, and many-worktree fixtures. Count Git processes; no branch-count-dependent process path is acceptable.
+6. **Do not turn the loose-ref result into scope creep.** Correctness is required; the 500 ms guarantee is packed-ref-specific. A persistent index or repository mutation requires a future product decision, not a stack workaround.
 
 ## Sources
 
-### Existing application and installed versions
+### Authoritative external sources
 
-- [`package.json`](../../package.json) — exact dependency versions and absence of a styling library or preprocessor.
-- [`src/web/App.vue`](../../src/web/App.vue) — global `<style src>`, current diff/file/review information architecture, drawers, skip links, and live region.
-- [`src/web/styles.css`](../../src/web/styles.css) — competing root palettes, existing responsive rules, focus treatment, control states, and reduced motion.
-- [`src/web/components/DiffWorkspace.vue`](../../src/web/components/DiffWorkspace.vue) — existing Monaco lifecycle, resize observer, side labels, gutter action, and inline comment zones.
-- [`src/web/monaco/diff-adapter.ts`](../../src/web/monaco/diff-adapter.ts) — existing Monaco options, decorations, view zones, and unchanged-region behavior.
-- [`monaco-editor@0.55.1` published type definitions](https://unpkg.com/monaco-editor@0.55.1/monaco.d.ts) — exact current theme and diff-editor API surface.
+- [Node.js release status](https://nodejs.org/en/about/previous-releases) — verifies Node 24.18.1 as the latest LTS release and Node 26 as Current on 2026-07-30.
+- [Node.js 24 `child_process` documentation](https://nodejs.org/docs/latest-v24.x/api/child_process.html#child_processspawncommand-args-options) — verifies argument-array spawning, default `shell: false`, `AbortSignal`, timeout, and stdio options.
+- [`@inquirer/search` official README](https://github.com/SBoudrias/Inquirer.js/blob/main/packages/search/README.md) — verifies async `source(term, { signal })`, undefined empty term, choices/separators, and cancellation signal.
+- [`@inquirer/search` npm registry `latest`](https://registry.npmjs.org/%40inquirer%2Fsearch/latest) — verifies version 4.2.1 and its Node engine range on the research date.
+- [`git branch` documentation](https://git-scm.com/docs/git-branch) — verifies `--list` pattern filtering, `--ignore-case`, `--format`, and read-only list semantics; the documentation is unchanged through current Git 2.55.0.
+- [`git log` documentation](https://git-scm.com/docs/git-log) — verifies `--stdin`, `--no-walk`, `--abbrev-commit`, and `%h`; current page updated for Git 2.55.0.
+- [`git worktree` documentation](https://git-scm.com/docs/git-worktree) — authoritative registered-worktree listing semantics retained by eager discovery.
+- [`git pack-refs` documentation](https://git-scm.com/docs/git-pack-refs) — confirms packing changes ref storage, supporting fixture-only use.
 
-### Primary/current external sources
+### Repository evidence
 
-- [Monaco Editor repository: custom theme example](https://github.com/microsoft/monaco-editor/blob/main/website/src/website/data/playground-samples/customizing-the-appearence/exposed-colors/sample.js) — `defineTheme`, theme color map, alpha colors, and `setTheme`.
-- [Monaco Editor accessibility guide for integrators](https://github.com/microsoft/monaco-editor/wiki/Accessibility-Guide-for-Integrators) — editor/diff `ariaLabel` guidance.
-- [VS Code Theme Color reference](https://code.visualstudio.com/api/references/theme-color#diff-editor-colors) — current official diff editor, gutter, overview, unchanged-region, focus, selection, line-number, and widget color identifiers; updated 2026-07-15.
-- [Vue SFC CSS Features](https://vuejs.org/api/sfc-css-features.html) — global/non-scoped styles, scoped CSS, CSS Modules, and custom-property behavior.
-- [Vite CSS features](https://vite.dev/guide/features.html#css) — ordinary CSS injection/HMR, CSS Modules, preprocessors, and recommendation to use native CSS variables.
-- [`@primer/primitives@11.9.0` published dark theme](https://unpkg.com/@primer/primitives@11.9.0/dist/css/functional/themes/dark.css) — exact current dark semantic, syntax, and diff token values.
-- [Primer Primitives `diffBlob` source](https://github.com/primer/primitives/blob/main/src/tokens/component/diffBlob.json5) — semantic relationships and dark overrides for addition/deletion line, number, and word states.
-- [W3C WCAG 2.2 — Use of Color](https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html) — color cannot be the only visual means of conveying information; updated 2025-09-16.
-- [W3C WCAG 2.2 — Contrast (Minimum)](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) — 4.5:1 normal-text and 3:1 large-text thresholds, including inactive-control exception.
-- [W3C WCAG 2.2 — Non-text Contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html) — 3:1 meaningful component and state cue contrast.
-- [W3C WCAG 2.2 — Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html) — persistent visible keyboard focus and `:focus-visible` technique; updated 2025-09-17.
-
-### Documentation lookup trail
-
-- Context7 `/microsoft/monaco-editor` — theme registration, theme application, construction options, and accessibility guide references.
-- Context7 `/vuejs/vue` — SFC external/global/scoped style mechanisms.
-- Context7 `/vitejs/vite` (`v8.0.10` documentation set) — CSS imports, native variables, and preprocessor requirements, cross-checked against installed Vite 8.1.4 metadata.
-- Context7 `/websites/primer_style` — semantic foreground/background/border/diff token model, cross-checked against published Primitives 11.9.0 CSS.
+- [`package.json`](../../package.json) — exact existing Node engine and dependency versions.
+- [`src/git/runner.ts`](../../src/git/runner.ts) — existing safe, bounded, cancellable native-Git process boundary.
+- [`src/git/repository.ts`](../../src/git/repository.ts) — Git 2.43.0 minimum and positive capability checks.
+- [`src/cli/picker.ts`](../../src/cli/picker.ts) — existing Inquirer source seam and validated ordered picker behavior.
+- [`cli-startup-discovery.md`](../notes/cli-startup-discovery.md) — measured startup subprocess and latency findings.
+- [`Spike 002: staged source discovery`](../spikes/002-staged-source-discovery/README.md) — 10,000-ref packed/loose, broad-query, and many-worktree measurements that support the no-new-dependency recommendation.
 
 ---
-*Stack research for: Diff Review v1.1 GitHub Dark Diff*
-*Researched: 2026-07-24*
+*Stack research for: Compare v1.2 Fast Source Discovery*
+*Researched: 2026-07-30*

@@ -1,158 +1,125 @@
 # Project Research Summary
 
-**Project:** Diff Review
-**Domain:** Dark-only GitHub Dark-default-inspired visual adaptation of a local Vue/Monaco pull-request diff workspace
-**Researched:** 2026-07-24
-**Confidence:** MEDIUM overall (HIGH for repository integration boundaries and pitfalls; MEDIUM for external visual parity guidance)
+**Project:** Compare
+**Domain:** Fast, staged native-Git source discovery for a local ordered comparison picker
+**Milestone:** v1.2 Fast Source Discovery
+**Researched:** 2026-07-30
+**Confidence:** HIGH for scope and architecture; MEDIUM for production performance until the implementation is measured on the supported Git floor
 
 ## Executive Summary
 
-Diff Review is an existing local-first review workspace, not a GitHub clone. The v1.1 GitHub Dark Diff milestone should therefore be a presentation-only cutover: preserve Vue 3, Monaco, the three-part changed-files/diff/review-rail information architecture, comment lifecycle, draft persistence, summary/export behavior, keyboard commands, and local identity while making the entire workspace one coherent dark-default experience. The research recommends no new npm dependency. Use one Diff Review-owned semantic token vocabulary in the existing global stylesheet, and map that vocabulary into one typed Monaco standalone theme so shell and editor share the same visual contract.
+Compare is a local-first, single-developer code-review tool whose CLI must let users choose an ordered base and head from local branches or registered worktrees before opening the existing browser review flow. v1.2 is a focused discovery-latency milestone, not a new persistence or Git subsystem: make the picker usable from an eager snapshot of the current branch and registered worktrees, then search the remaining local branches only when the user types a non-empty term.
 
-The work is safest as a dependency-ordered brownfield migration: establish the palette and state vocabulary before styling consumers; register Monaco's theme before creating the editor; then cover file/header, controls, comments, notices, and review-rail states without changing markup contracts or review behavior; finally harden narrow layouts and accessibility. The principal risks are split-brain palettes, composited diff/selection collisions, clipped focus, color-only meaning, and accidentally widening a restyle into mechanics or contract changes. WCAG 2.2 contrast, non-color, focus, reflow, and forced-colors constraints must be acceptance criteria, not a late cosmetic review.
+The recommended implementation keeps Node 24, TypeScript, `@inquirer/search`, native installed Git, and the existing bounded/cancellable `GitRunner`. Split the existing candidate authority into an eager snapshot and an abortable lazy branch-search closure, while leaving comparison pinning, review UI, persistence, exports, and all previously validated selection/recovery semantics unchanged. The main risks are asynchronous stale results, unbounded subprocess or buffer growth, and confusing storage-dependent performance with correctness. Signal propagation, stable identity maps, constant-process batching, explicit limits, and separate packed/loose verification address those risks without mutating repositories or adding an index.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The current stack is sufficient: Vue 3.5.39, Monaco Editor 0.55.1, Vite 8.1.4, TypeScript 7.0.2, and the Node.js 24 LTS baseline remain in place. Native CSS custom properties and media queries are the right styling mechanism; adding a CSS framework, preprocessor, component library, Monaco wrapper, or alternate diff renderer would create a second convention and threaten validated line mapping and comment anchors.
+No dependency or runtime upgrade is warranted. Node.js `>=24`, strict TypeScript, `@inquirer/search@4.2.1`, installed Git `>=2.43.0`, and the existing `GitRunner` already provide the required async source callback, argument-array spawning, `AbortSignal` cancellation, timeouts, byte limits, and Git-authoritative ref/object semantics. Keep Commander and the rest of the validated application stack untouched; v1.2 changes query timing and shape, not the browser/server/review stack.
 
 **Core technologies:**
-- **Vue 3.5.39:** retain the existing component and ARIA structure in `src/web/components/DiffWorkspace.vue`; the milestone changes presentation rather than state or composition.
-- **Monaco Editor 0.55.1:** retain side-by-side diff, line mapping, decorations, view zones, syntax tokenization, and accessible diff behavior; use `defineTheme` and the construction-time `theme` option.
-- **Vite 8.1.4 + native CSS:** keep the existing SFC/global stylesheet pipeline; consolidate semantic roles in `src/web/styles.css` without a preprocessor.
-- **TypeScript 7.0.2 + Node 24 LTS:** retain the supported build/runtime baseline and type the Monaco theme data.
-- **Primer primitives 11.9.0:** reference only for dark semantic values and provenance; do not install it as a runtime dependency.
+- **Native Git through `GitRunner`:** authoritative local refs, worktrees, full OIDs, and read-only filtering; avoids a second Git semantics or cancellation boundary.
+- **Node.js 24 / TypeScript:** built-in abortable subprocesses and timers with existing strict contracts; no worker or job-queue dependency for this I/O-bound path.
+- **`@inquirer/search@4.2.1`:** its async `source(term, { signal })` seam supports eager empty-term choices and superseded-query cancellation.
+- **Git filtered listing plus one batched abbreviation call:** one filtered branch query followed by a `git log --no-walk --stdin` batch for unique OIDs avoids per-branch process fan-out.
+
+Performance contracts are distinct: picker readiness is ≤400 ms from process start, and packed-ref search is ≤500 ms for 10,000 branches. Loose-ref search must remain complete and correct even when slower (the measured 10,000-ref case was about 798.5 ms). Do not pack refs, enlarge limits without measurement, or persist a recency/index state to disguise that trade-off.
 
 ### Expected Features
 
 **Must (table stakes):**
-- **Complete semantic dark hierarchy:** canvas, inset/muted surfaces, controls, text, borders, states, and diff layers must make the page, drawers, editor, comments, notices, and rail one workspace rather than a dark editor in a light shell.
-- **Complete diff and file-header language:** preserve explicit Base/Head identity, side-by-side geometry, file path hierarchy, line/gutter context, and addition/deletion cues that remain understandable without color.
-- **State matrix and accessibility:** rest, hover, active, selected, focus-visible, disabled, pending, destructive, warning, error, comment, and resolved states need distinct visual and programmatic cues; normal text targets 4.5:1 and meaningful non-text cues 3:1.
-- **Comment and review continuity:** dark inline composer, accepted comments, notices, summary, export, and review-rail lifecycle states must remain readable and behaviorally unchanged.
-- **Narrow-layout preservation:** only the side-by-side diff may own localized horizontal overflow; headers, drawers, rail, forms, notices, and prose must reflow.
+- **Staged initial choices:** current attached branch and every registered worktree (including detached, dirty, and unavailable states) are usable/visible according to existing labels and disabling rules before full branch enumeration.
+- **On-demand local-branch search:** non-empty input performs case-insensitive literal matching under `refs/heads/*`; wildcard characters remain literal, with canonical ref-name ordering independent of user `branch.sort`.
+- **Identity and selection continuity:** branch IDs use full refs and full commit OIDs; worktree IDs use stable paths and committed HEAD state. Distinct refs/worktrees sharing an OID remain distinct. Base-before-head, suggested head, Back, retained selections, and ref-drift recovery remain unchanged.
+- **Race-safe bounded work:** propagate the prompt signal through every Git call; return only the active term; use a constant/bounded process count and batch unique OIDs; distinguish cancellation, no matches, and actual failure.
+- **Packed/loose parity:** packed refs meet the strict benchmark; loose refs return the complete authoritative result without mutation or false “no matches.”
 
 **Should have (competitive):**
-- **Close GitHub familiarity without forge chrome:** adapt dark-default semantic surfaces, restrained borders, compact typography/density, file-header hierarchy, and gutter affordances while retaining Diff Review copy, local-save language, Base/Head identity, review rail, and export model.
-- **One semantic contract across native UI and Monaco:** a single role map prevents shell/editor visual drift and makes future maintenance and accessibility auditing tractable.
-- **Dark-only precision and zero workflow churn:** complete one mode rather than a partial theme system, preserving existing DOM semantics, keyboard paths, and state transitions.
+- **Useful-before-complete discovery:** users can begin comparison while large branch namespaces remain undiscovered.
+- **Git-authoritative, stateless scale:** fast search without a private catalog, stale cache, daemon, or repository rewrite.
+- **Honest storage-dependent behavior:** loading may remain visible for slow loose-ref searches rather than hiding or truncating correct results.
 
 **Defer (v2+):**
-- **Light mode or a theme picker:** doubles verification scope and is explicitly outside v1.1.
-- **GitHub review mechanics:** replies, suggestions, approvals, requests changes, pending-review submission, Viewed tracking, remote collaboration, or any new persistence/API contract.
-- **Pixel-perfect GitHub cloning, branding, avatars, forge navigation, and remote font loading:** adapt recognizable conventions, not a brittle or network-dependent clone.
+- Remote-tracking refs, fuzzy or recency ranking, persistent branch indexes, cross-launch caches, watchers, and repository maintenance such as automatic `git pack-refs`.
+- Debounce or alternate ref-storage optimization unless production measurements demonstrate a concrete need after cancellation and batching are correct.
 
 ### Architecture Approach
 
-Keep existing review state and server boundaries authoritative. `styles.css` owns the single semantic dark token layer; a small new `src/web/monaco/theme.ts` translates resolved CSS tokens into a registered, idempotent Monaco theme; `DiffWorkspace.vue` registers it before constructing the existing adapter; `diff-adapter.ts` receives only the theme option while retaining models, mappings, zones, read-only/side-by-side settings, hidden regions, and accessibility labels. Existing Vue components consume semantic classes and attributes for file tree/header, toolbar, comments, rail, notices, and responsive drawers. No Vue theme state, server, persistence, contract, anchor, export, or review-model changes are justified by this milestone.
+Integrate one discovery session into the existing modules. `candidates.ts` remains the sole source-discovery authority and returns an immutable eager snapshot plus `searchBranches(term, signal)`. `picker.ts` owns async prompt behavior, grouping, transient result rendering, and a prompt-lifetime stable-ID candidate registry. `run.ts` creates/recreates the session inside the existing selection/recovery loop and preserves role ordering. `runner.ts`, repository discovery, domain source contracts, comparison pinning, confirmation, server launch, and browser review remain their existing boundaries.
 
 **Major components:**
-1. **Semantic presentation contract (`src/web/styles.css`):** one authoritative role vocabulary for surfaces, text, borders, controls, focus, statuses, selection, and diff states; remove competing palette aliases rather than layering another override.
-2. **Monaco theme boundary (`src/web/monaco/theme.ts` + `diff-adapter.ts`):** map CSS-computed values to documented editor, selection, gutter, inserted/removed, unchanged-region, focus, widget, and overview colors before first editor render; keep syntax inheritance and diff behavior intact.
-3. **Existing Vue shell and review surfaces:** restyle file tree/header, toolbar, drawers, inline view-zone DOM, comment composer/cards, review rail, notices, recovery, summary, and export using existing hooks, ARIA relationships, events, and focus targets.
-4. **Responsive/accessibility boundary:** isolate the diff's two-dimensional viewport while keeping surrounding application chrome reflowable; preserve drawer focus/inert/Escape behavior and add forced-colors, contrast, grayscale, zoom, and keyboard verification.
+1. **`src/git/candidates.ts`:** parse Git protocols, build current-branch/worktree candidates, classify availability, filter branches, and batch Git-derived abbreviations.
+2. **`src/cli/picker.ts`:** return eager choices for empty input, invoke abortable search for non-empty terms, merge by stable source ID, preserve branch-before-worktree groups and Back behavior, and resolve lazy selections.
+3. **`src/cli/run.ts`:** own one session per attempt, retain selected candidates through Base/Head and confirmation-back, and delegate ref-drift recovery unchanged.
+4. **`src/git/runner.ts` / repository authority:** retain safe argument-array subprocesses, cancellation, timeouts, byte bounds, and canonical repository facts.
+5. **Existing comparison/review pipeline:** re-resolve branch refs and pin immutable comparison identities exactly as before; no v1.2 changes to browser review, drafts, exports, or server behavior.
+
+Data flow is: repository/root and worktree snapshot → bounded worktree enrichment → one abbreviation batch for eager OIDs → prompt opens; typed term → escaped Git filter → unique-OID abbreviation batch → immutable result installed in the candidate map → ordered selection → existing authoritative pinning and recovery.
 
 ### Critical Pitfalls
 
-1. **Appending a third palette:** perform a clean semantic cutover from the two competing root palettes; raw values belong only in the token definition and no light aliases may remain authoritative.
-2. **Semantic and compositing collisions:** keep dedicated diff-added/deleted, selection, comment, focus, warning, error, and disabled roles; design overlap matrices with alpha-composited values so selection, anchors, and intraline fills do not erase provenance or readability.
-3. **A mismatched Monaco system:** CSS cannot theme Monaco internals; register an inherited `vs-dark`-based theme before editor creation and explicitly cover editor, line-number/gutter, selection, diff, unchanged-region, widget, scrollbar, diagnostic, and focus colors.
-4. **Accessibility and responsive regressions:** retain non-color labels/glyphs/edges, visible focus that is not clipped, native disabled semantics, forced-colors fallbacks, and 4.5:1/3:1 contrast checks; confine horizontal scrolling to the diff rather than the entire page.
-5. **Restyle drift into behavior or brittle screenshots:** preserve queried classes, refs, ARIA, adapter options, view-zone ownership, and state transitions; use a small curated visual matrix only as a supplement to behavioral invariants, not as a replacement for them.
+1. **Stale query overwrites newer query:** keep each source invocation self-contained, pass the exact `AbortSignal`, check it after awaits, and never mutate shared choices after return.
+2. **Cancellation leaks Git children:** signal every filtered-list and abbreviation subprocess through `GitRunner`; do not translate abort into “no matches”; keep at most one active pipeline per picker.
+3. **Lazy rows cannot be selected:** install completed results in the same stable-ID authority used for rendering before returning choices; retain branch/worktree identity semantics.
+4. **Identity or recovery collapse:** merge by source ID, never OID/label; preserve duplicate refs/worktrees, selected Base/Head state, focus, Back, and role-specific ref-drift recovery.
+5. **Performance work becomes unsafe or dishonest:** avoid per-branch processes, bound stdout/stderr/timeouts and worktree concurrency, skip empty batches, and treat loose-ref latency separately from packed-ref guarantees. Never auto-pack refs, return partial results as complete, or hide Git failures as empty results.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+The milestone should be planned as three dependent slices, with the performance gate last:
 
-### Phase 1: Semantic Dark Foundation
-**Rationale:** Every consumer and Monaco mapping depends on one unambiguous role vocabulary; doing this first prevents cascade patches and makes accessibility pairs auditable.
-**Delivers:** A single dark-only `:root` semantic token contract, migrated selectors, typography/density/border foundations, contrast ledger, and preserved state labels.
-**Addresses:** Dark hierarchy, typography, density, restrained surfaces, complete control-state groundwork, and non-color semantics.
-**Avoids:** Split-brain palette leakage, semantic color collisions, raw-hex sprawl, and “dark only on the happy path.”
+1. **Staged picker contract.** Split eager current-branch/worktree discovery from lazy branch search and add the prompt-lifetime stable-ID registry. Deliver usable empty-term choices, async source integration, branch/worktree grouping, candidate retention, Base→Head/Back continuity, cancellation ownership, and existing recovery/error semantics. This phase must avoid stale-result races, duplicate identity collapse, and state resets. It is an established Inquirer pattern but needs repository-specific contract tests.
+2. **Bounded native-Git search.** Implement literal wildcard-safe filtering, explicit `--sort=refname`, NUL-safe full-ref/full-OID records, unique-OID batched abbreviation, bounded runner resources, and bounded worktree inspection. Deliver complete packed and loose results with typed distinction between cancellation, no matches, and search failure. This phase must prove process count does not scale with branches or matches and must not add dependencies, indexes, or mutations.
+3. **Performance and safety gate.** Measure the production path, not only the spike: process-start-to-picker readiness ≤400 ms; packed 10,000-branch search ≤500 ms; loose 10,000-ref search complete/correct even if slower; broad 9,999-match output within explicit limits; rapid typing leaves no children; many-worktree and detached/dirty/unavailable cases preserve truth; repository refs/config remain unchanged. This phase is the acceptance gate before declaring v1.2 complete.
 
-### Phase 2: Monaco Diff Integration
-**Rationale:** Monaco is a separate rendering system and must receive the same role map before shell polish can be judged as coherent.
-**Delivers:** Idempotent `monaco/theme.ts`, pre-construction registration, typed theme colors for editor/syntax/selection/diff/gutters/unchanged regions/widgets/focus, and a bounded diff viewport that preserves side labels and gutter geometry.
-**Uses:** Monaco 0.55.1 `defineTheme`, `IStandaloneThemeData`, `createDiffEditor` theme option, existing adapter/decorations/view zones.
-**Implements:** The Monaco presentation component while leaving diff computation, line mapping, anchors, models, and keyboard commands unchanged.
+**Research flags:**
+- Phase 1: focused research is optional for library API usage but required validation of existing picker/recovery contracts and async error ownership.
+- Phase 2: plan with explicit Git 2.43.0 capability checks, output-size assumptions, literal escaping, OID format handling, and process-count instrumentation; research further only if the production runner or Git floor differs from the spike.
+- Phase 3: no new architecture research is needed; it needs reproducible benchmark fixtures and safety assertions. Investigate only a measured failure, especially loose-ref performance or output limits.
 
-### Phase 3: Workspace State and Review Surfaces
-**Rationale:** Once base and editor layers are stable, migrate every existing interactive and lifecycle state without introducing new review mechanics.
-**Delivers:** GitHub-familiar file header/tree, toolbar, controls, inline composer, accepted comments, review rail, notices, errors, conflict/recovery, summary, export, disabled/pending/destructive/resolved states, and focus/hover/selection precedence.
-**Addresses:** All remaining P1 table stakes and the familiarity/zero-workflow-churn differentiators.
-**Avoids:** Comment/diagnostic/error collapse, view-zone sizing regressions, hover-only actions, and accidental changes to persistence/export/lifecycle contracts.
-
-### Phase 4: Responsive Accessibility Hardening
-**Rationale:** Contrast and reflow outcomes depend on the complete composited state matrix, drawer overlays, and real narrow layouts; this is validation of all prior layers, not an optional polish pass.
-**Delivers:** Keyboard focus audit, grayscale/color-vision checks, forced-colors layer, 320 CSS px/400% zoom behavior, localized diff scrolling, touch-target checks, and fixes for clipped focus or overflow.
-**Addresses:** WCAG use-of-color, contrast, non-text contrast, focus-visible, reflow, and forced-colors constraints.
-**Avoids:** Whole-page 640px canvases, invisible focus, color-only states, and dark “subtlety” that fails measured contrast.
-
-### Phase 5: Curated Visual/Behavioral Regression Gate
-**Rationale:** A presentation cutover needs evidence that visuals improve without silently changing validated review behavior; broad brittle snapshots are less useful than a small deterministic matrix plus behavior checks.
-**Delivers:** Representative desktop/narrow/state coverage for diff selection/focus/comments, rail states, notices, disabled/pending states, and forced-colors supplements, alongside the existing behavior contract.
-**Addresses:** Visual restoration confidence and regression prevention.
-**Avoids:** Screenshot-baseline churn, Monaco timing noise, and treating pixels as a substitute for comment/navigation/export behavior.
-
-### Phase Ordering Rationale
-
-- Token ownership precedes Monaco and component styling because both need the same semantic meanings and because the current stylesheet has competing palette eras.
-- Monaco integration precedes shell-state polish because its alpha layers, line geometry, view zones, and selection precedence determine whether surrounding controls can be evaluated coherently.
-- Workspace state coverage precedes responsive hardening because narrow and forced-color behavior must include real comments, drawers, notices, and lifecycle states, not only an empty diff.
-- Accessibility and behavior gates remain cross-cutting acceptance criteria; no phase may trade away existing review mechanics for visual fidelity.
-
-### Research Flags
-
-Phases likely needing deeper research during planning:
-- **Phase 2:** Monaco 0.55.1 color-ID coverage, CSS-token resolution timing, composited selection/diff precedence, and view-zone/anchor geometry need implementation-time verification across representative languages.
-- **Phase 4:** Forced-colors behavior, browser/OS contrast composition, 320px and 400% zoom, and drawer/focus interactions need real browser inspection; live GitHub spacing is not a stable public specification.
-- **Phase 5:** Visual baseline strategy needs environment pinning and a deliberately small matrix to avoid brittle snapshots.
-
-Phases with standard patterns (skip research-phase):
-- **Phase 1:** Native CSS custom properties, semantic roles, and WCAG contrast/focus patterns are established and directly supported by the existing stylesheet.
-- **Phase 3:** Existing Vue components, ARIA attributes, lifecycle state, and class hooks already provide the required surfaces; this is coordinated restyling, not new interaction design.
+Do not create roadmap work for remote refs, review UI, persistence, export, server, automatic packing, persistent/recency state, fuzzy ranking, or staged/unstaged content: those are either previously validated/out of scope or explicitly deferred beyond v1.2.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | MEDIUM | Installed versions and official Monaco/Vite/Vue documentation support the no-dependency approach; exact visual parity still needs browser inspection. |
-| Features | MEDIUM | Primer, GitHub documentation, and WCAG agree on semantic diff and accessibility conventions, but production GitHub spacing/details are not a versioned spec. |
-| Architecture | HIGH | Repository integration points, existing adapter lifecycle, CSS ownership, and unchanged boundaries are directly mapped; external design guidance is MEDIUM. |
-| Pitfalls | HIGH | Risks are grounded in the current brownfield stylesheet/Monaco seams plus official WCAG, Monaco, forced-colors, and visual-testing guidance. |
+| Stack | MEDIUM | Official Node/Git/Inquirer capabilities and the spike support reuse; production proof on the supported Git 2.43.0 floor remains. |
+| Features | HIGH | Milestone boundaries and preserved behavior are explicit; identifying-field parity needs focused production coverage. |
+| Architecture | HIGH | Repository boundaries and measured native-Git integration are clear; external library details are less certain than local contracts. |
+| Pitfalls | HIGH | Failure modes map directly to existing state, runner limits, and measured packed/loose behavior. |
 
-**Overall confidence:** MEDIUM
+**Overall confidence:** HIGH for roadmap scope and phase dependencies; MEDIUM for final latency claims.
 
-### Gaps to Address
+### Gaps Address
 
-- **Exact final colors and alpha composition:** validate all foreground/background pairs on actual Monaco layers, selection, anchors, and status surfaces; reference values are starting points, not an assumption of passing contrast.
-- **Real responsive geometry:** inspect desktop breakpoints, 320px, 400% zoom, drawer overlays, long paths, comments, notices, and export/recovery states in a browser; do not infer from CSS alone.
-- **Forced-colors coverage:** validate on Windows High Contrast where available; emulation is supplementary and must leave durable text, borders, and markers.
-- **Visual regression environment:** pin browser/OS/fonts/viewport/device scale before approving curated snapshots, and retain behavior checks for navigation, anchors, comments, drafts, and export.
-- **Scope discipline:** planning and execution must reject changes to review mechanics, API/schema, persistence, export, or information architecture unless a separately approved milestone changes the contract.
+- **Production benchmark equivalence:** run the actual CLI/picker path on supported Git versions and packed/loose fixtures; do not infer readiness from Git-only timings.
+- **Existing identifying-field search parity:** explicitly cover full refs, full and abbreviated OIDs, kind aliases, worktree paths, and state labels without reintroducing eager all-branch enumeration.
+- **Runner output limits and long names:** validate the 9,999-match fixture against production byte caps; preserve typed limit failures and user-visible narrowing guidance.
+- **Interactive search failure rendering:** verify non-abort failures remain retryable and retain eager choices, while startup failures remain fatal and selection drift keeps existing recovery.
+- **Git object/hash compatibility:** use Git-authoritative abbreviation mapping and test supported full-OID formats rather than slicing hashes in TypeScript.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `.planning/research/ARCHITECTURE.md` — repository-mapped component boundaries, Monaco initialization/data flow, styling ownership, responsive scroll boundary, and unchanged contracts.
-- `.planning/research/PITFALLS.md` — brownfield failure modes and prevention strategies grounded in existing CSS/Monaco seams.
-- [Monaco 0.55.1 published type definitions](https://unpkg.com/monaco-editor@0.55.1/monaco.d.ts) — theme registration, diff color IDs, construction options, and accessibility-related APIs.
-- [Monaco editor color registry](https://github.com/microsoft/vscode/blob/main/src/vs/platform/theme/common/colors/editorColors.ts) — opacity and supported diff/editor color semantics.
-- [W3C WCAG 2.2](https://www.w3.org/WAI/WCAG22/) — contrast, non-text contrast, use of color, focus-visible, reflow, and accessibility constraints.
+- `.planning/PROJECT.md` — product core value, v1.2 goal, existing validated behavior, and hard boundaries.
+- `.planning/research/FEATURES.md` — milestone scope, required behaviors, edge cases, anti-features, and budgets.
+- `.planning/research/ARCHITECTURE.md` — module boundaries, data flow, cancellation/error ownership, and integration patterns.
+- `.planning/research/PITFALLS.md` — race, identity, process, buffer, loose-ref, and recovery failure modes with verification signals.
+- [Git branch documentation](https://git-scm.com/docs/git-branch) — filtered local-ref listing, literal escaping requirements, and ordering considerations.
+- [Git log documentation](https://git-scm.com/docs/git-log) — stdin-fed no-walk abbreviation batching.
+- [Inquirer search README](https://github.com/SBoudrias/Inquirer.js/blob/main/packages/search/README.md) — async source, empty-term behavior, separators, and abort signals.
+- [Node.js child_process documentation](https://nodejs.org/api/child_process.html) — argument-array spawning and AbortSignal support.
 
 ### Secondary (MEDIUM confidence)
-- `.planning/research/STACK.md` — installed stack decisions, Primer reference palette, and dependency exclusions.
-- `.planning/research/FEATURES.md` — table stakes, differentiators, anti-features, state contract, and prioritization.
-- [Primer color usage](https://primer.style/product/getting-started/foundations/color-usage/) — semantic role model and dark-default design guidance.
-- [Primer dark functional CSS 11.9.0](https://unpkg.com/@primer/primitives@11.9.0/dist/css/functional/themes/dark.css) — reference dark values; not a runtime dependency.
-- [Primer diffBlob tokens](https://github.com/primer/primitives/blob/main/src/tokens/component/diffBlob.json5) — addition/deletion/hunk relationships.
-- [GitHub pull request review documentation](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/reviewing-proposed-changes-in-a-pull-request) — visual/interaction conventions only; forge mechanics remain excluded.
-- [Playwright visual comparisons](https://playwright.dev/docs/test-snapshots) — environment and baseline cautions for curated visual regression coverage.
+- `.planning/research/STACK.md` — dependency/version decision and measured integration guidance.
+- `.planning/notes/cli-startup-discovery.md` — startup observations and no-recency decision.
+- `.planning/spikes/002-staged-source-discovery/README.md` — packed/loose, broad-query, and many-worktree measurements.
+- Repository evidence in `src/git/runner.ts`, `src/git/candidates.ts`, `src/cli/picker.ts`, and `src/cli/run.ts` — existing contracts and safe Git boundary.
 
 ### Tertiary (LOW confidence)
-- None. Remaining uncertainty is implementation validation, not reliance on an unverified single source.
+- None. Remaining uncertainty is an implementation-validation gap, not reliance on an unverified source.
 
 ---
-*Research completed: 2026-07-24*
+*Research completed: 2026-07-30*
 *Ready roadmap: yes*

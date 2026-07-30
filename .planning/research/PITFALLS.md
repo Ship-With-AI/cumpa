@@ -1,433 +1,543 @@
 # Pitfalls Research
 
-**Domain:** Brownfield GitHub dark-default diff restyle for a Vue 3 and Monaco code-review workspace
-**Researched:** 2026-07-24
+**Domain:** Lazy asynchronous native-Git branch discovery in an existing ordered `@inquirer/search` picker
+**Researched:** 2026-07-30
 **Confidence:** HIGH
 
-## Scope and Likely Roadmap Phases
+## Scope and Proposed Roadmap Placement
 
-This milestone is a presentation cutover, not a new review product. The risks below assume the validated v1.0 information architecture and review behavior remain authoritative.
+This research covers only v1.2 Fast Source Discovery. Existing ordered base/head selection, Git identity, dirty-state labeling, unavailable-worktree behavior, comparison pinning, and recovery behavior remain authoritative.
 
-1. **Semantic palette foundation** — replace the current light palette and legacy aliases with one dark-only, role-based token contract.
-2. **Monaco diff integration** — theme Monaco, its diff layers, gutters, selections, diagnostics, and Vue-owned view zones as one visual system.
-3. **Review workspace states** — restyle the file header/tree, controls, comments rail, inline composer, notices, disabled/pending states, recovery, and export surfaces.
-4. **Responsive and accessibility hardening** — verify contrast, keyboard focus, non-color cues, forced colors, zoom, and narrow layouts.
-5. **Visual and behavioral regression gate** — stabilize a small screenshot matrix and prove that existing review mechanics did not drift.
+The current roadmap has not assigned v1.2 phase numbers. To make every warning actionable, this document uses these proposed phases:
+
+1. **Phase 09 — Staged Picker Contract:** split eager current-branch/worktree discovery from lazy branch search while preserving stable identities, ordered selection, recovery, cancellation, and error ownership.
+2. **Phase 10 — Bounded Native-Git Search:** implement literal filtered branch lookup and Git-authoritative batched abbreviation with bounded process, input, output, and concurrency behavior.
+3. **Phase 11 — Performance and Safety Gate:** verify the production path against packed and loose refs, rapid typing, broad results, worktree edge cases, and a repository non-mutation invariant.
 
 ## Critical Pitfalls
 
-### Pitfall 1: Appending a third palette instead of making a clean semantic cutover
+### Pitfall 1: An older search overwrites a newer term
 
 **What goes wrong:**
-The page looks dark in the common path, but old light values leak into drawers, recovery screens, inline notices, export receipts, or Monaco-owned UI. Fixes accumulate as selector-specific overrides and `!important`, making state combinations unpredictable.
+A slow search for `f` completes after a fast search for `fea`, and the picker displays results for `f` under the `fea` input. A related failure occurs when an old promise mutates a shared candidate array after the prompt has moved on.
 
 **Why it happens:**
-`src/web/styles.css` already contains two palette eras. The initial `:root` declares GitHub-like dark values, while the Phase 2 `:root` around line 970 replaces them with the current warm light palette and maps legacy `--color-*` aliases onto it. Adding another late override would preserve both vocabularies and rely on cascade order rather than a clear contract.
+Asynchronous completion order is not request order. `@inquirer/search` aborts the previous source call when the term changes and checks that call's signal before installing its result, but this protection is lost if the integration ignores the supplied signal, launches detached work, or mutates state outside the source result.
 
 **How to avoid:**
-Inventory every color role before changing values. Define one dark-only semantic layer for canvas, elevated/subtle surfaces, default/muted/on-emphasis text, borders, focus, selection, diff insertion/deletion at line and token level, comments, warning, error, disabled, and overlay/shadow. Migrate all existing aliases and components to those roles in the same phase; delete obsolete palette declarations rather than stacking overrides. Primer explicitly recommends functional or component tokens instead of raw base colors and pairs foreground/background roles across modes ([Primer color usage](https://primer.style/product/getting-started/foundations/color-usage/)).
+- Keep each source invocation self-contained: return one immutable result for that term and do not push later results into a shared array.
+- Forward the prompt's `AbortSignal` through every Git call in that search pipeline.
+- Check `signal.throwIfAborted()` between branch listing, parsing, and the abbreviation batch so an obsolete query cannot start its second process.
+- If results are ever stored outside the prompt source, gate installation by the exact term or a monotonically increasing request generation in addition to the signal. Do not add that state if the prompt-owned signal is sufficient.
+- Preserve the literal term associated with each result; never read a mutable “current term” after awaiting Git.
 
 **Warning signs:**
-- More than one `:root` block owns color values.
-- The same semantic role has both `--color-*` and short aliases such as `--surface` or `--rule`.
-- New raw hex values appear outside the palette/theme definition.
-- A component is correct only because its rule occurs later in the file.
-- Recovery, conflict, empty, unsupported, or export states still show light surfaces.
+- Typing quickly makes the result list grow broader again.
+- A result label does not contain the visible query.
+- Source code starts work without using the provided `signal`.
+- An async callback calls `candidates.push(...)` after the source has returned.
+
+**Verification signal:**
+Delay query A, issue query B, then release A. Only B's rows may become selectable; A must neither update the list nor populate the selectable-candidate map.
 
 **Phase to address:**
-Phase 1 — Semantic palette foundation.
+Phase 09 — Staged Picker Contract.
 
 ---
 
-### Pitfall 2: Semantic collisions make different states visually indistinguishable
+### Pitfall 2: Cancellation hides stale UI but leaves Git processes running
 
 **What goes wrong:**
-A deletion looks like an application error; an addition looks like a successful save; selected rows, focus, links, active controls, and inline-comment anchors all compete for the same blue. Users cannot tell whether color describes code provenance, review status, system health, or current interaction.
+The picker looks correct because Inquirer ignores an aborted result, yet every keystroke leaves `git branch` or `git log` running. Rapid typing produces overlapping subprocesses, delayed exit, excess CPU and file I/O, or process-limit failures.
 
 **Why it happens:**
-The current stylesheet aliases destructive/error/deletion-adjacent reds and uses the accent color for selection, focus, links, buttons, and comment borders. A literal GitHub palette copy makes the problem worse if colors are copied by appearance rather than assigned by meaning. Primer reserves roles such as accent, success, attention, and danger for distinct semantics ([Primer color roles](https://primer.style/product/getting-started/foundations/color-usage/#color-roles)); diff provenance needs dedicated roles, not reuse of application outcome roles.
+Cancellation is both a correctness concern and a resource concern. Checking `signal.aborted` only after `await` prevents stale display but does not stop the child. The existing `GitRunner` already accepts a signal and aborts its spawned process; a new discovery layer can accidentally omit it or translate cancellation into a normal empty result.
 
 **How to avoid:**
-Create separate tokens for `diff-added-*`, `diff-deleted-*`, `selection-*`, `comment-*`, `focus-*`, `warning-*`, `error-*`, and `disabled-*`. Permit similar hues only when another cue distinguishes the state. Preserve visible labels already present in the app—Base/Head, Open/Resolved, Verified/Stale/Anchor unavailable, warning/error headings, status badges, and `+`/`−` counts. Build a state matrix that places colliding states side by side: selected deleted file with an error notice, focused added line with a comment anchor, disabled destructive action, and stale comment in the review rail.
+- Pass the exact source-call signal to both filtered listing and batched abbreviation.
+- Do not catch `GitRunnerError` with kind `aborted` and return “no matches”; let the aborted source settle as cancellation.
+- Skip the abbreviation command when listing produced no candidates.
+- Allow at most one active search pipeline per picker. A replacement query must abort the previous pipeline before starting its second stage.
+- Keep the runner's timeout and child termination behavior; do not replace it with an untracked `spawn`.
 
 **Warning signs:**
-- One token is referenced by deletion, error, and destructive-action selectors.
-- Focus is indicated only by the same blue background used for selected rows.
-- Comment borders disappear on selected or changed lines.
-- A screenshot can only be interpreted by knowing where the element is located.
+- Process counts rise with characters typed rather than completed searches.
+- Exiting the prompt waits for old Git commands.
+- Cancelled searches flash “No branches match” or an error.
+- The new code calls `spawn` directly instead of the bounded runner.
+
+**Verification signal:**
+Drive a rapid sequence such as `f`, `fe`, `fea`, `feat`; observe that superseded children are terminated, no cancellation message is shown, and the process count returns to zero after the final result settles.
 
 **Phase to address:**
-Phase 1 establishes distinct roles; Phase 3 verifies their use across review states.
+Phase 09 defines cancellation ownership; Phase 10 proves it reaches every Git subprocess.
 
 ---
 
-### Pitfall 3: The surrounding app becomes dark while Monaco remains a separate or mismatched theme
+### Pitfall 3: Lazy rows are visible but cannot be selected
 
 **What goes wrong:**
-Monaco stays light, uses generic `vs-dark` colors that do not match the workspace, or shows token foregrounds with poor contrast on custom diff backgrounds. Gutters, hidden-region controls, line numbers, scrollbars, widgets, and overview rulers expose a second visual system.
+A searched branch appears in the prompt, but pressing Enter throws “Base/Head selection did not identify an available source.”
 
 **Why it happens:**
-`src/web/monaco/diff-adapter.ts` creates the diff editor without a `theme` option, and `src/web/monaco/configure.ts` configures workers and languages but no theme. Monaco owns tokenization and many internal surfaces; CSS variables on the Vue shell do not theme those internals. Replacing only `.monaco-editor` background CSS bypasses Monaco's color registry.
+`pickOrderedSources` currently builds `candidateById` once from the eager `options.candidates`. A lazy source can return a new branch ID without adding the corresponding `SourceCandidate` to the selection authority. Rendering and selection then use different inventories.
 
 **How to avoid:**
-Define the theme once before editor creation, base it on `vs-dark`, and keep `inherit: true` so Monaco's language token rules remain complete. Apply it at `createDiffEditor`. Explicitly map at least editor foreground/background, line numbers, cursor, line highlight, selection and inactive selection, focus border, widget/input surfaces, diff inserted/removed line and inline-text backgrounds, diff gutters/overview, editor border, unchanged regions, and diagnostic colors. Monaco's official example documents `defineTheme`, inherited token rules, named editor colors, and applying the theme at creation or with `setTheme` ([Monaco theme example](https://github.com/microsoft/monaco-editor/blob/main/website/src/website/data/playground-samples/customizing-the-appearence/tokens-and-colors/sample.js)). Version 0.55.1 registers distinct diff line, inline-text, gutter, overview, border, and unchanged-region keys ([Monaco editor color registrations](https://github.com/microsoft/vscode/blob/main/src/vs/platform/theme/common/colors/editorColors.ts)).
+- Define one prompt-lifetime candidate authority keyed by stable source ID.
+- Install a completed, non-aborted search batch into that authority before returning its rows.
+- Resolve the chosen ID to the exact candidate that produced the displayed row.
+- Keep branch selection on the existing live-ref path (`revision: refName`) and worktree selection on its committed `HEAD` snapshot; do not silently change identity semantics to make lookup easier.
+- Reject unknown values explicitly as the current picker does.
 
 **Warning signs:**
-- The app palette changes but no `monaco.editor.defineTheme` exists.
-- HTML/CSS is used to force Monaco backgrounds directly.
-- TypeScript looks acceptable but JSON, CSS, Markdown, shell, or plaintext fixtures do not.
-- Hidden unchanged regions or Monaco popovers retain light defaults.
-- Theme setup runs on every file switch.
+- Prompt tests assert labels but never submit a lazily discovered row.
+- The search service returns display objects with no corresponding domain candidate.
+- Selection uses a map created before the first query.
+
+**Verification signal:**
+Select a branch that is absent from the eager set and present only in search results as both base and head in separate runs. The existing descriptor and recovery paths must receive its stable branch ID and ref name.
 
 **Phase to address:**
-Phase 2 — Monaco diff integration.
+Phase 09 — Staged Picker Contract.
 
 ---
 
-### Pitfall 4: Selection, current-line, and anchor overlays erase the diff
+### Pitfall 4: Deduplication collapses distinct Git source identities
 
 **What goes wrong:**
-Selecting text or focusing a line makes green/red change provenance disappear. Inactive selection becomes invisible after focus moves into the inline comment textarea. The custom `.monaco-anchor-line` decoration hides either the change background or the selection. Reviewers lose the evidence needed to place a precise comment.
+The current branch is shown twice as the same branch row, or, in the opposite direction, valid branch and worktree rows disappear because they point to the same commit. Detached worktrees at the same OID may also collapse into one row.
 
 **Why it happens:**
-A diff line can simultaneously carry a line background, an inline changed-text background, a current-line highlight, active or inactive selection, a hover/comment affordance, and the whole-line anchor decoration created in `diff-adapter.ts`. Opaque or overly saturated layers win by paint order. Monaco's own color registrations explicitly require inserted/removed text and line backgrounds to be non-opaque so they do not hide underlying decorations ([Monaco diff color source](https://github.com/microsoft/vscode/blob/main/src/vs/platform/theme/common/colors/editorColors.ts)).
+The eager current branch will also match a later branch search. That exact branch must be merged once. However, Compare intentionally permits several distinct source identities to share one commit. Existing IDs encode identity: `branch:<full-ref>` and `worktree:<path>`. Commit OID and display label are not identity keys.
 
 **How to avoid:**
-Design the layers together, using controlled alpha for area fills and borders/gutter indicators for durable provenance. Measure final composited text contrast, not just token-versus-canvas pairs. Define both active and inactive selection. Give the anchored line a cue that does not replace the diff fill—for example, an edge or gutter marker. Verify the cross-product of unchanged/added/deleted × active selection/inactive selection × base/head × anchored/unanchored, including partial-token changes.
+- Merge eager and lazy results by exact candidate `id`, not by `commitOid`, `shortOid`, label, branch leaf name, or `branchRef`.
+- Let the lazy copy of the same `branch:<full-ref>` replace or confirm the eager copy; never append it as a second branch row.
+- Preserve a worktree row even when its `branchRef` and OID match a branch row.
+- Preserve multiple worktrees at the same commit because their paths, dirty states, availability, and detached states differ.
+- Keep group ordering unchanged: local branches, then worktrees, with the existing Back action for head.
 
 **Warning signs:**
-- An added or deleted line becomes a uniform blue rectangle when selected.
-- Selection vanishes when the comment composer receives focus.
-- `.monaco-anchor-line` sets an opaque background.
-- Reviewers must deselect text to tell whether it was added or removed.
-- Contrast was measured only against the base canvas, not layered backgrounds.
+- A `Map` is keyed by OID or label.
+- Candidate count drops when several refs point to one commit.
+- Searching the current branch shows two identical `[Branch]` rows.
+- Selecting a worktree unexpectedly records a branch source.
+
+**Verification signal:**
+Use one current branch, another branch at the same OID, an attached worktree, and a detached worktree at that OID. Exact branch IDs are unique, the eager/search copy of the current branch appears once, and every distinct worktree remains selectable.
 
 **Phase to address:**
-Phase 2 — Monaco diff integration, with acceptance checks repeated in Phase 4.
+Phase 09 — Staged Picker Contract.
 
 ---
 
-### Pitfall 5: Comments, diagnostics, and review failures collapse into the same visual language
+### Pitfall 5: Result refresh destroys ordered selection and recovery state
 
 **What goes wrong:**
-A saved inline comment, an unsaved composer, a stale anchor, a Monaco diagnostic, a draft conflict, and a persistence error are all represented by similar borders or red/yellow accents. Diagnostic squiggles disappear on deleted lines, or comment cards become unreadable inside Monaco view zones.
+Loading branches clears a chosen base, changes the suggested head, moves recovery focus to a different row, loses the typed recovery term, or recreates the prompt. A user can end up reviewing the reverse ordering from what they intended.
 
 **Why it happens:**
-Vue renders the inline composer and accepted comment inside a Monaco view zone, while Monaco paints syntax, diff, and potential diagnostics beneath it. The app also uses inline notices for warning/error states and text labels for verified/stale/orphaned comments. Treating all annotations as one “highlight” ignores ownership, severity, and lifecycle.
+The brownfield picker has state beyond a list: base must be chosen first; Back returns from head to base; current checkout is suggested only for head; descriptor failures preserve the opposite valid role and may focus the prior row. Inquirer's `default` is applied once, and each new result set resets the active cursor. Treating asynchronous results as a reason to reconstruct the picker discards these contracts.
 
 **How to avoid:**
-Keep separate contracts: comments use a neutral/comment surface plus explicit Saved/Open/Resolved/Unsaved text; stale/orphaned anchors keep their existing textual status; application warnings and errors use icon/text/heading plus semantic border; diagnostics retain Monaco's wavy underline or marker shape with colors that remain visible over both diff backgrounds. Theme the Vue-owned view-zone DOM with app tokens, including textarea, confirmation region, disabled/pending controls, alerts, and spacer transparency. Check content growth and focus after zone height recalculation; do not change the adapter's paired-zone lifecycle to solve a color problem.
+- Keep selected base/head as domain candidates outside transient result arrays.
+- Do not recreate the prompt when a query finishes; let the source promise resolve once for that term.
+- Preserve existing `initialBase`, `initialHead`, `recovery.searchTerm`, `focusedCandidateId`, and suggested-head rules.
+- If a focused candidate is absent from the current filtered result, focus the search input rather than a different candidate; restore the candidate only when its exact ID returns.
+- Never auto-select a newly loaded first match.
 
 **Warning signs:**
-- The only difference between a saved comment and an error is hue.
-- A diagnostic underline is invisible on removed text.
-- The view-zone composer has a light textarea or browser-default control.
-- Moving focus into the composer removes all indication of its source line.
-- Styling changes `z-index`, view-zone height, or pointer behavior without a demonstrated need.
+- Async completion calls `pickOrderedSources` again.
+- The selected base is derived from the current result-array index.
+- A recovery test must change expected base/head ordering to accommodate discovery.
+- Current checkout becomes the default for base.
+
+**Verification signal:**
+Cover Base → Head → Back → Base, retained-head recovery, retained-base recovery, and a focused candidate that disappears and later reappears after search. The same stable IDs and terms must survive each transition.
 
 **Phase to address:**
-Phase 2 for Monaco/view-zone integration; Phase 3 for the complete comment, notice, and lifecycle state matrix.
+Phase 09 — Staged Picker Contract.
 
 ---
 
-### Pitfall 6: Low-contrast “GitHub-like” subtlety fails measurable accessibility
+### Pitfall 6: Search, startup, and selection errors acquire the wrong owner
 
 **What goes wrong:**
-Muted file paths, line numbers, metadata, disabled text, borders, placeholder text, tooltip text, and text on tinted diff lines become hard to read. A palette may look authentic on one display while falling below thresholds after alpha compositing.
+A cancelled query becomes “no matches,” a branch-search failure terminates the CLI, an unavailable worktree becomes a fatal startup error, or a ref that moves after selection bypasses existing `LaunchError` recovery.
 
 **Why it happens:**
-Dark interfaces often create hierarchy by reducing luminance contrast. Copying a screenshot, using alpha without calculating the result, or checking only primary text misses dozens of state/background pairs. WCAG 2.2 requires at least 4.5:1 for normal text and 3:1 for large text; meaningful control/state cues require 3:1 against adjacent colors. Thresholds are not rounded ([WCAG 1.4.3 Contrast Minimum](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html), [WCAG 1.4.11 Non-text Contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)).
+Splitting discovery creates multiple failure boundaries. Existing behavior already assigns ownership: repository prerequisite failures exit; unavailable registered worktrees remain disabled rows; picker selection failures are explicit; comparison descriptor failures print exact copy and preserve the opposite role. A single broad catch around staged discovery flattens these meanings.
 
 **How to avoid:**
-Maintain a contrast ledger for every semantic foreground/background pair and for composited diff, selection, hover, and notice layers. Use computed CSS colors at runtime for verification. Target 4.5:1 for all ordinary text, including 12px labels and Monaco line numbers; target 3:1 for meaningful borders, focus indicators, selected-state markers, and icons. Disabled controls are exempt from those WCAG contrast criteria, but keep them legible enough to identify and distinguish from enabled controls through more than opacity alone. Exceed minimums for thin monospace text because antialiasing can reduce perceived contrast.
+- **Eager startup owner:** repository/Git prerequisite failures retain existing fatal handling.
+- **Worktree owner:** retain clean, dirty, detached, and unavailable row semantics; one broken registration does not fail the entire picker.
+- **Search owner:** non-abort listing/abbreviation failures stay in the active prompt with actionable retry/narrowing copy and must not erase eager choices or a retained base/head.
+- **Cancellation owner:** aborted work is silent.
+- **Selection/descriptor owner:** keep existing ref re-resolution and recovery logic; do not trust an old branch result to bypass it.
+- Distinguish “zero matches” from “search failed” and “search was cancelled.”
 
 **Warning signs:**
-- Muted text is approved by eye only.
-- Alpha colors are checked as raw hex rather than composited values.
-- Text passes on the canvas but fails on added/deleted/selected/hover surfaces.
-- Borders disappear between adjacent dark surfaces.
-- Disabled controls look like missing controls.
+- Every error returns an empty array.
+- Every `GitRunnerError` is wrapped as a fatal `LaunchError`.
+- Search code prints directly to stderr while Inquirer owns the terminal.
+- Existing exact recovery-copy tests are removed or rewritten.
+
+**Verification signal:**
+Independently inject startup failure, unavailable worktree, search exit failure, stdout-limit failure, cancellation, and branch deletion after selection. Each must reach only its established owner and preserve the unaffected picker state.
 
 **Phase to address:**
-Phase 1 defines verified pairs; Phase 4 performs the full state/background audit.
+Phase 09 — Staged Picker Contract; Phase 10 supplies typed search failures.
 
 ---
 
-### Pitfall 7: Focus is technically present but clipped, obscured, or confused with selection
+### Pitfall 7: Loose-ref latency is disguised as incorrectness or “fixed” by mutation
 
 **What goes wrong:**
-Keyboard focus disappears inside overflow-hidden panes, Monaco, transformed drawers, or dark controls. The global outline is clipped at pane edges, covered by an overlay, or indistinguishable from the selected-row accent. A focused gutter `+` or drawer control cannot be located.
+A correct search over 10,000 loose branch refs takes about 800 ms, so the implementation times out at 500 ms, returns partial/no results, or runs `git pack-refs` against the user's repository to force a benchmark pass.
 
 **Why it happens:**
-The stylesheet has a global `:focus-visible` outline, but the review shell, file pane, comments rail, Monaco host, and narrow-layout drawers use overflow, positioning, transforms, and z-index. Monaco also owns its internal focus visuals. One global color and positive outline offset is not sufficient across all these boundaries.
+The spike measured a large storage-layout difference: the chosen two-process query took 20.4 ms with packed refs and 798.5 ms with loose refs. Git must inspect thousands of loose files before filtering. The milestone explicitly requires loose-ref correctness but allows it to exceed 500 ms.
 
 **How to avoid:**
-Audit the real tab order and every programmatic focus transfer already used by comments, errors, drawers, and recovery. Keep focus distinct from selected/active state. Use a two-color or locally inset indicator where an outer outline can clip, and theme Monaco focus keys separately. WCAG 2.2 AA requires a visible focus indicator ([WCAG 2.4.7 Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html)); use the AAA Focus Appearance dimensions as a robust design target: an area at least equivalent to a 2 CSS-pixel perimeter with a 3:1 focused-versus-unfocused change ([WCAG 2.4.13 Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html)). Verify focus remains visible when drawers overlap the workspace and when the inline composer takes focus away from Monaco.
+- State the performance contract precisely: ≤500 ms for the 10,000 packed-ref fixture; loose refs must remain complete and correct without the same guarantee.
+- Let the prompt's loading state remain visible during a slow loose-ref search.
+- Do not use a 500 ms command timeout as the budget assertion; measurement and operational timeout are different controls.
+- Do not return a prefix of results when the budget expires.
+- Do not add a persistent index, recency cache, background ref database, or automatic packing.
 
 **Warning signs:**
-- Focus and selected row use the same single cue.
-- `outline: none` appears without a replacement.
-- The outline is cut off at the first/last item in a scroll pane.
-- Pointer hover looks stronger than keyboard focus.
-- Focused controls are underneath fixed narrow-layout notices or drawers.
+- Benchmark reports only one ref storage layout.
+- Search has a hard 500 ms timeout.
+- Loose-ref tests assert speed but not complete result identity.
+- Documentation implies every repository meets 500 ms.
+
+**Verification signal:**
+The packed fixture meets ≤500 ms. The loose fixture returns the same matching branch IDs and OIDs as an authoritative full Git listing even when its observed time exceeds 500 ms.
 
 **Phase to address:**
-Phase 3 styles component states; Phase 4 completes keyboard and obscuration verification.
+Phase 10 preserves correctness; Phase 11 records the separate packed and loose verdicts.
 
 ---
 
-### Pitfall 8: Additions, deletions, availability, and comment state rely on color alone
+### Pitfall 8: Per-branch subprocesses return through a side door
 
 **What goes wrong:**
-Users with color-vision deficiency or forced colors cannot distinguish added from deleted content, open from resolved comments, warning from error, selected from unselected files, or unavailable from unsupported files.
+Branch listing is lazy, but each match still triggers `rev-parse --short`, `show`, or `log`. A broad query causes thousands of serial or concurrent children and recreates the measured 96-second startup problem inside search.
 
 **Why it happens:**
-Dark diff designs are strongly associated with green and red fills, so existing text, shapes, line indicators, borders, and ARIA state can be accidentally removed as “visual noise.” WCAG 2.2 states that color cannot be the only visual means of conveying information or state ([WCAG 1.4.1 Use of Color](https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html)).
+Mapping an async helper over candidates looks clean, and a narrow developer query hides the scaling curve. `Promise.all` changes serial explosion into concurrent explosion; it does not make the process count bounded.
 
 **How to avoid:**
-Retain and strengthen non-color cues already present: Base/Head headings, `+` and `−` counts, letter/status badges, selected-row edge, unsupported/unavailable marker shapes and text, Open/Resolved and Verified/Stale/Anchor unavailable labels, notice headings, disabled semantics, and explicit button labels. Monaco diff indicators/gutters and side position should remain visible even when fills are removed. Review in grayscale and with green/red color-vision simulation; the task and state must remain understandable without naming colors.
+- Use the chosen constant-process search: one filtered `git branch --list --ignore-case` call and at most one `git log --no-walk=unsorted ... --stdin` abbreviation batch.
+- Deduplicate full OIDs before the abbreviation batch.
+- Require process count to be O(queries), never O(branches) or O(matches).
+- Preserve worktree status/HEAD semantics separately. If eager worktree checks remain per worktree because each has a different cwd, cap their concurrency rather than launching an unbounded `Promise.all`.
+- Do not introduce a Git library that merely hides the same child-process pattern.
 
 **Warning signs:**
-- Removing fills makes added and deleted lines identical.
-- Selected file is communicated only by background hue.
-- Status badges become unlabeled dots.
-- Error and warning notices use identical copy and differ only by border color.
-- A design review describes states as “the red one” or “the green one.”
+- `await` appears inside a loop over branch records.
+- `Promise.all(matches.map(...git...))` appears.
+- Search time scales with number of matches even when ref listing time is flat.
+- Process count is absent from benchmark output.
+
+**Verification signal:**
+For 100 and 9,999 matches, completed branch search uses at most two Git processes. The benchmark reports both total invocations and peak concurrent children.
 
 **Phase to address:**
-Phase 3 preserves state cues; Phase 4 verifies grayscale, simulation, and assistive semantics.
+Phase 10 — Bounded Native-Git Search.
 
 ---
 
-### Pitfall 9: Forced-colors and unsupported high-contrast states erase custom semantics
+### Pitfall 9: Broad searches exceed output or memory bounds
 
 **What goes wrong:**
-Windows High Contrast/forced-colors removes diff fills, shadows, or the selected-row inset shadow, leaving no indication of changes or open drawers. Conversely, a blanket `forced-color-adjust: none` preserves the brand palette but defeats the user's required contrast settings. Browsers without the relevant media behavior receive no useful fallback.
+A short term matches nearly every branch. Git output exceeds the runner's stdout limit, the abbreviation stdin/result batch becomes huge, or Inquirer allocates and normalizes thousands of decorated rows. Raising limits without a product bound only moves the failure.
 
 **Why it happens:**
-In forced-colors mode, user agents replace author foreground, background, border, and outline colors at paint time and can suppress shadows. MDN advises targeted fixes rather than a separate wholesale design ([MDN `forced-colors`](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/forced-colors)). `forced-color-adjust` defaults to `auto`; opting out should support, not override, the user's contrast needs ([MDN `forced-color-adjust`](https://developer.mozilla.org/en-US/docs/Web/CSS/forced-color-adjust)). The CSS Color Adjustment specification also recommends pairing both foreground and background rather than assuming author colors guarantee contrast ([CSS Color Adjustment Level 1](https://www.w3.org/TR/css-color-adjust-1/)).
+Pagination limits rendered rows, not source output or the in-memory choice array. The spike's broad query returned 9,999 branches. The existing runner deliberately caps stdout at 1 MiB and stderr at 64 KiB; a richer format or long ref names can cross that bound.
 
 **How to avoid:**
-Keep `forced-color-adjust: auto` by default. Add a small `@media (forced-colors: active)` layer using system colors and durable borders/outlines/text markers for selected files, diff additions/deletions, focus, comments, and notices. Replace shadow-only boundaries in this mode. Do not depend on forced-colors support for baseline accessibility: the default dark palette and non-color cues must stand on their own. Verify with a real Windows High Contrast configuration where possible and with browser emulation as a supplement.
+- Request only fields needed for branch identity: full OID and full ref name; keep NUL-safe/minimal parsing where supported.
+- Keep explicit timeout, stdout, stderr, and input-size bounds. Size them against the supported 10,000-branch broad-query fixture rather than removing them.
+- If a deliberate displayed-result cap is introduced, make truncation explicit (“more matches; narrow the search”) and keep ordering deterministic. Never label truncation as complete results.
+- Treat `stdout-limit` as a search error with narrowing guidance, not as zero matches.
+- Batch only unique OIDs and skip abbreviation when there are no matches.
 
 **Warning signs:**
-- `forced-color-adjust: none` is applied to the app or Monaco root.
-- Selected state depends on `box-shadow` only.
-- All diff fills disappear and no gutter/border/text cue remains.
-- The focus ring uses a hard-coded color that the user agent replaces into the background.
-- High-contrast support is declared complete after only a CSS media emulation screenshot.
+- `maxStdoutBytes` is set to an effectively unlimited value.
+- Choice names include unnecessary commit subjects, dates, or decoration.
+- A 10,000-match query is not exercised.
+- Output-limit errors are caught and replaced with `[]`.
+
+**Verification signal:**
+The 9,999-match fixture completes within declared byte bounds, or produces an explicit deterministic truncation/narrowing state. A forced low stdout limit produces a typed search error while eager choices and retained selection remain usable.
 
 **Phase to address:**
-Phase 4 — Responsive and accessibility hardening.
+Phase 10 — Bounded Native-Git Search; Phase 11 exercises the broad-query boundary.
 
 ---
 
-### Pitfall 10: Narrow-layout polish accidentally turns the whole page into a 640px canvas
+### Pitfall 10: Display abbreviations are computed by slicing full OIDs
 
 **What goes wrong:**
-At mobile widths or high browser zoom, the toolbar, comments rail, file drawer, alerts, and review controls require two-dimensional page scrolling or become obscured. The side-by-side diff may remain usable, but unrelated UI inherits its fixed width.
+Two objects display the same 12-character prefix, a SHA-256 repository is mishandled, or the UI shows an abbreviation Git would have extended to remain unique.
 
 **Why it happens:**
-The current CSS deliberately keeps `.diff-workspace` and `.review-main` at a 640px minimum, sets `.review-main` to 640px below 768px, and displays a “Widen the window” notice. That is defensible for side-by-side code, but the exception must be scoped. WCAG Reflow expects content at 320 CSS px without loss or page-wide two-dimensional scrolling; its guidance explicitly uses a two-column diff as an allowed separately scrollable comparison when each column fits in a 320px container ([WCAG 1.4.10 Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html#two-column-presentation-of-editing-changes)).
+`oid.slice(0, 12)` is fast and appears equivalent in ordinary fixtures. Git's abbreviation is repository-aware: `rev-parse --short=<n>` and log abbreviation choose a unique prefix of at least the requested length. Compare's contract accepts both 40- and 64-hex full IDs and has deliberately used Git-authoritative short IDs.
 
 **How to avoid:**
-Keep horizontal scrolling local to the code comparison, not the whole review shell. Ensure toolbar groups wrap without covering content; file/comments drawers fit the viewport, scroll internally, and can be dismissed; comment cards, alerts, recovery, and export content reflow to 320 CSS px; long paths and object IDs wrap or expose full values without widening the page. Verify desktop breakpoints around 1440/1100/768, a 320px viewport, and 400% zoom from a 1280px starting viewport. Test open and closed drawers, inline composer, keyboard focus, long paths, conflict notices, and export receipts—not just an empty diff.
+- Keep full OIDs as authority and stable data; short OIDs are display only.
+- Feed unique full OIDs to one batched `git log --no-walk=unsorted --abbrev=12 --format=%H%x00%h%x00 --stdin` call.
+- Parse the full-to-short mapping byte-safely and fail if any requested OID is absent.
+- Never use a short OID as candidate identity, deduplication key, selection revision, or batch correlation key.
+- Verify both 40- and 64-character full-OID parsing where supported by the existing Git fixture capabilities.
 
 **Warning signs:**
-- The browser page itself scrolls horizontally because `.review-main` is 640px.
-- A fixed notice covers a focused control.
-- Drawer width is calculated from the viewport but its padding/border still overflows.
-- Toolbar actions disappear rather than wrap or scroll locally.
-- The diff exception is used to excuse non-diff panels.
+- `.slice(0, 12)` or `.substring(0, 12)` appears in discovery.
+- Results are correlated by output order rather than returned full OID.
+- Candidate IDs contain abbreviated hashes.
+- Tests assert only that short IDs have length 12, not that Git produced them.
+
+**Verification signal:**
+Create or inject colliding 12-character prefixes; displayed abbreviations must extend as Git requires while full IDs and candidate IDs remain distinct. Every requested full OID must map exactly once.
 
 **Phase to address:**
-Phase 4 — Responsive and accessibility hardening.
+Phase 10 — Bounded Native-Git Search.
 
 ---
 
-### Pitfall 11: Screenshot coverage becomes brittle while behavior coverage weakens
+### Pitfall 11: Staging discovery changes worktree semantics
 
 **What goes wrong:**
-Large full-page golden images fail because of font rasterization, Monaco timing, cursor blinking, scrollbars, host OS, or browser differences. Teams raise pixel thresholds or update baselines blindly, allowing real regressions through. Alternatively, screenshots replace assertions for commenting and navigation behavior.
+The “fast” eager set omits detached or unavailable registrations, treats a locked worktree as unavailable, derives dirty state from the main worktree, or turns a checked-out branch and its worktree into one source. Dirty bytes may accidentally enter the comparison instead of only affecting labels/warnings.
 
 **Why it happens:**
-The existing suite has behavioral Playwright coverage but no `toHaveScreenshot` use. A visual milestone invites broad snapshots. Playwright warns that rendering varies with host OS, version, settings, hardware, power source, headless mode, browser, platform, and fonts, and recommends generating/comparing baselines in the same environment ([Playwright visual comparisons](https://playwright.dev/docs/test-snapshots)). Monaco also updates asynchronously.
+The initial set is intentionally worktree-heavy, so startup optimization is tempted to parse less or skip per-worktree checks. Git's `worktree list --porcelain -z` has distinct `branch`, `detached`, `bare`, `locked`, and `prunable` records. Compare additionally resolves each usable worktree's committed `HEAD` and status in that worktree's cwd.
 
 **How to avoid:**
-Add only a curated visual matrix after the UI is stable: representative desktop and narrow shells; changed lines with selection/focus/comment; review rail states; warning/error/disabled; forced-colors supplement. Pin the CI browser/OS/container, viewport, device scale, font availability, data, scroll position, reduced motion, hover/focus state, and Monaco diff readiness. Mask truly nondeterministic content rather than increasing a global tolerance. Keep semantic and behavior assertions as the primary contract; screenshots supplement them.
+- Keep `git worktree list --porcelain -z` as the registration authority and retain byte-safe parsing.
+- Eagerly include every registered worktree, including disabled unavailable entries; do not show only currently mounted/clean worktrees.
+- Derive the current branch only from the current checkout's full `branchRef`; a detached current checkout contributes no fabricated branch.
+- Preserve attached versus detached, clean/dirty/unavailable, path, branch ref, and `isCurrentCheckout` fields.
+- A locked worktree remains usable when its path and HEAD resolve; prunable/bare/missing registrations keep existing unavailable behavior.
+- Preserve the established comparison rule: a worktree selects committed `HEAD`; staged, unstaged, and untracked bytes only mark it dirty.
 
 **Warning signs:**
-- A single full-page snapshot tries to cover every state.
-- Baselines are generated on arbitrary developer machines.
-- Tests capture before Monaco's diff-ready signal.
-- Cursor, spinner, animation, or system scrollbar pixels dominate diffs.
-- A high `maxDiffPixels` is used to silence recurring noise.
-- Snapshot updates are approved without inspecting changed regions.
+- Worktree discovery uses human-formatted output or line splitting without `-z`.
+- One `git status` at repository root labels every worktree.
+- Worktree and branch rows are merged by `branchRef`.
+- A detached current checkout is exposed as a branch named `HEAD`.
+
+**Verification signal:**
+Initial choices include current attached checkout, linked attached checkout, detached checkout, dirty checkout, locked usable checkout, and prunable/missing disabled checkout with their existing IDs, labels, and availability. The selected worktree comparison still pins committed bytes only.
 
 **Phase to address:**
-Phase 5 — Visual and behavioral regression gate.
+Phase 09 preserves the contract; Phase 11 runs the full worktree matrix.
 
 ---
 
-### Pitfall 12: A “restyle” silently changes validated review mechanics
+### Pitfall 12: A favorable benchmark certifies the wrong implementation
 
 **What goes wrong:**
-File selection, context expansion, keyboard navigation, line anchoring, composer focus, discard/move confirmation, async settlement, drawer dismissal, comment lifecycle, draft conflict recovery, or export readiness changes while the screens are being rearranged.
+The prototype meets both budgets, but the packaged CLI does not. Results exclude module startup, use warmed packed refs only, search for very few matches, omit process counts, or start the clock after expensive discovery.
 
 **Why it happens:**
-Presentation and behavior are coupled at several brownfield seams. `DiffWorkspace.vue` queries specific view-zone classes, moves focus after Vue render, calculates zone height, and exposes adapter commands. `diff-adapter.ts` listens for focus/cursor/mouse/scroll events and preserves per-file state. Responsive drawers and comments use existing DOM order, ARIA relationships, focus restoration, transitions, and z-index. “Cleaning up” markup or Monaco options during styling expands the milestone beyond its stated contract.
+Microbenchmarks naturally isolate the code under investigation. The product budgets are user-observed boundaries: process start to usable picker, and input submission to installed matching results. Spike 002 is intentionally partial and manually models the staged path; final verification must move to the production implementation.
 
 **How to avoid:**
-Set a hard invariant: no new review mechanics and no state-model/API/schema changes. Prefer token and CSS changes; when markup must change for accessibility, preserve emitted events, refs, queried class hooks, ARIA names/relationships, DOM focus targets, adapter options, view-zone ownership, and command ordering. Keep a before/after behavior checklist covering file switching, previous/next change, context reveal, both-side comments, unsaved composer move/discard, edit/delete/resolve/reopen, stale/orphaned comments, conflicts, keyboard help, narrow drawers, summary, and export. Visual snapshots never substitute for these behaviors.
+- Measure the built production CLI/module path, not a duplicate benchmark implementation.
+- Start readiness timing before process creation and stop only when the prompt can accept selection with current branch/worktrees installed.
+- Start search timing when the term is delivered and stop when selectable rows are installed.
+- Report every run plus median; retain the first run so warm-cache bias is visible.
+- Record ref storage (`packed` or `loose`), branch count, worktree count, match count, total Git invocations, peak concurrency, listing time, abbreviation time, and end-to-end round trip.
+- Exercise at least: 100 packed matches, 9,999 packed matches, 100 loose matches, 32 worktrees, and rapid superseding terms.
+- Keep fixture creation and `pack-refs` outside the measured child, but include normal CLI module load and repository discovery.
 
 **Warning signs:**
-- Changes touch workspace state, API contracts, persistence, or export code.
-- A class queried from TypeScript is renamed as “CSS cleanup.”
-- `renderSideBySide`, hidden-region, read-only, focus, or view-zone options change to improve appearance.
-- Buttons are removed from the DOM instead of being responsively arranged.
-- A new interaction is introduced to compensate for inaccessible styling.
-- Existing behavior tests need rewritten expectations unrelated to appearance.
+- Only internal Git duration is reported.
+- The benchmark imports prototype helpers instead of production discovery.
+- One median is shown without raw runs or storage layout.
+- Search subprocess count is inferred from source code rather than observed.
+
+**Verification signal:**
+The production boundary meets ≤400 ms picker readiness and ≤500 ms packed-ref search in the 10,000-branch fixture. Loose-ref results remain complete, and process counts remain bounded in broad and cancelled searches.
 
 **Phase to address:**
-Every implementation phase enforces the invariant; Phase 5 provides the final regression gate.
+Phase 11 — Performance and Safety Gate.
+
+---
+
+### Pitfall 13: Read-only discovery mutates the repository to improve itself
+
+**What goes wrong:**
+Compare runs `git pack-refs`, maintenance, `gc`, `update-ref`, or writes a branch cache/recency file. Search becomes faster but changes repository representation, creates lock contention, surprises other Git processes, or makes results stale across tools.
+
+**Why it happens:**
+Packing refs is the easiest way to turn the failing loose-ref benchmark into a pass, and a persistent index makes repeated substring search cheap. Both violate the local read-only discovery decision. Official Git documentation states that `pack-refs` writes packed ref storage and normally removes corresponding loose refs.
+
+**How to avoid:**
+- Restrict product discovery to read-only commands: repository inspection, `worktree list`, filtered branch listing, and object display/abbreviation.
+- Retain the runner's `--no-optional-locks`, disabled hooks, argument arrays, and non-interactive environment.
+- Keep `git pack-refs` strictly inside fixture setup.
+- Add no `.compare` branch index, recency store, background cache, or filesystem watcher for this milestone.
+- Do not invoke Git maintenance implicitly on slow or broad searches.
+
+**Warning signs:**
+- Product code contains `pack-refs`, `maintenance`, `gc`, or `update-ref`.
+- Search performance improves only on its second run because Compare wrote state.
+- New files appear under `.git` or `.compare` before the user starts a review.
+- A cancelled search leaves a lock file.
+
+**Verification signal:**
+Hash ref contents/storage and inventory before and after successful, failed, broad, slow, and cancelled searches. They must be byte-identical, no lock remains, and no persistent discovery artifact is created.
+
+**Phase to address:**
+Phase 10 enforces the read-only command allowlist; Phase 11 proves non-mutation.
 
 ## Technical Debt Patterns
 
-Shortcuts that seem reasonable but create long-term problems.
-
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Add a late `:root` override | Fast dark screenshot | Three palette eras, cascade leaks, hard-to-audit contrast | Never |
-| Paste GitHub raw hex values into component rules | Close visual match locally | No semantic ownership; impossible state-wide tuning | Never |
-| Reuse success/danger for added/deleted | Fewer tokens | Diff provenance collides with save/error outcomes | Never |
-| Force Monaco internals with broad CSS selectors | Quick surface match | Breaks across Monaco updates and misses registered colors | Never; use Monaco theme keys |
-| Set opaque diff/selection backgrounds | Stronger color | Hides text, diagnostics, selections, and decorations | Never |
-| Apply `forced-color-adjust: none` globally | Preserves screenshots | Defeats user contrast choices | Never |
-| Hide controls at narrow widths | Removes overflow | Loss of validated functionality and keyboard access | Never |
-| Add visual snapshots with broad tolerances | Fast “coverage” | Noisy CI and blind baseline updates | Only a temporary local experiment, never a release gate |
-| Retain the initial dark palette as dead “fallback” code | Avoids deletion | Future maintainers cannot tell which tokens are authoritative | Never after cutover |
+| Keep one eager all-branch array and merely delay rendering | Small picker diff | Startup still enumerates/abbreviates every branch; misses milestone | Never |
+| Key candidates by commit OID | Easy deduplication | Destroys branch/worktree identity and dirty/path semantics | Never |
+| Slice full OIDs to 12 characters | Removes abbreviation Git call | Non-unique, non-authoritative display; SHA-format assumptions | Never |
+| Ignore source `AbortSignal` because Inquirer ignores stale results | Less plumbing | Orphaned Git children and process storms | Never |
+| `Promise.all` per branch | Faster than serial calls in small fixtures | Unbounded concurrent subprocesses | Never |
+| Cache all branches for the prompt lifetime after first query | Faster subsequent terms | Stale branch view and unnecessary 10,000-row memory; changes fresh-search semantics | Only if later requirements explicitly choose snapshot semantics; not v1.2 |
+| Persist a branch/recency index | Fast repeated launches | Invalidation, mutation, privacy/state, and new authority | Never in v1.2 |
+| Auto-run `pack-refs` | Makes loose-ref benchmark fast | Mutates repository and may contend with Git | Fixture setup only |
+| Remove runner byte limits | Broad query stops failing locally | Memory exhaustion and unbounded terminal data | Never |
+| Promise a 500 ms loose-ref result | Simpler marketing/acceptance text | Encourages truncation, timeout, or mutation | Never; report packed budget and loose correctness separately |
 
 ## Integration Gotchas
 
-Common mistakes at the boundaries this milestone touches.
-
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Global CSS ↔ legacy Phase 1/2 components | Assuming changing the newest aliases reaches every selector | Inventory raw colors and both token vocabularies; migrate and delete obsolete declarations |
-| Vue shell ↔ Monaco | Styling Monaco DOM from app CSS | Register one inherited `vs-dark` theme and use documented color keys |
-| Monaco diff ↔ selection/diagnostics | Choosing each color independently | Validate composited layers and preserve non-opaque diff fills |
-| Monaco view zones ↔ Vue comments | Treating composer DOM as ordinary page content | Theme it with app tokens while preserving paired-zone sizing, focus, and lifecycle |
-| Browser forced colors ↔ custom palette | Opting out to protect brand colors | Respect `auto`; add targeted system-color borders and text cues |
-| Responsive shell ↔ fixed-width diff | Letting the 640px code surface widen the whole page | Give the diff a local scroll container; reflow surrounding controls and prose |
-| Playwright ↔ Monaco rendering | Capturing immediately after navigation | Wait on the existing diff-ready behavior and stabilize environment/state |
-| Dark form controls ↔ browser UI | Styling backgrounds but not native control scheme | Declare dark color scheme and verify inputs, scrollbars, autofill, and focus in supported browsers |
+| `@inquirer/search` source | Treating source calls as ordered | Forward its signal and return one immutable result per exact term |
+| `@inquirer/search` default/cursor | Assuming row focus survives every result replacement | Preserve domain selection separately; use stable values and existing recovery focus rules |
+| Existing picker map | Returning lazy IDs absent from `candidateById` | Install completed lazy candidates into one prompt-lifetime ID authority before rows become selectable |
+| Git branch patterns | Passing user input as an unescaped wildcard | Escape Git pattern metacharacters and wrap the literal term for substring matching; keep `--list` and argv arrays |
+| Git output | Parsing human branch decorations such as `*` and `+` | Request explicit full ref/OID fields and parse a machine-oriented format |
+| Git abbreviation | Correlating abbreviated lines by position | Emit full OID plus `%h`, then map by full OID |
+| Worktree inventory | Parsing newline output | Use `worktree list --porcelain -z` and preserve boolean/value records |
+| Git runner | Direct `spawn`, no limits, no signal | Reuse bounded `GitRunner` with signal, timeout, stdout/stderr caps, safe config, and no shell |
+| Existing recovery | Treating an old search snapshot as final Git truth | Keep live branch ref resolution and current `LaunchError` recovery after selection |
 
 ## Performance Traps
 
-Patterns that work in a small fixture but degrade real reviews.
-
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Redefining or switching Monaco themes on each file/state change | Flicker, repeated editor repaint, lost screenshot stability | Define once before editor creation; express interaction states with registered colors/decorations | Rapid file navigation and large diffs |
-| Heavy shadows/transparency on every scrolling row or diff line | Scroll jank and muddy compositing | Prefer flat fills and borders; reserve shadows for true overlays | Large files and long file trees on integrated GPUs |
-| Runtime contrast/color calculation per rendered line | CPU work during scroll and diff updates | Precompute semantic token pairs; audit them outside render loops | Thousands of visible lines |
-| Screenshot matrix explosion | Slow, noisy CI and expensive baseline maintenance | Cover representative state boundaries, not every permutation; keep behavior tests separate | Cross-browser × viewport × state combinations |
-| Web-font introduction for visual fidelity | Layout shift, offline failure, divergent glyph rasterization | Keep the existing system/local font strategy and explicitly test fallbacks | Packaged local-first use and heterogeneous hosts |
+| Serial abbreviation | Search time increases roughly per unique head | One `log --no-walk --stdin` batch | Broad queries; measured eager path reached ~96 seconds at 10,000 refs |
+| Concurrent per-branch abbreviation | CPU/process spike despite acceptable median | Constant number of branch-search processes | Hundreds to thousands of matches |
+| Loose-ref enumeration | Correct search exceeds target | Accept slower correct result; benchmark separately; no mutation | Spike: ~798.5 ms at 10,000 loose refs |
+| Packed-only benchmark | Green budget that does not describe all storage layouts | Always pair packed performance with loose correctness | Any repository with many loose branch files |
+| Result pagination mistaken for data bound | Low visible row count but large memory/output | Bound Git output and choice creation independently | Broad 9,999-match term or long ref names |
+| Unbounded eager worktree checks | Picker readiness becomes process-scheduler dependent | Cap concurrency while preserving per-worktree cwd semantics | Dozens of registered worktrees; spike used 66 initial calls at 32 worktrees |
+| Warm-cache-only median | Repeat runs hide first-launch filesystem cost | Retain first run and raw samples beside median | Cold launch or recently created refs |
+| Measuring internal Git time only | Git looks fast while CLI misses 400/500 ms | Measure process/prompt round trip at production boundary | Module load, parsing, formatting, and prompt installation |
 
 ## Security Mistakes
 
-Domain-specific security issues beyond general web security.
-
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Copying GitHub CSS with remote fonts, images, or asset URLs | A local-only review can make network requests that expose use/repository timing and fail offline | Ship no remote visual dependencies; use local CSS, system fonts, and bundled assets only |
-| Replacing text/status markup with externally sourced SVG/HTML snippets | Introduces unnecessary sanitization and supply-chain surface | Use existing Vue text, CSS shapes, and reviewed bundled icons |
-| Altering capability/API behavior to obtain richer UI state | Expands a presentation milestone into a security-sensitive server change | Derive styling from existing validated client state; no new endpoints or authority |
+| Shell interpolation of the search term | Command injection and platform-specific quoting errors | Keep `shell: false`, argv arrays, and escape only Git's own branch-pattern metacharacters |
+| Rendering raw branch names | Terminal control-sequence injection or corrupted prompt | Continue using `escapeTerminalText` for every candidate label/path |
+| Removing process/output limits | A repository with hostile/extreme ref names can exhaust memory or hang the prompt | Retain timeout and byte caps; treat limit failures explicitly |
+| Letting Git invoke hooks or optional locks | Discovery can execute repository-controlled code or create lock contention | Reuse the runner's disabled hooks, `--no-optional-locks`, non-interactive environment, and read-only command set |
 
 ## UX Pitfalls
 
-Common user experience mistakes in this domain.
-
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Pixel-copying GitHub rather than adapting semantics | Diff Review loses identity and states do not map cleanly | Match hierarchy and role, not every raw value or control |
-| Excessively low-contrast muted chrome | Paths, counts, and context controls become invisible | Keep hierarchy through spacing/weight while meeting contrast |
-| Saturated red/green over large code areas | Eye fatigue and syntax-token clashes | Use restrained translucent line fills plus stronger gutter/inline cues |
-| Focus equals selection | Keyboard users cannot locate operation target | Separate focus outline from persistent selected state |
-| Comments look like diff changes | Review feedback is confused with source provenance | Use neutral/comment surfaces and explicit lifecycle text |
-| Narrow view only says “widen window” | Review becomes practically unusable under zoom | Preserve local diff scrolling and make all surrounding functionality fit |
-| Restyling only the happy path | Errors and recovery feel broken or revert to light UI | Include conflict, stale/orphaned, unsupported, recovery, and export states in the palette matrix |
+| Empty input launches all-branch search | Picker becomes slow before user asks for branches | Empty term returns eager current branch/worktrees only |
+| Cancellation displayed as error/no matches | Normal typing looks broken | Keep cancellation silent and install only the latest result |
+| Slow loose refs have no loading state | User assumes the prompt froze | Keep Inquirer's loading state until complete, correct results arrive |
+| Exact current branch appears twice | User cannot tell whether rows differ | Deduplicate only the exact branch ID while keeping its worktree row distinct |
+| Search failure removes eager choices | A branch error blocks selecting a known worktree | Keep eager choices and retained role state; show owned search error |
+| Background results move cursor | Enter selects an unintended branch | One result installation per term; never auto-submit or recreate the prompt |
+| Output cap masquerades as completeness | User believes a branch does not exist | State truncation/limit explicitly and ask for a narrower term |
 
 ## "Looks Done But Isn't" Checklist
 
-Things that appear complete but are missing critical pieces.
-
-- [ ] **Palette cutover:** Only one semantic palette is authoritative; no light surfaces or obsolete root overrides remain.
-- [ ] **Contrast:** Normal text meets 4.5:1 and meaningful non-text state cues meet 3:1 on every actual layered background.
-- [ ] **Monaco:** Syntax tokens, line numbers, gutters, hidden-region controls, widgets, scrollbars, additions, deletions, and unchanged regions share the dark system.
-- [ ] **Layering:** Active/inactive selection, current line, anchor decoration, diagnostics, and added/deleted fills remain simultaneously legible.
-- [ ] **Comments:** Saved, unsaved, pending, failed, stale, orphaned, open, and resolved states remain distinguishable without color alone.
-- [ ] **Focus:** Every keyboard target has visible, unclipped focus in the shell, drawers, rail, composer, and Monaco.
-- [ ] **Forced colors:** The UI remains understandable with author fills/shadows replaced; no blanket opt-out defeats user choices.
-- [ ] **Responsive:** The diff scrolls locally while toolbar, drawers, notices, comments, recovery, and export content work at 320 CSS px and 400% zoom.
-- [ ] **Long content:** Paths, object IDs, comments, and diagnostic/error copy do not widen or escape panels.
-- [ ] **Visual regression:** Baselines use a pinned environment and stable Monaco state; tolerances are narrow and reviewed.
-- [ ] **Behavior preservation:** All existing navigation, comment, draft, conflict, drawer, and export flows behave exactly as before.
-- [ ] **Local-first packaging:** No remote font, image, stylesheet, or runtime theme dependency was introduced.
+- [ ] **Picker readiness:** Clock starts before process creation, and current branch plus all registered worktrees are selectable within 400 ms.
+- [ ] **True laziness:** No all-local-branch command runs before a non-empty search term.
+- [ ] **Latest-query wins:** Delayed old results cannot update rows or candidate authority.
+- [ ] **Real cancellation:** Superseded Git children terminate; cancellation is silent.
+- [ ] **Lazy selection:** A branch discovered only by search can be selected and reaches the existing descriptor path.
+- [ ] **Identity dedupe:** Same branch ID appears once; different refs/worktrees sharing an OID remain distinct.
+- [ ] **Ordered state:** Base/head order, Back, current-head suggestion, retained opposite role, search term, and recovery focus are unchanged.
+- [ ] **Error ownership:** Startup, unavailable worktree, no matches, search failure, cancellation, and descriptor recovery remain distinguishable.
+- [ ] **Process bound:** Search uses one listing plus at most one abbreviation process for both narrow and broad queries.
+- [ ] **Output bound:** 9,999 matches fit declared bounds or produce explicit narrowing/truncation behavior.
+- [ ] **Git abbreviation:** Short IDs come from Git and map by full 40/64-character OID.
+- [ ] **Worktree semantics:** Attached, detached, clean, dirty, unavailable, locked, prunable, and current-checkout cases retain existing behavior.
+- [ ] **Packed budget:** 10,000 packed refs return matching rows within 500 ms at the production boundary.
+- [ ] **Loose correctness:** 10,000 loose refs return the complete authoritative match set even if slower than 500 ms.
+- [ ] **Benchmark honesty:** Raw runs, first run, median, match count, storage layout, subprocess count, and peak concurrency are reported.
+- [ ] **Non-mutation:** Successful, failed, broad, slow, and cancelled searches leave refs/storage and discovery state unchanged.
 
 ## Recovery Strategies
 
-When pitfalls occur despite prevention, how to recover.
-
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Cascade/palette leak | MEDIUM | Stop adding overrides; inventory computed colors, consolidate tokens, migrate remaining selectors, delete obsolete roots |
-| Monaco mismatch | MEDIUM | Remove DOM overrides, define one `vs-dark` inherited theme, map all documented diff/editor keys, recheck language fixtures |
-| Selection hides changes | MEDIUM | Rebuild the layer matrix, reduce fill opacity, add durable borders/gutter cues, verify active and inactive selection |
-| Contrast failure late in milestone | MEDIUM | Fix semantic pairs centrally, then re-audit every component using those roles; avoid one-off selector colors |
-| Forced-colors failure | LOW–MEDIUM | Restore `forced-color-adjust:auto`, replace shadow-only cues, add targeted system-color borders/text under the media query |
-| Responsive page-wide overflow | HIGH | Isolate the diff in its own scroll container, remove inherited 640px constraints from surrounding shell, re-test drawer/focus behavior |
-| Brittle screenshots | LOW | Delete noisy baselines, pin environment and state, shrink to representative component/region captures, keep semantic assertions |
-| Behavior drift | HIGH | Revert structural/adapter/state changes, reapply the visual change through tokens/CSS, then re-run the preserved behavior contract |
+| Stale-result state mutation | MEDIUM | Remove detached/shared mutation, make source results immutable, add delayed A/B cancellation verification |
+| Orphaned Git children | LOW | Thread prompt signal through runner and stop starting batch stage after abort |
+| Lazy row missing from selection map | MEDIUM | Introduce one prompt-lifetime candidate authority and install non-aborted batches atomically |
+| OID-based dedupe shipped | HIGH | Restore branch/worktree IDs, rebuild merge logic, re-verify recovery and exported source identities |
+| Selection/recovery regression | HIGH | Revert prompt reconstruction/index state and restore existing stable-ID role state machine |
+| Loose refs timed out/truncated | LOW | Remove budget-as-timeout, restore complete search, document measured loose latency |
+| Per-branch subprocess path | MEDIUM | Replace helper loop with filtered listing plus one unique-OID abbreviation batch |
+| Output-limit ambiguity | LOW | Surface typed narrowing guidance and add broad/forced-limit cases |
+| Naive abbreviation | MEDIUM | Restore full-OID authority and Git batch mapping; invalidate any short-ID keyed state |
+| Worktree semantics drift | HIGH | Reuse porcelain parser and established candidate construction; rerun full worktree matrix |
+| Biased benchmark | LOW | Point harness at built production path and publish raw packed/loose scenarios |
+| Repository mutation | HIGH | Remove mutating command/state, restore fixture, inspect/repair refs with Git, and add before/after content proof |
 
 ## Pitfall-to-Phase Mapping
 
-How roadmap phases should address these pitfalls.
-
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| Multiple palette eras and cascade leaks | Phase 1: Semantic palette foundation | One token source; raw-color inventory; all exceptional states inspected |
-| Semantic state collisions | Phase 1, completed in Phase 3 | Side-by-side state matrix understandable in grayscale |
-| Monaco/app theme mismatch | Phase 2: Monaco diff integration | Language fixture matrix plus all Monaco-owned surfaces inspected |
-| Selection obscures diff | Phase 2 | Added/deleted/unchanged × active/inactive selection × anchor/diagnostic matrix |
-| Comment/diagnostic/failure collision | Phases 2–3 | Inline and rail lifecycle states remain distinct over both diff sides |
-| Text and non-text contrast | Phase 4: Responsive/accessibility hardening | Computed contrast ledger: 4.5:1 text, 3:1 meaningful UI/state cues |
-| Focus clipped or confused | Phase 4 | Full keyboard traversal at desktop/narrow/zoom with visible focus at every stop |
-| Color-only meaning | Phase 4 | Grayscale and color-vision simulation preserve all task/state distinctions |
-| Forced-colors failure | Phase 4 | Real Windows High Contrast when available, plus browser emulation and no-feature fallback review |
-| Responsive regression | Phase 4 | 320px, 400% zoom, breakpoint-boundary, long-content, and open-drawer scenarios |
-| Screenshot brittleness | Phase 5: Visual/behavioral regression gate | Pinned environment, stable Monaco readiness, small reviewed visual matrix |
-| Accidental behavior drift | All phases; final in Phase 5 | Existing end-to-end review contract unchanged; screenshots remain supplemental |
+| Stale searches | Phase 09 — Staged Picker Contract | Delayed A cannot overwrite faster B or candidate authority |
+| Cancellation | Phase 09 + Phase 10 | Rapid terms terminate superseded children with no user-facing error |
+| Lazy row absent from selection authority | Phase 09 | Search-only branch selects successfully for either role |
+| Duplicate identities | Phase 09 | Exact branch ID once; same-OID refs/worktrees remain distinct |
+| Selection preservation | Phase 09 | Base/head/Back/suggestion/recovery matrix unchanged |
+| Error ownership | Phase 09 + Phase 10 | Inject each failure class and observe only its designated owner |
+| Loose-ref latency | Phase 10 + Phase 11 | Complete loose results; separate measured verdict from packed budget |
+| Process explosion | Phase 10 | ≤2 branch-search Git calls for 100 and 9,999 matches; bounded concurrency |
+| Unbounded output | Phase 10 + Phase 11 | Broad query respects declared bounds and limit errors stay explicit |
+| Object abbreviation | Phase 10 | Git-produced unique abbreviations mapped by full OID |
+| Worktree semantics | Phase 09 + Phase 11 | Full registration/dirty/detached/unavailable matrix remains unchanged |
+| Benchmark bias | Phase 11 — Performance and Safety Gate | Production-boundary raw runs meet 400/500 ms packed budgets |
+| Repository mutation | Phase 10 + Phase 11 | Ref/storage hashes unchanged across success, failure, and cancellation |
 
 ## Sources
 
-- [Diff Review `.planning/PROJECT.md`](../PROJECT.md) — milestone scope, validated behavior, constraints, and no-new-mechanics boundary.
-- [Current `src/web/styles.css`](../../src/web/styles.css) — two palette eras, legacy aliases, review shell, 640px diff constraints, comments, notices, and responsive drawers.
-- [Current Monaco adapter](../../src/web/monaco/diff-adapter.ts) — editor options, focus/cursor listeners, whole-line anchor decoration, paired view zones, and per-file state.
-- [Current Monaco configuration](../../src/web/monaco/configure.ts) — language workers and path mapping, with no theme registration.
-- [Current DiffWorkspace](../../src/web/components/DiffWorkspace.vue) — Vue rendering/focus/height lifecycle inside Monaco view zones.
-- [W3C WCAG 2.2: Contrast Minimum](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html) — 4.5:1 normal text and 3:1 large text thresholds.
-- [W3C WCAG 2.2: Non-text Contrast](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html) — 3:1 meaningful control and state cues.
-- [W3C WCAG 2.2: Use of Color](https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html) — color cannot be the only visual means of conveying information or state.
-- [W3C WCAG 2.2: Focus Visible](https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html) and [Focus Appearance](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html) — visible focus requirement and measurable 2px/3:1 enhanced target.
-- [W3C WCAG 2.2: Reflow](https://www.w3.org/WAI/WCAG22/Understanding/reflow.html) — 320 CSS px requirement and explicit two-column diff guidance.
-- [CSS Color Adjustment Module Level 1](https://www.w3.org/TR/css-color-adjust-1/) — browser/user color-scheme negotiation and automatic color adjustment.
-- [MDN `forced-colors`](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/forced-colors) and [`forced-color-adjust`](https://developer.mozilla.org/en-US/docs/Web/CSS/forced-color-adjust) — forced property behavior, shadow loss, system colors, and targeted opt-out guidance.
-- [Primer color usage](https://primer.style/product/getting-started/foundations/color-usage/) and [Primer functional color tokens](https://github.com/primer/primitives/tree/main/src/tokens/functional/color) — functional/component token hierarchy and semantic role separation.
-- [Monaco custom theme example](https://github.com/microsoft/monaco-editor/blob/main/website/src/website/data/playground-samples/customizing-the-appearence/tokens-and-colors/sample.js) — inherited themes and named editor colors.
-- [Monaco/VS Code editor color registrations](https://github.com/microsoft/vscode/blob/main/src/vs/platform/theme/common/colors/editorColors.ts) — diff, selection, diagnostic, and opacity requirements used by Monaco 0.55.1.
-- [Playwright visual comparisons](https://playwright.dev/docs/test-snapshots) — environment-dependent rendering and consistent-baseline guidance.
+### Project evidence — HIGH confidence
+
+- [v1.2 project contract](../PROJECT.md) — active requirements, non-mutation and no-persistence decisions.
+- [CLI startup discovery findings](../notes/cli-startup-discovery.md) — current 15-process startup trace and staged-discovery decision.
+- [Spike 002: Staged Source Discovery](../spikes/002-staged-source-discovery/README.md) — empirical packed/loose, broad-query, and worktree results; verdict is explicitly PARTIAL.
+- [`src/cli/picker.ts`](../../src/cli/picker.ts) — stable candidate values, ordered base/head state, default/recovery behavior, and current immutable candidate map.
+- [`src/cli/run.ts`](../../src/cli/run.ts) — existing discovery, selection, descriptor, and recovery ownership.
+- [`src/git/candidates.ts`](../../src/git/candidates.ts) — branch/worktree identity, NUL parsing, per-head abbreviation, dirty/unavailable semantics.
+- [`src/git/runner.ts`](../../src/git/runner.ts) — AbortSignal propagation, process termination, timeouts, output limits, disabled hooks, and no-shell execution.
+- [`tests/git/candidates.test.ts`](../../tests/git/candidates.test.ts) and [`tests/cli/selection.test.ts`](../../tests/cli/selection.test.ts) — validated duplicate-OID, worktree, ordering, and recovery contracts.
+
+### Official documentation — HIGH confidence for documented semantics
+
+- [`@inquirer/search` README](https://github.com/SBoudrias/Inquirer.js/tree/main/packages/search) — async source contract, term-change `AbortSignal`, defaults, and separators.
+- [`@inquirer/search` current source](https://github.com/SBoudrias/Inquirer.js/blob/main/packages/search/src/index.ts) — aborted-result guard, one-time default application, result replacement, and active-row reset.
+- [Git `branch`](https://git-scm.com/docs/git-branch) — `--list` and wildcard filtering semantics.
+- [Git `worktree`](https://git-scm.com/docs/git-worktree) — stable porcelain records and `-z` path safety.
+- [Git `rev-parse`](https://git-scm.com/docs/git-rev-parse) and [Git `log`](https://git-scm.com/docs/git-log) — unique abbreviation with a requested minimum length.
+- [Git `pack-refs`](https://git-scm.com/docs/git-pack-refs) — ref-storage mutation and loose-ref removal behavior.
+- [Node.js 24 child process documentation](https://nodejs.org/docs/latest-v24.x/api/child_process.html) — asynchronous spawning, AbortSignal, pipe limits, and bounded output behavior.
+
+### Confidence note
+
+The integration risks and thresholds are HIGH confidence because they are grounded in the current code, existing contract tests, and the repository's measured spike. The research-plan web search produced no useful authoritative benchmark source; no external anecdotal benchmark claim is used. Platform/filesystem variance remains a Phase 11 measurement concern rather than an unsupported guarantee.
 
 ---
-*Pitfalls research for: Diff Review v1.1 GitHub Dark Diff*
-*Researched: 2026-07-24*
+*Pitfalls research for: Compare v1.2 Fast Source Discovery*
+*Researched: 2026-07-30*
