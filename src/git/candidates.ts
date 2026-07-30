@@ -79,7 +79,14 @@ function splitNul(buffer: Buffer): Buffer[] {
 }
 
 function splitNulLineTerminated(buffer: Buffer): Buffer[] {
-  return buffer.length === 0 ? [] : splitNul(stripGitLineTerminator(buffer));
+  if (buffer.length === 0) {
+    return [];
+  }
+  const payload = stripGitLineTerminator(buffer);
+  if (payload.length === 0) {
+    throw new Error('Git NUL output contained no record content');
+  }
+  return splitNul(payload);
 }
 
 function parseLocalBranchRef(field: Buffer, source: string): string {
@@ -205,10 +212,11 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
     open = true;
 
     const separator = field.indexOf(0x20);
-    const key =
-      separator === -1
-        ? field.toString('ascii')
-        : field.subarray(0, separator).toString('ascii');
+    const keyField = separator === -1 ? field : field.subarray(0, separator);
+    if (keyField.some((byte) => byte > 0x7f)) {
+      throw new Error('Git worktree output contained non-ASCII field name');
+    }
+    const key = keyField.toString('ascii');
     const value = separator === -1 ? undefined : field.subarray(separator + 1);
     if (seen.size === 0 && key !== 'worktree') {
       throw new Error('Git worktree output omitted leading worktree field');
@@ -268,7 +276,10 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
   }
 
   if (open) {
-    throw new Error('Git worktree output ended before a record separator');
+    throw new Error('Git worktree output ended before record separator');
+  }
+  if (records.length === 0) {
+    throw new Error('Git worktree output contained no worktree records');
   }
   return records;
 }

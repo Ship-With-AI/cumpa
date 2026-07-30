@@ -332,6 +332,43 @@ describe('truthful native-Git source candidate discovery', () => {
     }
   });
 
+  it('accepts empty but rejects newline-only deferred branch output', async () => {
+    const repository = await fixture();
+
+    for (const [name, stdout, rejects] of [
+      ['empty output', Buffer.alloc(0), false],
+      ['newline-only output', Buffer.from('\n'), true],
+    ] as const) {
+      const nativeRunner = createGitRunner();
+      let abbreviationCalls = 0;
+      const controlledRunner: GitRunner = {
+        async run(arguments_, options) {
+          if (arguments_[0] === 'branch') {
+            return { stdout, stderr: Buffer.alloc(0) };
+          }
+          if (arguments_[0] === 'log') {
+            abbreviationCalls += 1;
+          }
+          return await nativeRunner.run(arguments_, options);
+        },
+      };
+      const discovery = await discoverSourceCandidates(
+        { cwd: repository.nestedCwd },
+        { runner: controlledRunner },
+      );
+
+      if (rejects) {
+        await expect(discovery.searchBranches('target'), name).rejects.toThrow(
+          'Git NUL output contained no record content',
+        );
+      } else {
+        await expect(discovery.searchBranches('target'), name).resolves.toEqual([]);
+      }
+      expect(abbreviationCalls, name).toBe(0);
+    }
+  });
+
+
   it('rejects duplicate deferred branch identities before abbreviation', async () => {
     const repository = await fixture();
     const firstOid = 'a'.repeat(40);
@@ -473,6 +510,26 @@ describe('truthful native-Git source candidate discovery', () => {
       {
         name: 'open record at EOF',
         stdout: Buffer.from(`worktree ${repository.root}\0`, 'utf8'),
+      },
+      {
+        name: 'empty worktree output',
+        stdout: Buffer.alloc(0),
+      },
+      {
+        name: 'high-bit leading field name',
+        stdout: Buffer.concat([
+          Buffer.from('worktr', 'ascii'),
+          Buffer.of(0xe5),
+          Buffer.from(`e ${repository.root}\0\0`, 'utf8'),
+        ]),
+      },
+      {
+        name: 'high-bit metadata field name',
+        stdout: Buffer.concat([
+          Buffer.from(`worktree ${repository.root}\0H`, 'utf8'),
+          Buffer.of(0xc5),
+          Buffer.from(`AD ${oid}\0\0`, 'ascii'),
+        ]),
       },
       {
         name: 'missing worktree value',
