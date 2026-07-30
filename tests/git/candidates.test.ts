@@ -264,6 +264,7 @@ describe('truthful native-Git source candidate discovery', () => {
     }> = [
       { name: 'truncated after ref', branch: Buffer.from('refs/heads/target\0') },
       { name: 'truncated after label', branch: Buffer.from('refs/heads/target\0target\0') },
+      { name: 'unterminated final branch field', branch: validBranch.subarray(0, -1) },
       { name: 'extra branch field', branch: Buffer.from(`refs/heads/target\0target\0${firstOid}\0extra`) },
       { name: 'empty ref', branch: Buffer.from(`\0target\0${firstOid}\0`) },
       { name: 'empty label', branch: Buffer.from(`refs/heads/target\0\0${firstOid}\0`) },
@@ -279,6 +280,7 @@ describe('truthful native-Git source candidate discovery', () => {
       { name: 'unrequested OID', branch: validBranch, abbreviation: Buffer.from(`${firstOid}\0${firstOid.slice(0, 12)}\0\n${secondOid}\0${secondOid.slice(0, 12)}\0`) },
       { name: 'missing only OID', branch: validBranch, abbreviation: Buffer.alloc(0) },
       { name: 'missing one multi-OID key', branch: validPair, abbreviation: validAbbreviation },
+      { name: 'unterminated final abbreviation field', branch: validBranch, abbreviation: validAbbreviation.subarray(0, -1) },
     ];
 
     for (const failure of failures) {
