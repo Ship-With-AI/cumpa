@@ -2,9 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Fast Source Discovery
-status: planning
-last_updated: "2026-07-30T08:58:05Z"
+current_phase: 09
+current_phase_name: Immediate Source Picker; 1 of 3 in v1.2
+status: executing
+stopped_at: v1.2 roadmap created; Phase 09 ready to plan
+last_updated: "2026-07-30T10:31:29.307Z"
 last_activity: 2026-07-30
+last_activity_desc: Created the v1.2 roadmap and reset state to Phase 09 planning.
 progress:
   total_phases: 3
   completed_phases: 0
@@ -26,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-30)
 
 Phase: 09 of 11 (Immediate Source Picker; 1 of 3 in v1.2)
 Plan: — (not planned)
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-07-30 — Created the v1.2 roadmap and reset state to Phase 09 planning.
 
 Progress: [░░░░░░░░░░] 0%
@@ -34,6 +38,7 @@ Progress: [░░░░░░░░░░] 0%
 ## Performance Metrics
 
 **Velocity:**
+
 - Total plans completed: 56
 - Average duration: 23 min
 - Total execution time: 4.7 hours

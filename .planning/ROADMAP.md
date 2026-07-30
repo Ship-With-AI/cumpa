@@ -28,12 +28,19 @@ Existing picker identity, ordering, worktree truthfulness, selection, recovery, 
 **Depends on**: Phase 08 (shipped v1.1)
 **Requirements**: PICK-01, PICK-02
 **Success Criteria** (what must be TRUE):
+
   1. User can interact with the ordered source picker before Compare enumerates the remaining local branches.
   2. User initially sees the attached current branch and every registered worktree as source choices.
   3. User can choose an eager source for either ordered Base or Head selection without waiting for the remaining branch namespace.
+
 **Plans**: 2 plans
 Plans:
+**Wave 1**
+
 - [ ] 09-01-PLAN.md — Stage native-Git discovery into eager current-branch/worktree candidates plus deferred branch lookup.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 09-02-PLAN.md — Make the ordered picker interactive from eager candidates with exact-ID lazy selection and recovery.
 
 ### Phase 10: On-Demand Branch Search
@@ -42,9 +49,11 @@ Plans:
 **Depends on**: Phase 09
 **Requirements**: SRCH-01
 **Success Criteria** (what must be TRUE):
+
   1. User can enter a non-empty search term and receive matching local branch names on demand.
   2. Matching is case-insensitive and treats characters with Git pattern meaning as literal search text.
   3. When the user changes the term, the picker shows results for the current term, and a returned branch can be selected for the ordered comparison.
+
 **Plans**: TBD
 
 ### Phase 11: Production Performance Gate
@@ -53,8 +62,10 @@ Plans:
 **Depends on**: Phase 10
 **Requirements**: PERF-01, PERF-02
 **Success Criteria** (what must be TRUE):
+
   1. Launching Compare through the production command path against 10,000 packed local branch refs makes the ordered source picker usable within 400 ms of process start.
   2. Entering a term through that production picker returns matching local branch results within 500 ms in the 10,000-packed-ref benchmark.
+
 **Plans**: TBD
 **Acceptance gate**: Both budgets must be measured through the production picker path; spike-only measurements cannot complete this phase or the milestone.
 
