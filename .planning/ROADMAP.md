@@ -13,7 +13,7 @@ v1.2 makes the ordered source picker useful before Compare scans a large local b
 ## Phases
 
 - [x] **Phase 09: Immediate Source Picker** — Make current branch and registered worktrees usable before remaining local branches are enumerated. (completed 2026-07-30)
-- [ ] **Phase 10: On-Demand Branch Search** — Discover literal local-branch matches only after the user starts searching.
+- [x] **Phase 10: On-Demand Branch Search** — Discover literal local-branch matches only after the user starts searching. (completed 2026-07-30)
 - [ ] **Phase 11: Production Performance Gate** — Accept the milestone only when the production picker path meets both packed-ref latency budgets.
 
 ## Milestone Constraints
@@ -54,7 +54,9 @@ Plans:
   2. Matching is case-insensitive and treats characters with Git pattern meaning as literal search text.
   3. When the user changes the term, the picker shows results for the current term, and a returned branch can be selected for the ordered comparison.
 
-**Plans**: TBD
+**Plans**: 1/1 plans complete
+
+- [x] 10-01-PLAN.md
 
 ### Phase 11: Production Performance Gate
 
@@ -88,5 +90,5 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 09. Immediate Source Picker | v1.2 | 2/2 | Complete    | 2026-07-30 |
-| 10. On-Demand Branch Search | v1.2 | 0/TBD | Not started | - |
+| 10. On-Demand Branch Search | v1.2 | 1/1 | Complete   | 2026-07-30 |
 | 11. Production Performance Gate | v1.2 | 0/TBD | Not started | - |

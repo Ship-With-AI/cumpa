@@ -15,7 +15,7 @@ These requirements extend the validated ordered-picker contract. Existing source
 
 ### Branch Search
 
-- [ ] **SRCH-01**: User can enter a non-empty search term and receive case-insensitive literal matches from local branch names on demand.
+- [x] **SRCH-01**: User can enter a non-empty search term and receive case-insensitive literal matches from local branch names on demand.
 
 ### Performance
 
@@ -45,7 +45,7 @@ These requirements extend the validated ordered-picker contract. Existing source
 |-------------|-------|--------|
 | PICK-01 | Phase 09 | Complete |
 | PICK-02 | Phase 09 | Complete |
-| SRCH-01 | Phase 10 | Pending |
+| SRCH-01 | Phase 10 | Complete |
 | PERF-01 | Phase 11 | Pending |
 | PERF-02 | Phase 11 | Pending |
 

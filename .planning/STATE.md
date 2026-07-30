@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: Fast Source Discovery
 current_phase: 10
-current_phase_name: On-Demand Branch Search
+current_phase_name: on-demand-branch-search
 status: executing
 stopped_at: Completed 09-02-PLAN.md
-last_updated: "2026-07-30T13:26:02.929Z"
+last_updated: "2026-07-30T13:50:56.898Z"
 last_activity: 2026-07-30
-last_activity_desc: Phase 09 complete, transitioned to Phase 10
+last_activity_desc: Phase 10 execution started
 progress:
   total_phases: 3
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 33
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 3
+  percent: 67
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-30)
 
 **Core value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
-**Current focus:** Phase 09 — Immediate Source Picker
+**Current focus:** Phase 10 — on-demand-branch-search
 
 ## Current Position
 
-Phase: 10 — On-Demand Branch Search
-Plan: Not started
-Status: Ready to execute
-Last activity: 2026-07-30 — Phase 09 complete, transitioned to Phase 10
+Phase: 10 (on-demand-branch-search) — EXECUTING
+Plan: 1 of ?
+Status: Executing Phase 10
+Last activity: 2026-07-30 — Phase 10 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -54,6 +54,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion.*
 | Phase 09 P01 | 6min | 2 tasks | 4 files |
 | Phase 09 P02 | 20min | 2 tasks | 4 files |
+| Phase 10 P01 | 12min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -70,6 +71,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 09]: Startup ref protocol validation uses --count=1. — Preserves capability validation without unbounded refs/heads enumeration.
 - [Phase 09]: Picker selection authority is a prompt-lifetime exact-ID registry shared by Base and Head. — Lazy branch candidates install only after non-aborted completion.
 - [Phase 09]: Descriptor recovery uses fresh discovery authority for searched branches. — A stale failed candidate is never seeded; missing exact IDs leave picker focus unset.
+- [Phase 10]: Batch unique matched OIDs through native Git log with exact complete abbreviation key sets. — Keeps Git abbreviation authority while limiting each successful non-empty search to one filtered listing and one optional batch.
 
 ### Pending Todos
 
