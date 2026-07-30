@@ -6,7 +6,11 @@ import {
   type WorktreeCandidate,
 } from '../domain/source.js';
 import { discoverGitRepository } from './repository.js';
-import { createGitRunner, type GitRunner } from './runner.js';
+import {
+  createGitRunner,
+  GitRunnerError,
+  type GitRunner,
+} from './runner.js';
 
 const BRANCH_FORMAT = [
   '%(refname)',
@@ -22,6 +26,14 @@ interface CandidateDiscoveryOptions {
 
 interface CandidateDiscoveryDependencies {
   readonly runner?: GitRunner;
+}
+
+export interface SourceDiscovery {
+  readonly initialCandidates: readonly SourceCandidate[];
+  readonly searchBranches: (
+    term: string,
+    signal?: AbortSignal,
+  ) => Promise<readonly BranchCandidate[]>;
 }
 
 interface BranchRecord {
@@ -131,29 +143,17 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
 export async function discoverSourceCandidates(
   options: CandidateDiscoveryOptions,
   dependencies: CandidateDiscoveryDependencies = {},
-): Promise<readonly SourceCandidate[]> {
+): Promise<SourceDiscovery> {
   const runner = dependencies.runner ?? createGitRunner();
   const repository = await discoverGitRepository(
     options.cwd,
     runner,
     options.signal,
   );
-  const [branchResult, worktreeResult] = await Promise.all([
-    runner.run(
-      [
-        'for-each-ref',
-        '--sort=refname',
-        `--format=${BRANCH_FORMAT}`,
-        'refs/heads',
-      ],
-      { cwd: repository.root, signal: options.signal },
-    ),
-    runner.run(['worktree', 'list', '--porcelain', '-z'], {
-      cwd: repository.root,
-      signal: options.signal,
-    }),
-  ]);
-  const branchRecords = parseBranchRecords(branchResult.stdout);
+  const worktreeResult = await runner.run(
+    ['worktree', 'list', '--porcelain', '-z'],
+    { cwd: repository.root, signal: options.signal },
+  );
   const worktreeRecords = parseWorktreeRecords(worktreeResult.stdout);
   const shortOidByFullOid = new Map<string, string>();
 
@@ -171,19 +171,8 @@ export async function discoverSourceCandidates(
     return shortOid;
   };
 
-  const candidates: SourceCandidate[] = [];
-  for (const record of branchRecords) {
-    const candidate: BranchCandidate = {
-      kind: 'branch',
-      id: `branch:${record.refName}`,
-      label: record.label,
-      refName: record.refName,
-      commitOid: record.commitOid,
-      shortOid: await abbreviate(record.commitOid),
-    };
-    candidates.push(Object.freeze(candidate));
-  }
-
+  const worktreeCandidates: WorktreeCandidate[] = [];
+  let currentBranch: BranchCandidate | undefined;
   for (const record of worktreeRecords) {
     if (record.path === undefined) {
       continue;
@@ -227,6 +216,8 @@ export async function discoverSourceCandidates(
     }
 
     const branchRef = record.branchRef;
+    const shortOid =
+      commitOid === undefined ? undefined : await abbreviate(commitOid);
     const candidate: WorktreeCandidate = {
       kind: 'worktree',
       id: `worktree:${record.path}`,
@@ -237,20 +228,104 @@ export async function discoverSourceCandidates(
       path: record.path,
       ...(branchRef === undefined ? {} : { branchRef }),
       detached: record.detached || branchRef === undefined,
-      ...(commitOid === undefined
+      ...(commitOid === undefined || shortOid === undefined
         ? {}
-        : {
-            commitOid,
-            shortOid: await abbreviate(commitOid),
-          }),
+        : { commitOid, shortOid }),
       availability,
       ...(availability === 'unavailable'
         ? { unavailableReason: UNAVAILABLE_WORKTREE_REASON }
         : {}),
       isCurrentCheckout: record.path === repository.root,
     };
-    candidates.push(Object.freeze(candidate));
+    worktreeCandidates.push(Object.freeze(candidate));
+
+    if (
+      record.path === repository.root &&
+      branchRef !== undefined &&
+      commitOid !== undefined &&
+      shortOid !== undefined
+    ) {
+      currentBranch = Object.freeze({
+        kind: 'branch',
+        id: `branch:${branchRef}`,
+        label: branchRef.replace(/^refs\/heads\//, ''),
+        refName: branchRef,
+        commitOid,
+        shortOid,
+      });
+    }
   }
 
-  return Object.freeze(candidates);
+  return Object.freeze({
+    initialCandidates: Object.freeze([
+      ...(currentBranch === undefined ? [] : [currentBranch]),
+      ...worktreeCandidates,
+    ]),
+    async searchBranches(
+      term: string,
+      signal?: AbortSignal,
+    ): Promise<readonly BranchCandidate[]> {
+      if (signal?.aborted) {
+        throw new GitRunnerError('aborted', 'Git command was cancelled', {
+          cause: signal.reason,
+        });
+      }
+      if (term.length === 0) {
+        return Object.freeze([]);
+      }
+
+      const branchResult = await runner.run(
+        [
+          'for-each-ref',
+          '--sort=refname',
+          `--format=${BRANCH_FORMAT}`,
+          'refs/heads',
+        ],
+        { cwd: repository.root, signal },
+      );
+      signal?.throwIfAborted();
+
+      const shortOidByFullOid = new Map<string, string>();
+      const candidates: BranchCandidate[] = [];
+      const query = term.toLowerCase();
+      for (const record of parseBranchRecords(branchResult.stdout)) {
+        let shortOid = shortOidByFullOid.get(record.commitOid);
+        if (shortOid === undefined) {
+          const shortOidResult = await runner.run(
+            ['rev-parse', '--short=12', record.commitOid],
+            { cwd: repository.root, signal },
+          );
+          signal?.throwIfAborted();
+          shortOid = shortOidResult.stdout.toString('ascii').trim();
+          shortOidByFullOid.set(record.commitOid, shortOid);
+        }
+        if (
+          [
+            'branch',
+            'local branch',
+            record.label,
+            record.refName,
+            record.commitOid,
+            shortOid,
+          ]
+            .join(' ')
+            .toLowerCase()
+            .includes(query)
+        ) {
+          candidates.push(
+            Object.freeze({
+              kind: 'branch',
+              id: `branch:${record.refName}`,
+              label: record.label,
+              refName: record.refName,
+              commitOid: record.commitOid,
+              shortOid,
+            }),
+          );
+        }
+      }
+      signal?.throwIfAborted();
+      return Object.freeze(candidates);
+    },
+  });
 }

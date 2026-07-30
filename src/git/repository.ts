@@ -89,7 +89,7 @@ async function probeMachineProtocols(
 ): Promise<void> {
   const commands = [
     ['worktree', 'list', '--porcelain', '-z'],
-    ['for-each-ref', '--format=%(refname)%00', 'refs/heads'],
+    ['for-each-ref', '--count=1', '--format=%(refname)%00', 'refs/heads'],
     ['merge-base', '--all', headOid, headOid],
     [
       'diff',

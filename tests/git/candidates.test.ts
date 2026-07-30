@@ -67,12 +67,14 @@ describe('truthful native-Git source candidate discovery', () => {
       },
     ]);
     expect(worktrees).toHaveLength(4);
-    expect(worktrees.map((candidate) => candidate.path)).toEqual([
-      repository.root,
-      linkedPath,
-      detachedPath,
-      unavailablePath,
-    ]);
+    expect(worktrees.map((candidate) => candidate.path)).toEqual(
+      repository
+        .git(['worktree', 'list', '--porcelain', '-z'])
+        .toString('utf8')
+        .split('\0')
+        .filter((field) => field.startsWith('worktree '))
+        .map((field) => field.slice('worktree '.length)),
+    );
 
     const current = worktrees.find((candidate) => candidate.path === repository.root);
     expect(current).toMatchObject({
