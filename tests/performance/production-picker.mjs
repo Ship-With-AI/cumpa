@@ -15,8 +15,19 @@ const OUTPUT_LIMIT = 64 * 1024;
 const COMMAND_OUTPUT_LIMIT = 2 * 1024 * 1024;
 const READY_BUDGET_MS = 400;
 const SEARCH_BUDGET_MS = 500;
+const baseEnvironment = { ...process.env };
+for (const key of [
+  'GIT_DIR',
+  'GIT_COMMON_DIR',
+  'GIT_WORK_TREE',
+  'GIT_INDEX_FILE',
+  'GIT_OBJECT_DIRECTORY',
+  'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+]) {
+  delete baseEnvironment[key];
+}
 const fixtureEnv = {
-  ...process.env,
+  ...baseEnvironment,
   GIT_CONFIG_NOSYSTEM: '1',
   GIT_TERMINAL_PROMPT: '0',
 };
@@ -26,6 +37,11 @@ const executablePath = resolve(root, 'dist/bin/cumpa.mjs');
 function appendTail(previous, value, limit = OUTPUT_LIMIT) {
   const combined = previous + value;
   return combined.length > limit ? combined.slice(-limit) : combined;
+}
+
+function appendBufferTail(previous, chunk, limit = OUTPUT_LIMIT) {
+  const combined = Buffer.concat([previous, chunk]);
+  return combined.length > limit ? combined.subarray(-limit) : combined;
 }
 
 function median(values) {
@@ -140,8 +156,7 @@ function packedHeadRefs(contents) {
   return refs;
 }
 
-async function createFixture() {
-  const tempRoot = await mkdtemp(join(tmpdir(), 'compare-production-picker-'));
+async function createFixture(tempRoot) {
   const repository = join(tempRoot, 'repository');
   await mkdir(repository);
   await git(repository, ['init', '-q', '-b', 'main']);
@@ -185,15 +200,12 @@ async function createFixture() {
   }
   const mainShortOid = (await git(repository, ['rev-parse', '--short=12', 'main'])).stdout.trim();
   const targetShortOid = (await git(repository, ['rev-parse', '--short=12', 'branch-09999'])).stdout.trim();
-  return { tempRoot, repository, proof, mainShortOid, targetShortOid };
+  return { repository, proof, mainShortOid, targetShortOid };
 }
 
 function sanitizedEnvironment() {
-  const env = { ...process.env };
-  delete env.COMPARE_LAUNCH_OPTIONS;
-  delete env.CMUX_WORKSPACE_ID;
   return {
-    ...env,
+    ...baseEnvironment,
     COLUMNS: '120',
     LINES: '40',
     NO_COLOR: '1',
@@ -224,24 +236,20 @@ function runPickerSample({ repository, mainShortOid, targetShortOid, kind }) {
   return new Promise((resolvePromise, reject) => {
     const readyMarker = `[Branch] main · ${mainShortOid}`;
     const targetMarker = `[Branch] branch-09999 · ${targetShortOid}`;
+    const markerLimit = Math.max(readyMarker.length, targetMarker.length);
     const environment = sanitizedEnvironment();
-    let stdoutTail = '';
-    let stderrTail = '';
+    let stdoutTail = Buffer.alloc(0);
+    let stderrTail = Buffer.alloc(0);
+    let markerTail = '';
     let readyMs;
     let searchMs;
     let searchStartedAt;
     let markerWatchdog;
     let settled = false;
+    let child;
+    let closed;
     const readyStartedAt = performance.now();
-    const child = spawn(process.execPath, [executablePath], {
-      cwd: repository,
-      env: environment,
-      shell: false,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-    const closed = waitForClose(child);
     const stdoutDecoder = new StringDecoder('utf8');
-    const stderrDecoder = new StringDecoder('utf8');
     const fail = async (error) => {
       if (settled) return;
       settled = true;
@@ -252,7 +260,12 @@ function runPickerSample({ repository, mainShortOid, targetShortOid, kind }) {
       } catch (terminationError) {
         cleanupError = terminationError instanceof Error ? terminationError.message : String(terminationError);
       }
-      reject(Object.assign(error, { stdoutTail, stderrTail, cleanupSucceeded: cleanupError === undefined, cleanupError }));
+      reject(Object.assign(error, {
+        stdoutTail: stdoutTail.toString('utf8'),
+        stderrTail: stderrTail.toString('utf8'),
+        cleanupSucceeded: cleanupError === undefined,
+        cleanupError,
+      }));
     };
     const armWatchdog = (phase) => {
       clearTimeout(markerWatchdog);
@@ -260,17 +273,30 @@ function runPickerSample({ repository, mainShortOid, targetShortOid, kind }) {
         void fail(new Error(`${phase} marker watchdog expired after ${MARKER_TIMEOUT_MS} ms`));
       }, MARKER_TIMEOUT_MS);
     };
+    child = spawn(process.execPath, [executablePath], {
+      cwd: repository,
+      env: environment,
+      shell: false,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    child.stdin.on('error', (error) => void fail(error));
+    closed = waitForClose(child);
     child.stdout.on('data', (chunk) => {
-      stdoutTail = appendTail(stdoutTail, stdoutDecoder.write(chunk));
-      if (readyMs === undefined && stdoutTail.includes(readyMarker)) {
+      stdoutTail = appendBufferTail(stdoutTail, chunk);
+      const markerOutput = markerTail + stdoutDecoder.write(chunk);
+      markerTail = markerOutput.slice(-markerLimit);
+      if (readyMs === undefined && markerOutput.includes(readyMarker)) {
         readyMs = performance.now() - readyStartedAt;
-        const searchStart = performance.now();
-        searchStartedAt = searchStart;
-        child.stdin.write('branch-09999');
+        searchStartedAt = performance.now();
+        try {
+          child.stdin.write('branch-09999');
+        } catch (error) {
+          void fail(error);
+          return;
+        }
         armWatchdog('search');
-        return;
       }
-      if (readyMs !== undefined && searchMs === undefined && stdoutTail.includes(targetMarker)) {
+      if (readyMs !== undefined && searchMs === undefined && markerOutput.includes(targetMarker)) {
         searchMs = performance.now() - searchStartedAt;
         if (settled) return;
         settled = true;
@@ -283,17 +309,20 @@ function runPickerSample({ repository, mainShortOid, targetShortOid, kind }) {
             close,
             cleanupSucceeded: true,
           }),
-          (error) => reject(Object.assign(error, { stdoutTail, stderrTail, cleanupSucceeded: false })),
+          (error) => reject(Object.assign(error, {
+            stdoutTail: stdoutTail.toString('utf8'),
+            stderrTail: stderrTail.toString('utf8'),
+            cleanupSucceeded: false,
+          })),
         );
       }
     });
     child.stderr.on('data', (chunk) => {
-      stderrTail = appendTail(stderrTail, stderrDecoder.write(chunk));
+      stderrTail = appendBufferTail(stderrTail, chunk);
     });
     child.once('error', (error) => void fail(error));
     child.once('close', (code, signal) => {
-      stdoutTail = appendTail(stdoutTail, stdoutDecoder.end());
-      stderrTail = appendTail(stderrTail, stderrDecoder.end());
+      stdoutDecoder.end();
       if (!settled) {
         void fail(new Error(`picker exited before both markers (${code ?? 'null'}/${signal ?? 'none'})`));
       }
@@ -348,8 +377,8 @@ try {
   if (!existsSync(executablePath)) {
     throw new Error(`compiled executable is absent: ${executablePath}`);
   }
-  const fixture = await createFixture();
-  tempRoot = fixture.tempRoot;
+  tempRoot = await mkdtemp(join(tmpdir(), 'compare-production-picker-'));
+  const fixture = await createFixture(tempRoot);
   report.fixture = fixture.proof;
   const warmup = await runPickerSample({ ...fixture, kind: 'warmup' });
   report.warmup = warmup;
