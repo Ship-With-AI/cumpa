@@ -175,18 +175,22 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
       separator === -1
         ? field.toString('ascii')
         : field.subarray(0, separator).toString('ascii');
-    const value =
-      separator === -1 ? undefined : field.subarray(separator + 1).toString('utf8');
+    const value = separator === -1 ? undefined : field.subarray(separator + 1);
 
     switch (key) {
       case 'worktree':
-        current.path = value;
+        current.path = value?.toString('utf8');
         break;
       case 'HEAD':
-        current.headOid = value;
+        current.headOid = value?.toString('utf8');
         break;
       case 'branch':
-        current.branchRef = value;
+        if (value !== undefined && !isUtf8(value)) {
+          throw new Error(
+            'Git worktree output contained invalid UTF-8 branch identity',
+          );
+        }
+        current.branchRef = value?.toString('utf8');
         break;
       case 'detached':
         current.detached = true;

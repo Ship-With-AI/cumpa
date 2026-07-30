@@ -363,6 +363,51 @@ describe('truthful native-Git source candidate discovery', () => {
       expect(abbreviationCalls, failure.name).toBe(0);
     }
   });
+
+  it('rejects invalid UTF-8 current-worktree branch identities before publication', async () => {
+    const repository = await fixture();
+    const nativeRunner = createGitRunner();
+    let worktreeListingCalls = 0;
+    let ranAfterInvalidWorktreeListing = false;
+    const controlledRunner: GitRunner = {
+      async run(arguments_, options) {
+        if (
+          JSON.stringify(arguments_) ===
+          JSON.stringify(['worktree', 'list', '--porcelain', '-z'])
+        ) {
+          worktreeListingCalls += 1;
+          if (worktreeListingCalls === 2) {
+            return {
+              stdout: Buffer.concat([
+                Buffer.from(
+                  `worktree ${repository.root}\0HEAD ${'a'.repeat(40)}\0branch refs/heads/`,
+                  'utf8',
+                ),
+                Buffer.of(0x80),
+                Buffer.from('\0\0', 'ascii'),
+              ]),
+              stderr: Buffer.alloc(0),
+            };
+          }
+        }
+        if (worktreeListingCalls === 2) {
+          ranAfterInvalidWorktreeListing = true;
+        }
+        return await nativeRunner.run(arguments_, options);
+      },
+    };
+
+    await expect(
+      discoverSourceCandidates(
+        { cwd: repository.nestedCwd },
+        { runner: controlledRunner },
+      ),
+    ).rejects.toThrow(
+      'Git worktree output contained invalid UTF-8 branch identity',
+    );
+    expect(worktreeListingCalls).toBe(2);
+    expect(ranAfterInvalidWorktreeListing).toBe(false);
+  });
   it('propagates caller cancellation through both branch-search Git stages', async () => {
     const repository = await fixture();
     const oid = 'a'.repeat(40);
