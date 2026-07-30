@@ -329,6 +329,7 @@ const report = {
   fixture: null,
   warmup: null,
   samples: [],
+  completed: { warmups: 0, measured: 0 },
   readiness: null,
   search: null,
   budgets: { readinessMs: READY_BUDGET_MS, searchMs: SEARCH_BUDGET_MS },
@@ -352,10 +353,15 @@ try {
   report.fixture = fixture.proof;
   const warmup = await runPickerSample({ ...fixture, kind: 'warmup' });
   report.warmup = warmup;
+  report.completed.warmups = 1;
   for (let index = 0; index < SAMPLE_COUNT; index += 1) {
     const sample = await runPickerSample({ ...fixture, kind: 'measured' });
     report.samples.push(sample);
+    report.completed.measured += 1;
     console.log(`COMPARE_PERF_SAMPLE=${JSON.stringify(sample)}`);
+  }
+  if (report.completed.warmups !== 1 || report.completed.measured !== SAMPLE_COUNT) {
+    throw new Error('incomplete warmup or measured invocation set');
   }
   const readinessValues = report.samples.map(({ readinessMs }) => readinessMs);
   const searchValues = report.samples.map(({ searchMs }) => searchMs);
