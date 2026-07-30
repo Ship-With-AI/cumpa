@@ -43,11 +43,11 @@ These requirements extend the validated ordered-picker contract. Existing source
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PICK-01 | TBD | Pending |
-| PICK-02 | TBD | Pending |
-| SRCH-01 | TBD | Pending |
-| PERF-01 | TBD | Pending |
-| PERF-02 | TBD | Pending |
+| PICK-01 | Phase 09 | Pending |
+| PICK-02 | Phase 09 | Pending |
+| SRCH-01 | Phase 10 | Pending |
+| PERF-01 | Phase 11 | Pending |
+| PERF-02 | Phase 11 | Pending |
 
 ---
 *Requirements defined: 2026-07-30*
