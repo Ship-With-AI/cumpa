@@ -62,11 +62,7 @@ function stripGitLineTerminator(buffer: Buffer): Buffer {
 }
 
 function splitNul(buffer: Buffer): Buffer[] {
-  const hasRecordTerminator =
-    buffer.length === 0 ||
-    buffer.at(-1) === 0 ||
-    (buffer.at(-1) === 0x0a && buffer.at(-2) === 0);
-  if (!hasRecordTerminator) {
+  if (buffer.length !== 0 && buffer.at(-1) !== 0) {
     throw new Error('Git NUL output ended without a record terminator');
   }
 
@@ -78,17 +74,30 @@ function splitNul(buffer: Buffer): Buffer[] {
       start = index + 1;
     }
   }
-  if (start < buffer.length) {
-    fields.push(buffer.subarray(start));
-  }
   return fields;
 }
 
-function parseBranchRecords(buffer: Buffer): BranchRecord[] {
-  const fields = splitNul(buffer);
-  if (fields.at(-1)?.equals(Buffer.from('\n'))) {
-    fields.pop();
+function splitNulLineTerminated(buffer: Buffer): Buffer[] {
+  return buffer.length === 0 ? [] : splitNul(stripGitLineTerminator(buffer));
+}
+
+function parseLocalBranchRef(field: Buffer, source: string): string {
+  if (!isUtf8(field)) {
+    throw new Error(`${source} contained invalid UTF-8 branch identity`);
   }
+  const refName = field.toString('utf8');
+  if (
+    refName.length === 0 ||
+    !refName.startsWith('refs/heads/') ||
+    refName.length === 'refs/heads/'.length
+  ) {
+    throw new Error(`${source} contained an invalid local branch identity`);
+  }
+  return refName;
+}
+
+function parseBranchRecords(buffer: Buffer): BranchRecord[] {
+  const fields = splitNulLineTerminated(buffer);
   if (fields.length % 3 !== 0) {
     throw new Error('Git branch output ended with an incomplete record');
   }
@@ -103,20 +112,15 @@ function parseBranchRecords(buffer: Buffer): BranchRecord[] {
       refField = refField.subarray(1);
     }
     const labelField = fields[index + 1]!;
-    if (!isUtf8(refField) || !isUtf8(labelField)) {
+    if (!isUtf8(labelField)) {
       throw new Error('Git branch output contained invalid UTF-8');
     }
-    const refName = refField.toString('utf8');
+    const refName = parseLocalBranchRef(refField, 'Git branch output');
     const label = labelField.toString('utf8');
     const commitOid = GitObjectIdSchema.parse(
       fields[index + 2]!.toString('latin1'),
     );
-    if (
-      refName.length === 0 ||
-      !refName.startsWith('refs/heads/') ||
-      refName.length === 'refs/heads/'.length ||
-      label.length === 0
-    ) {
+    if (label.length === 0) {
       throw new Error('Git branch output contained an invalid local branch record');
     }
     records.push({ refName, label, commitOid });
@@ -129,10 +133,7 @@ function escapeBranchPattern(term: string): string {
 }
 
 function parseAbbreviationRecords(buffer: Buffer): Map<string, string> {
-  const fields = splitNul(buffer);
-  if (fields.at(-1)?.equals(Buffer.from('\n'))) {
-    fields.pop();
-  }
+  const fields = splitNulLineTerminated(buffer);
   if (fields.length % 2 !== 0) {
     throw new Error('Git abbreviation output ended with an incomplete record');
   }
@@ -168,37 +169,54 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
     prunable: false,
     bare: false,
   };
+  let open = false;
+  const seen = new Set<string>();
 
   for (const field of splitNul(buffer)) {
     if (field.length === 0) {
-      if (current.path !== undefined) {
-        records.push(current);
+      if (!open || current.path === undefined) {
+        throw new Error('Git worktree output contained an incomplete record');
       }
+      records.push(current);
       current = { detached: false, prunable: false, bare: false };
+      open = false;
+      seen.clear();
       continue;
     }
 
+    open = true;
     const separator = field.indexOf(0x20);
     const key =
       separator === -1
         ? field.toString('ascii')
         : field.subarray(0, separator).toString('ascii');
     const value = separator === -1 ? undefined : field.subarray(separator + 1);
+    if (seen.has(key)) {
+      throw new Error('Git worktree output contained a duplicate field');
+    }
+    seen.add(key);
 
     switch (key) {
       case 'worktree':
-        current.path = value?.toString('utf8');
+        if (value === undefined || value.length === 0 || !isUtf8(value)) {
+          throw new Error('Git worktree output contained an invalid worktree path');
+        }
+        current.path = value.toString('utf8');
         break;
       case 'HEAD':
-        current.headOid = value?.toString('utf8');
+        if (value === undefined || value.length === 0) {
+          throw new Error('Git worktree output omitted a HEAD value');
+        }
+        current.headOid = GitObjectIdSchema.parse(value.toString('latin1'));
         break;
       case 'branch':
-        if (value !== undefined && !isUtf8(value)) {
-          throw new Error(
-            'Git worktree output contained invalid UTF-8 branch identity',
-          );
+        if (value === undefined) {
+          throw new Error('Git worktree output omitted a branch identity');
         }
-        current.branchRef = value?.toString('utf8');
+        current.branchRef = parseLocalBranchRef(
+          value,
+          'Git worktree output',
+        );
         break;
       case 'detached':
         current.detached = true;
@@ -209,11 +227,13 @@ function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
       case 'bare':
         current.bare = true;
         break;
+      default:
+        throw new Error('Git worktree output contained an unknown field');
     }
   }
 
-  if (current.path !== undefined) {
-    records.push(current);
+  if (open) {
+    throw new Error('Git worktree output ended before a record separator');
   }
   return records;
 }
@@ -228,10 +248,12 @@ export async function discoverSourceCandidates(
     runner,
     options.signal,
   );
+  options.signal?.throwIfAborted();
   const worktreeResult = await runner.run(
     ['worktree', 'list', '--porcelain', '-z'],
     { cwd: repository.root, signal: options.signal },
   );
+  options.signal?.throwIfAborted();
   const worktreeRecords = parseWorktreeRecords(worktreeResult.stdout);
   const shortOidByFullOid = new Map<string, string>();
 
@@ -244,6 +266,7 @@ export async function discoverSourceCandidates(
       cwd: repository.root,
       signal: options.signal,
     });
+    options.signal?.throwIfAborted();
     const shortOid = stripGitLineTerminator(result.stdout).toString('latin1');
     if (
       !/^[0-9a-f]{12,}$/.test(shortOid) ||
@@ -263,13 +286,8 @@ export async function discoverSourceCandidates(
       continue;
     }
 
-    let commitOid: string | undefined;
-    if (record.headOid !== undefined) {
-      const parsed = GitObjectIdSchema.safeParse(record.headOid);
-      if (parsed.success) {
-        commitOid = parsed.data;
-      }
-    }
+    // A missing porcelain HEAD is Git's valid unborn-worktree representation.
+    let commitOid = record.headOid;
     let availability: WorktreeCandidate['availability'] =
       record.prunable || record.bare ? 'unavailable' : 'clean';
 
@@ -280,6 +298,7 @@ export async function discoverSourceCandidates(
           ['rev-parse', '--verify', '--end-of-options', 'HEAD^{commit}'],
           { cwd: record.path, signal: options.signal },
         );
+        options.signal?.throwIfAborted();
       } catch (error) {
         if (options.signal?.aborted) {
           throw error;
@@ -300,6 +319,7 @@ export async function discoverSourceCandidates(
             ],
             { cwd: record.path, signal: options.signal },
           );
+          options.signal?.throwIfAborted();
           availability = statusResult.stdout.length === 0 ? 'clean' : 'dirty';
         } catch (error) {
           if (options.signal?.aborted) {
@@ -313,6 +333,7 @@ export async function discoverSourceCandidates(
     const branchRef = record.branchRef;
     const shortOid =
       commitOid === undefined ? undefined : await abbreviate(commitOid);
+    options.signal?.throwIfAborted();
     const candidate: WorktreeCandidate = {
       kind: 'worktree',
       id: `worktree:${record.path}`,
@@ -351,6 +372,7 @@ export async function discoverSourceCandidates(
     }
   }
 
+  options.signal?.throwIfAborted();
   return Object.freeze({
     initialCandidates: Object.freeze([
       ...(currentBranch === undefined ? [] : [currentBranch]),
