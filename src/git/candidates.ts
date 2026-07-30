@@ -1,3 +1,5 @@
+import { isUtf8 } from 'node:buffer';
+
 import { GitObjectIdSchema } from '../contracts/comparison.js';
 import {
   UNAVAILABLE_WORKTREE_REASON,
@@ -92,8 +94,12 @@ function parseBranchRecords(buffer: Buffer): BranchRecord[] {
       }
       refField = refField.subarray(1);
     }
+    const labelField = fields[index + 1]!;
+    if (!isUtf8(refField) || !isUtf8(labelField)) {
+      throw new Error('Git branch output contained invalid UTF-8');
+    }
     const refName = refField.toString('utf8');
-    const label = fields[index + 1]!.toString('utf8');
+    const label = labelField.toString('utf8');
     const commitOid = GitObjectIdSchema.parse(
       fields[index + 2]!.toString('ascii'),
     );
