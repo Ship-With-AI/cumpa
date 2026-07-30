@@ -79,7 +79,7 @@ function isCompareInternalPath(path: ExactPath | undefined): boolean {
   }
   return (
     bytes.byteLength >= comparePathPrefix.byteLength &&
-    comparePathPrefix.every((byte, index) => byte === comparePathPrefix[index])
+    comparePathPrefix.every((byte, index) => byte === bytes[index])
   );
 }
 
