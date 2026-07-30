@@ -196,8 +196,9 @@ describe('comparison validation matrix', () => {
             cwd: '/repo',
             base: { label: 'main', revision: 'refs/heads/main' },
             head: { label: 'feature', revision: 'refs/heads/feature' },
+            signal: controller.signal,
           },
-          { runner, signal: controller.signal },
+          { runner },
         ),
       ).rejects.toBe(aborted);
     }
