@@ -245,7 +245,6 @@ function promptItems(
 function mergedCandidates(
   candidates: readonly SourceCandidate[],
   branches: readonly BranchCandidate[],
-  term: string,
 ): readonly SourceCandidate[] {
   const branchIds = new Set<string>();
   const mergedBranches = branches.filter((candidate) => {
@@ -255,27 +254,10 @@ function mergedCandidates(
     branchIds.add(candidate.id);
     return true;
   });
-
-  for (const candidate of candidates) {
-    if (
-      candidate.kind !== 'branch' ||
-      branchIds.has(candidate.id) ||
-      !candidateMatches(candidate, term)
-    ) {
-      continue;
-    }
-    const insertionIndex = mergedBranches.findIndex(
-      (branch) => branch.refName > candidate.refName,
-    );
-    if (insertionIndex === -1) {
-      mergedBranches.push(candidate);
-    } else {
-      mergedBranches.splice(insertionIndex, 0, candidate);
-    }
-    branchIds.add(candidate.id);
-  }
-
-  return [...mergedBranches, ...candidates.filter((candidate) => candidate.kind === 'worktree')];
+  return [
+    ...mergedBranches,
+    ...candidates.filter((candidate) => candidate.kind === 'worktree'),
+  ];
 }
 
 function sourceForPrompt(
@@ -302,7 +284,7 @@ function sourceForPrompt(
     }
     return promptItems(
       buildSourceSearchItems(
-        mergedCandidates(candidates, branches, effectiveTerm!),
+        mergedCandidates(candidates, branches),
         undefined,
         options,
       ),

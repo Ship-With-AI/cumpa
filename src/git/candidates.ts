@@ -68,23 +68,75 @@ function splitNul(buffer: Buffer): Buffer[] {
 
 function parseBranchRecords(buffer: Buffer): BranchRecord[] {
   const fields = splitNul(buffer);
+  if (fields.at(-1)?.equals(Buffer.from('\n'))) {
+    fields.pop();
+  }
+  if (fields.length % 3 !== 0) {
+    throw new Error('Git branch output ended with an incomplete record');
+  }
+
   const records: BranchRecord[] = [];
-  for (let index = 0; index + 2 < fields.length; index += 3) {
+  for (let index = 0; index < fields.length; index += 3) {
     let refField = fields[index]!;
-    if (refField[0] === 0x0a) {
+    if (index > 0) {
+      if (refField[0] !== 0x0a) {
+        throw new Error('Git branch output omitted a record separator');
+      }
       refField = refField.subarray(1);
-    }
-    if (refField.length === 0) {
-      continue;
     }
     const refName = refField.toString('utf8');
     const label = fields[index + 1]!.toString('utf8');
     const commitOid = GitObjectIdSchema.parse(
       fields[index + 2]!.toString('ascii'),
     );
+    if (
+      refName.length === 0 ||
+      !refName.startsWith('refs/heads/') ||
+      refName.length === 'refs/heads/'.length ||
+      label.length === 0
+    ) {
+      throw new Error('Git branch output contained an invalid local branch record');
+    }
     records.push({ refName, label, commitOid });
   }
   return records;
+}
+
+function escapeBranchPattern(term: string): string {
+  return `*${term.replace(/[\\*?\[\]]/g, '\\$&')}*`;
+}
+
+function parseAbbreviationRecords(buffer: Buffer): Map<string, string> {
+  const fields = splitNul(buffer);
+  if (fields.at(-1)?.equals(Buffer.from('\n'))) {
+    fields.pop();
+  }
+  if (fields.length % 2 !== 0) {
+    throw new Error('Git abbreviation output ended with an incomplete record');
+  }
+
+  const shortByFull = new Map<string, string>();
+  for (let index = 0; index < fields.length; index += 2) {
+    let fullField = fields[index]!;
+    if (index > 0) {
+      if (fullField[0] !== 0x0a) {
+        throw new Error('Git abbreviation output omitted a record separator');
+      }
+      fullField = fullField.subarray(1);
+    }
+    const fullOid = GitObjectIdSchema.parse(fullField.toString('ascii'));
+    const shortOid = fields[index + 1]!.toString('ascii');
+    if (
+      !/^[0-9a-f]{12,}$/.test(shortOid) ||
+      shortOid.length > fullOid.length ||
+      !fullOid.startsWith(shortOid) ||
+      shortByFull.has(fullOid)
+    ) {
+      throw new Error('Git abbreviation output contained an invalid record');
+    }
+    shortByFull.set(fullOid, shortOid);
+  }
+  return shortByFull;
 }
 
 function parseWorktreeRecords(buffer: Buffer): WorktreeRecord[] {
@@ -276,56 +328,68 @@ export async function discoverSourceCandidates(
 
       const branchResult = await runner.run(
         [
-          'for-each-ref',
+          'branch',
+          '--list',
+          '--ignore-case',
+          '--no-color',
           '--sort=refname',
           `--format=${BRANCH_FORMAT}`,
-          'refs/heads',
+          '--',
+          escapeBranchPattern(term),
         ],
         { cwd: repository.root, signal },
       );
       signal?.throwIfAborted();
-
-      const shortOidByFullOid = new Map<string, string>();
-      const candidates: BranchCandidate[] = [];
       const query = term.toLowerCase();
-      for (const record of parseBranchRecords(branchResult.stdout)) {
-        let shortOid = shortOidByFullOid.get(record.commitOid);
-        if (shortOid === undefined) {
-          const shortOidResult = await runner.run(
-            ['rev-parse', '--short=12', record.commitOid],
-            { cwd: repository.root, signal },
-          );
-          signal?.throwIfAborted();
-          shortOid = shortOidResult.stdout.toString('ascii').trim();
-          shortOidByFullOid.set(record.commitOid, shortOid);
-        }
-        if (
-          [
-            'branch',
-            'local branch',
-            record.label,
-            record.refName,
-            record.commitOid,
-            shortOid,
-          ]
-            .join(' ')
-            .toLowerCase()
-            .includes(query)
-        ) {
-          candidates.push(
-            Object.freeze({
-              kind: 'branch',
-              id: `branch:${record.refName}`,
-              label: record.label,
-              refName: record.refName,
-              commitOid: record.commitOid,
-              shortOid,
-            }),
-          );
-        }
+      const records = parseBranchRecords(branchResult.stdout)
+        .filter((record) => record.label.toLowerCase().includes(query))
+        .sort((left, right) =>
+          Buffer.compare(
+            Buffer.from(left.refName, 'utf8'),
+            Buffer.from(right.refName, 'utf8'),
+          ),
+        );
+      signal?.throwIfAborted();
+      if (records.length === 0) {
+        return Object.freeze([]);
+      }
+
+      const requestedOids = [...new Set(records.map((record) => record.commitOid))];
+      const abbreviationResult = await runner.run(
+        [
+          'log',
+          '--no-walk=unsorted',
+          '--abbrev=12',
+          '--format=%H%x00%h%x00',
+          '--stdin',
+        ],
+        {
+          cwd: repository.root,
+          input: Buffer.from(`${requestedOids.join('\n')}\n`, 'ascii'),
+          signal,
+        },
+      );
+      signal?.throwIfAborted();
+      const shortByFull = parseAbbreviationRecords(abbreviationResult.stdout);
+      if (
+        shortByFull.size !== requestedOids.length ||
+        requestedOids.some((oid) => !shortByFull.has(oid))
+      ) {
+        throw new Error('Git abbreviation output did not match requested objects');
       }
       signal?.throwIfAborted();
-      return Object.freeze(candidates);
+      return Object.freeze(
+        records.map((record) =>
+          Object.freeze({
+            kind: 'branch' as const,
+            id: `branch:${record.refName}`,
+            label: record.label,
+            refName: record.refName,
+            commitOid: record.commitOid,
+            shortOid: shortByFull.get(record.commitOid)!,
+          }),
+        ),
+      );
     },
   });
 }
