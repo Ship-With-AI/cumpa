@@ -64,7 +64,7 @@ The terminal `COMPARE_PERF_RESULT` records proved, before any child process:
 
 ### Initial valid gate — `PASS`
 
-`npm run test:performance -- --accept-budget-red` completed with `classification: "PASS"`, `completed: { warmups: 1, measured: 5 }`, settled children, removed temporary root, and no diagnostics.
+`npm run test:performance -- --accept-budget-red` completed with `classification: "PASS"`, settled children, removed the temporary root, and no diagnostics. This Task 1 payload did **not** emit `completed`; its `warmup` object and five `samples` entries establish the one discarded warmup and five measured invocations.
 
 | Invocation | Readiness ms | Search ms |
 |---|---:|---:|
@@ -79,7 +79,7 @@ The terminal `COMPARE_PERF_RESULT` records proved, before any child process:
 - Search raw min/median/max: `36.26050000000032 / 38.423917000000074 / 54.04874999999993` ms; budget `<= 500` ms.
 - Because both values passed, Task 2 made no conditional production change and no stage probes were introduced.
 
-### Final unchanged gate — `PASS`
+### Historical final unchanged gate — `PASS`
 
 The required final command was:
 
@@ -100,6 +100,22 @@ It passed **5 test files / 57 tests**, then emitted `classification: "PASS"`, `c
 
 - Final readiness raw min/median/max: `225.34012500000063 / 233.2207500000004 / 245.8800000000001` ms; budget `<= 400` ms.
 - Final search raw min/median/max: `38.40845900000022 / 40.18541699999969 / 46.34062499999982` ms; budget `<= 500` ms.
+
+### Current hardened harness gate — `PASS`
+
+After the review fixes, `npm run test:performance` exited `0` and emitted `classification: "PASS"`, `completed: { warmups: 1, measured: 5 }`, `childrenSettled: true`, `tempRemoved: true`, and `diagnostics: null`. The current fixture proof again reports `expectedCount: 10000`, `logicalCount: 10000`, `packedCount: 10000`, `looseHeadFiles: 0`, with all three set comparisons `true`.
+
+| Invocation | Readiness ms | Search ms |
+|---|---:|---:|
+| Discarded warmup | 280.76170900000034 | 37.49162499999966 |
+| Measured 1 | 220.28754200000003 | 36.95862500000021 |
+| Measured 2 | 229.08541700000023 | 37.75195799999983 |
+| Measured 3 | 226.90008299999954 | 37.83024999999998 |
+| Measured 4 | 230.18537500000002 | 36.36149999999998 |
+| Measured 5 | 212.18437499999982 | 38.07320900000013 |
+
+- Current readiness raw min/median/max: `212.18437499999982 / 226.90008299999954 / 230.18537500000002` ms; budget `<= 400` ms.
+- Current search raw min/median/max: `36.36149999999998 / 37.75195799999983 / 38.07320900000013` ms; budget `<= 500` ms.
 
 ## Task Commits
 
