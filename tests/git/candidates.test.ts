@@ -163,11 +163,15 @@ describe('truthful native-Git source candidate discovery', () => {
       'refs/remotes/origin/target-remote',
       output(repository, ['rev-parse', '--verify', `${repository.headRef}^{commit}`]),
     ]);
-    const calls: Array<{ readonly arguments_: readonly string[]; readonly cwd: string }> = [];
+    const calls: Array<{
+      readonly arguments_: readonly string[];
+      readonly cwd: string;
+      readonly signal?: AbortSignal;
+    }> = [];
     const nativeRunner = createGitRunner();
     const recordingRunner: GitRunner = {
       async run(arguments_, options) {
-        calls.push({ arguments_, cwd: options.cwd });
+        calls.push({ arguments_, cwd: options.cwd, signal: options.signal });
         return await nativeRunner.run(arguments_, options);
       },
     };
@@ -182,7 +186,8 @@ describe('truthful native-Git source candidate discovery', () => {
     expect(Object.isFrozen(empty)).toBe(true);
     expect(calls).toHaveLength(eagerCallCount);
 
-    const matches = await discovery.searchBranches('TaRgEt');
+    const searchController = new AbortController();
+    const matches = await discovery.searchBranches('TaRgEt', searchController.signal);
     expect(matches.map((candidate) => candidate.label)).toEqual(
       expect.arrayContaining(['AlphaTarget', 'alpha-target', 'target-zulu']),
     );
@@ -213,6 +218,7 @@ describe('truthful native-Git source candidate discovery', () => {
     ]);
     const logCalls = calls.filter(({ arguments_ }) => arguments_[0] === 'log');
     expect(logCalls).toHaveLength(1);
+    expect(branchCalls[0]?.signal).toBe(searchController.signal);
     expect(logCalls[0]?.arguments_).toEqual([
       'log',
       '--no-walk=unsorted',
@@ -221,6 +227,7 @@ describe('truthful native-Git source candidate discovery', () => {
       '--stdin',
     ]);
 
+    expect(logCalls[0]?.signal).toBe(searchController.signal);
     for (const [term, escapedPattern] of [
       ['*', '*\\**'],
       ['?', '*\\?*'],
@@ -356,6 +363,57 @@ describe('truthful native-Git source candidate discovery', () => {
       expect(abbreviationCalls, failure.name).toBe(0);
     }
   });
+  it('propagates caller cancellation through both branch-search Git stages', async () => {
+    const repository = await fixture();
+    const oid = 'a'.repeat(40);
+    const branch = Buffer.from(
+      `refs/heads/target\0target\0${oid}\0`,
+      'ascii',
+    );
+    const abbreviation = Buffer.from(`${oid}\0${oid.slice(0, 12)}\0`, 'ascii');
+
+    for (const abortedStage of ['branch', 'log'] as const) {
+      const controller = new AbortController();
+      let branchCalls = 0;
+      let abbreviationCalls = 0;
+      const nativeRunner = createGitRunner();
+      const controlledRunner: GitRunner = {
+        async run(arguments_, options) {
+          if (arguments_[0] === 'branch') {
+            branchCalls += 1;
+            expect(options.signal).toBe(controller.signal);
+            if (abortedStage === 'branch') {
+              controller.abort(new Error('branch listing aborted'));
+            }
+            return { stdout: branch, stderr: Buffer.alloc(0) };
+          }
+          if (arguments_[0] === 'log') {
+            abbreviationCalls += 1;
+            expect(options.signal).toBe(controller.signal);
+            if (abortedStage === 'log') {
+              controller.abort(new Error('abbreviation batching aborted'));
+            }
+            return { stdout: abbreviation, stderr: Buffer.alloc(0) };
+          }
+          return await nativeRunner.run(arguments_, options);
+        },
+      };
+      const discovery = await discoverSourceCandidates(
+        { cwd: repository.nestedCwd },
+        { runner: controlledRunner },
+      );
+
+      await expect(
+        discovery.searchBranches('target', controller.signal),
+        abortedStage,
+      ).rejects.toThrow();
+      expect(branchCalls, abortedStage).toBe(1);
+      expect(abbreviationCalls, abortedStage).toBe(
+        abortedStage === 'branch' ? 0 : 1,
+      );
+    }
+  });
+
 
 
   it('uses only byte-safe native-Git candidate protocols through the bounded runner', async () => {
