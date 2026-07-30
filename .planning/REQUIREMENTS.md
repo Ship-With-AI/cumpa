@@ -1,8 +1,53 @@
-# Exploration Requirements
+# Requirements: Compare
 
-**Captured:** 2026-07-29
-**Status:** Pending next milestone
+**Defined:** 2026-07-30
+**Milestone:** v1.2 Fast Source Discovery
+**Core Value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
 
-## CLI Performance
+## v1.2 Requirements
 
-- [ ] **PERF-01**: From process start, the ordered source picker is usable within 400 ms with the current branch and registered worktrees available; after the user starts searching, matching local branches appear within 500 ms in a repository containing 10,000 local branches, without serial per-branch Git subprocesses.
+These requirements extend the validated ordered-picker contract. Existing source identity, ordering, worktree state, selection, recovery, and failure behavior remain non-regression constraints rather than new milestone scope.
+
+### Initial Picker
+
+- [ ] **PICK-01**: User can interact with the ordered source picker before Compare enumerates all remaining local branches.
+- [ ] **PICK-02**: User initially sees the attached current branch and registered worktrees as selectable sources.
+
+### Branch Search
+
+- [ ] **SRCH-01**: User can enter a non-empty search term and receive case-insensitive literal matches from local branch names on demand.
+
+### Performance
+
+- [ ] **PERF-01**: User can use the ordered source picker within 400 ms of process start in the production-path benchmark containing 10,000 packed local branch refs.
+- [ ] **PERF-02**: User receives matching local branch search results within 500 ms of entering a term in the production-path benchmark containing 10,000 packed local branch refs.
+
+## Future Requirements
+
+- **PERF-03**: User receives sub-500 ms first-search results in repositories containing 10,000 loose local branch refs without Compare mutating repository state.
+- **SRCH-02**: User can search remote-tracking branches through an explicit local/remote source-identity contract.
+- **SRCH-03**: User can use fuzzy or relevance-ranked branch search with deterministic ordering and recovery behavior.
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Automatic `git pack-refs` or repository maintenance | Source discovery must not mutate a user's repository to meet a latency target. |
+| Persistent branch inventory or recency index | The milestone keeps Git as the only source authority and introduces no new persistence or invalidation model. |
+| Background enumeration of every local branch | It performs unrequested O(N) work and competes with the user's active search. |
+| Remote-tracking branch discovery | v1.2 remains limited to local branches and registered worktrees. |
+| Fuzzy or recency ranking | It changes validated deterministic picker behavior without addressing the measured subprocess bottleneck. |
+| Speculative debounce | Add only if production measurement shows cancellation alone is insufficient. |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| PICK-01 | TBD | Pending |
+| PICK-02 | TBD | Pending |
+| SRCH-01 | TBD | Pending |
+| PERF-01 | TBD | Pending |
+| PERF-02 | TBD | Pending |
+
+---
+*Requirements defined: 2026-07-30*
