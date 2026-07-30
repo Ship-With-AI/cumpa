@@ -90,5 +90,5 @@ Plans:
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 09. Immediate Source Picker | v1.2 | 2/2 | Complete    | 2026-07-30 |
-| 10. On-Demand Branch Search | v1.2 | 1/1 | Complete   | 2026-07-30 |
+| 10. On-Demand Branch Search | v1.2 | 1/1 | Complete    | 2026-07-30 |
 | 11. Production Performance Gate | v1.2 | 0/TBD | Not started | - |
