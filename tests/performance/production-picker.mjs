@@ -23,6 +23,8 @@ for (const key of [
   'GIT_INDEX_FILE',
   'GIT_OBJECT_DIRECTORY',
   'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+  'COMPARE_LAUNCH_OPTIONS',
+  'CMUX_WORKSPACE_ID',
 ]) {
   delete baseEnvironment[key];
 }
@@ -248,7 +250,6 @@ function runPickerSample({ repository, mainShortOid, targetShortOid, kind }) {
     let settled = false;
     let child;
     let closed;
-    const readyStartedAt = performance.now();
     const stdoutDecoder = new StringDecoder('utf8');
     const fail = async (error) => {
       if (settled) return;
@@ -273,6 +274,7 @@ function runPickerSample({ repository, mainShortOid, targetShortOid, kind }) {
         void fail(new Error(`${phase} marker watchdog expired after ${MARKER_TIMEOUT_MS} ms`));
       }, MARKER_TIMEOUT_MS);
     };
+    const readyStartedAt = performance.now();
     child = spawn(process.execPath, [executablePath], {
       cwd: repository,
       env: environment,
@@ -287,8 +289,8 @@ function runPickerSample({ repository, mainShortOid, targetShortOid, kind }) {
       markerTail = markerOutput.slice(-markerLimit);
       if (readyMs === undefined && markerOutput.includes(readyMarker)) {
         readyMs = performance.now() - readyStartedAt;
-        searchStartedAt = performance.now();
         try {
+          searchStartedAt = performance.now();
           child.stdin.write('branch-09999');
         } catch (error) {
           void fail(error);

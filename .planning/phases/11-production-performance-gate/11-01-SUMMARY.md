@@ -101,21 +101,21 @@ It passed **5 test files / 57 tests**, then emitted `classification: "PASS"`, `c
 - Final readiness raw min/median/max: `225.34012500000063 / 233.2207500000004 / 245.8800000000001` ms; budget `<= 400` ms.
 - Final search raw min/median/max: `38.40845900000022 / 40.18541699999969 / 46.34062499999982` ms; budget `<= 500` ms.
 
-### Current hardened harness gate — `PASS`
+### Post-CR-03/WR-04 gate — `PASS`
 
-After the review fixes, `npm run test:performance` exited `0` and emitted `classification: "PASS"`, `completed: { warmups: 1, measured: 5 }`, `childrenSettled: true`, `tempRemoved: true`, and `diagnostics: null`. The current fixture proof again reports `expectedCount: 10000`, `logicalCount: 10000`, `packedCount: 10000`, `looseHeadFiles: 0`, with all three set comparisons `true`.
+With the shared environment deleting `COMPARE_LAUNCH_OPTIONS` and `CMUX_WORKSPACE_ID`, and parent clocks starting immediately before `spawn()` and the guarded `stdin.write('branch-09999')`, `npm run test:performance` exited `0`. It emitted `classification: "PASS"`, `completed: { warmups: 1, measured: 5 }`, `childrenSettled: true`, `tempRemoved: true`, `diagnostics: null`, and `environment: { removedCompareLaunchOptions: true, removedCmuxWorkspaceId: true, shell: false, stdinTerm: "branch-09999" }`. Fixture proof: `expectedCount: 10000`, `logicalCount: 10000`, `packedCount: 10000`, `looseHeadFiles: 0`; all three set comparisons were `true`.
 
 | Invocation | Readiness ms | Search ms |
 |---|---:|---:|
-| Discarded warmup | 280.76170900000034 | 37.49162499999966 |
-| Measured 1 | 220.28754200000003 | 36.95862500000021 |
-| Measured 2 | 229.08541700000023 | 37.75195799999983 |
-| Measured 3 | 226.90008299999954 | 37.83024999999998 |
-| Measured 4 | 230.18537500000002 | 36.36149999999998 |
-| Measured 5 | 212.18437499999982 | 38.07320900000013 |
+| Discarded warmup | 275.4880830000002 | 35.987208000000464 |
+| Measured 1 | 213.104875 | 36.39816599999995 |
+| Measured 2 | 211.95970800000032 | 36.07824999999957 |
+| Measured 3 | 214.61366699999962 | 34.94012499999917 |
+| Measured 4 | 291.18216699999994 | 41.32329200000004 |
+| Measured 5 | 215.50520799999958 | 38.64375000000018 |
 
-- Current readiness raw min/median/max: `212.18437499999982 / 226.90008299999954 / 230.18537500000002` ms; budget `<= 400` ms.
-- Current search raw min/median/max: `36.36149999999998 / 37.75195799999983 / 38.07320900000013` ms; budget `<= 500` ms.
+- Readiness raw min/median/max: `211.95970800000032 / 214.61366699999962 / 291.18216699999994` ms; budget `<= 400` ms.
+- Search raw min/median/max: `34.94012499999917 / 36.39816599999995 / 41.32329200000004` ms; budget `<= 500` ms.
 
 ## Task Commits
 
