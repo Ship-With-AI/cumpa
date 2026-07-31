@@ -34,6 +34,8 @@ interface CandidateDiscoveryDependencies {
 
 export interface SourceDiscovery {
   readonly initialCandidates: readonly SourceCandidate[];
+  readonly candidateEnrichment: Promise<readonly SourceCandidate[]>;
+  readonly startCandidateEnrichment: () => void;
   readonly searchBranches: (
     term: string,
     signal?: AbortSignal,
@@ -301,78 +303,61 @@ export async function discoverSourceCandidates(
   );
   options.signal?.throwIfAborted();
   const worktreeRecords = parseWorktreeRecords(worktreeResult.stdout);
-  const shortOidByFullOid = new Map<string, string>();
+  const shortOidByFullOid = new Map<string, Promise<string>>();
 
   const abbreviate = async (oid: string): Promise<string> => {
     const known = shortOidByFullOid.get(oid);
     if (known !== undefined) {
       return known;
     }
-    const result = await runner.run(['rev-parse', '--short=12', oid], {
-      cwd: repository.root,
-      signal: options.signal,
-    });
-    options.signal?.throwIfAborted();
-    const shortOid = stripGitLineTerminator(result.stdout).toString('latin1');
-    if (
-      !/^[0-9a-f]{12,}$/.test(shortOid) ||
-      shortOid.length > oid.length ||
-      !oid.startsWith(shortOid)
-    ) {
-      throw new Error('Git worktree abbreviation output contained an invalid OID');
-    }
-    shortOidByFullOid.set(oid, shortOid);
-    return shortOid;
+    const pending = (async () => {
+      const result = await runner.run(['rev-parse', '--short=12', oid], {
+        cwd: repository.root,
+        signal: options.signal,
+      });
+      options.signal?.throwIfAborted();
+      const shortOid = stripGitLineTerminator(result.stdout).toString('latin1');
+      if (
+        !/^[0-9a-f]{12,}$/.test(shortOid) ||
+        shortOid.length > oid.length ||
+        !oid.startsWith(shortOid)
+      ) {
+        throw new Error('Git worktree abbreviation output contained an invalid OID');
+      }
+      return shortOid;
+    })();
+    shortOidByFullOid.set(oid, pending);
+    return pending;
   };
 
-  const worktreeCandidates: WorktreeCandidate[] = [];
   let currentBranch: BranchCandidate | undefined;
-  for (const record of worktreeRecords) {
+  const resolveWorktreeIdentity = async (
+    record: WorktreeRecord,
+  ): Promise<WorktreeCandidate | undefined> => {
     if (record.path === undefined) {
-      continue;
+      return undefined;
     }
 
     // A missing porcelain HEAD is Git's valid unborn-worktree representation.
     let commitOid = record.headOid;
     let availability: WorktreeCandidate['availability'] =
-      record.prunable || record.bare ? 'unavailable' : 'clean';
+      record.prunable || record.bare ? 'unavailable' : 'pending';
 
     if (availability !== 'unavailable') {
-      let headResult: GitRunResult | undefined;
       try {
-        headResult = await runner.run(
+        const headResult = await runner.run(
           ['rev-parse', '--verify', '--end-of-options', 'HEAD^{commit}'],
           { cwd: record.path, signal: options.signal },
         );
         options.signal?.throwIfAborted();
+        commitOid = GitObjectIdSchema.parse(
+          stripGitLineTerminator(headResult.stdout).toString('latin1'),
+        );
       } catch (error) {
         if (options.signal?.aborted) {
           throw error;
         }
         availability = 'unavailable';
-      }
-      if (headResult !== undefined) {
-        commitOid = GitObjectIdSchema.parse(
-          stripGitLineTerminator(headResult.stdout).toString('latin1'),
-        );
-        try {
-          const statusResult = await runner.run(
-            [
-              'status',
-              '--porcelain=v1',
-              '-z',
-              '--untracked-files=normal',
-            ],
-            { cwd: record.path, signal: options.signal },
-          );
-          options.signal?.throwIfAborted();
-          availability = statusResult.stdout.length === 0 ? 'clean' : 'dirty';
-        } catch (error) {
-          if (options.signal?.aborted) {
-            throw error;
-          }
-          availability = 'unavailable';
-        }
       }
     }
 
@@ -399,7 +384,6 @@ export async function discoverSourceCandidates(
         : {}),
       isCurrentCheckout: record.path === repository.root,
     };
-    worktreeCandidates.push(Object.freeze(candidate));
 
     if (
       record.path === repository.root &&
@@ -416,14 +400,70 @@ export async function discoverSourceCandidates(
         shortOid,
       });
     }
-  }
+    return Object.freeze(candidate);
+  };
+  const worktreeCandidates = (
+    await Promise.all(worktreeRecords.map(resolveWorktreeIdentity))
+  ).filter(
+    (candidate): candidate is WorktreeCandidate => candidate !== undefined,
+  );
 
   options.signal?.throwIfAborted();
-  return Object.freeze({
-    initialCandidates: Object.freeze([
+  const initialCandidates = Object.freeze([
+    ...(currentBranch === undefined ? [] : [currentBranch]),
+    ...worktreeCandidates,
+  ]);
+  const enrichmentStart = Promise.withResolvers<void>();
+  let enrichmentStarted = false;
+  const startCandidateEnrichment = () => {
+    if (!enrichmentStarted) {
+      enrichmentStarted = true;
+      setImmediate(enrichmentStart.resolve);
+    }
+  };
+  const candidateEnrichment = enrichmentStart.promise.then(async () => {
+    options.signal?.throwIfAborted();
+    const enrichedWorktrees = await Promise.all(
+      worktreeCandidates.map(async (candidate) => {
+        if (candidate.availability === 'unavailable') {
+          return candidate;
+        }
+        try {
+          const statusResult = await runner.run(
+            ['status', '--porcelain=v1', '-z', '--untracked-files=normal'],
+            { cwd: candidate.path, signal: options.signal },
+          );
+          options.signal?.throwIfAborted();
+          return Object.freeze({
+            ...candidate,
+            availability:
+              statusResult.stdout.length === 0
+                ? ('clean' as const)
+                : ('dirty' as const),
+          });
+        } catch (error) {
+          if (options.signal?.aborted) {
+            throw error;
+          }
+          return Object.freeze({
+            ...candidate,
+            availability: 'unavailable' as const,
+            unavailableReason: UNAVAILABLE_WORKTREE_REASON,
+          });
+        }
+      }),
+    );
+    return Object.freeze([
       ...(currentBranch === undefined ? [] : [currentBranch]),
-      ...worktreeCandidates,
-    ]),
+      ...enrichedWorktrees,
+    ]);
+  });
+  void candidateEnrichment.catch(() => undefined);
+
+  return Object.freeze({
+    startCandidateEnrichment,
+    initialCandidates,
+    candidateEnrichment,
     async searchBranches(
       term: string,
       signal?: AbortSignal,

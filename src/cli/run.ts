@@ -113,6 +113,8 @@ export interface RunCliDependencies {
     options: {
       readonly candidates: readonly SourceCandidate[];
       readonly searchBranches: SourceDiscovery['searchBranches'];
+      readonly candidateEnrichment?: SourceDiscovery['candidateEnrichment'];
+      readonly startCandidateEnrichment?: SourceDiscovery['startCandidateEnrichment'];
       readonly suggestedHeadId?: string;
       readonly initialBase?: SourceCandidate;
       readonly initialHead?: SourceCandidate;
@@ -298,7 +300,8 @@ function selectionForWorktree(
   candidate: WorktreeCandidate,
 ): ComparisonSelection {
   if (
-    candidate.availability === 'unavailable' ||
+    (candidate.availability !== 'clean' &&
+      candidate.availability !== 'dirty') ||
     candidate.commitOid === undefined
   ) {
     throw new Error(
@@ -374,6 +377,8 @@ export async function runCli(
     const selected = await pickSources({
       candidates,
       searchBranches,
+      candidateEnrichment: discovery.candidateEnrichment,
+      startCandidateEnrichment: discovery.startCandidateEnrichment,
       ...(suggestedHead === undefined
         ? {}
         : { suggestedHeadId: suggestedHead.id }),

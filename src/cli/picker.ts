@@ -2,6 +2,7 @@ import search, { Separator } from '@inquirer/search';
 
 import {
   DIRTY_ROW_LABEL,
+  PENDING_ROW_LABEL,
   UNAVAILABLE_WORKTREE_REASON,
   type BranchCandidate,
   type OrderedSources,
@@ -76,6 +77,8 @@ export interface PickerRecoveryOptions {
 export interface PickOrderedSourcesOptions {
   readonly candidates: readonly SourceCandidate[];
   readonly searchBranches: SourceDiscovery['searchBranches'];
+  readonly candidateEnrichment?: SourceDiscovery['candidateEnrichment'];
+  readonly startCandidateEnrichment?: SourceDiscovery['startCandidateEnrichment'];
   readonly suggestedHeadId?: string;
   readonly initialBase?: SourceCandidate;
   readonly initialHead?: SourceCandidate;
@@ -116,6 +119,9 @@ export function escapeTerminalText(value: string): string {
 function worktreeState(candidate: WorktreeCandidate): string {
   if (candidate.availability === 'dirty') {
     return DIRTY_ROW_LABEL;
+  }
+  if (candidate.availability === 'pending') {
+    return PENDING_ROW_LABEL;
   }
   if (candidate.availability === 'unavailable') {
     return 'Unavailable';
@@ -261,20 +267,28 @@ function mergedCandidates(
 }
 
 function sourceForPrompt(
-  candidates: readonly SourceCandidate[],
+  candidates: () => readonly SourceCandidate[],
   searchBranches: SourceDiscovery['searchBranches'],
   candidateById: Map<string, SourceCandidate>,
+  startCandidateEnrichment: (() => void) | undefined,
   options: BuildSourceSearchOptions,
   initialSearchTerm = '',
 ): SourceSearchPromptConfig['source'] {
   let firstRequest = true;
   return async (term, { signal }) => {
     signal.throwIfAborted();
+    const startEnrichment = firstRequest;
     const effectiveTerm =
       firstRequest && term === undefined ? initialSearchTerm : term;
     firstRequest = false;
     if ((effectiveTerm ?? '').length === 0) {
-      return promptItems(buildSourceSearchItems(candidates, effectiveTerm, options));
+      const items = promptItems(
+        buildSourceSearchItems(candidates(), effectiveTerm, options),
+      );
+      if (startEnrichment) {
+        startCandidateEnrichment?.();
+      }
+      return items;
     }
 
     const branches = await searchBranches(effectiveTerm!, signal);
@@ -282,13 +296,17 @@ function sourceForPrompt(
     for (const candidate of branches) {
       candidateById.set(candidate.id, candidate);
     }
-    return promptItems(
+    const items = promptItems(
       buildSourceSearchItems(
-        mergedCandidates(candidates, branches),
+        mergedCandidates(candidates(), branches),
         undefined,
         options,
       ),
     );
+    if (startEnrichment) {
+      startCandidateEnrichment?.();
+    }
+    return items;
   };
 }
 
@@ -296,9 +314,20 @@ export async function pickOrderedSources(
   options: PickOrderedSourcesOptions,
   dependencies: PickOrderedSourcesDependencies = {},
 ): Promise<OrderedSources> {
+  let currentCandidates = options.candidates;
   const candidateById = new Map(
-    options.candidates.map((candidate) => [candidate.id, candidate] as const),
+    currentCandidates.map((candidate) => [candidate.id, candidate] as const),
   );
+  const candidateEnrichment = options.candidateEnrichment?.then(
+    (enrichedCandidates) => {
+      currentCandidates = enrichedCandidates;
+      for (const candidate of enrichedCandidates) {
+        candidateById.set(candidate.id, candidate);
+      }
+      return enrichedCandidates;
+    },
+  );
+  void candidateEnrichment?.catch(() => undefined);
   const prompt: SourceSearchPrompt =
     dependencies.prompt ??
     (async (config) =>
@@ -308,19 +337,20 @@ export async function pickOrderedSources(
         ...(config.default === undefined ? {} : { default: config.default }),
       }));
   let base = options.initialBase;
-  const retainedHead = options.initialHead;
+  let head = options.initialHead;
 
   while (true) {
     if (base === undefined) {
       const selectedBaseId = await prompt({
         message:
-          retainedHead === undefined
+          head === undefined
             ? BASE_PROMPT
-            : `${BASE_PROMPT}\nHead retained: ${escapeTerminalText(retainedHead.label)} · ${retainedHead.shortOid ?? 'unavailable'}`,
+            : `${BASE_PROMPT}\nHead retained: ${escapeTerminalText(head.label)} · ${head.shortOid ?? 'unavailable'}`,
         source: sourceForPrompt(
-          options.candidates,
+          () => currentCandidates,
           options.searchBranches,
           candidateById,
+          options.startCandidateEnrichment,
           { role: 'base' },
           options.recovery?.role === 'base'
             ? options.recovery.searchTerm
@@ -338,42 +368,66 @@ export async function pickOrderedSources(
       if (base === undefined) {
         throw new Error('Base selection did not identify an available source');
       }
-      if (retainedHead !== undefined) {
-        return Object.freeze({ base, head: retainedHead });
+    }
+
+    if (head === undefined) {
+      const selectedHeadId = await prompt({
+        message:
+          options.recovery?.role === 'head'
+            ? `${HEAD_PROMPT}\nBase retained: ${escapeTerminalText(base.label)} · ${base.shortOid ?? 'unavailable'}`
+            : HEAD_PROMPT,
+        source: sourceForPrompt(
+          () => currentCandidates,
+          options.searchBranches,
+          candidateById,
+          options.startCandidateEnrichment,
+          {
+            role: 'head',
+            suggestedHeadId: options.suggestedHeadId,
+          },
+          options.recovery?.role === 'head' ? options.recovery.searchTerm : '',
+        ),
+        default:
+          options.recovery?.role === 'head'
+            ? options.recovery.focusedCandidateId
+            : options.suggestedHeadId,
+        backValue: BACK_TO_BASE,
+      });
+      if (selectedHeadId === BACK_TO_BASE) {
+        base = undefined;
+        continue;
+      }
+      head =
+        selectedHeadId === undefined
+          ? undefined
+          : candidateById.get(selectedHeadId);
+      if (head === undefined) {
+        throw new Error('Head selection did not identify an available source');
       }
     }
 
-    const selectedHeadId = await prompt({
-      message:
-        options.recovery?.role === 'head'
-          ? `${HEAD_PROMPT}\nBase retained: ${escapeTerminalText(base.label)} · ${base.shortOid ?? 'unavailable'}`
-          : HEAD_PROMPT,
-      source: sourceForPrompt(
-        options.candidates,
-        options.searchBranches,
-        candidateById,
-        {
-          role: 'head',
-          suggestedHeadId: options.suggestedHeadId,
-        },
-        options.recovery?.role === 'head' ? options.recovery.searchTerm : '',
-      ),
-      default:
-        options.recovery?.role === 'head'
-          ? options.recovery.focusedCandidateId
-          : options.suggestedHeadId,
-      backValue: BACK_TO_BASE,
-    });
-    if (selectedHeadId === BACK_TO_BASE) {
+    if (
+      candidateEnrichment !== undefined &&
+      (base.kind === 'worktree' || head.kind === 'worktree')
+    ) {
+      options.startCandidateEnrichment?.();
+      await candidateEnrichment;
+      base = candidateById.get(base.id);
+      head = candidateById.get(head.id);
+      if (base === undefined) {
+        throw new Error('Base selection did not identify an available source');
+      }
+      if (head === undefined) {
+        throw new Error('Head selection did not identify an available source');
+      }
+    }
+    if (base.kind === 'worktree' && base.availability === 'unavailable') {
       base = undefined;
       continue;
     }
-    const head =
-      selectedHeadId === undefined
-        ? undefined
-        : candidateById.get(selectedHeadId);
-    if (head === undefined) {
-      throw new Error('Head selection did not identify an available source');
+    if (head.kind === 'worktree' && head.availability === 'unavailable') {
+      head = undefined;
+      continue;
     }
     return Object.freeze({ base, head });
   }

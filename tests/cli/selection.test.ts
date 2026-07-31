@@ -249,19 +249,27 @@ describe('staged source discovery', () => {
     shortOid: '222222222222',
   } as const satisfies SourceCandidate;
 
-  it('installs Base and Head from eager rows before deferred branch discovery starts', async () => {
+  it('renders identities before installing exact asynchronous worktree state', async () => {
     let searchStarted = false;
     const sourceCalls: SourceSearchPromptConfig[] = [];
     const answers = ['branch:refs/heads/feature', 'worktree:/repo'];
+    const candidateEnrichment =
+      Promise.withResolvers<readonly SourceCandidate[]>();
+    const identityCandidates = [
+      eagerCandidates[0],
+      { ...eagerCandidates[1], availability: 'pending' as const },
+      eagerCandidates[2],
+    ];
 
     const selected = await pickOrderedSources(
       {
-        candidates: eagerCandidates,
+        candidates: identityCandidates,
+        candidateEnrichment: candidateEnrichment.promise,
         searchBranches: async () => {
           searchStarted = true;
           return [alphaCandidate];
         },
-      } as never,
+      },
       {
         prompt: async (config) => {
           sourceCalls.push(config);
@@ -283,6 +291,17 @@ describe('staged source discovery', () => {
             'worktree:/repo/detached',
           ]);
           expect(searchStarted).toBe(false);
+          if (sourceCalls.length === 1) {
+            expect(
+              items.find(
+                (item) =>
+                  !(item instanceof Separator) &&
+                  item.value === 'worktree:/repo',
+              )?.name,
+            ).toContain('Checking worktree state…');
+          } else {
+            setTimeout(() => candidateEnrichment.resolve(eagerCandidates), 10);
+          }
           return answers.shift();
         },
       },
@@ -292,6 +311,15 @@ describe('staged source discovery', () => {
       base: candidates[1],
       head: candidates[2],
     });
+    const refreshedItems = await sourceCalls[1]!.source(undefined, {
+      signal: new AbortController().signal,
+    });
+    expect(
+      refreshedItems.find(
+        (item) =>
+          !(item instanceof Separator) && item.value === 'worktree:/repo',
+      )?.name,
+    ).toContain('Dirty — committed HEAD only');
     expect(sourceCalls).toHaveLength(2);
     expect(searchStarted).toBe(false);
   });

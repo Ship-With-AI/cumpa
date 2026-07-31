@@ -50,15 +50,18 @@ describe('truthful native-Git source candidate discovery', () => {
     const discovery = await discoverSourceCandidates({
       cwd: repository.nestedCwd,
     });
-    const branches = discovery.initialCandidates.filter(
+    discovery.startCandidateEnrichment();
+    const enrichedCandidates = await discovery.candidateEnrichment;
+    const branches = enrichedCandidates.filter(
       (candidate) => candidate.kind === 'branch',
     );
-    const worktrees = discovery.initialCandidates.filter(
+    const worktrees = enrichedCandidates.filter(
       (candidate) => candidate.kind === 'worktree',
     );
 
     expect(Object.isFrozen(discovery)).toBe(true);
     expect(Object.isFrozen(discovery.initialCandidates)).toBe(true);
+    expect(Object.isFrozen(enrichedCandidates)).toBe(true);
     expect(branches.every((candidate) => Object.isFrozen(candidate))).toBe(true);
     expect(worktrees.every((candidate) => Object.isFrozen(candidate))).toBe(true);
     expect(branches).toMatchObject([
@@ -114,7 +117,7 @@ describe('truthful native-Git source candidate discovery', () => {
       '--short=12',
       expectedFeatureOid,
     ]);
-    const duplicateOidRows = discovery.initialCandidates.filter(
+    const duplicateOidRows = enrichedCandidates.filter(
       (candidate) => candidate.commitOid === expectedFeatureOid,
     );
 
@@ -128,6 +131,104 @@ describe('truthful native-Git source candidate discovery', () => {
     expect(duplicateOidRows.every((candidate) => candidate.id !== candidate.commitOid)).toBe(
       true,
     );
+  });
+
+  it('starts every worktree dirty-state check before waiting for one to finish', async () => {
+    const repository = await fixture();
+    const fixtureRoot = dirname(repository.root);
+    const firstLinkedPath = join(fixtureRoot, 'first-linked-worktree');
+    const secondLinkedPath = join(fixtureRoot, 'second-linked-worktree');
+    repository.git([
+      'worktree',
+      'add',
+      '--detach',
+      firstLinkedPath,
+      repository.headRef,
+    ]);
+    repository.git([
+      'worktree',
+      'add',
+      '--detach',
+      secondLinkedPath,
+      repository.headRef,
+    ]);
+
+    const runner = createGitRunner();
+    const statusGate = Promise.withResolvers<void>();
+    const firstStatusStarted = Promise.withResolvers<void>();
+    const headOid = output(repository, [
+      'rev-parse',
+      '--verify',
+      'HEAD^{commit}',
+    ]);
+    let statusCalls = 0;
+    let currentStatusCwd: string | undefined;
+    const gatedRunner: GitRunner = {
+      async run(arguments_, options) {
+        if (
+          arguments_[0] === 'rev-parse' &&
+          arguments_.includes('HEAD^{commit}')
+        ) {
+          return {
+            stdout: Buffer.from(`${headOid}\n`, 'ascii'),
+            stderr: Buffer.alloc(0),
+          };
+        }
+        if (arguments_[0] === 'status') {
+          statusCalls += 1;
+          currentStatusCwd = options.cwd;
+          firstStatusStarted.resolve();
+          await statusGate.promise;
+          return {
+            stdout:
+              options.cwd === repository.root
+                ? Buffer.from('?? untracked.txt\0')
+                : Buffer.alloc(0),
+            stderr: Buffer.alloc(0),
+          };
+        }
+        return await runner.run(arguments_, options);
+      },
+    };
+
+    const discoveryPromise = discoverSourceCandidates(
+      { cwd: repository.nestedCwd },
+      { runner: gatedRunner },
+    );
+    const publication = await Promise.race([
+      discoveryPromise.then(() => 'published'),
+      new Promise<'blocked'>((resolve) => {
+        setTimeout(() => resolve('blocked'), 2_000);
+      }),
+    ]);
+    if (publication === 'blocked') {
+      statusGate.resolve();
+    }
+    const discovery = await discoveryPromise;
+    discovery.startCandidateEnrichment();
+    await firstStatusStarted.promise;
+    const statusCallsBeforeRelease = statusCalls;
+    statusGate.resolve();
+    const enrichedCandidates = await discovery.candidateEnrichment;
+
+    expect(publication).toBe('published');
+    expect(statusCallsBeforeRelease).toBe(3);
+    expect(currentStatusCwd).toBeDefined();
+    expect(
+      discovery.initialCandidates.find(
+        (candidate) => candidate.id === `worktree:${repository.root}`,
+      ),
+    ).toMatchObject({ availability: 'pending' });
+    expect(
+      enrichedCandidates.find(
+        (candidate) => candidate.id === `worktree:${repository.root}`,
+      ),
+    ).toMatchObject({ availability: 'dirty' });
+    expect(
+      enrichedCandidates
+        .filter((candidate) => candidate.kind === 'worktree')
+        .map((candidate) => candidate.path),
+    ).toEqual([repository.root, firstLinkedPath, secondLinkedPath]);
   });
 
   it('does not fabricate an attached branch for a detached current checkout', async () => {
@@ -970,10 +1071,12 @@ describe('truthful native-Git source candidate discovery', () => {
       },
     };
 
-    await discoverSourceCandidates(
+    const discovery = await discoverSourceCandidates(
       { cwd: repository.nestedCwd },
       { runner: recordingRunner },
     );
+    discovery.startCandidateEnrichment();
+    await discovery.candidateEnrichment;
 
     expect(calls.some(({ arguments_ }) =>
       JSON.stringify(arguments_) ===

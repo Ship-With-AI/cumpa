@@ -1,10 +1,15 @@
 export const DIRTY_ROW_LABEL = 'Dirty — committed HEAD only';
 export const DIRTY_EXPLANATION =
   "The worktree's committed HEAD will be reviewed. Staged, unstaged, and untracked bytes are ignored.";
+export const PENDING_ROW_LABEL = 'Checking worktree state…';
 export const UNAVAILABLE_WORKTREE_REASON =
   'Unavailable — this registered worktree cannot be resolved. Choose another entry or repair it with Git.';
 
-export type CandidateAvailability = 'clean' | 'dirty' | 'unavailable';
+export type CandidateAvailability =
+  | 'clean'
+  | 'dirty'
+  | 'pending'
+  | 'unavailable';
 
 interface SourceCandidateBase {
   readonly id: string;
