@@ -85,6 +85,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260731-hdw | Standardize CLI-managed directory and live product naming | 2026-07-31 | b6fef23 | [260731-hdw-the-directory-created-by-the-cli-should-](./quick/260731-hdw-the-directory-created-by-the-cli-should-/) |
+| 260731-ll9 | Maximize diff space with collapsible Files sidebar | 2026-07-31 | 62ebd25 | [260731-ll9-maximize-diff-space](./quick/260731-ll9-maximize-diff-space/) |
 
 ## Deferred Items
 
