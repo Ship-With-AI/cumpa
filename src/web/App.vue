@@ -75,6 +75,7 @@ const isNarrow = ref(false);
 const isFilesDrawer = ref(false);
 const isCommentsDrawer = ref(false);
 const filesOpen = ref(false);
+const filesCollapsed = ref(false);
 const commentsOpen = ref(false);
 const keyboardHelpOpen = ref(false);
 const liveMessage = ref('');
@@ -147,6 +148,14 @@ function openFiles(): void {
   filesOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
   filesOpen.value = true;
   void nextTick(() => filesDrawer.value?.focus());
+}
+
+function toggleFiles(): void {
+  if (isFilesDrawer.value) {
+    openFiles();
+  } else {
+    filesCollapsed.value = !filesCollapsed.value;
+  }
 }
 
 function closeFiles(): void {
@@ -793,11 +802,18 @@ onBeforeUnmount(() => {
       @recovered="acceptRecoveredDraft"
       @open-new-draft="openRecoveredDraft"
     />
-    <div v-else class="review-shell" :inert="identityOpen && isNarrow">
+    <div
+      v-else
+      class="review-shell"
+      :class="{ 'review-shell--files-collapsed': !isFilesDrawer && filesCollapsed }"
+      :inert="identityOpen && isNarrow"
+    >
       <nav
+        v-if="isFilesDrawer || !filesCollapsed"
         ref="filesDrawer"
         class="review-files"
         :class="{ 'review-files--open': filesOpen }"
+        id="changed-files"
         :inert="isFilesDrawer && !filesOpen"
         :aria-hidden="isFilesDrawer && !filesOpen ? 'true' : undefined"
         aria-label="Changed files"
@@ -822,7 +838,13 @@ onBeforeUnmount(() => {
                   <template v-else>{{ selectedPath }}</template>
                 </h1>
               </div>
-              <button v-if="isFilesDrawer" type="button" class="ui-button" @click="openFiles">Files</button>
+              <button
+                type="button"
+                class="ui-button"
+                aria-controls="changed-files"
+                :aria-expanded="isFilesDrawer ? filesOpen : !filesCollapsed"
+                @click="toggleFiles"
+              >Files</button>
             </div>
             <div class="review-context-header__endpoint review-context-header__endpoint--base">
               <span class="review-context-header__endpoint-label">Base</span>

@@ -791,6 +791,11 @@ input:-webkit-autofill:focus {
   line-height: var(--line-height-body);
 }
 
+.review-files .tree-row {
+  font-size: var(--font-size-metadata);
+  line-height: var(--line-height-metadata);
+}
+
 .review-files .tree-row:focus-visible {
   outline-offset: -2px;
 }
@@ -1115,6 +1120,10 @@ input:-webkit-autofill:focus {
   grid-template-columns: 288px minmax(0, 1fr) 360px;
 }
 
+.review-shell--files-collapsed {
+  grid-template-columns: minmax(0, 1fr) 360px;
+}
+
 .review-files,
 .comments-rail {
   min-width: 0;
@@ -1168,8 +1177,8 @@ input:-webkit-autofill:focus {
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
   grid-template-areas: "base file head";
   align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
 }
 
 .review-context-header__endpoint--base {
@@ -1217,6 +1226,8 @@ input:-webkit-autofill:focus {
 
 .review-context-header__endpoint-name {
   color: var(--text-primary);
+  font-size: var(--font-size-metadata);
+  line-height: var(--line-height-metadata);
 }
 
 .review-context-header__endpoint-oid {
@@ -1235,6 +1246,8 @@ input:-webkit-autofill:focus {
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
 }
 
 .review-context-header__toolbar {
@@ -1248,11 +1261,16 @@ input:-webkit-autofill:focus {
   width: 100%;
   min-width: 0;
   max-width: 100%;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
   border-bottom: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.review-context-header .ui-button {
+  font-size: var(--font-size-metadata);
+  line-height: var(--line-height-metadata);
 }
 
 .review-toolbar__group {
@@ -2007,6 +2025,10 @@ h3.conversation-card__identity {
 @media (max-width: 1439px) {
   .review-shell {
     grid-template-columns: 256px minmax(0, 1fr);
+  }
+
+  .review-shell--files-collapsed {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .comments-rail {

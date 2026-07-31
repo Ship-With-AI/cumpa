@@ -972,7 +972,7 @@ test('responsive keyboard and accessibility contract', async ({
       }));
       expect(typography).toEqual([
         ['.session-header h1', '20px', '600', '28px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.review-context-header__file h1', '16px', '600', '24px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.review-context-header__file h1', '14px', '600', '20px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['[data-normal-file]', '14px', '400', '20px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['.availability-marker', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['.pin-cue', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
@@ -1227,6 +1227,58 @@ test('responsive keyboard and accessibility contract', async ({
       const sessionHeader = page.locator('.session-header');
       const headerFacts = page.locator('.header-facts');
       const overlayShadow = 'rgba(0, 0, 0, 0.4) 0px 8px 24px 0px';
+      const assertFilesCollapse = async (width: number): Promise<void> => {
+        await page.setViewportSize({ width, height: 560 });
+        const filesButton = page.getByRole('button', { name: 'Files', exact: true });
+        await expect(filesButton).toHaveAttribute('aria-controls', 'changed-files');
+        await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
+        const before = await reviewShell.evaluate((shell) => {
+          const files = shell.querySelector<HTMLElement>('.review-files')!;
+          const main = shell.querySelector<HTMLElement>('.review-main')!;
+          const filesBox = files.getBoundingClientRect();
+          const mainBox = main.getBoundingClientRect();
+          return {
+            files: { x: filesBox.x, width: filesBox.width },
+            main: { x: mainBox.x, width: mainBox.width },
+          };
+        });
+        expect(before.files.x + before.files.width).toBeCloseTo(before.main.x, 3);
+
+        await filesButton.click();
+        await expect(filesButton).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.getByRole('navigation', { name: 'Changed files', exact: true })).toHaveCount(0);
+        const collapsed = await reviewShell.evaluate((shell) => {
+          const main = shell.querySelector<HTMLElement>('.review-main')!;
+          const shellBox = shell.getBoundingClientRect();
+          const mainBox = main.getBoundingClientRect();
+          return {
+            shellX: shellBox.x,
+            main: { x: mainBox.x, width: mainBox.width },
+          };
+        });
+        expect(collapsed.main.x).toBeCloseTo(collapsed.shellX, 3);
+        expect(collapsed.main.width).toBeGreaterThan(before.main.width);
+        await assertNoPageOverflow(page);
+
+        await filesButton.click();
+        await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.getByRole('navigation', { name: 'Changed files', exact: true })).toBeVisible();
+        const restored = await reviewShell.evaluate((shell) => {
+          const files = shell.querySelector<HTMLElement>('.review-files')!;
+          const main = shell.querySelector<HTMLElement>('.review-main')!;
+          const filesBox = files.getBoundingClientRect();
+          const mainBox = main.getBoundingClientRect();
+          return {
+            files: { x: filesBox.x, width: filesBox.width },
+            main: { x: mainBox.x, width: mainBox.width },
+          };
+        });
+        expect(restored.files.x).toBeCloseTo(before.files.x, 3);
+        expect(restored.files.width).toBeCloseTo(before.files.width, 3);
+        expect(restored.main.x).toBeCloseTo(before.main.x, 3);
+        expect(restored.main.width).toBeCloseTo(before.main.width, 3);
+        await assertNoPageOverflow(page);
+      };
 
       await page.setViewportSize({ width: 1440, height: 560 });
       await expect(reviewMain).toBeVisible();
@@ -1251,6 +1303,7 @@ test('responsive keyboard and accessibility contract', async ({
         await expect(staticSurface).toHaveCSS('box-shadow', 'none');
       }
       await assertNoPageOverflow(page);
+      await assertFilesCollapse(1440);
 
       await reviewButton.focus();
       await page.keyboard.press('Shift+Tab');
@@ -1273,7 +1326,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 1280, height: 560 });
-      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveAttribute('aria-expanded', 'true');
       await expect(sessionHeader).toHaveCSS('flex-wrap', 'nowrap');
       await expect(headerFacts).toHaveCSS('flex-wrap', 'nowrap');
       await expect(rail).toHaveCSS('box-shadow', 'none');
@@ -1323,7 +1376,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 1279, height: 560 });
-      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveAttribute('aria-expanded', 'true');
       await expect(sessionHeader).toHaveCSS('flex-wrap', 'wrap');
       await expect(headerFacts).toHaveCSS('flex-wrap', 'wrap');
       const wrappedHeaderGeometry = await sessionHeader.evaluate((header) => {
@@ -1411,8 +1464,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).not.toHaveClass(/comments-rail--open/);
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
-      await page.setViewportSize({ width: 1100, height: 560 });
-      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveCount(0);
+      await assertFilesCollapse(1100);
       await expect(rail).toHaveCSS('box-shadow', 'none');
       await reviewButton.click();
       const mediumBox = await rail.boundingBox();
@@ -1426,14 +1478,21 @@ test('responsive keyboard and accessibility contract', async ({
       await page.setViewportSize({ width: 1099, height: 560 });
       const filesButton = page.getByRole('button', { name: 'Files', exact: true });
       await expect(filesButton).toBeVisible();
+      await expect(filesButton).toHaveAttribute('aria-controls', 'changed-files');
+      await expect(filesButton).toHaveAttribute('aria-expanded', 'false');
       await expect(treePane).toHaveCSS('overflow-y', 'auto');
       await expect(treePane).toHaveCSS('box-shadow', 'none');
-      await filesButton.click();
+      await filesButton.focus();
+      await page.keyboard.press('Enter');
       await expect(treePane).toHaveClass(/review-files--open/);
+      await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
       await expect(treePane).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
-      await page.getByRole('button', { name: 'Close files' }).click();
+      await expect(page.getByRole('button', { name: 'Close files', exact: true })).toBeVisible();
+      await page.keyboard.press('Escape');
       await expect(treePane).not.toHaveClass(/review-files--open/);
+      await expect(filesButton).toHaveAttribute('aria-expanded', 'false');
+      await expect(filesButton).toBeFocused();
       await expect(treePane).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 768, height: 560 });
