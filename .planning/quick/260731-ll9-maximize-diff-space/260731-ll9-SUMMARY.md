@@ -74,6 +74,7 @@ completed: 2026-07-31
 
 - `npx playwright test --config=playwright.config.ts tests/e2e/responsive-session.spec.ts --grep "responsive keyboard and accessibility contract" --project=chromium` — passed, 1 test.
 - `npm run build` — passed.
+- `npm run typecheck:web` — passed.
 - `fix-ai-slop.mjs --check .` — completed with unrelated existing copy/capability warnings and no task-specific blocker.
 - `analyze-layout.mjs .` — 89 files, 0 blockers, 0 warnings.
 
