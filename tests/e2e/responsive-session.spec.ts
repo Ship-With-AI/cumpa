@@ -1246,7 +1246,7 @@ test('responsive keyboard and accessibility contract', async ({
 
         await filesButton.click();
         await expect(filesButton).toHaveAttribute('aria-expanded', 'false');
-        await expect(page.getByRole('navigation', { name: 'Changed files', exact: true })).toHaveCount(0);
+        await expect(page.locator('#changed-files')).toHaveCount(0);
         const collapsed = await reviewShell.evaluate((shell) => {
           const main = shell.querySelector<HTMLElement>('.review-main')!;
           const shellBox = shell.getBoundingClientRect();
@@ -1262,7 +1262,7 @@ test('responsive keyboard and accessibility contract', async ({
 
         await filesButton.click();
         await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
-        await expect(page.getByRole('navigation', { name: 'Changed files', exact: true })).toBeVisible();
+        await expect(page.locator('#changed-files')).toBeVisible();
         const restored = await reviewShell.evaluate((shell) => {
           const files = shell.querySelector<HTMLElement>('.review-files')!;
           const main = shell.querySelector<HTMLElement>('.review-main')!;
