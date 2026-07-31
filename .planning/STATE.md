@@ -5,9 +5,9 @@ milestone_name: Fast Source Discovery
 current_phase: null
 status: Awaiting next milestone
 stopped_at: Milestone v1.2 completed and archived
-last_updated: "2026-07-30T19:14:20.845Z"
-last_activity: 2026-07-30
-last_activity_desc: Milestone v1.2 completed and archived
+last_updated: "2026-07-31T11:04:59Z"
+last_activity: 2026-07-31
+last_activity_desc: "Completed quick task 260731-hdw: Standardize CLI-managed directory and live product naming"
 progress:
   total_phases: 3
   completed_phases: 3
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-30)
 Phase: Milestone v1.2 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-07-30 — Milestone v1.2 completed and archived
+Last activity: 2026-07-31 — Completed quick task 260731-hdw: Standardize CLI-managed directory and live product naming
 
 ## Performance Metrics
 
@@ -79,6 +79,12 @@ None yet.
 
 - No open milestone blocker.
 - Production gate passed with 10,000 packed local refs: readiness median 221.532417 ms ≤ 400 ms; search median 38.266167 ms ≤ 500 ms.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260731-hdw | Standardize CLI-managed directory and live product naming | 2026-07-31 | b6fef23 | [260731-hdw-the-directory-created-by-the-cli-should-](./quick/260731-hdw-the-directory-created-by-the-cli-should-/) |
 
 ## Deferred Items
 
