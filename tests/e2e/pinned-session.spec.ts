@@ -43,7 +43,7 @@ const extractedPackageRoot = join(packedRoot, 'package');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 const executablePath = join(
   extractedPackageRoot,
-  'dist/bin/compare.mjs',
+  'dist/bin/cumpa.mjs',
 );
 
 const metadataHarnessModule = `
@@ -1157,8 +1157,8 @@ test('metadata and availability states', async ({ browser, context, page }, test
     await expect(workspace.getByRole('heading', { level: 1 })).toHaveText('00-src/old\\tname.ts→00-src/new\\nname.ts');
     await expect(workspace.locator('.monaco-diff-editor')).toBeVisible();
     const contextHeader = workspace.locator('.review-context-header');
-    await expect(contextHeader.getByText('BASE', { exact: true })).toBeVisible();
-    await expect(contextHeader.getByText('HEAD', { exact: true })).toBeVisible();
+    await expect(contextHeader.getByText('Base', { exact: true })).toBeVisible();
+    await expect(contextHeader.getByText('Head', { exact: true })).toBeVisible();
 
     const selectFile = async (fileId: string): Promise<void> => {
       const row = page.locator(`[role="treeitem"][data-file-id="${fileId}"]`);

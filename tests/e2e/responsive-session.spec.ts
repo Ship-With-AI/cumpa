@@ -33,7 +33,7 @@ const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const packedRoot = mkdtempSync(join(tmpdir(), 'compare-responsive-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
-const executablePath = join(extractedPackageRoot, 'dist/bin/compare.mjs');
+const executablePath = join(extractedPackageRoot, 'dist/bin/cumpa.mjs');
 
 interface PackResult {
   readonly filename: string;

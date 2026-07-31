@@ -240,7 +240,7 @@ test('packaged anchored gap closure recovers a non-line-1 exact anchor', async (
     const composer = page.locator('.monaco-anchor-zone--composer textarea');
     await expect(composer).toHaveCount(1);
     await expect(page.locator('.inline-comment-composer__header')).toContainText(
-      'src/changed.ts · Base · line 10',
+      'src/changed.ts · Base line 10',
     );
     await composer.fill('Keep this draft while moving.');
 
@@ -253,7 +253,7 @@ test('packaged anchored gap closure recovers a non-line-1 exact anchor', async (
     await expect(composer).toHaveCount(1);
     await expect(composer).toBeFocused();
     await expect(page.locator('.inline-comment-composer__header')).toContainText(
-      'src/changed.ts · Head · line 10',
+      'src/changed.ts · Head line 10',
     );
     await page.setViewportSize({ width: 1200, height: 900 });
     await expect(composer).toHaveCount(1);
