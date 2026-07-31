@@ -106,7 +106,7 @@ Architecture not yet mapped. Follow existing patterns found in the codebase.
 
 ## Project Skills
 
-- **Spike findings for diff-review** (implementation patterns, constraints, gotchas) → `Skill("spike-findings-diff-review")`
+- **Spike findings for Compare** (implementation patterns, constraints, gotchas) → `Skill("spike-findings-compare")`
 <!-- GSD:skills-end -->
 
 <!-- GSD:workflow-start source:GSD defaults -->

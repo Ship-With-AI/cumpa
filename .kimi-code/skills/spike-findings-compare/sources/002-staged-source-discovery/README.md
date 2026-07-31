@@ -53,7 +53,7 @@ The default creates 10,000 packed branch refs and four worktrees. The child proc
 3. Removing `%(refname:short)` and `%(objectname:short)` did not remove that loose-ref cost.
 4. A filtered `git branch --list --ignore-case` call preserves substring name search. Matching full OIDs are then abbreviated by one `git log --no-walk --stdin` call.
 5. Packed refs made the same 10,000-branch query fast. A broad query returning 9,999 branches and a 32-worktree initial set were tested as edge cases.
-6. `git pack-refs` is fixture setup only. Diff Review must not mutate a user's repository to obtain these results.
+6. `git pack-refs` fixture setup only. Compare must not mutate user's repository obtain results.
 
 ## Results
 

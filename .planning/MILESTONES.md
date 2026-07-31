@@ -42,7 +42,7 @@
 **Key accomplishments:**
 
 - A single GitHub-dark semantic stylesheet now renders the local review workflow with role-based surfaces, typography, controls, status states, constrained overlay elevation, and deterministic Chromium evidence.
-- A complete, typed `diff-review-dark` Monaco theme now maps Phase 05 semantic roles into canvas, syntax, diff, selection, widget, and scrollbar colors with deterministic source/generated CSS parity enforcement.
+- A complete, typed `compare-dark` Monaco theme now maps Phase 05 semantic roles into canvas, syntax, diff, selection, widget, and scrollbar colors with deterministic source/generated CSS parity enforcement.
 - Pure Monaco line-change normalization now produces continuous Base/Head change bars and sparse non-interactive gutter-sign decorations without recomputing diffs or altering model text.
 - The production Monaco adapter now selects the shared dark theme before construction and composes sparse signed diffs, selection contrast, anchors, focus, flat empty regions, and hidden hunks without changing review mechanics or editor geometry.
 - A compact, framed Base/path/Head context header now keeps every shipped diff navigation and review control available while presenting safe renamed-file identity with local icon controls.
