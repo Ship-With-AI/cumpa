@@ -62,8 +62,6 @@ export const COMPARE_THEME = {
     'diffEditor.removedLineBackground': '#F8514938',
     'diffEditor.insertedTextBackground': '#2EA04373',
     'diffEditor.removedTextBackground': '#F8514973',
-    'diffEditor.insertedTextBorder': '#3FB950',
-    'diffEditor.removedTextBorder': '#F85149',
     'diffEditorGutter.insertedLineBackground': '#2EA04338',
     'diffEditorGutter.removedLineBackground': '#F8514938',
     'diffEditorOverview.insertedForeground': '#3FB950',

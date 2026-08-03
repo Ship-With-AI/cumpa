@@ -39,8 +39,6 @@ const THEME_COLOR_ROOT_MAP: Readonly<Record<string, RootMapping>> = {
   'diffEditor.removedLineBackground': { token: '--diff-deletion-background' },
   'diffEditor.insertedTextBackground': { token: '--diff-addition-intraline-background' },
   'diffEditor.removedTextBackground': { token: '--diff-deletion-intraline-background' },
-  'diffEditor.insertedTextBorder': { token: '--diff-addition-foreground' },
-  'diffEditor.removedTextBorder': { token: '--diff-deletion-foreground' },
   'diffEditorGutter.insertedLineBackground': { token: '--diff-addition-background' },
   'diffEditorGutter.removedLineBackground': { token: '--diff-deletion-background' },
   'diffEditorOverview.insertedForeground': { token: '--diff-addition-foreground' },
