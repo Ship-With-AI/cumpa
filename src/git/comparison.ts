@@ -13,6 +13,7 @@ import {
   type PickerRecovery,
   type SelectionRole,
 } from '../domain/errors.js';
+import { rangeReviewKey } from '../domain/comparison-key.js';
 import { discoverGitRepository } from './repository.js';
 import {
   createGitRunner,
@@ -25,6 +26,14 @@ export interface CreatePinnedComparisonOptions {
   readonly cwd: string;
   readonly base: ComparisonSelection;
   readonly head: ComparisonSelection;
+  readonly signal?: AbortSignal;
+}
+
+export interface CreatePinnedRangeComparisonOptions {
+  readonly cwd: string;
+  readonly baseRevision: string;
+  readonly headRevision: string;
+  readonly pathspecs: readonly string[];
   readonly signal?: AbortSignal;
 }
 
@@ -145,6 +154,72 @@ function parseMergeBases(
     }
   }
   return lines;
+}
+
+function freezeComparison(comparison: PinnedComparison): PinnedComparison {
+  if (comparison.base.source !== undefined) {
+    Object.freeze(comparison.base.source);
+  }
+  if (comparison.head.source !== undefined) {
+    Object.freeze(comparison.head.source);
+  }
+  if (comparison.range !== undefined) {
+    Object.freeze(comparison.range.pathspecs);
+    Object.freeze(comparison.range);
+  }
+  Object.freeze(comparison.base);
+  Object.freeze(comparison.head);
+  return Object.freeze(comparison);
+}
+
+async function resolveRangeCommit(
+  revision: string,
+  role: 'base' | 'head',
+  repositoryRoot: string,
+  runner: GitRunner,
+  signal?: AbortSignal,
+): Promise<string> {
+  try {
+    const result = await runner.run(
+      ['rev-parse', '--verify', '--end-of-options', `${revision}^{commit}`],
+      { cwd: repositoryRoot, signal },
+    );
+    return GitObjectIdSchema.parse(
+      parseSingleLine(result.stdout, `${role} commit object`),
+    );
+  } catch (error) {
+    if (signal?.aborted) {
+      throw error;
+    }
+    throw new LaunchError(
+      'endpoint-unavailable',
+      `The requested ${role} revision does not resolve to a commit. Check the revision and try again.`,
+      { cause: error, recovery: { kind: 'exit' } },
+    );
+  }
+}
+
+async function verifyRangeCommit(
+  oid: string,
+  repositoryRoot: string,
+  runner: GitRunner,
+  signal?: AbortSignal,
+): Promise<void> {
+  try {
+    await runner.run(['cat-file', '-e', `${oid}^{commit}`], {
+      cwd: repositoryRoot,
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted) {
+      throw error;
+    }
+    throw new LaunchError(
+      'object-unavailable',
+      `Required Git object ${oid.slice(0, 12)} is missing or unreadable. Repair the repository's object data with Git, then retry.`,
+      { cause: error, recovery: { kind: 'exit' } },
+    );
+  }
 }
 
 export async function createPinnedComparison(
@@ -314,13 +389,130 @@ export async function createPinnedComparison(
     hasCommittedChanges: changedFiles.length > 0,
   });
 
-  if (comparison.base.source !== undefined) {
-    Object.freeze(comparison.base.source);
+  return freezeComparison(comparison);
+}
+
+export async function createPinnedRangeComparison(
+  options: CreatePinnedRangeComparisonOptions,
+  dependencies: PinnedComparisonDependencies = {},
+): Promise<PinnedComparison> {
+  if (options.cwd.length === 0) {
+    throw new LaunchError(
+      'not-worktree',
+      FATAL_LAUNCH_MESSAGES.notWorktree,
+      { recovery: { kind: 'exit' } },
+    );
   }
-  if (comparison.head.source !== undefined) {
-    Object.freeze(comparison.head.source);
+
+  const runner = dependencies.runner ?? createGitRunner();
+  const repository = await discoverGitRepository(
+    options.cwd,
+    runner,
+    options.signal,
+  );
+  const objectFormatResult = await runner.run(
+    ['rev-parse', '--show-object-format=storage'],
+    { cwd: repository.root, signal: options.signal },
+  );
+  const objectFormat = parseSingleLine(
+    objectFormatResult.stdout,
+    'object format',
+  );
+  if (objectFormat !== 'sha1' && objectFormat !== 'sha256') {
+    throw new LaunchError(
+      'git-unsupported',
+      FATAL_LAUNCH_MESSAGES.gitUnsupported,
+      { recovery: { kind: 'exit' } },
+    );
   }
-  Object.freeze(comparison.base);
-  Object.freeze(comparison.head);
-  return Object.freeze(comparison);
+
+  const baseOid = await resolveRangeCommit(
+    options.baseRevision,
+    'base',
+    repository.root,
+    runner,
+    options.signal,
+  );
+  const headOid = await resolveRangeCommit(
+    options.headRevision,
+    'head',
+    repository.root,
+    runner,
+    options.signal,
+  );
+  await verifyRangeCommit(baseOid, repository.root, runner, options.signal);
+  await verifyRangeCommit(headOid, repository.root, runner, options.signal);
+
+  try {
+    await runner.run(['merge-base', '--is-ancestor', baseOid, headOid], {
+      cwd: repository.root,
+      signal: options.signal,
+    });
+  } catch (error) {
+    if (options.signal?.aborted) {
+      throw error;
+    }
+    if (
+      error instanceof GitRunnerError &&
+      error.kind === 'exit' &&
+      error.exitCode === 1
+    ) {
+      throw new LaunchError(
+        'non-ancestor-range',
+        'The requested base is not an ancestor of the requested head. Choose a contiguous range and try again.',
+        { cause: error, recovery: { kind: 'exit' } },
+      );
+    }
+    throw error;
+  }
+
+  const pathspecs = Object.freeze([...options.pathspecs]);
+  let changedFiles;
+  try {
+    changedFiles = await createChangedFileInventory(
+      {
+        repositoryRoot: repository.root,
+        mergeBaseOid: baseOid,
+        headOid,
+        objectFormat,
+        pathspecs,
+        signal: options.signal,
+      },
+      { runner },
+    );
+  } catch (error) {
+    if (
+      pathspecs.length > 0 &&
+      error instanceof GitRunnerError &&
+      error.kind === 'exit'
+    ) {
+      throw new LaunchError(
+        'invalid-pathspec',
+        'Git rejected the requested pathspec scope. Check native Git pathspec syntax and try again.',
+        { cause: error, recovery: { kind: 'exit' } },
+      );
+    }
+    throw error;
+  }
+
+  return freezeComparison(
+    PinnedComparisonSchema.parse({
+      repositoryRoot: repository.root,
+      objectFormat,
+      base: { label: options.baseRevision, oid: baseOid },
+      head: { label: options.headRevision, oid: headOid },
+      mergeBaseOid: baseOid,
+      changedFiles,
+      hasCommittedChanges: changedFiles.length > 0,
+      range: {
+        kind: 'revisions',
+        requestedBase: options.baseRevision,
+        requestedHead: options.headRevision,
+        baseOid,
+        headOid,
+        pathspecs,
+        reviewKey: rangeReviewKey(baseOid, headOid, pathspecs),
+      },
+    }),
+  );
 }

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
 const DOMAIN = Buffer.from('compare-comparison-key-v1', 'utf8');
+const RANGE_DOMAIN = Buffer.from('compare-range-review-key-v1', 'utf8');
 const encoder = new TextEncoder();
 
 function frame(value: string): Buffer {
@@ -19,5 +20,20 @@ export function comparisonKey(baseCommitOid: string, headCommitOid: string): str
   hash.update(DOMAIN);
   hash.update(frame(baseCommitOid));
   hash.update(frame(headCommitOid));
+  return hash.digest('hex');
+}
+
+export function rangeReviewKey(
+  baseCommitOid: string,
+  headCommitOid: string,
+  pathspecs: readonly string[],
+): string {
+  const hash = createHash('sha256');
+  hash.update(RANGE_DOMAIN);
+  hash.update(frame(baseCommitOid));
+  hash.update(frame(headCommitOid));
+  for (const pathspec of pathspecs) {
+    hash.update(frame(pathspec));
+  }
   return hash.digest('hex');
 }

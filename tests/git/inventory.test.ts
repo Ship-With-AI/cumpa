@@ -342,13 +342,13 @@ describe('native-Git changed-file inventory', () => {
   });
 
   it.each([
-    [],
-    ['*.txt'],
-    ['*.txt', ':(exclude)deleted.txt'],
-    [':(exclude)deleted.txt'],
-    [':(glob)*.txt', ':(exclude)deleted.txt'],
-    ['-leading.txt'],
-    ['space name.txt'],
+    [[]],
+    [['*.txt']],
+    [['*.txt', ':(exclude)deleted.txt']],
+    [[':(exclude)deleted.txt']],
+    [[':(glob)*.txt', ':(exclude)deleted.txt']],
+    [['-leading.txt']],
+    [['space name.txt']],
   ] as const)(
     'passes ordered native pathspecs identically to both diff protocols: %j',
     async (pathspecs) => {

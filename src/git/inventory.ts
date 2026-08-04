@@ -29,12 +29,15 @@ export interface CreateChangedFileInventoryOptions {
   readonly objectFormat: 'sha1' | 'sha256';
   readonly signal?: AbortSignal;
   readonly fileIdNamespace?: Uint8Array;
+  readonly pathspecs?: readonly string[];
 }
 
 export interface ChangedFileInventoryDependencies {
   readonly runner?: GitRunner;
   readonly objectReader?: ObjectReader;
 }
+
+const emptyPathspecs: readonly string[] = Object.freeze([]);
 
 const processFileIdNamespace = randomBytes(32);
 const knownModes: Readonly<Record<string, true>> = Object.freeze({
@@ -138,6 +141,10 @@ export async function createChangedFileInventory(
   options: CreateChangedFileInventoryOptions,
   dependencies: ChangedFileInventoryDependencies = {},
 ): Promise<readonly ChangedFile[]> {
+  const pathspecTail = Object.freeze([
+    '--',
+    ...(options.pathspecs ?? emptyPathspecs),
+  ]);
   const runner = dependencies.runner ?? createGitRunner();
   const [rawResult, numstatResult] = await Promise.all([
     runner.run(
@@ -149,7 +156,7 @@ export async function createChangedFileInventory(
         ...sharedDiffOptions.slice(1),
         options.mergeBaseOid,
         options.headOid,
-        '--',
+        ...pathspecTail,
       ],
       { cwd: options.repositoryRoot, signal: options.signal },
     ),
@@ -160,7 +167,7 @@ export async function createChangedFileInventory(
         ...sharedDiffOptions,
         options.mergeBaseOid,
         options.headOid,
-        '--',
+        ...pathspecTail,
       ],
       { cwd: options.repositoryRoot, signal: options.signal },
     ),

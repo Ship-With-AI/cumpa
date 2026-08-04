@@ -139,10 +139,16 @@ export function createGitRunner(defaults: GitRunnerOptions = {}): GitRunner {
         }, timeoutMs);
         timeout.unref();
 
+        const environment = { ...process.env };
+        delete environment.GIT_LITERAL_PATHSPECS;
+        delete environment.GIT_GLOB_PATHSPECS;
+        delete environment.GIT_NOGLOB_PATHSPECS;
+        delete environment.GIT_ICASE_PATHSPECS;
+
         const child = spawn('git', [...safeGitArguments, ...arguments_], {
           cwd: options.cwd,
           env: {
-            ...process.env,
+            ...environment,
             GIT_CONFIG_NOSYSTEM: '1',
             GIT_EXTERNAL_DIFF: '',
             GIT_OPTIONAL_LOCKS: '0',

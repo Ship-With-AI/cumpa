@@ -35,6 +35,18 @@ export const PinnedEndpointSchema = z.strictObject({
   source: SelectedSourceIdentitySchema.optional(),
 });
 
+export const RangeReviewScopeSchema = z
+  .strictObject({
+    kind: z.literal('revisions'),
+    requestedBase: z.string().min(1),
+    requestedHead: z.string().min(1),
+    baseOid: GitObjectIdSchema,
+    headOid: GitObjectIdSchema,
+    pathspecs: z.array(z.string()).readonly(),
+    reviewKey: z.string().regex(/^[0-9a-f]{64}$/),
+  })
+  .readonly();
+
 export const ExactPathSchema = z
   .strictObject({
     bytesBase64url: z.string().regex(/^[A-Za-z0-9_-]+$/),
@@ -110,10 +122,12 @@ export const PinnedComparisonSchema = z.strictObject({
   mergeBaseOid: GitObjectIdSchema,
   changedFiles: z.array(ChangedFileSchema).readonly(),
   hasCommittedChanges: z.boolean(),
+  range: RangeReviewScopeSchema.optional(),
 });
 
 export type ComparisonSelection = z.infer<typeof ComparisonSelectionSchema>;
 export type PinnedComparison = z.infer<typeof PinnedComparisonSchema>;
+export type RangeReviewScope = z.infer<typeof RangeReviewScopeSchema>;
 export type ExactPathDto = z.infer<typeof ExactPathSchema>;
 export type Availability = z.infer<typeof AvailabilitySchema>;
 export type UnsupportedAvailabilityReason = z.infer<

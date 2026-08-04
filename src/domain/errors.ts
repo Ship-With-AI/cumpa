@@ -8,6 +8,8 @@ export type LaunchErrorKind =
   | 'multiple-merge-bases'
   | 'not-worktree'
   | 'object-unavailable'
+  | 'invalid-pathspec'
+  | 'non-ancestor-range'
   | 'unrelated-histories';
 
 export type SelectionRole = 'base' | 'head';
