@@ -7,8 +7,8 @@
 
 ### Request Protocol
 
-- [ ] **AGENT-01**: A coding agent can pipe one versioned JSON review request to `compare` and is never shown an interactive prompt.
-- [ ] **AGENT-02**: A coding agent receives an actionable nonzero failure before browser launch when stdin is malformed, oversized, invalid UTF-8, has unknown fields, uses an unsupported version, or does not select exactly one input mode.
+- [x] **AGENT-01**: A coding agent can pipe one versioned JSON review request to `compare` and is never shown an interactive prompt.
+- [x] **AGENT-02**: A coding agent receives an actionable nonzero failure before browser launch when stdin is malformed, oversized, invalid UTF-8, has unknown fields, uses an unsupported version, or does not select exactly one input mode.
 - [ ] **AGENT-03**: A developer launching `compare` from a TTY retains the existing interactive source-selection and browser-review flow.
 
 ### Git Range
@@ -68,8 +68,8 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AGENT-01 | Phase 12 | Pending |
-| AGENT-02 | Phase 12 | Pending |
+| AGENT-01 | Phase 12 | Complete |
+| AGENT-02 | Phase 12 | Complete |
 | AGENT-03 | Phase 12 | Pending |
 | RANGE-01 | Phase 12 | Pending |
 | RANGE-02 | Phase 12 | Pending |
@@ -87,6 +87,7 @@
 | HAND-06 | Phase 15 | Pending |
 
 **Coverage:**
+
 - v1.3 requirements: 17 total
 - Mapped to phases: 17
 - Unmapped: 0
