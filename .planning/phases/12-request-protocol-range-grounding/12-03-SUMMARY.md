@@ -89,9 +89,19 @@ status: complete
 
 ## Deviations from Plan
 
-None - plan executed exactly as written.
+### Auto-fixed Issues
 
-**Total deviations:** 0 auto-fixed. **Impact:** No scope change.
+**1. [Rule 3 - Blocking workflow-state issue] Repaired stale human-readable state progress**
+- **Found during:** Plan closeout
+- **Issue:** The required state mutations recorded the frontmatter plan count and metric but left the Current Position activity and progress bar at Plan 2 / 17%.
+- **Fix:** Updated only those stale human-readable state fields to match the state mutation result: Plan 3 / 50%.
+- **Files modified:** `.planning/STATE.md`, `.planning/phases/12-request-protocol-range-grounding/12-03-SUMMARY.md`
+- **Verification:** `state.update-progress` reported 3/6 (50%); the committed roadmap reports 3/6 in progress.
+- **Committed in:** Final metadata correction commit.
+
+---
+
+**Total deviations:** 1 auto-fixed (1 blocking workflow-state issue). **Impact:** No application or plan scope changed.
 
 ## Issues Encountered
 
