@@ -68,29 +68,29 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AGENT-01 | TBD | Pending |
-| AGENT-02 | TBD | Pending |
-| AGENT-03 | TBD | Pending |
-| RANGE-01 | TBD | Pending |
-| RANGE-02 | TBD | Pending |
-| RANGE-03 | TBD | Pending |
-| PATCH-01 | TBD | Pending |
-| PATCH-02 | TBD | Pending |
-| PATCH-03 | TBD | Pending |
-| PATCH-04 | TBD | Pending |
-| PATCH-05 | TBD | Pending |
-| HAND-01 | TBD | Pending |
-| HAND-02 | TBD | Pending |
-| HAND-03 | TBD | Pending |
-| HAND-04 | TBD | Pending |
-| HAND-05 | TBD | Pending |
-| HAND-06 | TBD | Pending |
+| AGENT-01 | Phase 12 | Pending |
+| AGENT-02 | Phase 12 | Pending |
+| AGENT-03 | Phase 12 | Pending |
+| RANGE-01 | Phase 12 | Pending |
+| RANGE-02 | Phase 12 | Pending |
+| RANGE-03 | Phase 12 | Pending |
+| PATCH-01 | Phase 13 | Pending |
+| PATCH-02 | Phase 13 | Pending |
+| PATCH-03 | Phase 13 | Pending |
+| PATCH-04 | Phase 13 | Pending |
+| PATCH-05 | Phase 13 | Pending |
+| HAND-01 | Phase 14 | Pending |
+| HAND-02 | Phase 14 | Pending |
+| HAND-03 | Phase 14 | Pending |
+| HAND-04 | Phase 14 | Pending |
+| HAND-05 | Phase 14 | Pending |
+| HAND-06 | Phase 15 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 17 total
-- Mapped to phases: 0
-- Unmapped: 17
+- Mapped to phases: 17
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-08-04*
-*Last updated: 2026-08-04 after milestone scoping*
+*Last updated: 2026-08-04 after roadmap creation*
