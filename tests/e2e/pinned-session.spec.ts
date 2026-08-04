@@ -138,6 +138,31 @@ interface GeneratedCliSelections {
   readonly head: ComparisonSelection;
 }
 
+interface GeneratedRangeRequest {
+  readonly kind: 'compare.review-request';
+  readonly schemaVersion: 1;
+  readonly mode: 'revisions';
+  readonly revisions: Readonly<{
+    readonly base: string;
+    readonly head: string;
+    readonly pathspecs?: readonly string[];
+  }>;
+}
+
+function rangeRequest(
+  repository: GitFixture,
+  pathspecs: readonly string[] = [],
+  base = repository.baseRef,
+  head = repository.headRef,
+): GeneratedRangeRequest {
+  return {
+    kind: 'compare.review-request',
+    schemaVersion: 1,
+    mode: 'revisions',
+    revisions: { base, head, ...(pathspecs.length === 0 ? {} : { pathspecs }) },
+  };
+}
+
 function runPrerequisite(command: string, arguments_: readonly string[]): string {
   try {
     return execFileSync(command, [...arguments_], {
@@ -215,6 +240,7 @@ function startGeneratedCli(
     base: { label: 'Base fixture', revision: repository.baseRef },
     head: { label: 'Head fixture', revision: repository.headRef },
   },
+  request?: GeneratedRangeRequest,
 ): RunningCli {
   const outputPath = join(packedRoot, `terminal-${crypto.randomUUID()}.log`);
   const openerLogPath = join(packedRoot, `opener-${crypto.randomUUID()}.log`);
@@ -226,16 +252,54 @@ function startGeneratedCli(
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
-      COMPARE_LAUNCH_OPTIONS: JSON.stringify({
-        cwd: repository.nestedCwd,
-        ...selections,
-      }),
+      ...(request === undefined
+        ? {
+            COMPARE_LAUNCH_OPTIONS: JSON.stringify({
+              cwd: repository.nestedCwd,
+              ...selections,
+            }),
+          }
+        : {}),
       COMPARE_OPENER_LOG: openerLogPath,
       COMPARE_TERMINAL_CAPTURE: outputPath,
     },
-    stdio: ['ignore', outputDescriptor, outputDescriptor],
+    stdio: [request === undefined ? 'ignore' : 'pipe', outputDescriptor, outputDescriptor],
   });
+  child.stdin?.end(request === undefined ? undefined : JSON.stringify(request));
   return { child, outputPath, openerLogPath, outputDescriptor };
+}
+
+async function runGeneratedRequest(
+  repository: GitFixture,
+  request: GeneratedRangeRequest,
+): Promise<Readonly<{ code: number | null; stdout: string; stderr: string; openerLogPath: string }>> {
+  const stdoutPath = join(packedRoot, `stdout-${crypto.randomUUID()}.log`);
+  const stderrPath = join(packedRoot, `stderr-${crypto.randomUUID()}.log`);
+  const openerLogPath = join(packedRoot, `opener-${crypto.randomUUID()}.log`);
+  const stdoutDescriptor = openSync(stdoutPath, 'w');
+  const stderrDescriptor = openSync(stderrPath, 'w');
+  const environment = { ...process.env };
+  delete environment.CMUX_WORKSPACE_ID;
+  const child = spawn(process.execPath, [executablePath], {
+    cwd: repository.nestedCwd,
+    env: {
+      ...environment,
+      PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
+      COMPARE_OPENER_LOG: openerLogPath,
+      COMPARE_TERMINAL_CAPTURE: stdoutPath,
+    },
+    stdio: ['pipe', stdoutDescriptor, stderrDescriptor],
+  });
+  child.stdin?.end(JSON.stringify(request));
+  const { code } = await waitForExit(child);
+  closeSync(stdoutDescriptor);
+  closeSync(stderrDescriptor);
+  return {
+    code,
+    stdout: readFileSync(stdoutPath, 'utf8'),
+    stderr: readFileSync(stderrPath, 'utf8'),
+    openerLogPath,
+  };
 }
 
 async function stopGeneratedCli(running: RunningCli): Promise<{
@@ -387,6 +451,169 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
     ).toBeVisible();
   } finally {
     await stopGeneratedCli(running);
+    await repository.cleanup();
+  }
+});
+
+test('generated range request preserves the server-scoped pinned review', async ({ browser }, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  const repository = await createGitFixture();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const request = rangeRequest(repository, [':(literal)committed.txt']);
+  const running = startGeneratedCli(repository, undefined, request);
+  try {
+    const expectedBase = independentlyResolve(repository, ['rev-parse', '--verify', repository.baseRef]);
+    const expectedHead = independentlyResolve(repository, ['rev-parse', '--verify', repository.headRef]);
+    const url = await waitForLoopbackUrl(running);
+    const terminal = readFileSync(running.outputPath, 'utf8');
+    const openerEvidence = await waitForText(running.openerLogPath, (content) => content.length > 0);
+    const parsedUrl = new URL(url);
+    const token = parsedUrl.hash.slice('#token='.length);
+    const sessionResponse = await context.request.get(`${parsedUrl.origin}/api/session`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    const session = (await sessionResponse.json()) as SessionResponse;
+
+    expect(terminal).not.toContain('Base source');
+    expect(openerEvidence.trim().split('\n')).toHaveLength(1);
+    expect(session.range).toEqual({
+      kind: 'revisions',
+      baseOid: expectedBase,
+      headOid: expectedHead,
+      pathspecs: [':(literal)committed.txt'],
+    });
+    expect(session.files).toHaveLength(1);
+    expect(session.files[0]?.newPath?.display ?? session.files[0]?.oldPath?.display).toBe('committed.txt');
+
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('tree', { name: 'Changed files' })).toContainText('committed.txt');
+    await expect(page.getByRole('tree')).not.toContainText('at-limit.txt');
+    await expect(page.getByRole('tree')).not.toContainText('over-limit.txt');
+
+    const disclosure = page.getByRole('button', { name: 'View review scope' });
+    await disclosure.click();
+    const scope = page.getByRole('region', { name: 'Review scope' });
+    await expect(scope.getByRole('heading', { name: 'Review scope' })).toBeVisible();
+    await expect(scope.getByText('Base commit', { exact: true })).toBeVisible();
+    await expect(scope.getByText('Head commit', { exact: true })).toBeVisible();
+    await expect(scope.getByText(expectedBase, { exact: true })).toBeVisible();
+    await expect(scope.getByText(expectedHead, { exact: true })).toBeVisible();
+    await expect(scope.getByText('Ordered Git pathspecs', { exact: true })).toBeVisible();
+    await expect(scope.locator('ol')).toHaveText(':(literal)committed.txt');
+    await expect(scope.getByRole('button', { name: 'Copy full base commit' })).toBeVisible();
+    await expect(scope.getByRole('button', { name: 'Copy full head commit' })).toBeVisible();
+    await expect(scope.getByText('Merge base', { exact: true })).toHaveCount(0);
+
+    repository.git(['update-ref', repository.headRef, repository.futureHeadOid, expectedHead]);
+    const afterMovement = await context.request.get(`${parsedUrl.origin}/api/session`, {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    await expect(afterMovement).toBeOK();
+    expect((await afterMovement.json()) as SessionResponse).toEqual(session);
+  } finally {
+    await stopGeneratedCli(running);
+    await context.close();
+    await repository.cleanup();
+  }
+});
+
+test('generated range invalid native pathspec fails before listener or opener', async () => {
+  const repository = await createGitFixture();
+  try {
+    const result = await runGeneratedRequest(repository, rangeRequest(repository, [':(not-a-magic)secret']));
+
+    expect(result.code).not.toBe(0);
+    expect(result.stdout).toBe('');
+    expect(result.stderr).toMatch(/Git rejected .*pathspec scope/);
+    expect(result.stderr.length).toBeLessThan(256);
+    expect(result.stderr).not.toContain('not-a-magic');
+    expect(result.stderr).not.toContain('fatal:');
+    expect(result.stderr).not.toMatch(/127\.0\.0\.1|https?:\/\//);
+    expect(existsSync(result.openerLogPath)).toBe(false);
+  } finally {
+    await repository.cleanup();
+  }
+});
+
+test('range empty state exposes all changed paths without changing interactive copy', async ({ browser }, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  const repository = await createGitFixture();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const running = startGeneratedCli(repository, undefined, rangeRequest(repository, [], repository.baseRef, repository.baseRef));
+  try {
+    const url = await waitForLoopbackUrl(running);
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: 'No changes match this review scope' })).toBeVisible();
+    await expect(page.getByText('The pinned commits contain no changed files. View review scope to inspect the commits.')).toBeVisible();
+    await page.getByRole('button', { name: 'View review scope' }).click();
+    const scope = page.getByRole('region', { name: 'Review scope' });
+    await expect(scope.getByText('All changed paths', { exact: true })).toBeVisible();
+  } finally {
+    await stopGeneratedCli(running);
+    await context.close();
+    await repository.cleanup();
+  }
+});
+
+test('range content error does not fall back to current refs', async ({ browser }, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  const repository = await createGitFixture();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const running = startGeneratedCli(repository, undefined, rangeRequest(repository, ['committed.txt']));
+  try {
+    const url = await waitForLoopbackUrl(running);
+    await page.route('**/api/files/**', (route) =>
+      route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 'file-unavailable', message: 'Pinned file unavailable.' }),
+      }),
+    );
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: 'Pinned range unavailable' })).toBeVisible();
+    await expect(
+      page.getByText(
+        'Compare could not load the pinned commits or scoped file inventory. Relaunch the same request; this review will not substitute current refs.',
+      ),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Try loading pinned diff again' })).toBeVisible();
+  } finally {
+    await stopGeneratedCli(running);
+    await context.close();
+    await repository.cleanup();
+  }
+});
+
+test('narrow range scope is a focused modal sheet', async ({ browser }, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  const repository = await createGitFixture();
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  const running = startGeneratedCli(repository, undefined, rangeRequest(repository, ['committed.txt']));
+  try {
+    const url = await waitForLoopbackUrl(running);
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    const disclosure = page.getByRole('button', { name: 'View review scope' });
+    await disclosure.click();
+    const scope = page.getByRole('dialog', { name: 'Review scope' });
+    const close = scope.getByRole('button', { name: 'Close review scope' });
+    await expect(close).toBeFocused();
+    const box = await close.boundingBox();
+    expect(box?.width).toBeGreaterThanOrEqual(44);
+    expect(box?.height).toBeGreaterThanOrEqual(44);
+    await page.keyboard.press('Shift+Tab');
+    await expect(scope.getByRole('button', { name: 'Copy full head commit' })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(scope).toHaveCount(0);
+    await expect(disclosure).toBeFocused();
+  } finally {
+    await stopGeneratedCli(running);
+    await context.close();
     await repository.cleanup();
   }
 });
