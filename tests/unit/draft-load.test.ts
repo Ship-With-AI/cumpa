@@ -5,14 +5,35 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { comparisonKey } from '../../src/domain/comparison-key.js';
-import { createDraftLoader } from '../../src/server/draft-loader.js';
+import { comparisonKey, rangeReviewKey } from '../../src/domain/comparison-key.js';
+import { createDraftLoader, draftPaths } from '../../src/server/draft-loader.js';
 
 const comparison = {
   baseCommitOid: '1'.repeat(40),
   headCommitOid: '2'.repeat(40),
   mergeBaseOid: '3'.repeat(40),
 };
+
+function rangeComparison(pathspecs: readonly string[]) {
+  return {
+    ...comparison,
+    range: {
+      kind: 'revisions' as const,
+      requestedBase: 'main~1',
+      requestedHead: 'main',
+      baseOid: comparison.baseCommitOid,
+      headOid: comparison.headCommitOid,
+      pathspecs,
+      reviewKey: rangeReviewKey(
+        comparison.baseCommitOid,
+        comparison.headCommitOid,
+        'main~1',
+        'main',
+        pathspecs,
+      ),
+    },
+  };
+}
 const roots: string[] = [];
 
 async function fixture(bytes?: Buffer): Promise<string> {
@@ -23,6 +44,14 @@ async function fixture(bytes?: Buffer): Promise<string> {
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, `${comparisonKey(comparison.baseCommitOid, comparison.headCommitOid)}.json`), bytes);
   }
+  return root;
+}
+
+async function rangeFixture(scope: { readonly range: { readonly reviewKey: string } }, bytes: Buffer): Promise<string> {
+  const root = await fixture();
+  const directory = join(root, '.compare', 'drafts');
+  await mkdir(directory, { recursive: true });
+  await writeFile(join(directory, `${scope.range.reviewKey}.json`), bytes);
   return root;
 }
 
@@ -60,6 +89,43 @@ describe('raw draft load classification', () => {
     expect(state.raw.equals(bytes)).toBe(true);
     expect(state.raw.length).toBe(bytes.length);
     expect(fingerprint(state.raw)).toBe(fingerprint(bytes));
+  });
+
+  test('keys exact ordered range scopes independently and resumes matching provenance', async () => {
+    const first = rangeComparison(['src', ':(exclude)src/generated']);
+    const reordered = rangeComparison([':(exclude)src/generated', 'src']);
+    const same = rangeComparison(['src', ':(exclude)src/generated']);
+
+    expect(draftPaths('/repository', first)).toMatchObject({
+      key: first.range.reviewKey,
+      relativePath: `.compare/drafts/${first.range.reviewKey}.json`,
+    });
+    expect(draftPaths('/repository', first)).not.toEqual(draftPaths('/repository', reordered));
+    expect(draftPaths('/repository', first)).toEqual(draftPaths('/repository', same));
+
+    const bytes = current({ comparison: first });
+    const state = await createDraftLoader({
+      repositoryRoot: await rangeFixture(first, bytes),
+      comparison: first,
+    }).load();
+    expect(state).toMatchObject({ kind: 'current', draft: { comparison: first } });
+  });
+
+  test.each([
+    ['missing', comparison],
+    ['partial', { ...rangeComparison(['src']), range: { kind: 'revisions' } }],
+    ['mismatched', { ...rangeComparison(['src']), range: { ...rangeComparison(['src']).range, pathspecs: ['test'] } }],
+    ['reordered', rangeComparison([':(exclude)src/generated', 'src'])],
+    ['malformed key', { ...rangeComparison(['src']), range: { ...rangeComparison(['src']).range, reviewKey: 'not-a-key' } }],
+    ['unknown', { ...rangeComparison(['src']), range: { ...rangeComparison(['src']).range, unknown: true } }],
+  ])('rejects %s range provenance without changing canonical bytes', async (_label, persistedComparison) => {
+    const expected = rangeComparison(['src']);
+    const bytes = current({ comparison: persistedComparison });
+    const root = await rangeFixture(expected, bytes);
+    const state = await createDraftLoader({ repositoryRoot: root, comparison: expected }).load();
+
+    expect(state).toMatchObject({ kind: 'schemaInvalid', fingerprint: fingerprint(bytes) });
+    expect(state.raw.equals(bytes)).toBe(true);
   });
 
   test('keeps malformed bytes intact and fingerprints the original buffer', async () => {

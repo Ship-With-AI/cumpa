@@ -6,7 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import type { PinnedComparison } from '../../src/contracts/comparison.js';
-import { comparisonKey } from '../../src/domain/comparison-key.js';
+import { comparisonKey, rangeReviewKey } from '../../src/domain/comparison-key.js';
 import { createSessionApp } from '../../src/server/app.js';
 
 const token = 'a'.repeat(43);
@@ -17,6 +17,8 @@ const headers = { host, origin, authorization: `Bearer ${token}` };
 const apps = new Set<FastifyInstance>();
 const roots: string[] = [];
 
+type ReviewRange = NonNullable<PinnedComparison['range']>;
+
 function exactPath(value: string) {
   return {
     utf8: value,
@@ -25,7 +27,24 @@ function exactPath(value: string) {
   };
 }
 
-function comparison(root: string, baseOid = '1'.repeat(40), headOid = '2'.repeat(40)): PinnedComparison {
+function range(pathspecs: readonly string[]): ReviewRange {
+  return {
+    kind: 'revisions' as const,
+    requestedBase: 'main~1',
+    requestedHead: 'main',
+    baseOid: '1'.repeat(40),
+    headOid: '2'.repeat(40),
+    pathspecs,
+    reviewKey: rangeReviewKey('1'.repeat(40), '2'.repeat(40), 'main~1', 'main', pathspecs),
+  };
+}
+
+function comparison(
+  root: string,
+  baseOid = '1'.repeat(40),
+  headOid = '2'.repeat(40),
+  reviewRange?: ReviewRange,
+): PinnedComparison {
   return {
     repositoryRoot: root,
     objectFormat: 'sha1',
@@ -46,6 +65,7 @@ function comparison(root: string, baseOid = '1'.repeat(40), headOid = '2'.repeat
       availability: { kind: 'text' },
     }],
     hasCommittedChanges: true,
+    ...(reviewRange === undefined ? {} : { range: reviewRange }),
   };
 }
 
@@ -56,8 +76,9 @@ function buildApp(
   onLookup?: (file: string) => void,
   headText = 'after\n',
   missingHead = false,
+  reviewRange?: ReviewRange,
 ) {
-  const app = createSessionApp(comparison(root, baseOid, headOid), {
+  const app = createSessionApp(comparison(root, baseOid, headOid, reviewRange), {
     sessionToken: token,
     onCapabilityLookup: onLookup,
     objectReader: {
@@ -120,6 +141,37 @@ describe('comparison-local draft routes', () => {
 
     const isolated = buildApp(repositoryRoot, '6'.repeat(40));
     expect((await isolated.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({ kind: 'missing' });
+  });
+
+  test('isolates same-OID range drafts by frozen ordered scope and resumes exact provenance', async () => {
+    const repositoryRoot = await root();
+    const firstRange = range(['src', ':(exclude)src/generated']);
+    const secondRange = range([':(exclude)src/generated', 'src']);
+    const first = buildApp(repositoryRoot, undefined, undefined, undefined, 'after\n', false, firstRange);
+    const second = buildApp(repositoryRoot, undefined, undefined, undefined, 'after\n', false, secondRange);
+
+    expect((await first.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      kind: 'missing',
+      path: `.compare/drafts/${firstRange.reviewKey}.json`,
+    });
+    expect((await second.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      kind: 'missing',
+      path: `.compare/drafts/${secondRange.reviewKey}.json`,
+    });
+
+    expect((await first.inject({
+      method: 'POST',
+      url: '/api/draft/mutations',
+      headers,
+      payload: { type: 'addComment', expectedRevision: 0, fileId, side: 'head', line: 1, body: 'Range one.' },
+    })).statusCode).toBe(201);
+    expect((await second.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({ kind: 'missing' });
+
+    const resumed = buildApp(repositoryRoot, undefined, undefined, undefined, 'after\n', false, firstRange);
+    expect((await resumed.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      kind: 'current',
+      draft: { revision: 1, comparison: { range: firstRange } },
+    });
   });
 
   test('stores only server-derived canonical records and rejects the exact side-specific duplicate', async () => {
