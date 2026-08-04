@@ -57,8 +57,7 @@ export async function runGeneratedExport(
       const input = JSON.parse(await readFile(process.argv[2], 'utf8'));
       const result = await publishReviewExport({
         repositoryRoot: input.repositoryRoot,
-        baseOid: input.baseOid,
-        headOid: input.headOid,
+        identity: { kind: 'interactive', baseOid: input.baseOid, headOid: input.headOid },
         json: Buffer.from(input.json, 'base64'),
         markdown: Buffer.from(input.markdown, 'base64'),
         reExportCapability: input.mode === 'observed'
@@ -88,7 +87,9 @@ export async function runGeneratedRecovery(repositoryRoot: string): Promise<Expo
       import { readFile, writeFile } from 'node:fs/promises';
       import { recoverReviewExport } from ${JSON.stringify(exportStoreUrl)};
       const input = JSON.parse(await readFile(process.argv[2], 'utf8'));
-      const pair = await recoverReviewExport(input.repositoryRoot, input.baseOid, input.headOid);
+      const pair = await recoverReviewExport(input.repositoryRoot, {
+        kind: 'interactive', baseOid: input.baseOid, headOid: input.headOid,
+      });
       await writeFile(process.argv[3], JSON.stringify(pair === undefined ? null : {
         json: pair.json.toString('base64'), markdown: pair.markdown.toString('base64'),
       }));
