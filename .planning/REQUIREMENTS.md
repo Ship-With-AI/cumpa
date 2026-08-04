@@ -9,7 +9,7 @@
 
 - [x] **AGENT-01**: A coding agent can pipe one versioned JSON review request to `compare` and is never shown an interactive prompt.
 - [x] **AGENT-02**: A coding agent receives an actionable nonzero failure before browser launch when stdin is malformed, oversized, invalid UTF-8, has unknown fields, uses an unsupported version, or does not select exactly one input mode.
-- [ ] **AGENT-03**: A developer launching `compare` from a TTY retains the existing interactive source-selection and browser-review flow.
+- [x] **AGENT-03**: A developer launching `compare` from a TTY retains the existing interactive source-selection and browser-review flow.
 
 ### Git Range
 
@@ -70,7 +70,7 @@
 |-------------|-------|--------|
 | AGENT-01 | Phase 12 | Complete |
 | AGENT-02 | Phase 12 | Complete |
-| AGENT-03 | Phase 12 | Pending |
+| AGENT-03 | Phase 12 | Complete |
 | RANGE-01 | Phase 12 | Complete |
 | RANGE-02 | Phase 12 | Complete |
 | RANGE-03 | Phase 12 | Complete |
