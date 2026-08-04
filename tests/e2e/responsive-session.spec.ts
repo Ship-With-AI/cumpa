@@ -1124,8 +1124,10 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(page.locator('.review-context-header__file')).toContainText('alpha.ts');
       await hoverMonacoLine(page, 'head', 'export const changed = 3;');
       await page.setViewportSize({ width: 320, height: 640 });
+      await expect(page.locator('.review-files')).toHaveAttribute('inert', '');
       await files.focus();
       await page.keyboard.press('Enter');
+      await expect(page.locator('.review-files')).toHaveClass(/review-files--open/);
       const filesDrawer = page.locator('.review-files');
       const filesBox = await filesDrawer.boundingBox();
       expect(filesBox!.x).toBe(8);
