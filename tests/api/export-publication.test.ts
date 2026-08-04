@@ -9,7 +9,7 @@ vi.mock('node:crypto', async (importOriginal) => {
   return { ...actual, randomUUID: () => 'race' };
 });
 
-import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
+import { ReviewExportV1Schema, ReviewExportV2Schema } from '../../src/contracts/draft.js';
 import { canonicalizeReviewExport } from '../../src/export/review-export.js';
 import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js';
 import { publishReviewExport, recoverReviewExport } from '../../src/server/export-store.js';
@@ -17,6 +17,7 @@ import { publishReviewExport, recoverReviewExport } from '../../src/server/expor
 const roots: string[] = [];
 const baseOid = '1'.repeat(40);
 const headOid = '2'.repeat(40);
+const rangeReviewKey = 'a'.repeat(64);
 
 async function root(): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), 'compare-export-publication-'));
@@ -207,3 +208,41 @@ describe('literal export publication state machine', () => {
     },
   );
 });
+
+  test('publishes and recovers a range export only through its server-derived review key', async () => {
+    const repositoryRoot = await root();
+    const interactive = candidatePair('range');
+    const document = JSON.parse(interactive.json.toString('utf8'));
+    const json = Buffer.from(canonicalizeReviewExport(ReviewExportV2Schema.parse({
+      ...document,
+      schemaVersion: 2,
+      range: {
+        requestedBase: 'agent/base',
+        requestedHead: 'agent/head',
+        baseOid,
+        headOid,
+        pathspecs: ['src', ':(exclude)src/generated'],
+        reviewKey: rangeReviewKey,
+      },
+    })));
+    const markdown = Buffer.from(renderReviewMarkdown(json));
+
+    await expect(publishReviewExport({
+      repositoryRoot,
+      identity: { kind: 'range', reviewKey: rangeReviewKey },
+      json,
+      markdown,
+      reExportCapability: { kind: 'reExportUnsupported' },
+    })).resolves.toMatchObject({
+      kind: 'exported',
+      receipt: { files: [{ path: `.compare/exports/${rangeReviewKey}/review.json` }] },
+    });
+    await expect(recoverReviewExport(repositoryRoot, { kind: 'range', reviewKey: rangeReviewKey })).resolves.toBe(true);
+    await expect(publishReviewExport({
+      repositoryRoot,
+      identity: { kind: 'range', reviewKey: `${rangeReviewKey}x` },
+      json,
+      markdown,
+      reExportCapability: { kind: 'reExportUnsupported' },
+    })).resolves.toEqual({ kind: 'publicationFailed' });
+  });

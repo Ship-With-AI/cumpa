@@ -1,12 +1,14 @@
 import { describe, expect, test } from 'vitest';
 
-import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
+import { ReviewExportV1Schema, ReviewExportV2Schema } from '../../src/contracts/draft.js';
 import {
   buildReviewExportV1,
+  buildReviewExportV2,
   canonicalizeReviewExport,
   hashExportBytes,
   parseCanonicalReviewExport,
 } from '../../src/export/review-export.js';
+import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js';
 
 const oid = 'a'.repeat(40);
 const commentId = 'comment_aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -193,5 +195,28 @@ describe('ReviewExportV1 canonical contract', () => {
     for (const candidate of candidates) {
       expect(() => parseCanonicalReviewExport(canonicalizeReviewExport({ ...document, ...candidate }))).toThrow();
     }
+  });
+});
+
+describe('ReviewExportV2 range contract', () => {
+  test('binds canonical bytes and Markdown to one exact frozen range scope', async () => {
+    const range = {
+      requestedBase: 'agent/base',
+      requestedHead: 'agent/head',
+      baseOid: oid,
+      headOid: 'b'.repeat(40),
+      pathspecs: ['src', ':(exclude)src/generated'],
+      reviewKey: 'c'.repeat(64),
+    };
+    const document = buildReviewExportV2(snapshot(), range, '2026-07-23T08:02:00.000Z');
+    const bytes = canonicalizeReviewExport(document);
+    const parsed = parseCanonicalReviewExport(bytes);
+    expect(document).toMatchObject({ schemaVersion: 2, range });
+    expect(renderReviewMarkdown(bytes)).toContain('agent/base');
+    expect(renderReviewMarkdown(bytes)).toContain(':(exclude)src/generated');
+    expect(() => ReviewExportV1Schema.parse(document)).toThrow();
+    expect(() => ReviewExportV2Schema.parse({ ...document, range: { ...range, pathspecs: [...range.pathspecs].reverse() } })).toThrow();
+    expect(() => ReviewExportV2Schema.parse({ ...document, range: { ...range, reviewKey: 'C'.repeat(64) } })).toThrow();
+    expect(() => ReviewExportV2Schema.parse({ ...document, extra: true })).toThrow();
   });
 });

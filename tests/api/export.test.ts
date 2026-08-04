@@ -14,7 +14,15 @@ const headers = { host, origin: `http://${host}`, authorization: `Bearer ${token
 const apps = new Set<FastifyInstance>();
 const roots: string[] = [];
 
-async function buildApp() {
+async function buildApp(range?: {
+  readonly kind: 'revisions';
+  readonly requestedBase: string;
+  readonly requestedHead: string;
+  readonly baseOid: string;
+  readonly headOid: string;
+  readonly pathspecs: readonly string[];
+  readonly reviewKey: string;
+}) {
   const repositoryRoot = await mkdtemp(join(tmpdir(), 'compare-export-api-'));
   roots.push(repositoryRoot);
   const revealDraftFile = vi.fn(async () => undefined);
@@ -38,6 +46,7 @@ async function buildApp() {
       availability: { kind: 'text' },
     }],
     hasCommittedChanges: true,
+    ...(range === undefined ? {} : { range }),
   }, {
     sessionToken: token,
     revealDraftFile,
@@ -131,6 +140,62 @@ describe('secured export and fixed export-directory reveal APIs', () => {
       ],
     });
     expect(JSON.stringify(response.json())).not.toContain(repositoryRoot);
+  });
+
+  test('exports frozen range provenance and publishes through its scoped review key', async () => {
+    const reviewKey = 'a'.repeat(64);
+    const { app, repositoryRoot } = await buildApp({
+      kind: 'revisions',
+      requestedBase: 'agent/base',
+      requestedHead: 'agent/head',
+      baseOid: '1'.repeat(40),
+      headOid: '2'.repeat(40),
+      pathspecs: ['src', ':(exclude)src/generated'],
+      reviewKey,
+    });
+    const draft = await app.inject({
+      method: 'POST',
+      url: '/api/draft/mutations',
+      headers,
+      payload: {
+        type: 'addComment',
+        expectedRevision: 0,
+        fileId: `file_${'b'.repeat(43)}`,
+        side: 'head',
+        line: 1,
+        body: 'Keep this exact line.',
+      },
+    });
+    expect(draft.statusCode).toBe(201);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/export',
+      headers,
+      payload: { expectedRevision: 1 },
+    });
+    expect(response.statusCode).toBe(201);
+    expect(response.json()).toMatchObject({
+      comparison: {
+        base: { oid: '1'.repeat(40) },
+        head: { oid: '2'.repeat(40) },
+      },
+      files: [
+        { path: `.compare/exports/${reviewKey}/review.json` },
+        { path: `.compare/exports/${reviewKey}/review.md` },
+      ],
+    });
+    expect(JSON.parse(await readFile(join(repositoryRoot, '.compare', 'exports', reviewKey, 'review.json'), 'utf8'))).toMatchObject({
+      schemaVersion: 2,
+      range: {
+        requestedBase: 'agent/base',
+        requestedHead: 'agent/head',
+        baseOid: '1'.repeat(40),
+        headOid: '2'.repeat(40),
+        pathspecs: ['src', ':(exclude)src/generated'],
+        reviewKey,
+      },
+    });
   });
 
   test('rejects export replacement authority and fixed reveal body, query, and wrong methods', async () => {
