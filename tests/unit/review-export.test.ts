@@ -1,4 +1,6 @@
 import { describe, expect, test } from 'vitest';
+import type { RangeReviewScope } from '../../src/contracts/comparison.js';
+
 
 import { ReviewExportV1Schema, ReviewExportV2Schema } from '../../src/contracts/draft.js';
 import {
@@ -74,6 +76,26 @@ function snapshot(comments = [comment()]) {
     },
   };
 }
+function rangeSnapshot(range: RangeReviewScope) {
+  const base = snapshot();
+  return {
+    ...base,
+    acceptedDraft: {
+      ...base.acceptedDraft,
+      comparison: {
+        ...base.acceptedDraft.comparison,
+        range,
+      },
+    },
+    comparison: {
+      selectedBase: { label: range.requestedBase, launchOid: range.baseOid },
+      selectedHead: { label: range.requestedHead, launchOid: range.headOid },
+      mergeBaseOid: range.baseOid,
+      comparisonKey: range.reviewKey,
+    },
+  };
+}
+
 
 describe('ReviewExportV1 canonical contract', () => {
   test('maps the accepted draft once, preserves every identity, and rejects unknown or invalid data', () => {
@@ -199,24 +221,26 @@ describe('ReviewExportV1 canonical contract', () => {
 });
 
 describe('ReviewExportV2 range contract', () => {
-  test('binds canonical bytes and Markdown to one exact frozen range scope', async () => {
+  test('binds canonical bytes Markdown one exact frozen range scope', () => {
     const range = {
-      requestedBase: 'agent/base',
-      requestedHead: 'agent/head',
+      kind: 'revisions' as const,
+      requestedBase: 'main',
+      requestedHead: 'topic',
       baseOid: oid,
-      headOid: 'b'.repeat(40),
+      headOid: oid,
       pathspecs: ['src', ':(exclude)src/generated'],
-      reviewKey: 'c'.repeat(64),
+      reviewKey: 'd'.repeat(64),
     };
-    const document = buildReviewExportV2(snapshot(), range, '2026-07-23T08:02:00.000Z');
+    const document = buildReviewExportV2(rangeSnapshot(range), range, '2026-07-23T08:02:00.000Z');
     const bytes = canonicalizeReviewExport(document);
     const parsed = parseCanonicalReviewExport(bytes);
+    expect(parsed).toEqual(document);
     expect(document).toMatchObject({ schemaVersion: 2, range });
-    expect(renderReviewMarkdown(bytes)).toContain('agent/base');
+    expect(renderReviewMarkdown(bytes)).toContain('main');
     expect(renderReviewMarkdown(bytes)).toContain(':(exclude)src/generated');
     expect(() => ReviewExportV1Schema.parse(document)).toThrow();
-    expect(() => ReviewExportV2Schema.parse({ ...document, range: { ...range, pathspecs: [...range.pathspecs].reverse() } })).toThrow();
     expect(() => ReviewExportV2Schema.parse({ ...document, range: { ...range, reviewKey: 'C'.repeat(64) } })).toThrow();
     expect(() => ReviewExportV2Schema.parse({ ...document, extra: true })).toThrow();
+    expect(() => buildReviewExportV2(rangeSnapshot(range), { ...range, pathspecs: [...range.pathspecs].reverse() }, '2026-07-23T08:02:00.000Z')).toThrow();
   });
 });

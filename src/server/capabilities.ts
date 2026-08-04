@@ -36,6 +36,7 @@ import {
 import { createDraftStore, type DraftStore } from './draft-store.js';
 import {
   buildReviewExportV1,
+  buildReviewExportV2,
   canonicalizeReviewExport,
 } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
@@ -320,10 +321,11 @@ export function createCapabilityRegistry(
       return filesByCapability.get(fileId);
     },
     async revealExportDirectory() {
-      const managedRoot = await ensureManagedExportsRoot(comparison.repositoryRoot, false);
-      const exportDirectory = managedRoot === undefined
-        ? undefined
-        : join(managedRoot.exportsRoot, `${comparison.base.oid}..${comparison.head.oid}`);
+    const managedRoot = await ensureManagedExportsRoot(comparison.repositoryRoot, false);
+    const exportName = comparison.range?.reviewKey ?? `${comparison.base.oid}..${comparison.head.oid}`;
+    const exportDirectory = managedRoot === undefined
+      ? undefined
+      : join(managedRoot.exportsRoot, exportName);
       if (
         options.revealDraftFile === undefined
         || managedRoot === undefined
@@ -387,40 +389,52 @@ export function createCapabilityRegistry(
           acceptedDraft.comments.map(async (comment) => [comment.id, await this.verifyAnchor(comment.anchor)] as const),
         ),
       );
-      const document = buildReviewExportV1(
-        {
-          acceptedDraft,
-          commentVerification,
-          comparison: {
-            selectedBase: { label: comparison.base.label, launchOid: comparison.base.oid },
-            selectedHead: { label: comparison.head.label, launchOid: comparison.head.oid },
-            mergeBaseOid: comparison.mergeBaseOid,
-            comparisonKey: comparisonKey(comparison.base.oid, comparison.head.oid),
-          },
-          drift: {
-            observedAt: exportedAt,
-            acknowledged: drifted,
-            base: {
-              launchOid: comparison.base.oid,
-              currentOid: observation.base.kind === 'moved' ? observation.base.newOid : observation.base.kind === 'unchanged' ? comparison.base.oid : null,
-              status: observation.base.kind,
-            },
-            head: {
-              launchOid: comparison.head.oid,
-              currentOid: observation.head.kind === 'moved' ? observation.head.newOid : observation.head.kind === 'unchanged' ? comparison.head.oid : null,
-              status: observation.head.kind,
-            },
-          },
+    const range = comparison.range;
+    if (range !== undefined && (range.baseOid !== comparison.base.oid || range.headOid !== comparison.head.oid)) {
+      throw new Error('Frozen comparison does not match its range provenance.');
+    }
+    const exportSnapshot = {
+      acceptedDraft,
+      commentVerification,
+      comparison: range === undefined
+        ? {
+          selectedBase: { label: comparison.base.label, launchOid: comparison.base.oid },
+          selectedHead: { label: comparison.head.label, launchOid: comparison.head.oid },
+          mergeBaseOid: comparison.mergeBaseOid,
+          comparisonKey: comparisonKey(comparison.base.oid, comparison.head.oid),
+        }
+        : {
+          selectedBase: { label: range.requestedBase, launchOid: range.baseOid },
+          selectedHead: { label: range.requestedHead, launchOid: range.headOid },
+          mergeBaseOid: range.baseOid,
+          comparisonKey: range.reviewKey,
         },
-        exportedAt,
-      );
+      drift: {
+        observedAt: exportedAt,
+        acknowledged: drifted,
+        base: {
+          launchOid: comparison.base.oid,
+          currentOid: observation.base.kind === 'moved' ? observation.base.newOid : observation.base.kind === 'unchanged' ? comparison.base.oid : null,
+          status: observation.base.kind,
+        },
+        head: {
+          launchOid: comparison.head.oid,
+          currentOid: observation.head.kind === 'moved' ? observation.head.newOid : observation.head.kind === 'unchanged' ? comparison.head.oid : null,
+          status: observation.head.kind,
+        },
+      },
+    };
+    const document = range === undefined
+      ? buildReviewExportV1(exportSnapshot, exportedAt)
+      : buildReviewExportV2(exportSnapshot, range, exportedAt);
       const json = canonicalizeReviewExport(document);
       const markdown = Buffer.from(renderReviewMarkdown(json), 'utf8');
-      const published = await publishReviewExport({
-        repositoryRoot: comparison.repositoryRoot,
-        baseOid: comparison.base.oid,
-        headOid: comparison.head.oid,
-        json,
+    const published = await publishReviewExport({
+      repositoryRoot: comparison.repositoryRoot,
+      identity: range === undefined
+        ? { kind: 'interactive', baseOid: comparison.base.oid, headOid: comparison.head.oid }
+        : { kind: 'range', reviewKey: range.reviewKey },
+      json,
         markdown,
         reExportCapability: await getObservedNativeExchangeCapability(),
         revalidate: async () => {

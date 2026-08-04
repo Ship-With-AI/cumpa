@@ -382,11 +382,16 @@ export const SelectorDriftResponseSchema = z
   })
   .readonly();
 
-const ExportReceiptDirectoryPattern = /^\.compare\/exports\/([0-9a-f]+\.\.[0-9a-f]+)\/review\.(?:json|md)$/u;
+const ExportReceiptDirectoryPattern =
+  /^\.compare\/exports\/((?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64}))|[0-9a-f]{64})\/review\.(?:json|md)$/u;
 
 const ExportReceiptJsonFileSchema = z
   .strictObject({
-    path: z.string().regex(/^\.compare\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.json$/u),
+    path: z
+      .string()
+      .regex(
+        /^\.compare\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|[0-9a-f]{64})\/review\.json$/u,
+      ),
     algorithm: z.literal('sha256'),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),
     bytes: z.number().int().nonnegative(),
@@ -395,7 +400,11 @@ const ExportReceiptJsonFileSchema = z
 
 const ExportReceiptMarkdownFileSchema = z
   .strictObject({
-    path: z.string().regex(/^\.compare\/exports\/[0-9a-f]+\.\.[0-9a-f]+\/review\.md$/u),
+    path: z
+      .string()
+      .regex(
+        /^\.compare\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|[0-9a-f]{64})\/review\.md$/u,
+      ),
     algorithm: z.literal('sha256'),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),
     bytes: z.number().int().nonnegative(),

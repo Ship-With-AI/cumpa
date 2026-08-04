@@ -3,7 +3,8 @@ import { lstat, mkdir, open, readdir, readFile, rename, rm } from 'node:fs/promi
 import { join, relative, resolve } from 'node:path';
 import type { Stats } from 'node:fs';
 
-import { hashExportBytes, parseCanonicalReviewExport, type ExportHash } from '../export/review-export.js';
+import { hashExportBytes, parseCanonicalReviewExport } from '../export/review-export.js';
+import type { ExportHash, ReviewExport } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
 
 export class ReExportUnsupported extends Error {
@@ -32,11 +33,14 @@ export type PublishReviewExportResult =
   | Readonly<{ readonly kind: 'publicationFailed' }>
   | Readonly<{ readonly kind: 'recoveryRequired' }>;
 
+export type ExportPublicationIdentity =
+  | Readonly<{ readonly kind: 'interactive'; readonly baseOid: string; readonly headOid: string }>
+  | Readonly<{ readonly kind: 'range'; readonly reviewKey: string }>;
+
 export type PublishReviewExportInput = Readonly<{
   readonly revalidate?: () => Promise<boolean>;
   readonly repositoryRoot: string;
-  readonly baseOid: string;
-  readonly headOid: string;
+  readonly identity: ExportPublicationIdentity;
   readonly json: Uint8Array;
   readonly markdown: Uint8Array;
   readonly reExportCapability: ReExportCapability;
@@ -113,6 +117,27 @@ async function stableExists(path: string): Promise<boolean> {
   }
 }
 
+function stableNameFor(identity: ExportPublicationIdentity): string | undefined {
+  if (identity.kind === 'range') {
+    return Object.keys(identity).length === 2 && /^[0-9a-f]{64}$/u.test(identity.reviewKey)
+      ? identity.reviewKey
+      : undefined;
+  }
+  return Object.keys(identity).length === 3
+    && /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/u.test(identity.baseOid)
+    && /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/u.test(identity.headOid)
+    ? `${identity.baseOid}..${identity.headOid}`
+    : undefined;
+}
+
+function matchesPublicationIdentity(document: ReviewExport, identity: ExportPublicationIdentity): boolean {
+  return identity.kind === 'range'
+    ? document.schemaVersion === 2 && document.range.reviewKey === identity.reviewKey
+    : document.schemaVersion === 1
+      && document.comparison.selectedBase.launchOid === identity.baseOid
+      && document.comparison.selectedHead.launchOid === identity.headOid;
+}
+
 function receipt(exportsRoot: string, stable: string, pair: CompletePair): ExportReceipt {
   const stableRelative = relative(exportsRoot, stable).split('\\').join('/');
   const json = hashExportBytes(pair.json);
@@ -180,8 +205,10 @@ export async function assertManagedExportsRoot(managedRoot: ManagedExportsRoot):
 }
 
 export async function publishReviewExport(input: PublishReviewExportInput): Promise<PublishReviewExportResult> {
+  const publication = input.identity;
+  const stableName = stableNameFor(publication);
+  if (stableName === undefined) return Object.freeze({ kind: 'publicationFailed' });
   const repositoryRoot = resolve(input.repositoryRoot);
-  const stableName = `${input.baseOid}..${input.headOid}`;
   let managedRoot: ManagedExportsRoot | undefined;
   let candidate: string | undefined;
   let exportsRoot: string | undefined;
@@ -213,9 +240,12 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
     if (!validatedCandidate.json.equals(input.json) || !validatedCandidate.markdown.equals(input.markdown)) {
       throw new Error('Candidate reread differs from validated export bytes.');
     }
-    parseCanonicalReviewExport(validatedCandidate.json);
-    if (!Buffer.from(renderReviewMarkdown(validatedCandidate.json), 'utf8').equals(validatedCandidate.markdown)) {
-      throw new Error('Candidate Markdown is not the exact rendering of canonical export JSON.');
+    const document = parseCanonicalReviewExport(validatedCandidate.json);
+    if (
+      !matchesPublicationIdentity(document, publication)
+      || !Buffer.from(renderReviewMarkdown(validatedCandidate.json), 'utf8').equals(validatedCandidate.markdown)
+    ) {
+      throw new Error('Candidate export identity or Markdown does not match canonical export JSON.');
     }
     await assertManagedExportsRoot(managedRoot);
     await syncDirectory(candidate);
@@ -283,11 +313,16 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
   }
 }
 
-export async function recoverReviewExport(repositoryRoot: string, baseOid: string, headOid: string): Promise<CompletePair | undefined> {
+export async function recoverReviewExport(
+  repositoryRoot: string,
+  identity: ExportPublicationIdentity,
+): Promise<CompletePair | undefined> {
+  const stableName = stableNameFor(identity);
+  if (stableName === undefined) return undefined;
   const managedRoot = await ensureManagedExportsRoot(repositoryRoot, false);
   if (managedRoot === undefined) return undefined;
   await assertManagedExportsRoot(managedRoot);
-  const stable = join(managedRoot.exportsRoot, `${baseOid}..${headOid}`);
+  const stable = join(managedRoot.exportsRoot, stableName);
   try {
     await assertManagedExportsRoot(managedRoot);
     return await completePair(stable);

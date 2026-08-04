@@ -4,13 +4,17 @@ import {
   AnchorVerificationSchema,
   ReviewDraftV1Schema,
   ReviewExportV1Schema,
+  ReviewExportV2Schema,
   compareReviewExportComments,
   compareUtf16CodeUnits,
   type AnchorVerificationDto,
   type ReviewDraftV1,
+  type ReviewExport,
   type ReviewExportV1,
+  type ReviewExportV2,
 } from '../contracts/draft.js';
-export type { ReviewExportV1 } from '../contracts/draft.js';
+export type { ReviewExport, ReviewExportV1, ReviewExportV2 } from '../contracts/draft.js';
+import type { RangeReviewScope } from '../contracts/comparison.js';
 import { compareExactPaths } from '../domain/path-bytes.js';
 
 
@@ -127,19 +131,60 @@ export function buildReviewExportV1(snapshot: AcceptedReviewSnapshotV1, exported
   return ReviewExportV1Schema.parse(document);
 }
 
+function hasMatchingRangeScope(left: RangeReviewScope, right: RangeReviewScope): boolean {
+  return left.requestedBase === right.requestedBase
+    && left.requestedHead === right.requestedHead
+    && left.baseOid === right.baseOid
+    && left.headOid === right.headOid
+    && left.reviewKey === right.reviewKey
+    && left.pathspecs.length === right.pathspecs.length
+    && left.pathspecs.every((pathspec, index) => pathspec === right.pathspecs[index]);
+}
+
+export function buildReviewExportV2(
+  snapshot: AcceptedReviewSnapshotV1,
+  range: RangeReviewScope,
+  exportedAt: string,
+): ReviewExportV2 {
+  const draft = ReviewDraftV1Schema.parse(snapshot.acceptedDraft);
+  if (
+    draft.comparison.range === undefined
+    || !hasMatchingRangeScope(draft.comparison.range, range)
+    || snapshot.comparison.selectedBase.label !== range.requestedBase
+    || snapshot.comparison.selectedHead.label !== range.requestedHead
+    || snapshot.comparison.selectedBase.launchOid !== range.baseOid
+    || snapshot.comparison.selectedHead.launchOid !== range.headOid
+    || snapshot.comparison.mergeBaseOid !== range.baseOid
+    || snapshot.comparison.comparisonKey !== range.reviewKey
+  ) {
+    throw new TypeError('Range export provenance does not match the frozen comparison.');
+  }
+  const versionOne = buildReviewExportV1(snapshot, exportedAt);
+  return ReviewExportV2Schema.parse({ ...versionOne, schemaVersion: 2, range });
+}
+
 export function canonicalizeReviewExport(document: unknown): Uint8Array {
   return new TextEncoder().encode(serializeCanonicalJson(document));
 }
 
-export function parseCanonicalReviewExport(bytes: Uint8Array): ReviewExportV1 {
+export function parseCanonicalReviewExport(bytes: Uint8Array): ReviewExport {
   const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   const parsed: unknown = JSON.parse(text);
-  const document = ReviewExportV1Schema.parse(parsed);
+  const document = zodParseReviewExport(parsed);
   const canonicalBytes = canonicalizeReviewExport(document);
   if (bytes.byteLength !== canonicalBytes.byteLength || bytes.some((byte, index) => byte !== canonicalBytes[index])) {
     throw new TypeError('Export bytes are not the canonical representation of the validated document.');
   }
   return document;
+}
+
+function zodParseReviewExport(document: unknown): ReviewExport {
+  if (document === null || typeof document !== 'object' || !('schemaVersion' in document)) {
+    throw new TypeError('Export schema version is unsupported.');
+  }
+  if (document.schemaVersion === 1) return ReviewExportV1Schema.parse(document);
+  if (document.schemaVersion === 2) return ReviewExportV2Schema.parse(document);
+  throw new TypeError('Export schema version is unsupported.');
 }
 
 export function hashExportBytes(bytes: Uint8Array): ExportHash {

@@ -73,8 +73,7 @@ describe('literal export publication state machine', () => {
 
     const result = await publishReviewExport({
       repositoryRoot,
-      baseOid,
-      headOid,
+      identity: { kind: 'interactive', baseOid, headOid },
       json: pair.json,
       markdown: pair.markdown,
       reExportCapability: { kind: 'reExportUnsupported' },
@@ -96,8 +95,7 @@ describe('literal export publication state machine', () => {
 
     const result = await publishReviewExport({
       repositoryRoot,
-      baseOid,
-      headOid,
+      identity: { kind: 'interactive', baseOid, headOid },
       json: Buffer.from('{"kind":"invalid"}'),
       markdown: Buffer.from('# invalid\n'),
       reExportCapability: { kind: 'reExportUnsupported' },
@@ -117,8 +115,7 @@ describe('literal export publication state machine', () => {
 
     const result = await publishReviewExport({
       repositoryRoot,
-      baseOid,
-      headOid,
+      identity: { kind: 'interactive', baseOid, headOid },
       json: newPair.json,
       markdown: newPair.markdown,
       reExportCapability: { kind: 'reExportUnsupported' },
@@ -145,8 +142,7 @@ describe('literal export publication state machine', () => {
 
       const result = await publishReviewExport({
         repositoryRoot,
-        baseOid,
-        headOid,
+        identity: { kind: 'interactive', baseOid, headOid },
         json: pair.json,
         markdown: pair.markdown,
         reExportCapability: { kind: 'reExportUnsupported' },
@@ -192,13 +188,12 @@ describe('literal export publication state machine', () => {
 
       await expect(publishReviewExport({
         repositoryRoot,
-        baseOid,
-        headOid,
+        identity: { kind: 'interactive', baseOid, headOid },
         json: candidatePair('new').json,
         markdown: candidatePair('new').markdown,
         reExportCapability: { kind: 'reExportUnsupported' },
       })).resolves.toEqual({ kind: 'publicationFailed' });
-      await expect(recoverReviewExport(repositoryRoot, baseOid, headOid)).rejects.toThrow(
+      await expect(recoverReviewExport(repositoryRoot, { kind: 'interactive', baseOid, headOid })).rejects.toThrow(
         'Managed export directory is not a real directory.',
       );
       await expect(Promise.all([
@@ -213,17 +208,26 @@ describe('literal export publication state machine', () => {
     const repositoryRoot = await root();
     const interactive = candidatePair('range');
     const document = JSON.parse(interactive.json.toString('utf8'));
+    const range = {
+      kind: 'revisions',
+      requestedBase: 'agent/base',
+      requestedHead: 'agent/head',
+      baseOid,
+      headOid,
+      pathspecs: ['src', ':(exclude)src/generated'],
+      reviewKey: rangeReviewKey,
+    };
     const json = Buffer.from(canonicalizeReviewExport(ReviewExportV2Schema.parse({
       ...document,
       schemaVersion: 2,
-      range: {
-        requestedBase: 'agent/base',
-        requestedHead: 'agent/head',
-        baseOid,
-        headOid,
-        pathspecs: ['src', ':(exclude)src/generated'],
-        reviewKey: rangeReviewKey,
+      comparison: {
+        ...document.comparison,
+        selectedBase: { label: range.requestedBase, launchOid: range.baseOid },
+        selectedHead: { label: range.requestedHead, launchOid: range.headOid },
+        mergeBaseOid: range.baseOid,
+        comparisonKey: range.reviewKey,
       },
+      range,
     })));
     const markdown = Buffer.from(renderReviewMarkdown(json));
 
@@ -235,9 +239,14 @@ describe('literal export publication state machine', () => {
       reExportCapability: { kind: 'reExportUnsupported' },
     })).resolves.toMatchObject({
       kind: 'exported',
-      receipt: { files: [{ path: `.compare/exports/${rangeReviewKey}/review.json` }] },
+      receipt: {
+        files: [
+          { path: `.compare/exports/${rangeReviewKey}/review.json` },
+          { path: `.compare/exports/${rangeReviewKey}/review.md` },
+        ],
+      },
     });
-    await expect(recoverReviewExport(repositoryRoot, { kind: 'range', reviewKey: rangeReviewKey })).resolves.toBe(true);
+    await expect(recoverReviewExport(repositoryRoot, { kind: 'range', reviewKey: rangeReviewKey })).resolves.toMatchObject({ json, markdown });
     await expect(publishReviewExport({
       repositoryRoot,
       identity: { kind: 'range', reviewKey: `${rangeReviewKey}x` },

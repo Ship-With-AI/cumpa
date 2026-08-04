@@ -1,4 +1,5 @@
-import { parseCanonicalReviewExport, type ReviewExportV1 } from './review-export.js';
+import { controlSafeDisplay } from '../domain/path-bytes.js';
+import { parseCanonicalReviewExport, type ReviewExport } from './review-export.js';
 
 function fenceFor(value: string): string {
   const runs = value.match(/`+/gu) ?? [];
@@ -11,7 +12,7 @@ function appendFencedData(lines: string[], label: string, value: string): void {
   lines.push(label, `${fence}text`, value, fence);
 }
 
-function appendAnchor(lines: string[], comment: ReviewExportV1['files'][number]['comments'][number]): void {
+function appendAnchor(lines: string[], comment: ReviewExport['files'][number]['comments'][number]): void {
   const { anchor } = comment;
   lines.push(`Side: \`${anchor.side}\``, `Recorded line: ${anchor.line} (hint only)`, `Blob: \`${anchor.blobOid}\``, `Context hash: \`${anchor.contextHash.algorithm}:${anchor.contextHash.value}\``);
   appendFencedData(lines, 'Repository-relative path:', anchor.path.utf8 ?? anchor.path.bytesBase64url);
@@ -25,7 +26,7 @@ function appendAnchor(lines: string[], comment: ReviewExportV1['files'][number][
   );
 }
 
-function appendComment(lines: string[], comment: ReviewExportV1['files'][number]['comments'][number]): void {
+function appendComment(lines: string[], comment: ReviewExport['files'][number]['comments'][number]): void {
   lines.push(`### ${comment.id}`);
   appendAnchor(lines, comment);
   appendFencedData(lines, 'Review feedback:', comment.body);
@@ -44,6 +45,21 @@ export function renderReviewMarkdown(canonicalBytes: Uint8Array): string {
     `Merge base: \`${document.comparison.mergeBaseOid}\``,
     `Comparison key: \`${document.comparison.comparisonKey}\``,
   ];
+  if (document.schemaVersion === 2) {
+    lines.push(
+      '## Review scope',
+      `Base commit: \`${document.range.baseOid}\``,
+      `Head commit: \`${document.range.headOid}\``,
+      `Review key: \`${document.range.reviewKey}\``,
+    );
+    appendFencedData(lines, 'Requested base:', controlSafeDisplay(document.range.requestedBase));
+    appendFencedData(lines, 'Requested head:', controlSafeDisplay(document.range.requestedHead));
+    lines.push('Ordered Git pathspecs:');
+    for (const [index, pathspec] of document.range.pathspecs.entries()) {
+      appendFencedData(lines, `Pathspec ${index + 1}:`, controlSafeDisplay(pathspec));
+    }
+    lines.push('');
+  }
   appendFencedData(lines, 'Base label:', document.comparison.selectedBase.label);
   appendFencedData(lines, 'Head label:', document.comparison.selectedHead.label);
   lines.push(

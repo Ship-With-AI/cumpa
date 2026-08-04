@@ -321,6 +321,51 @@ export const ReviewExportV1Schema = z
   })
   .readonly();
 
+export const ReviewExportV2Schema = z
+  .strictObject({
+    schemaVersion: z.literal(2),
+    kind: z.literal('compare/export'),
+    exportedAt: z.string().datetime(),
+    acceptedDraftRevision: RevisionSchema,
+    comparison: z
+      .strictObject({
+        selectedBase: ExportEndpointSchema,
+        selectedHead: ExportEndpointSchema,
+        mergeBaseOid: GitObjectIdSchema,
+        comparisonKey: z.string().regex(/^[0-9a-f]{64}$/u),
+      })
+      .readonly(),
+    drift: z
+      .strictObject({
+        observedAt: z.string().datetime(),
+        acknowledged: z.boolean(),
+        base: ExportDriftEndpointSchema,
+        head: ExportDriftEndpointSchema,
+      })
+      .readonly(),
+    summary: z.strictObject({ markdown: SummaryMarkdownSchema.nullable() }).readonly(),
+    files: z.array(ExportFileSchema).readonly(),
+    counts: ExportCountsSchema,
+    range: RangeReviewScopeSchema,
+  })
+  .superRefine((document, context) => {
+    const { range, ...versionOne } = document;
+    if (!ReviewExportV1Schema.safeParse({ ...versionOne, schemaVersion: 1 }).success) {
+      context.addIssue({ code: 'custom', message: 'Version 2 export must retain valid version 1 feedback.' });
+    }
+    if (
+      range.requestedBase !== document.comparison.selectedBase.label
+      || range.requestedHead !== document.comparison.selectedHead.label
+      || range.baseOid !== document.comparison.selectedBase.launchOid
+      || range.headOid !== document.comparison.selectedHead.launchOid
+      || range.baseOid !== document.comparison.mergeBaseOid
+      || range.reviewKey !== document.comparison.comparisonKey
+    ) {
+      context.addIssue({ code: 'custom', message: 'Range provenance must match the frozen export comparison.' });
+    }
+  })
+  .readonly();
+
 export const DraftMutationSchema = z
   .discriminatedUnion('type', [
     z.strictObject({ type: z.literal('addComment'), commentId: CommentIdSchema, body: CommentBodySchema, anchor: DurableAnchorV1Schema }),
@@ -334,6 +379,8 @@ export const DraftMutationSchema = z
 
 export type ReviewDraftV1 = z.infer<typeof ReviewDraftV1Schema>;
 export type ReviewExportV1 = z.infer<typeof ReviewExportV1Schema>;
+export type ReviewExportV2 = z.infer<typeof ReviewExportV2Schema>;
+export type ReviewExport = ReviewExportV1 | ReviewExportV2;
 export type ReviewDraftCommentV1 = z.infer<typeof DraftCommentSchema>;
 export type DraftMutation = z.infer<typeof DraftMutationSchema>;
 
