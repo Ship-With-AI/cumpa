@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   AgentReviewRequestSchema,
@@ -10,6 +10,9 @@ import {
   AgentRequestError,
   readAgentReviewRequest,
 } from '../../src/cli/request.js';
+import { runOrdinaryAction } from '../../src/cli/run.js';
+import type { PinnedComparison } from '../../src/contracts/comparison.js';
+import { LaunchError } from '../../src/domain/errors.js';
 
 const encoder = new TextEncoder();
 
@@ -166,4 +169,146 @@ describe('agent review request protocol', () => {
       'Request is invalid. Use kind "compare.review-request", schemaVersion 1, mode "revisions", and revisions only.',
     );
   });
+});
+
+describe('ordinary action request ownership', () => {
+  const comparison = {
+    repositoryRoot: '/repo',
+    objectFormat: 'sha1',
+    base: { label: 'main', oid: '1'.repeat(40) },
+    head: { label: 'feature', oid: '2'.repeat(40) },
+    mergeBaseOid: '1'.repeat(40),
+    changedFiles: [],
+    hasCommittedChanges: false,
+    range: {
+      kind: 'revisions',
+      requestedBase: 'main',
+      requestedHead: 'feature',
+      baseOid: '1'.repeat(40),
+      headOid: '2'.repeat(40),
+      pathspecs: ['src', ':!generated'],
+      reviewKey: 'f'.repeat(64),
+    },
+  } satisfies PinnedComparison;
+
+  it('keeps TTY launch with the injected interactive owner', async () => {
+    const runInteractive = vi.fn(async () => {});
+    const readRequest = vi.fn();
+
+    await runOrdinaryAction(
+      { cwd: '/repo' },
+      { isTTY: true, runCli: runInteractive, readRequest },
+    );
+
+    expect(runInteractive).toHaveBeenCalledExactlyOnceWith({ cwd: '/repo' });
+    expect(readRequest).not.toHaveBeenCalled();
+  });
+
+  it('grounds one non-TTY request and launches its frozen range once', async () => {
+    const events: string[] = [];
+    const launch = vi.fn(async () => {
+      events.push('launch');
+    });
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const setExitStatus = vi.fn();
+
+    await runOrdinaryAction(
+      { cwd: '/repo' },
+      {
+        isTTY: false,
+        input: chunks(),
+        readRequest: async () => {
+          events.push('read');
+          return AgentReviewRequestSchema.parse(request());
+        },
+        createRangeComparison: async (options) => {
+          events.push('range');
+          expect(options).toEqual({
+            cwd: '/repo',
+            baseRevision: 'main',
+            headRevision: 'feature',
+            pathspecs: [],
+          });
+          return comparison;
+        },
+        launchComparison: launch,
+        output: (message) => stderr.push(message),
+        stdout: (message) => stdout.push(message),
+        setExitStatus,
+      },
+    );
+
+    expect(events).toEqual(['read', 'range', 'launch']);
+    expect(launch).toHaveBeenCalledExactlyOnceWith(comparison);
+    expect(stderr).toEqual([]);
+    expect(stdout).toEqual([]);
+    expect(setExitStatus).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['request', new AgentRequestError('invalid-request')],
+    [
+      'revision',
+      new LaunchError('endpoint-unavailable', 'Requested revision is unavailable.', {
+        recovery: { kind: 'exit' },
+      }),
+    ],
+    [
+      'ancestry',
+      new LaunchError(
+        'non-ancestor-range',
+        'The requested base is not an ancestor of the requested head. Choose a contiguous range and try again.',
+        { recovery: { kind: 'exit' } },
+      ),
+    ],
+    [
+      'invalid native pathspec',
+      new LaunchError(
+        'invalid-pathspec',
+        'Git rejected the requested pathspec scope. Check native Git pathspec syntax and try again.',
+        { recovery: { kind: 'exit' } },
+      ),
+    ],
+  ])(
+    'reports bounded %s failures before listener or browser launch',
+    async (_name, error) => {
+      const stderr: string[] = [];
+      const stdout: string[] = [];
+      const launch = vi.fn();
+      const setExitStatus = vi.fn();
+      const rawGitStderr = 'fatal: invalid pathspec magic';
+      const submittedPathspec = ':(invalid)secret';
+
+      await runOrdinaryAction(
+        { cwd: '/repo' },
+        {
+          isTTY: false,
+          input: chunks(),
+          readRequest: async () => {
+            if (error instanceof AgentRequestError) {
+              throw error;
+            }
+            return AgentReviewRequestSchema.parse(request());
+          },
+          createRangeComparison: async () => {
+            throw error;
+          },
+          launchComparison: launch,
+          output: (message) => stderr.push(message),
+          stdout: (message) => stdout.push(message),
+          setExitStatus,
+        },
+      );
+
+      expect(stderr).toHaveLength(1);
+      expect(stderr[0]).toBeDefined();
+      expect(stderr[0]!.length).toBeLessThan(256);
+      expect(stderr[0]).not.toContain(rawGitStderr);
+      expect(stderr[0]).not.toContain(submittedPathspec);
+      expect(stdout).toEqual([]);
+      expect(setExitStatus).toHaveBeenCalledExactlyOnceWith(1);
+      expect(launch).not.toHaveBeenCalled();
+    },
+  );
 });

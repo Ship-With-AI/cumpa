@@ -58,6 +58,22 @@ function comparisonFixture(): PinnedComparison {
   };
 }
 
+function rangeComparisonFixture(): PinnedComparison {
+  return {
+    ...comparisonFixture(),
+    mergeBaseOid: '1'.repeat(40),
+    range: {
+      kind: 'revisions',
+      requestedBase: 'refs/heads/main',
+      requestedHead: 'refs/heads/feature',
+      baseOid: '1'.repeat(40),
+      headOid: '2'.repeat(40),
+      pathspecs: ['src', ':!generated', '--literal'],
+      reviewKey: 'f'.repeat(64),
+    },
+  };
+}
+
 interface SecurityAwareApp extends FastifyInstance {
   bindSessionSecurity(target: {
     readonly expectedHost: string;
@@ -145,6 +161,36 @@ describe('frozen opaque session capabilities', () => {
     expect(response.body).not.toContain('oldBlobOid');
     expect(response.body).not.toContain('newBlobOid');
     expect(response.body).not.toContain(token);
+  });
+
+  test('projects only frozen range scope and does not follow later ref movement', async () => {
+    const comparison = rangeComparisonFixture();
+    const app = buildApp(comparison);
+
+    const before = await app.inject({ method: 'GET', url: '/api/session', headers });
+    Reflect.set(comparison.base, 'oid', '9'.repeat(40));
+    Reflect.set(comparison.head, 'oid', '8'.repeat(40));
+    Reflect.set(comparison.range!, 'pathspecs', ['changed-after-launch']);
+    const after = await app.inject({ method: 'GET', url: '/api/session', headers });
+
+    expect(after.statusCode).toBe(200);
+    expect(after.json()).toMatchObject({
+      base: { oid: '1'.repeat(40) },
+      head: { oid: '2'.repeat(40) },
+      range: {
+        kind: 'revisions',
+        baseOid: '1'.repeat(40),
+        headOid: '2'.repeat(40),
+        pathspecs: ['src', ':!generated', '--literal'],
+      },
+    });
+    expect(after.json()).toEqual(before.json());
+    expect(after.body).not.toContain('requestedBase');
+    expect(after.body).not.toContain('requestedHead');
+    expect(after.body).not.toContain('reviewKey');
+    expect(after.body).not.toContain('/private/repository');
+    expect(after.body).not.toContain('4'.repeat(40));
+    expect(after.body).not.toContain(token);
   });
 
   test('returns metadata only for one frozen opaque file capability', async () => {
