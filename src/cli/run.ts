@@ -6,6 +6,7 @@ import open from 'open';
 import { z } from 'zod';
 
 import { confirmPinnedComparison } from './confirm.js';
+import { AgentRequestError, readAgentReviewRequest } from './request.js';
 import {
   pickOrderedSources,
   type PickerRecoveryOptions,
@@ -25,7 +26,9 @@ import { discoverSourceCandidates } from '../git/candidates.js';
 import type { SourceDiscovery } from '../git/candidates.js';
 import {
   createPinnedComparison,
+  createPinnedRangeComparison,
   type CreatePinnedComparisonOptions,
+  type CreatePinnedRangeComparisonOptions,
 } from '../git/comparison.js';
 import { createSessionApp, type SessionApp } from '../server/app.js';
 import type { DraftRevealPort } from '../server/capabilities.js';
@@ -127,6 +130,21 @@ export interface RunCliDependencies {
   readonly confirmComparison?: (
     comparison: PinnedComparison,
   ) => Promise<'back' | 'launch'>;
+  readonly launchComparison?: (
+    comparison: PinnedComparison,
+  ) => Promise<unknown>;
+  readonly output?: (message: string) => void;
+  readonly setExitStatus?: (status: number) => void;
+}
+
+export interface OrdinaryActionDependencies {
+  readonly isTTY?: boolean;
+  readonly input?: AsyncIterable<Uint8Array>;
+  readonly runCli?: (options: RunCliOptions) => Promise<void>;
+  readonly readRequest?: typeof readAgentReviewRequest;
+  readonly createRangeComparison?: (
+    options: CreatePinnedRangeComparisonOptions,
+  ) => Promise<PinnedComparison>;
   readonly launchComparison?: (
     comparison: PinnedComparison,
   ) => Promise<unknown>;
@@ -330,6 +348,48 @@ function reportFatalLaunchError(
   setExitStatus(1);
 }
 
+export async function runOrdinaryAction(
+  options: RunCliOptions,
+  dependencies: OrdinaryActionDependencies = {},
+): Promise<void> {
+  if (dependencies.isTTY ?? process.stdin.isTTY === true) {
+    await (dependencies.runCli ?? runCli)(options);
+    return;
+  }
+
+  const readRequest = dependencies.readRequest ?? readAgentReviewRequest;
+  const createRangeComparison =
+    dependencies.createRangeComparison ?? createPinnedRangeComparison;
+  const output = dependencies.output ?? console.error;
+  const setExitStatus =
+    dependencies.setExitStatus ??
+    ((status: number) => {
+      process.exitCode = status;
+    });
+  let comparison: PinnedComparison;
+  try {
+    const request = await readRequest(dependencies.input ?? process.stdin);
+    comparison = await createRangeComparison({
+      cwd: options.cwd,
+      baseRevision: request.revisions.base,
+      headRevision: request.revisions.head,
+      pathspecs: request.revisions.pathspecs,
+    });
+  } catch (error) {
+    if (
+      error instanceof AgentRequestError ||
+      (isLaunchError(error) && error.recovery.kind === 'exit')
+    ) {
+      output(error.message);
+      setExitStatus(1);
+      return;
+    }
+    throw error;
+  }
+
+  await (dependencies.launchComparison ?? launchPinnedComparison)(comparison);
+}
+
 export async function runCli(
   options: RunCliOptions,
   dependencies: RunCliDependencies = {},
@@ -475,7 +535,7 @@ export async function run(
     .action(async () => {
       const serializedLaunchOptions = process.env.COMPARE_LAUNCH_OPTIONS;
       if (serializedLaunchOptions === undefined) {
-        await runCli({ cwd: process.cwd() });
+        await runOrdinaryAction({ cwd: process.cwd() });
         return;
       }
       const launchOptions = packagedLaunchOptionsSchema.parse(

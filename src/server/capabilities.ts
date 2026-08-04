@@ -261,6 +261,16 @@ export function createCapabilityRegistry(
     base: toSessionEndpoint(comparison.base),
     head: toSessionEndpoint(comparison.head),
     mergeBaseOid: comparison.mergeBaseOid,
+    ...(comparison.range === undefined
+      ? {}
+      : {
+          range: {
+            kind: comparison.range.kind,
+            baseOid: comparison.range.baseOid,
+            headOid: comparison.range.headOid,
+            pathspecs: comparison.range.pathspecs,
+          },
+        }),
     files: comparison.changedFiles.map((file) => {
       const status =
         file.status.similarity === null

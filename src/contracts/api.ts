@@ -288,6 +288,15 @@ const ApiPinnedEndpointSchema = z
   })
   .readonly();
 
+const SessionRangeSchema = z
+  .strictObject({
+    kind: z.literal('revisions'),
+    baseOid: GitObjectIdSchema,
+    headOid: GitObjectIdSchema,
+    pathspecs: z.array(z.string()).readonly(),
+  })
+  .readonly();
+
 const ApiFileStatusSchema = z
   .strictObject({
     kind: ChangedFileStatusKindSchema,
@@ -312,7 +321,20 @@ export const SessionResponseSchema = z
     base: ApiPinnedEndpointSchema,
     head: ApiPinnedEndpointSchema,
     mergeBaseOid: GitObjectIdSchema,
+    range: SessionRangeSchema.optional(),
     files: z.array(SessionFileSchema).readonly(),
+  })
+  .superRefine((session, context) => {
+    if (
+      session.range !== undefined &&
+      (session.range.baseOid !== session.base.oid ||
+        session.range.headOid !== session.head.oid)
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Range scope must match pinned session endpoints.',
+      });
+    }
   })
   .readonly();
 
