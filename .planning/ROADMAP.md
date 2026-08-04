@@ -33,11 +33,11 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 4. Ordered include and exclude pathspecs retain native Git meaning, and the developer sees only the resulting scoped file inventory.
 5. Ref movement after launch cannot change the pinned commits, pathspec scope, blobs, draft identity, or feedback provenance for the range review.
 
-**Plans**: 5/6 plans executed
+**Plans**: 6/6 plans executed
 
 - [x] 12-04-PLAN.md — Bind range drafts to frozen ordered path scope while preserving pair-only interactive persistence.
 - [x] 12-05-PLAN.md
-- [ ] 12-06-PLAN.md
+- [x] 12-06-PLAN.md
 
 **Wave 1**
 
@@ -133,7 +133,7 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 12. Request Protocol & Range Grounding | v1.3 | 5/6 | In Progress|  |
+| 12. Request Protocol & Range Grounding | v1.3 | 6/6 | In Progress|  |
 | 13. Exact Patch Grounding | v1.3 | 0/3 | Not started | - |
 | 14. Attached Lifecycle & Canonical Completion | v1.3 | 0/3 | Not started | - |
 | 15. Adversarial Integration Gate | v1.3 | 0/1 | Not started | - |
