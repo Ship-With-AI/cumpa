@@ -18,6 +18,10 @@ const heading = computed(
   () =>
     `Compare: ${controlSafeDisplay(props.session.base.label)} · ${props.session.base.oid.slice(0, 7)} → ${controlSafeDisplay(props.session.head.label)} · ${props.session.head.oid.slice(0, 7)}`,
 );
+const isRange = computed(() => props.session.range?.kind === 'revisions');
+const panelId = computed(() =>
+  isRange.value ? 'review-scope-panel' : 'comparison-identities-panel',
+);
 const dirtyEndpoints = computed(() =>
   [
     { role: 'Base', worktree: props.session.base.worktree },
@@ -54,11 +58,11 @@ defineExpose({ focusDisclosure });
         ref="disclosure"
         type="button"
         class="identity-disclosure"
-        aria-controls="comparison-identities-panel"
+        :aria-controls="panelId"
         :aria-expanded="expanded"
         @click="emit('toggle')"
       >
-        Comparison identities
+        {{ isRange ? 'View review scope' : 'Comparison identities' }}
       </button>
     </div>
   </header>

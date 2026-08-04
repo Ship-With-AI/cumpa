@@ -120,6 +120,8 @@ const reviewableFiles = computed(() => session.value?.files.filter((file) => fil
 const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? selectedFile.value?.oldPath?.display ?? 'Changed file');
 const baseShortOid = computed(() => session.value?.base.oid.slice(0, 7));
 const headShortOid = computed(() => session.value?.head.oid.slice(0, 7));
+const isRangeSession = computed(() => session.value?.range?.kind === 'revisions');
+const rangeHasPathspecs = computed(() => (session.value?.range?.pathspecs.length ?? 0) > 0);
 const selectedIndex = computed(() => reviewableFiles.value.findIndex((file) => file.fileId === selectedFile.value?.fileId));
 const atFirstFile = computed(() => selectedIndex.value <= 0);
 const atLastFile = computed(() => selectedIndex.value === -1 || selectedIndex.value === reviewableFiles.value.length - 1);
@@ -877,18 +879,37 @@ onBeforeUnmount(() => {
         <KeyboardHelp :open="keyboardHelpOpen" @close="keyboardHelpOpen = false" />
 
         <section v-if="session.files.length === 0" class="empty-state">
-          <h2>No PR-style changes in this pinned comparison</h2>
-          <p>The selected head has no changes from the displayed merge base.</p>
+          <template v-if="isRangeSession">
+            <h2>No changes match this review scope</h2>
+            <p>
+              {{
+                rangeHasPathspecs
+                  ? 'The pinned commits have no changed files selected by this scope. View review scope to inspect the commits and ordered Git pathspecs.'
+                  : 'The pinned commits contain no changed files. View review scope to inspect the commits.'
+              }}
+            </p>
+          </template>
+          <template v-else>
+            <h2>No PR-style changes in this pinned comparison</h2>
+            <p>The selected head has no changes from the displayed merge base.</p>
+          </template>
         </section>
         <section v-else-if="selectedFile?.availability.kind !== 'text'" class="empty-state">
           <h2>Diff unavailable for this file</h2>
           <p>{{ selectedFile?.availability.kind === 'unsupported' ? `unsupported: ${selectedFile.availability.reason}` : 'unavailable: missing-object' }}. Select another changed file to continue reviewing.</p>
         </section>
         <section v-else-if="diffLoading" class="diff-state" aria-live="polite">Loading diff…</section>
-        <section v-else-if="diffError !== ''" class="empty-state">
-          <h2>Diff couldn’t be loaded</h2>
-          <p>The pinned file content is unavailable. Try again, or relaunch Compare if the session ended.</p>
-          <button type="button" class="ui-button" @click="retryDiff">Try loading diff again</button>
+        <section v-else-if="diffError !== ''" class="empty-state" :role="isRangeSession ? 'alert' : undefined">
+          <template v-if="isRangeSession">
+            <h2>Pinned range unavailable</h2>
+            <p>Compare could not load the pinned commits or scoped file inventory. Relaunch the same request; this review will not substitute current refs.</p>
+            <button type="button" class="ui-button" @click="retryDiff">Try loading pinned diff again</button>
+          </template>
+          <template v-else>
+            <h2>Diff couldn’t be loaded</h2>
+            <p>The pinned file content is unavailable. Try again, or relaunch Compare if the session ended.</p>
+            <button type="button" class="ui-button" @click="retryDiff">Try loading diff again</button>
+          </template>
         </section>
         <DiffWorkspace
           v-else-if="selectedContent !== undefined"

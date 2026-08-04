@@ -610,6 +610,23 @@ input:-webkit-autofill:focus {
   padding: var(--space-md);
 }
 
+.pathspec-list {
+  display: grid;
+  gap: var(--space-sm);
+  margin: 0;
+  padding-inline-start: var(--space-lg);
+}
+
+.pathspec-list code {
+  display: block;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.pathspec-empty {
+  margin: 0;
+}
+
 .identity-row dt,
 .identity-meta-label,
 .metadata-label,
@@ -2233,6 +2250,13 @@ h3.conversation-card__identity {
   .worktree-path {
     max-width: 100%;
     overflow-wrap: anywhere;
+  }
+
+  .identity-disclosure,
+  .identity-panel--modal .sheet-close-button,
+  .identity-panel--modal .copy-button {
+    min-width: 44px;
+    min-height: 44px;
   }
 
   .review-context-header__context {
