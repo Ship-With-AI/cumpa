@@ -5,15 +5,15 @@ milestone_name: Agent Review Handoff
 current_phase: 12
 current_phase_name: Request Protocol & Range Grounding
 status: executing
-stopped_at: Completed 12-04-PLAN.md
-last_updated: "2026-08-04T19:42:52Z"
+stopped_at: Completed 12-05-PLAN.md
+last_updated: "2026-08-04T20:11:12.876Z"
 last_activity: 2026-08-04
 last_activity_desc: completed 12-04 scoped range draft ownership
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 ## Current Position
 
 Phase: 12 of 15 (Request Protocol & Range Grounding)
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-08-04 — completed 12-04 scoped range draft ownership
 Progress: [███████░░░] 67%
@@ -62,6 +62,7 @@ Progress: [███████░░░] 67%
 | Phase 12 P02 | 6 min | 3 tasks | 9 files |
 | Phase 12 P03 | 10 min | 3 tasks | 5 files |
 | Phase 12 P04 | 6 min | 3 tasks | 8 files |
+| Phase 12 P05 | 20min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 12]: Phase 12 request v1 uses one strict Zod schema and inferred public type.
 - [Phase 12]: Phase 12 agent input is bounded before one fatal UTF-8 decode and JSON parse.
 - [Phase 12]: Use explicit revision ranges with pinned object IDs; preserve the existing interactive merge-base policy. — A range review must remain reproducible while the interactive review behavior is intentionally unchanged.
+- [Phase 12]: V1 exports retain pair directories while frozen ranges use V2 review-key directories. — Preserves interactive artifacts and prevents range output collisions.
+- [Phase 12]: V2 export provenance must exactly match accepted draft range scope and frozen comparison. — Prevents stale or browser-authored range scope from being exported.
 
 ### Pending Todos
 
@@ -117,8 +120,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-04T19:28:22.824Z
-Stopped at: Completed 12-03-PLAN.md
+Last session: 2026-08-04T20:10:50.478Z
+Stopped at: Completed 12-05-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
