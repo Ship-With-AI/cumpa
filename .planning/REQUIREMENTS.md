@@ -1,7 +1,7 @@
 # Requirements: Compare v1.3 Agent Review Handoff
 
 **Defined:** 2026-08-04
-**Core Value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
+**Core Value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
 
 ## v1.3 Requirements
 

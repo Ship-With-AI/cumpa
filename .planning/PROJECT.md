@@ -6,7 +6,7 @@ Compare is a local-first code review application for developers who want a GitHu
 
 ## Core Value
 
-A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
+A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
 
 ## Current State: v1.2 Fast Source Discovery
 
@@ -83,7 +83,7 @@ Validated in Phase 11: Production Performance Gate proved the compiled picker pa
 
 ### Out of Scope
 
-- Reviewing staged, unstaged, or untracked worktree changes — v1 compares committed worktree `HEAD` values only and reports ignored dirty state.
+- Automatic review of staged, unstaged, or untracked worktree state — v1.3 accepts only an exact agent-supplied patch proven against repository/worktree content; Compare does not discover or synthesize a working-tree diff.
 - Hosting reviews remotely or supporting multiple simultaneous reviewers — the product is a single-developer local tool.
 - Posting reviews to GitHub, GitLab, or another forge — export files are the integration boundary for v1.
 - Applying requested changes from inside the application — a separate coding agent consumes the export.
