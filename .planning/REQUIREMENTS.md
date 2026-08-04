@@ -13,9 +13,9 @@
 
 ### Git Range
 
-- [ ] **RANGE-01**: A coding agent can request a contiguous comparison using explicit ancestor base and head revisions that Compare resolves once to full commit IDs.
-- [ ] **RANGE-02**: A coding agent can restrict a range review with ordered native Git include/exclude pathspecs whose semantics are not reinterpreted by Compare.
-- [ ] **RANGE-03**: A range review's inventory, blobs, draft identity, and returned feedback remain bound to its pinned commits and exact pathspec scope.
+- [x] **RANGE-01**: A coding agent can request a contiguous comparison using explicit ancestor base and head revisions that Compare resolves once to full commit IDs.
+- [x] **RANGE-02**: A coding agent can restrict a range review with ordered native Git include/exclude pathspecs whose semantics are not reinterpreted by Compare.
+- [x] **RANGE-03**: A range review's inventory, blobs, draft identity, and returned feedback remain bound to its pinned commits and exact pathspec scope.
 
 ### Exact Patch
 
@@ -71,9 +71,9 @@
 | AGENT-01 | Phase 12 | Complete |
 | AGENT-02 | Phase 12 | Complete |
 | AGENT-03 | Phase 12 | Pending |
-| RANGE-01 | Phase 12 | Pending |
-| RANGE-02 | Phase 12 | Pending |
-| RANGE-03 | Phase 12 | Pending |
+| RANGE-01 | Phase 12 | Complete |
+| RANGE-02 | Phase 12 | Complete |
+| RANGE-03 | Phase 12 | Complete |
 | PATCH-01 | Phase 13 | Pending |
 | PATCH-02 | Phase 13 | Pending |
 | PATCH-03 | Phase 13 | Pending |

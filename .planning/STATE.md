@@ -5,15 +5,16 @@ milestone_name: Agent Review Handoff
 current_phase: 12
 current_phase_name: Request Protocol & Range Grounding
 status: executing
-stopped_at: Completed 12-01-PLAN.md
-last_updated: "2026-08-04T18:44:06.995Z"
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-08-04T19:09:14.612Z"
 last_activity: 2026-08-04
-last_activity_desc: v1.3 roadmap created with 17/17 requirements mapped
+last_activity_desc: completed 12-01 bounded versioned request protocol
 progress:
-  total_phases: 1
+  total_phases: 4
   completed_phases: 0
   total_plans: 6
-  completed_plans: 1
+  completed_plans: 2
+  percent: 0
 ---
 
 # Project State
@@ -28,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 ## Current Position
 
 Phase: 12 of 15 (Request Protocol & Range Grounding)
-Plan: 1 of 6
-Status: In progress
+Plan: 2 of 6
+Status: Ready to execute
 Last activity: 2026-08-04 — completed 12-01 bounded versioned request protocol
 Progress: [██░░░░░░░░] 17%
 
@@ -58,6 +59,7 @@ Progress: [██░░░░░░░░] 17%
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 12 P01 | 10min | 3 tasks | 3 files |
+| Phase 12 P02 | 6 min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -77,6 +79,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 10]: Batch unique matched OIDs through native Git log with exact complete abbreviation key sets. — Keeps Git abbreviation authority while limiting each successful non-empty search to one filtered listing and one optional batch.
 - [Phase 12]: Phase 12 request v1 uses one strict Zod schema and inferred public type.
 - [Phase 12]: Phase 12 agent input is bounded before one fatal UTF-8 decode and JSON parse.
+- [Phase 12]: Use explicit revision ranges with pinned object IDs; preserve the existing interactive merge-base policy. — A range review must remain reproducible while the interactive review behavior is intentionally unchanged.
 
 ### Pending Todos
 
@@ -112,8 +115,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-04T18:44:06.991Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-08-04T19:09:14.609Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
