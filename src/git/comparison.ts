@@ -55,6 +55,26 @@ function parseSingleLine(buffer: Buffer, fact: string): string {
   return lines[0]!;
 }
 
+async function resolveObjectFormat(
+  repositoryRoot: string,
+  runner: GitRunner,
+  signal?: AbortSignal,
+): Promise<'sha1' | 'sha256'> {
+  const result = await runner.run(
+    ['rev-parse', '--show-object-format=storage'],
+    { cwd: repositoryRoot, signal },
+  );
+  const objectFormat = parseSingleLine(result.stdout, 'object format');
+  if (objectFormat !== 'sha1' && objectFormat !== 'sha256') {
+    throw new LaunchError(
+      'git-unsupported',
+      FATAL_LAUNCH_MESSAGES.gitUnsupported,
+      { recovery: { kind: 'exit' } },
+    );
+  }
+  return objectFormat;
+}
+
 function recoveryFor(role: SelectionRole): PickerRecovery {
   return role === 'base' ? BASE_RECOVERY : HEAD_RECOVERY;
 }
@@ -243,21 +263,11 @@ export async function createPinnedComparison(
     options.signal,
   );
 
-  const objectFormatResult = await runner.run(
-    ['rev-parse', '--show-object-format=storage'],
-    { cwd: repository.root, signal: options.signal },
+  const objectFormat = await resolveObjectFormat(
+    repository.root,
+    runner,
+    options.signal,
   );
-  const objectFormat = parseSingleLine(
-    objectFormatResult.stdout,
-    'object format',
-  );
-  if (objectFormat !== 'sha1' && objectFormat !== 'sha256') {
-    throw new LaunchError(
-      'git-unsupported',
-      FATAL_LAUNCH_MESSAGES.gitUnsupported,
-      { recovery: { kind: 'exit' } },
-    );
-  }
 
   const baseOid = await resolveCommit(
     baseSelection,
@@ -410,21 +420,11 @@ export async function createPinnedRangeComparison(
     runner,
     options.signal,
   );
-  const objectFormatResult = await runner.run(
-    ['rev-parse', '--show-object-format=storage'],
-    { cwd: repository.root, signal: options.signal },
+  const objectFormat = await resolveObjectFormat(
+    repository.root,
+    runner,
+    options.signal,
   );
-  const objectFormat = parseSingleLine(
-    objectFormatResult.stdout,
-    'object format',
-  );
-  if (objectFormat !== 'sha1' && objectFormat !== 'sha256') {
-    throw new LaunchError(
-      'git-unsupported',
-      FATAL_LAUNCH_MESSAGES.gitUnsupported,
-      { recovery: { kind: 'exit' } },
-    );
-  }
 
   const baseOid = await resolveRangeCommit(
     options.baseRevision,
