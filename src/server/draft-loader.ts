@@ -46,10 +46,24 @@ function fingerprint(raw: Buffer): string {
 }
 
 function sameComparison(left: DraftComparison, right: DraftComparison): boolean {
+  if (
+    left.baseCommitOid !== right.baseCommitOid ||
+    left.headCommitOid !== right.headCommitOid ||
+    left.mergeBaseOid !== right.mergeBaseOid
+  ) {
+    return false;
+  }
+  if (left.range === undefined || right.range === undefined) {
+    return left.range === right.range;
+  }
   return (
-    left.baseCommitOid === right.baseCommitOid &&
-    left.headCommitOid === right.headCommitOid &&
-    left.mergeBaseOid === right.mergeBaseOid
+    left.range.requestedBase === right.range.requestedBase &&
+    left.range.requestedHead === right.range.requestedHead &&
+    left.range.baseOid === right.range.baseOid &&
+    left.range.headOid === right.range.headOid &&
+    left.range.reviewKey === right.range.reviewKey &&
+    left.range.pathspecs.length === right.range.pathspecs.length &&
+    left.range.pathspecs.every((pathspec, index) => pathspec === right.range?.pathspecs[index])
   );
 }
 
@@ -64,7 +78,7 @@ function invalidState(path: string, raw: Buffer, details: readonly DraftIssue[])
 }
 
 export function draftPaths(repositoryRoot: string, comparison: DraftComparison): DraftPaths {
-  const key = comparisonKey(comparison.baseCommitOid, comparison.headCommitOid);
+  const key = comparison.range?.reviewKey ?? comparisonKey(comparison.baseCommitOid, comparison.headCommitOid);
   const relativePath = `${draftsDirectory}/${key}.json`;
   const directory = join(repositoryRoot, draftsDirectory);
   return Object.freeze({ key, directory, canonicalPath: join(repositoryRoot, relativePath), relativePath });

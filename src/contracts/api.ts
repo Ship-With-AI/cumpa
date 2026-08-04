@@ -6,6 +6,7 @@ import {
   ExactPathSchema,
   GitModeSchema,
   GitObjectIdSchema,
+  RangeReviewScopeSchema,
 } from './comparison.js';
 import {
   AnchorVerificationSchema,
@@ -96,6 +97,7 @@ export const DraftViewSchema = z
         baseCommitOid: GitObjectIdSchema,
         headCommitOid: GitObjectIdSchema,
         mergeBaseOid: GitObjectIdSchema,
+        range: RangeReviewScopeSchema.optional(),
       })
       .readonly(),
     revision: RevisionSchema,

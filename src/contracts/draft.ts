@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { ExactPathSchema, GitObjectIdSchema } from './comparison.js';
+import { ExactPathSchema, GitObjectIdSchema, RangeReviewScopeSchema } from './comparison.js';
 import { compareExactPaths, decodeBase64url } from '../domain/path-bytes.js';
 
 export const RevisionSchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
@@ -57,6 +57,15 @@ const DraftComparisonSchema = z
     baseCommitOid: GitObjectIdSchema,
     headCommitOid: GitObjectIdSchema,
     mergeBaseOid: GitObjectIdSchema,
+    range: RangeReviewScopeSchema.optional(),
+  })
+  .superRefine((comparison, context) => {
+    if (
+      comparison.range !== undefined &&
+      (comparison.range.baseOid !== comparison.baseCommitOid || comparison.range.headOid !== comparison.headCommitOid)
+    ) {
+      context.addIssue({ code: 'custom', message: 'Range provenance must match draft comparison endpoints.', path: ['range'] });
+    }
   })
   .readonly();
 

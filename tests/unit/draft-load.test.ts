@@ -24,13 +24,7 @@ function rangeComparison(pathspecs: readonly string[]) {
       baseOid: comparison.baseCommitOid,
       headOid: comparison.headCommitOid,
       pathspecs,
-      reviewKey: rangeReviewKey(
-        comparison.baseCommitOid,
-        comparison.headCommitOid,
-        'main~1',
-        'main',
-        pathspecs,
-      ),
+      reviewKey: rangeReviewKey(comparison.baseCommitOid, comparison.headCommitOid, pathspecs),
     },
   };
 }

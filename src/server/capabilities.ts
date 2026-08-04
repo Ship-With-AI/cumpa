@@ -245,11 +245,18 @@ export function createCapabilityRegistry(
     options.draftStore ??
     createDraftStore({
       repositoryRoot: comparison.repositoryRoot,
-      comparison: {
-        baseCommitOid: comparison.base.oid,
-        headCommitOid: comparison.head.oid,
-        mergeBaseOid: comparison.mergeBaseOid,
-      },
+      comparison: comparison.range === undefined
+        ? {
+            baseCommitOid: comparison.base.oid,
+            headCommitOid: comparison.head.oid,
+            mergeBaseOid: comparison.mergeBaseOid,
+          }
+        : {
+            baseCommitOid: comparison.base.oid,
+            headCommitOid: comparison.head.oid,
+            mergeBaseOid: comparison.mergeBaseOid,
+            range: comparison.range,
+          },
     });
   const selectorDriftObserver =
     options.selectorDriftObserver ?? createSelectorDriftObserver(comparison);

@@ -35,7 +35,7 @@ function range(pathspecs: readonly string[]): ReviewRange {
     baseOid: '1'.repeat(40),
     headOid: '2'.repeat(40),
     pathspecs,
-    reviewKey: rangeReviewKey('1'.repeat(40), '2'.repeat(40), 'main~1', 'main', pathspecs),
+    reviewKey: rangeReviewKey('1'.repeat(40), '2'.repeat(40), pathspecs),
   };
 }
 
@@ -130,6 +130,12 @@ describe('comparison-local draft routes', () => {
     expect(added.statusCode).toBe(201);
     expect(added.json()).toMatchObject({ kind: 'accepted', draft: { comments: [{ state: 'open', body: 'Keep this exact line.' }] } });
 
+    const persisted = JSON.parse(await readFile(
+      join(repositoryRoot, '.compare', 'drafts', `${comparisonKey('1'.repeat(40), '2'.repeat(40))}.json`),
+      'utf8',
+    )) as { comparison: Record<string, unknown> };
+    expect(persisted.comparison).not.toHaveProperty('range');
+
     const resumed = buildApp(repositoryRoot);
     expect((await resumed.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
       kind: 'current',
@@ -172,6 +178,34 @@ describe('comparison-local draft routes', () => {
       kind: 'current',
       draft: { revision: 1, comparison: { range: firstRange } },
     });
+  });
+
+  test.each([
+    ['reviewKey', 'f'.repeat(64)],
+    ['path', '.compare/drafts/controlled.json'],
+    ['baseCommitOid', 'f'.repeat(40)],
+    ['headCommitOid', 'f'.repeat(40)],
+    ['label', 'controlled'],
+    ['pathspecs', ['controlled']],
+  ])('rejects browser-supplied %s authority', async (authority, value) => {
+    const app = buildApp(await root(), undefined, undefined, undefined, 'after\n', false, range(['src']));
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/draft/mutations',
+      headers,
+      payload: {
+        type: 'addComment',
+        expectedRevision: 0,
+        fileId,
+        side: 'head',
+        line: 1,
+        body: 'Cannot control persisted scope.',
+        [authority]: value,
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect((await app.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({ kind: 'missing' });
   });
 
   test('stores only server-derived canonical records and rejects the exact side-specific duplicate', async () => {

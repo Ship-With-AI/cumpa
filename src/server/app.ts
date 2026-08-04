@@ -84,11 +84,18 @@ function createAppDraftStore(
   const failure = testRecoveryFailure();
   return createDraftStore({
     repositoryRoot: comparison.repositoryRoot,
-    comparison: {
-      baseCommitOid: comparison.base.oid,
-      headCommitOid: comparison.head.oid,
-      mergeBaseOid: comparison.mergeBaseOid,
-    },
+    comparison: comparison.range === undefined
+      ? {
+          baseCommitOid: comparison.base.oid,
+          headCommitOid: comparison.head.oid,
+          mergeBaseOid: comparison.mergeBaseOid,
+        }
+      : {
+          baseCommitOid: comparison.base.oid,
+          headCommitOid: comparison.head.oid,
+          mergeBaseOid: comparison.mergeBaseOid,
+          range: comparison.range,
+        },
     ...(failure === undefined ? {} : { fileSystem: createRecoveryFaultFileSystem(failure) }),
   });
 }

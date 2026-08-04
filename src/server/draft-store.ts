@@ -10,6 +10,7 @@ import {
   type DraftMutation,
   type ReviewDraftV1,
 } from '../contracts/draft.js';
+import type { RangeReviewScope } from '../contracts/comparison.js';
 import { applyDraftMutation } from '../draft/mutate-draft.js';
 import { createDraftLoader, type DraftLoadState } from './draft-loader.js';
 
@@ -17,6 +18,7 @@ export type DraftComparison = Readonly<{
   readonly baseCommitOid: string;
   readonly headCommitOid: string;
   readonly mergeBaseOid: string;
+  readonly range?: RangeReviewScope;
 }>;
 
 export type DraftFileHandle = Readonly<{
