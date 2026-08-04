@@ -27,9 +27,16 @@ Compare now opens its ordered source picker from an immutable eager snapshot of 
 - Preserved correct identity, ordering, worktree state, cancellation, recovery, and failure behavior without mutating refs.
 
 </details>
-## Next Milestone Goals
+## Current Milestone: v1.3 Agent Review Handoff
 
-No next milestone is active. Run `/gsd-new-milestone` to define the next goal, requirements, and roadmap.
+**Goal:** Let a coding agent submit an exact, repository-grounded review request, wait while the developer reviews it in Compare, and receive canonical JSON feedback on completion.
+
+**Target features:**
+- Accept a versioned review request on CLI stdin without changing the existing interactive launch flow.
+- Derive a review from either a contiguous Git revision range with optional Git pathspec filters or an exact repository-grounded patch.
+- Open the normal browser review workspace for human review.
+- End the attached session through an explicit Finish review action.
+- Emit canonical review JSON on stdout for the waiting coding agent.
 ## Requirements
 
 ### Validated
@@ -68,7 +75,11 @@ Validated in Phase 11: Production Performance Gate proved the compiled picker pa
 
 ### Active
 
-No active requirements. v1.2 shipped all five milestone requirements.
+- [ ] Coding agents can submit versioned review requests through CLI stdin.
+- [ ] Requests can select either a filtered contiguous Git range or a repository-grounded exact patch.
+- [ ] Submitted requests open the existing human browser review experience.
+- [ ] Developers can explicitly finish an agent-submitted review.
+- [ ] The waiting CLI returns canonical review JSON on stdout.
 
 ### Out of Scope
 
@@ -155,4 +166,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-07-30 after shipping v1.2 Fast Source Discovery*
+*Last updated: 2026-08-04 starting v1.3 Agent Review Handoff*
