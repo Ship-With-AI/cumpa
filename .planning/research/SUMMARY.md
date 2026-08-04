@@ -1,125 +1,165 @@
 # Project Research Summary
 
 **Project:** Compare
-**Domain:** Fast, staged native-Git source discovery for a local ordered comparison picker
-**Milestone:** v1.2 Fast Source Discovery
-**Researched:** 2026-07-30
-**Confidence:** HIGH for scope and architecture; MEDIUM for production performance until the implementation is measured on the supported Git floor
+**Domain:** Local-first agent-to-human code-review handoff
+**Researched:** 2026-08-04
+**Confidence:** MEDIUM-HIGH
 
 ## Executive Summary
 
-Compare is a local-first, single-developer code-review tool whose CLI must let users choose an ordered base and head from local branches or registered worktrees before opening the existing browser review flow. v1.2 is a focused discovery-latency milestone, not a new persistence or Git subsystem: make the picker usable from an eager snapshot of the current branch and registered worktrees, then search the remaining local branches only when the user types a non-empty term.
+Compare v1.3 should add an attached agent handoff ingress and completion path, not a second review product. A coding agent submits exactly one bounded, versioned JSON request on stdin; Compare validates it before opening the existing loopback-authenticated Vue/Monaco workspace; the human explicitly finishes or cancels; and the invoking process emits one canonical, request-bound JSON result on stdout. Interactive TTY behavior, Git semantics, draft persistence, anchors, export, Markdown, and browser security remain authoritative.
 
-The recommended implementation keeps Node 24, TypeScript, `@inquirer/search`, native installed Git, and the existing bounded/cancellable `GitRunner`. Split the existing candidate authority into an eager snapshot and an abortable lazy branch-search closure, while leaving comparison pinning, review UI, persistence, exports, and all previously validated selection/recovery semantics unchanged. The main risks are asynchronous stale results, unbounded subprocess or buffer growth, and confusing storage-dependent performance with correctness. Signal propagation, stable identity maps, constant-process batching, explicit limits, and separate packed/loose verification address those risks without mutating repositories or adding an index.
+The recommended implementation adds no dependency or runtime upgrade. Reuse Node 24 streams and process lifecycle, Zod 4 strict discriminated schemas, native Git through the existing safe runner, Fastify 5 response hooks, and the existing canonical export serializer. Range requests resolve and pin ordered base/head commits and pass native pathspecs through Git. Patch requests are accepted only when an exact already-applied patch can be proven against the repository and materialized in an isolated temporary Git index/object overlay. The primary risks are false patch grounding, scope/draft identity collisions, stdout contamination, and races between autosave, Finish, cancellation, drift, and shutdown; each requires explicit gates and an adversarial integration phase.
 
 ## Key Findings
 
 ### Recommended Stack
 
-No dependency or runtime upgrade is warranted. Node.js `>=24`, strict TypeScript, `@inquirer/search@4.2.1`, installed Git `>=2.43.0`, and the existing `GitRunner` already provide the required async source callback, argument-array spawning, `AbortSignal` cancellation, timeouts, byte limits, and Git-authoritative ref/object semantics. Keep Commander and the rest of the validated application stack untouched; v1.2 changes query timing and shape, not the browser/server/review stack.
+The stack research recommends **no v1.3 dependency additions or upgrades**. Keep Node.js >=24, Git >=2.43, Commander/Inquirer, Fastify 5, Vue 3/Vite/Monaco, Zod 4, and the existing TypeScript/Vitest/Playwright toolchain. Use native `process.stdin` async iteration with a finite byte ceiling, fatal UTF-8 decoding, one `JSON.parse`, and strict Zod validation. Keep Git as the semantic authority: resolve revisions with `rev-parse --verify --end-of-options`, enforce ancestry, pass pathspecs after `--`, and use a temporary index/object overlay for exact patch materialization. Reuse the current canonical export bytes directly; stdout is data only and diagnostics stay on stderr.
 
 **Core technologies:**
-- **Native Git through `GitRunner`:** authoritative local refs, worktrees, full OIDs, and read-only filtering; avoids a second Git semantics or cancellation boundary.
-- **Node.js 24 / TypeScript:** built-in abortable subprocesses and timers with existing strict contracts; no worker or job-queue dependency for this I/O-bound path.
-- **`@inquirer/search@4.2.1`:** its async `source(term, { signal })` seam supports eager empty-term choices and superseded-query cancellation.
-- **Git filtered listing plus one batched abbreviation call:** one filtered branch query followed by a `git log --no-walk --stdin` batch for unique OIDs avoids per-branch process fan-out.
-
-Performance contracts are distinct: picker readiness is ≤400 ms from process start, and packed-ref search is ≤500 ms for 10,000 branches. Loose-ref search must remain complete and correct even when slower (the measured 10,000-ref case was about 798.5 ms). Do not pack refs, enlarge limits without measurement, or persist a recency/index state to disguise that trade-off.
+- **Node.js 24 + standard streams:** bounded one-document ingestion, lifecycle, temp storage, and exact stdout delivery without a new protocol library.
+- **Native Git via the existing `GitRunner`:** authoritative revision, pathspec, patch, object, mode, rename, and inventory semantics with shell-free argument arrays.
+- **Zod 4:** strict, versioned, discriminated request validation and derived TypeScript types at the trust boundary.
+- **Fastify 5 + Vue 3/Monaco:** reuse the authenticated loopback review session; add only attached Finish/Cancel presentation and completion signaling.
+- **Existing canonical export service:** generate, validate, publish, and emit one immutable byte sequence; do not add a serializer.
 
 ### Expected Features
 
+The milestone boundaries remain the four researched phases: **Request Protocol Range Grounding**, **Patch Grounding Review Model**, **Attached Lifecycle Canonical Completion**, and **Adversarial Integration Gate**.
+
 **Must (table stakes):**
-- **Staged initial choices:** current attached branch and every registered worktree (including detached, dirty, and unavailable states) are usable/visible according to existing labels and disabling rules before full branch enumeration.
-- **On-demand local-branch search:** non-empty input performs case-insensitive literal matching under `refs/heads/*`; wildcard characters remain literal, with canonical ref-name ordering independent of user `branch.sort`.
-- **Identity and selection continuity:** branch IDs use full refs and full commit OIDs; worktree IDs use stable paths and committed HEAD state. Distinct refs/worktrees sharing an OID remain distinct. Base-before-head, suggested head, Back, retained selections, and ref-drift recovery remain unchanged.
-- **Race-safe bounded work:** propagate the prompt signal through every Git call; return only the active term; use a constant/bounded process count and batch unique OIDs; distinguish cancellation, no matches, and actual failure.
-- **Packed/loose parity:** packed refs meet the strict benchmark; loose refs return the complete authoritative result without mutation or false “no matches.”
+- TTY-compatible routing that leaves the current interactive picker and lifecycle unchanged; non-TTY accepts one request and never prompts.
+- Bounded UTF-8 ingestion, strict schema/version/unknown-field rejection, exclusive range-or-patch modes, and actionable stderr failures before browser launch.
+- Ordered base/head resolution to pinned full commit IDs, native Git pathspec semantics, truthful zero-match/zero-change reviews, and request-bound scope identity.
+- Exact already-applied patch grounding (preimages, postimages, paths, bytes, modes, renames/binary metadata) without mutating the worktree, real index, refs, or object store; immutable snapshot pinning.
+- Existing authenticated browser review with attached wait, disconnect/reload resilience, explicit race-safe Finish and separate Cancel, pending mutation settlement, final drift checks, and canonical stdout-only success.
+- Correct statuses: successful empty feedback is distinct from cancellation; signals and delivery failures produce no result and retain drafts.
 
 **Should have (competitive):**
-- **Useful-before-complete discovery:** users can begin comparison while large branch namespaces remain undiscovered.
-- **Git-authoritative, stateless scale:** fast search without a private catalog, stale cache, daemon, or repository rewrite.
-- **Honest storage-dependent behavior:** loading may remain visible for slow loose-ref searches rather than hiding or truncating correct results.
+- Synchronous one-process agent → human → agent rendezvous without polling, hosted services, clipboard, or agent-controlled HTTP.
+- Scope-bound canonical feedback carrying resolved range/pathspec provenance or patch digest and pinned identities while reusing existing anchors and review content.
+- Stronger-than-applicability patch identity and a mature human UX for both source modes.
 
 **Defer (v2+):**
-- Remote-tracking refs, fuzzy or recency ranking, persistent branch indexes, cross-launch caches, watchers, and repository maintenance such as automatic `git pack-refs`.
-- Debounce or alternate ref-storage optimization unless production measurements demonstrate a concrete need after cancellation and batching are correct.
+- Multiple requests per process, non-contiguous commit composition, detached/prospective patches, headless review, remote or multi-reviewer collaboration, and agent-controlled HTTP APIs.
+- Optional titles/instructions or explicit mode flags only after real usage validates the need; they are not prerequisites for v1.3.
 
 ### Architecture Approach
 
-Integrate one discovery session into the existing modules. `candidates.ts` remains the sole source-discovery authority and returns an immutable eager snapshot plus `searchBranches(term, signal)`. `picker.ts` owns async prompt behavior, grouping, transient result rendering, and a prompt-lifetime stable-ID candidate registry. `run.ts` creates/recreates the session inside the existing selection/recovery loop and preserves role ordering. `runner.ts`, repository discovery, domain source contracts, comparison pinning, confirmation, server launch, and browser review remain their existing boundaries.
+Add one narrow ingress/completion path around the existing `PinnedComparison` pipeline. The CLI handoff adapter owns stdin, stdout, cancellation, and exit status; a shared strict contract owns request validation; one Git adapter normalizes range or grounded patch inputs into immutable comparison data; and a one-shot attached-session primitive owns terminal transitions. `createSessionApp()` continues to serve the same Fastify loopback session, stores, capabilities, browser, anchors, drafts, and export. Attached metadata (scope key, optional object reader, completion port) is presentation/session context, not a new comparison identity model. Existing interactive behavior remains the default path.
 
 **Major components:**
-1. **`src/git/candidates.ts`:** parse Git protocols, build current-branch/worktree candidates, classify availability, filter branches, and batch Git-derived abbreviations.
-2. **`src/cli/picker.ts`:** return eager choices for empty input, invoke abortable search for non-empty terms, merge by stable source ID, preserve branch-before-worktree groups and Back behavior, and resolve lazy selections.
-3. **`src/cli/run.ts`:** own one session per attempt, retain selected candidates through Base/Head and confirmation-back, and delegate ref-drift recovery unchanged.
-4. **`src/git/runner.ts` / repository authority:** retain safe argument-array subprocesses, cancellation, timeouts, byte bounds, and canonical repository facts.
-5. **Existing comparison/review pipeline:** re-resolve branch refs and pin immutable comparison identities exactly as before; no v1.2 changes to browser review, drafts, exports, or server behavior.
-
-Data flow is: repository/root and worktree snapshot → bounded worktree enrichment → one abbreviation batch for eager OIDs → prompt opens; typed term → escaped Git filter → unique-OID abbreviation batch → immutable result installed in the candidate map → ordered selection → existing authoritative pinning and recovery.
+1. **CLI routing and handoff contract:** choose TTY versus piped ownership before Inquirer; decode, validate, report, and deliver exact bytes.
+2. **Git handoff adapter:** pin revisions/pathspecs or create and retain a temporary index/object overlay; feed the existing inventory/object reader and comparison model.
+3. **Attached session and server/UI:** preserve loopback token/origin security, expose explicit Finish/Cancel, settle drafts, and resolve completion only after the response is flushed.
+4. **Scoped persistence/export identity:** domain-separate attached request keys from interactive base/head keys; include mode-specific provenance without changing existing draft schemas unnecessarily.
+5. **Existing review/export pipeline:** remain the authority for frozen file inventory, Monaco rendering, anchors, canonical JSON, Markdown, and atomic publication.
 
 ### Critical Pitfalls
 
-1. **Stale query overwrites newer query:** keep each source invocation self-contained, pass the exact `AbortSignal`, check it after awaits, and never mutate shared choices after return.
-2. **Cancellation leaks Git children:** signal every filtered-list and abbreviation subprocess through `GitRunner`; do not translate abort into “no matches”; keep at most one active pipeline per picker.
-3. **Lazy rows cannot be selected:** install completed results in the same stable-ID authority used for rendering before returning choices; retain branch/worktree identity semantics.
-4. **Identity or recovery collapse:** merge by source ID, never OID/label; preserve duplicate refs/worktrees, selected Base/Head state, focus, Back, and role-specific ref-drift recovery.
-5. **Performance work becomes unsafe or dishonest:** avoid per-branch processes, bound stdout/stderr/timeouts and worktree concurrency, skip empty batches, and treat loose-ref latency separately from packed-ref guarantees. Never auto-pack refs, return partial results as complete, or hide Git failures as empty results.
+1. **Changing interactive mode or corrupting stream ownership** — decide TTY/piped mode before Inquirer; validate all attached input before prompts/server work; reserve stdout for data and stderr for every diagnostic.
+2. **Mistaking patch applicability for exact repository grounding** — do not use the real index/worktree, `--3way`, rejects, unsafe paths, or whitespace reinterpretation; prove exact metadata/content equality and retain the isolated overlay through Finish.
+3. **Reinterpreting Git scope or allowing scope collisions** — resolve and pin OIDs once, pass each pathspec unchanged after `--`, freeze inventory at launch, and use domain-separated keys containing mode and exact scope/digest.
+4. **Conflating browser disconnect, Export, Finish, and Cancel** — only an authenticated explicit Finish is terminal; reload/close remains recoverable; Cancel is explicit and never a successful empty result.
+5. **Racing finalization and delivery** — serialize active → finalizing → finished/cancelled/failed transitions, settle pending revisions and drift gates, publish one immutable canonical buffer, flush the response and stdout before shutdown.
 
 ## Implications for Roadmap
 
-The milestone should be planned as three dependent slices, with the performance gate last:
+Build in the confirmed research order; do not merge the four boundaries into one risky implementation phase.
 
-1. **Staged picker contract.** Split eager current-branch/worktree discovery from lazy branch search and add the prompt-lifetime stable-ID registry. Deliver usable empty-term choices, async source integration, branch/worktree grouping, candidate retention, Base→Head/Back continuity, cancellation ownership, and existing recovery/error semantics. This phase must avoid stale-result races, duplicate identity collapse, and state resets. It is an established Inquirer pattern but needs repository-specific contract tests.
-2. **Bounded native-Git search.** Implement literal wildcard-safe filtering, explicit `--sort=refname`, NUL-safe full-ref/full-OID records, unique-OID batched abbreviation, bounded runner resources, and bounded worktree inspection. Deliver complete packed and loose results with typed distinction between cancellation, no matches, and search failure. This phase must prove process count does not scale with branches or matches and must not add dependencies, indexes, or mutations.
-3. **Performance and safety gate.** Measure the production path, not only the spike: process-start-to-picker readiness ≤400 ms; packed 10,000-branch search ≤500 ms; loose 10,000-ref search complete/correct even if slower; broad 9,999-match output within explicit limits; rapid typing leaves no children; many-worktree and detached/dirty/unavailable cases preserve truth; repository refs/config remain unchanged. This phase is the acceptance gate before declaring v1.2 complete.
+### Phase 1: Request Protocol Range Grounding
 
-**Research flags:**
-- Phase 1: focused research is optional for library API usage but required validation of existing picker/recovery contracts and async error ownership.
-- Phase 2: plan with explicit Git 2.43.0 capability checks, output-size assumptions, literal escaping, OID format handling, and process-count instrumentation; research further only if the production runner or Git floor differs from the spike.
-- Phase 3: no new architecture research is needed; it needs reproducible benchmark fixtures and safety assertions. Investigate only a measured failure, especially loose-ref performance or output limits.
+**Rationale:** Everything else depends on safe input ownership and a pinned, scoped comparison. Establishing this first prevents prompts, revision ambiguity, pathspec reinterpretation, and stdout contamination from infecting later work.
 
-Do not create roadmap work for remote refs, review UI, persistence, export, server, automatic packing, persistent/recency state, fuzzy ranking, or staged/unstaged content: those are either previously validated/out of scope or explicitly deferred beyond v1.2.
+**Delivers:** TTY/non-TTY dispatch; bounded strict request schema; actionable pre-launch errors; pinned ordered range revisions; native pathspec propagation through all inventory calls; attached scoped identity; clean stream and exit-status policy.
+
+**Addresses:** TTY routing, bounded ingestion, strict exclusive modes, range mode, pathspec table stakes, and request-bound provenance.
+
+**Avoids:** Pitfalls 1–3 and 7. Keep the existing interactive path behaviorally unchanged.
+
+**Research flag:** **Plan-phase research recommended** for repository-specific CLI seams, pathspec environment controls, and exact backward-compatibility checks; standard Node/Zod patterns otherwise need no new library research.
+
+### Phase 2: Patch Grounding Review Model
+
+**Rationale:** Patch mode is the highest correctness and implementation risk and must produce the same immutable data model before lifecycle work can trust it.
+
+**Delivers:** Git-generated patch dialect acceptance; read-only exact preimage/postimage and metadata checks; temporary index/object overlay with cleanup ownership; frozen inventory/blob reader; patch digest and provenance; scoped draft/export identity; binary, rename, mode, symlink, and unsupported-file classification preservation.
+
+**Uses:** Native Git, controlled `GitRunner` environments, temporary filesystem APIs, existing inventory/object readers, anchors, and export contracts.
+
+**Implements:** Git handoff adapter and immutable `PinnedComparison` convergence.
+
+**Avoids:** Pitfalls 4–6 and false confidence from forward `git apply --check` alone.
+
+**Research flag:** **Mandatory focused implementation spike/research-phase.** Exercise Git 2.43 behavior with Compare fixtures for binary, rename/copy, mode/symlink, quoting, zero-context, attributes, concurrent worktree changes, and object-overlay lifetime before committing the final mechanism.
+
+### Phase 3: Attached Lifecycle Canonical Completion
+
+**Rationale:** Once both inputs yield a frozen review, make the process rendezvous deterministic and preserve the established browser/export authority.
+
+**Delivers:** Attached session state machine; explicit Finish and Cancel UI; reload/disconnect resilience; pending draft mutation settlement; final scope/drift/anchor checks; route-level post-response completion; exact canonical stdout delivery; signal, EPIPE, server-close, and cleanup handling.
+
+**Uses:** Fastify `onResponse`/`close`, existing authenticated routes and draft CAS, canonical export bytes, Vue API client, and loopback security.
+
+**Implements:** One-shot completion primitive and attached presentation context without an agent HTTP API or second serializer.
+
+**Avoids:** Pitfalls 7–10 and accidental completion on ordinary Export or tab close.
+
+**Research flag:** **Plan-phase research recommended** for current draft revision/anchor semantics and response/write ordering. Fastify and Node lifecycle APIs are well documented; validate against the actual app rather than upgrading dependencies.
+
+### Phase 4: Adversarial Integration Gate
+
+**Rationale:** The handoff contract crosses process streams, Git, filesystem snapshots, browser state, persistence, and shutdown; only end-to-end scenarios can prove the boundaries compose.
+
+**Delivers:** Scenarios for malformed/oversized/ambiguous requests, invalid revisions/pathspecs, exact patch variants, binary/rename/mode changes, scope and repository drift, reload/browser-open failure, double Finish, Finish/Cancel races, signals, stdout backpressure/EPIPE, cancellation, and zero-feedback success.
+
+**Addresses:** All v1.3 table stakes and confirmed milestone acceptance criteria.
+
+**Avoids:** Regression of interactive mode, false patch reviews, leaked capabilities, duplicate results, partial canonical output, and stale drafts.
+
+**Research flag:** **No broad new research required** once the patch spike and lifecycle design are settled; this phase is executable validation with real Git fixtures and browser/process integration.
+
+**Research flags summary:** Phase 2 is the highest-uncertainty research gate; Phases 1 and 3 need targeted repository validation; Phase 4 should test, not expand, the design. Recommendations above are not unresolved requirements: open validation work is explicitly limited to proving exact Git overlay behavior, supported patch dialect/edge cases, and final race/drift semantics.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | MEDIUM | Official Node/Git/Inquirer capabilities and the spike support reuse; production proof on the supported Git 2.43.0 floor remains. |
-| Features | HIGH | Milestone boundaries and preserved behavior are explicit; identifying-field parity needs focused production coverage. |
-| Architecture | HIGH | Repository boundaries and measured native-Git integration are clear; external library details are less certain than local contracts. |
-| Pitfalls | HIGH | Failure modes map directly to existing state, runner limits, and measured packed/loose behavior. |
+| Stack | MEDIUM | Official Node, Git, Fastify, Zod documentation and installed versions support the no-dependency recommendation; isolated Git overlay behavior still needs proof at the project's Git 2.43 floor. |
+| Features | HIGH for required behavior; MEDIUM for patch mechanism | Product boundaries and table stakes are clear; exact patch grounding and result wrapper details require implementation evidence. |
+| Architecture | HIGH for reuse boundaries; MEDIUM-HIGH for patch overlay | Existing session/export/Git boundaries are well established; overlay lifetime and all patch fixtures remain to be exercised. |
+| Pitfalls | HIGH | Failure modes are cross-checked against project constraints, existing lifecycle, and native Git semantics; adversarial integration must still demonstrate prevention. |
 
-**Overall confidence:** HIGH for roadmap scope and phase dependencies; MEDIUM for final latency claims.
+**Overall confidence:** MEDIUM-HIGH
 
 ### Gaps Address
 
-- **Production benchmark equivalence:** run the actual CLI/picker path on supported Git versions and packed/loose fixtures; do not infer readiness from Git-only timings.
-- **Existing identifying-field search parity:** explicitly cover full refs, full and abbreviated OIDs, kind aliases, worktree paths, and state labels without reintroducing eager all-branch enumeration.
-- **Runner output limits and long names:** validate the 9,999-match fixture against production byte caps; preserve typed limit failures and user-visible narrowing guidance.
-- **Interactive search failure rendering:** verify non-abort failures remain retryable and retain eager choices, while startup failures remain fatal and selection drift keeps existing recovery.
-- **Git object/hash compatibility:** use Git-authoritative abbreviation mapping and test supported full-OID formats rather than slicing hashes in TypeScript.
+- **Exact patch overlay at Git >=2.43:** validate temporary index/object/alternate-object behavior, cleanup, and blob reads with real fixtures before Phase 2 implementation is considered complete.
+- **Accepted patch dialect:** document and test full-index/binary, rename/copy, mode, symlink, quoting, and unsupported combined/partial forms; do not silently broaden parsing.
+- **Finish ordering and drift policy:** establish the accepted draft revision, pending-save settlement, repository drift response, and cancellation commit point against current draft/anchor APIs during Phase 3 planning.
+- **Result contract evolution:** decide the minimal versioned request-bound wrapper/provenance union while preserving canonical export compatibility and exact-byte guarantees.
+- **Pathspec/environment edge behavior:** verify supported native pathspec subset, `.compare/` exclusion, inherited Git environment neutralization, and deterministic zero-match behavior.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `.planning/PROJECT.md` — product core value, v1.2 goal, existing validated behavior, and hard boundaries.
-- `.planning/research/FEATURES.md` — milestone scope, required behaviors, edge cases, anti-features, and budgets.
-- `.planning/research/ARCHITECTURE.md` — module boundaries, data flow, cancellation/error ownership, and integration patterns.
-- `.planning/research/PITFALLS.md` — race, identity, process, buffer, loose-ref, and recovery failure modes with verification signals.
-- [Git branch documentation](https://git-scm.com/docs/git-branch) — filtered local-ref listing, literal escaping requirements, and ordering considerations.
-- [Git log documentation](https://git-scm.com/docs/git-log) — stdin-fed no-walk abbreviation batching.
-- [Inquirer search README](https://github.com/SBoudrias/Inquirer.js/blob/main/packages/search/README.md) — async source, empty-term behavior, separators, and abort signals.
-- [Node.js child_process documentation](https://nodejs.org/api/child_process.html) — argument-array spawning and AbortSignal support.
+
+- Git `rev-parse`, `merge-base`, `diff`, `apply`, `read-tree`, `write-tree`, and environment-variable documentation — revision pinning, ancestry, pathspecs, patch validation, temporary index/object overlay semantics.
+- Fastify 5 hooks and server `close` documentation — response-flush completion and graceful shutdown.
+- Zod 4 objects and discriminated-union documentation — strict request boundary and schema-derived types.
+- Node.js 24 releases and stream/process documentation — supported runtime APIs, bounded stdin, fatal decoding, stdout backpressure, and exit behavior.
+- Compare repository evidence (`package.json`, Git runner/inventory, comparison, server/session, draft, export, and UI modules) — existing authority and compatibility boundaries.
 
 ### Secondary (MEDIUM confidence)
-- `.planning/research/STACK.md` — dependency/version decision and measured integration guidance.
-- `.planning/notes/cli-startup-discovery.md` — startup observations and no-recency decision.
-- `.planning/spikes/002-staged-source-discovery/README.md` — packed/loose, broad-query, and many-worktree measurements.
-- Repository evidence in `src/git/runner.ts`, `src/git/candidates.ts`, `src/cli/picker.ts`, and `src/cli/run.ts` — existing contracts and safe Git boundary.
+
+- `diffmux` and `PRless` local review precedents — ecosystem expectations for local review annotations and agent delivery; useful comparison, not normative for Compare's contract.
+- npm registry metadata for Fastify, Vue, Zod, Commander, and TypeScript — current-version checks; no upgrade is justified by this milestone.
 
 ### Tertiary (LOW confidence)
-- None. Remaining uncertainty is an implementation-validation gap, not reliance on an unverified source.
+
+- None relied upon for a recommendation. The remaining uncertainty is implementation validation, not an unsupported external claim.
 
 ---
-*Research completed: 2026-07-30*
-*Ready roadmap: yes*
+*Research completed: 2026-08-04*
+*Ready for roadmap: yes*

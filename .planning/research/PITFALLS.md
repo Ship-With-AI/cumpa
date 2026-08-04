@@ -1,543 +1,419 @@
 # Pitfalls Research
 
-**Domain:** Lazy asynchronous native-Git branch discovery in an existing ordered `@inquirer/search` picker
-**Researched:** 2026-07-30
+**Domain:** Agent-submitted Git ranges and repository-grounded exact patches for an existing local-first code review CLI
+**Researched:** 2026-08-04
 **Confidence:** HIGH
 
-## Scope and Proposed Roadmap Placement
+## Scope and Phase Vocabulary
 
-This research covers only v1.2 Fast Source Discovery. Existing ordered base/head selection, Git identity, dirty-state labeling, unavailable-worktree behavior, comparison pinning, and recovery behavior remain authoritative.
+This document covers only the additions needed for v1.3 Agent Review Handoff. Existing interactive launch, browser review, loopback security, durable comments, draft persistence, and canonical export behavior remain authoritative.
 
-The current roadmap has not assigned v1.2 phase numbers. To make every warning actionable, this document uses these proposed phases:
+The phase names below are research labels for sequencing the work:
 
-1. **Phase 09 — Staged Picker Contract:** split eager current-branch/worktree discovery from lazy branch search while preserving stable identities, ordered selection, recovery, cancellation, and error ownership.
-2. **Phase 10 — Bounded Native-Git Search:** implement literal filtered branch lookup and Git-authoritative batched abbreviation with bounded process, input, output, and concurrency behavior.
-3. **Phase 11 — Performance and Safety Gate:** verify the production path against packed and loose refs, rapid typing, broad results, worktree edge cases, and a repository non-mutation invariant.
+1. **Request Protocol and Range Grounding** — stdin mode selection, schema validation, revision resolution, pathspec handling, and stdout/stderr ownership.
+2. **Patch Grounding and Review Model** — exact-patch validation, safe materialization, file inventory, provenance, durable anchors, and scoped persistence.
+3. **Attached Lifecycle and Canonical Completion** — browser reconnection, explicit Finish semantics, cancellation, serialization, response flushing, and shutdown.
+4. **Adversarial Integration Gate** — end-to-end scenarios covering malformed, ambiguous, drifting, interrupted, binary, rename, mode-change, and output-integrity cases.
 
 ## Critical Pitfalls
 
-### Pitfall 1: An older search overwrites a newer term
+### Pitfall 1: Agent input detection changes the existing interactive launch
 
 **What goes wrong:**
-A slow search for `f` completes after a fast search for `fea`, and the picker displays results for `f` under the `fea` input. A related failure occurs when an old promise mutates a shared candidate array after the prompt has moved on.
+The CLI waits for stdin when launched interactively, starts Inquirer while a piped request is being decoded, or treats empty/partial piped input as an interactive launch. The existing human command can hang or change behavior, and the agent path can emit prompts into a machine protocol.
 
 **Why it happens:**
-Asynchronous completion order is not request order. `@inquirer/search` aborts the previous source call when the term changes and checks that call's signal before installing its result, but this protection is lost if the integration ignores the supplied signal, launches detached work, or mutates state outside the source result.
+TTY detection, Commander parsing, Inquirer startup, and stream consumption are often added independently. stdin is a single-owner stream: once a prompt library or JSON decoder consumes it, the other mode cannot reliably recover it.
 
 **How to avoid:**
-- Keep each source invocation self-contained: return one immutable result for that term and do not push later results into a shared array.
-- Forward the prompt's `AbortSignal` through every Git call in that search pipeline.
-- Check `signal.throwIfAborted()` between branch listing, parsing, and the abbreviation batch so an obsolete query cannot start its second process.
-- If results are ever stored outside the prompt source, gate installation by the exact term or a monotonically increasing request generation in addition to the signal. Do not add that state if the prompt-owned signal is sufficient.
-- Preserve the literal term associated with each result; never read a mutable “current term” after awaiting Git.
+Choose the input owner before starting Inquirer. Preserve the current interactive path when stdin is a TTY. For non-TTY stdin, read one bounded UTF-8 document, reject malformed encoding, trailing non-whitespace, or multiple JSON values, then validate a strict versioned discriminated union with exactly one mode: `range` or `patch`. Reject unknown fields at the request trust boundary. An invalid attached request must produce diagnostics only on stderr and zero stdout bytes.
 
 **Warning signs:**
-- Typing quickly makes the result list grow broader again.
-- A result label does not contain the visible query.
-- Source code starts work without using the provided `signal`.
-- An async callback calls `candidates.push(...)` after the source has returned.
-
-**Verification signal:**
-Delay query A, issue query B, then release A. Only B's rows may become selectable; A must neither update the list nor populate the selectable-candidate map.
+- Inquirer is imported or initialized before attached-mode detection.
+- A timeout is used to guess whether stdin contains a request.
+- Empty piped input falls through to the branch picker.
+- A schema permits both revision and patch fields, or silently strips unknown fields.
+- Prompt text appears when stdout is captured.
 
 **Phase to address:**
-Phase 09 — Staged Picker Contract.
+Request Protocol and Range Grounding; exercise both TTY and pipe entry paths again in the Adversarial Integration Gate.
 
 ---
 
-### Pitfall 2: Cancellation hides stale UI but leaves Git processes running
+### Pitfall 2: Free-form revision syntax creates ambiguous or non-contiguous comparisons
 
 **What goes wrong:**
-The picker looks correct because Inquirer ignores an aborted result, yet every keystroke leaves `git branch` or `git log` running. Rapid typing produces overlapping subprocesses, delayed exit, excess CPU and file I/O, or process-limit failures.
+A field described as a revision accepts expressions such as `A..B`, `A...B`, `^A`, reflog selectors, or a name that resolves differently as a ref and a path. Compare reviews a set of commits rather than two explicit endpoints, selects the wrong object type, or changes meaning after refs move.
 
 **Why it happens:**
-Cancellation is both a correctness concern and a resource concern. Checking `signal.aborted` only after `await` prevents stale display but does not stop the child. The existing `GitRunner` already accepts a signal and aborts its spawned process; a new discovery layer can accidentally omit it or translate cancellation into a normal empty result.
+Git revision syntax is deliberately rich. Commands interpret two-dot and three-dot notation differently, while `git diff A..B` is only an endpoint comparison and not the same conceptual operation as a revision walk. Refname resolution also has precedence rules that make short names ambiguous.
 
 **How to avoid:**
-- Pass the exact source-call signal to both filtered listing and batched abbreviation.
-- Do not catch `GitRunnerError` with kind `aborted` and return “no matches”; let the aborted source settle as cancellation.
-- Skip the abbreviation command when listing produced no candidates.
-- Allow at most one active search pipeline per picker. A replacement query must abort the previous pipeline before starting its second stage.
-- Keep the runner's timeout and child termination behavior; do not replace it with an untracked `spawn`.
+The protocol must carry separate `baseRevision` and `headRevision` strings, never a revset. Resolve each independently with native Git using an argument-array invocation equivalent to `git rev-parse --verify --end-of-options "$value^{commit}"`. Require exactly one result, reject non-commit objects, and immediately pin both to full object IDs. Every later Git operation, persisted scope, and export provenance must use those pinned IDs rather than re-resolving the submitted names.
 
 **Warning signs:**
-- Process counts rise with characters typed rather than completed searches.
-- Exiting the prompt waits for old Git commands.
-- Cancelled searches flash “No branches match” or an error.
-- The new code calls `spawn` directly instead of the bounded runner.
-
-**Verification signal:**
-Drive a rapid sequence such as `f`, `fe`, `fea`, `feat`; observe that superseded children are terminated, no cancellation message is shown, and the process count returns to zero after the final result settles.
+- Request examples contain `..`, `...`, `^`, or a single “range” string.
+- A revision is passed directly to `git diff` before `rev-parse --verify`.
+- Short submitted names are persisted instead of full OIDs.
+- Refreshing the UI after a branch moves changes the reviewed bytes.
+- A tag pointing to a blob or tree is accepted as an endpoint.
 
 **Phase to address:**
-Phase 09 defines cancellation ownership; Phase 10 proves it reaches every Git subprocess.
+Request Protocol and Range Grounding.
 
 ---
 
-### Pitfall 3: Lazy rows are visible but cannot be selected
+### Pitfall 3: Pathspec filters become option injection or silently change review scope
 
 **What goes wrong:**
-A searched branch appears in the prompt, but pressing Enter throws “Base/Head selection did not identify an available source.”
+A filter beginning with `-` is parsed as a Git option, pathspec magic changes matching rules, exclusions expand the effective scope unexpectedly, or attribute-based pathspecs are evaluated against the working tree rather than the pinned tree. Two requests that appear equivalent review different files.
 
 **Why it happens:**
-`pickOrderedSources` currently builds `candidateById` once from the eager `options.candidates`. A lazy source can return a new branch ID without adding the corresponding `SourceCandidate` to the selection authority. Rendering and selection then use different inventories.
+Git pathspec is a language, not a list of plain relative paths. It supports magic such as `top`, `literal`, `glob`, `icase`, `attr`, and `exclude`; exclusions have special behavior when no positive pathspec exists. Attribute requirements are obtained from the working tree even when matching another tree.
 
 **How to avoid:**
-- Define one prompt-lifetime candidate authority keyed by stable source ID.
-- Install a completed, non-aborted search batch into that authority before returning its rows.
-- Resolve the chosen ID to the exact candidate that produced the displayed row.
-- Keep branch selection on the existing live-ref path (`revision: refName`) and worktree selection on its committed `HEAD` snapshot; do not silently change identity semantics to make lookup easier.
-- Reject unknown values explicitly as the current picker does.
+Pass every submitted pathspec as one argv element after `--`; never construct a shell string. Reject NUL bytes and bound count and byte length. Run from the discovered repository root with the existing safe Git runner and neutralize inherited Git environment variables that alter pathspec parsing. Define the supported native pathspec subset explicitly: either preserve all accepted pathspecs byte-for-byte with their documented Git semantics or reject unstable forms such as `attr:` rather than pretending they are ordinary globs. Materialize and persist the exact file inventory at launch. Repository-internal `.compare/` exclusion must remain authoritative and must not be defeated by user exclusions or magic.
 
 **Warning signs:**
-- Prompt tests assert labels but never submit a lazily discovered row.
-- The search service returns display objects with no corresponding domain candidate.
-- Selection uses a map created before the first query.
-
-**Verification signal:**
-Select a branch that is absent from the eager set and present only in search results as both base and head in separate runs. The existing descriptor and recovery paths must receive its stable branch ID and ref name.
+- Filters are concatenated into a command string.
+- `--` is absent before filter arguments.
+- Code rewrites slashes, glob characters, or `:(...)` magic.
+- Scope is recalculated on every browser request.
+- Draft identity records only base/head and omits filter scope.
+- Attribute pathspec results vary with an unrelated worktree edit.
 
 **Phase to address:**
-Phase 09 — Staged Picker Contract.
+Request Protocol and Range Grounding, with persistence consequences completed in Patch Grounding and Review Model.
 
 ---
 
-### Pitfall 4: Deduplication collapses distinct Git source identities
+### Pitfall 4: Treating an exact patch as only unified text hunks loses Git metadata
 
 **What goes wrong:**
-The current branch is shown twice as the same branch row, or, in the opposite direction, valid branch and worktree rows disappear because they point to the same commit. Detached worktrees at the same OID may also collapse into one row.
+Binary changes appear as “Binary files differ” without bytes, renames are reconstructed as delete/add, executable-bit or symlink changes disappear, copy metadata is lost, quoted paths are decoded incorrectly, or rename swaps are applied in the wrong order. The displayed comparison is not the submitted patch.
 
 **Why it happens:**
-The eager current branch will also match a later branch search. That exact branch must be merged once. However, Compare intentionally permits several distinct source identities to share one commit. Existing IDs encode identity: `branch:<full-ref>` and `worktree:<path>`. Commit OID and display label are not identity keys.
+Git patch format carries meaning outside `@@` hunks: `old mode`, `new mode`, `new file mode`, `deleted file mode`, similarity indices, rename/copy headers, full blob IDs, and binary payloads. Extended headers may have no text hunks at all, and patch paths have Git quoting and prefix rules.
 
 **How to avoid:**
-- Merge eager and lazy results by exact candidate `id`, not by `commitOid`, `shortOid`, label, branch leaf name, or `branchRef`.
-- Let the lazy copy of the same `branch:<full-ref>` replace or confirm the eager copy; never append it as a second branch row.
-- Preserve a worktree row even when its `branchRef` and OID match a branch row.
-- Preserve multiple worktrees at the same commit because their paths, dirty states, availability, and detached states differ.
-- Keep group ordering unchanged: local branches, then worktrees, with the existing Back action for head.
+Define the accepted payload as a documented Git-generated patch dialect capable of carrying full-index and binary data, equivalent to `git diff --full-index --binary` for supported changes. Let native Git validate and materialize it; do not build a second JavaScript patch parser as the semantic authority. Preserve exact old/new paths, old/new blob OIDs, modes, status, and similarity metadata in the existing changed-file model. Reject combined diffs and incomplete binary summaries explicitly. Keep content types that Compare cannot render visible as non-reviewable rather than dropping them.
 
 **Warning signs:**
-- A `Map` is keyed by OID or label.
-- Candidate count drops when several refs point to one commit.
-- Searching the current branch shows two identical `[Branch]` rows.
-- Selecting a worktree unexpectedly records a branch source.
-
-**Verification signal:**
-Use one current branch, another branch at the same OID, an attached worktree, and a detached worktree at that OID. Exact branch IDs are unique, the eager/search copy of the current branch appears once, and every distinct worktree remains selectable.
+- Validation only searches for `diff --git` and `@@` lines.
+- A patch with only mode headers produces no changed file.
+- Rename, copy, or binary coverage is absent from acceptance scenarios.
+- Paths are split on spaces or decoded by URL/path helpers.
+- The implementation applies file sections sequentially in JavaScript.
 
 **Phase to address:**
-Phase 09 — Staged Picker Contract.
+Patch Grounding and Review Model.
 
 ---
 
-### Pitfall 5: Result refresh destroys ordered selection and recovery state
+### Pitfall 5: `git apply --check` is mistaken for proof that a patch exactly describes the current repository
 
 **What goes wrong:**
-Loading branches clears a chosen base, changes the suggested head, moves recovery focus to a different row, loses the typed recovery term, or recreates the prompt. A user can end up reviewing the reverse ordering from what they intended.
+A patch applies with fuzz or whitespace tolerance but does not describe the current checked-out result; a forward check fails because the coding agent has already applied the change; a three-way fallback synthesizes a different result; or validation mutates the real index or worktree. Review bytes can drift between validation and display.
 
 **Why it happens:**
-The brownfield picker has state beyond a list: base must be chosen first; Back returns from head to base; current checkout is suggested only for head; descriptor failures preserve the opposite valid role and may focus the prior row. Inquirer's `default` is applied once, and each new result set resets the active cursor. Treating asynchronous results as a reason to reconstruct the picker discards these contracts.
+`git apply --check` answers whether a patch can be applied under the selected options. It does not by itself prove that the patch's postimage equals the current repository. `--3way`, `--reject`, zero-context hunks, whitespace configuration, and index/worktree selection materially change that answer.
 
 **How to avoid:**
-- Keep selected base/head as domain candidates outside transient result arrays.
-- Do not recreate the prompt when a query finishes; let the source promise resolve once for that term.
-- Preserve existing `initialBase`, `initialHead`, `recovery.searchTerm`, `focusedCandidateId`, and suggested-head rules.
-- If a focused candidate is absent from the current filtered result, focus the search input rather than a different candidate; restore the candidate only when its exact ID returns.
-- Never auto-select a newly loaded first match.
+Ground a submitted patch against the current repository by reverse-validating the already-applied change, then materializing the exact preimage/postimage in isolated Git state. Use a temporary index and temporary object directory with the real object database as an alternate; carry the resulting overlay object reader for the lifetime of the review. Never touch the user's real index or worktree. Disable semantic escape hatches: no three-way merge, reject files, unsafe paths, zero-context patches, or configuration-dependent whitespace loosening. Verify every declared postimage against current repository bytes and every reversed preimage against the isolated materialization. Snapshot identities and bytes once; detect repository changes before Finish rather than re-grounding silently. Bound patch size, file count, output, object creation, and execution time.
 
 **Warning signs:**
-- Async completion calls `pickOrderedSources` again.
-- The selected base is derived from the current result-array index.
-- A recovery test must change expected base/head ordering to accommodate discovery.
-- Current checkout becomes the default for base.
-
-**Verification signal:**
-Cover Base → Head → Back → Base, retained-head recovery, retained-base recovery, and a focused candidate that disappears and later reappears after search. The same stable IDs and terms must survive each transition.
+- Validation is only `git apply --check patch` in the real worktree.
+- `--3way`, `--reject`, `--unidiff-zero`, or `--unsafe-paths` is enabled.
+- Tests need to reset the user's index after validation.
+- The UI reads live filesystem files after patch validation.
+- A context-mismatched patch succeeds because of whitespace settings.
+- Temporary objects are deleted before the browser finishes reading blobs.
 
 **Phase to address:**
-Phase 09 — Staged Picker Contract.
+Patch Grounding and Review Model; concurrency and cleanup are verified again in Attached Lifecycle and Canonical Completion.
 
 ---
 
-### Pitfall 6: Search, startup, and selection errors acquire the wrong owner
+### Pitfall 6: Scoped agent requests reuse the base/head-only draft identity
 
 **What goes wrong:**
-A cancelled query becomes “no matches,” a branch-search failure terminates the CLI, an unavailable worktree becomes a fatal startup error, or a ref that moves after selection bypasses existing `LaunchError` recovery.
+A filtered review opens comments from an unfiltered review, two different pathspec requests overwrite one another, or a patch-grounded session collides with an ordinary comparison. Comments and summaries attach to the wrong review scope.
 
 **Why it happens:**
-Splitting discovery creates multiple failure boundaries. Existing behavior already assigns ownership: repository prerequisite failures exit; unavailable registered worktrees remain disabled rows; picker selection failures are explicit; comparison descriptor failures print exact copy and preserve the opposite role. A single broad catch around staged discovery flattens these meanings.
+The current comparison key is intentionally based on the existing interactive comparison. v1.3 adds provenance dimensions that are material to identity: exact filters for range mode, or patch digest and grounding snapshot for patch mode.
 
 **How to avoid:**
-- **Eager startup owner:** repository/Git prerequisite failures retain existing fatal handling.
-- **Worktree owner:** retain clean, dirty, detached, and unavailable row semantics; one broken registration does not fail the entire picker.
-- **Search owner:** non-abort listing/abbreviation failures stay in the active prompt with actionable retry/narrowing copy and must not erase eager choices or a retained base/head.
-- **Cancellation owner:** aborted work is silent.
-- **Selection/descriptor owner:** keep existing ref re-resolution and recovery logic; do not trust an old branch result to bypass it.
-- Distinguish “zero matches” from “search failed” and “search was cancelled.”
+Do not change the identity of existing interactive launches. Introduce a domain-separated attached-request identity that includes protocol version and mode. Range identity includes pinned base/head OIDs and exact pathspec scope; patch identity includes a canonical patch digest plus repository grounding identity. Persist the provenance beside the versioned draft and export. Reuse the existing atomic replace and optimistic revision behavior. Never persist the bearer token, browser URL, port, process handle, or transient server state.
 
 **Warning signs:**
-- Every error returns an empty array.
-- Every `GitRunnerError` is wrapped as a fatal `LaunchError`.
-- Search code prints directly to stderr while Inquirer owns the terminal.
-- Existing exact recovery-copy tests are removed or rewritten.
-
-**Verification signal:**
-Independently inject startup failure, unavailable worktree, search exit failure, stdout-limit failure, cancellation, and branch deletion after selection. Each must reach only its established owner and preserve the unaffected picker state.
+- Attached code calls the existing `comparisonKey(base, head)` unchanged.
+- Opening two differently filtered sessions shows the same draft revision.
+- A patch digest is computed after line-ending or path normalization.
+- Deleting a transient browser session deletes durable review comments.
 
 **Phase to address:**
-Phase 09 — Staged Picker Contract; Phase 10 supplies typed search failures.
+Patch Grounding and Review Model.
 
 ---
 
-### Pitfall 7: Loose-ref latency is disguised as incorrectness or “fixed” by mutation
+### Pitfall 7: Friendly CLI output corrupts canonical stdout
 
 **What goes wrong:**
-A correct search over 10,000 loose branch refs takes about 800 ms, so the implementation times out at 500 ms, returns partial/no results, or runs `git pack-refs` against the user's repository to force a benchmark pass.
+A startup banner, browser URL, progress indicator, warning, newline, shutdown message, or stack trace is mixed with the canonical review JSON. The coding agent cannot parse the result or receives different bytes from those persisted by Compare.
 
 **Why it happens:**
-The spike measured a large storage-layout difference: the chosen two-process query took 20.4 ms with packed refs and 798.5 ms with loose refs. Git must inspect thousands of loose files before filtering. The milestone explicitly requires loose-ref correctness but allows it to exceed 500 ms.
+The current interactive CLI can reasonably use console output, while an attached subprocess contract makes stdout a data channel. Global `console.log`, dependencies that print, and abrupt process termination bypass that distinction. On POSIX, writes to piped stdout are asynchronous; `process.exit()` can truncate them.
 
 **How to avoid:**
-- State the performance contract precisely: ≤500 ms for the 10,000 packed-ref fixture; loose refs must remain complete and correct without the same guarantee.
-- Let the prompt's loading state remain visible during a slow loose-ref search.
-- Do not use a 500 ms command timeout as the budget assertion; measurement and operational timeout are different controls.
-- Do not return a prefix of results when the budget expires.
-- Do not add a persistent index, recency cache, background ref database, or automatic packing.
+In attached mode, reserve stdout exclusively for the exact canonical JSON bytes produced by the existing canonicalizer, with no extra newline. Route every diagnostic, browser notice, and recoverable error to stderr. Inject or centralize output sinks so the existing interactive path remains unchanged. Await stream backpressure and completion, handle stdout `error`/EPIPE as cancellation, and set exit status without calling `process.exit()` while output is pending. Persist and emit the same immutable byte buffer.
 
 **Warning signs:**
-- Benchmark reports only one ref storage layout.
-- Search has a hard 500 ms timeout.
-- Loose-ref tests assert speed but not complete result identity.
-- Documentation implies every repository meets 500 ms.
-
-**Verification signal:**
-The packed fixture meets ≤500 ms. The loose fixture returns the same matching branch IDs and OIDs as an authoritative full Git listing even when its observed time exceeds 500 ms.
+- Attached code calls `console.log` or prints the browser URL.
+- JSON is produced once for disk and separately with `JSON.stringify` for stdout.
+- A snapshot expects a trailing newline not produced by the canonicalizer.
+- Completion immediately calls `process.exit(0)`.
+- A closed stdout pipe leaves the server running.
 
 **Phase to address:**
-Phase 10 preserves correctness; Phase 11 records the separate packed and loose verdicts.
+Request Protocol and Range Grounding establishes channel ownership; Attached Lifecycle and Canonical Completion implements terminal emission.
 
 ---
 
-### Pitfall 8: Per-branch subprocesses return through a side door
+### Pitfall 8: Loopback is treated as authentication, or the agent controls the browser capability
 
 **What goes wrong:**
-Branch listing is lazy, but each match still triggers `rev-parse --short`, `show`, or `log`. A broad query causes thousands of serial or concurrent children and recreates the measured 96-second startup problem inside search.
+Another local process can read or mutate the review; a request chooses the bind host, port, callback URL, token, or browser URL; bearer credentials leak through stdout, logs, persisted JSON, process arguments, or browser history; a finished session remains usable.
 
 **Why it happens:**
-Mapping an async helper over candidates looks clean, and a narrow developer query hides the scaling curve. `Promise.all` changes serial explosion into concurrent explosion; it does not make the process count bounded.
+Loopback prevents LAN exposure but not same-device interception. OAuth native-app guidance explicitly treats loopback interception as possible. Bearer tokens grant access by possession, and URL-carried tokens are especially prone to logging and history leakage.
 
 **How to avoid:**
-- Use the chosen constant-process search: one filtered `git branch --list --ignore-case` call and at most one `git log --no-walk=unsorted ... --stdin` abbreviation batch.
-- Deduplicate full OIDs before the abbreviation batch.
-- Require process count to be O(queries), never O(branches) or O(matches).
-- Preserve worktree status/HEAD semantics separately. If eager worktree checks remain per worktree because each has a different cwd, cap their concurrency rather than launching an unbounded `Promise.all`.
-- Do not introduce a Git library that merely hides the same child-process pattern.
+Preserve the existing random per-session token, exact Host/Origin checks, bearer authorization, loopback IP binding, ephemeral port, CSP, `no-store`, and no-referrer policy. Keep the existing fragment-based browser bootstrap and history removal. The stdin schema must not accept network routing, callbacks, browser commands, tokens, or arbitrary URLs. Never place the capability on stdout or in durable state. Revoke it and close the listener after a terminal outcome. State explicitly that stderr and the spawned browser are observable by the invoking local agent; do not claim protection from the process that launched Compare.
 
 **Warning signs:**
-- `await` appears inside a loop over branch records.
-- `Promise.all(matches.map(...git...))` appears.
-- Search time scales with number of matches even when ref listing time is flat.
-- Process count is absent from benchmark output.
-
-**Verification signal:**
-For 100 and 9,999 matches, completed branch search uses at most two Git processes. The benchmark reports both total invocations and peak concurrent children.
+- An attached request has `host`, `port`, `callback`, `token`, or `url` fields.
+- Authentication is skipped because the listener uses `127.0.0.1`.
+- The complete browser URL is included in canonical output or draft JSON.
+- A finished URL can still call the API.
+- Binding uses `localhost` or a wildcard address rather than the existing explicit loopback policy.
 
 **Phase to address:**
-Phase 10 — Bounded Native-Git Search.
+Attached Lifecycle and Canonical Completion, with schema exclusion begun in Request Protocol and Range Grounding.
 
 ---
 
-### Pitfall 9: Broad searches exceed output or memory bounds
+### Pitfall 9: Browser disconnect, reload, Export, and Finish are conflated
 
 **What goes wrong:**
-A short term matches nearly every branch. Git output exceeds the runner's stdout limit, the abbreviation stdin/result batch becomes huge, or Inquirer allocates and normalizes thousands of decorated rows. Raising limits without a product bound only moves the failure.
+Closing a tab returns an incomplete review, a reload cancels the CLI, an ordinary export ends the session unexpectedly, or a temporary network disconnect loses the draft. Conversely, the CLI waits forever because “Finish” is only a client-side navigation event.
 
 **Why it happens:**
-Pagination limits rendered rows, not source output or the in-memory choice array. The spike's broad query returned 9,999 branches. The existing runner deliberately caps stdout at 1 MiB and stderr at 64 KiB; a richer format or long ref names can cross that bound.
+Browser lifecycle events are unreliable and semantically weaker than a user decision. Existing export behavior produces an artifact but does not mean the reviewer has ended an attached session.
 
 **How to avoid:**
-- Request only fields needed for branch identity: full OID and full ref name; keep NUL-safe/minimal parsing where supported.
-- Keep explicit timeout, stdout, stderr, and input-size bounds. Size them against the supported 10,000-branch broad-query fixture rather than removing them.
-- If a deliberate displayed-result cap is introduced, make truncation explicit (“more matches; narrow the search”) and keep ordering deterministic. Never label truncation as complete results.
-- Treat `stdout-limit` as a search error with narrowing guidance, not as zero matches.
-- Batch only unique OIDs and skip abbreviation when there are no matches.
+Only an explicit, authenticated **Finish review** server action may complete an attached session. Tab close, browser process exit, page unload, reload, websocket/HTTP disconnect, and ordinary Export remain non-terminal. A reload reconnects to the same server-side session, token, and repository-local draft. The Finish control should state that it returns the review to the waiting agent; retain the existing interactive UI semantics when no attached session exists. Do not add idle auto-finish.
 
 **Warning signs:**
-- `maxStdoutBytes` is set to an effectively unlimited value.
-- Choice names include unnecessary commit subjects, dates, or decoration.
-- A 10,000-match query is not exercised.
-- Output-limit errors are caught and replaced with `[]`.
-
-**Verification signal:**
-The 9,999-match fixture completes within declared byte bounds, or produces an explicit deterministic truncation/narrowing state. A forced low stdout limit produces a typed search error while eager choices and retained selection remain usable.
+- `beforeunload`, socket close, or browser-process exit calls the completion handler.
+- Existing Export is renamed or silently repurposed as Finish.
+- Session state lives only in a Vue component.
+- Reload creates a new token or new draft identity.
+- An idle timer returns partial output.
 
 **Phase to address:**
-Phase 10 — Bounded Native-Git Search; Phase 11 exercises the broad-query boundary.
+Attached Lifecycle and Canonical Completion.
 
 ---
 
-### Pitfall 10: Display abbreviations are computed by slicing full OIDs
+### Pitfall 10: Finish races with autosave, drift, cancellation, response flushing, or shutdown
 
 **What goes wrong:**
-Two objects display the same 12-character prefix, a SHA-256 repository is mishandled, or the UI shows an abbreviation Git would have extended to remain unique.
+The CLI emits an older draft than the reviewer saw, emits twice, reports success before durable publication, truncates stdout, or lets SIGINT/EPIPE cancel after Finish has committed. A concurrent mutation lands between validation and export.
 
 **Why it happens:**
-`oid.slice(0, 12)` is fast and appears equivalent in ordinary fixtures. Git's abbreviation is repository-aware: `rev-parse --short=<n>` and log abbreviation choose a unique prefix of at least the requested length. Compare's contract accepts both 40- and 64-hex full IDs and has deliberately used Git-authoritative short IDs.
+Finish crosses several asynchronous systems: browser state, optimistic draft writes, drift checks, canonical generation, durable export publication, HTTP response delivery, stdout backpressure, and server teardown. Boolean flags do not define ordering or a cancellation commit point.
 
 **How to avoid:**
-- Keep full OIDs as authority and stable data; short OIDs are display only.
-- Feed unique full OIDs to one batched `git log --no-walk=unsorted --abbrev=12 --format=%H%x00%h%x00 --stdin` call.
-- Parse the full-to-short mapping byte-safely and fail if any requested OID is absent.
-- Never use a short OID as candidate identity, deduplication key, selection revision, or batch correlation key.
-- Verify both 40- and 64-character full-OID parsing where supported by the existing Git fixture capabilities.
+Serialize terminal transitions with a small server-side state machine such as `active → finalizing → finished`, with competing `cancelled` and `failed` terminal states. Finish carries the expected draft revision. Reject or defer it while edits are unsaved, a save is pending, a revision conflict exists, repository drift is unresolved, or publication fails. Freeze one canonical byte buffer after the accepted revision and grounding checks. Publish it atomically, flush the Finish HTTP response so the browser gets confirmation, then write those exact bytes once to stdout, await completion, revoke the token, and close the server. Define the cancellation commit point: before accepted finalization, signal/EPIPE cancels with zero stdout; after it, no second terminal transition may win.
 
 **Warning signs:**
-- `.slice(0, 12)` or `.substring(0, 12)` appears in discovery.
-- Results are correlated by output order rather than returned full OID.
-- Candidate IDs contain abbreviated hashes.
-- Tests assert only that short IDs have length 12, not that Git produced them.
-
-**Verification signal:**
-Create or inject colliding 12-character prefixes; displayed abbreviations must extend as Git requires while full IDs and candidate IDs remain distinct. Every requested full OID must map exactly once.
+- Completion is represented by multiple booleans or event listeners.
+- Finish does not include the expected draft revision.
+- The server closes inside the Finish route before the response is flushed.
+- Canonical bytes are regenerated during stdout emission.
+- SIGINT, EPIPE, and Finish handlers can each resolve the same promise.
+- Publication errors still produce stdout.
 
 **Phase to address:**
-Phase 10 — Bounded Native-Git Search.
+Attached Lifecycle and Canonical Completion.
 
 ---
 
-### Pitfall 11: Staging discovery changes worktree semantics
+### Pitfall 11: Patch mode fabricates commit identities or weakens durable anchors
 
 **What goes wrong:**
-The “fast” eager set omits detached or unavailable registrations, treats a locked worktree as unavailable, derives dirty state from the main worktree, or turns a checked-out branch and its worktree into one source. Dirty bytes may accidentally enter the comparison instead of only affecting labels/warnings.
+A patch-grounded review claims fake base/head commits, anchors comments only by current path and line, maps rename-side comments to the wrong blob, or emits anchors the coding agent cannot verify. Existing range exports can also regress if a broad schema change makes provenance optional.
 
 **Why it happens:**
-The initial set is intentionally worktree-heavy, so startup optimization is tempted to parse less or skip per-worktree checks. Git's `worktree list --porcelain -z` has distinct `branch`, `detached`, `bare`, `locked`, and `prunable` records. Compare additionally resolves each usable worktree's committed `HEAD` and status in that worktree's cwd.
+The existing canonical review is commit-specific, while an exact patch may have real blob identities without two truthful comparison commit IDs. Forcing both modes into one flat set of fields encourages sentinel OIDs, `HEAD/HEAD`, or nullable identity. Lines and paths alone are unstable across renames and edits.
 
 **How to avoid:**
-- Keep `git worktree list --porcelain -z` as the registration authority and retain byte-safe parsing.
-- Eagerly include every registered worktree, including disabled unavailable entries; do not show only currently mounted/clean worktrees.
-- Derive the current branch only from the current checkout's full `branchRef`; a detached current checkout contributes no fabricated branch.
-- Preserve attached versus detached, clean/dirty/unavailable, path, branch ref, and `isCurrentCheckout` fields.
-- A locked worktree remains usable when its path and HEAD resolve; prunable/bare/missing registrations keep existing unavailable behavior.
-- Preserve the established comparison rule: a worktree selects committed `HEAD`; staged, unstaged, and untracked bytes only mark it dirty.
+Use an explicit versioned provenance union rather than inventing commits. Range provenance records submitted names, pinned base/head commit OIDs, merge base, and exact pathspecs. Patch provenance records the canonical patch digest, repository grounding identity, and verified per-file preimage/postimage blob IDs and modes. Preserve the current durable-anchor semantics: exact Git path bytes, old/new side, side-specific blob OID, selected text, bounded surrounding context, context hash, and line only as a hint. Reuse existing verified/stale/orphaned resolution behavior. Persist and emit canonical anchors derived from the frozen inventory, not live files.
 
 **Warning signs:**
-- Worktree discovery uses human-formatted output or line splitting without `-z`.
-- One `git status` at repository root labels every worktree.
-- Worktree and branch rows are merged by `branchRef`.
-- A detached current checkout is exposed as a branch named `HEAD`.
-
-**Verification signal:**
-Initial choices include current attached checkout, linked attached checkout, detached checkout, dirty checkout, locked usable checkout, and prunable/missing disabled checkout with their existing IDs, labels, and availability. The selected worktree comparison still pins committed bytes only.
+- Patch exports set both revisions to `HEAD` or all-zero OIDs.
+- Provenance fields become optional without a mode discriminator.
+- Rename comments store only the destination path.
+- Anchors omit side-specific blob OIDs or context hash.
+- The stdout result and repository-local JSON use different schemas or bytes.
 
 **Phase to address:**
-Phase 09 preserves the contract; Phase 11 runs the full worktree matrix.
-
----
-
-### Pitfall 12: A favorable benchmark certifies the wrong implementation
-
-**What goes wrong:**
-The prototype meets both budgets, but the packaged CLI does not. Results exclude module startup, use warmed packed refs only, search for very few matches, omit process counts, or start the clock after expensive discovery.
-
-**Why it happens:**
-Microbenchmarks naturally isolate the code under investigation. The product budgets are user-observed boundaries: process start to usable picker, and input submission to installed matching results. Spike 002 is intentionally partial and manually models the staged path; final verification must move to the production implementation.
-
-**How to avoid:**
-- Measure the built production CLI/module path, not a duplicate benchmark implementation.
-- Start readiness timing before process creation and stop only when the prompt can accept selection with current branch/worktrees installed.
-- Start search timing when the term is delivered and stop when selectable rows are installed.
-- Report every run plus median; retain the first run so warm-cache bias is visible.
-- Record ref storage (`packed` or `loose`), branch count, worktree count, match count, total Git invocations, peak concurrency, listing time, abbreviation time, and end-to-end round trip.
-- Exercise at least: 100 packed matches, 9,999 packed matches, 100 loose matches, 32 worktrees, and rapid superseding terms.
-- Keep fixture creation and `pack-refs` outside the measured child, but include normal CLI module load and repository discovery.
-
-**Warning signs:**
-- Only internal Git duration is reported.
-- The benchmark imports prototype helpers instead of production discovery.
-- One median is shown without raw runs or storage layout.
-- Search subprocess count is inferred from source code rather than observed.
-
-**Verification signal:**
-The production boundary meets ≤400 ms picker readiness and ≤500 ms packed-ref search in the 10,000-branch fixture. Loose-ref results remain complete, and process counts remain bounded in broad and cancelled searches.
-
-**Phase to address:**
-Phase 11 — Performance and Safety Gate.
-
----
-
-### Pitfall 13: Read-only discovery mutates the repository to improve itself
-
-**What goes wrong:**
-Compare runs `git pack-refs`, maintenance, `gc`, `update-ref`, or writes a branch cache/recency file. Search becomes faster but changes repository representation, creates lock contention, surprises other Git processes, or makes results stale across tools.
-
-**Why it happens:**
-Packing refs is the easiest way to turn the failing loose-ref benchmark into a pass, and a persistent index makes repeated substring search cheap. Both violate the local read-only discovery decision. Official Git documentation states that `pack-refs` writes packed ref storage and normally removes corresponding loose refs.
-
-**How to avoid:**
-- Restrict product discovery to read-only commands: repository inspection, `worktree list`, filtered branch listing, and object display/abbreviation.
-- Retain the runner's `--no-optional-locks`, disabled hooks, argument arrays, and non-interactive environment.
-- Keep `git pack-refs` strictly inside fixture setup.
-- Add no `.compare` branch index, recency store, background cache, or filesystem watcher for this milestone.
-- Do not invoke Git maintenance implicitly on slow or broad searches.
-
-**Warning signs:**
-- Product code contains `pack-refs`, `maintenance`, `gc`, or `update-ref`.
-- Search performance improves only on its second run because Compare wrote state.
-- New files appear under `.git` or `.compare` before the user starts a review.
-- A cancelled search leaves a lock file.
-
-**Verification signal:**
-Hash ref contents/storage and inventory before and after successful, failed, broad, slow, and cancelled searches. They must be byte-identical, no lock remains, and no persistent discovery artifact is created.
-
-**Phase to address:**
-Phase 10 enforces the read-only command allowlist; Phase 11 proves non-mutation.
+Patch Grounding and Review Model, finalized through Attached Lifecycle and Canonical Completion.
 
 ## Technical Debt Patterns
 
+Shortcuts that look small here tend to corrupt review identity or the machine protocol.
+
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Keep one eager all-branch array and merely delay rendering | Small picker diff | Startup still enumerates/abbreviates every branch; misses milestone | Never |
-| Key candidates by commit OID | Easy deduplication | Destroys branch/worktree identity and dirty/path semantics | Never |
-| Slice full OIDs to 12 characters | Removes abbreviation Git call | Non-unique, non-authoritative display; SHA-format assumptions | Never |
-| Ignore source `AbortSignal` because Inquirer ignores stale results | Less plumbing | Orphaned Git children and process storms | Never |
-| `Promise.all` per branch | Faster than serial calls in small fixtures | Unbounded concurrent subprocesses | Never |
-| Cache all branches for the prompt lifetime after first query | Faster subsequent terms | Stale branch view and unnecessary 10,000-row memory; changes fresh-search semantics | Only if later requirements explicitly choose snapshot semantics; not v1.2 |
-| Persist a branch/recency index | Fast repeated launches | Invalidation, mutation, privacy/state, and new authority | Never in v1.2 |
-| Auto-run `pack-refs` | Makes loose-ref benchmark fast | Mutates repository and may contend with Git | Fixture setup only |
-| Remove runner byte limits | Broad query stops failing locally | Memory exhaustion and unbounded terminal data | Never |
-| Promise a 500 ms loose-ref result | Simpler marketing/acceptance text | Encourages truncation, timeout, or mutation | Never; report packed budget and loose correctness separately |
+| Reuse base/head-only comparison keys for scoped requests | No persistence changes | Cross-scope draft collisions and wrong comments | Never for attached scoped sessions |
+| Represent patch mode as `HEAD` versus `HEAD` | Reuses flat export fields | False provenance and unverifiable anchors | Never |
+| Parse and apply Git patches in TypeScript | Avoids temporary Git plumbing | Diverges on binary, mode, rename, quoting, and future Git behavior | Never; native Git is a project constraint |
+| Use only forward `git apply --check` | One command | Rejects already-applied changes or validates the wrong direction | Never for the stated exact-current-repository contract |
+| Enable `--3way` to make more patches pass | Higher apparent success rate | Produces a merge result different from the submitted patch | Never for exact validation |
+| Print a result URL or status line on stdout | Easy integration demo | Breaks canonical pipe consumers | Never in attached mode |
+| Treat existing Export as Finish | Avoids a new action | Changes established UI semantics and makes accidental completion likely | Never |
+| Keep completion state only in memory | Minimal prototype | Reload/race behavior becomes undefined, though drafts remain durable | Acceptable only for the transient session state if one server owns it and the state machine is explicit; review content must remain repository-local |
+| Accept detached patches without repository grounding | Broader feature | No trustworthy postimage or anchor identity | Never; explicitly out of scope |
 
 ## Integration Gotchas
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| `@inquirer/search` source | Treating source calls as ordered | Forward its signal and return one immutable result per exact term |
-| `@inquirer/search` default/cursor | Assuming row focus survives every result replacement | Preserve domain selection separately; use stable values and existing recovery focus rules |
-| Existing picker map | Returning lazy IDs absent from `candidateById` | Install completed lazy candidates into one prompt-lifetime ID authority before rows become selectable |
-| Git branch patterns | Passing user input as an unescaped wildcard | Escape Git pattern metacharacters and wrap the literal term for substring matching; keep `--list` and argv arrays |
-| Git output | Parsing human branch decorations such as `*` and `+` | Request explicit full ref/OID fields and parse a machine-oriented format |
-| Git abbreviation | Correlating abbreviated lines by position | Emit full OID plus `%h`, then map by full OID |
-| Worktree inventory | Parsing newline output | Use `worktree list --porcelain -z` and preserve boolean/value records |
-| Git runner | Direct `spawn`, no limits, no signal | Reuse bounded `GitRunner` with signal, timeout, stdout/stderr caps, safe config, and no shell |
-| Existing recovery | Treating an old search snapshot as final Git truth | Keep live branch ref resolution and current `LaunchError` recovery after selection |
+| Integration Boundary | Common Mistake | Prevention |
+|----------------------|----------------|------------|
+| Commander ↔ Inquirer | Prompt initialization consumes piped stdin | Decide TTY versus attached mode before any prompt starts |
+| Request decoder ↔ Zod | Stream framing and schema validation are conflated | Bound and decode one UTF-8 JSON document first, then apply a strict versioned union |
+| Request ↔ Git runner | Shell quoting or option injection | Existing `spawn` argument arrays, `--end-of-options` for revisions, `--` for pathspecs, bounded output |
+| Pathspec ↔ Git environment | `GIT_LITERAL_PATHSPECS`, `GIT_GLOB_PATHSPECS`, or related variables change meaning | Supply a controlled environment for accepted semantics |
+| Patch validation ↔ repository | Real index/worktree is mutated | Temporary index and object overlay; real object database only as a read-only alternate |
+| Temporary object overlay ↔ server lifetime | Objects are cleaned up after launch | Keep the overlay reader and cleanup owner alive until terminal shutdown |
+| File inventory ↔ browser API | Live Git/filesystem reads change the review after launch | Serve frozen pinned inventory and blobs; report drift separately |
+| Attached identity ↔ draft store | Existing comparison key aliases scopes | Domain-separated identity containing mode-specific provenance |
+| Finish ↔ draft store | Last editor state has not reached disk | Expected revision and no pending save before finalization |
+| Finish ↔ export store | stdout succeeds when durable publication failed | Atomic publication must succeed before output emission |
+| Finish route ↔ server shutdown | Listener closes before browser receives acknowledgement | Flush HTTP response before terminal CLI emission and teardown |
+| Browser launcher ↔ auth | Capability appears in logs/output | Keep existing fragment bootstrap; never persist or print it on stdout |
+| Canonicalizer ↔ stdout | Separate serializers produce different bytes | Generate once, persist and emit the same immutable buffer |
 
 ## Performance Traps
 
+These are local single-review workloads; prevention should be bounded and boring, not a new job system.
+
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Serial abbreviation | Search time increases roughly per unique head | One `log --no-walk --stdin` batch | Broad queries; measured eager path reached ~96 seconds at 10,000 refs |
-| Concurrent per-branch abbreviation | CPU/process spike despite acceptable median | Constant number of branch-search processes | Hundreds to thousands of matches |
-| Loose-ref enumeration | Correct search exceeds target | Accept slower correct result; benchmark separately; no mutation | Spike: ~798.5 ms at 10,000 loose refs |
-| Packed-only benchmark | Green budget that does not describe all storage layouts | Always pair packed performance with loose correctness | Any repository with many loose branch files |
-| Result pagination mistaken for data bound | Low visible row count but large memory/output | Bound Git output and choice creation independently | Broad 9,999-match term or long ref names |
-| Unbounded eager worktree checks | Picker readiness becomes process-scheduler dependent | Cap concurrency while preserving per-worktree cwd semantics | Dozens of registered worktrees; spike used 66 initial calls at 32 worktrees |
-| Warm-cache-only median | Repeat runs hide first-launch filesystem cost | Retain first run and raw samples beside median | Cold launch or recently created refs |
-| Measuring internal Git time only | Git looks fast while CLI misses 400/500 ms | Measure process/prompt round trip at production boundary | Module load, parsing, formatting, and prompt installation |
+| Unbounded stdin or patch buffering | Memory spike or CLI appears hung | Protocol byte limit and read deadline/cancellation | Large accidental input or malicious local producer |
+| Copying the whole repository for patch validation | Slow launch and large temporary directories | Temporary index/object overlay; materialize only changed blobs | Medium repositories even with small patches |
+| One Git process per file or hunk | Launch latency scales sharply with file count | Use existing batched NUL-delimited Git queries and object reads | Hundreds of changed files |
+| Re-evaluating revisions/pathspecs on every API request | UI changes under the reviewer and repeats Git work | Pin once and cache the frozen inventory | Any moving branch; latency visible on large diffs |
+| Keeping the server alive after EPIPE or cancellation | Orphan listeners and temporary objects | One terminal owner closes listener and overlay on every outcome | Repeated automated runs |
+| Unbounded diagnostics from Git | stderr floods logs or deadlocks a child pipe | Existing output caps plus concise structured diagnostics | Malformed binary patch or pathological Git output |
 
 ## Security Mistakes
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Shell interpolation of the search term | Command injection and platform-specific quoting errors | Keep `shell: false`, argv arrays, and escape only Git's own branch-pattern metacharacters |
-| Rendering raw branch names | Terminal control-sequence injection or corrupted prompt | Continue using `escapeTerminalText` for every candidate label/path |
-| Removing process/output limits | A repository with hostile/extreme ref names can exhaust memory or hang the prompt | Retain timeout and byte caps; treat limit failures explicitly |
-| Letting Git invoke hooks or optional locks | Discovery can execute repository-controlled code or create lock contention | Reuse the runner's disabled hooks, `--no-optional-locks`, non-interactive environment, and read-only command set |
+| Assuming loopback equals authentication | Another local process accesses the review | Preserve random bearer token plus exact Host/Origin enforcement |
+| Letting the request choose host, port, callback, token, browser command, or URL | SSRF-like local routing, LAN exposure, token fixation, or command execution | Exclude these fields from the strict request schema |
+| Shell-building revisions, paths, or pathspecs | Command injection | `spawn` with argument arrays; explicit Git separators |
+| Applying against the real index/worktree | Data loss or staged-state corruption | Isolated index/object overlay and read-only real repository access |
+| Allowing unsafe patch paths or permissive apply fallbacks | Writes outside scope or accepts non-exact content | Reject unsafe paths; no 3-way, reject files, or zero-context relaxation |
+| Inheriting Git configuration that changes patch/pathspec behavior | Validation depends on caller environment | Controlled Git config/environment for semantic inputs |
+| Printing or persisting the bearer capability | Any reader can operate the live session | Capability only in browser bootstrap and authorization header; revoke on terminal state |
+| Returning repository details in machine-protocol errors on stdout | Protocol corruption and unintended disclosure to downstream consumers | Zero stdout on failure; bounded diagnostics on stderr |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Empty input launches all-branch search | Picker becomes slow before user asks for branches | Empty term returns eager current branch/worktrees only |
-| Cancellation displayed as error/no matches | Normal typing looks broken | Keep cancellation silent and install only the latest result |
-| Slow loose refs have no loading state | User assumes the prompt froze | Keep Inquirer's loading state until complete, correct results arrive |
-| Exact current branch appears twice | User cannot tell whether rows differ | Deduplicate only the exact branch ID while keeping its worktree row distinct |
-| Search failure removes eager choices | A branch error blocks selecting a known worktree | Keep eager choices and retained role state; show owned search error |
-| Background results move cursor | Enter selects an unintended branch | One result installation per term; never auto-submit or recreate the prompt |
-| Output cap masquerades as completeness | User believes a branch does not exist | State truncation/limit explicitly and ask for a narrower term |
+| Export and Finish are visually or semantically identical | Reviewer ends a session accidentally | Separate explicit **Finish review** action, only in attached mode, with clear consequence text |
+| Closing the tab means cancel or finish | Accidental loss or partial return | Treat disconnect as non-terminal; allow reopening the live URL/session |
+| Finish is enabled with unsaved comment text | The agent receives less than the reviewer saw | Surface pending save/conflict state and gate Finish |
+| Filtered scope is invisible | Reviewer assumes the whole comparison was reviewed | Display attached mode, pinned endpoints, and active pathspec scope |
+| Unsupported binary/mode/type changes disappear | Review falsely appears complete | Keep every changed entry visible and label non-reviewable content |
+| Drift silently refreshes the review | Comments move beneath the reviewer | Freeze the session, report drift, and require a new grounded launch |
+| Browser says done before durable output exists | Reviewer closes the page but agent gets failure | Confirm success only after accepted revision and publication; make terminal result clear |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Picker readiness:** Clock starts before process creation, and current branch plus all registered worktrees are selectable within 400 ms.
-- [ ] **True laziness:** No all-local-branch command runs before a non-empty search term.
-- [ ] **Latest-query wins:** Delayed old results cannot update rows or candidate authority.
-- [ ] **Real cancellation:** Superseded Git children terminate; cancellation is silent.
-- [ ] **Lazy selection:** A branch discovered only by search can be selected and reaches the existing descriptor path.
-- [ ] **Identity dedupe:** Same branch ID appears once; different refs/worktrees sharing an OID remain distinct.
-- [ ] **Ordered state:** Base/head order, Back, current-head suggestion, retained opposite role, search term, and recovery focus are unchanged.
-- [ ] **Error ownership:** Startup, unavailable worktree, no matches, search failure, cancellation, and descriptor recovery remain distinguishable.
-- [ ] **Process bound:** Search uses one listing plus at most one abbreviation process for both narrow and broad queries.
-- [ ] **Output bound:** 9,999 matches fit declared bounds or produce explicit narrowing/truncation behavior.
-- [ ] **Git abbreviation:** Short IDs come from Git and map by full 40/64-character OID.
-- [ ] **Worktree semantics:** Attached, detached, clean, dirty, unavailable, locked, prunable, and current-checkout cases retain existing behavior.
-- [ ] **Packed budget:** 10,000 packed refs return matching rows within 500 ms at the production boundary.
-- [ ] **Loose correctness:** 10,000 loose refs return the complete authoritative match set even if slower than 500 ms.
-- [ ] **Benchmark honesty:** Raw runs, first run, median, match count, storage layout, subprocess count, and peak concurrency are reported.
-- [ ] **Non-mutation:** Successful, failed, broad, slow, and cancelled searches leave refs/storage and discovery state unchanged.
+- [ ] **Mode selection:** Existing TTY launch is byte-for-byte behaviorally unchanged; piped input never invokes Inquirer.
+- [ ] **Request framing:** One bounded UTF-8 JSON value is required; malformed, extra, unknown, or dual-mode input emits zero stdout.
+- [ ] **Revision grounding:** Each endpoint is independently verified as a commit and pinned to a full OID before diffing.
+- [ ] **Range meaning:** The protocol cannot express non-contiguous revsets; `A..B` and `A...B` are not accepted as a single range field.
+- [ ] **Pathspec safety:** Every native pathspec is an argv element after `--`, semantic environment is controlled, and exact scope is persisted.
+- [ ] **Patch completeness:** Binary, rename/copy, mode-only, symlink, quoted-path, add, and delete cases are either preserved or explicitly rejected.
+- [ ] **Patch exactness:** Validation proves current postimages and isolated reversed preimages; permissive apply fallbacks are absent.
+- [ ] **Repository safety:** Validation leaves the real worktree, index, refs, config, and object database unchanged.
+- [ ] **Frozen review:** Browser blobs come from pinned commits or the retained patch overlay, not live mutable files.
+- [ ] **Scoped persistence:** Two filters or patches over the same commits cannot share a draft identity.
+- [ ] **Canonical anchors:** Every comment carries exact path, side, side-specific blob OID, selected text/context hash, and truthful provenance.
+- [ ] **Browser lifecycle:** Reload and disconnect preserve the attached session; only explicit Finish is terminal.
+- [ ] **Finish correctness:** Pending saves, conflicts, drift, and publication failures block completion; output occurs exactly once.
+- [ ] **Output integrity:** Success stdout is exactly the existing canonicalizer bytes with no newline or diagnostic; failure/cancel stdout is empty.
+- [ ] **Pipe failure:** Backpressure and EPIPE are handled without truncation, duplicate emission, or an orphan server.
+- [ ] **Capability boundary:** Token and browser URL never enter stdout or repository persistence and are invalid after shutdown.
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Stale-result state mutation | MEDIUM | Remove detached/shared mutation, make source results immutable, add delayed A/B cancellation verification |
-| Orphaned Git children | LOW | Thread prompt signal through runner and stop starting batch stage after abort |
-| Lazy row missing from selection map | MEDIUM | Introduce one prompt-lifetime candidate authority and install non-aborted batches atomically |
-| OID-based dedupe shipped | HIGH | Restore branch/worktree IDs, rebuild merge logic, re-verify recovery and exported source identities |
-| Selection/recovery regression | HIGH | Revert prompt reconstruction/index state and restore existing stable-ID role state machine |
-| Loose refs timed out/truncated | LOW | Remove budget-as-timeout, restore complete search, document measured loose latency |
-| Per-branch subprocess path | MEDIUM | Replace helper loop with filtered listing plus one unique-OID abbreviation batch |
-| Output-limit ambiguity | LOW | Surface typed narrowing guidance and add broad/forced-limit cases |
-| Naive abbreviation | MEDIUM | Restore full-OID authority and Git batch mapping; invalidate any short-ID keyed state |
-| Worktree semantics drift | HIGH | Reuse porcelain parser and established candidate construction; rerun full worktree matrix |
-| Biased benchmark | LOW | Point harness at built production path and publish raw packed/loose scenarios |
-| Repository mutation | HIGH | Remove mutating command/state, restore fixture, inspect/repair refs with Git, and add before/after content proof |
+| Invalid or ambiguous revision | Low | Emit a concise stderr diagnostic, zero stdout, resolve nothing else, and let the agent submit explicit endpoints |
+| Unsupported or unstable pathspec | Low | Reject before session creation and name the unsupported construct without rewriting it |
+| Patch is incomplete or not exact for current repository | Low | Leave repository untouched, remove temporary state, report the first bounded grounding failure, require a newly generated exact patch |
+| Temporary materialization fails | Low | Close subprocesses, remove temporary index/object state, emit zero stdout; never fall back to the real index |
+| Browser disconnects | Low | Keep session and repository-local draft active; user reopens the same live session |
+| Draft is corrupt | Existing behavior | Use the existing explicit corruption handling/backup; do not synthesize an empty successful review |
+| Mutation races with Finish | Low | Reject the stale expected revision, keep the session active, reload latest draft, and require Finish again |
+| Canonical publication fails | Medium | Keep the review active, retain the draft, report the error in UI/stderr, and emit no stdout |
+| stdout consumer disconnects | Low | Treat EPIPE as terminal cancellation, close server, revoke token, clean temporary state, and do not retry output elsewhere |
+| Wrong provenance or anchor data was already emitted | High | Do not patch the artifact in place; invalidate it and start a new grounded session because canonical identities are part of the review contract |
 
 ## Pitfall-to-Phase Mapping
 
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| Stale searches | Phase 09 — Staged Picker Contract | Delayed A cannot overwrite faster B or candidate authority |
-| Cancellation | Phase 09 + Phase 10 | Rapid terms terminate superseded children with no user-facing error |
-| Lazy row absent from selection authority | Phase 09 | Search-only branch selects successfully for either role |
-| Duplicate identities | Phase 09 | Exact branch ID once; same-OID refs/worktrees remain distinct |
-| Selection preservation | Phase 09 | Base/head/Back/suggestion/recovery matrix unchanged |
-| Error ownership | Phase 09 + Phase 10 | Inject each failure class and observe only its designated owner |
-| Loose-ref latency | Phase 10 + Phase 11 | Complete loose results; separate measured verdict from packed budget |
-| Process explosion | Phase 10 | ≤2 branch-search Git calls for 100 and 9,999 matches; bounded concurrency |
-| Unbounded output | Phase 10 + Phase 11 | Broad query respects declared bounds and limit errors stay explicit |
-| Object abbreviation | Phase 10 | Git-produced unique abbreviations mapped by full OID |
-| Worktree semantics | Phase 09 + Phase 11 | Full registration/dirty/detached/unavailable matrix remains unchanged |
-| Benchmark bias | Phase 11 — Performance and Safety Gate | Production-boundary raw runs meet 400/500 ms packed budgets |
-| Repository mutation | Phase 10 + Phase 11 | Ref/storage hashes unchanged across success, failure, and cancellation |
+| Pitfall | Preventing Phase | Required Gate |
+|---------|------------------|---------------|
+| Input detection changes interactive launch | Request Protocol and Range Grounding | TTY launch unchanged; piped invalid input never prompts |
+| Free-form or ambiguous revisions | Request Protocol and Range Grounding | Independent commit verification and pinned-OID scenarios |
+| Pathspec injection/semantic drift | Request Protocol and Range Grounding | Option-like, magic, exclusion, Unicode, and environment cases |
+| Patch metadata loss | Patch Grounding and Review Model | Binary, rename/copy, mode, symlink, and quoted-path inventories |
+| Apply check without exact grounding | Patch Grounding and Review Model | Already-applied reverse validation, mismatch rejection, and repository non-mutation |
+| Scoped draft collisions | Patch Grounding and Review Model | Same endpoints with different filters/patches remain isolated |
+| stdout corruption/truncation | Attached Lifecycle and Canonical Completion | Exact-byte capture, backpressure, and EPIPE scenarios |
+| Loopback/capability boundary mistakes | Attached Lifecycle and Canonical Completion | Host, Origin, bearer, schema exclusion, revocation, and no-leak checks |
+| Disconnect/reload/export conflated with Finish | Attached Lifecycle and Canonical Completion | Reload/reconnect remains active; only Finish resolves CLI |
+| Finish/cancel/save/publication races | Attached Lifecycle and Canonical Completion | Deterministic state-transition race scenarios and one output |
+| Fabricated provenance or weak anchors | Patch Grounding and Review Model | Truthful mode union and side-specific anchor verification |
+| Cross-cutting regressions | Adversarial Integration Gate | End-to-end agent pipe → browser review → Finish → canonical stdout |
 
 ## Sources
 
-### Project evidence — HIGH confidence
+### Primary documentation
 
-- [v1.2 project contract](../PROJECT.md) — active requirements, non-mutation and no-persistence decisions.
-- [CLI startup discovery findings](../notes/cli-startup-discovery.md) — current 15-process startup trace and staged-discovery decision.
-- [Spike 002: Staged Source Discovery](../spikes/002-staged-source-discovery/README.md) — empirical packed/loose, broad-query, and worktree results; verdict is explicitly PARTIAL.
-- [`src/cli/picker.ts`](../../src/cli/picker.ts) — stable candidate values, ordered base/head state, default/recovery behavior, and current immutable candidate map.
-- [`src/cli/run.ts`](../../src/cli/run.ts) — existing discovery, selection, descriptor, and recovery ownership.
-- [`src/git/candidates.ts`](../../src/git/candidates.ts) — branch/worktree identity, NUL parsing, per-head abbreviation, dirty/unavailable semantics.
-- [`src/git/runner.ts`](../../src/git/runner.ts) — AbortSignal propagation, process termination, timeouts, output limits, disabled hooks, and no-shell execution.
-- [`tests/git/candidates.test.ts`](../../tests/git/candidates.test.ts) and [`tests/cli/selection.test.ts`](../../tests/cli/selection.test.ts) — validated duplicate-OID, worktree, ordering, and recovery contracts.
+- [Git revisions](https://git-scm.com/docs/gitrevisions) — revision syntax, ref disambiguation, two-dot/three-dot semantics. **Confidence: HIGH**
+- [git-rev-parse](https://git-scm.com/docs/git-rev-parse) — `--verify`, peeling to commits, and `--end-of-options`. **Confidence: HIGH**
+- [Git pathspec glossary](https://git-scm.com/docs/gitglossary#def_pathspec) — pathspec magic, exclusion behavior, and attribute matching caveat. **Confidence: HIGH**
+- [git-diff](https://git-scm.com/docs/git-diff) — endpoint comparison semantics, full-index, binary, and rename options. **Confidence: HIGH**
+- [Git diff format](https://git-scm.com/docs/diff-generate-patch) — extended mode/rename/copy/index headers and non-sequential rename application. **Confidence: HIGH**
+- [git-apply](https://git-scm.com/docs/git-apply) — check/index/3-way/reject/zero-context/binary/unsafe-path and whitespace behavior. **Confidence: HIGH**
+- [Node.js 24 process documentation](https://nodejs.org/docs/latest-v24.x/api/process.html) — asynchronous pipe writes and truncation risk from `process.exit()`. **Confidence: HIGH**
+- [Node.js 24 stream documentation](https://nodejs.org/docs/latest-v24.x/api/stream.html) — writable backpressure, completion, and error handling. **Confidence: HIGH**
+- [RFC 8252: OAuth 2.0 for Native Apps](https://www.rfc-editor.org/rfc/rfc8252) — loopback IP literals, ephemeral ports, prompt listener closure, and interception considerations. **Confidence: HIGH**
+- [RFC 6750: Bearer Token Usage](https://www.rfc-editor.org/rfc/rfc6750) — possession semantics and URI/log/history leakage risks. **Confidence: HIGH**
+- [GitHub REST review comments](https://docs.github.com/en/rest/pulls/comments) — established side/path/line/original-commit anchoring precedent. **Confidence: MEDIUM** for Compare design; this is precedent, not a required dependency.
 
-### Official documentation — HIGH confidence for documented semantics
+### Existing Compare authority
 
-- [`@inquirer/search` README](https://github.com/SBoudrias/Inquirer.js/tree/main/packages/search) — async source contract, term-change `AbortSignal`, defaults, and separators.
-- [`@inquirer/search` current source](https://github.com/SBoudrias/Inquirer.js/blob/main/packages/search/src/index.ts) — aborted-result guard, one-time default application, result replacement, and active-row reset.
-- [Git `branch`](https://git-scm.com/docs/git-branch) — `--list` and wildcard filtering semantics.
-- [Git `worktree`](https://git-scm.com/docs/git-worktree) — stable porcelain records and `-z` path safety.
-- [Git `rev-parse`](https://git-scm.com/docs/git-rev-parse) and [Git `log`](https://git-scm.com/docs/git-log) — unique abbreviation with a requested minimum length.
-- [Git `pack-refs`](https://git-scm.com/docs/git-pack-refs) — ref-storage mutation and loose-ref removal behavior.
-- [Node.js 24 child process documentation](https://nodejs.org/docs/latest-v24.x/api/child_process.html) — asynchronous spawning, AbortSignal, pipe limits, and bounded output behavior.
-
-### Confidence note
-
-The integration risks and thresholds are HIGH confidence because they are grounded in the current code, existing contract tests, and the repository's measured spike. The research-plan web search produced no useful authoritative benchmark source; no external anecdotal benchmark claim is used. Platform/filesystem variance remains a Phase 11 measurement concern rather than an unsupported guarantee.
+The recommendations were checked against the repository's current request/server boundary, Git runner, comparison identity, changed-file model, durable-anchor schema, draft store, export store/canonicalizer, loopback security plugin, browser launcher, and Vue review/export flow. Those implementations remain the source of truth for behavior v1.3 must preserve.
 
 ---
-*Pitfalls research for: Compare v1.2 Fast Source Discovery*
-*Researched: 2026-07-30*
+
+*Pitfalls research for: v1.3 Agent Review Handoff*
+*Researched: 2026-08-04*
