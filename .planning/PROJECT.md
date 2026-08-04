@@ -8,11 +8,11 @@ Compare is a local-first code review application for developers who want a GitHu
 
 A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
 
-## Current State: v1.2 Fast Source Discovery
+## Current State: v1.3 Agent Review Handoff — Phase 12 Complete
 
-**Shipped:** 2026-07-30
+**Current progress:** Phase 12 delivered safe range-request launch and immutable review scope; Phase 13 has not started.
 
-Compare now opens its ordered source picker from an immutable eager snapshot of the attached current branch and registered worktrees, then searches remaining local branches only after the user enters a term. The shipped path preserves exact source identity, worktree truthfulness, selection ordering, drift recovery, and native-Git authority without a persistent branch index or repository mutation.
+Compare now accepts one strict, bounded versioned stdin range request without changing TTY launch. Native Git resolves and pins range commits and ordered pathspecs once; that scope remains authoritative through the browser session, draft identity, and V2 export.
 
 <details>
 <summary>v1.2 milestone intent</summary>
@@ -73,11 +73,11 @@ Validated in Phase 10: On-Demand Branch Search added fresh case-insensitive lite
 
 Validated in Phase 11: Production Performance Gate proved the compiled picker path within fixed readiness and search budgets against exactly 10,000 packed local refs.
 
+Validated in Phase 12: Request Protocol & Range Grounding accepts one strict, bounded versioned stdin range request while preserving TTY launch; native Git pins range commits and ordered pathspec scope through the browser session, draft identity, and V2 export.
+
 ### Active
 
-- [ ] Coding agents can submit versioned review requests through CLI stdin.
-- [ ] Requests can select either a filtered contiguous Git range or a repository-grounded exact patch.
-- [ ] Submitted requests open the existing human browser review experience.
+- [ ] Coding agents can submit a repository-grounded exact patch through CLI stdin.
 - [ ] Developers can explicitly finish an agent-submitted review.
 - [ ] The waiting CLI returns canonical review JSON on stdout.
 
@@ -101,6 +101,8 @@ The browser workspace provides an exact changed-file tree, real Monaco side-by-s
 Exports are versioned and machine-validated. Canonical JSON owns comparison identities, accepted summary and comments, timestamps, blob identities, and context anchors; Markdown is derived from that same validated model. Publication is an atomic pair beneath `.compare/exports/`, with hashes and a bounded receipt.
 
 v1.2 completed 5/5 requirements, 12/12 cross-phase integrations, and 5/5 end-to-end flows. Its compiled production gate proved exactly 10,000 packed local heads with zero loose heads, one discarded warmup, five serial measurements, readiness median 221.532417 ms against a 400 ms budget, and search median 38.266167 ms against a 500 ms budget.
+
+Phase 12 completed the first v1.3 vertical slice: an agent can launch a strict native-Git range review without an interactive prompt, while interactive reviews retain their existing merge-base behavior. The browser discloses the frozen range scope and preserves it in the range draft and export provenance.
 
 Retained debt is bounded: one authenticated orphan metadata route/client method, Phase 3 UI polish, accepted Phase 4 filesystem/power-loss durability limits, focused rather than compiled black-box coverage for uncommon worktree recovery states, and host-sensitive absolute performance evidence. No shipped requirement or user flow remains blocked.
 ## Constraints
@@ -148,6 +150,8 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 | Share one prompt-lifetime exact-ID registry across Base and Head selection | Keep eager, lazy, and recovered candidates unambiguous across ordered selection | Good — abort-safe lazy results and descriptor recovery preserve exact source identity |
 | Use bounded native-Git protocols for literal local-head search and metadata | Avoid a persistent index and one subprocess per branch while retaining Git semantics | Good — strict protocol validation and batched abbreviation pass real-Git coverage |
 | Gate discovery performance through the compiled production binary | Prevent injected seams or spike-only measurements from claiming release budgets | Good — the packed-10,000-ref gate passes fixed 400 ms readiness and 500 ms search medians |
+| Accept only one bounded strict V1 stdin range request | Keep agent launch deterministic while preserving the established interactive CLI path | Good — malformed, oversized, ambiguous, or unsupported requests fail before browser launch; TTY remains interactive |
+| Pin range revisions and native pathspecs once | Prevent selector drift or browser-authored scope from changing agent review provenance | Good — session, draft identity, and V2 exports use the same immutable Git-authoritative scope |
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -166,4 +170,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-08-04 starting v1.3 Agent Review Handoff*
+*Last updated: 2026-08-04 after Phase 12 Request Protocol & Range Grounding*

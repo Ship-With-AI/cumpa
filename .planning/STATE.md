@@ -4,11 +4,11 @@ milestone: v1.3
 milestone_name: Agent Review Handoff
 current_phase: 13
 current_phase_name: Exact Patch Grounding
-status: executing
-stopped_at: Completed 12-06-PLAN.md
-last_updated: "2026-08-04T21:55:35.125Z"
+status: ready
+stopped_at: Phase 12 complete; Phase 13 not started
+last_updated: "2026-08-04"
 last_activity: 2026-08-04
-last_activity_desc: Phase 12 complete, transitioned to Phase 13
+last_activity_desc: Phase 12 complete; Phase 13 not started
 progress:
   total_phases: 4
   completed_phases: 1
@@ -24,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 12 — Request Protocol & Range Grounding
+**Current focus:** Phase 13 — Exact Patch Grounding (not started)
 
 ## Current Position
 
-Phase: 13 of 15 (Exact Patch Grounding)
+Phase: 13 — Exact Patch Grounding
 Plan: Not started
-Status: Ready to execute
-Last activity: 2026-08-04 — Phase 12 complete, transitioned to Phase 13
-Progress: [██████████] 100%
+Status: Phase 12 complete; Phase 13 not started
+Last activity: 2026-08-04 — Phase 12 complete; no transition run
+Progress: Phase 12 complete (6/6 plans)
 
 ## Performance Metrics
 
