@@ -1,6 +1,9 @@
 import { describe, expect, test } from 'vitest';
 
-import { comparisonKey } from '../../src/domain/comparison-key.js';
+import {
+  comparisonKey,
+  rangeReviewKey,
+} from '../../src/domain/comparison-key.js';
 
 const sha1Base = 'a'.repeat(40);
 const sha1Head = 'b'.repeat(40);
@@ -32,5 +35,35 @@ describe('comparisonKey', () => {
     expect(comparisonKey(selectedBase, selectedHead)).not.toBe(
       comparisonKey(selectedBase.slice(0, 12), selectedHead),
     );
+  });
+});
+
+describe('rangeReviewKey', () => {
+  test('is stable only for identical pinned OIDs and exact ordered pathspecs', () => {
+    const scope = ['src/**/*.ts', ':(exclude)src/generated/**'] as const;
+    const original = rangeReviewKey(sha1Base, sha1Head, scope);
+
+    expect(original).toBe(rangeReviewKey(sha1Base, sha1Head, scope));
+    expect(original).toMatch(/^[0-9a-f]{64}$/u);
+    expect(rangeReviewKey(sha256Base, sha256Head, scope)).toMatch(
+      /^[0-9a-f]{64}$/u,
+    );
+  });
+
+  test('frames each ordered pathspec independently in a separate domain', () => {
+    const scope = ['src/**/*.ts', ':(exclude)src/generated/**'] as const;
+    const original = rangeReviewKey(sha1Base, sha1Head, scope);
+
+    expect(rangeReviewKey(sha1Head, sha1Base, scope)).not.toBe(original);
+    expect(rangeReviewKey(sha1Base, sha1Head, [...scope].reverse())).not.toBe(
+      original,
+    );
+    expect(
+      rangeReviewKey(sha1Base, sha1Head, [
+        'src/**/*.ts:(exclude)src/generated/**',
+      ]),
+    ).not.toBe(original);
+    expect(rangeReviewKey(sha1Base, sha1Head, [])).not.toBe(original);
+    expect(original).not.toBe(comparisonKey(sha1Base, sha1Head));
   });
 });

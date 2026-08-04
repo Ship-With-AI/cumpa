@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { createPinnedComparison } from '../../src/git/comparison.js';
+import {
+  createPinnedComparison,
+  createPinnedRangeComparison,
+} from '../../src/git/comparison.js';
 import {
   createGitRunner,
   GitRunnerError,
@@ -33,6 +36,19 @@ function comparisonOptions(repository: ValidationGitFixture) {
     cwd: repository.nestedCwd,
     base: { label: 'main', revision: repository.baseRef },
     head: { label: 'feature', revision: repository.headRef },
+  } as const;
+}
+
+
+function rangeOptions(
+  repository: ValidationGitFixture,
+  pathspecs: readonly string[] = [],
+) {
+  return {
+    cwd: repository.nestedCwd,
+    baseRevision: repository.baseRef,
+    headRevision: repository.headRef,
+    pathspecs,
   } as const;
 }
 
@@ -269,6 +285,91 @@ describe('comparison validation matrix', () => {
     expect(
       commands.filter((command) => command[0] === 'merge-base'),
     ).toHaveLength(1);
+  });
+
+  it('pins explicit ancestor revisions once, permits equality, and never follows a moved ref', async () => {
+    const repository = await fixture('removed-object');
+    const delegate = createGitRunner();
+    const commands: string[][] = [];
+    const runner: GitRunner = {
+      async run(arguments_, options) {
+        commands.push([...arguments_]);
+        return await delegate.run(arguments_, options);
+      },
+    };
+
+    const comparison = await createPinnedRangeComparison(
+      rangeOptions(repository),
+      { runner },
+    );
+
+    expect(comparison.mergeBaseOid).toBe(comparison.base.oid);
+    expect(comparison.range).toMatchObject({
+      requestedBase: repository.baseRef,
+      requestedHead: repository.headRef,
+      baseOid: repository.baseOid,
+      headOid: repository.headOid,
+      pathspecs: [],
+    });
+    expect(comparison.range.reviewKey).toMatch(/^[0-9a-f]{64}$/u);
+    expect(
+      commands.filter((command) =>
+        command.some((argument_) => argument_.includes(repository.baseRef)),
+      ),
+    ).toHaveLength(1);
+    expect(
+      commands.filter((command) =>
+        command.some((argument_) => argument_.includes(repository.headRef)),
+      ),
+    ).toHaveLength(1);
+    expect(
+      commands.filter((command) => command[0] === 'merge-base'),
+    ).toContainEqual([
+      'merge-base',
+      '--is-ancestor',
+      repository.baseOid!,
+      repository.headOid!,
+    ]);
+
+    repository.git(['update-ref', repository.headRef, repository.baseOid!]);
+    expect(comparison.head.oid).toBe(repository.headOid);
+    expect(comparison.changedFiles).not.toHaveLength(0);
+  });
+
+  it('accepts equal endpoint OIDs and rejects reversed or unavailable range revisions before inventory', async () => {
+    const equal = await fixture('equal');
+    const reversed = await fixture('removed-object');
+
+    const equalComparison = await createPinnedRangeComparison(rangeOptions(equal));
+    expect(equalComparison.changedFiles).toHaveLength(0);
+
+    const reversedError = await captureFailure(
+      createPinnedRangeComparison({
+        cwd: reversed.nestedCwd,
+        baseRevision: reversed.headRef,
+        headRevision: reversed.baseRef,
+        pathspecs: [],
+      }),
+    );
+    expect(reversedError).toMatchObject({
+      name: 'LaunchError',
+      kind: 'non-ancestor-range',
+      recovery: { kind: 'exit' },
+    });
+
+    const unavailableError = await captureFailure(
+      createPinnedRangeComparison({
+        cwd: reversed.nestedCwd,
+        baseRevision: 'refs/heads/missing',
+        headRevision: reversed.headRef,
+        pathspecs: [],
+      }),
+    );
+    expect(unavailableError).toMatchObject({
+      name: 'LaunchError',
+      kind: 'endpoint-unavailable',
+      recovery: { kind: 'exit' },
+    });
   });
 
   it('distinguishes unrelated histories from an ambiguous two-base history', async () => {

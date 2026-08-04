@@ -16,7 +16,10 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { PinnedComparisonSchema } from '../../src/contracts/comparison.js';
-import { createPinnedComparison } from '../../src/git/comparison.js';
+import {
+  createPinnedComparison,
+  createPinnedRangeComparison,
+} from '../../src/git/comparison.js';
 import {
   createChangedFileInventory,
   type ChangedFile,
@@ -336,6 +339,112 @@ describe('native-Git changed-file inventory', () => {
       repository.headOid,
       '--',
     ]);
+  });
+
+  it.each([
+    [],
+    ['*.txt'],
+    ['*.txt', ':(exclude)deleted.txt'],
+    [':(exclude)deleted.txt'],
+    [':(glob)*.txt', ':(exclude)deleted.txt'],
+    ['-leading.txt'],
+    ['space name.txt'],
+  ] as const)(
+    'passes ordered native pathspecs identically to both diff protocols: %j',
+    async (pathspecs) => {
+      const repository = await createInventoryFixture();
+      const commands: string[][] = [];
+
+      await createChangedFileInventory(
+        {
+          repositoryRoot: repository.root,
+          mergeBaseOid: repository.baseOid,
+          headOid: repository.headOid,
+          objectFormat: 'sha1',
+          pathspecs,
+        },
+        { runner: recordingRunner(commands) },
+      );
+
+      const tail = ['--', ...pathspecs];
+      const scopedDiffs = commands.filter((command) => command[0] === 'diff');
+      expect(scopedDiffs).toHaveLength(2);
+      expect(scopedDiffs.every((command) => command.slice(-tail.length).join('\u0000') === tail.join('\u0000'))).toBe(true);
+    },
+  );
+
+  it('uses native include/exclude matching and ignores inherited global pathspec modes', async () => {
+    const repository = await createInventoryFixture();
+    const pathspecs = ['*.txt', ':(exclude)deleted.txt'] as const;
+    const expected = repository
+      .git([
+        'diff',
+        '--name-only',
+        '-z',
+        repository.baseOid,
+        repository.headOid,
+        '--',
+        ...pathspecs,
+      ])
+      .toString('utf8')
+      .split('\0')
+      .filter(
+        (path) =>
+          path.length > 0 && path !== '.compare' && !path.startsWith('.compare/'),
+      )
+      .sort();
+    const inheritedLiteral = process.env.GIT_LITERAL_PATHSPECS;
+
+    process.env.GIT_LITERAL_PATHSPECS = '1';
+    try {
+      const files = await createChangedFileInventory({
+        repositoryRoot: repository.root,
+        mergeBaseOid: repository.baseOid,
+        headOid: repository.headOid,
+        objectFormat: 'sha1',
+        pathspecs,
+      });
+      expect(files.map((file) => pathText(file)).sort()).toEqual(expected);
+    } finally {
+      if (inheritedLiteral === undefined) {
+        delete process.env.GIT_LITERAL_PATHSPECS;
+      } else {
+        process.env.GIT_LITERAL_PATHSPECS = inheritedLiteral;
+      }
+    }
+  });
+
+  it('passes native attribute magic through and translates invalid native magic at the range boundary', async () => {
+    const repository = await createInventoryFixture();
+    const accepted = await createPinnedRangeComparison({
+      cwd: repository.root,
+      baseRevision: repository.baseOid,
+      headRevision: repository.headOid,
+      pathspecs: [':(attr:compare-scope)'],
+    });
+    expect(accepted.range?.pathspecs).toEqual([':(attr:compare-scope)']);
+
+    const error = await (async () => {
+      try {
+        await createPinnedRangeComparison({
+          cwd: repository.root,
+          baseRevision: repository.baseOid,
+          headRevision: repository.headOid,
+          pathspecs: [':(not-a-magic)scope'],
+        });
+      } catch (caught) {
+        return caught;
+      }
+      throw new Error('Expected invalid native pathspec magic to fail');
+    })();
+    expect(error).toMatchObject({
+      name: 'LaunchError',
+      kind: 'invalid-pathspec',
+      message:
+        'Git rejected the requested pathspec scope. Check native Git pathspec syntax and try again.',
+      recovery: { kind: 'exit' },
+    });
+    expect(String(error)).not.toContain('not-a-magic');
   });
 
   it('preserves difficult path bytes, safe display, and distinct opaque selection identities', async () => {
