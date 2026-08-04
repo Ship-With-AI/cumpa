@@ -34,9 +34,13 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 5. Ref movement after launch cannot change the pinned commits, pathspec scope, blobs, draft identity, or feedback provenance for the range review.
 
 **Plans**: 3 plan placeholders
+**Wave 1**
 
 - [ ] 12-01-PLAN.md — Route TTY and bounded stdin ownership through a strict versioned request boundary.
 - [ ] 12-02-PLAN.md — Ground ancestor range revisions and ordered native pathspec scope to immutable Git identities.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 12-03-PLAN.md — Carry pinned range scope through comparison, draft, and result provenance without changing interactive launch.
 
 ### Phase 13: Exact Patch Grounding
