@@ -15,6 +15,9 @@ import {
   PatchStatusResponseSchema,
   SelectorDriftResponseSchema,
   OpaqueFileIdSchema,
+  AttachedCompletionStatusSchema,
+  FinishReviewRequestSchema,
+  FinishReviewResultSchema,
   type DraftMutationResult as ApiDraftMutationResult,
   type DraftRecoveryResult as ApiDraftRecoveryResult,
 } from '../contracts/api.js';
@@ -123,6 +126,55 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
     },
     async () => await capabilities.session(),
   );
+
+  if (capabilities.attachedCompletion !== undefined) {
+    app.get<{ Querystring: Record<string, never> }>(
+      '/api/review-completion',
+      { schema: { querystring: EMPTY_QUERY_SCHEMA } },
+      async (request, reply) => {
+        if (
+          Object.keys(request.query).length !== 0
+          || request.body !== undefined
+          || request.headers['content-length'] !== undefined
+          || request.headers['content-type'] !== undefined
+        ) {
+          return unavailable(reply, 400);
+        }
+        return AttachedCompletionStatusSchema.parse(capabilities.attachedCompletion!.status());
+      },
+    );
+
+    app.post<{ Querystring: Record<string, never>; Body: unknown }>(
+      '/api/review-completion/finish',
+      { schema: { querystring: EMPTY_QUERY_SCHEMA }, bodyLimit: 256 },
+      async (request, reply) => {
+        if (
+          Object.keys(request.query).length !== 0
+          || request.headers['content-type']?.split(';', 1)[0] !== 'application/json'
+        ) {
+          return unavailable(reply, 400);
+        }
+        const input = FinishReviewRequestSchema.safeParse(request.body);
+        if (!input.success) return unavailable(reply, 400);
+        const result = FinishReviewResultSchema.parse(await capabilities.attachedCompletion!.finish(input.data.expectedRevision));
+        switch (result.kind) {
+          case 'completed':
+            return reply.code(201).send(result);
+          case 'alreadyCompleted':
+            return reply.code(200).send(result);
+          case 'revisionConflict':
+          case 'staleAnchors':
+          case 'scopeInvalid':
+          case 'draftReadOnly':
+            return reply.code(409).send(result);
+          case 'persistenceFailure':
+          case 'canonicalizationFailure':
+          case 'deliveryFailed':
+            return reply.code(500).send(result);
+        }
+      },
+    );
+  }
 
   if (capabilities.patchStatus !== undefined) {
     app.get<{ Querystring: Record<string, never> }>(

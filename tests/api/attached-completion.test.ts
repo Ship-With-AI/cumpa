@@ -42,21 +42,34 @@ describe('attached completion API', () => {
     const coordinator = new AttachedCompletionCoordinator();
     const app = createSessionApp(comparison(), {
       sessionToken: token,
+      selectorDriftObserver: {
+        observe: async () => ({
+          base: { kind: 'unchanged', role: 'base' as const },
+          head: { kind: 'unchanged', role: 'head' as const },
+        }),
+      },
       attachedCompletion: {
         coordinator,
-        finish: async () => {
+        deliver: async () => {
           deliveries += 1;
-          return { kind: 'completed' as const, revision: 0 };
         },
       },
     });
     apps.add(app);
     app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
 
+    const session = await app.inject({ method: 'GET', url: '/api/session', headers });
+    expect(session.json()).toMatchObject({ attached: { kind: 'agent-review' } });
     await expect(app.inject({ method: 'GET', url: '/api/review-completion', headers })).resolves.toMatchObject({
       statusCode: 200,
       json: expect.any(Function),
     });
+    await expect(app.inject({
+      method: 'POST',
+      url: '/api/review-completion/finish?unexpected=true',
+      headers,
+      payload: { expectedRevision: 0, extra: true },
+    })).resolves.toMatchObject({ statusCode: 400 });
     const first = await app.inject({ method: 'POST', url: '/api/review-completion/finish', headers, payload: { expectedRevision: 0 } });
     expect(first.statusCode).toBe(201);
     expect(first.json()).toEqual({ kind: 'completed', revision: 0 });

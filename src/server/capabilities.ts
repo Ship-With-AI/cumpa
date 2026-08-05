@@ -21,6 +21,11 @@ import {
   type CompareIgnoreStatus,
   type SelectorDriftResponse,
 } from '../contracts/api.js';
+import type {
+  AttachedCompletionStatus,
+  FinishReviewResult,
+} from '../contracts/api.js';
+import { AttachedCompletionCoordinator } from './attached-completion.js';
 import {
   buildDurableAnchor,
   verifyDurableAnchor,
@@ -42,6 +47,7 @@ import {
   buildReviewExportV3,
   canonicalizeReviewExport,
 } from '../export/review-export.js';
+import { parseCanonicalReviewExport } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
 import { getObservedNativeExchangeCapability } from './native-exchange-capability.js';
 import { assertManagedExportsRoot, ensureManagedExportsRoot, publishReviewExport } from './export-store.js';
@@ -93,7 +99,14 @@ export type CapabilityRegistryOptions = Readonly<{
   readonly draftStore?: DraftStore;
   readonly revealDraftFile?: DraftRevealPort;
   readonly selectorDriftObserver?: SelectorDriftObserver;
+  readonly attachedCompletion?: AttachedCompletionOptions;
 }>;
+
+export type AttachedCompletionOptions = Readonly<{
+  readonly coordinator: AttachedCompletionCoordinator;
+  readonly deliver: (bytes: Uint8Array) => Promise<void>;
+}>;
+
 
 export type CapabilityRegistry = Readonly<{
   readonly session: () => Promise<SessionResponse>;
@@ -102,6 +115,10 @@ export type CapabilityRegistry = Readonly<{
   readonly selectorDriftObserver?: SelectorDriftObserver;
   readonly patchStatus?: () => Promise<PatchStatusResponse>;
   readonly isExactPatch?: true;
+  readonly attachedCompletion?: Readonly<{
+    readonly status: () => AttachedCompletionStatus;
+    readonly finish: (expectedRevision: number) => Promise<FinishReviewResult>;
+  }>;
   readonly lookup: (fileId: string) => Promise<FileMetadataResponse | undefined>;
   readonly readContent: (fileId: string) => Promise<FileContentResponse | undefined>;
   readonly verifyAnchor: (anchor: DurableAnchorV1) => Promise<AnchorVerification>;
@@ -285,6 +302,7 @@ export function createCapabilityRegistry(
             pathspecs: comparison.range.pathspecs,
           },
         }),
+    ...(options.attachedCompletion === undefined ? {} : { attached: { kind: 'agent-review' as const } }),
     files: comparison.changedFiles.map((file) => {
       const status =
         file.status.similarity === null
@@ -311,8 +329,98 @@ export function createCapabilityRegistry(
     }),
   });
 
+  const verifyAnchor = async (anchor: DurableAnchorV1): Promise<AnchorVerification> => {
+    for (const file of frozenFilesByCapability.values()) {
+      const path = anchor.side === 'base' ? file.oldPath : file.newPath;
+      const blobOid = anchor.side === 'base' ? file.oldBlobOid : file.newBlobOid;
+      const mode = anchor.side === 'base' ? file.oldMode : file.newMode;
+      if (file.availability.kind !== 'text' || path === undefined || path.bytesBase64url !== anchor.path.bytesBase64url || blobOid !== anchor.blobOid) continue;
+      const side = await readSide(reader, path, blobOid, mode);
+      if (side === undefined || !side.exists) return { state: 'orphaned', reason: 'anchor-unavailable' };
+      try {
+        return verifyDurableAnchor(anchor, buildDurableAnchor({
+          path: side.path,
+          safeDisplayPath: side.path.display,
+          side: anchor.side,
+          blobOid: side.blobOid,
+          line: anchor.line,
+          text: side.text,
+        }));
+      } catch {
+        return { state: 'orphaned', reason: 'anchor-unavailable' };
+      }
+    }
+    return { state: 'orphaned', reason: 'anchor-unavailable' };
+  };
+
+  const attachedCompletion = options.attachedCompletion === undefined ? undefined : {
+    status: () => options.attachedCompletion!.coordinator.status(),
+    finish: async (expectedRevision: number): Promise<FinishReviewResult> => {
+      return options.attachedCompletion!.coordinator.finish(expectedRevision, async () => {
+        const settled = await draftStore.settle(expectedRevision, {
+          prepare: async (acceptedDraft) => {
+            const observation = await selectorDriftObserver.observe();
+            if (observation.base.kind !== 'unchanged' || observation.head.kind !== 'unchanged' || comparison.range === undefined) {
+              return { kind: 'scopeInvalid' as const };
+            }
+            const verification = Object.fromEntries(await Promise.all(acceptedDraft.comments.map(async (comment) => [comment.id, await verifyAnchor(comment.anchor)] as const)));
+            const affectedCommentIds = acceptedDraft.comments.filter((comment) => verification[comment.id]?.state !== 'verified').map((comment) => comment.id);
+            if (affectedCommentIds.length !== 0) return { kind: 'staleAnchors' as const, affectedCommentIds, affectedCount: affectedCommentIds.length };
+            try {
+              const range = comparison.range;
+              const exportedAt = new Date().toISOString();
+              const bytes = canonicalizeReviewExport(buildReviewExportV2({
+                acceptedDraft,
+                commentVerification: verification,
+                comparison: {
+                  selectedBase: { label: range.requestedBase, launchOid: range.baseOid },
+                  selectedHead: { label: range.requestedHead, launchOid: range.headOid },
+                  mergeBaseOid: range.baseOid,
+                  comparisonKey: range.reviewKey,
+                },
+                drift: {
+                  observedAt: exportedAt,
+                  acknowledged: false,
+                  base: { launchOid: comparison.base.oid, currentOid: comparison.base.oid, status: 'unchanged' as const },
+                  head: { launchOid: comparison.head.oid, currentOid: comparison.head.oid, status: 'unchanged' as const },
+                },
+              }, range, exportedAt));
+              return { kind: 'ready' as const, bytes, revision: acceptedDraft.revision };
+            } catch {
+              return { kind: 'canonicalizationFailure' as const };
+            }
+          },
+          finalize: async ({ draft, prepared }) => {
+            if (prepared.kind !== 'ready') return prepared;
+            const observation = await selectorDriftObserver.observe();
+            if (observation.base.kind !== 'unchanged' || observation.head.kind !== 'unchanged') return { kind: 'scopeInvalid' as const };
+            const affectedCommentIds = (await Promise.all(draft.comments.map(async (comment) => ({ id: comment.id, verification: await verifyAnchor(comment.anchor) })))).filter(({ verification }) => verification.state !== 'verified').map(({ id }) => id);
+            if (affectedCommentIds.length !== 0) return { kind: 'staleAnchors' as const, affectedCommentIds, affectedCount: affectedCommentIds.length };
+            try {
+              const document = parseCanonicalReviewExport(prepared.bytes);
+              if (document.schemaVersion !== 2 || document.acceptedDraftRevision !== draft.revision) return { kind: 'canonicalizationFailure' as const };
+            } catch {
+              return { kind: 'canonicalizationFailure' as const };
+            }
+            try {
+              await options.attachedCompletion!.deliver(prepared.bytes);
+              return { kind: 'completed' as const, revision: prepared.revision };
+            } catch {
+              return { kind: 'deliveryFailed' as const };
+            }
+          },
+        });
+        if (settled.kind === 'accepted') return settled.value;
+        if (settled.kind === 'revisionConflict') return { kind: 'revisionConflict', expectedRevision: settled.expectedRevision, actualRevision: settled.actualRevision };
+        if (settled.kind === 'draftChanged') return { kind: 'revisionConflict', expectedRevision, actualRevision: settled.actualRevision };
+        return settled.kind === 'readOnly' ? { kind: 'draftReadOnly' } : { kind: 'persistenceFailure' };
+      });
+    },
+  };
+
   return Object.freeze({
     session: async () => session,
+    attachedCompletion,
     onAnchorAdd: options.onAnchorAdd,
     draftStore,
     selectorDriftObserver,
@@ -484,41 +592,7 @@ export function createCapabilityRegistry(
       }
       return FileContentResponseSchema.parse({ fileId, base, head });
     },
-    async verifyAnchor(anchor) {
-      for (const file of frozenFilesByCapability.values()) {
-        const path = anchor.side === 'base' ? file.oldPath : file.newPath;
-        const blobOid = anchor.side === 'base' ? file.oldBlobOid : file.newBlobOid;
-        const mode = anchor.side === 'base' ? file.oldMode : file.newMode;
-        if (
-          file.availability.kind !== 'text' ||
-          path === undefined ||
-          path.bytesBase64url !== anchor.path.bytesBase64url ||
-          blobOid !== anchor.blobOid
-        ) {
-          continue;
-        }
-        const side = await readSide(reader, path, blobOid, mode);
-        if (side === undefined || !side.exists) {
-          return { state: 'orphaned', reason: 'anchor-unavailable' };
-        }
-        try {
-          return verifyDurableAnchor(
-            anchor,
-            buildDurableAnchor({
-              path: side.path,
-              safeDisplayPath: side.path.display,
-              side: anchor.side,
-              blobOid: side.blobOid,
-              line: anchor.line,
-              text: side.text,
-            }),
-          );
-        } catch {
-          return { state: 'orphaned', reason: 'anchor-unavailable' };
-        }
-      }
-      return { state: 'orphaned', reason: 'anchor-unavailable' };
-    },
+    verifyAnchor,
   });
 }
 
@@ -527,7 +601,10 @@ export async function createExactPatchCapabilityRegistry(
   snapshot: PatchSnapshot,
   options: CapabilityRegistryOptions = {},
 ): Promise<CapabilityRegistry> {
-  const session = SessionResponseSchema.parse(await snapshot.session());
+  const session = SessionResponseSchema.parse({
+    ...(await snapshot.session()),
+    ...(options.attachedCompletion === undefined ? {} : { attached: { kind: 'agent-review' as const } }),
+  });
   if (!('patch' in session)) throw new Error('Exact patch snapshot did not provide patch provenance.');
   const patchSession = session.patch;
   const draftStore = options.draftStore ?? createDraftStore({
@@ -564,9 +641,55 @@ export async function createExactPatchCapabilityRegistry(
     );
   };
 
+  const attachedCompletion = options.attachedCompletion === undefined ? undefined : {
+    status: () => options.attachedCompletion!.coordinator.status(),
+    finish: async (expectedRevision: number): Promise<FinishReviewResult> => {
+      return options.attachedCompletion!.coordinator.finish(expectedRevision, async () => {
+        const settled = await draftStore.settle(expectedRevision, {
+          prepare: async (acceptedDraft) => {
+            const patch = await snapshot.exportScope();
+            if (patch.snapshot.status !== 'unchanged') return { kind: 'scopeInvalid' as const };
+            const verification = Object.fromEntries(await Promise.all(acceptedDraft.comments.map(async (comment) => [comment.id, await verifyAnchor(comment.anchor)] as const)));
+            const affectedCommentIds = acceptedDraft.comments.filter((comment) => verification[comment.id]?.state !== 'verified').map((comment) => comment.id);
+            if (affectedCommentIds.length !== 0) return { kind: 'staleAnchors' as const, affectedCommentIds, affectedCount: affectedCommentIds.length };
+            try {
+              const bytes = canonicalizeReviewExport(buildReviewExportV3({ acceptedDraft, commentVerification: verification }, patch, new Date().toISOString()));
+              return { kind: 'ready' as const, bytes, revision: acceptedDraft.revision };
+            } catch {
+              return { kind: 'canonicalizationFailure' as const };
+            }
+          },
+          finalize: async ({ draft, prepared }) => {
+            if (prepared.kind !== 'ready') return prepared;
+            if ((await snapshot.exportScope()).snapshot.status !== 'unchanged') return { kind: 'scopeInvalid' as const };
+            const affectedCommentIds = (await Promise.all(draft.comments.map(async (comment) => ({ id: comment.id, verification: await verifyAnchor(comment.anchor) })))).filter(({ verification }) => verification.state !== 'verified').map(({ id }) => id);
+            if (affectedCommentIds.length !== 0) return { kind: 'staleAnchors' as const, affectedCommentIds, affectedCount: affectedCommentIds.length };
+            try {
+              const document = parseCanonicalReviewExport(prepared.bytes);
+              if (document.schemaVersion !== 3 || document.acceptedDraftRevision !== draft.revision) return { kind: 'canonicalizationFailure' as const };
+            } catch {
+              return { kind: 'canonicalizationFailure' as const };
+            }
+            try {
+              await options.attachedCompletion!.deliver(prepared.bytes);
+              return { kind: 'completed' as const, revision: prepared.revision };
+            } catch {
+              return { kind: 'deliveryFailed' as const };
+            }
+          },
+        });
+        if (settled.kind === 'accepted') return settled.value;
+        if (settled.kind === 'revisionConflict') return { kind: 'revisionConflict', expectedRevision: settled.expectedRevision, actualRevision: settled.actualRevision };
+        if (settled.kind === 'draftChanged') return { kind: 'revisionConflict', expectedRevision, actualRevision: settled.actualRevision };
+        return settled.kind === 'readOnly' ? { kind: 'draftReadOnly' } : { kind: 'persistenceFailure' };
+      });
+    },
+  };
+
   return Object.freeze({
     isExactPatch: true as const,
-    session: async () => SessionResponseSchema.parse(await snapshot.session()),
+    session: async () => session,
+    attachedCompletion,
     onAnchorAdd: options.onAnchorAdd,
     draftStore,
     patchStatus: async () => {
