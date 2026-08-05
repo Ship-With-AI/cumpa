@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { h, nextTick, onBeforeUnmount, onMounted, ref, render, watch } from 'vue';
+import { computed, h, nextTick, onBeforeUnmount, onMounted, ref, render, watch } from 'vue';
 
 import type { FileContentResponse } from '../../contracts/api.js';
 import CommentComposer from './CommentComposer.vue';
@@ -14,12 +14,15 @@ import {
 import type { WorkspaceComment, WorkspaceComposer } from '../model/workspace-state.js';
 import { configureMonacoWorkers, languageForPath } from '../monaco/configure.js';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   comments: readonly WorkspaceComment[];
   composer?: WorkspaceComposer;
   content: FileContentResponse;
   path: string;
-}>();
+  sourceKind?: 'range' | 'exact-patch';
+}>(), {
+  sourceKind: 'range',
+});
 
 const emit = defineEmits<{
   add: [];
@@ -42,6 +45,15 @@ let observedComposerAnchor = '';
 let zoneRoot: HTMLElement | undefined;
 let focusComposerAnchor: string | undefined;
 
+const visibleSides = computed(() =>
+  props.sourceKind === 'exact-patch'
+    ? { original: 'PREIMAGE', modified: 'POSTIMAGE', originalName: 'preimage', modifiedName: 'postimage' }
+    : { original: 'BASE', modified: 'HEAD', originalName: 'base', modifiedName: 'head' },
+);
+const commentSideName = (side: DiffSide) =>
+  props.sourceKind === 'exact-patch'
+    ? side === 'base' ? 'preimage' : 'postimage'
+    : side === 'base' ? 'Base' : 'Head';
 function immutableFile() {
   const fallbackPath = props.path;
   return {
@@ -97,7 +109,7 @@ function renderAnnotation(): void {
       h('header', { class: 'conversation-card__header' }, [
         h('h3', { tabindex: -1, class: 'conversation-card__identity' }, [
           h(PathText, { display: props.path }),
-          h('span', ` · ${comment.side === 'base' ? 'Base' : 'Head'} · line ${comment.line}`),
+          h('span', ` · ${commentSideName(comment.side)} · line ${comment.line}`),
         ]),
         h('div', { class: 'conversation-card__badges' }, [
           h(ReviewStateBadge, { kind: comment.state, label: comment.state === 'open' ? 'Open' : 'Resolved' }),
@@ -271,16 +283,16 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="diff-workspace" :aria-label="`${path}: base and head side-by-side diff`">
+  <section class="diff-workspace" :aria-label="`${path}: ${visibleSides.originalName} and ${visibleSides.modifiedName} side-by-side diff`">
     <div class="diff-workspace__viewport">
       <div class="diff-workspace__canvas">
         <div class="diff-workspace__side-labels" aria-hidden="true">
           <span>
-            <span>BASE</span>
+            <span>{{ visibleSides.original }}</span>
             <span class="diff-workspace__side-cue diff-workspace__side-cue--base">− REMOVED</span>
           </span>
           <span>
-            <span>HEAD</span>
+            <span>{{ visibleSides.modified }}</span>
             <span class="diff-workspace__side-cue diff-workspace__side-cue--head">+ ADDED</span>
           </span>
         </div>
@@ -292,8 +304,8 @@ onBeforeUnmount(() => {
           :style="{ top: `${anchorAffordance.top}px` }"
           :data-anchor-side="anchorAffordance.side"
           :data-anchor-line="anchorAffordance.line"
-          :aria-label="`Add comment to ${anchorAffordance.side} line ${anchorAffordance.line}`"
-          :title="`Add comment to ${anchorAffordance.side} line ${anchorAffordance.line} · Option+Enter`"
+          :aria-label="`Add comment to ${anchorAffordance.side === 'base' ? visibleSides.originalName : visibleSides.modifiedName} line ${anchorAffordance.line}`"
+          :title="`Add comment to ${anchorAffordance.side === 'base' ? visibleSides.originalName : visibleSides.modifiedName} line ${anchorAffordance.line} · Option+Enter`"
           @click="addComment(anchorAffordance)"
         >+</button>
         <div ref="host" class="diff-workspace__editor" />

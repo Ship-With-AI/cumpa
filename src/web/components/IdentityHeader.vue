@@ -14,22 +14,28 @@ const emit = defineEmits<{
 }>();
 
 const disclosure = ref<HTMLButtonElement>();
-const heading = computed(
-  () =>
-    `Compare: ${controlSafeDisplay(props.session.base.label)} · ${props.session.base.oid.slice(0, 7)} → ${controlSafeDisplay(props.session.head.label)} · ${props.session.head.oid.slice(0, 7)}`,
+const isExactPatch = computed(() => 'patch' in props.session);
+const patchSession = computed(() => 'patch' in props.session ? props.session : undefined);
+const pinnedSession = computed(() => 'base' in props.session ? props.session : undefined);
+const heading = computed(() =>
+  isExactPatch.value
+    ? `Compare: exact patch · ${patchSession.value!.patch.digest.slice(0, 12)}`
+    : `Compare: ${controlSafeDisplay(pinnedSession.value!.base.label)} · ${pinnedSession.value!.base.oid.slice(0, 7)} → ${controlSafeDisplay(pinnedSession.value!.head.label)} · ${pinnedSession.value!.head.oid.slice(0, 7)}`,
 );
-const isRange = computed(() => props.session.range?.kind === 'revisions');
+const isRange = computed(() => pinnedSession.value?.range?.kind === 'revisions');
 const panelId = computed(() =>
-  isRange.value ? 'review-scope-panel' : 'comparison-identities-panel',
+  isExactPatch.value ? 'patch-scope-panel' : isRange.value ? 'review-scope-panel' : 'comparison-identities-panel',
 );
 const dirtyEndpoints = computed(() =>
-  [
-    { role: 'Base', worktree: props.session.base.worktree },
-    { role: 'Head', worktree: props.session.head.worktree },
-  ].filter(
-    (entry): entry is { role: string; worktree: { path: string; dirty: true } } =>
-      entry.worktree?.dirty === true,
-  ),
+  isExactPatch.value
+    ? []
+    : [
+        { role: 'Base', worktree: pinnedSession.value!.base.worktree },
+        { role: 'Head', worktree: pinnedSession.value!.head.worktree },
+      ].filter(
+        (entry): entry is { role: string; worktree: { path: string; dirty: true } } =>
+          entry.worktree?.dirty === true,
+      ),
 );
 
 function focusDisclosure(): void {
@@ -43,7 +49,7 @@ defineExpose({ focusDisclosure });
   <header class="session-header">
     <h1>{{ heading }}</h1>
     <div class="header-facts">
-      <span class="pin-cue">Pinned to displayed commits</span>
+      <span class="pin-cue">{{ isExactPatch ? 'Frozen verified patch' : 'Pinned to displayed commits' }}</span>
       <span
         v-for="endpoint in dirtyEndpoints"
         :key="endpoint.role"
@@ -62,7 +68,7 @@ defineExpose({ focusDisclosure });
         :aria-expanded="expanded"
         @click="emit('toggle')"
       >
-        {{ isRange ? 'View review scope' : 'Comparison identities' }}
+        {{ isExactPatch ? 'View patch scope' : isRange ? 'View review scope' : 'Comparison identities' }}
       </button>
     </div>
   </header>

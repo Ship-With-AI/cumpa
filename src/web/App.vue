@@ -6,6 +6,7 @@ import type {
   DraftRecoveryResult,
   DraftRevealResult,
   FileContentResponse,
+  PatchStatusResponse,
   SessionFile,
   SessionResponse,
   SelectorDriftResponse,
@@ -25,6 +26,7 @@ import ErrorState from './components/ErrorState.vue';
 import FileTree from './components/FileTree.vue';
 import IdentityHeader from './components/IdentityHeader.vue';
 import IdentityPanel from './components/IdentityPanel.vue';
+import InlineNotice from './components/InlineNotice.vue';
 import SelectorDriftNotice from './components/SelectorDriftNotice.vue';
 import KeyboardHelp from './components/KeyboardHelp.vue';
 import ReviewToolbar from './components/ReviewToolbar.vue';
@@ -88,6 +90,7 @@ const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
 const draftRevision = ref(0);
 const reviewDraft = shallowRef<ReviewDraftSnapshot>();
+const patchStatus = shallowRef<PatchStatusResponse>();
 const reviewFailure = shallowRef<ReviewFailure | null>(null);
 const draftLoad = shallowRef<DraftLoadResponse>();
 const recoveredDraft = shallowRef<Extract<DraftRecoveryResult, { readonly kind: 'recovered' }>>();
@@ -106,6 +109,8 @@ const recoveryLoad = computed<ReadOnlyDraftLoad | undefined>(() => {
 
 let reviewState: ReviewDraftState | undefined;
 let selectorDriftState: SelectorDriftState | undefined;
+let patchStatusInterval: number | undefined;
+let patchStatusRefreshing = false;
 
 let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
@@ -116,12 +121,21 @@ let filesOpener: HTMLElement | undefined;
 let commentsOpener: HTMLElement | undefined;
 let latestConflictDraft: CanonicalReviewDraft | undefined;
 
+const pinnedSession = computed(() =>
+  session.value !== undefined && 'base' in session.value ? session.value : undefined,
+);
+const exactPatchSession = computed(() =>
+  session.value !== undefined && 'patch' in session.value ? session.value : undefined,
+);
+const isExactPatchSession = computed(() => exactPatchSession.value !== undefined);
+const patchSnapshotUnavailable = computed(() => patchStatus.value?.kind === 'snapshotUnavailable');
+const patchDrifted = computed(() => patchStatus.value?.kind === 'drifted');
 const reviewableFiles = computed(() => session.value?.files.filter((file) => file.availability.kind === 'text') ?? []);
 const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? selectedFile.value?.oldPath?.display ?? 'Changed file');
-const baseShortOid = computed(() => session.value?.base.oid.slice(0, 7));
-const headShortOid = computed(() => session.value?.head.oid.slice(0, 7));
-const isRangeSession = computed(() => session.value?.range?.kind === 'revisions');
-const rangeHasPathspecs = computed(() => (session.value?.range?.pathspecs.length ?? 0) > 0);
+const baseShortOid = computed(() => pinnedSession.value?.base.oid.slice(0, 7));
+const headShortOid = computed(() => pinnedSession.value?.head.oid.slice(0, 7));
+const isRangeSession = computed(() => pinnedSession.value?.range?.kind === 'revisions');
+const rangeHasPathspecs = computed(() => (pinnedSession.value?.range?.pathspecs.length ?? 0) > 0);
 const selectedIndex = computed(() => reviewableFiles.value.findIndex((file) => file.fileId === selectedFile.value?.fileId));
 const atFirstFile = computed(() => selectedIndex.value <= 0);
 const atLastFile = computed(() => selectedIndex.value === -1 || selectedIndex.value === reviewableFiles.value.length - 1);
@@ -733,6 +747,38 @@ function handleViewportChange(): void {
   diffWorkspace.value?.layout();
 }
 
+async function refreshPatchStatus(): Promise<void> {
+  if (sessionClient === undefined || patchStatusRefreshing || patchStatus.value?.kind === 'snapshotUnavailable') {
+    return;
+  }
+  patchStatusRefreshing = true;
+  try {
+    patchStatus.value = await sessionClient.getPatchStatus();
+  } finally {
+    patchStatusRefreshing = false;
+  }
+}
+
+function refreshPatchStatusWhenVisible(): void {
+  if (document.visibilityState === 'visible') {
+    void refreshPatchStatus();
+  }
+}
+
+function startPatchStatus(): void {
+  void refreshPatchStatus();
+  document.addEventListener('visibilitychange', refreshPatchStatusWhenVisible);
+  patchStatusInterval = window.setInterval(refreshPatchStatusWhenVisible, 30_000);
+}
+
+function stopPatchStatus(): void {
+  document.removeEventListener('visibilitychange', refreshPatchStatusWhenVisible);
+  if (patchStatusInterval !== undefined) {
+    window.clearInterval(patchStatusInterval);
+    patchStatusInterval = undefined;
+  }
+}
+
 onMounted(async () => {
   document.addEventListener('keydown', handleKeydown);
   filesDrawerMedia = window.matchMedia('(max-width: 1099px)');
@@ -745,8 +791,12 @@ onMounted(async () => {
     sessionClient = createSessionClient();
     const loaded = await sessionClient.getSession();
     session.value = loaded;
-    selectorDriftState = createSelectorDriftState(sessionClient, announce, { status: selectorDriftStatus });
-    selectorDriftState.start();
+    if ('patch' in loaded) {
+      startPatchStatus();
+    } else {
+      selectorDriftState = createSelectorDriftState(sessionClient, announce, { status: selectorDriftStatus });
+      selectorDriftState.start();
+    }
     const loadedDraft = await sessionClient.getDraft();
     draftLoad.value = loadedDraft;
     if (loadedDraft.kind === 'current' || loadedDraft.kind === 'missing') {
@@ -772,20 +822,21 @@ onBeforeUnmount(() => {
   filesDrawerMedia?.removeEventListener('change', handleViewportChange);
   commentsDrawerMedia?.removeEventListener('change', handleViewportChange);
   selectorDriftState?.stop();
+  stopPatchStatus();
 });
 </script>
 
 <template>
   <main v-if="primarySurface === 'loading' && errorMessage === ''" class="loading-shell">
     <section class="state-card" aria-labelledby="loading-heading">
-      <h1 id="loading-heading">Compare: loading pinned comparison</h1>
-      <p role="status">Opening local draft…</p>
+      <h1 id="loading-heading">{{ isExactPatchSession ? 'Compare: loading exact patch' : 'Compare: loading pinned comparison' }}</h1>
+      <p role="status">{{ isExactPatchSession ? 'Opening frozen patch review…' : 'Opening local draft…' }}</p>
     </section>
   </main>
 
-  <main v-else-if="errorMessage !== ''" class="unavailable-shell">
-    <h1>Review unavailable</h1>
-    <ErrorState :message="errorMessage" />
+  <main v-else-if="errorMessage !== '' || patchSnapshotUnavailable" class="unavailable-shell">
+    <h1>{{ patchSnapshotUnavailable ? 'Frozen patch unavailable' : 'Review unavailable' }}</h1>
+    <ErrorState :message="patchSnapshotUnavailable ? 'The accepted patch snapshot is missing, corrupt, incomplete, or unreadable. Relaunch Compare with an exact patch that matches the current implementation.' : errorMessage" />
   </main>
 
   <div v-else class="session-shell">
@@ -793,7 +844,11 @@ onBeforeUnmount(() => {
     <a class="skip-link" href="#compare-heading">Skip to diff</a>
     <a class="skip-link" href="#review-heading">Skip review</a>
     <IdentityHeader ref="identityHeader" :session="session" :expanded="identityOpen" @toggle="toggleIdentity" />
-    <SelectorDriftNotice :drift="selectorDriftStatus" />
+    <InlineNotice v-if="patchDrifted" tone="error" role="alert">
+      <h2>Implemented content changed</h2>
+      <p>The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Compare will not substitute current content. Relaunch with a patch that matches the current implementation.</p>
+    </InlineNotice>
+    <SelectorDriftNotice v-else :drift="selectorDriftStatus" />
     <IdentityPanel ref="identityPanel" v-if="identityOpen" :session="session" :modal="isNarrow" @close="closeIdentity" />
 
     <DraftRecovery
@@ -834,7 +889,7 @@ onBeforeUnmount(() => {
           <div class="review-context-header__context">
             <div class="review-context-header__file">
               <div>
-                <p class="active-file-strip__eyebrow">Comparison</p>
+                <p class="active-file-strip__eyebrow">{{ isExactPatchSession ? 'Exact patch' : 'Comparison' }}</p>
                 <h1 id="compare-heading">
                   <PathDisplay v-if="selectedFile !== undefined" :file="selectedFile" />
                   <template v-else>{{ selectedPath }}</template>
@@ -848,16 +903,28 @@ onBeforeUnmount(() => {
                 @click="toggleFiles"
               >Files</button>
             </div>
-            <div class="review-context-header__endpoint review-context-header__endpoint--base">
-              <span class="review-context-header__endpoint-label">Base</span>
-              <span class="review-context-header__endpoint-name" :title="session.base.label">{{ session.base.label }}</span>
-              <span class="review-context-header__endpoint-oid" :title="session.base.oid">{{ baseShortOid }}</span>
-            </div>
-            <div class="review-context-header__endpoint review-context-header__endpoint--head">
-              <span class="review-context-header__endpoint-label">Head</span>
-              <span class="review-context-header__endpoint-name" :title="session.head.label">{{ session.head.label }}</span>
-              <span class="review-context-header__endpoint-oid" :title="session.head.oid">{{ headShortOid }}</span>
-            </div>
+            <template v-if="isExactPatchSession">
+              <div class="review-context-header__endpoint review-context-header__endpoint--base">
+                <span class="review-context-header__endpoint-label">Preimage</span>
+                <span class="review-context-header__endpoint-name">Repository object</span>
+              </div>
+              <div class="review-context-header__endpoint review-context-header__endpoint--head">
+                <span class="review-context-header__endpoint-label">Postimage</span>
+                <span class="review-context-header__endpoint-name">Implemented content</span>
+              </div>
+            </template>
+            <template v-else-if="pinnedSession !== undefined">
+              <div class="review-context-header__endpoint review-context-header__endpoint--base">
+                <span class="review-context-header__endpoint-label">Base</span>
+                <span class="review-context-header__endpoint-name" :title="pinnedSession.base.label">{{ pinnedSession.base.label }}</span>
+                <span class="review-context-header__endpoint-oid" :title="pinnedSession.base.oid">{{ baseShortOid }}</span>
+              </div>
+              <div class="review-context-header__endpoint review-context-header__endpoint--head">
+                <span class="review-context-header__endpoint-label">Head</span>
+                <span class="review-context-header__endpoint-name" :title="pinnedSession.head.label">{{ pinnedSession.head.label }}</span>
+                <span class="review-context-header__endpoint-oid" :title="pinnedSession.head.oid">{{ headShortOid }}</span>
+              </div>
+            </template>
           </div>
           <div class="review-context-header__toolbar">
             <ReviewToolbar
@@ -879,7 +946,11 @@ onBeforeUnmount(() => {
         <KeyboardHelp :open="keyboardHelpOpen" @close="keyboardHelpOpen = false" />
 
         <section v-if="session.files.length === 0" class="empty-state">
-          <template v-if="isRangeSession">
+          <template v-if="isExactPatchSession">
+            <h2>No files in this exact patch</h2>
+            <p>This accepted patch contains no changed file entries. View patch scope to inspect its digest, then relaunch with a non-empty already-applied patch.</p>
+          </template>
+          <template v-else-if="isRangeSession">
             <h2>No changes match this review scope</h2>
             <p>
               {{
@@ -891,7 +962,7 @@ onBeforeUnmount(() => {
           </template>
           <template v-else>
             <h2>No PR-style changes in this pinned comparison</h2>
-            <p>The selected head has no changes from the displayed merge base.</p>
+            <p>The selected head has no changes beyond the displayed merge base.</p>
           </template>
         </section>
         <section v-else-if="selectedFile?.availability.kind !== 'text'" class="empty-state">
@@ -899,8 +970,13 @@ onBeforeUnmount(() => {
           <p>{{ selectedFile?.availability.kind === 'unsupported' ? `unsupported: ${selectedFile.availability.reason}` : 'unavailable: missing-object' }}. Select another changed file to continue reviewing.</p>
         </section>
         <section v-else-if="diffLoading" class="diff-state" aria-live="polite">Loading diff…</section>
-        <section v-else-if="diffError !== ''" class="empty-state" :role="isRangeSession ? 'alert' : undefined">
-          <template v-if="isRangeSession">
+        <section v-else-if="diffError !== ''" class="empty-state" :role="isRangeSession || isExactPatchSession ? 'alert' : undefined">
+          <template v-if="isExactPatchSession">
+            <h2>Frozen patch file unavailable</h2>
+            <p>Compare could not read this file from the frozen patch snapshot. Try the same snapshot again; current repository or worktree bytes will not be substituted.</p>
+            <button type="button" class="ui-button" @click="retryDiff">Try frozen snapshot again</button>
+          </template>
+          <template v-else-if="isRangeSession">
             <h2>Pinned range unavailable</h2>
             <p>Compare could not load the pinned commits or scoped file inventory. Relaunch the same request; this review will not substitute current refs.</p>
             <button type="button" class="ui-button" @click="retryDiff">Try loading pinned diff again</button>
@@ -918,6 +994,7 @@ onBeforeUnmount(() => {
           :composer="activeComposer"
           :content="selectedContent"
           :path="selectedPath"
+          :source-kind="isExactPatchSession ? 'exact-patch' : 'range'"
           @activate="(side, line) => dispatchWorkspace({ type: 'activate-line', side, line })"
           @add="dispatchWorkspace({ type: 'add-comment' })"
           @cancel="dispatchWorkspace({ type: 'cancel-composer' })"

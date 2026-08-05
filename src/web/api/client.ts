@@ -26,6 +26,8 @@ import {
   type FileMetadataResponse,
   SelectorDriftResponseSchema,
   type SelectorDriftResponse,
+  PatchStatusResponseSchema,
+  type PatchStatusResponse,
   SessionResponseSchema,
   type SessionResponse,
 } from '../../contracts/api.js';
@@ -66,6 +68,7 @@ export interface SessionClient {
   getFileMetadata(fileId: string): Promise<FileMetadataResponse>;
   getSession(): Promise<SessionResponse>;
   getSelectorDrift(): Promise<SelectorDriftResponse>;
+  getPatchStatus(): Promise<PatchStatusResponse>;
 }
 
 export interface SessionClientEnvironment {
@@ -249,6 +252,15 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       }
       return result.data;
     },
+  async getPatchStatus() {
+    const result = PatchStatusResponseSchema.safeParse(
+      await requestJson('/api/patch-status', 'GET', 'session'),
+    );
+    if (!result.success) {
+      throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
+    }
+    return result.data;
+  },
     async getSession() {
       const result = SessionResponseSchema.safeParse(await requestJson('/api/session', 'GET', 'session'));
       if (!result.success) {

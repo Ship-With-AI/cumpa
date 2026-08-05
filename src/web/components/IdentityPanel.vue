@@ -16,25 +16,31 @@ const emit = defineEmits<{
 
 const closeButton = ref<HTMLButtonElement>();
 
-const baseLabel = computed(() => controlSafeDisplay(props.session.base.label));
-const headLabel = computed(() => controlSafeDisplay(props.session.head.label));
+const patchSession = computed(() => 'patch' in props.session ? props.session : undefined);
+const pinnedSession = computed(() => 'base' in props.session ? props.session : undefined);
+const isExactPatch = computed(() => patchSession.value !== undefined);
+const baseLabel = computed(() => controlSafeDisplay(pinnedSession.value!.base.label));
+const headLabel = computed(() => controlSafeDisplay(pinnedSession.value!.head.label));
 const baseWorktreePath = computed(() =>
-  props.session.base.worktree === undefined
+  pinnedSession.value!.base.worktree === undefined
     ? undefined
-    : controlSafeDisplay(props.session.base.worktree.path),
+    : controlSafeDisplay(pinnedSession.value!.base.worktree.path),
 );
 const headWorktreePath = computed(() =>
-  props.session.head.worktree === undefined
+  pinnedSession.value!.head.worktree === undefined
     ? undefined
-    : controlSafeDisplay(props.session.head.worktree.path),
+    : controlSafeDisplay(pinnedSession.value!.head.worktree.path),
 );
-const isRange = computed(() => props.session.range?.kind === 'revisions');
-const range = computed(() => props.session.range);
+const isRange = computed(() => pinnedSession.value?.range?.kind === 'revisions');
+const range = computed(() => pinnedSession.value?.range);
 const panelId = computed(() =>
-  isRange.value ? 'review-scope-panel' : 'comparison-identities-panel',
+  isExactPatch.value ? 'patch-scope-panel' : isRange.value ? 'review-scope-panel' : 'comparison-identities-panel',
 );
 const headingId = computed(() =>
-  isRange.value ? 'review-scope-heading' : 'comparison-identities-heading',
+  isExactPatch.value ? 'patch-scope-heading' : isRange.value ? 'review-scope-heading' : 'comparison-identities-heading',
+);
+const patchTarget = computed(() =>
+  patchSession.value?.patch.validationTarget.kind === 'repository' ? 'Repository content' : 'Worktree',
 );
 
 function focusClose(): void {
@@ -83,10 +89,29 @@ defineExpose({ focusClose });
       class="sheet-close-button"
       @click="emit('close')"
     >
-      {{ isRange ? 'Close review scope' : 'Close comparison identities' }}
+      {{ isExactPatch ? 'Close patch scope' : isRange ? 'Close review scope' : 'Close comparison identities' }}
     </button>
-    <h2 :id="headingId">{{ isRange ? 'Review scope' : 'Comparison identities' }}</h2>
-    <dl v-if="isRange && range?.kind === 'revisions'" class="identity-list">
+    <h2 :id="headingId">{{ isExactPatch ? 'Patch scope' : isRange ? 'Review scope' : 'Comparison identities' }}</h2>
+    <dl v-if="isExactPatch && patchSession !== undefined" class="identity-list">
+      <div class="identity-row">
+        <dt>Patch digest</dt>
+        <dd>
+          <div class="identity-value">
+            <code class="object-id">{{ patchSession.patch.digest }}</code>
+            <CopyButton label="Copy full patch digest" :value="patchSession.patch.digest" />
+          </div>
+        </dd>
+      </div>
+      <div class="identity-row">
+        <dt>Changed files</dt>
+        <dd>{{ patchSession.patch.changedFileCount }}</dd>
+      </div>
+      <div class="identity-row">
+        <dt>Verified against</dt>
+        <dd>{{ patchTarget }}</dd>
+      </div>
+    </dl>
+    <dl v-else-if="isRange && range?.kind === 'revisions'" class="identity-list">
       <div class="identity-row">
         <dt>Base commit</dt>
         <dd>
@@ -169,11 +194,13 @@ defineExpose({ focusClose });
     </dl>
     <p class="identity-statement">
       {{
-        isRange && range?.kind === 'revisions'
-          ? range.pathspecs.length === 0
-            ? 'This review is pinned to these commits and all changed paths. Moving refs do not change its files or content.'
-            : 'This review is pinned to these commits and ordered Git pathspecs. Moving refs do not change its files or content.'
-          : 'This session is pinned to these commits and does not follow moving refs.'
+        isExactPatch
+          ? 'This review is frozen to the accepted patch. Every preimage is repository-grounded and every postimage matched implemented content at launch. Compare never refreshes reviewed bytes from the worktree.'
+          : isRange && range?.kind === 'revisions'
+            ? range.pathspecs.length === 0
+              ? 'This review is pinned to these commits and all changed paths. Moving refs do not change its files or content.'
+              : 'This review is pinned to these commits and ordered Git pathspecs. Moving refs do not change its files or content.'
+            : 'This session is pinned to these commits and does not follow moving refs.'
       }}
     </p>
   </section>
