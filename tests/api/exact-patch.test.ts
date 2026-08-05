@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
@@ -144,6 +144,22 @@ describe('exact patch snapshot sessions', () => {
       headers,
       payload: { type: 'setSummary', expectedRevision: 0, markdown: 'Frozen feedback.' },
     })).statusCode).toBe(200);
+  });
+
+  test('latches snapshot loss and blocks frozen content without rebuilding from the repository', async () => {
+    const repositoryRoot = await root();
+    const app = await createExactPatchSessionApp(grounded(repositoryRoot), {
+      sessionToken: token,
+      snapshotParent: repositoryRoot,
+    });
+    app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
+    apps.add(app);
+    const snapshotRoot = (await readdir(repositoryRoot)).find((name) => name.startsWith('compare-patch-'));
+    expect(snapshotRoot).toBeDefined();
+    await rm(join(repositoryRoot, snapshotRoot!), { recursive: true, force: true });
+
+    expect((await app.inject({ method: 'GET', url: '/api/patch-status', headers })).json()).toEqual({ kind: 'snapshotUnavailable' });
+    expect((await app.inject({ method: 'GET', url: `/api/files/${fileId}/content`, headers })).statusCode).toBe(500);
   });
 
   test('keeps snapshot capabilities session-local and rejects unauthenticated file and status access', async () => {
