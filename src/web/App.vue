@@ -74,6 +74,7 @@ const diffLoading = ref(false);
 const diffError = ref('');
 const identityOpen = ref(false);
 const isNarrow = ref(false);
+const isCompact = ref(false);
 const isFilesDrawer = ref(false);
 const isCommentsDrawer = ref(false);
 const filesOpen = ref(false);
@@ -118,6 +119,7 @@ let requestVersion = 0;
 let filesDrawerMedia: MediaQueryList | undefined;
 let commentsDrawerMedia: MediaQueryList | undefined;
 let filesOpener: HTMLElement | undefined;
+let compactIdentityMedia: MediaQueryList | undefined;
 let commentsOpener: HTMLElement | undefined;
 let latestConflictDraft: CanonicalReviewDraft | undefined;
 
@@ -129,6 +131,9 @@ const exactPatchSession = computed(() =>
 );
 const isExactPatchSession = computed(() => exactPatchSession.value !== undefined);
 const patchSnapshotUnavailable = computed(() => patchStatus.value?.kind === 'snapshotUnavailable');
+const identityModal = computed(() =>
+  isExactPatchSession.value ? isCompact.value : isNarrow.value,
+);
 const patchDrifted = computed(() => patchStatus.value?.kind === 'drifted');
 const reviewableFiles = computed(() => session.value?.files.filter((file) => file.availability.kind === 'text') ?? []);
 const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? selectedFile.value?.oldPath?.display ?? 'Changed file');
@@ -136,6 +141,18 @@ const baseShortOid = computed(() => pinnedSession.value?.base.oid.slice(0, 7));
 const headShortOid = computed(() => pinnedSession.value?.head.oid.slice(0, 7));
 const isRangeSession = computed(() => pinnedSession.value?.range?.kind === 'revisions');
 const rangeHasPathspecs = computed(() => (pinnedSession.value?.range?.pathspecs.length ?? 0) > 0);
+const unavailableHeading = computed(() =>
+  patchSnapshotUnavailable.value
+    ? 'Frozen patch unavailable'
+    : isExactPatchSession.value
+      ? 'Exact patch review unavailable'
+      : 'Pinned session unavailable',
+);
+const unavailableMessage = computed(() =>
+  patchSnapshotUnavailable.value
+    ? 'The accepted patch snapshot is missing, corrupt, incomplete, or unreadable. Relaunch Compare with an exact patch that matches the current implementation.'
+    : errorMessage.value,
+);
 const selectedIndex = computed(() => reviewableFiles.value.findIndex((file) => file.fileId === selectedFile.value?.fileId));
 const atFirstFile = computed(() => selectedIndex.value <= 0);
 const atLastFile = computed(() => selectedIndex.value === -1 || selectedIndex.value === reviewableFiles.value.length - 1);
@@ -342,7 +359,9 @@ function openRecoveredDraft(): void {
     return;
   }
   recoveredDraftOpen.value = true;
-  announce('New local draft for this pinned comparison.');
+  announce(isExactPatchSession.value
+    ? 'New local draft for this frozen exact patch.'
+    : 'New local draft for this pinned comparison.');
 }
 
 function mutationOperation(request: DraftMutationRequest): ReviewPendingOperation {
@@ -686,7 +705,7 @@ function toggleIdentity(): void {
   }
 
   identityOpen.value = true;
-  if (isNarrow.value) {
+  if (identityModal.value) {
     void nextTick(() => identityPanel.value?.focusClose());
   }
 }
@@ -710,6 +729,10 @@ function handleKeydown(event: KeyboardEvent): void {
   }
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
   if (event.key === 'Escape') {
+    if (isExactPatchSession.value && identityOpen.value) {
+      closeIdentity();
+      return;
+    }
     if (keyboardHelpOpen.value) {
       keyboardHelpOpen.value = false;
     } else if (commentsOpen.value) {
@@ -740,6 +763,7 @@ function handleViewportChange(): void {
   isFilesDrawer.value = filesDrawerMedia?.matches ?? false;
   isCommentsDrawer.value = commentsDrawerMedia?.matches ?? false;
   isNarrow.value = isFilesDrawer.value;
+  isCompact.value = compactIdentityMedia?.matches ?? false;
   if (!isFilesDrawer.value) {
     filesOpen.value = false;
   }
@@ -783,9 +807,11 @@ onMounted(async () => {
   document.addEventListener('keydown', handleKeydown);
   filesDrawerMedia = window.matchMedia('(max-width: 1099px)');
   commentsDrawerMedia = window.matchMedia('(max-width: 1439px)');
+  compactIdentityMedia = window.matchMedia('(max-width: 767px)');
   commentsOpen.value = !commentsDrawerMedia.matches;
   handleViewportChange();
   filesDrawerMedia.addEventListener('change', handleViewportChange);
+  compactIdentityMedia.addEventListener('change', handleViewportChange);
   commentsDrawerMedia.addEventListener('change', handleViewportChange);
   try {
     sessionClient = createSessionClient();
@@ -808,9 +834,13 @@ onMounted(async () => {
         loadedDraft.kind === 'current' ? reconcileDraftComments(draft.comments, loaded.files) : [],
       );
     void refreshIgnoreStatus().catch(() => undefined);
-      announce(draft.comments.length > 0
-        ? 'Local draft resumed. Accepted comments for this pinned comparison are ready.'
-        : 'New local draft for this pinned comparison.');
+      announce(isExactPatchSession.value
+        ? draft.comments.length > 0
+          ? 'Local draft resumed. Accepted comments for this frozen exact patch are ready.'
+          : 'New local draft for this frozen exact patch.'
+        : draft.comments.length > 0
+          ? 'Local draft resumed. Accepted comments for this pinned comparison are ready.'
+          : 'New local draft for this pinned comparison.');
     }
   } catch (error) {
     errorMessage.value = error instanceof SessionClientError ? error.message : SECURITY_FAILURE_MESSAGE;
@@ -821,6 +851,7 @@ onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeydown);
   filesDrawerMedia?.removeEventListener('change', handleViewportChange);
   commentsDrawerMedia?.removeEventListener('change', handleViewportChange);
+  compactIdentityMedia?.removeEventListener('change', handleViewportChange);
   selectorDriftState?.stop();
   stopPatchStatus();
 });
@@ -835,21 +866,31 @@ onBeforeUnmount(() => {
   </main>
 
   <main v-else-if="errorMessage !== '' || patchSnapshotUnavailable" class="unavailable-shell">
-    <h1>{{ patchSnapshotUnavailable ? 'Frozen patch unavailable' : 'Review unavailable' }}</h1>
-    <ErrorState :message="patchSnapshotUnavailable ? 'The accepted patch snapshot is missing, corrupt, incomplete, or unreadable. Relaunch Compare with an exact patch that matches the current implementation.' : errorMessage" />
+    <ErrorState
+      :alert="!patchSnapshotUnavailable"
+      :focus-heading="patchSnapshotUnavailable"
+      :heading="unavailableHeading"
+      :message="unavailableMessage"
+    />
   </main>
 
   <div v-else class="session-shell">
     <a class="skip-link" href="#changed-files-heading">Skip to changed files</a>
     <a class="skip-link" href="#compare-heading">Skip to diff</a>
     <a class="skip-link" href="#review-heading">Skip review</a>
-    <IdentityHeader ref="identityHeader" :session="session" :expanded="identityOpen" @toggle="toggleIdentity" />
+    <IdentityHeader
+      ref="identityHeader"
+      :session="session"
+      :expanded="identityOpen"
+      :inert="isExactPatchSession && identityOpen && identityModal"
+      @toggle="toggleIdentity"
+    />
     <InlineNotice v-if="patchDrifted" tone="error" role="alert">
       <h2>Implemented content changed</h2>
       <p>The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Compare will not substitute current content. Relaunch with a patch that matches the current implementation.</p>
     </InlineNotice>
     <SelectorDriftNotice v-else :drift="selectorDriftStatus" />
-    <IdentityPanel ref="identityPanel" v-if="identityOpen" :session="session" :modal="isNarrow" @close="closeIdentity" />
+    <IdentityPanel ref="identityPanel" v-if="identityOpen" :session="session" :modal="identityModal" @close="closeIdentity" />
 
     <DraftRecovery
       v-if="recoveryLoad !== undefined && primarySurface !== 'workspace'"
@@ -863,7 +904,7 @@ onBeforeUnmount(() => {
       v-else
       class="review-shell"
       :class="{ 'review-shell--files-collapsed': !isFilesDrawer && filesCollapsed }"
-      :inert="identityOpen && isNarrow"
+      :inert="identityOpen && identityModal"
     >
       <nav
         v-if="isFilesDrawer || !filesCollapsed"

@@ -5,9 +5,11 @@ import { expect, test, type Page } from '@playwright/test';
 import { createServer, type ViteDevServer } from 'vite';
 
 import {
+  DraftLoadResponseSchema,
   PatchStatusResponseSchema,
   SelectorDriftResponseSchema,
   SessionResponseSchema,
+  type DraftLoadResponse,
   type PatchStatusResponse,
   type SelectorDriftResponse,
   type SessionResponse,
@@ -19,14 +21,25 @@ const token = 't'.repeat(43);
 const baseOid = 'a'.repeat(40);
 const headOid = 'b'.repeat(40);
 const movedBaseOid = 'd'.repeat(40);
+const patchFileId = `file_${'p'.repeat(43)}`;
+const patchPath = {
+  bytesBase64url: Buffer.from('src/exact.ts').toString('base64url'),
+  display: 'src/exact.ts',
+  utf8: 'src/exact.ts',
+};
+const frozenPreimage = 'export const source = "frozen preimage";';
+const frozenPostimage = 'export const source = "frozen postimage";';
 
 let server: ViteDevServer | undefined;
 let origin = '';
 let session: SessionResponse;
 let driftResponse: SelectorDriftResponse;
 let patchStatusResponse: PatchStatusResponse;
+let draftResponse: DraftLoadResponse;
 const driftRequests: { body: string; method: string; url: string }[] = [];
 const patchStatusRequests: { body: string; method: string; url: string }[] = [];
+let patchContentFailures = 0;
+const patchContentRequests: string[] = [];
 
 function pinnedSession(): SessionResponse {
   return SessionResponseSchema.parse({
@@ -37,16 +50,25 @@ function pinnedSession(): SessionResponse {
   });
 }
 
-function exactPatchSession(): SessionResponse {
+function exactPatchSession(withTextFile = false): SessionResponse {
   return SessionResponseSchema.parse({
     patch: {
       kind: 'exact-patch',
       digest: 'd'.repeat(64),
       reviewKey: 'e'.repeat(64),
       validationTarget: { kind: 'repository' },
-      changedFileCount: 0,
+      changedFileCount: withTextFile ? 1 : 0,
     },
-    files: [],
+    files: withTextFile
+      ? [{
+          fileId: patchFileId,
+          status: { kind: 'modified' },
+          newPath: patchPath,
+          additions: 1,
+          deletions: 1,
+          availability: { kind: 'text' },
+        }]
+      : [],
   });
 }
 
@@ -84,9 +106,68 @@ function unavailableHead(): SelectorDriftResponse {
     },
   });
 }
+function exactPatchContent() {
+  return {
+    fileId: patchFileId,
+    base: {
+      exists: true,
+      path: patchPath,
+      language: 'typescript',
+      blobOid: 'a'.repeat(40),
+      text: frozenPreimage,
+    },
+    head: {
+      exists: true,
+      path: patchPath,
+      language: 'typescript',
+      blobOid: 'b'.repeat(40),
+      text: frozenPostimage,
+    },
+  };
+}
+function resumedDraft(): DraftLoadResponse {
+  return DraftLoadResponseSchema.parse({
+    kind: 'current',
+    path: '.compare/drafts/active-review.json',
+    draft: {
+      schemaVersion: 1,
+      comparison: {
+        baseCommitOid: baseOid,
+        headCommitOid: headOid,
+        mergeBaseOid: 'c'.repeat(40),
+      },
+      revision: 1,
+      summary: '',
+      comments: [{
+        id: 'comment_123e4567-e89b-12d3-a456-426614174000',
+        state: 'open',
+        body: 'Review the frozen source.',
+        anchor: {
+          version: 'durable-anchor-v1',
+          path: patchPath,
+          safeDisplayPath: patchPath.display,
+          side: 'base',
+          line: 1,
+          blobOid: 'a'.repeat(40),
+          selectedText: frozenPreimage,
+          context: {
+            before: [],
+            target: { line: 1, text: frozenPreimage },
+            after: [],
+          },
+          contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
+          uniqueKey: 'c'.repeat(64),
+        },
+        createdAt: '2026-08-05T00:00:00.000Z',
+        updatedAt: '2026-08-05T00:00:00.000Z',
+        verification: { state: 'verified', reason: 'exact-match' },
+      }],
+    },
+  });
+}
 
-function json(response: ServerResponse, body: unknown): void {
-  response.statusCode = 200;
+function json(response: ServerResponse, body: unknown, statusCode = 200): void {
+  response.statusCode = statusCode;
   response.setHeader('content-type', 'application/json');
   response.end(JSON.stringify(body));
 }
@@ -112,7 +193,7 @@ async function startAppServer(): Promise<string> {
       name: 'selector-drift-ui-api',
       configureServer(viteServer) {
         viteServer.middlewares.use('/api/session', (_request, response) => json(response, session));
-        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, { kind: 'missing', path: '.compare/drafts/active-review.json' }));
+        viteServer.middlewares.use('/api/draft', (_request, response) => json(response, draftResponse));
       viteServer.middlewares.use('/api/selector-drift', async (request, response) => {
         driftRequests.push({ body: await readBody(request), method: request.method ?? '', url: request.url ?? '' });
         json(response, driftResponse);
@@ -120,6 +201,15 @@ async function startAppServer(): Promise<string> {
       viteServer.middlewares.use('/api/patch-status', async (request, response) => {
         patchStatusRequests.push({ body: await readBody(request), method: request.method ?? '', url: request.url ?? '' });
         json(response, patchStatusResponse);
+      });
+      viteServer.middlewares.use('/api/files', (request, response) => {
+        patchContentRequests.push(request.url ?? '');
+        if (patchContentFailures > 0) {
+          patchContentFailures -= 1;
+          json(response, { error: 'frozen-snapshot-read-failed' }, 500);
+          return;
+        }
+        json(response, exactPatchContent());
       });
       },
     }],
@@ -144,6 +234,10 @@ test.afterAll(async () => {
 
 test.beforeEach(() => {
   session = pinnedSession();
+  draftResponse = DraftLoadResponseSchema.parse({
+    kind: 'missing',
+    path: '.compare/drafts/active-review.json',
+  });
   driftResponse = unchanged();
   patchStatusResponse = PatchStatusResponseSchema.parse({
     kind: 'unchanged',
@@ -151,6 +245,8 @@ test.beforeEach(() => {
   });
   driftRequests.length = 0;
   patchStatusRequests.length = 0;
+  patchContentFailures = 0;
+  patchContentRequests.length = 0;
 });
 
 test('visible-only polling coalesces overlap and announces each selector transition once', async () => {
@@ -319,4 +415,139 @@ test('exact patch sessions observe only their frozen patch status', async ({ pag
   );
   await expect(page.getByRole('button', { name: 'View patch scope' })).toBeVisible();
   expect(pinnedPropWarnings).toEqual([]);
+});
+
+test('exact patch resumed drafts announce frozen provenance without pinned wording', async ({ page }) => {
+  const vueWarnings: string[] = [];
+  page.on('console', (message) => {
+    if (/\[Vue warn\]|Unhandled/u.test(message.text())) {
+      vueWarnings.push(message.text());
+    }
+  });
+  session = exactPatchSession(true);
+  draftResponse = resumedDraft();
+
+  await openReview(page);
+  await expect(page.locator('p.visually-hidden[aria-live="polite"]')).toContainText(
+    'Local draft resumed. Accepted comments for this frozen exact patch are ready.',
+  );
+  await expect(page.locator('body')).not.toContainText(/\bpinned\b/iu);
+  expect(vueWarnings).toEqual([]);
+});
+
+test('exact patch retry stays snapshot-only and terminal loss focuses one source-correct heading', async ({ page }) => {
+  const vueWarnings: string[] = [];
+  page.on('console', (message) => {
+    if (/\[Vue warn\]|Unhandled/u.test(message.text())) {
+      vueWarnings.push(message.text());
+    }
+  });
+  session = exactPatchSession(true);
+  patchContentFailures = 1;
+
+  await openReview(page);
+  await expect(page.getByRole('heading', { name: 'Frozen patch file unavailable' })).toBeVisible();
+  await expect(page.getByText(
+    'Compare could not read this file from the frozen patch snapshot. Try the same snapshot again; current repository or worktree bytes will not be substituted.',
+    { exact: true },
+  )).toBeVisible();
+  await expect(page.locator('body')).not.toContainText(/\bpinned\b/iu);
+
+  const retry = page.getByRole('button', { name: 'Try frozen snapshot again' });
+  await retry.focus();
+  await expect(retry).toBeFocused();
+  await retry.click();
+  await expect(page.getByText('PREIMAGE', { exact: true })).toBeVisible();
+  await expect(page.getByText('POSTIMAGE', { exact: true })).toBeVisible();
+  await expect(page.getByText('− REMOVED', { exact: true })).toBeVisible();
+  await expect(page.getByText('+ ADDED', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('src/exact.ts: preimage and postimage side-by-side diff')).toBeVisible();
+  expect(patchContentRequests).toEqual([
+    `/${patchFileId}/content`,
+    `/${patchFileId}/content`,
+  ]);
+
+  await page.evaluate(() => {
+    document.body.dataset.snapshotHeadingFocusCount = '0';
+    document.addEventListener('focusin', (event) => {
+      if (event.target instanceof HTMLElement && event.target.id === 'unavailable-heading') {
+        document.body.dataset.snapshotHeadingFocusCount = String(
+          Number(document.body.dataset.snapshotHeadingFocusCount) + 1,
+        );
+      }
+    });
+  });
+  await expect.poll(() => patchStatusRequests.length).toBeGreaterThanOrEqual(1);
+  patchStatusResponse = PatchStatusResponseSchema.parse({ kind: 'snapshotUnavailable' });
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  const blockingHeading = page.getByRole('heading', { name: 'Frozen patch unavailable' });
+  await expect(blockingHeading).toHaveCount(1);
+  await expect(blockingHeading).toBeFocused();
+  await expect(page.getByText(
+    'The accepted patch snapshot is missing, corrupt, incomplete, or unreadable. Relaunch Compare with an exact patch that matches the current implementation.',
+    { exact: true },
+  )).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Pinned session unavailable' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Try frozen snapshot again' })).toHaveCount(0);
+  await expect(page.locator('.review-shell')).toHaveCount(0);
+  await expect(page.locator('body')).not.toContainText(/\bpinned\b/iu);
+
+  await page.evaluate(() => {
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await expect.poll(() => page.evaluate(
+    () => Number(document.body.dataset.snapshotHeadingFocusCount),
+  )).toBe(1);
+  expect(patchContentRequests).toHaveLength(2);
+  expect(vueWarnings).toEqual([]);
+});
+
+test('exact patch scope follows approved responsive and modal focus behavior', async ({ page }) => {
+  const vueWarnings: string[] = [];
+  page.on('console', (message) => {
+    if (/\[Vue warn\]|Unhandled/u.test(message.text())) {
+      vueWarnings.push(message.text());
+    }
+  });
+  session = exactPatchSession(true);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openReview(page);
+
+  for (const width of [1440, 1100, 768]) {
+    await page.setViewportSize({ width, height: 900 });
+    const disclosure = page.getByRole('button', { name: 'View patch scope' });
+    await disclosure.click();
+    const scope = page.getByRole('region', { name: 'Patch scope' });
+    await expect(scope).toBeVisible();
+    const bounds = await scope.boundingBox();
+    expect(bounds?.width).toBeLessThanOrEqual(width === 1440 ? 520 : 480);
+    expect(bounds?.x).toBeGreaterThanOrEqual(width === 768 ? 16 : 0);
+    await page.keyboard.press('Escape');
+    await expect(disclosure).toBeFocused();
+  }
+
+  await page.setViewportSize({ width: 320, height: 640 });
+  const disclosure = page.getByRole('button', { name: 'View patch scope' });
+  await disclosure.click();
+  const dialog = page.getByRole('dialog', { name: 'Patch scope' });
+  await expect(dialog).toBeVisible();
+  const close = page.getByRole('button', { name: 'Close patch scope' });
+  const copy = page.getByRole('button', { name: 'Copy full patch digest' });
+  await expect(close).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(copy).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(close).toBeFocused();
+  await expect(page.locator('.object-id')).toHaveText('d'.repeat(64));
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  expect((await page.locator('.session-header').boundingBox())?.height).toBeGreaterThanOrEqual(96);
+  await page.keyboard.press('Escape');
+  await expect(disclosure).toBeFocused();
+  expect(vueWarnings).toEqual([]);
 });

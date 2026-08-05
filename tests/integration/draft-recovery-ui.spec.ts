@@ -6,8 +6,10 @@ import {
   DraftLoadResponseSchema,
   DraftRecoveryResultSchema,
   DraftRevealResultSchema,
+  SessionResponseSchema,
   type DraftLoadResponse,
   type DraftRecoveryResult,
+  type SessionResponse,
 } from '../../src/contracts/api.js';
 import { createServer, type ViteDevServer } from 'vite';
 
@@ -26,12 +28,29 @@ let releaseRecovery: (() => void) | undefined;
 const recoveryBodies: string[] = [];
 const revealBodies: string[] = [];
 
-const session = {
-  base: { label: 'base', oid: 'a'.repeat(40) },
-  head: { label: 'head', oid: 'b'.repeat(40) },
-  mergeBaseOid: 'c'.repeat(40),
-  files: [],
-};
+function pinnedSession(): SessionResponse {
+  return SessionResponseSchema.parse({
+    base: { label: 'base', oid: 'a'.repeat(40) },
+    head: { label: 'head', oid: 'b'.repeat(40) },
+    mergeBaseOid: 'c'.repeat(40),
+    files: [],
+  });
+}
+
+function exactPatchSession(): SessionResponse {
+  return SessionResponseSchema.parse({
+    patch: {
+      kind: 'exact-patch',
+      digest: 'd'.repeat(64),
+      reviewKey: 'e'.repeat(64),
+      validationTarget: { kind: 'repository' },
+      changedFileCount: 0,
+    },
+    files: [],
+  });
+}
+
+let session = pinnedSession();
 
 function json(response: ServerResponse, body: unknown, statusCode = 200): void {
   response.statusCode = statusCode;
@@ -82,6 +101,24 @@ function recoveredResult() {
     },
   });
 }
+function exactRecoveredResult(): DraftRecoveryResult {
+  return DraftRecoveryResultSchema.parse({
+    kind: 'recovered',
+    backupPath: safeBackupPath,
+    draft: {
+      schemaVersion: 1,
+      comparison: {
+        kind: 'exact-patch',
+        digest: 'd'.repeat(64),
+        reviewKey: 'e'.repeat(64),
+        validationTarget: { kind: 'repository' },
+      },
+      revision: 0,
+      summary: '',
+      comments: [],
+    },
+  });
+}
 
 async function startAppServer(): Promise<string> {
   server = await createServer({
@@ -90,6 +127,9 @@ async function startAppServer(): Promise<string> {
       name: 'draft-recovery-ui-api',
       configureServer(viteServer) {
         viteServer.middlewares.use('/api/session', (_request, response) => json(response, session));
+        viteServer.middlewares.use('/api/patch-status', (_request, response) => {
+          json(response, { kind: 'unchanged', validationTargetLabel: 'Repository content' });
+        });
         viteServer.middlewares.use('/api/draft/reveal', async (request, response) => {
           revealBodies.push(await readBody(request));
           json(response, DraftRevealResultSchema.parse({ kind: 'revealed' }));
@@ -124,6 +164,7 @@ test.afterAll(async () => {
 });
 
 test.beforeEach(async ({ context }) => {
+  session = pinnedSession();
   draftLoad = malformedLoad();
   recoveryResult = DraftRecoveryResultSchema.parse({ kind: 'persistenceFailure' });
   releaseRecovery = undefined;
@@ -300,4 +341,30 @@ test('newer drafts are upgrade-only and expose only fixed reveal and safe copy a
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(safeDraftPath);
   expect(revealBodies).toEqual(['']);
   expect(revealRequests).toEqual([{ url: `${origin}api/draft/reveal`, postData: null }]);
+});
+
+test('exact patch recovery opens a frozen draft without pinned-session language', async ({ page }) => {
+  const vueWarnings: string[] = [];
+  page.on('console', (message) => {
+    if (/\[Vue warn\]|Unhandled/u.test(message.text())) {
+      vueWarnings.push(message.text());
+    }
+  });
+  session = exactPatchSession();
+  recoveryResult = exactRecoveredResult();
+
+  await openDraft(page);
+  await expect(page.getByRole('heading', { name: 'Compare: exact patch · dddddddddddd' })).toBeVisible();
+  await expect(page.locator('body')).not.toContainText(/\bpinned\b/iu);
+  await page.getByRole('button', { name: 'Back up and start new' }).click();
+  await page.getByRole('button', { name: 'Back up and start new' }).last().click();
+  await expect.poll(() => releaseRecovery !== undefined).toBe(true);
+  releaseRecovery?.();
+
+  await expect(page.getByRole('heading', { name: 'New draft started' })).toBeVisible();
+  await page.getByRole('button', { name: 'Open new draft' }).click();
+  await expect(page.getByRole('heading', { name: 'No files in this exact patch' })).toBeVisible();
+  await expect(page.locator('[aria-live="polite"]')).toContainText('New local draft for this frozen exact patch.');
+  await expect(page.locator('body')).not.toContainText(/\bpinned\b/iu);
+  expect(vueWarnings).toEqual([]);
 });
