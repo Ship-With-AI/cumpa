@@ -128,8 +128,8 @@ test('uses strict attached completion status and revision-zero Finish requests',
   await expect(client.getAttachedCompletionStatus()).rejects.toThrow('Local draft couldn’t be opened');
 
   expect(requests).toEqual([
-    { path: '/api/attached-completion', body: undefined },
-    { path: '/api/attached-completion/finish', body: { expectedRevision: 0 } },
-    { path: '/api/attached-completion', body: undefined },
+    { path: '/api/review-completion', body: undefined },
+    { path: '/api/review-completion/finish', body: { expectedRevision: 0 } },
+    { path: '/api/review-completion', body: undefined },
   ]);
 });

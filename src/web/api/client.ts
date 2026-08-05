@@ -11,6 +11,9 @@ import {
   ExportReviewRequestSchema,
   ExportReviewResultSchema,
   FileContentResponseSchema,
+  AttachedCompletionStatusSchema,
+  FinishReviewRequestSchema,
+  FinishReviewResultSchema,
   FileMetadataResponseSchema,
   type DraftLoadResponse,
   type AppendCompareIgnoreResult,
@@ -29,6 +32,8 @@ import {
   PatchStatusResponseSchema,
   type PatchStatusResponse,
   SessionResponseSchema,
+  type AttachedCompletionStatus,
+  type FinishReviewResult,
   type SessionResponse,
 } from '../../contracts/api.js';
 
@@ -57,6 +62,8 @@ export class SessionClientError extends Error {
 
 export interface SessionClient {
   mutate(request: DraftMutationRequest): Promise<DraftMutationResult>;
+  getAttachedCompletionStatus(): Promise<AttachedCompletionStatus>;
+  finishReview(input: { readonly expectedRevision: number }): Promise<FinishReviewResult>;
   exportReview(request: ExportReviewRequest): Promise<ExportReviewResult>;
   getDraft(): Promise<DraftLoadResponse>;
   appendCompareIgnoreRule(): Promise<AppendCompareIgnoreResult>;
@@ -261,6 +268,28 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
     }
     return result.data;
   },
+    async getAttachedCompletionStatus() {
+      const result = AttachedCompletionStatusSchema.safeParse(
+        await requestJson('/api/review-completion', 'GET', 'draft'),
+      );
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
+    async finishReview(input) {
+      const payload = FinishReviewRequestSchema.safeParse(input);
+      if (!payload.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      const result = FinishReviewResultSchema.safeParse(
+        await requestJson('/api/review-completion/finish', 'POST', 'draft', payload.data, [409, 500]),
+      );
+      if (!result.success) {
+        throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
+      }
+      return result.data;
+    },
     async getSession() {
       const result = SessionResponseSchema.safeParse(await requestJson('/api/session', 'GET', 'session'));
       if (!result.success) {

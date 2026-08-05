@@ -2,10 +2,12 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 
 import type {
+  AttachedCompletionStatus,
   DraftLoadResponse,
   DraftRecoveryResult,
   DraftRevealResult,
   FileContentResponse,
+  FinishReviewResult,
   PatchStatusResponse,
   SessionFile,
   SessionResponse,
@@ -66,6 +68,8 @@ type ReviewFailure = Readonly<{
   commentId?: string;
 }>;
 
+type AttachedLifecycle = 'ordinary' | 'waiting' | 'waitingDisconnected' | 'finishing' | 'completed' | 'retryableFailure' | 'terminalFailure';
+
 const session = shallowRef<SessionResponse>();
 const errorMessage = ref('');
 const selectedFile = shallowRef<SessionFile>();
@@ -98,6 +102,9 @@ const recoveredDraft = shallowRef<Extract<DraftRecoveryResult, { readonly kind: 
 const recoveredDraftOpen = ref(false);
 const selectorDriftStatus = shallowRef<SelectorDriftResponse>();
 const selectedCommentId = ref<string | null>(null);
+const attachedLifecycle = ref<AttachedLifecycle>('ordinary');
+const attachedResult = shallowRef<FinishReviewResult>();
+const attachedStatus = shallowRef<AttachedCompletionStatus>();
 const primarySurface = computed(() => recoveredDraftOpen.value
   ? 'workspace'
   : reviewPrimarySurface(draftLoad.value));
@@ -164,6 +171,31 @@ const resolvedCommentCount = computed(
   () => workspaceComments.value.filter((comment) => comment.state === 'resolved').length,
 );
 
+const isAttachedSession = computed(() => session.value?.attached?.kind === 'agent-review');
+const attachedMutationLocked = computed(() =>
+  isAttachedSession.value && (attachedLifecycle.value === 'finishing' || attachedLifecycle.value === 'completed'),
+);
+const hasUnsavedReviewText = computed(() => {
+  const current = reviewDraft.value;
+  if (current === undefined) return false;
+  return current.summaryBuffer !== current.canonical.summary
+    || [...current.commentBuffers].some(([commentId, body]) =>
+      current.canonical.comments.find((comment) => comment.id === commentId)?.body !== body,
+    );
+});
+const attachedFinishReady = computed(() => {
+  const current = reviewDraft.value;
+  return isAttachedSession.value
+    && current !== undefined
+    && attachedLifecycle.value !== 'finishing'
+    && attachedLifecycle.value !== 'completed'
+    && attachedLifecycle.value !== 'terminalFailure'
+    && current.pending === null
+    && current.conflict === null
+    && !hasUnsavedReviewText.value
+    && recoveryLoad.value === undefined
+    && !patchSnapshotUnavailable.value;
+});
 watch(workspaceComments, (comments) => {
   if (selectedCommentId.value !== null && !comments.some((comment) => comment.id === selectedCommentId.value)) {
     selectedCommentId.value = null;
@@ -362,6 +394,40 @@ function openRecoveredDraft(): void {
     : 'New local draft for this pinned comparison.');
 }
 
+function setAttachedStatus(status: AttachedCompletionStatus): void {
+  attachedStatus.value = status;
+  attachedLifecycle.value = status.kind;
+}
+
+async function reloadAttachedStatus(): Promise<void> {
+  if (!isAttachedSession.value || sessionClient === undefined) return;
+  setAttachedStatus(await sessionClient.getAttachedCompletionStatus());
+}
+
+function finishAttachedReview(): void {
+  const current = reviewDraft.value;
+  if (!attachedFinishReady.value || current === undefined || sessionClient === undefined) return;
+
+  attachedLifecycle.value = 'finishing';
+  attachedResult.value = undefined;
+  void sessionClient.finishReview({ expectedRevision: current.canonical.revision }).then((result) => {
+    attachedResult.value = result;
+    switch (result.kind) {
+      case 'completed':
+      case 'alreadyCompleted':
+        attachedLifecycle.value = 'completed';
+        return;
+      case 'deliveryFailed':
+        attachedLifecycle.value = 'terminalFailure';
+        return;
+      default:
+        attachedLifecycle.value = 'retryableFailure';
+    }
+  }).catch(() => {
+    attachedLifecycle.value = 'terminalFailure';
+  });
+}
+
 function mutationOperation(request: DraftMutationRequest): ReviewPendingOperation {
   switch (request.type) {
     case 'setSummary': return 'summary';
@@ -381,7 +447,7 @@ function mutationFailure(request: DraftMutationRequest): ReviewFailure {
 }
 
 function mutateReview(request: DraftMutationRequest, successfulBuffer?: 'summary' | string): void {
-  if (reviewState === undefined || sessionClient === undefined || !reviewState.start(mutationOperation(request))) return;
+  if (attachedMutationLocked.value || reviewState === undefined || sessionClient === undefined || !reviewState.start(mutationOperation(request))) return;
   reviewFailure.value = null;
   refreshReviewSnapshot();
   void sessionClient.mutate(request).then((result) => {
@@ -441,7 +507,7 @@ function mutateComment(commentId: string, type: 'deleteComment' | 'resolveCommen
 
 function exportReview(): void {
   const current = reviewDraft.value;
-  if (current === undefined || reviewState === undefined || sessionClient === undefined) return;
+  if (attachedMutationLocked.value || current === undefined || reviewState === undefined || sessionClient === undefined) return;
   const token = current.export.phase === 'drift' ? current.export.driftAcknowledgementToken ?? undefined : undefined;
   if (!reviewState.startExport(token)) return;
   refreshReviewSnapshot();
@@ -483,7 +549,7 @@ async function refreshIgnoreStatus(): Promise<void> {
 }
 
 async function appendCompareIgnoreRule() {
-  if (sessionClient === undefined) {
+  if (attachedMutationLocked.value || sessionClient === undefined) {
     throw new SessionClientError('draft', DRAFT_UNAVAILABLE_MESSAGE);
   }
   const result = await sessionClient.appendCompareIgnoreRule();
@@ -560,6 +626,7 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
         diffWorkspace.value?.layout();
         break;
       case 'persist-comment':
+        if (attachedMutationLocked.value) break;
         const originWorkspace = workspace;
         const commentLocation = `${filePath(command.fileId)} at ${command.side} line ${command.line}`;
         void sessionClient?.mutate({
@@ -815,6 +882,13 @@ onMounted(async () => {
     sessionClient = createSessionClient();
     const loaded = await sessionClient.getSession();
     session.value = loaded;
+    if (isAttachedSession.value) {
+      try {
+        await reloadAttachedStatus();
+      } catch {
+        attachedLifecycle.value = 'waitingDisconnected';
+      }
+    }
     if ('patch' in loaded) {
       startPatchStatus();
     } else {
