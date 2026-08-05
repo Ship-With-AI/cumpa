@@ -166,5 +166,12 @@ test('attached lifecycle renders waiting, progress, completion, and safe recover
 
   await page.setViewportSize({ width: 320, height: 720 });
   await page.evaluate(() => globalThis.__setAttachedLifecycle('waiting'));
-  await expect(completion.getByRole('button', { name: 'Finish review' })).toBeVisible();
+  const finish = completion.getByRole('button', { name: 'Finish review' });
+  await expect(finish).toBeVisible();
+  expect((await finish.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+
+  await page.setViewportSize({ width: 767, height: 720 });
+  expect((await finish.boundingBox())?.height).toBeGreaterThanOrEqual(44);
+  await page.emulateMedia({ forcedColors: 'active' });
+  await expect(finish).toBeVisible();
 });
