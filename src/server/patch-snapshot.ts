@@ -322,10 +322,11 @@ export async function materializePatchSnapshot(
       const postimage = Buffer.from(content.postimage ?? []);
       total += preimage.byteLength + postimage.byteLength;
       if (preimage.byteLength > MAX_SIDE_BYTES || postimage.byteLength > MAX_SIDE_BYTES || total > MAX_SNAPSHOT_BYTES) throw new PatchSnapshotError('snapshot-unavailable', false);
+      const frozenFile = structuredClone(file);
       const entry = Object.freeze({
-        file: Object.freeze({ ...file }),
-        preimage: side(content.preimage, file.oldPath, file.oldMode, file.oldBlobOid),
-        postimage: side(content.postimage, file.newPath, file.newMode, file.newBlobOid),
+        file: Object.freeze(frozenFile),
+        preimage: side(content.preimage, frozenFile.oldPath, frozenFile.oldMode, frozenFile.oldBlobOid),
+        postimage: side(content.postimage, frozenFile.newPath, frozenFile.newMode, frozenFile.newBlobOid),
       });
       entries.push(entry);
       if (content.preimage !== undefined) await writeOwned(join(staging, contentName(file.id, 'preimage')), preimage);
@@ -334,7 +335,7 @@ export async function materializePatchSnapshot(
     const base = {
       version: SNAPSHOT_VERSION,
       digest: grounded.scope.digest,
-      validationTarget: grounded.scope.validationTarget,
+      validationTarget: Object.freeze({ ...grounded.scope.validationTarget }),
       reviewKey: reviewKey(grounded),
       submittedByteLength: grounded.scope.submittedByteLength,
       repositoryIdentity: grounded.repositoryRoot,
