@@ -142,7 +142,8 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
     );
   }
 
-  if (capabilities.selectorDriftObserver !== undefined) {
+  const selectorDriftObserver = capabilities.selectorDriftObserver;
+  if (selectorDriftObserver !== undefined) {
     app.get<{ Querystring: Record<string, never> }>(
       '/api/selector-drift',
       { schema: { querystring: EMPTY_QUERY_SCHEMA } },
@@ -155,7 +156,7 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
           return unavailable(reply, 400);
         }
         return SelectorDriftResponseSchema.parse(
-          await capabilities.selectorDriftObserver.observe(),
+          await selectorDriftObserver.observe(),
         );
       },
     );

@@ -137,7 +137,7 @@ function parsePatch(content: string, oidLength: number): readonly ParsedPatch[] 
 
   const finish = () => {
     if (current === undefined || current.oldOid === undefined || current.newOid === undefined) fail();
-    records.push(Object.freeze({ ...current, text: current.text === undefined ? undefined : Object.freeze([...current.text]), binary: current.binary === undefined ? undefined : Object.freeze({ kind: current.binary.kind, lines: Object.freeze([...current.binary.lines]) }) }));
+    records.push(Object.freeze({ ...current, oldOid: current.oldOid, newOid: current.newOid, text: current.text === undefined ? undefined : Object.freeze([...current.text]), binary: current.binary === undefined ? undefined : Object.freeze({ kind: current.binary.kind, lines: Object.freeze([...current.binary.lines]) }) }));
     current = undefined;
     body = undefined;
   };

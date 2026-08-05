@@ -40,6 +40,7 @@ import {
   createSessionApp,
   type SessionApp,
 } from '../server/app.js';
+import type { DraftRevealPort } from '../server/capabilities.js';
 import { PatchSnapshotError } from '../server/patch-snapshot.js';
 import {
   createShutdownController,

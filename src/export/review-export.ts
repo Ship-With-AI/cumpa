@@ -161,6 +161,8 @@ export function buildReviewExportV2(
 ): ReviewExportV2 {
   const draft = ReviewDraftV1Schema.parse(snapshot.acceptedDraft);
   if (
+    'kind' in draft.comparison
+    ||
     draft.comparison.range === undefined
     || !hasMatchingRangeScope(draft.comparison.range, range)
     || snapshot.comparison.selectedBase.label !== range.requestedBase
@@ -183,7 +185,7 @@ export function buildReviewExportV3(
 ): ReviewExportV3 {
   const draft = ReviewDraftV1Schema.parse(snapshot.acceptedDraft);
   if (
-    draft.comparison.kind !== 'exact-patch'
+    !('kind' in draft.comparison)
     || draft.comparison.digest !== patch.digest
     || draft.comparison.validationTarget.kind !== patch.validationTarget.kind
     || draft.comparison.reviewKey !== patch.reviewKey
