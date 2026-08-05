@@ -22,14 +22,22 @@ const revealFailed = ref(false);
 const revealAlert = ref<HTMLElement>();
 
 const headingText = computed(() => props.previous ? 'Previous confirmed export' : 'Review export complete');
-const driftText = computed(() => props.receipt.drift.kind === 'acknowledged' ? 'Acknowledged for this export' : 'None observed');
+const exactPatch = computed(() => 'patch' in props.receipt ? props.receipt.patch : undefined);
+const driftText = computed(() => {
+  if ('patch' in props.receipt) {
+    return props.receipt.patch.snapshot.status === 'drifted' ? 'Target drift observed' : 'No target drift observed';
+  }
+  return props.receipt.drift.kind === 'acknowledged' ? 'Acknowledged for this export' : 'None observed';
+});
 const acknowledgedIdentitiesOpen = ref(false);
 const comparisonOpen = ref(false);
-const comparisonEndpoints = computed(() => [
-  { role: 'Base', identity: props.receipt.comparison.base },
-  { role: 'Head', identity: props.receipt.comparison.head },
-]);
-const acknowledgedIdentities = computed(() => props.receipt.drift.kind === 'acknowledged'
+const comparisonEndpoints = computed(() => 'comparison' in props.receipt
+  ? [
+      { role: 'Base', identity: props.receipt.comparison.base },
+      { role: 'Head', identity: props.receipt.comparison.head },
+    ]
+  : []);
+const acknowledgedIdentities = computed(() => 'drift' in props.receipt && props.receipt.drift.kind === 'acknowledged'
   ? props.receipt.drift.identities
   : []);
 const acknowledgedIdentityDetails = computed(() => acknowledgedIdentities.value.map((identity) => [
@@ -51,7 +59,14 @@ const acknowledgedIdentityDetails = computed(() => acknowledgedIdentities.value.
 const receiptDetails = computed(() => [
   `Accepted revision: ${props.receipt.draftRevision}`,
   `Exported at: ${props.receipt.exportedAt}`,
-  `Drift: ${driftText.value}`,
+  ...(exactPatch.value === undefined
+    ? [`Drift: ${driftText.value}`]
+    : [
+        `Patch digest: ${exactPatch.value.digest}`,
+        `Review key: ${exactPatch.value.reviewKey}`,
+        `Validation target: ${exactPatch.value.validationTarget.kind}`,
+        `Snapshot status: ${exactPatch.value.snapshot.status}`,
+      ]),
   `Path: ${props.receipt.files[0].path}`,
   `${props.receipt.files[0].algorithm}:${props.receipt.files[0].sha256}`,
   `Bytes: ${props.receipt.files[0].bytes}`,
@@ -114,9 +129,14 @@ async function revealDirectory(): Promise<void> {
     <dl class="export-receipt__metadata">
       <div><dt>Accepted revision</dt><dd>{{ receipt.draftRevision }}</dd></div>
       <div><dt>Exported at</dt><dd><time :datetime="receipt.exportedAt">{{ receipt.exportedAt }}</time></dd></div>
-      <div><dt>Drift</dt><dd>{{ driftText }}</dd></div>
+      <div><dt>{{ exactPatch === undefined ? 'Drift' : 'Snapshot status' }}</dt><dd>{{ driftText }}</dd></div>
+      <template v-if="exactPatch !== undefined">
+        <div><dt>Patch digest</dt><dd><code>{{ exactPatch.digest }}</code></dd></div>
+        <div><dt>Review key</dt><dd><code>{{ exactPatch.reviewKey }}</code></dd></div>
+        <div><dt>Validation target</dt><dd>{{ exactPatch.validationTarget.kind }}</dd></div>
+      </template>
     </dl>
-    <section class="export-receipt__drift-disclosure">
+    <section v-if="exactPatch === undefined" class="export-receipt__drift-disclosure">
       <button
         type="button"
         class="ui-button"

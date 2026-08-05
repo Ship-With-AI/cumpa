@@ -146,7 +146,7 @@ export async function createExactPatchSessionApp(
     ajv: { customOptions: { removeAdditional: false } },
   }) as unknown as SessionApp;
   const webRoot = options.webRoot ?? resolve(import.meta.dirname, '../web');
-  const capabilities = createExactPatchCapabilityRegistry(grounded, snapshot, options);
+  const capabilities = await createExactPatchCapabilityRegistry(grounded, snapshot, options);
   const security = registerSessionSecurity(app, options);
 
   app.decorate('bindSessionSecurity', security.bind);

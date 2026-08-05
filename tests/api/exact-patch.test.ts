@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, rm } from 'node:fs/promises';
+import { chmod, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
@@ -6,6 +6,8 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 import type { GroundedExactPatch } from '../../src/contracts/comparison.js';
 import { createExactPatchSessionApp } from '../../src/server/app.js';
+import { ExportReviewResultSchema } from '../../src/contracts/api.js';
+import { ReviewExportV3Schema } from '../../src/contracts/draft.js';
 
 const token = 'p'.repeat(43);
 const host = '127.0.0.1:43130';
@@ -27,7 +29,10 @@ function path(value: string) {
   } as const;
 }
 
-function grounded(repositoryRoot = '/private/repository/never-on-the-wire'): GroundedExactPatch {
+function grounded(
+  repositoryRoot = '/private/repository/never-on-the-wire',
+  target: 'repository' | 'worktree' = 'repository',
+): GroundedExactPatch {
   const before = Buffer.from('before\n');
   const after = Buffer.from('after\n');
   return Object.freeze({
@@ -36,7 +41,7 @@ function grounded(repositoryRoot = '/private/repository/never-on-the-wire'): Gro
     scope: Object.freeze({
       kind: 'exact-patch' as const,
       digest: 'a'.repeat(64),
-      validationTarget: Object.freeze({ kind: 'repository' as const }),
+      validationTarget: Object.freeze({ kind: target }),
       submittedByteLength: 42,
     }),
     changedFiles: Object.freeze([
@@ -47,7 +52,7 @@ function grounded(repositoryRoot = '/private/repository/never-on-the-wire'): Gro
         newMode: '100755',
         oldBlobOid: '1'.repeat(40),
         newBlobOid: '2'.repeat(40),
-        oldPath: path('old\u0000name.ts'),
+        oldPath: path('old-name.ts'),
         newPath: path('new-name.ts'),
         additions: 1,
         deletions: 1,
@@ -89,6 +94,39 @@ async function buildApp(drifted = false) {
   app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
   apps.add(app);
   return app;
+}
+
+async function buildProductionApp() {
+  const repositoryRoot = await root();
+  await writeFile(join(repositoryRoot, 'new-name.ts'), 'after\n');
+  await chmod(join(repositoryRoot, 'new-name.ts'), 0o755);
+  await writeFile(join(repositoryRoot, 'binary.bin'), Buffer.from([0]));
+  const app = await createExactPatchSessionApp(grounded(repositoryRoot, 'worktree'), {
+    sessionToken: token,
+    snapshotParent: repositoryRoot,
+  });
+  app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
+  apps.add(app);
+  return { app, repositoryRoot };
+}
+
+async function setSummary(app: FastifyInstance, markdown = 'Frozen feedback.') {
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/draft/mutations',
+    headers,
+    payload: { type: 'setSummary', expectedRevision: 0, markdown },
+  });
+  expect(response.statusCode).toBe(200);
+}
+
+async function exportReview(app: FastifyInstance) {
+  return await app.inject({
+    method: 'POST',
+    url: '/api/export',
+    headers,
+    payload: { expectedRevision: 1 },
+  });
 }
 
 afterEach(async () => {
@@ -146,20 +184,116 @@ describe('exact patch snapshot sessions', () => {
     })).statusCode).toBe(200);
   });
 
-  test('latches snapshot loss and blocks frozen content without rebuilding from the repository', async () => {
-    const repositoryRoot = await root();
-    const app = await createExactPatchSessionApp(grounded(repositoryRoot), {
-      sessionToken: token,
-      snapshotParent: repositoryRoot,
+  test('observes production worktree bytes, modes, and path presence without browser authority', async () => {
+    const mutations = [
+      async (repositoryRoot: string) => writeFile(join(repositoryRoot, 'new-name.ts'), 'changed\n'),
+      async (repositoryRoot: string) => chmod(join(repositoryRoot, 'new-name.ts'), 0o644),
+      async (repositoryRoot: string) => rm(join(repositoryRoot, 'new-name.ts')),
+      async (repositoryRoot: string) => writeFile(join(repositoryRoot, 'old-name.ts'), 'before\n'),
+    ];
+
+    for (const mutate of mutations) {
+      const { app, repositoryRoot } = await buildProductionApp();
+      expect((await app.inject({ method: 'GET', url: '/api/patch-status', headers })).json()).toEqual({
+        kind: 'unchanged',
+        validationTargetLabel: 'Worktree',
+      });
+      await mutate(repositoryRoot);
+      expect((await app.inject({ method: 'GET', url: '/api/patch-status', headers })).json()).toEqual({
+        kind: 'drifted',
+        validationTargetLabel: 'Worktree',
+      });
+    }
+  });
+
+  test('publishes an exact V3 export from the accepted draft and frozen snapshot', async () => {
+    const { app, repositoryRoot } = await buildProductionApp();
+    await setSummary(app);
+
+    const response = await exportReview(app);
+    expect(response.statusCode).toBe(201);
+    const receipt = ExportReviewResultSchema.parse(response.json());
+    expect(receipt).toMatchObject({
+      kind: 'exported',
+      draftRevision: 1,
+      patch: {
+        digest: 'a'.repeat(64),
+        validationTarget: { kind: 'worktree' },
+        snapshot: { status: 'unchanged' },
+      },
     });
-    app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
-    apps.add(app);
+    expect(receipt).not.toHaveProperty('comparison');
+    if (receipt.kind !== 'exported' || !('patch' in receipt)) throw new Error('Expected an exact patch export receipt.');
+    const reviewKey = receipt.patch.reviewKey;
+    const document = ReviewExportV3Schema.parse(
+      JSON.parse(await readFile(join(repositoryRoot, '.compare', 'exports', reviewKey, 'review.json'), 'utf8')),
+    );
+    expect(document).toMatchObject({
+      schemaVersion: 3,
+      acceptedDraftRevision: 1,
+      summary: { markdown: 'Frozen feedback.' },
+      patch: {
+        digest: 'a'.repeat(64),
+        validationTarget: { kind: 'worktree' },
+        reviewKey,
+        snapshot: { status: 'unchanged' },
+      },
+    });
+    expect(document.patch.snapshot.files.find((file) => file.id === fileId)).toMatchObject({
+      id: fileId,
+      newMode: '100755',
+    });
+  });
+
+  test('exports frozen snapshot provenance after production target drift', async () => {
+    const { app, repositoryRoot } = await buildProductionApp();
+    await setSummary(app);
+    await writeFile(join(repositoryRoot, 'new-name.ts'), 'live target changed\n');
+
+    const response = await exportReview(app);
+    expect(response.statusCode).toBe(201);
+    const receipt = ExportReviewResultSchema.parse(response.json());
+    expect(receipt).toMatchObject({
+      kind: 'exported',
+      patch: { snapshot: { status: 'drifted' } },
+    });
+    if (receipt.kind !== 'exported' || !('patch' in receipt)) throw new Error('Expected an exact patch export receipt.');
+    const document = ReviewExportV3Schema.parse(
+      JSON.parse(await readFile(join(repositoryRoot, '.compare', 'exports', receipt.patch.reviewKey, 'review.json'), 'utf8')),
+    );
+    expect(document.patch.snapshot.status).toBe('drifted');
+    expect(document.patch.snapshot.files.map((file) => file.id)).toContain(fileId);
+    expect(JSON.stringify(document)).not.toContain('live target changed');
+  });
+
+  test('latches snapshot loss and blocks content and export without live fallback', async () => {
+    const { app, repositoryRoot } = await buildProductionApp();
+    await setSummary(app);
     const snapshotRoot = (await readdir(repositoryRoot)).find((name) => name.startsWith('compare-patch-'));
     expect(snapshotRoot).toBeDefined();
     await rm(join(repositoryRoot, snapshotRoot!), { recursive: true, force: true });
 
     expect((await app.inject({ method: 'GET', url: '/api/patch-status', headers })).json()).toEqual({ kind: 'snapshotUnavailable' });
     expect((await app.inject({ method: 'GET', url: `/api/files/${fileId}/content`, headers })).statusCode).toBe(500);
+    expect((await exportReview(app)).statusCode).toBe(500);
+  });
+
+  test('strictly parses the manifest and permanently latches corruption before every capability use', async () => {
+    const { app, repositoryRoot } = await buildProductionApp();
+    await setSummary(app);
+    const snapshotRoot = (await readdir(repositoryRoot)).find((name) => name.startsWith('compare-patch-'));
+    expect(snapshotRoot).toBeDefined();
+    const manifestPath = join(repositoryRoot, snapshotRoot!, 'manifest.json');
+    const original = await readFile(manifestPath);
+    await chmod(manifestPath, 0o600);
+    await writeFile(manifestPath, '{"version":1,"unexpected":true}');
+
+    expect((await app.inject({ method: 'GET', url: '/api/session', headers })).statusCode).toBe(500);
+    await writeFile(manifestPath, original);
+    await chmod(manifestPath, 0o400);
+    expect((await app.inject({ method: 'GET', url: '/api/patch-status', headers })).json()).toEqual({ kind: 'snapshotUnavailable' });
+    expect((await app.inject({ method: 'GET', url: `/api/files/${fileId}`, headers })).statusCode).toBe(500);
+    expect((await exportReview(app)).statusCode).toBe(500);
   });
 
   test('keeps snapshot capabilities session-local and rejects unauthenticated file and status access', async () => {

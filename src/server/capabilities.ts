@@ -39,6 +39,7 @@ import { createDraftStore, type DraftStore } from './draft-store.js';
 import {
   buildReviewExportV1,
   buildReviewExportV2,
+  buildReviewExportV3,
   canonicalizeReviewExport,
 } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
@@ -95,13 +96,13 @@ export type CapabilityRegistryOptions = Readonly<{
 }>;
 
 export type CapabilityRegistry = Readonly<{
-  readonly session: SessionResponse;
+  readonly session: () => Promise<SessionResponse>;
   readonly onAnchorAdd?: AnchorAddPort;
   readonly draftStore: DraftStore;
   readonly selectorDriftObserver?: SelectorDriftObserver;
   readonly patchStatus?: () => Promise<PatchStatusResponse>;
   readonly isExactPatch?: true;
-  readonly lookup: (fileId: string) => FileMetadataResponse | undefined;
+  readonly lookup: (fileId: string) => Promise<FileMetadataResponse | undefined>;
   readonly readContent: (fileId: string) => Promise<FileContentResponse | undefined>;
   readonly verifyAnchor: (anchor: DurableAnchorV1) => Promise<AnchorVerification>;
   readonly revealDraftFile: () => Promise<void>;
@@ -134,7 +135,7 @@ function receiptComparisonEndpoint(endpoint: PinnedComparison['base']) {
   };
 }
 
-type ReceiptDrift = Extract<ExportReviewResult, { readonly kind: 'exported' }>['drift'];
+type ReceiptDrift = Extract<ExportReviewResult, { readonly kind: 'exported'; readonly drift: unknown }>['drift'];
 type AcknowledgedReceiptDrift = Extract<ReceiptDrift, { readonly kind: 'acknowledged' }>;
 type ReceiptDriftIdentity = AcknowledgedReceiptDrift['identities'][number];
 
@@ -311,7 +312,7 @@ export function createCapabilityRegistry(
   });
 
   return Object.freeze({
-    session,
+    session: async () => session,
     onAnchorAdd: options.onAnchorAdd,
     draftStore,
     selectorDriftObserver,
@@ -321,7 +322,7 @@ export function createCapabilityRegistry(
       }
       await options.revealDraftFile(draftStore.canonicalPath);
     },
-    lookup(fileId: string) {
+    async lookup(fileId: string) {
       options.onCapabilityLookup?.(fileId);
       return filesByCapability.get(fileId);
     },
@@ -521,25 +522,51 @@ export function createCapabilityRegistry(
   });
 }
 
-export function createExactPatchCapabilityRegistry(
+export async function createExactPatchCapabilityRegistry(
   grounded: GroundedExactPatch,
   snapshot: PatchSnapshot,
   options: CapabilityRegistryOptions = {},
-): CapabilityRegistry {
+): Promise<CapabilityRegistry> {
+  const session = SessionResponseSchema.parse(await snapshot.session());
+  if (!('patch' in session)) throw new Error('Exact patch snapshot did not provide patch provenance.');
+  const patchSession = session.patch;
   const draftStore = options.draftStore ?? createDraftStore({
     repositoryRoot: grounded.repositoryRoot,
     comparison: {
       kind: 'exact-patch',
-      digest: snapshot.digest,
-      validationTarget: snapshot.validationTarget,
-      reviewKey: snapshot.reviewKey,
+      digest: patchSession.digest,
+      validationTarget: patchSession.validationTarget,
+      reviewKey: patchSession.reviewKey,
     },
   });
-  const session = SessionResponseSchema.parse(snapshot.sessionDto());
+
+  const verifyAnchor = async (anchor: DurableAnchorV1): Promise<AnchorVerification> => {
+    const file = (await snapshot.files()).find((candidate) => {
+      const path = anchor.side === 'base' ? candidate.oldPath : candidate.newPath;
+      const blobOid = anchor.side === 'base' ? candidate.oldBlobOid : candidate.newBlobOid;
+      return path?.bytesBase64url === anchor.path.bytesBase64url && blobOid === anchor.blobOid;
+    });
+    if (file === undefined) return { state: 'orphaned', reason: 'anchor-unavailable' };
+    const content = await snapshot.readContent(file.id);
+    const bytes = anchor.side === 'base' ? content?.preimage : content?.postimage;
+    const path = anchor.side === 'base' ? file.oldPath : file.newPath;
+    if (bytes === undefined || path === undefined) return { state: 'orphaned', reason: 'anchor-unavailable' };
+    return verifyDurableAnchor(
+      anchor,
+      buildDurableAnchor({
+        path,
+        safeDisplayPath: path.display,
+        side: anchor.side,
+        blobOid: anchor.blobOid,
+        line: anchor.line,
+        text: strictTextDecoder.decode(bytes),
+      }),
+    );
+  };
 
   return Object.freeze({
     isExactPatch: true as const,
-    session,
+    session: async () => SessionResponseSchema.parse(await snapshot.session()),
     onAnchorAdd: options.onAnchorAdd,
     draftStore,
     patchStatus: async () => {
@@ -550,9 +577,9 @@ export function createExactPatchCapabilityRegistry(
           : { kind: status, validationTargetLabel: snapshot.validationTargetLabel },
       );
     },
-    lookup(fileId) {
+    async lookup(fileId) {
       options.onCapabilityLookup?.(fileId);
-      const file = snapshot.file(fileId);
+      const file = await snapshot.lookup(fileId);
       if (file === undefined) return undefined;
       return FileMetadataResponseSchema.parse({
         fileId: file.id,
@@ -590,40 +617,74 @@ export function createExactPatchCapabilityRegistry(
         head: makeSide(postimage, file.newPath, file.newMode, file.newBlobOid),
       });
     },
-    async verifyAnchor(anchor) {
-      const file = snapshot.files().find((candidate) => {
-        const path = anchor.side === 'base' ? candidate.oldPath : candidate.newPath;
-        const blobOid = anchor.side === 'base' ? candidate.oldBlobOid : candidate.newBlobOid;
-        return path?.bytesBase64url === anchor.path.bytesBase64url && blobOid === anchor.blobOid;
-      });
-      if (file === undefined) return { state: 'orphaned' as const, reason: 'anchor-unavailable' as const };
-      const content = await snapshot.readContent(file.id);
-      const bytes = anchor.side === 'base' ? content?.preimage : content?.postimage;
-      const path = anchor.side === 'base' ? file.oldPath : file.newPath;
-      if (bytes === undefined || path === undefined) {
-        return { state: 'orphaned' as const, reason: 'anchor-unavailable' as const };
-      }
-      return verifyDurableAnchor(
-        anchor,
-        buildDurableAnchor({
-          path,
-          safeDisplayPath: path.display,
-          side: anchor.side,
-          blobOid: anchor.blobOid,
-          line: anchor.line,
-          text: strictTextDecoder.decode(bytes),
-        }),
-      );
-    },
+    verifyAnchor,
     async revealDraftFile() {
       if (options.revealDraftFile === undefined) throw new Error('Draft reveal adapter is unavailable.');
       await options.revealDraftFile(draftStore.canonicalPath);
     },
     async revealExportDirectory() {
-      throw new Error('Patch export composition is unavailable.');
+      if (options.revealDraftFile === undefined) throw new Error('Export reveal adapter is unavailable.');
+      const managedRoot = await ensureManagedExportsRoot(grounded.repositoryRoot, false);
+      if (managedRoot === undefined) throw new Error('Export reveal adapter is unavailable.');
+      const exportDirectory = join(managedRoot.exportsRoot, patchSession.reviewKey);
+      await assertManagedExportsRoot(managedRoot);
+      if (!(await isCompleteExportDirectory(exportDirectory))) throw new Error('Export reveal adapter is unavailable.');
+      await assertManagedExportsRoot(managedRoot);
+      await options.revealDraftFile(exportDirectory);
     },
-    async exportReview() {
-      throw new Error('Patch export composition is unavailable.');
+    async exportReview(input) {
+      const initial = await draftStore.loadState();
+      if (initial.kind !== 'current') return ExportReviewResultSchema.parse({ kind: 'draftReadOnly' });
+      if (initial.draft.revision !== input.expectedRevision) {
+        return ExportReviewResultSchema.parse({
+          kind: 'revisionConflict',
+          expectedRevision: input.expectedRevision,
+          actualRevision: initial.draft.revision,
+        });
+      }
+      const acceptedDraft = structuredClone(initial.draft);
+      const draftFingerprint = createHash('sha256').update(initial.raw).digest('hex');
+      const patch = await snapshot.exportScope();
+      const exportedAt = new Date().toISOString();
+      const commentVerification = Object.fromEntries(
+        await Promise.all(acceptedDraft.comments.map(async (comment) => [comment.id, await verifyAnchor(comment.anchor)] as const)),
+      );
+      const json = canonicalizeReviewExport(buildReviewExportV3(
+        { acceptedDraft, commentVerification },
+        patch,
+        exportedAt,
+      ));
+      const published = await publishReviewExport({
+        repositoryRoot: grounded.repositoryRoot,
+        identity: { kind: 'exact-patch', reviewKey: patch.reviewKey },
+        json,
+        markdown: Buffer.from(renderReviewMarkdown(json), 'utf8'),
+        reExportCapability: await getObservedNativeExchangeCapability(),
+        revalidate: async () => {
+          const current = await draftStore.loadState();
+          if (
+            current.kind !== 'current'
+            || current.draft.revision !== acceptedDraft.revision
+            || createHash('sha256').update(current.raw).digest('hex') !== draftFingerprint
+          ) {
+            return false;
+          }
+          return (await snapshot.exportScope()).snapshot.status === patch.snapshot.status;
+        },
+      });
+      if (published.kind !== 'exported') return ExportReviewResultSchema.parse({ kind: published.kind });
+      return ExportReviewResultSchema.parse({
+        kind: 'exported',
+        draftRevision: acceptedDraft.revision,
+        exportedAt,
+        patch: {
+          digest: patch.digest,
+          validationTarget: patch.validationTarget,
+          reviewKey: patch.reviewKey,
+          snapshot: { status: patch.snapshot.status },
+        },
+        files: published.receipt.files,
+      });
     },
     async inspectCompareIgnore() {
       return CompareIgnoreStatusSchema.parse({ kind: 'unavailable' });

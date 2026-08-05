@@ -121,7 +121,7 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
         querystring: EMPTY_QUERY_SCHEMA,
       },
     },
-    async () => capabilities.session,
+    async () => await capabilities.session(),
   );
 
   if (capabilities.patchStatus !== undefined) {
@@ -176,7 +176,7 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
         return unavailable(reply, 404);
       }
 
-      const metadata = capabilities.lookup(fileId.data);
+      const metadata = await capabilities.lookup(fileId.data);
       if (metadata === undefined) {
         return unavailable(reply, 404);
       }
@@ -198,7 +198,7 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       if (!fileId.success) {
         return unavailable(reply, 404);
       }
-      const metadata = capabilities.lookup(fileId.data);
+      const metadata = await capabilities.lookup(fileId.data);
       if (metadata === undefined) {
         return unavailable(reply, 404);
       }

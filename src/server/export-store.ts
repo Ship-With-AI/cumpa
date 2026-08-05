@@ -35,7 +35,8 @@ export type PublishReviewExportResult =
 
 export type ExportPublicationIdentity =
   | Readonly<{ readonly kind: 'interactive'; readonly baseOid: string; readonly headOid: string }>
-  | Readonly<{ readonly kind: 'range'; readonly reviewKey: string }>;
+  | Readonly<{ readonly kind: 'range'; readonly reviewKey: string }>
+  | Readonly<{ readonly kind: 'exact-patch'; readonly reviewKey: string }>;
 
 export type PublishReviewExportInput = Readonly<{
   readonly revalidate?: () => Promise<boolean>;
@@ -118,7 +119,7 @@ async function stableExists(path: string): Promise<boolean> {
 }
 
 function stableNameFor(identity: ExportPublicationIdentity): string | undefined {
-  if (identity.kind === 'range') {
+  if (identity.kind === 'range' || identity.kind === 'exact-patch') {
     return Object.keys(identity).length === 2 && /^[0-9a-f]{64}$/u.test(identity.reviewKey)
       ? identity.reviewKey
       : undefined;
@@ -131,6 +132,9 @@ function stableNameFor(identity: ExportPublicationIdentity): string | undefined 
 }
 
 function matchesPublicationIdentity(document: ReviewExport, identity: ExportPublicationIdentity): boolean {
+  if (identity.kind === 'exact-patch') {
+    return document.schemaVersion === 3 && document.patch.reviewKey === identity.reviewKey;
+  }
   return identity.kind === 'range'
     ? document.schemaVersion === 2 && document.range.reviewKey === identity.reviewKey
     : document.schemaVersion === 1
