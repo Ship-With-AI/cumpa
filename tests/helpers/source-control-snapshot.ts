@@ -37,6 +37,8 @@ export type SourceControlSnapshot = Readonly<{
   readonly remotes: Buffer;
   readonly index: Buffer;
   readonly indexSha256: string;
+  readonly objectCount: Buffer;
+  readonly objectInventory: Buffer;
   readonly tracked: readonly TrackedEntry[];
   readonly stagedDelta: Buffer;
   readonly unstagedDelta: Buffer;
@@ -127,6 +129,12 @@ export async function captureSourceControlSnapshot(repositoryRoot: string): Prom
     remotes: git(repositoryRoot, ['remote', '-v']),
     index,
     indexSha256: createHash('sha256').update(index).digest('hex'),
+    objectCount: git(repositoryRoot, ['count-objects', '-v']),
+    objectInventory: git(repositoryRoot, [
+      'cat-file',
+      '--batch-all-objects',
+      '--batch-check=%(objectname) %(objecttype) %(objectsize)',
+    ]),
     tracked: Object.freeze(tracked),
     stagedDelta: git(repositoryRoot, ['diff', '--cached', '--no-ext-diff', '--no-textconv', '--binary', '--no-color'], true),
     unstagedDelta: git(repositoryRoot, ['diff', '--no-ext-diff', '--no-textconv', '--binary', '--no-color'], true),
@@ -143,6 +151,9 @@ export async function assertSourceControlUnchanged(
   }
   if (!equalBytes(before.remotes, after.remotes)) throw new Error('remote changed');
   if (!equalBytes(before.index, after.index) || before.indexSha256 !== after.indexSha256) throw new Error('index changed');
+  if (!equalBytes(before.objectCount, after.objectCount) || !equalBytes(before.objectInventory, after.objectInventory)) {
+    throw new Error('object inventory changed');
+  }
 
   const beforeTracked = withoutExports(before.tracked);
   const afterTracked = withoutExports(after.tracked);

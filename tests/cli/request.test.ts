@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   AgentReviewRequestSchema,
+  ExactPatchRequestSchema,
   MAX_AGENT_REQUEST_BYTES,
   MAX_GIT_ARGUMENT_BYTES,
   MAX_PATHSPEC_COUNT,
@@ -167,6 +168,48 @@ describe('agent review request protocol', () => {
       ),
       'invalid-request',
       'Request is invalid. Use kind "compare.review-request", schemaVersion 1, mode "revisions", and revisions only.',
+    );
+  });
+});
+
+describe('exact patch request protocol', () => {
+  const patch = 'diff --git a/café.txt b/café.txt\r\nindex 1111111111111111111111111111111111111111..2222222222222222222222222222222222222222 100644\r\n';
+
+  function patchRequest(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+      kind: 'compare.review-request',
+      schemaVersion: 1,
+      mode: 'patch',
+      patch: { content: patch, target: { kind: 'repository' } },
+      ...overrides,
+    };
+  }
+
+  it('accepts one exclusive patch request and preserves exact Unicode and line-ending bytes', async () => {
+    const parsed = await readAgentReviewRequest(chunks(bytes(patchRequest())));
+    const direct = ExactPatchRequestSchema.parse(patchRequest({ patch: { content: patch, target: { kind: 'worktree' } } }));
+
+    expect(parsed).toEqual(patchRequest());
+    expect(Buffer.from(parsed.patch.content, 'utf8')).toEqual(Buffer.from(patch, 'utf8'));
+    expect(direct.patch.target).toEqual({ kind: 'worktree' });
+    expect(Object.isFrozen(parsed)).toBe(true);
+    expect(Object.isFrozen(parsed.patch)).toBe(true);
+  });
+
+  it.each([
+    ['empty content', patchRequest({ patch: { content: '', target: { kind: 'repository' } } })],
+    ['NUL content', patchRequest({ patch: { content: 'diff\0 --git', target: { kind: 'repository' } } })],
+    ['lone surrogate', patchRequest({ patch: { content: '\ud800', target: { kind: 'repository' } } })],
+    ['unknown patch authority', patchRequest({ patch: { content: patch, target: { kind: 'repository' }, cwd: '/secret' } })],
+    ['unknown target authority', patchRequest({ patch: { content: patch, target: { kind: 'repository', oid: 'a'.repeat(40) } } })],
+    ['unsupported target', patchRequest({ patch: { content: patch, target: { kind: 'branch' } } })],
+    ['mixed revisions and patch', patchRequest({ revisions: { base: 'main', head: 'feature' } })],
+    ['patch fields on revisions request', request({ patch: { content: patch, target: { kind: 'repository' } } })],
+  ])('rejects %s without echoing patch content', async (_name, value) => {
+    await expectRequestError(
+      chunks(bytes(value)),
+      'invalid-request',
+      'Request is invalid. Use kind "compare.review-request", schemaVersion 1, and one supported source mode.',
     );
   });
 });
