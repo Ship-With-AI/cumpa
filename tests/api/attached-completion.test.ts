@@ -1,14 +1,18 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, describe, expect, test } from 'vitest';
 import type { FastifyInstance } from 'fastify';
 
-import type { PinnedComparison } from '../../src/contracts/comparison.js';
+import type { GroundedExactPatch, PinnedComparison } from '../../src/contracts/comparison.js';
 import { AttachedCompletionCoordinator } from '../../src/server/attached-completion.js';
-import { createSessionApp } from '../../src/server/app.js';
+import { createExactPatchSessionApp, createSessionApp } from '../../src/server/app.js';
 
 const token = 'a'.repeat(43);
 const host = '127.0.0.1:43132';
 const headers = { host, origin: `http://${host}`, authorization: `Bearer ${token}` };
 const apps = new Set<FastifyInstance>();
+const roots: string[] = [];
 
 function comparison(): PinnedComparison {
   return {
@@ -31,9 +35,53 @@ function comparison(): PinnedComparison {
   };
 }
 
+function path(value: string) {
+  return {
+    bytesBase64url: Buffer.from(value).toString('base64url'),
+    display: value,
+    utf8: value,
+  };
+}
+
+function exactPatch(repositoryRoot: string): GroundedExactPatch {
+  const before = Buffer.from('before\n');
+  const after = Buffer.from('after\n');
+  return {
+    repositoryRoot,
+    objectFormat: 'sha1',
+    scope: {
+      kind: 'exact-patch',
+      digest: 'a'.repeat(64),
+      validationTarget: { kind: 'repository' },
+      submittedByteLength: 42,
+    },
+    changedFiles: [{
+      id: `file_${'p'.repeat(43)}`,
+      status: { code: 'M', kind: 'modified', similarity: null },
+      oldMode: '100644',
+      newMode: '100644',
+      oldBlobOid: '1'.repeat(40),
+      newBlobOid: '2'.repeat(40),
+      oldPath: path('old-name.ts'),
+      newPath: path('new-name.ts'),
+      additions: 1,
+      deletions: 1,
+      availability: { kind: 'text' },
+    }],
+    contents: new Map([[`file_${'p'.repeat(43)}`, { preimage: before, postimage: after }]]),
+  };
+}
+
+async function root(): Promise<string> {
+  const value = await mkdtemp(join(tmpdir(), 'compare-attached-completion-'));
+  roots.push(value);
+  return value;
+}
+
 afterEach(async () => {
   await Promise.all([...apps].map(async (app) => await app.close()));
   apps.clear();
+  await Promise.all(roots.splice(0).map(async (directory) => await rm(directory, { recursive: true, force: true })));
 });
 
 describe('attached completion API', () => {
@@ -83,6 +131,36 @@ describe('attached completion API', () => {
     const ordinary = createSessionApp(comparison(), { sessionToken: token });
     apps.add(ordinary);
     ordinary.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
+
     await expect(ordinary.inject({ method: 'GET', url: '/api/review-completion', headers })).resolves.toMatchObject({ statusCode: 404 });
+  });
+  test('settles exact-patch completion only through the attached finish response', async () => {
+    let deliveries = 0;
+    const coordinator = new AttachedCompletionCoordinator();
+    const app = await createExactPatchSessionApp(exactPatch(await root()), {
+      sessionToken: token,
+      snapshotParent: roots.at(-1)!,
+      observePatchTarget: async () => false,
+      attachedCompletion: {
+        coordinator,
+        deliver: async () => {
+          deliveries += 1;
+        },
+      },
+    });
+    apps.add(app);
+    app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
+
+    expect((await app.inject({ method: 'GET', url: '/api/session', headers })).json()).toMatchObject({
+      attached: { kind: 'agent-review' },
+    });
+    await expect(app.inject({
+      method: 'POST',
+      url: '/api/review-completion/finish',
+      headers,
+      payload: { expectedRevision: 0 },
+    })).resolves.toMatchObject({ statusCode: 201 });
+    await expect(coordinator.responseSettled).resolves.toBeUndefined();
+    expect(deliveries).toBe(1);
   });
 });
