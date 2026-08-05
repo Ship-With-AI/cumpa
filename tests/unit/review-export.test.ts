@@ -283,7 +283,22 @@ describe('ReviewExportV3 exact patch contract', () => {
     expect(parseCanonicalReviewExport(bytes)).toEqual(document);
     expect(document).toMatchObject({ schemaVersion: 3, patch });
     expect(function () {
-      return ReviewExportV3Schema.parse({ ...document, patch: { ...patch, digest: oid } });
+      return buildReviewExportV3(
+        {
+          acceptedDraft: {
+            ...base.acceptedDraft,
+            comparison: {
+              kind: 'exact-patch',
+              digest: patch.digest,
+              validationTarget: patch.validationTarget,
+              reviewKey: patch.reviewKey,
+            },
+          },
+          commentVerification: base.commentVerification,
+        },
+        { ...patch, digest: 'a'.repeat(64) },
+        '2026-07-23T08:02:00.000Z',
+      );
     }).toThrow();
     expect(function () {
       return ReviewExportV3Schema.parse({ ...document, extra: true });
