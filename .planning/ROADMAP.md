@@ -81,10 +81,10 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 4. Returned JSON binds the accepted summary, comments, and drift-detectable anchors to the exact submitted range/pathspec or patch identity.
 5. Finish settles pending draft mutations and validates current anchors and scope before returning; stale feedback fails explicitly instead of becoming a successful result.
 
-**Plans**: 3 plan placeholders
+**Plans**: 1/3 plans executed
 **Wave 1**
 
-- [ ] 14-01-PLAN.md — Attach the authenticated browser session to an explicit, one-shot Finish lifecycle.
+- [x] 14-01-PLAN.md — Attach the authenticated browser session to an explicit, one-shot Finish lifecycle.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -143,5 +143,5 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 |-------|-----------|----------------|--------|-----------|
 | 12. Request Protocol & Range Grounding | v1.3 | 6/6 | Complete    | 2026-08-04 |
 | 13. Exact Patch Grounding | v1.3 | 4/4 | Complete    | 2026-08-05 |
-| 14. Attached Lifecycle & Canonical Completion | v1.3 | 0/3 | Not started | - |
+| 14. Attached Lifecycle & Canonical Completion | v1.3 | 1/3 | In progress | - |
 | 15. Adversarial Integration Gate | v1.3 | 0/1 | Not started | - |
