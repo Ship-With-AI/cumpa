@@ -113,11 +113,28 @@ export type DraftRecoveryResult =
   | Readonly<{ readonly kind: 'recoveryUnavailable'; readonly load: DraftLoadState }>
   | Readonly<{ readonly kind: 'persistenceFailure' }>;
 
+export type DraftSettleResult<T> =
+  | Readonly<{ readonly kind: 'accepted'; readonly value: T }>
+  | Readonly<{ readonly kind: 'revisionConflict'; readonly expectedRevision: number; readonly actualRevision: number }>
+  | Readonly<{ readonly kind: 'draftChanged'; readonly actualRevision: number }>
+  | Readonly<{ readonly kind: 'persistenceFailure' }>
+  | Readonly<{ readonly kind: 'readOnly'; readonly load: Exclude<DraftLoadState, { readonly kind: 'missing' | 'current' }> }>;
+
+export type DraftSettleOperation<TPrepared, TResult> = Readonly<{
+  readonly prepare: (draft: ReviewDraftV1) => Promise<TPrepared>;
+  readonly finalize: (input: Readonly<{ readonly draft: ReviewDraftV1; readonly prepared: TPrepared }>) => Promise<TResult>;
+}>;
+
+
 export type DraftStore = Readonly<{
   readonly canonicalPath: string;
   load(): Promise<ReviewDraftV1>;
   loadState(): Promise<DraftLoadState>;
   mutate(input: Readonly<{ readonly expectedRevision: number; readonly mutation: DraftStoreMutation }>): Promise<DraftMutationResult>;
+  settle<TPrepared, TResult>(
+    expectedRevision: number,
+    operation: DraftSettleOperation<TPrepared, TResult>,
+  ): Promise<DraftSettleResult<TResult>>;
   recover(input: Readonly<{ readonly expectedFingerprint: string }>): Promise<DraftRecoveryResult>;
 }>;
 
@@ -243,6 +260,53 @@ export function createDraftStore(options: Readonly<{
       throw new DraftStoreError('Existing draft cannot be used for this comparison.');
     },
     loadState: async () => loader.load(),
+    async settle<TPrepared, TResult>(expectedRevision: number, operation: DraftSettleOperation<TPrepared, TResult>) {
+      return runSerialized(queueKey, async (): Promise<DraftSettleResult<TResult>> => {
+        const expected = RevisionSchema.parse(expectedRevision);
+        let initial: DraftLoadState;
+        try {
+          initial = await loader.load();
+        } catch {
+          return Object.freeze({ kind: 'persistenceFailure' as const });
+        }
+        if (initial.kind === 'malformed' || initial.kind === 'schemaInvalid' || initial.kind === 'newerUnsupported') {
+          return Object.freeze({ kind: 'readOnly' as const, load: initial });
+        }
+        const draft = initial.kind === 'missing' ? initialDraft(options.comparison) : initial.draft;
+        if (draft.revision !== expected) {
+          return Object.freeze({ kind: 'revisionConflict' as const, expectedRevision: expected, actualRevision: draft.revision });
+        }
+        let prepared: TPrepared;
+        try {
+          prepared = await operation.prepare(structuredClone(draft));
+        } catch {
+          return Object.freeze({ kind: 'persistenceFailure' as const });
+        }
+        let final: DraftLoadState;
+        try {
+          final = await loader.load();
+        } catch {
+          return Object.freeze({ kind: 'persistenceFailure' as const });
+        }
+        if (
+          final.kind !== initial.kind
+          || (final.kind === 'current' && initial.kind === 'current' && !final.raw.equals(initial.raw))
+        ) {
+          return Object.freeze({ kind: 'draftChanged' as const, actualRevision: final.kind === 'current' ? final.draft.revision : 0 });
+        }
+        if (final.kind !== 'missing' && final.kind !== 'current') {
+          return Object.freeze({ kind: 'readOnly' as const, load: final });
+        }
+        try {
+          return Object.freeze({
+            kind: 'accepted' as const,
+            value: await operation.finalize({ draft: structuredClone(draft), prepared }),
+          });
+        } catch {
+          return Object.freeze({ kind: 'persistenceFailure' as const });
+        }
+      });
+    },
     async mutate(input) {
       return runSerialized(queueKey, async () => {
         const expectedRevision = RevisionSchema.parse(input.expectedRevision);

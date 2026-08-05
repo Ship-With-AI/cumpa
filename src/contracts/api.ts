@@ -320,6 +320,48 @@ export const SessionFileSchema = z
   })
   .readonly();
 
+export const AttachedCompletionStatusSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('waiting') }).readonly(),
+    z.strictObject({ kind: z.literal('finishing'), expectedRevision: RevisionSchema }).readonly(),
+    z.strictObject({ kind: z.literal('completed'), revision: RevisionSchema }).readonly(),
+  ])
+  .readonly();
+
+export const FinishReviewRequestSchema = z
+  .strictObject({ expectedRevision: RevisionSchema })
+  .readonly();
+
+export const FinishReviewResultSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('completed'), revision: RevisionSchema }).readonly(),
+    z.strictObject({ kind: z.literal('alreadyCompleted'), revision: RevisionSchema }).readonly(),
+    z.strictObject({
+      kind: z.literal('revisionConflict'),
+      expectedRevision: RevisionSchema,
+      actualRevision: RevisionSchema,
+    }).readonly(),
+    z.strictObject({
+      kind: z.literal('staleAnchors'),
+      affectedCommentIds: z.array(CommentIdSchema).readonly(),
+      affectedCount: z.number().int().nonnegative(),
+    }).readonly(),
+    z.strictObject({ kind: z.literal('scopeInvalid') }).readonly(),
+    z.strictObject({ kind: z.literal('draftReadOnly') }).readonly(),
+    z.strictObject({ kind: z.literal('persistenceFailure') }).readonly(),
+    z.strictObject({ kind: z.literal('canonicalizationFailure') }).readonly(),
+    z.strictObject({ kind: z.literal('deliveryFailed') }).readonly(),
+  ])
+  .readonly();
+
+const AttachedSessionMarkerSchema = z
+  .strictObject({ kind: z.literal('agent-review') })
+  .readonly();
+
+export type AttachedCompletionStatus = z.infer<typeof AttachedCompletionStatusSchema>;
+export type FinishReviewRequest = z.infer<typeof FinishReviewRequestSchema>;
+export type FinishReviewResult = z.infer<typeof FinishReviewResultSchema>;
+
 const PinnedSessionResponseSchema = z
   .strictObject({
     base: ApiPinnedEndpointSchema,
@@ -327,6 +369,7 @@ const PinnedSessionResponseSchema = z
     mergeBaseOid: GitObjectIdSchema,
     range: SessionRangeSchema.optional(),
     files: z.array(SessionFileSchema).readonly(),
+    attached: AttachedSessionMarkerSchema.optional(),
   })
   .superRefine((session, context) => {
     if (
@@ -354,6 +397,7 @@ const ExactPatchSessionResponseSchema = z
       })
       .readonly(),
     files: z.array(SessionFileSchema).readonly(),
+    attached: AttachedSessionMarkerSchema.optional(),
   })
   .readonly();
 
