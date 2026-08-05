@@ -16,7 +16,6 @@ import { createObjectReader } from './objects.js';
 import { discoverGitRepository } from './repository.js';
 import { createGitRunner, type GitRunner } from './runner.js';
 
-const zeroOid = (length: number) => '0'.repeat(length);
 const modePattern = /^[0-7]{6}$/;
 const oidPattern = /^[0-9a-f]+$/;
 
@@ -352,9 +351,10 @@ export async function createGroundedExactPatch(options: CreateGroundedExactPatch
     const contents = new Map<string, Readonly<{ readonly preimage: Buffer | undefined; readonly postimage: Buffer | undefined }>>();
 
     for (const [index, record] of records.entries()) {
+      const absentOid = '0'.repeat(oidLength);
       if (!modePattern.test(record.oldMode) || !modePattern.test(record.newMode)) fail();
-      const oldAbsent = record.oldOid === zeroOid(oidLength);
-      const newAbsent = record.newOid === zeroOid(oidLength);
+      const oldAbsent = record.oldOid === absentOid;
+      const newAbsent = record.newOid === absentOid;
       if (oldAbsent !== (record.oldMode === '000000') || newAbsent !== (record.newMode === '000000') || (oldAbsent && newAbsent)) fail();
       const identity = `${record.oldPath?.path.bytesBase64url ?? ''}\0${record.newPath?.path.bytesBase64url ?? ''}`;
       if (seen.has(identity)) fail(); seen.add(identity);
