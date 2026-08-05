@@ -249,52 +249,9 @@ describe('ordinary action request ownership', () => {
     expect(readRequest).not.toHaveBeenCalled();
   });
 
-  it('grounds one non-TTY request and launches its frozen range once', async () => {
-    const events: string[] = [];
-    const launch = vi.fn(async () => {
-      events.push('launch');
-    });
-    const stdout: string[] = [];
-    const stderr: string[] = [];
-    const setExitStatus = vi.fn();
-
-    await runOrdinaryAction(
-      { cwd: '/repo' },
-      {
-        isTTY: false,
-        input: chunks(),
-        readRequest: async () => {
-          events.push('read');
-          return AgentReviewRequestSchema.parse(request());
-        },
-        createRangeComparison: async (options) => {
-          events.push('range');
-          expect(options).toEqual({
-            cwd: '/repo',
-            baseRevision: 'main',
-            headRevision: 'feature',
-            pathspecs: [],
-          });
-          return comparison;
-        },
-        launchComparison: launch,
-        output: (message) => stderr.push(message),
-        stdout: (message) => stdout.push(message),
-        setExitStatus,
-      },
-    );
-
-    expect(events).toEqual(['read', 'range', 'launch']);
-    expect(launch).toHaveBeenCalledExactlyOnceWith(comparison);
-    expect(stderr).toEqual([]);
-    expect(stdout).toEqual([]);
-
-    expect(setExitStatus).not.toHaveBeenCalled();
-  });
   it('keeps a non-TTY range attached until Finish writes canonical bytes and its response settles', async () => {
     const events: string[] = [];
     const stdout: Uint8Array[] = [];
-    const coordinator = new AttachedCompletionCoordinator();
     let attached: { coordinator: AttachedCompletionCoordinator; deliver: (bytes: Uint8Array) => Promise<void> } | undefined;
     const app = {
       listen: vi.fn(async () => {}),
@@ -311,7 +268,15 @@ describe('ordinary action request ownership', () => {
         isTTY: false,
         input: chunks(),
         readRequest: async () => AgentReviewRequestSchema.parse(request()),
-        createRangeComparison: async () => comparison,
+        createRangeComparison: async (options) => {
+          expect(options).toEqual({
+            cwd: '/repo',
+            baseRevision: 'main',
+            headRevision: 'feature',
+            pathspecs: [],
+          });
+          return comparison;
+        },
         createSessionApp: (_comparison, options) => {
           attached = options.attachedCompletion;
           return app;
@@ -336,10 +301,21 @@ describe('ordinary action request ownership', () => {
     );
     void running.catch(() => {});
 
-    await Promise.resolve();
+    await vi.waitFor(() => {
+      expect(attached).toBeDefined();
+    });
     expect(attached).toBeDefined();
     expect(stdout).toEqual([]);
     expect(events).toContain('open');
+    await attached!.coordinator.finish(0, async () => ({
+      kind: 'revisionConflict',
+      expectedRevision: 0,
+      actualRevision: 1,
+    }));
+    expect(attached!.coordinator.status()).toEqual({ kind: 'waiting' });
+    expect(stdout).toEqual([]);
+    expect(events).not.toContain('shutdown');
+
 
     const canonical = new TextEncoder().encode('{"schemaVersion":2}');
     await attached!.coordinator.finish(0, async () => {
@@ -350,7 +326,73 @@ describe('ordinary action request ownership', () => {
     await running;
 
     expect(stdout).toEqual([canonical]);
-    expect(events).toEqual(['stderr:http://127.0.0.1:43123/#token=expect.any(String)']);
+    expect(events[0]).toMatch(/^stderr:http:\/\/127\.0\.0\.1:43123\/#token=[A-Za-z0-9_-]{43}$/u);
+    expect(events.slice(1)).toEqual([
+      'stderr:Open the URL above if the browser did not open. Press Ctrl+C to stop.',
+      'open',
+      'stdout',
+      'shutdown',
+      'exit:0',
+    ]);
+  });
+
+  it('treats exact-patch stdout failure as terminal without retrying delivery', async () => {
+    const events: string[] = [];
+    let attached: { coordinator: AttachedCompletionCoordinator; deliver: (bytes: Uint8Array) => Promise<void> } | undefined;
+    const app = {
+      listen: vi.fn(async () => {}),
+      server: { address: () => ({ address: '127.0.0.1', port: 43124 }) },
+      bindSessionSecurity: vi.fn(),
+      close: vi.fn(async () => {
+        events.push('shutdown');
+      }),
+    } as unknown as SessionApp;
+    const running = runOrdinaryAction(
+      { cwd: '/repo' },
+      {
+        isTTY: false,
+        input: chunks(),
+        readRequest: async () => ExactPatchRequestSchema.parse({
+          kind: 'compare.review-request',
+          schemaVersion: 1,
+          mode: 'patch',
+          patch: { content: 'diff --git a/a b/a', target: { kind: 'repository' } },
+        }),
+        createGroundedExactPatch: async () => ({}) as never,
+        createExactPatchSessionApp: async (_grounded, options) => {
+          attached = options.attachedCompletion;
+          return app;
+        },
+        openBrowser: async () => {
+          events.push('open');
+        },
+        output: (message) => {
+          events.push(`stderr:${message}`);
+        },
+        stdout: async () => {
+          events.push('stdout');
+          throw new Error('EPIPE');
+        },
+        setExitStatus: (status) => {
+          events.push(`exit:${status}`);
+        },
+      },
+    );
+    void running.catch(() => {});
+
+    await vi.waitFor(() => {
+      expect(attached).toBeDefined();
+    });
+    await attached!.coordinator.finish(0, async () => {
+      await attached!.deliver(new TextEncoder().encode('{"schemaVersion":3}'));
+      return { kind: 'completed', revision: 0 };
+    });
+    await running;
+
+    expect(events.filter((event) => event === 'stdout')).toHaveLength(1);
+    expect(events).toContain('shutdown');
+    expect(events).toContain('exit:1');
+    expect(events).not.toContain('exit:0');
   });
 
   it.each([

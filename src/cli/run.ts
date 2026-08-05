@@ -40,6 +40,11 @@ import {
   createSessionApp,
   type SessionApp,
 } from '../server/app.js';
+import {
+  createAttachedCompletionCoordinator,
+  type AttachedCompletionCoordinator,
+} from '../server/attached-completion.js';
+import type { AttachedCompletionOptions } from '../server/capabilities.js';
 import type { DraftRevealPort } from '../server/capabilities.js';
 import { PatchSnapshotError } from '../server/patch-snapshot.js';
 import {
@@ -156,14 +161,14 @@ export interface OrdinaryActionDependencies {
     options: CreatePinnedRangeComparisonOptions,
   ) => Promise<PinnedComparison>;
   readonly createGroundedExactPatch?: typeof createGroundedExactPatch;
+  readonly createSessionApp?: typeof createSessionApp;
   readonly createExactPatchSessionApp?: typeof createExactPatchSessionApp;
-  readonly launchComparison?: (
-    comparison: PinnedComparison,
-  ) => Promise<unknown>;
   readonly openBrowser?: (url: string) => Promise<unknown>;
   readonly webRoot?: string;
   readonly revealDraftFile?: DraftRevealPort;
   readonly output?: (message: string) => void;
+  readonly stdout?: (bytes: Uint8Array) => Promise<void> | void;
+  readonly signalSource?: ShutdownSignalSource;
   readonly setExitStatus?: (status: number) => void;
 }
 
@@ -363,20 +368,56 @@ function reportFatalLaunchError(
   setExitStatus(1);
 }
 
-async function launchExactPatchSession(
-  grounded: GroundedExactPatch,
+function writeStdout(bytes: Uint8Array): Promise<void> {
+  const { promise, reject, resolve } = Promise.withResolvers<void>();
+  process.stdout.write(bytes, (error) => {
+    if (error === undefined || error === null) {
+      resolve();
+      return;
+    }
+    reject(error);
+  });
+  return promise;
+}
+
+function waitForAttachedOutcome(
+  coordinator: AttachedCompletionCoordinator,
+  signalSource: ShutdownSignalSource | undefined,
+): Promise<Awaited<AttachedCompletionCoordinator['delivery']> | undefined> {
+  const source = signalSource ?? process;
+  const signal = Promise.withResolvers<undefined>();
+  const onSignal = () => {
+    signal.resolve(undefined);
+  };
+  source.on('SIGINT', onSignal);
+  source.on('SIGTERM', onSignal);
+  return Promise.race([coordinator.delivery, signal.promise]).finally(() => {
+    source.off('SIGINT', onSignal);
+    source.off('SIGTERM', onSignal);
+  });
+}
+
+async function launchAttachedSession(
   dependencies: OrdinaryActionDependencies,
   activeGit: AbortController,
+  createApp: (
+    sessionToken: string,
+    attachedCompletion: AttachedCompletionOptions,
+    revealDraftFile: DraftRevealPort,
+  ) => Promise<SessionApp>,
 ): Promise<void> {
   const output = dependencies.output ?? console.error;
   const openBrowser = dependencies.openBrowser ?? createBrowserUrlOpener();
+  const stdout = dependencies.stdout ?? writeStdout;
   const revealDraftFile =
     dependencies.revealDraftFile ??
     (async (canonicalPath: string) => {
       await open(canonicalPath);
     });
+  const coordinator = createAttachedCompletionCoordinator();
   let app: SessionApp | undefined;
   const shutdown = createShutdownController({
+    signalSource: dependencies.signalSource,
     abortActiveWork: () => {
       activeGit.abort();
     },
@@ -385,28 +426,20 @@ async function launchExactPatchSession(
     },
     setExitStatus: dependencies.setExitStatus,
     reportError: () => {
-      output('Exact patch review shutdown failed.');
+      output('Attached review shutdown failed.');
     },
   });
 
   try {
     const token = randomBytes(32).toString('base64url');
-    app = await (dependencies.createExactPatchSessionApp ?? createExactPatchSessionApp)(
-      grounded,
-      {
-        webRoot: dependencies.webRoot,
-        sessionToken: token,
-        revealDraftFile,
-        diagnostics: () => {
-          output('Exact patch review request denied.');
-        },
+    app = await createApp(token, {
+      coordinator,
+      deliver: async (bytes) => {
+        await stdout(bytes);
       },
-    );
+    }, revealDraftFile);
     await app.listen({ host: '127.0.0.1', port: 0 });
-    if (shutdown.isShuttingDown) {
-      await shutdown.shutdown();
-      return;
-    }
+    if (shutdown.isShuttingDown) return;
 
     const address = app.server.address();
     if (
@@ -425,19 +458,45 @@ async function launchExactPatchSession(
     const url = `http://${authority}/#token=${token}`;
     output(url);
     output(browserFallback);
-    try {
-      await openBrowser(url);
-    } catch {
-      output('Browser did not open automatically. Open the URL above manually.');
-    }
-  } catch (error) {
-    await shutdown.shutdown(1);
-    if (error instanceof ExactPatchGroundingError || error instanceof PatchSnapshotError) {
-      output('Exact patch review could not be prepared.');
+    await openBrowser(url);
+
+    const result = await waitForAttachedOutcome(coordinator, dependencies.signalSource);
+    if (result === undefined || result.kind !== 'completed') {
+      if (result !== undefined) output('Attached review result could not be delivered.');
+      await shutdown.shutdown(1);
       return;
     }
-    throw error;
+    await coordinator.responseSettled;
+    await shutdown.shutdown();
+  } catch {
+    output('Attached review could not be completed.');
+    await shutdown.shutdown(1);
   }
+}
+
+async function launchExactPatchSession(
+  grounded: GroundedExactPatch,
+  dependencies: OrdinaryActionDependencies,
+  activeGit: AbortController,
+): Promise<void> {
+  await launchAttachedSession(
+    dependencies,
+    activeGit,
+    async (sessionToken, attachedCompletion, revealDraftFile) => {
+      return await (dependencies.createExactPatchSessionApp ?? createExactPatchSessionApp)(
+        grounded,
+        {
+          webRoot: dependencies.webRoot,
+          sessionToken,
+          revealDraftFile,
+          attachedCompletion,
+          diagnostics: () => {
+            (dependencies.output ?? console.error)('Exact patch review request denied.');
+          },
+        },
+      );
+    },
+  );
 }
 
 export async function runOrdinaryAction(
@@ -478,7 +537,21 @@ export async function runOrdinaryAction(
       headRevision: request.revisions.head,
       pathspecs: request.revisions.pathspecs,
     });
-    await (dependencies.launchComparison ?? launchPinnedComparison)(comparison);
+    await launchAttachedSession(
+      dependencies,
+      activeGit,
+      async (sessionToken, attachedCompletion, revealDraftFile) => {
+        return (dependencies.createSessionApp ?? createSessionApp)(comparison, {
+          webRoot: dependencies.webRoot,
+          sessionToken,
+          revealDraftFile,
+          attachedCompletion,
+          diagnostics: ({ correlationId, reason }) => {
+            output(`Compare request denied [${correlationId}]: ${reason}.`);
+          },
+        });
+      },
+    );
   } catch (error) {
     if (
       error instanceof AgentRequestError
