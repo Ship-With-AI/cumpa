@@ -2,10 +2,15 @@ import { describe, expect, test } from 'vitest';
 import type { RangeReviewScope } from '../../src/contracts/comparison.js';
 
 
-import { ReviewExportV1Schema, ReviewExportV2Schema } from '../../src/contracts/draft.js';
+import {
+  ReviewExportV1Schema,
+  ReviewExportV2Schema,
+  ReviewExportV3Schema,
+} from '../../src/contracts/draft.js';
 import {
   buildReviewExportV1,
   buildReviewExportV2,
+  buildReviewExportV3,
   canonicalizeReviewExport,
   hashExportBytes,
   parseCanonicalReviewExport,
@@ -242,5 +247,46 @@ describe('ReviewExportV2 range contract', () => {
     expect(() => ReviewExportV2Schema.parse({ ...document, range: { ...range, reviewKey: 'C'.repeat(64) } })).toThrow();
     expect(() => ReviewExportV2Schema.parse({ ...document, extra: true })).toThrow();
     expect(() => buildReviewExportV2(rangeSnapshot(range), { ...range, pathspecs: [...range.pathspecs].reverse() }, '2026-07-23T08:02:00.000Z')).toThrow();
+  });
+});
+
+describe('ReviewExportV3 exact patch contract', () => {
+  test('binds accepted feedback to frozen patch provenance and rejects spoofed identity', () => {
+    const base = snapshot();
+    const patch = {
+      digest: 'e'.repeat(64),
+      validationTarget: { kind: 'repository' as const },
+      reviewKey: 'f'.repeat(64),
+      snapshot: {
+        status: 'drifted' as const,
+        files: [],
+      },
+    };
+    const document = buildReviewExportV3(
+      {
+        acceptedDraft: {
+          ...base.acceptedDraft,
+          comparison: {
+            kind: 'exact-patch',
+            digest: patch.digest,
+            validationTarget: patch.validationTarget,
+            reviewKey: patch.reviewKey,
+          },
+        },
+        commentVerification: base.commentVerification,
+      },
+      patch,
+      '2026-07-23T08:02:00.000Z',
+    );
+    const bytes = canonicalizeReviewExport(document);
+
+    expect(parseCanonicalReviewExport(bytes)).toEqual(document);
+    expect(document).toMatchObject({ schemaVersion: 3, patch });
+    expect(function () {
+      return ReviewExportV3Schema.parse({ ...document, patch: { ...patch, digest: oid } });
+    }).toThrow();
+    expect(function () {
+      return ReviewExportV3Schema.parse({ ...document, extra: true });
+    }).toThrow();
   });
 });

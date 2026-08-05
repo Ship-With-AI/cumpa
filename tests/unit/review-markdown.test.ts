@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
+import { ReviewExportV1Schema, ReviewExportV3Schema } from '../../src/contracts/draft.js';
 import { canonicalizeReviewExport } from '../../src/export/review-export.js';
 import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js';
 
@@ -144,5 +144,32 @@ describe('renderReviewMarkdown', () => {
     expect(empty).toMatch(/\n$/u);
     expect(empty).not.toContain('\r');
     expect(empty).not.toContain('/Users/');
+  });
+});
+
+describe('exact patch Markdown', () => {
+  test('identifies frozen patch provenance with preimage/postimage terminology', () => {
+    const document = ReviewExportV3Schema.parse({
+      schemaVersion: 3,
+      kind: 'compare/export',
+      exportedAt: '2026-07-23T08:02:00.000Z',
+      acceptedDraftRevision: 4,
+      patch: {
+        digest: 'e'.repeat(64),
+        validationTarget: { kind: 'repository' },
+        reviewKey: 'f'.repeat(64),
+        snapshot: { status: 'drifted', files: [] },
+      },
+      summary: { markdown: 'Review summary' },
+      files: [],
+      counts: { all: 0, openActionable: 0, openNeedsAttention: 0, resolved: 0 },
+    });
+
+    const markdown = renderReviewMarkdown(canonicalizeReviewExport(document));
+
+    expect(markdown).toContain('## Exact patch');
+    expect(markdown).toContain(`Patch digest: \`${'e'.repeat(64)}\``);
+    expect(markdown).toContain('Preimage');
+    expect(markdown).toContain('Postimage');
   });
 });

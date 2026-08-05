@@ -11,8 +11,13 @@ import type {
   SourceSearchPrompt,
   SourceSearchPromptConfig,
 } from '../../src/cli/picker.js';
-import { runCli, type RunCliDependencies } from '../../src/cli/run.js';
-import type { PinnedComparison } from '../../src/contracts/comparison.js';
+import {
+  runCli,
+  runOrdinaryAction,
+  type RunCliDependencies,
+} from '../../src/cli/run.js';
+import type { GroundedExactPatch } from '../../src/contracts/comparison.js';
+import type { SessionApp } from '../../src/server/app.js';
 import type { SourceCandidate } from '../../src/domain/source.js';
 
 const baseOid = '1'.repeat(40);
@@ -570,5 +575,65 @@ describe('pinned comparison confirmation and CLI integration', () => {
         revision: headOid,
       },
     });
+  });
+});
+
+describe('exact patch CLI dispatch', () => {
+  const request = {
+    version: 1 as const,
+    kind: 'compare.review-request' as const,
+    mode: 'patch' as const,
+    patch: {
+      content: 'diff --git a/src/a.ts b/src/a.ts\n',
+      target: { kind: 'repository' as const },
+    },
+  };
+
+  it('grounds once, creates the exact session app with that authority, and opens only after readiness', async () => {
+    const events: string[] = [];
+    const grounded = {} as GroundedExactPatch;
+    const app = {
+      listen: async () => {
+        events.push('listen');
+      },
+      server: {
+        address: () => ({ address: '127.0.0.1', port: 43130 }),
+      },
+      bindSessionSecurity: () => {
+        events.push('security');
+      },
+      close: async () => undefined,
+    } as unknown as SessionApp;
+
+    await runOrdinaryAction(
+      { cwd: '/repo' },
+      {
+        isTTY: false,
+        readRequest: async () => request,
+        createRangeComparison: async () => {
+          throw new Error('range resolution must not run for a patch request');
+        },
+        createGroundedExactPatch: async (options) => {
+          expect(options).toEqual({
+            cwd: '/repo',
+            patchContent: request.patch.content,
+            target: request.patch.target,
+            signal: expect.any(AbortSignal),
+          });
+          events.push('ground');
+          return grounded;
+        },
+        createExactPatchSessionApp: async (received) => {
+          expect(received).toBe(grounded);
+          events.push('app');
+          return app;
+        },
+        openBrowser: async () => {
+          events.push('browser');
+        },
+      },
+    );
+
+    expect(events).toEqual(['ground', 'app', 'listen', 'security', 'browser']);
   });
 });
