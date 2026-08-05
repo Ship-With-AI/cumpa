@@ -100,8 +100,11 @@ describe('read-only exact patch grounding', () => {
 
   it('rejects an exact patch when the selected target differs by one byte and leaves the repository unchanged', async () => {
     const source = await fixture();
+    await writeFile(join(source.root, 'notes.txt'), Buffer.from('first line\nchanged lime', 'utf8'));
+    git(source.root, ['add', '--', 'notes.txt']);
+    git(source.root, ['commit', '--quiet', '-m', 'drift']);
     const before = await captureSourceControlSnapshot(source.root);
-    const content = patch(source.oldOid, source.newOid).replace('changed line', 'changed lime');
+    const content = patch(source.oldOid, source.newOid);
 
     await expect(
       createGroundedExactPatch({ cwd: source.root, patchContent: content, target: { kind: 'repository' } }),

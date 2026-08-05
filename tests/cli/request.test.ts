@@ -117,7 +117,7 @@ describe('agent review request protocol', () => {
     ['malformed-json', chunks(encoder.encode('{')), 'Request input must contain one JSON document.'],
     ['malformed-json', chunks(encoder.encode(`${JSON.stringify(request())}\n{} `)), 'Request input must contain one JSON document.'],
     ['invalid-utf8', chunks(Uint8Array.of(0xe2), Uint8Array.of(0x28, 0xa1)), 'Request input must be valid UTF-8 JSON.'],
-    ['invalid-request', chunks(encoder.encode('null')), 'Request is invalid. Use kind "compare.review-request", schemaVersion 1, mode "revisions", and revisions only.'],
+    ['invalid-request', chunks(encoder.encode('null')), 'Request is invalid. Use kind "compare.review-request", schemaVersion 1, and one supported source mode.'],
   ] as const)('reports safe %s failures without request data', async (kind, input, message) => {
     await expectRequestError(input, kind, message);
   });
@@ -136,7 +136,7 @@ describe('agent review request protocol', () => {
       kind,
       kind === 'unsupported-version'
         ? 'Request schema version is unsupported. Use schemaVersion 1.'
-        : 'Request is invalid. Use kind "compare.review-request", schemaVersion 1, mode "revisions", and revisions only.',
+        : 'Request is invalid. Use kind "compare.review-request", schemaVersion 1, and one supported source mode.',
     );
   });
 
@@ -149,7 +149,7 @@ describe('agent review request protocol', () => {
     await expectRequestError(
       chunks(bytes(request({ revisions: { base: value, head: 'feature' } }))),
       'invalid-request',
-      'Request is invalid. Use kind "compare.review-request", schemaVersion 1, mode "revisions", and revisions only.',
+      'Request is invalid. Use kind "compare.review-request", schemaVersion 1, and one supported source mode.',
     );
   });
 
@@ -167,7 +167,7 @@ describe('agent review request protocol', () => {
         ),
       ),
       'invalid-request',
-      'Request is invalid. Use kind "compare.review-request", schemaVersion 1, mode "revisions", and revisions only.',
+      'Request is invalid. Use kind "compare.review-request", schemaVersion 1, and one supported source mode.',
     );
   });
 });

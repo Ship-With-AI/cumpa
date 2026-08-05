@@ -47,6 +47,22 @@ export const RangeReviewScopeSchema = z
   })
   .readonly();
 
+export const ExactPatchValidationTargetSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('repository') }),
+    z.strictObject({ kind: z.literal('worktree') }),
+  ])
+  .readonly();
+
+export const ExactPatchScopeSchema = z
+  .strictObject({
+    kind: z.literal('exact-patch'),
+    digest: z.string().regex(/^[0-9a-f]{64}$/),
+    validationTarget: ExactPatchValidationTargetSchema,
+    submittedByteLength: z.number().int().positive().max(1_048_576),
+  })
+  .readonly();
+
 export const ExactPathSchema = z
   .strictObject({
     bytesBase64url: z.string().regex(/^[A-Za-z0-9_-]+$/),
@@ -128,6 +144,15 @@ export const PinnedComparisonSchema = z.strictObject({
 export type ComparisonSelection = z.infer<typeof ComparisonSelectionSchema>;
 export type PinnedComparison = z.infer<typeof PinnedComparisonSchema>;
 export type RangeReviewScope = z.infer<typeof RangeReviewScopeSchema>;
+export type ExactPatchValidationTarget = z.infer<typeof ExactPatchValidationTargetSchema>;
+export type ExactPatchScope = z.infer<typeof ExactPatchScopeSchema>;
+export interface GroundedExactPatch {
+  readonly repositoryRoot: string;
+  readonly objectFormat: 'sha1' | 'sha256';
+  readonly scope: ExactPatchScope;
+  readonly changedFiles: readonly ChangedFile[];
+  readonly contents: ReadonlyMap<string, Readonly<{ readonly preimage: Buffer | undefined; readonly postimage: Buffer | undefined }>>;
+}
 export type ExactPathDto = z.infer<typeof ExactPathSchema>;
 export type Availability = z.infer<typeof AvailabilitySchema>;
 export type UnsupportedAvailabilityReason = z.infer<

@@ -8,11 +8,7 @@ export const MAX_PATHSPEC_COUNT = 256;
 
 const emptyPathspecs: string[] = [];
 
-function isBoundedGitArgument(value: string): boolean {
-  if (value.length === 0 || value.includes('\0') || Buffer.byteLength(value, 'utf8') > MAX_GIT_ARGUMENT_BYTES) {
-    return false;
-  }
-
+function isValidUnicode(value: string): boolean {
   for (let index = 0; index < value.length; index += 1) {
     const codeUnit = value.charCodeAt(index);
     if (codeUnit >= 0xd800 && codeUnit <= 0xdbff) {
@@ -27,6 +23,10 @@ function isBoundedGitArgument(value: string): boolean {
   }
 
   return true;
+}
+
+function isBoundedGitArgument(value: string): boolean {
+  return value.length > 0 && !value.includes('\0') && isValidUnicode(value) && Buffer.byteLength(value, 'utf8') <= MAX_GIT_ARGUMENT_BYTES;
 }
 
 const GitArgumentSchema = z.string().refine(isBoundedGitArgument, {
@@ -45,13 +45,45 @@ const RevisionRangeSchema = z
   })
   .readonly();
 
-export const AgentReviewRequestSchema = z
+const ExactPatchContentSchema = z
+  .string()
+  .refine(
+    (value) => value.length > 0 && !value.includes('\0') && isValidUnicode(value) && Buffer.byteLength(value, 'utf8') <= MAX_AGENT_REQUEST_BYTES,
+    { message: 'Patch content must be valid Unicode without NUL and fit within the request byte limit.' },
+  );
+
+const ExactPatchTargetSchema = z
+  .discriminatedUnion('kind', [
+    z.strictObject({ kind: z.literal('repository') }),
+    z.strictObject({ kind: z.literal('worktree') }),
+  ])
+  .readonly();
+
+export const ExactPatchRequestSchema = z
+  .strictObject({
+    kind: z.literal('compare.review-request'),
+    schemaVersion: z.literal(1),
+    mode: z.literal('patch'),
+    patch: z
+      .strictObject({
+        content: ExactPatchContentSchema,
+        target: ExactPatchTargetSchema,
+      })
+      .readonly(),
+  })
+  .readonly();
+
+const RevisionRequestSchema = z
   .strictObject({
     kind: z.literal('compare.review-request'),
     schemaVersion: z.literal(1),
     mode: z.literal('revisions'),
     revisions: RevisionRangeSchema,
   })
+  .readonly();
+
+export const AgentReviewRequestSchema = z
+  .discriminatedUnion('mode', [RevisionRequestSchema, ExactPatchRequestSchema])
   .readonly();
 
 export type AgentReviewRequest = z.infer<typeof AgentReviewRequestSchema>;

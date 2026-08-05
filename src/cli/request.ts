@@ -22,7 +22,7 @@ const requestErrorMessages = {
   'invalid-utf8': 'Request input must be valid UTF-8 JSON.',
   'malformed-json': 'Request input must contain one JSON document.',
   'unsupported-version': 'Request schema version is unsupported. Use schemaVersion 1.',
-  'invalid-request': 'Request is invalid. Use kind "compare.review-request", schemaVersion 1, mode "revisions", and revisions only.',
+  'invalid-request': 'Request is invalid. Use kind "compare.review-request", schemaVersion 1, and one supported source mode.',
 } as const satisfies Record<AgentRequestErrorKind, string>;
 
 export class AgentRequestError extends Error {
@@ -46,8 +46,13 @@ function isUnsupportedVersion(value: unknown): boolean {
 }
 
 function freezeRequest(request: AgentReviewRequest): AgentReviewRequest {
-  Object.freeze(request.revisions.pathspecs);
-  Object.freeze(request.revisions);
+  if (request.mode === 'revisions') {
+    Object.freeze(request.revisions.pathspecs);
+    Object.freeze(request.revisions);
+  } else {
+    Object.freeze(request.patch.target);
+    Object.freeze(request.patch);
+  }
   return Object.freeze(request);
 }
 
