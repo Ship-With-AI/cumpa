@@ -5,11 +5,11 @@ subsystem: web-ui
 tags: [vue, playwright, exact-patch, frozen-snapshot, drift]
 requires:
   - phase: 13-exact-patch-grounding
-    provides: immutable PatchSnapshot sessions, strict patch status DTOs, and exact-patch export provenance
+    provides: immutable PatchSnapshot sessions, strict patch-status DTOs, and exact-patch export provenance
 provides:
   - dedicated typed exact-patch status client
   - source-aware exact-patch identity, scope, drift, and diff labels
-  - status-source separation between range selector drift and patch snapshot state
+  - recovery evidence for the complete focused browser gate and production build
 affects: [phase-14-attached-lifecycle, exact-patch-ui]
 tech-stack:
   added: []
@@ -30,63 +30,74 @@ status: complete
 
 # Phase 13 Plan 04: Exact Patch Workspace Summary
 
-**The authenticated workspace now distinguishes frozen exact-patch status from range selector drift and presents exact-patch identity, scope, and preimage/postimage terminology without changing durable anchor sides.**
+**The authenticated workspace distinguishes frozen exact-patch status from range selector drift, and recovery fixes now prove the shipped package builds and the full four-file browser gate passes.**
 
 ## Performance
 
-- **Duration:** 17 min
-- **Started:** 2026-08-05T10:16:17Z
-- **Completed:** 2026-08-05T10:33:00Z
+- **Original execution:** 17 min
+- **Recovery closeout completed:** 2026-08-05T11:09:17Z
 - **Tasks:** 3 (RED, GREEN, no-op REFACTOR)
-- **Files modified:** 6
+- **Files modified:** 6 primary plan artifacts; recovery commits are recorded below.
 
 ## Accomplishments
 
 - Added strict authenticated `GET /api/patch-status` parsing to `SessionClient`, leaving selector-drift status range-only.
 - Added exact-session UI branching for frozen header/scope terms, persistent drift notice, snapshot-unavailable blocking shell, frozen-file retry copy, and preimage/postimage accessible labels.
-- Added Playwright coverage proving exact sessions use the patch-status endpoint and render the persistent exact drift notice while range selector drift remains green.
+- Recovered the blocked closeout by repairing the TypeScript contract narrowing, exact-patch export identity, responsive label selector, and pinned empty-state copy roots.
+- Verified the production build and all 28 browser tests in the required four-file gate.
 
 ## Task Commits
 
 1. **Task 1: RED — specify exact copy, frozen usability, status transitions, and responsive focus** — `debeb28` (`test`)
 2. **Task 2: GREEN — wire the dedicated patch status client into the approved workspace** — `c9de24a` (`feat`)
-3. **Task 3: REFACTOR — preserve behavior while removing only duplicated presentation branches** — no code change; GREEN structure already has one status loop and one source-aware label branch.
+3. **Task 3: REFACTOR — preserve behavior while removing only duplicated presentation branches** — no code change; GREEN already had one status loop and one source-aware label branch.
+
+### Recovery Commits
+
+- `e8a9c1b` (`fix(13): restore TypeScript contract narrowing`) — restored omitted type imports and explicit narrowing that structural unions, object spreads, and async closures did not preserve.
+- `478a069` (`fix(13-04): model exact patch export identity`) — corrected exact-patch UI/export identity wiring.
+- `84dbb93` (`test(13-04): target responsive side labels precisely`) — corrected the responsive side-label browser assertion.
+- `430f8d9` (`fix(13-04): preserve pinned empty-state copy`) — preserved pinned-session empty-state copy while retaining exact-patch presentation.
 
 ## Files Created/Modified
 
-- `src/web/api/client.ts` — adds the strict patch-status client method.
-- `src/web/App.vue` — selects exactly one status source by strict session member and renders exact-patch state copy.
-- `src/web/components/DiffWorkspace.vue` — maps user-facing labels and comment affordances to preimage/postimage while retaining `base`/`head` anchors.
-- `src/web/components/IdentityHeader.vue` — renders frozen patch identity and disclosure.
-- `src/web/components/IdentityPanel.vue` — renders server-session patch facts and full digest copy action.
-- `tests/integration/selector-drift-ui.spec.ts` — proves endpoint separation and readable drift presentation.
+- `src/web/api/client.ts` — strict patch-status client method.
+- `src/web/App.vue` — exclusive status source and exact-patch state copy.
+- `src/web/components/DiffWorkspace.vue` — preimage/postimage labels while retaining `base`/`head` anchors.
+- `src/web/components/IdentityHeader.vue` and `src/web/components/IdentityPanel.vue` — frozen patch identity and scope facts.
+- `tests/integration/selector-drift-ui.spec.ts` — endpoint separation and readable drift presentation.
+
+## Verification
+
+- `npm run build` — passed.
+- `npm exec playwright test -- tests/integration/anchored-workspace.spec.ts tests/integration/selector-drift-ui.spec.ts tests/e2e/file-tree.spec.ts tests/e2e/pinned-session.spec.ts` — passed, **28 passed (47.8s)**.
+
+The browser command exercises the anchored workspace, selector drift, packaged file tree, and pinned-session paths together. It therefore proves both the exact-patch recovery path and range/pinned non-regression under the requested gate.
 
 ## Decisions Made
 
-- Kept exact-patch status state local to `App.vue`; it uses no selector-drift response or range observer.
-- Reused `InlineNotice` as the persistent alert seam and retained existing durable anchor values for draft compatibility.
+- Kept exact-patch status local to `App.vue`; it uses no selector-drift response or range observer.
+- Reused `InlineNotice` as the persistent alert seam and retained durable anchor values for draft compatibility.
+- Closed the plan only after the exact gate and build succeeded; no application source or test files were changed during this documentation closeout.
+
+## TDD Gate Compliance
+
+- RED commit `debeb28` and GREEN commit `c9de24a` exist in history.
+- REFACTOR was intentionally a no-op because the GREEN implementation already met the structural constraint.
 
 ## Deviations from Plan
 
-### Auto-fixed Issues
+### Recovery Closeout
 
-**1. [Rule 1 - Regression] Restored range conversation-side capitalization**
-- **Found during:** Task 2
-- **Issue:** the source-aware diff label branch initially changed existing range accepted-comment text from `Head` to `head`.
-- **Fix:** separated comment display naming from exact-patch accessible terminology.
-- **Files modified:** `src/web/components/DiffWorkspace.vue`
-- **Verification:** range selector-drift and exact patch status browser tests passed.
-- **Committed in:** `c9de24a`
-
----
-
-**Total deviations:** 1 auto-fixed (1 Rule 1 regression).
-**Impact on plan:** retained the established pinned-range presentation while adding exact-patch terminology.
+The initial closeout was blocked by build and browser failures outside the original 13-04 implementation. The root corrections were committed separately as `e8a9c1b`, `478a069`, `84dbb93`, and `430f8d9`; this closeout records their observed successful gates without changing application source or tests.
 
 ## Issues Encountered
 
-- The required four-file Playwright command cannot complete because both packaged E2E files invoke `npm run build`, which fails on pre-existing TypeScript errors in earlier Phase 13 server/CLI/export files. The command also retains two unrelated anchored-workspace failures: an asynchronous comment-settlement assertion and a responsive label-reachability assertion.
-- The direct exact-session browser proof passes, but reports pre-existing `ReviewPanel`/`ExportSection` runtime prop warnings because those components still require pinned base/head props. They are outside this plan's prescribed file set and need parent integration follow-up before treating the full browser matrix as green.
+- The earlier checkpoint summary recorded a failing build and incomplete four-file browser run. Both conditions are resolved by the recovery commits and the observed verification above.
+
+## Known Stubs
+
+None. This closeout changes only planning documentation; no new product surface was introduced.
 
 ## User Setup Required
 
@@ -94,11 +105,12 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- The exact-patch UI now has a typed status seam, strict session presentation branches, and direct browser evidence.
-- Parent integration must repair the recorded upstream build errors and pinned-only review-panel prop contract, then rerun the required four-file browser command.
+- Plan 13-04 is complete with build and focused browser evidence.
+- Phase 13 remains at 4/4 plans pending its separate phase-level verification; this closeout does not transition work to Phase 14.
 
 ## Self-Check: PASSED
 
 - `13-04-SUMMARY.md` exists.
 - TDD commits `debeb28` and `c9de24a` exist in history.
-- Direct `selector-drift-ui.spec.ts` completed 3/3 tests after GREEN and no-op REFACTOR.
+- Recovery commits `e8a9c1b`, `478a069`, `84dbb93`, and `430f8d9` exist in history.
+- The required build and four-file Playwright gates passed as recorded above.
