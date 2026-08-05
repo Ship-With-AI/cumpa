@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rename, rm, unlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createGroundedExactPatch } from '../../src/git/exact-patch.js';
+import { MAX_INLINE_TEXT_BYTES } from '../../src/git/availability.js';
 import {
   assertSourceControlUnchanged,
   captureSourceControlSnapshot,
@@ -22,12 +23,21 @@ function git(cwd: string, arguments_: readonly string[]): Buffer {
   });
 }
 
-async function fixture(): Promise<{ readonly root: string; readonly oldBytes: Buffer; readonly newBytes: Buffer; readonly oldOid: string; readonly newOid: string }> {
+async function repository(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), 'compare-exact-patch-'));
   fixtures.push(root);
   git(root, ['init', '--quiet']);
   git(root, ['config', 'user.email', 'tests@example.com']);
   git(root, ['config', 'user.name', 'Compare tests']);
+  return root;
+}
+
+function gitPatch(root: string, from: string, to: string): string {
+  return git(root, ['diff', '--binary', '--full-index', '--find-renames=20%', from, to, '--']).toString('utf8');
+}
+
+async function fixture(): Promise<{ readonly root: string; readonly oldBytes: Buffer; readonly newBytes: Buffer; readonly oldOid: string; readonly newOid: string }> {
+  const root = await repository();
 
   const oldBytes = Buffer.from('first line\nlast line', 'utf8');
   const newBytes = Buffer.from('first line\nchanged line', 'utf8');
@@ -57,6 +67,25 @@ function patch(oldOid: string, newOid: string): string {
     '\\ No newline at end of file',
     '',
   ].join('\n');
+}
+
+async function deleteRenameFixture(): Promise<{ readonly root: string; readonly content: string; readonly deletedBytes: Buffer; readonly renamedBytes: Buffer }> {
+  const root = await repository();
+  const deletedBytes = Buffer.from('deleted source\n', 'utf8');
+  const renamedBytes = Buffer.from('one\ntwo\nthree\nfour\nfive\n', 'utf8');
+  await writeFile(join(root, 'deleted.txt'), deletedBytes);
+  await writeFile(join(root, 'rename-old.txt'), renamedBytes);
+  git(root, ['add', '--', 'deleted.txt', 'rename-old.txt']);
+  git(root, ['commit', '--quiet', '-m', 'base']);
+  const base = git(root, ['rev-parse', 'HEAD']).toString('ascii').trim();
+
+  await unlink(join(root, 'deleted.txt'));
+  await rename(join(root, 'rename-old.txt'), join(root, 'rename-new.txt'));
+  await writeFile(join(root, 'rename-new.txt'), Buffer.from('one\ntwo\nthree\nfour\nchanged\n', 'utf8'));
+  git(root, ['add', '-A']);
+  git(root, ['commit', '--quiet', '-m', 'delete and rename']);
+  const target = git(root, ['rev-parse', 'HEAD']).toString('ascii').trim();
+  return { root, content: gitPatch(root, base, target), deletedBytes, renamedBytes };
 }
 
 afterEach(async () => {
@@ -111,5 +140,129 @@ describe('read-only exact patch grounding', () => {
     ).rejects.toMatchObject({ name: 'ExactPatchGroundingError', message: 'Patch does not match the selected target.' });
 
     assertSourceControlUnchanged(before, await captureSourceControlSnapshot(source.root));
+  });
+
+  it('rejects malformed hunk ranges, truncation, and body records outside declared counts without mutation', async () => {
+    const source = await fixture();
+    const valid = patch(source.oldOid, source.newOid);
+    const malformed = [
+      valid.replace('@@ -1,2 +1,2 @@', '@@ -1,3 +1,2 @@'),
+      valid.replace('@@ -1,2 +1,2 @@', '@@ -1,2 +1,3 @@'),
+      valid.replace('@@ -1,2 +1,2 @@', '@@ -1,1 +1,1 @@'),
+      valid.replace('@@ -1,2 +1,2 @@', '@@ -1,2 +9,2 @@'),
+      valid.replace('-last line\n\\ No newline at end of file\n', ''),
+      valid.replace('@@ -1,2 +1,2 @@\n', '+outside\n@@ -1,2 +1,2 @@\n'),
+    ];
+    const before = await captureSourceControlSnapshot(source.root);
+
+    for (const content of malformed) {
+      await expect(
+        createGroundedExactPatch({ cwd: source.root, patchContent: content, target: { kind: 'repository' } }),
+      ).rejects.toMatchObject({ name: 'ExactPatchGroundingError' });
+    }
+
+    assertSourceControlUnchanged(before, await captureSourceControlSnapshot(source.root));
+  });
+
+  it.each(['repository', 'worktree'] as const)('rejects delete and rename drift when old target paths remain in the %s', async (targetKind) => {
+    const source = await deleteRenameFixture();
+    await writeFile(join(source.root, 'deleted.txt'), source.deletedBytes);
+    await writeFile(join(source.root, 'rename-old.txt'), source.renamedBytes);
+    if (targetKind === 'repository') {
+      git(source.root, ['add', '--', 'deleted.txt', 'rename-old.txt']);
+      git(source.root, ['commit', '--quiet', '-m', 'old targets drifted back']);
+    }
+    const before = await captureSourceControlSnapshot(source.root);
+
+    await expect(
+      createGroundedExactPatch({ cwd: source.root, patchContent: source.content, target: { kind: targetKind } }),
+    ).rejects.toMatchObject({ name: 'ExactPatchGroundingError', message: 'Patch does not match the selected target.' });
+
+    assertSourceControlUnchanged(before, await captureSourceControlSnapshot(source.root));
+  });
+
+  it('retains bounded oversized, binary, non-UTF-8, and submodule entries as exact unsupported inventory', async () => {
+    const root = await repository();
+    await writeFile(join(root, 'marker.txt'), 'first\n');
+    git(root, ['add', '--', 'marker.txt']);
+    git(root, ['commit', '--quiet', '-m', 'gitlink old object']);
+    const oldCommit = git(root, ['rev-parse', 'HEAD']).toString('ascii').trim();
+    await writeFile(join(root, 'marker.txt'), 'second\n');
+    git(root, ['add', '--', 'marker.txt']);
+    git(root, ['commit', '--quiet', '-m', 'gitlink new object']);
+    const newCommit = git(root, ['rev-parse', 'HEAD']).toString('ascii').trim();
+
+    const oldBinary = Buffer.from([0, 1, 2, 3]);
+    const newBinary = Buffer.from([0, 1, 9, 3]);
+    const oldNonUtf8 = Buffer.from([0xff, 1, 2]);
+    const newNonUtf8 = Buffer.from([0xff, 1, 3]);
+    const oldLarge = Buffer.alloc(MAX_INLINE_TEXT_BYTES + 1);
+    const newLarge = Buffer.from(oldLarge);
+    newLarge[newLarge.length - 1] = 1;
+    await writeFile(join(root, '.gitattributes'), 'non-utf8.dat binary\n');
+    await writeFile(join(root, 'binary.dat'), oldBinary);
+    await writeFile(join(root, 'non-utf8.dat'), oldNonUtf8);
+    await writeFile(join(root, 'large.dat'), oldLarge);
+    git(root, ['add', '--', '.gitattributes', 'binary.dat', 'non-utf8.dat', 'large.dat']);
+    git(root, ['update-index', '--add', '--cacheinfo', `160000,${oldCommit},vendor/sub`]);
+    git(root, ['commit', '--quiet', '-m', 'unsupported base']);
+    const base = git(root, ['rev-parse', 'HEAD']).toString('ascii').trim();
+
+    await writeFile(join(root, 'binary.dat'), newBinary);
+    await writeFile(join(root, 'non-utf8.dat'), newNonUtf8);
+    await writeFile(join(root, 'large.dat'), newLarge);
+    git(root, ['add', '--', 'binary.dat', 'non-utf8.dat', 'large.dat']);
+    git(root, ['update-index', '--add', '--cacheinfo', `160000,${newCommit},vendor/sub`]);
+    git(root, ['commit', '--quiet', '-m', 'unsupported target']);
+    const target = git(root, ['rev-parse', 'HEAD']).toString('ascii').trim();
+    await mkdir(join(root, 'vendor'), { recursive: true });
+    await writeFile(join(root, 'vendor', 'sub'), 'snapshot placeholder\n');
+    const content = gitPatch(root, base, target);
+    const before = await captureSourceControlSnapshot(root);
+
+    const grounded = await createGroundedExactPatch({
+      cwd: root,
+      patchContent: content,
+      target: { kind: 'repository' },
+    });
+
+    const byPath = new Map(grounded.changedFiles.map((file) => [file.newPath?.utf8, file]));
+    expect(byPath.get('binary.dat')?.availability).toEqual({ kind: 'unsupported', reason: 'binary' });
+    expect(byPath.get('non-utf8.dat')?.availability).toEqual({ kind: 'unsupported', reason: 'non-utf8' });
+    expect(byPath.get('large.dat')?.availability).toEqual({ kind: 'unsupported', reason: 'oversized' });
+    expect(byPath.get('vendor/sub')?.availability).toEqual({ kind: 'unsupported', reason: 'submodule' });
+    for (const [path, expectedOld, expectedNew] of [
+      ['binary.dat', oldBinary, newBinary],
+      ['non-utf8.dat', oldNonUtf8, newNonUtf8],
+      ['large.dat', oldLarge, newLarge],
+    ] as const) {
+      const file = byPath.get(path)!;
+      expect(grounded.contents.get(file.id)?.preimage).toEqual(expectedOld);
+      expect(grounded.contents.get(file.id)?.postimage).toEqual(expectedNew);
+    }
+    const submodule = byPath.get('vendor/sub')!;
+    expect(submodule.oldBlobOid).toBe(oldCommit);
+    expect(submodule.newBlobOid).toBe(newCommit);
+    expect(grounded.contents.get(submodule.id)).toEqual({ preimage: undefined, postimage: undefined });
+    assertSourceControlUnchanged(before, await captureSourceControlSnapshot(root));
+  });
+
+  it('rejects a Git binary literal that inflates beyond the grounded object ceiling without mutation', async () => {
+    const root = await repository();
+    git(root, ['commit', '--quiet', '--allow-empty', '-m', 'empty base']);
+    const base = git(root, ['rev-parse', 'HEAD']).toString('ascii').trim();
+    await writeFile(join(root, 'bounded.dat'), Buffer.alloc((2 * MAX_INLINE_TEXT_BYTES) + 1));
+    git(root, ['add', '--', 'bounded.dat']);
+    git(root, ['commit', '--quiet', '-m', 'oversized binary']);
+    const target = git(root, ['rev-parse', 'HEAD']).toString('ascii').trim();
+    const content = gitPatch(root, base, target);
+    expect(Buffer.byteLength(content, 'utf8')).toBeLessThan(MAX_INLINE_TEXT_BYTES);
+    const before = await captureSourceControlSnapshot(root);
+
+    await expect(
+      createGroundedExactPatch({ cwd: root, patchContent: content, target: { kind: 'repository' } }),
+    ).rejects.toMatchObject({ name: 'ExactPatchGroundingError' });
+
+    assertSourceControlUnchanged(before, await captureSourceControlSnapshot(root));
   });
 });
