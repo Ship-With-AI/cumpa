@@ -404,6 +404,10 @@ async function reloadAttachedStatus(): Promise<void> {
   setAttachedStatus(await sessionClient.getAttachedCompletionStatus());
 }
 
+function reloadPage(): void {
+  window.location.reload();
+}
+
 function finishAttachedReview(): void {
   const current = reviewDraft.value;
   if (!attachedFinishReady.value || current === undefined || sessionClient === undefined) return;
@@ -454,6 +458,10 @@ function mutateReview(request: DraftMutationRequest, successfulBuffer?: 'summary
     if (result.kind === 'accepted') {
       reviewFailure.value = null;
       acceptReviewDraft(result.draft, successfulBuffer);
+      if (isAttachedSession.value && attachedLifecycle.value === 'retryableFailure') {
+        attachedResult.value = undefined;
+        attachedLifecycle.value = 'waiting';
+      }
       const open = result.draft.comments.filter((comment) => comment.state === 'open').length;
       const resolved = result.draft.comments.length - open;
       announce(
@@ -574,7 +582,8 @@ async function reloadLatestReview(): Promise<void> {
     return;
   }
   const exportConflict = reviewDraft.value?.export.conflict;
-  if (latestConflictDraft === undefined && exportConflict === null) {
+  const attachedConflict = attachedResult.value?.kind === 'revisionConflict';
+  if (latestConflictDraft === undefined && exportConflict === null && !attachedConflict) {
     return;
   }
 
@@ -596,6 +605,10 @@ async function reloadLatestReview(): Promise<void> {
       runCommands(transition.commands);
     }
     latestConflictDraft = undefined;
+    if (isAttachedSession.value && attachedLifecycle.value === 'retryableFailure') {
+      attachedResult.value = undefined;
+      attachedLifecycle.value = 'waiting';
+    }
   } catch {
     announce('Latest draft couldn’t be reloaded. Your unsaved text is still here.');
   } finally {
@@ -711,6 +724,15 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
 }
 
 function dispatchWorkspace(event: WorkspaceEvent): void {
+  if (attachedMutationLocked.value && (
+    event.type === 'activate-line'
+    || event.type === 'add-comment'
+    || event.type === 'cancel-composer'
+    || event.type === 'confirm-discard'
+    || event.type === 'confirm-move'
+    || event.type === 'keep-writing'
+    || event.type === 'composer-text-changed'
+  )) return;
   if (workspace === undefined) return;
   const transition = workspace.dispatch(event);
   workspaceState.value = transition.state;
@@ -769,6 +791,13 @@ function toggleIdentity(): void {
     return;
   }
 
+  identityOpen.value = true;
+  if (identityModal.value) {
+    void nextTick(() => identityPanel.value?.focusClose());
+  }
+}
+
+function openIdentityScope(): void {
   identityOpen.value = true;
   if (identityModal.value) {
     void nextTick(() => identityPanel.value?.focusClose());
@@ -955,6 +984,7 @@ onBeforeUnmount(() => {
       ref="identityHeader"
       :session="session"
       :expanded="identityOpen"
+      :attached-lifecycle="isAttachedSession ? (attachedLifecycle === 'finishing' || attachedLifecycle === 'completed' ? attachedLifecycle : 'waiting') : undefined"
       :inert="isExactPatchSession && identityOpen && identityModal"
       @toggle="toggleIdentity"
     />
@@ -1109,6 +1139,7 @@ onBeforeUnmount(() => {
           :content="selectedContent"
           :path="selectedPath"
           :source-kind="isExactPatchSession ? 'exact-patch' : 'range'"
+          :mutations-locked="attachedMutationLocked"
           @activate="(side, line) => dispatchWorkspace({ type: 'activate-line', side, line })"
           @add="dispatchWorkspace({ type: 'add-comment' })"
           @cancel="dispatchWorkspace({ type: 'cancel-composer' })"
@@ -1144,7 +1175,12 @@ onBeforeUnmount(() => {
           :conflict="reviewDraft.conflict === null ? null : { expectedRevision: reviewDraft.conflict.expectedRevision, actualRevision: reviewDraft.conflict.latest.revision }"
           :failure="reviewFailure"
           :retained-summary="reviewDraft.retained.summary"
-          @cancel-summary="reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot()"
+          :attached-lifecycle="isAttachedSession ? attachedLifecycle : undefined"
+          :attached-ready="attachedFinishReady"
+          :attached-failure="attachedResult"
+          :mutation-locked="attachedMutationLocked"
+          :is-exact-patch="isExactPatchSession"
+          @cancel-summary="if (!attachedMutationLocked) { reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot(); }"
           @close="closeComments"
           @delete="mutateComment($event, 'deleteComment')"
           @reopen="mutateComment($event, 'reopenComment')"
@@ -1159,11 +1195,14 @@ onBeforeUnmount(() => {
           @save-comment="saveComment"
           @save-summary="saveSummary"
           @show="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
-          @update:comment-buffer="(commentId, value) => { reviewState?.setCommentBuffer(commentId, value); refreshReviewSnapshot(); }"
-          @update:summary-buffer="(value) => { reviewState?.setSummaryBuffer(value); refreshReviewSnapshot(); }"
+          @update:comment-buffer="(commentId, value) => { if (!attachedMutationLocked) { reviewState?.setCommentBuffer(commentId, value); refreshReviewSnapshot(); } }"
+          @update:summary-buffer="(value) => { if (!attachedMutationLocked) { reviewState?.setSummaryBuffer(value); refreshReviewSnapshot(); } }"
           @cancel-export="cancelExport"
           @export="exportReview"
           @review-unsaved-text="reviewUnsavedText"
+          @finish-review="finishAttachedReview"
+          @reload-attached="reloadPage"
+          @view-attached-scope="openIdentityScope"
         />
       </aside>
     </div>

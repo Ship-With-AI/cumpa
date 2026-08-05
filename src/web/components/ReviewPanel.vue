@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { FinishReviewResult } from '../../contracts/api.js';
 import { computed, nextTick, ref, watch } from 'vue';
 
 import type { ReviewPendingOperation } from '../model/review-draft-state.js';
@@ -17,46 +18,65 @@ type ReviewFailure = Readonly<{
   commentId?: string;
 }>;
 
+type AttachedLifecycle =
+  | 'waiting'
+  | 'waitingDisconnected'
+  | 'finishing'
+  | 'completed'
+  | 'retryableFailure'
+  | 'terminalFailure';
+
 const props = defineProps<{
-  comments: readonly WorkspaceComment[];
-  inventory: readonly { identity: string; display: string }[];
-  summary: string;
-  revision: number;
-  pinnedEndpoints?: Readonly<{
-    base: Readonly<{ label: string; oid: string }>;
-    head: Readonly<{ label: string; oid: string }>;
-  }>;
-  summaryBuffer: string;
-  commentBuffers: ReadonlyMap<string, string>;
-  pending: ReviewPendingOperation | null;
-  conflict: Readonly<{ expectedRevision: number; actualRevision: number }> | null;
-  failure: ReviewFailure | null;
-  retainedSummary: boolean;
-  exportState: ReviewExportState;
-  appendIgnoreRule: () => Promise<AppendCompareIgnoreResult>;
-  refreshIgnoreStatus: () => Promise<void>;
-  revealExportDirectory: () => Promise<ExportDirectoryRevealResult>;
-  selectedCommentId?: string | null;
+  readonly comments: readonly ReviewComment[];
+  readonly inventory: readonly FileInventoryEntry[];
+  readonly summary: string;
+  readonly revision: number;
+  readonly pinnedEndpoints?: PinnedRangeEndpoints;
+  readonly summaryBuffer: string;
+  readonly commentBuffers: ReadonlyMap<string, string>;
+  readonly pending: ReviewPendingOperation | null;
+  readonly conflict: ReviewConflict | null;
+  readonly failure: ReviewFailure | null;
+  readonly retainedSummary: string | null;
+  readonly exportState: ReviewExportState;
+  readonly appendIgnoreRule: AppendCompareIgnoreRule | undefined;
+  readonly refreshIgnoreStatus: RefreshCompareIgnoreStatus | undefined;
+  readonly revealExportDirectory: RevealExportDirectory | undefined;
+  readonly selectedCommentId?: string;
+  readonly attachedLifecycle?: AttachedLifecycle;
+  readonly attachedReady?: boolean;
+  readonly attachedFailure?: FinishReviewResult;
+  readonly mutationLocked?: boolean;
+  readonly isExactPatch?: boolean;
 }>();
 
 const emit = defineEmits<{
-  cancelSummary: [];
-  close: [];
-  copyRecordedAnchor: [commentId: string];
-  delete: [commentId: string];
-  edit: [commentId: string];
-  'reload-latest': [];
-  reopen: [commentId: string];
-  inspectRecordedFile: [commentId: string];
-  resolve: [commentId: string];
-  saveComment: [commentId: string];
-  cancelExport: [];
+  'update:summaryBuffer': [body: string];
+  'update:commentBuffer': [commentId: string, body: string];
   saveSummary: [];
-  export: [];
-  reviewUnsavedText: [];
+  cancelSummary: [];
+  editComment: [commentId: string];
+  cancelComment: [commentId: string];
+  resolveComment: [commentId: string];
+  reopenComment: [commentId: string];
+  deleteComment: [commentId: string];
+  edit: [commentId: string];
   show: [commentId: string];
-  'update:commentBuffer': [commentId: string, value: string];
-  'update:summaryBuffer': [value: string];
+  delete: [commentId: string];
+  close: [];
+  cancelExport: [];
+  export: [];
+  inspectRecordedFile: [commentId: string];
+  copyRecordedAnchor: [commentId: string];
+  saveComment: [commentId: string];
+  reloadLatest: [];
+  reviewUnsavedText: [];
+  refreshIgnoreStatus: [];
+  revealExportDirectory: [];
+  exportReview: [];
+  finishReview: [];
+  reloadAttached: [];
+  viewAttachedScope: [];
 }>();
 
 const root = ref<HTMLElement>();
@@ -106,6 +126,35 @@ const visibleOrder = computed(() => [
 const summaryFailure = computed(() => props.failure?.operation === 'summary');
 const reviewFailure = computed(() => props.failure !== null && props.failure.operation !== 'summary');
 
+const attached = computed(() => props.attachedLifecycle !== undefined);
+const attachedHasUnsavedText = computed(() => (
+  props.summaryBuffer !== props.summary
+  || props.comments.some((comment) => buffer(comment) !== comment.body)
+));
+const attachedBlockedByPending = computed(() => props.pending !== null);
+const attachedBlockedByConflict = computed(() => props.conflict !== null);
+const attachedNoFeedback = computed(() => props.summary === '' && props.comments.length === 0);
+const completionAction = ref<HTMLButtonElement>();
+const completionSuccess = ref<HTMLElement>();
+const completionFailure = ref<HTMLElement>();
+
+function finishAttachedReview(): void {
+  if (props.attachedReady) emit('finishReview');
+}
+
+function focusStaleFeedback(): void {
+  const result = props.attachedFailure;
+  if (result?.kind !== 'staleAnchors') return;
+
+  const commentId = result.affectedCommentIds.find((id) => props.comments.some((comment) => comment.id === id));
+  if (commentId === undefined) return;
+
+  const comment = props.comments.find((candidate) => candidate.id === commentId);
+  if (comment?.state === 'resolved') resolvedOpen.value = true;
+  else openCommentsOpen.value = true;
+  void nextTick(() => focusCommentHeading(commentId));
+}
+
 function buffer(comment: WorkspaceComment): string {
   return props.commentBuffers.get(comment.id) ?? comment.body;
 }
@@ -127,6 +176,7 @@ function focusEditButton(commentId: string): void {
 }
 
 function startEdit(comment: WorkspaceComment): void {
+  if (props.mutationLocked) return;
   editing.value = comment.id;
   confirmingEditDiscard.value = null;
   emit('edit', comment.id);
@@ -151,6 +201,7 @@ function keepEditing(commentId: string): void {
 }
 
 function discardEdits(comment: WorkspaceComment): void {
+  if (props.mutationLocked) return;
   emit('update:commentBuffer', comment.id, comment.body);
   confirmingEditDiscard.value = null;
   editing.value = null;
@@ -158,7 +209,7 @@ function discardEdits(comment: WorkspaceComment): void {
 }
 
 function onEditKeydown(event: KeyboardEvent, comment: WorkspaceComment): void {
-  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter' && buffer(comment).trim() !== '' && props.pending === null && props.conflict === null) {
+  if (!props.mutationLocked && (event.metaKey || event.ctrlKey) && event.key === 'Enter' && buffer(comment).trim() !== '' && props.pending === null && props.conflict === null) {
     event.preventDefault();
     event.stopPropagation();
     emit('saveComment', comment.id);
@@ -172,6 +223,7 @@ function onEditKeydown(event: KeyboardEvent, comment: WorkspaceComment): void {
 }
 
 function openDeleteConfirmation(commentId: string): void {
+  if (props.mutationLocked) return;
   confirmingDelete.value = commentId;
   focusWithinComment(commentId, '[data-keep-comment]');
 }
@@ -182,11 +234,13 @@ function cancelDelete(commentId: string): void {
 }
 
 function confirmDelete(commentId: string): void {
+  if (props.mutationLocked) return;
   pendingFocus.value = { kind: 'delete', commentId, visibleOrder: [...visibleOrder.value] };
   emit('delete', commentId);
 }
 
 function runLifecycle(commentId: string, kind: 'resolve' | 'reopen'): void {
+  if (props.mutationLocked) return;
   pendingFocus.value = { kind, commentId, visibleOrder: [...visibleOrder.value] };
   emit(kind, commentId);
 }
@@ -269,6 +323,14 @@ watch(() => props.comments, () => {
 watch(reviewFailure, (failed) => {
   if (failed) void nextTick(() => failureAlert.value?.focus());
 });
+
+watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecycle, failure]) => {
+  if (lifecycle === 'finishing') void nextTick(() => completionAction.value?.focus());
+  if (lifecycle === 'completed') void nextTick(() => completionSuccess.value?.focus());
+  if (lifecycle === 'waitingDisconnected' || lifecycle === 'terminalFailure' || failure !== undefined) {
+    void nextTick(() => completionFailure.value?.focus());
+  }
+}, { deep: true });
 </script>
 
 <template>
@@ -324,11 +386,11 @@ watch(reviewFailure, (failed) => {
       <SummarySection
         :canonical="summary"
         :model-value="summaryBuffer"
-        :pending="pending !== null"
+        :pending="pending !== null || mutationLocked === true"
         :saving="pending === 'summary'"
         :conflict="conflict !== null"
         :failure="summaryFailure"
-        :retained="retainedSummary"
+        :retained="retainedSummary !== null"
         @cancel="emit('cancelSummary')"
         @save="emit('saveSummary')"
         @update:model-value="emit('update:summaryBuffer', $event)"
@@ -382,7 +444,7 @@ watch(reviewFailure, (failed) => {
               <label>Comment
                 <textarea
                   :value="buffer(comment)"
-                  :disabled="pending !== null || conflict !== null"
+                  :disabled="pending !== null || conflict !== null || mutationLocked === true"
                   @input="emit('update:commentBuffer', comment.id, ($event.target as HTMLTextAreaElement).value)"
                   @keydown="onEditKeydown($event, comment)"
                 />
@@ -395,13 +457,13 @@ watch(reviewFailure, (failed) => {
                   class="ui-button ui-button--primary"
                   :class="{ 'ui-button--busy': pending === 'comment' }"
                   :aria-busy="pending === 'comment' || undefined"
-                  :disabled="pending !== null || conflict !== null || buffer(comment).trim() === ''"
+                  :disabled="pending !== null || conflict !== null || mutationLocked === true || buffer(comment).trim() === ''"
                   @click="emit('saveComment', comment.id)"
                 >
                   <span v-if="pending === 'comment'" class="ui-spinner" aria-hidden="true" />
                   {{ pending === 'comment' ? 'Saving comment…' : 'Save comment' }}
                 </button>
-                <button type="button" class="ui-button" :disabled="pending !== null" @click="closeEdit(comment)">Cancel edit</button>
+                <button type="button" class="ui-button" :disabled="pending !== null || mutationLocked === true" @click="closeEdit(comment)">Cancel edit</button>
               </div>
             </template>
             <template v-else>
@@ -409,19 +471,19 @@ watch(reviewFailure, (failed) => {
               <div class="review-panel__actions">
                 <button v-if="comment.status === 'verified'" type="button" class="ui-button" @click="emit('show', comment.id)">Show comment</button>
                 <button v-else type="button" class="ui-button" disabled>Show comment</button>
-                <button data-comment-edit type="button" class="ui-button" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null" @click="startEdit(comment)">Edit</button>
+                <button data-comment-edit type="button" class="ui-button" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null || mutationLocked === true" @click="startEdit(comment)">Edit</button>
                 <button
                   type="button"
                   class="ui-button"
                   :class="{ 'ui-button--busy': pending === 'resolve' && pendingFocus?.commentId === comment.id }"
                   :aria-busy="pending === 'resolve' && pendingFocus?.commentId === comment.id || undefined"
-                  :disabled="pending !== null || conflict !== null"
+                  :disabled="pending !== null || conflict !== null || mutationLocked === true"
                   @click="runLifecycle(comment.id, 'resolve')"
                 >
                   <span v-if="pending === 'resolve' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />
                   {{ pending === 'resolve' && pendingFocus?.commentId === comment.id ? 'Resolving…' : 'Resolve' }}
                 </button>
-                <button data-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null" @click="openDeleteConfirmation(comment.id)">Delete</button>
+                <button data-comment-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null || mutationLocked === true" @click="openDeleteConfirmation(comment.id)">Delete</button>
               </div>
               <p v-if="comment.status !== 'verified'">Editing requires a verified anchor.</p>
               <template v-if="comment.status !== 'verified'">
@@ -461,13 +523,13 @@ watch(reviewFailure, (failed) => {
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p>
               <p>{{ comment.body }}</p>
               <p>This permanently removes the comment from this local draft. Compare has no undo history.</p>
-              <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null" @click="cancelDelete(comment.id)">Keep comment</button>
+              <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null || mutationLocked === true" @click="cancelDelete(comment.id)">Keep comment</button>
               <button
                 type="button"
                 class="ui-button ui-button--destructive"
                 :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }"
                 :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined"
-                :disabled="pending !== null || conflict !== null"
+                :disabled="pending !== null || conflict !== null || mutationLocked === true"
                 @click="confirmDelete(comment.id)"
               >
                 <span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />
@@ -544,9 +606,9 @@ watch(reviewFailure, (failed) => {
               <div class="review-panel__actions">
                 <button v-if="comment.status === 'verified'" type="button" class="ui-button" @click="emit('show', comment.id)">Show comment</button>
                 <button v-else type="button" class="ui-button" disabled>Show comment</button>
-                <button data-comment-edit type="button" class="ui-button" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null" @click="startEdit(comment)">Edit</button>
-              <button type="button" class="ui-button" :class="{ 'ui-button--busy': pending === 'reopen' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'reopen' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null" @click="runLifecycle(comment.id, 'reopen')"><span v-if="pending === 'reopen' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'reopen' && pendingFocus?.commentId === comment.id ? 'Reopening…' : 'Reopen' }}</button>
-                <button data-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null" @click="openDeleteConfirmation(comment.id)">Delete</button>
+                <button data-comment-edit type="button" class="ui-button" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null || mutationLocked === true" @click="startEdit(comment)">Edit</button>
+                <button type="button" class="ui-button" :class="{ 'ui-button--busy': pending === 'reopen' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'reopen' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null || mutationLocked === true" @click="runLifecycle(comment.id, 'reopen')"><span v-if="pending === 'reopen' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'reopen' && pendingFocus?.commentId === comment.id ? 'Reopening…' : 'Reopen' }}</button>
+                <button data-comment-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null || mutationLocked === true" @click="openDeleteConfirmation(comment.id)">Delete</button>
               </div>
               <p v-if="comment.status !== 'verified'">Editing requires a verified anchor.</p>
             </template>
@@ -575,8 +637,8 @@ watch(reviewFailure, (failed) => {
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p>
               <p>{{ comment.body }}</p>
               <p>This permanently removes the comment from this local draft. Compare has no undo history.</p>
-              <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null" @click="cancelDelete(comment.id)">Keep comment</button>
-              <button type="button" class="ui-button ui-button--destructive" :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null" @click="confirmDelete(comment.id)"><span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'delete' && pendingFocus?.commentId === comment.id ? 'Deleting…' : 'Delete comment' }}</button>
+              <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null || mutationLocked === true" @click="cancelDelete(comment.id)">Keep comment</button>
+              <button type="button" class="ui-button ui-button--destructive" :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null || mutationLocked === true" @click="confirmDelete(comment.id)"><span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'delete' && pendingFocus?.commentId === comment.id ? 'Deleting…' : 'Delete comment' }}</button>
             </section>
             <p v-if="pending === 'reopen' && pendingFocus?.commentId === comment.id" role="status">Reopening comment…</p>
           </article>
@@ -596,11 +658,143 @@ watch(reviewFailure, (failed) => {
         :append-ignore-rule="appendIgnoreRule"
         :refresh-ignore-status="refreshIgnoreStatus"
         :reveal-export-directory="revealExportDirectory"
+        :attached="attached"
+        :locked="mutationLocked"
         @cancel="emit('cancelExport')"
         @export="emit('export')"
         @reload-latest="emit('reload-latest')"
         @review-unsaved-text="emit('reviewUnsavedText')"
       />
+    </section>
+
+    <section v-if="attached" class="review-panel__section attached-completion" aria-labelledby="finish-attached-review-heading">
+      <header class="attached-completion__heading">
+        <h3 id="finish-attached-review-heading">Finish attached review</h3>
+        <ReviewStateBadge
+          :kind="attachedLifecycle === 'completed' ? 'resolved' : 'open'"
+          :label="attachedLifecycle === 'completed' ? 'Completed' : attachedLifecycle === 'finishing' ? 'Finishing' : 'Waiting'"
+        />
+      </header>
+
+      <template v-if="attachedLifecycle === 'completed'">
+        <div class="inline-notice inline-notice--success" role="status">
+          <UiIcon name="success" class="inline-notice__icon" />
+          <div class="inline-notice__content">
+            <h4 ref="completionSuccess" tabindex="-1">Review finished</h4>
+            <p>The accepted review was returned to the requesting agent from revision {{ revision }}. You can close this tab.</p>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="attachedLifecycle === 'finishing'">
+        <button ref="completionAction" type="button" class="ui-button ui-button--primary attached-completion__action" disabled aria-busy="true">
+          <span class="ui-spinner" aria-hidden="true" />Finishing review…
+        </button>
+        <p class="attached-completion__progress" role="status" aria-live="polite">Validating accepted revision {{ revision }} and its recorded anchors…</p>
+      </template>
+
+      <template v-else-if="attachedLifecycle === 'waitingDisconnected'">
+        <div class="inline-notice inline-notice--error" role="alert">
+          <UiIcon name="error" class="inline-notice__icon" />
+          <div class="inline-notice__content">
+            <h4 ref="completionFailure" tabindex="-1">Waiting for agent connection</h4>
+            <p>Compare can’t confirm whether this attached review was finished. Reload this page to check the coordinator.</p>
+            <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload page</button>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="attachedLifecycle === 'terminalFailure'">
+        <div class="inline-notice inline-notice--error" role="alert">
+          <UiIcon name="error" class="inline-notice__icon" />
+          <div class="inline-notice__content">
+            <h4 ref="completionFailure" tabindex="-1">Finish status is ambiguous</h4>
+            <p>Compare may have finished this review, but the coordinator did not confirm delivery. Reload this page to check the coordinator. Do not retry Finish review from this tab.</p>
+            <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload page</button>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="attachedLifecycle === 'retryableFailure' && attachedFailure?.kind === 'revisionConflict'">
+        <div class="inline-notice inline-notice--warning" role="alert">
+          <UiIcon name="warning" class="inline-notice__icon" />
+          <div class="inline-notice__content">
+            <h4 ref="completionFailure" tabindex="-1">Review changed before finishing</h4>
+            <p>This tab expected revision {{ attachedFailure.expectedRevision }}, but the accepted review is now revision {{ attachedFailure.actualRevision }}. Nothing was finished. Reload the latest review before trying again.</p>
+            <button type="button" class="ui-button" @click="emit('reloadLatest')">Reload latest</button>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="attachedLifecycle === 'retryableFailure' && attachedFailure?.kind === 'staleAnchors'">
+        <div class="inline-notice inline-notice--warning" role="alert">
+          <UiIcon name="warning" class="inline-notice__icon" />
+          <div class="inline-notice__content">
+            <h4 ref="completionFailure" tabindex="-1">Review can’t be finished</h4>
+            <p>{{ attachedFailure.affectedCount }} comment{{ attachedFailure.affectedCount === 1 ? '' : 's' }} no longer {{ attachedFailure.affectedCount === 1 ? 'has' : 'have' }} a verified anchor. Update or delete stale feedback before finishing.</p>
+            <button type="button" class="ui-button" @click="focusStaleFeedback">Review stale feedback</button>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="attachedLifecycle === 'retryableFailure' && attachedFailure?.kind === 'scopeInvalid'">
+        <div class="inline-notice inline-notice--warning" role="alert">
+          <UiIcon name="warning" class="inline-notice__icon" />
+          <div class="inline-notice__content">
+            <h4 ref="completionFailure" tabindex="-1">Review scope is no longer valid</h4>
+            <p>{{ isExactPatch ? 'The exact patch request is no longer available. Relaunch the review from the requesting agent.' : 'The selected review range no longer resolves to the requested commits. Relaunch the review from the requesting agent.' }}</p>
+            <button type="button" class="ui-button" @click="emit('viewAttachedScope')">View requested scope</button>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="attachedLifecycle === 'retryableFailure' && attachedFailure?.kind === 'draftReadOnly'">
+        <div class="inline-notice inline-notice--warning" role="alert">
+          <UiIcon name="warning" class="inline-notice__icon" />
+          <div class="inline-notice__content">
+            <h4 ref="completionFailure" tabindex="-1">Review draft needs recovery</h4>
+            <p>The local review draft could not be accepted. Reload the review before trying again.</p>
+            <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload review</button>
+          </div>
+        </div>
+      </template>
+
+      <template v-else-if="attachedLifecycle === 'retryableFailure'">
+        <div class="inline-notice inline-notice--error" role="alert">
+          <UiIcon name="error" class="inline-notice__icon" />
+          <div class="inline-notice__content">
+            <h4 ref="completionFailure" tabindex="-1">Review was not finished</h4>
+            <p>The accepted review could not be finished. Your saved feedback is unchanged. Try again after checking Compare is running.</p>
+            <button type="button" class="ui-button ui-button--primary" @click="finishAttachedReview">Try Finish review again</button>
+          </div>
+        </div>
+      </template>
+
+      <template v-else>
+        <p class="attached-completion__waiting">The requesting agent is waiting. Only Finish review returns the accepted summary and comments. Exporting, closing, reloading, or disconnecting leaves this review unfinished.</p>
+        <div v-if="attachedNoFeedback" class="inline-notice">
+          <div class="inline-notice__content">
+            <h4>No feedback added</h4>
+            <p>This review has no accepted summary or comments. You can still finish and return an empty review result, or add feedback first.</p>
+          </div>
+        </div>
+        <div v-if="attachedHasUnsavedText" class="inline-notice inline-notice--warning">
+          <div class="inline-notice__content">
+            <h4>Save or discard your changes first</h4>
+            <p>Finish review uses only the accepted review. Save your summary or comment changes, or discard them before finishing.</p>
+            <button type="button" class="ui-button" @click="emit('reviewUnsavedText')">Review unsaved changes</button>
+          </div>
+        </div>
+        <p v-else-if="attachedBlockedByPending" class="attached-completion__pending" role="status">Saving review changes…</p>
+        <div v-else-if="attachedBlockedByConflict" class="inline-notice inline-notice--warning">
+          <div class="inline-notice__content">
+            <h4>Review changed in another tab</h4>
+            <p>Nothing from your attempt was written. Unsaved text retained in this tab.</p>
+            <button type="button" class="ui-button" @click="emit('reloadLatest')">Reload latest</button>
+          </div>
+        </div>
+        <button ref="completionAction" type="button" class="ui-button ui-button--primary attached-completion__action" :disabled="attachedReady !== true" @click="finishAttachedReview">Finish review</button>
+      </template>
     </section>
   </section>
 </template>

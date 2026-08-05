@@ -17,6 +17,7 @@ import { configureMonacoWorkers, languageForPath } from '../monaco/configure.js'
 const props = withDefaults(defineProps<{
   comments: readonly WorkspaceComment[];
   composer?: WorkspaceComposer;
+  mutationsLocked?: boolean;
   content: FileContentResponse;
   path: string;
   sourceKind?: 'range' | 'exact-patch';
@@ -306,6 +307,7 @@ onBeforeUnmount(() => {
           :data-anchor-line="anchorAffordance.line"
           :aria-label="`Add comment to ${anchorAffordance.side === 'base' ? visibleSides.originalName : visibleSides.modifiedName} line ${anchorAffordance.line}`"
           :title="`Add comment to ${anchorAffordance.side === 'base' ? visibleSides.originalName : visibleSides.modifiedName} line ${anchorAffordance.line} · Option+Enter`"
+          :disabled="mutationsLocked"
           @click="addComment(anchorAffordance)"
         >+</button>
         <div ref="host" class="diff-workspace__editor" />

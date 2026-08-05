@@ -8,6 +8,65 @@ import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js
 import { runGeneratedExport, runGeneratedRecovery, sampleGeneratedStablePair } from '../helpers/export-fault-runner.js';
 import { createDirtyGitFixture } from '../helpers/git-fixture.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
+import { createServer, type ViteDevServer } from 'vite';
+
+let lifecycleServer: ViteDevServer;
+let lifecycleUrl: string;
+
+const lifecycleHarness = `
+import { createApp, h, ref } from 'vue';
+import ReviewPanel from '/components/ReviewPanel.vue';
+import '/styles.css';
+
+export function mountLifecycleHarness() {
+  const lifecycle = ref('waiting');
+  const result = ref(undefined);
+  const finished = ref(0);
+  const exportState = {
+    pending: false, progress: null, phase: 'ready', failure: null, conflict: null,
+    receipt: null, previousConfirmedReceipt: null, driftObservation: null,
+    ignoreStatus: null, driftStale: false,
+  };
+  createApp({
+    render: () => h('main', [
+      h(ReviewPanel, {
+        comments: [], inventory: [], summary: '', revision: 7, summaryBuffer: '',
+        commentBuffers: new Map(), pending: null, conflict: null, failure: null,
+        retainedSummary: null, exportState, appendIgnoreRule: async () => ({ kind: 'alreadyIgnored' }),
+        refreshIgnoreStatus: async () => {}, revealExportDirectory: async () => ({ kind: 'revealed' }),
+        attachedLifecycle: lifecycle.value, attachedReady: lifecycle.value === 'waiting',
+        mutationLocked: lifecycle.value === 'finishing' || lifecycle.value === 'completed',
+        attachedFailure: result.value,
+        onFinishReview: () => { finished.value += 1; },
+      }),
+      h('output', { id: 'finish-count' }, String(finished.value)),
+    ]),
+  }).mount('#lifecycle-harness');
+  globalThis.__setAttachedLifecycle = (next, nextResult) => {
+    lifecycle.value = next;
+    result.value = nextResult;
+  };
+}
+`;
+
+test.beforeAll(async () => {
+  lifecycleServer = await createServer({
+    configFile: 'vite.config.ts',
+    plugins: [{
+      name: 'attached-lifecycle-harness',
+      resolveId: (id) => id === 'virtual:attached-lifecycle-harness' ? '\\0attached-lifecycle-harness' : undefined,
+      load: (id) => id === '\\0attached-lifecycle-harness' ? lifecycleHarness : undefined,
+    }],
+    server: { host: '127.0.0.1' },
+  });
+  await lifecycleServer.listen();
+  lifecycleUrl = lifecycleServer.resolvedUrls?.local[0] ?? '';
+  expect(lifecycleUrl).not.toBe('');
+});
+
+test.afterAll(async () => {
+  await lifecycleServer.close();
+});
 
 function pair(summary: string): Readonly<{ readonly json: Buffer; readonly markdown: Buffer }> {
   const json = Buffer.from(canonicalizeReviewExport(ReviewExportV1Schema.parse({
@@ -53,4 +112,59 @@ test('forced unavailable capability refuses re-export before touching the comple
   } finally {
     await fixture.cleanup();
   }
+});
+
+test('attached lifecycle renders waiting, progress, completion, and safe recovery actions', async ({ page }) => {
+  await page.goto(lifecycleUrl, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(async () => {
+    document.body.innerHTML = '<div id="lifecycle-harness"></div>';
+    // Virtual Vite modules exist only after the test server starts.
+    const { mountLifecycleHarness } = await import(`/@id/${'virtual:attached-lifecycle-harness'}`);
+    mountLifecycleHarness();
+  });
+
+  const completion = page.getByRole('region', { name: 'Finish attached review' });
+  await expect(completion).toContainText('The requesting agent is waiting. Only Finish review returns the accepted summary and comments. Exporting, closing, reloading, or disconnecting leaves this review unfinished.');
+  await expect(completion.getByText('No feedback added')).toBeVisible();
+  await completion.getByRole('button', { name: 'Finish review' }).click();
+  await expect(page.locator('#finish-count')).toHaveText('1');
+
+  await page.evaluate(() => globalThis.__setAttachedLifecycle('finishing'));
+  await expect(completion.getByRole('button', { name: 'Finishing review…' })).toBeDisabled();
+  await expect(completion.getByText('Validating accepted revision 7 and its recorded anchors…')).toHaveAttribute('role', 'status');
+
+  await page.evaluate(() => globalThis.__setAttachedLifecycle('completed'));
+  await expect(completion.getByText('Review finished')).toBeFocused();
+  await expect(completion).toContainText('The accepted review was returned to the requesting agent from revision 7. You can close this tab.');
+
+  await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', {
+    kind: 'staleAnchors', affectedCommentIds: [], affectedCount: 1,
+  }));
+  await expect(completion.getByRole('alert')).toContainText('Review can’t be finished');
+  await expect(completion.getByRole('button', { name: 'Review stale feedback' })).toBeVisible();
+
+  await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', {
+    kind: 'revisionConflict', expectedRevision: 7, actualRevision: 8,
+  }));
+  await expect(completion.getByRole('alert')).toContainText('Review changed before finishing');
+  await expect(completion.getByRole('button', { name: 'Reload latest' })).toBeVisible();
+
+  await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', { kind: 'scopeInvalid' }));
+  await expect(completion.getByRole('alert')).toContainText('Review scope is no longer valid');
+  await expect(completion.getByRole('button', { name: 'View requested scope' })).toBeVisible();
+
+  await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', { kind: 'draftReadOnly' }));
+  await expect(completion.getByRole('alert')).toContainText('Review draft needs recovery');
+  await expect(completion.getByRole('button', { name: 'Reload review' })).toBeVisible();
+
+  await page.evaluate(() => globalThis.__setAttachedLifecycle('terminalFailure'));
+  await expect(completion.getByRole('alert')).toContainText('Finish status is ambiguous');
+  await expect(completion.getByText('Do not retry Finish review from this tab.')).toBeVisible();
+
+  await page.evaluate(() => globalThis.__setAttachedLifecycle('waitingDisconnected'));
+  await expect(completion.getByRole('alert')).toContainText('Waiting for agent connection');
+
+  await page.setViewportSize({ width: 320, height: 720 });
+  await page.evaluate(() => globalThis.__setAttachedLifecycle('waiting'));
+  await expect(completion.getByRole('button', { name: 'Finish review' })).toBeVisible();
 });

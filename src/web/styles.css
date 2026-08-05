@@ -1714,6 +1714,45 @@ h3.conversation-card__identity {
   box-shadow: none;
 }
 
+.attached-completion {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+
+.attached-completion__heading {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.attached-completion__heading h3,
+.attached-completion h4 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.attached-completion__waiting,
+.attached-completion__progress,
+.attached-completion__pending,
+.attached-completion .inline-notice__content p,
+.attached-fact {
+  overflow-wrap: anywhere;
+}
+
+.attached-completion__action {
+  min-block-size: 44px;
+}
+
+.attached-fact {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control);
+}
+
 .review-summary {
   display: grid;
   min-width: 0;
@@ -2143,6 +2182,10 @@ h3.conversation-card__identity {
     white-space: normal;
   }
 
+  .attached-completion__action {
+    inline-size: 100%;
+  }
+
   .workspace-shell {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
@@ -2433,6 +2476,11 @@ h3.conversation-card__identity {
   :disabled,
   [aria-disabled="true"] {
     color: GrayText;
+  }
+
+  .attached-completion,
+  .attached-fact {
+    border-color: CanvasText;
   }
 
   a {

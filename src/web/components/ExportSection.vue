@@ -26,6 +26,8 @@ const props = defineProps<{
   appendIgnoreRule: () => Promise<AppendCompareIgnoreResult>;
   refreshIgnoreStatus: () => Promise<void>;
   revealExportDirectory: () => Promise<ExportDirectoryRevealResult>;
+  attached?: boolean;
+  locked?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -83,7 +85,12 @@ watch(() => props.exportState.phase, (phase) => {
     </header>
 
     <div v-if="open" id="export-section-content" class="export-section__content">
-      <section v-if="exportState.phase === 'conflict' && exportState.conflict !== null" class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-conflict-heading" @keydown.escape.stop>
+      <section v-if="locked" class="inline-notice" role="status">
+        <div class="inline-notice__content">
+          <p>Review lifecycle is settled. Export controls are unavailable.</p>
+        </div>
+      </section>
+      <section v-else-if="exportState.phase === 'conflict' && exportState.conflict !== null" class="inline-notice inline-notice--error" role="alert" aria-labelledby="export-conflict-heading" @keydown.escape.stop>
         <UiIcon name="error" class="inline-notice__icon" />
         <div class="inline-notice__content">
           <h4 id="export-conflict-heading" ref="conflictHeading" tabindex="-1">Review changed before export</h4>
@@ -138,6 +145,7 @@ watch(() => props.exportState.phase, (phase) => {
         <ExportReceipt :receipt="exportState.receipt" :reveal-export-directory="revealExportDirectory" />
         <button type="button" class="ui-button ui-button--primary" :disabled="exportState.pending" @click="emit('export')">Export review again</button>
         <p class="export-section__support">Creates <code>review.json</code> and <code>review.md</code> together from accepted revision {{ revision }}. This does not apply, stage, commit, or push changes.</p>
+        <p v-if="attached && !locked" class="export-section__support">Export complete. This attached review is still unfinished. Choose Finish review when you are ready.</p>
       </template>
 
       <template v-else>
@@ -160,6 +168,7 @@ watch(() => props.exportState.phase, (phase) => {
       </template>
 
       <GitignoreStatus
+        v-if="!locked"
         :status="exportState.ignoreStatus"
         :append-ignore-rule="appendIgnoreRule"
         :refresh-ignore-status="refreshIgnoreStatus"

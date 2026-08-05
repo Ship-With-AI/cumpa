@@ -5,7 +5,9 @@ import type { SessionResponse } from '../../contracts/api';
 import { controlSafeDisplay } from '../../domain/path-bytes';
 
 const props = defineProps<{
+  readonly attachedLifecycle?: 'waiting' | 'finishing' | 'completed';
   readonly expanded: boolean;
+  readonly inert?: boolean;
   readonly session: SessionResponse;
 }>();
 
@@ -38,6 +40,15 @@ const dirtyEndpoints = computed(() =>
       ),
 );
 
+const attachedFact = computed(() => {
+  switch (props.attachedLifecycle) {
+    case 'finishing': return 'Agent attached · finishing review';
+    case 'completed': return 'Agent review finished';
+    case 'waiting': return 'Agent attached · waiting for Finish review';
+    default: return '';
+  }
+});
+
 function focusDisclosure(): void {
   disclosure.value?.focus();
 }
@@ -60,6 +71,7 @@ defineExpose({ focusDisclosure });
           Committed HEAD reviewed; staged, unstaged, and untracked bytes ignored.
         </span>
       </span>
+      <span v-if="attachedFact !== ''" class="attached-fact">{{ attachedFact }}</span>
       <button
         ref="disclosure"
         type="button"
