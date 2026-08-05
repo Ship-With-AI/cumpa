@@ -23,7 +23,7 @@
 - [x] **PATCH-02**: Compare accepts a patch only when every preimage is grounded in repository objects and every postimage exactly matches the implemented repository/worktree content.
 - [x] **PATCH-03**: A patch review preserves Git-derived paths and added, modified, deleted, renamed, copied, mode-only, symlink, binary, and unsupported-file visibility without path corruption.
 - [x] **PATCH-04**: Validating and reviewing a patch does not mutate the repository's worktree, index, refs, or object store.
-- [ ] **PATCH-05**: A patch review remains frozen and readable through review completion; drift produces an explicit failure rather than different content.
+- [x] **PATCH-05**: A patch review remains frozen and readable through review completion; drift produces an explicit failure rather than different content.
 
 ### Attached Handoff
 
@@ -78,7 +78,7 @@
 | PATCH-02 | Phase 13 | Complete |
 | PATCH-03 | Phase 13 | Complete |
 | PATCH-04 | Phase 13 | Complete |
-| PATCH-05 | Phase 13 | Pending |
+| PATCH-05 | Phase 13 | Complete |
 | HAND-01 | Phase 14 | Pending |
 | HAND-02 | Phase 14 | Pending |
 | HAND-03 | Phase 14 | Pending |
