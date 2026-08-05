@@ -88,8 +88,8 @@ None - no external service configuration required.
 - **RED:** `npm exec -- vitest run tests/api/attached-completion-coordinator.test.ts tests/api/attached-completion.test.ts tests/api/draft-atomicity.test.ts tests/api/draft-recovery-faults.test.ts tests/api/session.test.ts tests/api/export.test.ts` exited 1 only because the new attached-completion module and lifecycle contracts were absent.
 - **GREEN Task 2:** `npm exec -- vitest run tests/api/attached-completion-coordinator.test.ts tests/api/draft-atomicity.test.ts tests/api/draft-recovery-faults.test.ts` exited 0: 3 files, 30 tests.
 - **GREEN Task 3:** `npm exec -- vitest run tests/api/attached-completion.test.ts tests/api/draft-atomicity.test.ts tests/api/draft-recovery-faults.test.ts tests/api/session.test.ts tests/api/export.test.ts` exited 0: 5 files, 59 tests.
-- **Final scoped check:** the six-file command above exited 0: 6 files, 63 tests.
-- **Response-settlement check:** `npm exec -- vitest run tests/api/attached-completion.test.ts tests/api/attached-completion-coordinator.test.ts` exited 0: 2 files, 5 tests; the successful response resolves only after the raw response finish event.
+- **Final scoped check:** the six-file command above exited 0: 6 files, 64 tests.
+- **Response-settlement and exact-mode check:** `npm exec -- vitest run tests/api/attached-completion.test.ts tests/api/attached-completion-coordinator.test.ts` exited 0: 2 files, 6 tests; range and exact-patch successful responses resolve only after the raw response finish event.
 
 ## Next Phase Readiness
 
@@ -98,7 +98,7 @@ None - no external service configuration required.
 
 ## Self-Check: PASSED
 
-- Confirmed task commits `9044b2b`, `f440742`, `9b4e5e1`, and response-settlement correction `57bd102` exist.
+- Confirmed task commits `9044b2b`, `f440742`, `9b4e5e1`, response-settlement correction `57bd102`, and exact-mode coverage `23e7fa4` exist.
 - Confirmed the final plan-scoped API/persistence command passes.
 - Confirmed attached routes are opt-in, ordinary export remains independent, and no interactive lifecycle route is registered.
 
