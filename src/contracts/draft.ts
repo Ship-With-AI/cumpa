@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import {
+  ChangedFileSchema,
   ExactPatchValidationTargetSchema,
   ExactPathSchema,
   GitObjectIdSchema,
@@ -389,6 +390,59 @@ export const ReviewExportV2Schema = z
   })
   .readonly();
 
+const ExactPatchExportScopeSchema = z
+  .strictObject({
+    digest: z.string().regex(/^[0-9a-f]{64}$/u),
+    validationTarget: ExactPatchValidationTargetSchema,
+    reviewKey: z.string().regex(/^[0-9a-f]{64}$/u),
+    snapshot: z
+      .strictObject({
+        status: z.enum(['unchanged', 'drifted']),
+        files: z.array(ChangedFileSchema).readonly(),
+      })
+      .readonly(),
+  })
+  .readonly();
+
+export const ReviewExportV3Schema = z
+  .strictObject({
+    schemaVersion: z.literal(3),
+    kind: z.literal('compare/export'),
+    exportedAt: z.string().datetime(),
+    acceptedDraftRevision: RevisionSchema,
+    patch: ExactPatchExportScopeSchema,
+    summary: z.strictObject({ markdown: ExportStringSchema.min(1).nullable() }).readonly(),
+    files: z.array(ExportFileSchema).readonly(),
+    counts: ExportCountsSchema,
+  })
+  .superRefine((document, context) => {
+    const feedback = ReviewExportV1Schema.safeParse({
+      schemaVersion: 1,
+      kind: document.kind,
+      exportedAt: document.exportedAt,
+      acceptedDraftRevision: document.acceptedDraftRevision,
+      comparison: {
+        selectedBase: { label: 'preimage', launchOid: '0'.repeat(40) },
+        selectedHead: { label: 'postimage', launchOid: '0'.repeat(40) },
+        mergeBaseOid: '0'.repeat(40),
+        comparisonKey: '0'.repeat(64),
+      },
+      drift: {
+        observedAt: document.exportedAt,
+        acknowledged: false,
+        base: { launchOid: '0'.repeat(40), currentOid: '0'.repeat(40), status: 'unchanged' },
+        head: { launchOid: '0'.repeat(40), currentOid: '0'.repeat(40), status: 'unchanged' },
+      },
+      summary: document.summary,
+      files: document.files,
+      counts: document.counts,
+    });
+    if (!feedback.success) {
+      context.addIssue({ code: 'custom', message: 'Version 3 export must retain valid review feedback.' });
+    }
+  })
+  .readonly();
+
 export const DraftMutationSchema = z
   .discriminatedUnion('type', [
     z.strictObject({ type: z.literal('addComment'), commentId: CommentIdSchema, body: CommentBodySchema, anchor: DurableAnchorV1Schema }),
@@ -404,7 +458,9 @@ export type ReviewDraftV1 = z.infer<typeof ReviewDraftV1Schema>;
 export type DraftComparison = z.infer<typeof DraftComparisonSchema>;
 export type ReviewExportV1 = z.infer<typeof ReviewExportV1Schema>;
 export type ReviewExportV2 = z.infer<typeof ReviewExportV2Schema>;
-export type ReviewExport = ReviewExportV1 | ReviewExportV2;
+export type ReviewExportV3 = z.infer<typeof ReviewExportV3Schema>;
+export type ReviewExport = ReviewExportV1 | ReviewExportV2 | ReviewExportV3;
+export type ExactPatchExportScope = z.infer<typeof ExactPatchExportScopeSchema>;
 export type ReviewDraftCommentV1 = z.infer<typeof DraftCommentSchema>;
 export type DraftMutation = z.infer<typeof DraftMutationSchema>;
 

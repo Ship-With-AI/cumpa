@@ -18,6 +18,8 @@ import {
 } from '../../src/cli/run.js';
 import type { GroundedExactPatch } from '../../src/contracts/comparison.js';
 import type { SessionApp } from '../../src/server/app.js';
+import { ExactPatchGroundingError } from '../../src/git/exact-patch.js';
+import { PatchSnapshotError } from '../../src/server/patch-snapshot.js';
 import type { SourceCandidate } from '../../src/domain/source.js';
 
 const baseOid = '1'.repeat(40);
@@ -635,5 +637,34 @@ describe('exact patch CLI dispatch', () => {
     );
 
     expect(events).toEqual(['ground', 'app', 'listen', 'security', 'browser']);
+  });
+
+  it('reports grounding and snapshot failures without launching or leaking patch bytes', async () => {
+    for (const failure of [
+      new ExactPatchGroundingError(request.patch.content),
+      new PatchSnapshotError('snapshot-unavailable', false),
+    ]) {
+      const output: string[] = [];
+      const launch = async () => {
+        throw failure;
+      };
+
+      await runOrdinaryAction(
+        { cwd: '/repo' },
+        {
+          isTTY: false,
+          readRequest: async () => request,
+          createGroundedExactPatch: launch,
+          createExactPatchSessionApp: launch,
+          openBrowser: async () => {
+            throw new Error('browser must not open after a failed exact patch setup');
+          },
+          output: (message) => output.push(message),
+          setExitStatus: () => undefined,
+        },
+      );
+
+      expect(output).toEqual(['Exact patch review could not be prepared.']);
+    }
   });
 });

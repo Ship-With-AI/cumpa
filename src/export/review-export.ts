@@ -5,15 +5,23 @@ import {
   ReviewDraftV1Schema,
   ReviewExportV1Schema,
   ReviewExportV2Schema,
+  ReviewExportV3Schema,
   compareReviewExportComments,
   compareUtf16CodeUnits,
   type AnchorVerificationDto,
+  type ExactPatchExportScope,
   type ReviewDraftV1,
   type ReviewExport,
   type ReviewExportV1,
   type ReviewExportV2,
+  type ReviewExportV3,
 } from '../contracts/draft.js';
-export type { ReviewExport, ReviewExportV1, ReviewExportV2 } from '../contracts/draft.js';
+export type {
+  ReviewExport,
+  ReviewExportV1,
+  ReviewExportV2,
+  ReviewExportV3,
+} from '../contracts/draft.js';
 import type { RangeReviewScope } from '../contracts/comparison.js';
 import { compareExactPaths } from '../domain/path-bytes.js';
 
@@ -34,6 +42,11 @@ export interface AcceptedReviewSnapshotV1 {
     readonly base: { readonly launchOid: string; readonly currentOid: string | null; readonly status: 'unchanged' | 'moved' | 'unavailable' };
     readonly head: { readonly launchOid: string; readonly currentOid: string | null; readonly status: 'unchanged' | 'moved' | 'unavailable' };
   };
+}
+
+export interface AcceptedExactPatchReviewSnapshot {
+  readonly acceptedDraft: ReviewDraftV1;
+  readonly commentVerification: Readonly<Record<string, AnchorVerificationDto>>;
 }
 
 export interface ExportHash {
@@ -163,6 +176,44 @@ export function buildReviewExportV2(
   return ReviewExportV2Schema.parse({ ...versionOne, schemaVersion: 2, range });
 }
 
+export function buildReviewExportV3(
+  snapshot: AcceptedExactPatchReviewSnapshot,
+  patch: ExactPatchExportScope,
+  exportedAt: string,
+): ReviewExportV3 {
+  const draft = ReviewDraftV1Schema.parse(snapshot.acceptedDraft);
+  if (
+    draft.comparison.kind !== 'exact-patch'
+    || draft.comparison.digest !== patch.digest
+    || draft.comparison.validationTarget.kind !== patch.validationTarget.kind
+    || draft.comparison.reviewKey !== patch.reviewKey
+  ) {
+    throw new TypeError('Exact patch export provenance does not match accepted draft.');
+  }
+
+  const feedback = buildReviewExportV1(
+    {
+      acceptedDraft: draft,
+      commentVerification: snapshot.commentVerification,
+      comparison: {
+        selectedBase: { label: 'preimage', launchOid: '0'.repeat(40) },
+        selectedHead: { label: 'postimage', launchOid: '0'.repeat(40) },
+        mergeBaseOid: '0'.repeat(40),
+        comparisonKey: '0'.repeat(64),
+      },
+      drift: {
+        observedAt: exportedAt,
+        acknowledged: false,
+        base: { launchOid: '0'.repeat(40), currentOid: '0'.repeat(40), status: 'unchanged' },
+        head: { launchOid: '0'.repeat(40), currentOid: '0'.repeat(40), status: 'unchanged' },
+      },
+    },
+    exportedAt,
+  );
+  const { comparison: _comparison, drift: _drift, ...document } = feedback;
+  return ReviewExportV3Schema.parse({ ...document, schemaVersion: 3, patch });
+}
+
 export function canonicalizeReviewExport(document: unknown): Uint8Array {
   return new TextEncoder().encode(serializeCanonicalJson(document));
 }
@@ -184,7 +235,8 @@ function zodParseReviewExport(document: unknown): ReviewExport {
   }
   if (document.schemaVersion === 1) return ReviewExportV1Schema.parse(document);
   if (document.schemaVersion === 2) return ReviewExportV2Schema.parse(document);
-  throw new TypeError('Export schema version is unsupported.');
+  if (document.schemaVersion === 3) return ReviewExportV3Schema.parse(document);
+  throw new TypeError('Export schema version unsupported.');
 }
 
 export function hashExportBytes(bytes: Uint8Array): ExportHash {

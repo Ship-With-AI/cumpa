@@ -13,6 +13,7 @@ import {
 } from './picker.js';
 import {
   ComparisonSelectionSchema,
+  type GroundedExactPatch,
   type ComparisonSelection,
   type PinnedComparison,
 } from '../contracts/comparison.js';
@@ -30,8 +31,16 @@ import {
   type CreatePinnedComparisonOptions,
   type CreatePinnedRangeComparisonOptions,
 } from '../git/comparison.js';
-import { createSessionApp, type SessionApp } from '../server/app.js';
-import type { DraftRevealPort } from '../server/capabilities.js';
+import {
+  createGroundedExactPatch,
+  ExactPatchGroundingError,
+} from '../git/exact-patch.js';
+import {
+  createExactPatchSessionApp,
+  createSessionApp,
+  type SessionApp,
+} from '../server/app.js';
+import { PatchSnapshotError } from '../server/patch-snapshot.js';
 import {
   createShutdownController,
   type ShutdownController,
@@ -145,9 +154,14 @@ export interface OrdinaryActionDependencies {
   readonly createRangeComparison?: (
     options: CreatePinnedRangeComparisonOptions,
   ) => Promise<PinnedComparison>;
+  readonly createGroundedExactPatch?: typeof createGroundedExactPatch;
+  readonly createExactPatchSessionApp?: typeof createExactPatchSessionApp;
   readonly launchComparison?: (
     comparison: PinnedComparison,
   ) => Promise<unknown>;
+  readonly openBrowser?: (url: string) => Promise<unknown>;
+  readonly webRoot?: string;
+  readonly revealDraftFile?: DraftRevealPort;
   readonly output?: (message: string) => void;
   readonly setExitStatus?: (status: number) => void;
 }
@@ -348,6 +362,83 @@ function reportFatalLaunchError(
   setExitStatus(1);
 }
 
+async function launchExactPatchSession(
+  grounded: GroundedExactPatch,
+  dependencies: OrdinaryActionDependencies,
+  activeGit: AbortController,
+): Promise<void> {
+  const output = dependencies.output ?? console.error;
+  const openBrowser = dependencies.openBrowser ?? createBrowserUrlOpener();
+  const revealDraftFile =
+    dependencies.revealDraftFile ??
+    (async (canonicalPath: string) => {
+      await open(canonicalPath);
+    });
+  let app: SessionApp | undefined;
+  const shutdown = createShutdownController({
+    abortActiveWork: () => {
+      activeGit.abort();
+    },
+    closeListener: async () => {
+      await app?.close();
+    },
+    setExitStatus: dependencies.setExitStatus,
+    reportError: () => {
+      output('Exact patch review shutdown failed.');
+    },
+  });
+
+  try {
+    const token = randomBytes(32).toString('base64url');
+    app = await (dependencies.createExactPatchSessionApp ?? createExactPatchSessionApp)(
+      grounded,
+      {
+        webRoot: dependencies.webRoot,
+        sessionToken: token,
+        revealDraftFile,
+        diagnostics: () => {
+          output('Exact patch review request denied.');
+        },
+      },
+    );
+    await app.listen({ host: '127.0.0.1', port: 0 });
+    if (shutdown.isShuttingDown) {
+      await shutdown.shutdown();
+      return;
+    }
+
+    const address = app.server.address();
+    if (
+      address === null
+      || typeof address === 'string'
+      || address.address !== '127.0.0.1'
+      || address.port === 0
+    ) {
+      throw new Error('Fastify did not bind the required IPv4 loopback address');
+    }
+    const authority = `127.0.0.1:${address.port}`;
+    app.bindSessionSecurity({
+      expectedHost: authority,
+      expectedOrigin: `http://${authority}`,
+    });
+    const url = `http://${authority}/#token=${token}`;
+    output(url);
+    output(browserFallback);
+    try {
+      await openBrowser(url);
+    } catch {
+      output('Browser did not open automatically. Open the URL above manually.');
+    }
+  } catch (error) {
+    await shutdown.shutdown(1);
+    if (error instanceof ExactPatchGroundingError || error instanceof PatchSnapshotError) {
+      output('Exact patch review could not be prepared.');
+      return;
+    }
+    throw error;
+  }
+}
+
 export async function runOrdinaryAction(
   options: RunCliOptions,
   dependencies: OrdinaryActionDependencies = {},
@@ -366,28 +457,44 @@ export async function runOrdinaryAction(
     ((status: number) => {
       process.exitCode = status;
     });
-  let comparison: PinnedComparison;
+  const activeGit = new AbortController();
   try {
     const request = await readRequest(dependencies.input ?? process.stdin);
-    comparison = await createRangeComparison({
+    if (request.mode === 'patch') {
+      const grounded = await (dependencies.createGroundedExactPatch ?? createGroundedExactPatch)({
+        cwd: options.cwd,
+        patchContent: request.patch.content,
+        target: request.patch.target,
+        signal: activeGit.signal,
+      });
+      await launchExactPatchSession(grounded, dependencies, activeGit);
+      return;
+    }
+
+    const comparison = await createRangeComparison({
       cwd: options.cwd,
       baseRevision: request.revisions.base,
       headRevision: request.revisions.head,
       pathspecs: request.revisions.pathspecs,
     });
+    await (dependencies.launchComparison ?? launchPinnedComparison)(comparison);
   } catch (error) {
     if (
-      error instanceof AgentRequestError ||
-      (isLaunchError(error) && error.recovery.kind === 'exit')
+      error instanceof AgentRequestError
+      || error instanceof ExactPatchGroundingError
+      || error instanceof PatchSnapshotError
+      || (isLaunchError(error) && error.recovery.kind === 'exit')
     ) {
-      output(error.message);
+      output(
+        error instanceof ExactPatchGroundingError || error instanceof PatchSnapshotError
+          ? 'Exact patch review could not be prepared.'
+          : error.message,
+      );
       setExitStatus(1);
       return;
     }
     throw error;
   }
-
-  await (dependencies.launchComparison ?? launchPinnedComparison)(comparison);
 }
 
 export async function runCli(
