@@ -46,6 +46,15 @@ function fingerprint(raw: Buffer): string {
 }
 
 function sameComparison(left: DraftComparison, right: DraftComparison): boolean {
+  if ('kind' in left || 'kind' in right) {
+    return (
+      'kind' in left &&
+      'kind' in right &&
+      left.digest === right.digest &&
+      left.validationTarget.kind === right.validationTarget.kind &&
+      left.reviewKey === right.reviewKey
+    );
+  }
   if (
     left.baseCommitOid !== right.baseCommitOid ||
     left.headCommitOid !== right.headCommitOid ||
@@ -78,7 +87,10 @@ function invalidState(path: string, raw: Buffer, details: readonly DraftIssue[])
 }
 
 export function draftPaths(repositoryRoot: string, comparison: DraftComparison): DraftPaths {
-  const key = comparison.range?.reviewKey ?? comparisonKey(comparison.baseCommitOid, comparison.headCommitOid);
+  const key =
+    'kind' in comparison
+      ? comparison.reviewKey
+      : comparison.range?.reviewKey ?? comparisonKey(comparison.baseCommitOid, comparison.headCommitOid);
   const relativePath = `${draftsDirectory}/${key}.json`;
   const directory = join(repositoryRoot, draftsDirectory);
   return Object.freeze({ key, directory, canonicalPath: join(repositoryRoot, relativePath), relativePath });

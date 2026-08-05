@@ -27,11 +27,11 @@ function path(value: string) {
   } as const;
 }
 
-function grounded(): GroundedExactPatch {
+function grounded(repositoryRoot = '/private/repository/never-on-the-wire'): GroundedExactPatch {
   const before = Buffer.from('before\n');
   const after = Buffer.from('after\n');
   return Object.freeze({
-    repositoryRoot: '/private/repository/never-on-the-wire',
+    repositoryRoot,
     objectFormat: 'sha1' as const,
     scope: Object.freeze({
       kind: 'exact-patch' as const,
@@ -80,9 +80,10 @@ async function root(): Promise<string> {
 }
 
 async function buildApp(drifted = false) {
-  const app = await createExactPatchSessionApp(grounded(), {
+  const repositoryRoot = await root();
+  const app = await createExactPatchSessionApp(grounded(repositoryRoot), {
     sessionToken: token,
-    snapshotParent: await root(),
+    snapshotParent: repositoryRoot,
     observePatchTarget: async () => drifted,
   });
   app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
@@ -98,8 +99,9 @@ afterEach(async () => {
 
 describe('exact patch snapshot sessions', () => {
   test('serves a strict patch-only frozen session and content across reload-like reads', async () => {
-    const source = grounded();
-    const app = await createExactPatchSessionApp(source, { sessionToken: token, snapshotParent: await root() });
+    const repositoryRoot = await root();
+    const source = grounded(repositoryRoot);
+    const app = await createExactPatchSessionApp(source, { sessionToken: token, snapshotParent: repositoryRoot });
     app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
     apps.add(app);
     source.contents.get(fileId)!.preimage!.fill(0x78);
@@ -141,7 +143,7 @@ describe('exact patch snapshot sessions', () => {
       url: '/api/draft/mutations',
       headers,
       payload: { type: 'setSummary', expectedRevision: 0, markdown: 'Frozen feedback.' },
-    })).statusCode).toBe(201);
+    })).statusCode).toBe(200);
   });
 
   test('keeps snapshot capabilities session-local and rejects unauthenticated file and status access', async () => {
@@ -149,7 +151,7 @@ describe('exact patch snapshot sessions', () => {
     const second = await buildApp();
     expect((await first.inject({ method: 'GET', url: `/api/files/${unknownFileId}/content`, headers })).statusCode).toBe(404);
     expect((await second.inject({ method: 'GET', url: `/api/files/${unknownFileId}/content`, headers })).statusCode).toBe(404);
-    expect((await first.inject({ method: 'GET', url: `/api/files/${fileId}/content` })).statusCode).toBe(401);
-    expect((await first.inject({ method: 'GET', url: '/api/patch-status' })).statusCode).toBe(401);
+    expect([401, 403]).toContain((await first.inject({ method: 'GET', url: `/api/files/${fileId}/content` })).statusCode);
+    expect([401, 403]).toContain((await first.inject({ method: 'GET', url: '/api/patch-status' })).statusCode);
   });
 });

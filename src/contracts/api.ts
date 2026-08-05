@@ -3,11 +3,13 @@ import { z } from 'zod';
 import {
   AvailabilitySchema,
   ChangedFileStatusKindSchema,
+  ExactPatchValidationTargetSchema,
   ExactPathSchema,
   GitModeSchema,
   GitObjectIdSchema,
   RangeReviewScopeSchema,
 } from './comparison.js';
+
 import {
   AnchorVerificationSchema,
   CommentBodySchema,
@@ -318,7 +320,7 @@ export const SessionFileSchema = z
   })
   .readonly();
 
-export const SessionResponseSchema = z
+const PinnedSessionResponseSchema = z
   .strictObject({
     base: ApiPinnedEndpointSchema,
     head: ApiPinnedEndpointSchema,
@@ -338,6 +340,25 @@ export const SessionResponseSchema = z
       });
     }
   })
+  .readonly();
+
+const ExactPatchSessionResponseSchema = z
+  .strictObject({
+    patch: z
+      .strictObject({
+        kind: z.literal('exact-patch'),
+        digest: z.string().regex(/^[0-9a-f]{64}$/u),
+        reviewKey: z.string().regex(/^[0-9a-f]{64}$/u),
+        validationTarget: ExactPatchValidationTargetSchema,
+        changedFileCount: z.number().int().nonnegative(),
+      })
+      .readonly(),
+    files: z.array(SessionFileSchema).readonly(),
+  })
+  .readonly();
+
+export const SessionResponseSchema = z
+  .union([PinnedSessionResponseSchema, ExactPatchSessionResponseSchema])
   .readonly();
 
 export const SelectorDriftRoleSchema = z.enum(['base', 'head']);
@@ -380,6 +401,24 @@ export const SelectorDriftResponseSchema = z
     base: SelectorDriftStatusSchema,
     head: SelectorDriftStatusSchema,
   })
+  .readonly();
+
+export const PatchStatusResponseSchema = z
+  .discriminatedUnion('kind', [
+    z
+      .strictObject({
+        kind: z.literal('unchanged'),
+        validationTargetLabel: z.string().min(1),
+      })
+      .readonly(),
+    z
+      .strictObject({
+        kind: z.literal('drifted'),
+        validationTargetLabel: z.string().min(1),
+      })
+      .readonly(),
+    z.strictObject({ kind: z.literal('snapshotUnavailable') }).readonly(),
+  ])
   .readonly();
 
 const ExportReceiptDirectoryPattern =
@@ -596,4 +635,5 @@ export type DraftRevealResult = z.infer<typeof DraftRevealResultSchema>;
 export type FileContentResponse = z.infer<typeof FileContentResponseSchema>;
 export type SelectorDriftStatus = z.infer<typeof SelectorDriftStatusSchema>;
 export type SelectorDriftResponse = z.infer<typeof SelectorDriftResponseSchema>;
+export type PatchStatusResponse = z.infer<typeof PatchStatusResponseSchema>;
 export type ApiError = z.infer<typeof ApiErrorSchema>;

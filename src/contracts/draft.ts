@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
-import { ExactPathSchema, GitObjectIdSchema, RangeReviewScopeSchema } from './comparison.js';
+import {
+  ExactPatchValidationTargetSchema,
+  ExactPathSchema,
+  GitObjectIdSchema,
+  RangeReviewScopeSchema,
+} from './comparison.js';
 import { compareExactPaths, decodeBase64url } from '../domain/path-bytes.js';
 
 export const RevisionSchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
@@ -52,7 +57,7 @@ export const AnchorVerificationSchema = z
   })
   .readonly();
 
-const DraftComparisonSchema = z
+const PinnedDraftComparisonSchema = z
   .strictObject({
     baseCommitOid: GitObjectIdSchema,
     headCommitOid: GitObjectIdSchema,
@@ -62,11 +67,29 @@ const DraftComparisonSchema = z
   .superRefine((comparison, context) => {
     if (
       comparison.range !== undefined &&
-      (comparison.range.baseOid !== comparison.baseCommitOid || comparison.range.headOid !== comparison.headCommitOid)
+      (comparison.range.baseOid !== comparison.baseCommitOid ||
+        comparison.range.headOid !== comparison.headCommitOid)
     ) {
-      context.addIssue({ code: 'custom', message: 'Range provenance must match draft comparison endpoints.', path: ['range'] });
+      context.addIssue({
+        code: 'custom',
+        message: 'Range provenance must match draft comparison endpoints.',
+        path: ['range'],
+      });
     }
   })
+  .readonly();
+
+const ExactPatchDraftComparisonSchema = z
+  .strictObject({
+    kind: z.literal('exact-patch'),
+    digest: z.string().regex(/^[0-9a-f]{64}$/u),
+    validationTarget: ExactPatchValidationTargetSchema,
+    reviewKey: z.string().regex(/^[0-9a-f]{64}$/u),
+  })
+  .readonly();
+
+export const DraftComparisonSchema = z
+  .union([PinnedDraftComparisonSchema, ExactPatchDraftComparisonSchema])
   .readonly();
 
 const DraftCommentSchema = z
@@ -378,6 +401,7 @@ export const DraftMutationSchema = z
   .readonly();
 
 export type ReviewDraftV1 = z.infer<typeof ReviewDraftV1Schema>;
+export type DraftComparison = z.infer<typeof DraftComparisonSchema>;
 export type ReviewExportV1 = z.infer<typeof ReviewExportV1Schema>;
 export type ReviewExportV2 = z.infer<typeof ReviewExportV2Schema>;
 export type ReviewExport = ReviewExportV1 | ReviewExportV2;

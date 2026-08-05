@@ -2,18 +2,20 @@ import { createHash, randomBytes } from 'node:crypto';
 import { lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import type { PinnedComparison, ChangedFile } from '../contracts/comparison.js';
+import type { GroundedExactPatch, PinnedComparison, ChangedFile } from '../contracts/comparison.js';
 import {
   ExportReviewResultSchema,
   AppendCompareIgnoreResultSchema,
   CompareIgnoreStatusSchema,
   FileContentResponseSchema,
   FileMetadataResponseSchema,
+  PatchStatusResponseSchema,
   SessionResponseSchema,
   type ExportReviewRequest,
   type ExportReviewResult,
   type FileContentResponse,
   type FileMetadataResponse,
+  type PatchStatusResponse,
   type SessionResponse,
   type AppendCompareIgnoreResult,
   type CompareIgnoreStatus,
@@ -44,6 +46,7 @@ import { getObservedNativeExchangeCapability } from './native-exchange-capabilit
 import { assertManagedExportsRoot, ensureManagedExportsRoot, publishReviewExport } from './export-store.js';
 import { inspectCompareIgnore } from '../git/ignore-status.js';
 import { appendCompareIgnoreRule } from './gitignore-capability.js';
+import { PatchSnapshot } from './patch-snapshot.js';
 
 export type AnchorAddPort = (
   input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
@@ -95,7 +98,9 @@ export type CapabilityRegistry = Readonly<{
   readonly session: SessionResponse;
   readonly onAnchorAdd?: AnchorAddPort;
   readonly draftStore: DraftStore;
-  readonly selectorDriftObserver: SelectorDriftObserver;
+  readonly selectorDriftObserver?: SelectorDriftObserver;
+  readonly patchStatus?: () => Promise<PatchStatusResponse>;
+  readonly isExactPatch?: true;
   readonly lookup: (fileId: string) => FileMetadataResponse | undefined;
   readonly readContent: (fileId: string) => Promise<FileContentResponse | undefined>;
   readonly verifyAnchor: (anchor: DurableAnchorV1) => Promise<AnchorVerification>;
@@ -512,6 +517,119 @@ export function createCapabilityRegistry(
         }
       }
       return { state: 'orphaned', reason: 'anchor-unavailable' };
+    },
+  });
+}
+
+export function createExactPatchCapabilityRegistry(
+  grounded: GroundedExactPatch,
+  snapshot: PatchSnapshot,
+  options: CapabilityRegistryOptions = {},
+): CapabilityRegistry {
+  const draftStore = options.draftStore ?? createDraftStore({
+    repositoryRoot: grounded.repositoryRoot,
+    comparison: {
+      kind: 'exact-patch',
+      digest: snapshot.digest,
+      validationTarget: snapshot.validationTarget,
+      reviewKey: snapshot.reviewKey,
+    },
+  });
+  const session = SessionResponseSchema.parse(snapshot.sessionDto());
+
+  return Object.freeze({
+    isExactPatch: true as const,
+    session,
+    onAnchorAdd: options.onAnchorAdd,
+    draftStore,
+    patchStatus: async () => {
+      const status = await snapshot.observe();
+      return PatchStatusResponseSchema.parse(
+        status === 'snapshotUnavailable'
+          ? { kind: 'snapshotUnavailable' }
+          : { kind: status, validationTargetLabel: snapshot.validationTargetLabel },
+      );
+    },
+    lookup(fileId) {
+      options.onCapabilityLookup?.(fileId);
+      const file = snapshot.file(fileId);
+      if (file === undefined) return undefined;
+      return FileMetadataResponseSchema.parse({
+        fileId: file.id,
+        status: file.status.similarity === null ? { kind: file.status.kind } : { kind: file.status.kind, similarity: file.status.similarity },
+        oldMode: file.oldMode,
+        newMode: file.newMode,
+        ...(file.oldPath === undefined ? {} : { oldPath: file.oldPath }),
+        ...(file.newPath === undefined ? {} : { newPath: file.newPath }),
+        additions: file.additions,
+        deletions: file.deletions,
+        availability: file.availability,
+      });
+    },
+    async readContent(fileId) {
+      const content = await snapshot.readContent(fileId);
+      if (content === undefined) return undefined;
+      const { file, preimage, postimage } = content;
+      const makeSide = (
+        bytes: Buffer | undefined,
+        path: ChangedFile['oldPath'],
+        mode: string,
+        blobOid: string,
+      ) => bytes === undefined || path === undefined || mode === '000000'
+        ? { exists: false as const }
+        : {
+            exists: true as const,
+            path,
+            language: languageForPath(path.utf8),
+            blobOid,
+            text: strictTextDecoder.decode(bytes),
+          };
+      return FileContentResponseSchema.parse({
+        fileId,
+        base: makeSide(preimage, file.oldPath, file.oldMode, file.oldBlobOid),
+        head: makeSide(postimage, file.newPath, file.newMode, file.newBlobOid),
+      });
+    },
+    async verifyAnchor(anchor) {
+      const file = snapshot.files().find((candidate) => {
+        const path = anchor.side === 'base' ? candidate.oldPath : candidate.newPath;
+        const blobOid = anchor.side === 'base' ? candidate.oldBlobOid : candidate.newBlobOid;
+        return path?.bytesBase64url === anchor.path.bytesBase64url && blobOid === anchor.blobOid;
+      });
+      if (file === undefined) return { state: 'orphaned' as const, reason: 'anchor-unavailable' as const };
+      const content = await snapshot.readContent(file.id);
+      const bytes = anchor.side === 'base' ? content?.preimage : content?.postimage;
+      const path = anchor.side === 'base' ? file.oldPath : file.newPath;
+      if (bytes === undefined || path === undefined) {
+        return { state: 'orphaned' as const, reason: 'anchor-unavailable' as const };
+      }
+      return verifyDurableAnchor(
+        anchor,
+        buildDurableAnchor({
+          path,
+          safeDisplayPath: path.display,
+          side: anchor.side,
+          blobOid: anchor.blobOid,
+          line: anchor.line,
+          text: strictTextDecoder.decode(bytes),
+        }),
+      );
+    },
+    async revealDraftFile() {
+      if (options.revealDraftFile === undefined) throw new Error('Draft reveal adapter is unavailable.');
+      await options.revealDraftFile(draftStore.canonicalPath);
+    },
+    async revealExportDirectory() {
+      throw new Error('Patch export composition is unavailable.');
+    },
+    async exportReview() {
+      throw new Error('Patch export composition is unavailable.');
+    },
+    async inspectCompareIgnore() {
+      return CompareIgnoreStatusSchema.parse({ kind: 'unavailable' });
+    },
+    async appendCompareIgnoreRule() {
+      return AppendCompareIgnoreResultSchema.parse({ kind: 'unconfirmed' });
     },
   });
 }

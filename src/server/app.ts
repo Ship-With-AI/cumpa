@@ -4,14 +4,19 @@ import fastifyStatic from '@fastify/static';
 import Fastify from 'fastify';
 import type { FastifyInstance } from 'fastify';
 
-import type { PinnedComparison } from '../contracts/comparison.js';
-import { createCapabilityRegistry, type CapabilityRegistryOptions } from './capabilities.js';
+import type { GroundedExactPatch, PinnedComparison } from '../contracts/comparison.js';
+import {
+  createCapabilityRegistry,
+  createExactPatchCapabilityRegistry,
+  type CapabilityRegistryOptions,
+} from './capabilities.js';
 import {
   createDraftStore,
   type DraftFileSystem,
   type DraftStore,
 } from './draft-store.js';
 import { registerSessionRoutes } from './routes.js';
+import { materializePatchSnapshot } from './patch-snapshot.js';
 import {
   registerSessionSecurity,
   type SecurityDiagnostic,
@@ -22,6 +27,11 @@ export interface CreateSessionAppOptions extends CapabilityRegistryOptions {
   readonly sessionToken: string;
   readonly webRoot?: string;
   readonly diagnostics?: (diagnostic: SecurityDiagnostic) => void;
+}
+
+export interface CreateExactPatchSessionAppOptions extends CreateSessionAppOptions {
+  readonly snapshotParent?: string;
+  readonly observePatchTarget?: () => Promise<boolean>;
 }
 
 export interface SessionApp extends FastifyInstance {
@@ -120,5 +130,31 @@ export function createSessionApp(
     index: ['index.html'],
   });
 
+  return app;
+}
+
+export async function createExactPatchSessionApp(
+  grounded: GroundedExactPatch,
+  options: CreateExactPatchSessionAppOptions,
+): Promise<SessionApp> {
+  const snapshot = await materializePatchSnapshot(grounded, {
+    parent: options.snapshotParent,
+    observeTarget: options.observePatchTarget,
+  });
+  const app = Fastify({
+    logger: false,
+    ajv: { customOptions: { removeAdditional: false } },
+  }) as unknown as SessionApp;
+  const webRoot = options.webRoot ?? resolve(import.meta.dirname, '../web');
+  const capabilities = createExactPatchCapabilityRegistry(grounded, snapshot, options);
+  const security = registerSessionSecurity(app, options);
+
+  app.decorate('bindSessionSecurity', security.bind);
+  app.addHook('onClose', async () => snapshot.dispose());
+  registerSessionRoutes(app, capabilities);
+  void app.register(fastifyStatic, {
+    root: webRoot,
+    index: ['index.html'],
+  });
   return app;
 }

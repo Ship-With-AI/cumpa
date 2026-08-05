@@ -12,6 +12,7 @@ import {
   ExportDirectoryRevealResultSchema,
   ExportReviewRequestSchema,
   ExportReviewResultSchema,
+  PatchStatusResponseSchema,
   SelectorDriftResponseSchema,
   OpaqueFileIdSchema,
   type DraftMutationResult as ApiDraftMutationResult,
@@ -123,26 +124,42 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
     async () => capabilities.session,
   );
 
-  app.get<{ Querystring: Record<string, never> }>(
-    '/api/selector-drift',
-    {
-      schema: {
-        querystring: EMPTY_QUERY_SCHEMA,
+  if (capabilities.patchStatus !== undefined) {
+    app.get<{ Querystring: Record<string, never> }>(
+      '/api/patch-status',
+      { schema: { querystring: EMPTY_QUERY_SCHEMA } },
+      async (request, reply) => {
+        if (
+          Object.keys(request.query).length !== 0 ||
+          request.body !== undefined ||
+          request.headers['content-length'] !== undefined ||
+          request.headers['content-type'] !== undefined
+        ) {
+          return unavailable(reply, 400);
+        }
+        return PatchStatusResponseSchema.parse(await capabilities.patchStatus!());
       },
-    },
-    async (request, reply) => {
-      if (
-        Object.keys(request.query).length !== 0 ||
-        request.body !== undefined ||
-        request.headers['content-length'] !== undefined
-      ) {
-        return unavailable(reply, 400);
-      }
-      return SelectorDriftResponseSchema.parse(
-        await capabilities.selectorDriftObserver.observe(),
-      );
-    },
-  );
+    );
+  }
+
+  if (capabilities.selectorDriftObserver !== undefined) {
+    app.get<{ Querystring: Record<string, never> }>(
+      '/api/selector-drift',
+      { schema: { querystring: EMPTY_QUERY_SCHEMA } },
+      async (request, reply) => {
+        if (
+          Object.keys(request.query).length !== 0 ||
+          request.body !== undefined ||
+          request.headers['content-length'] !== undefined
+        ) {
+          return unavailable(reply, 400);
+        }
+        return SelectorDriftResponseSchema.parse(
+          await capabilities.selectorDriftObserver.observe(),
+        );
+      },
+    );
+  }
 
   app.get<{ Params: { fileId: string } }>(
     '/api/files/:fileId',
