@@ -5,8 +5,12 @@ import { expect, test, type Page } from '@playwright/test';
 import { createServer, type ViteDevServer } from 'vite';
 
 import {
+  PatchStatusResponseSchema,
   SelectorDriftResponseSchema,
+  SessionResponseSchema,
+  type PatchStatusResponse,
   type SelectorDriftResponse,
+  type SessionResponse,
 } from '../../src/contracts/api.js';
 import { createSelectorDriftState } from '../../src/web/model/selector-drift-state.js';
 
@@ -18,15 +22,33 @@ const movedBaseOid = 'd'.repeat(40);
 
 let server: ViteDevServer | undefined;
 let origin = '';
+let session: SessionResponse;
 let driftResponse: SelectorDriftResponse;
+let patchStatusResponse: PatchStatusResponse;
 const driftRequests: { body: string; method: string; url: string }[] = [];
+const patchStatusRequests: { body: string; method: string; url: string }[] = [];
 
-const session = {
-  base: { label: 'base', oid: baseOid },
-  head: { label: 'head', oid: headOid },
-  mergeBaseOid: 'c'.repeat(40),
-  files: [],
-};
+function pinnedSession(): SessionResponse {
+  return SessionResponseSchema.parse({
+    base: { label: 'base', oid: baseOid },
+    head: { label: 'head', oid: headOid },
+    mergeBaseOid: 'c'.repeat(40),
+    files: [],
+  });
+}
+
+function exactPatchSession(): SessionResponse {
+  return SessionResponseSchema.parse({
+    patch: {
+      kind: 'exact-patch',
+      digest: 'd'.repeat(64),
+      reviewKey: 'e'.repeat(64),
+      validationTarget: { kind: 'repository' },
+      changedFileCount: 0,
+    },
+    files: [],
+  });
+}
 
 function unchanged(): SelectorDriftResponse {
   return SelectorDriftResponseSchema.parse({
@@ -91,10 +113,14 @@ async function startAppServer(): Promise<string> {
       configureServer(viteServer) {
         viteServer.middlewares.use('/api/session', (_request, response) => json(response, session));
         viteServer.middlewares.use('/api/draft', (_request, response) => json(response, { kind: 'missing', path: '.compare/drafts/active-review.json' }));
-        viteServer.middlewares.use('/api/selector-drift', async (request, response) => {
-          driftRequests.push({ body: await readBody(request), method: request.method ?? '', url: request.url ?? '' });
-          json(response, driftResponse);
-        });
+      viteServer.middlewares.use('/api/selector-drift', async (request, response) => {
+        driftRequests.push({ body: await readBody(request), method: request.method ?? '', url: request.url ?? '' });
+        json(response, driftResponse);
+      });
+      viteServer.middlewares.use('/api/patch-status', async (request, response) => {
+        patchStatusRequests.push({ body: await readBody(request), method: request.method ?? '', url: request.url ?? '' });
+        json(response, patchStatusResponse);
+      });
       },
     }],
     server: { host: '127.0.0.1', port: 0 },
@@ -117,8 +143,14 @@ test.afterAll(async () => {
 });
 
 test.beforeEach(() => {
+  session = pinnedSession();
   driftResponse = unchanged();
+  patchStatusResponse = PatchStatusResponseSchema.parse({
+    kind: 'unchanged',
+    validationTargetLabel: 'Repository content',
+  });
   driftRequests.length = 0;
+  patchStatusRequests.length = 0;
 });
 
 test('visible-only polling coalesces overlap and announces each selector transition once', async () => {
@@ -251,4 +283,33 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   for (const request of driftRequests) {
     expect(request.body).toBe('');
   }
+});
+
+test('exact patch sessions observe only their frozen patch status', async ({ page }) => {
+  session = exactPatchSession();
+  await openReview(page);
+
+  await expect(page.getByRole('heading', { name: 'Compare: exact patch · dddddddddddd' })).toBeVisible();
+  await expect(page.getByText('Frozen verified patch')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'View patch scope' })).toBeVisible();
+  expect(patchStatusRequests).toHaveLength(1);
+  expect(driftRequests).toHaveLength(0);
+
+  patchStatusResponse = PatchStatusResponseSchema.parse({
+    kind: 'drifted',
+    validationTargetLabel: 'Repository content',
+  });
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+    document.dispatchEvent(new Event('visibilitychange'));
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+
+  const notice = page.getByRole('alert');
+  await expect(notice).toContainText('Implemented content changed');
+  await expect(notice).toContainText(
+    'The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Compare will not substitute current content. Relaunch with a patch that matches the current implementation.',
+  );
+  await expect(page.getByRole('button', { name: 'View patch scope' })).toBeVisible();
 });
