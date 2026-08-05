@@ -238,6 +238,8 @@ describe('ReviewExportV2 range contract', () => {
     };
     const document = buildReviewExportV2(rangeSnapshot(range), range, '2026-07-23T08:02:00.000Z');
     const bytes = canonicalizeReviewExport(document);
+    expect(bytes.at(-1)).not.toBe(0x0a);
+    expect(parseCanonicalReviewExport(bytes)).toEqual(document);
     const parsed = parseCanonicalReviewExport(bytes);
     expect(parsed).toEqual(document);
     expect(document).toMatchObject({ schemaVersion: 2, range });
@@ -279,6 +281,7 @@ describe('ReviewExportV3 exact patch contract', () => {
       '2026-07-23T08:02:00.000Z',
     );
     const bytes = canonicalizeReviewExport(document);
+    expect(bytes.at(-1)).not.toBe(0x0a);
 
     expect(parseCanonicalReviewExport(bytes)).toEqual(document);
     expect(document).toMatchObject({ schemaVersion: 3, patch });

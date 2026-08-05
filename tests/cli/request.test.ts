@@ -12,6 +12,8 @@ import {
   readAgentReviewRequest,
 } from '../../src/cli/request.js';
 import { runOrdinaryAction } from '../../src/cli/run.js';
+import { AttachedCompletionCoordinator } from '../../src/server/attached-completion.js';
+import type { SessionApp } from '../../src/server/app.js';
 import type { PinnedComparison } from '../../src/contracts/comparison.js';
 import { LaunchError } from '../../src/domain/errors.js';
 
@@ -286,7 +288,69 @@ describe('ordinary action request ownership', () => {
     expect(launch).toHaveBeenCalledExactlyOnceWith(comparison);
     expect(stderr).toEqual([]);
     expect(stdout).toEqual([]);
+
     expect(setExitStatus).not.toHaveBeenCalled();
+  });
+  it('keeps a non-TTY range attached until Finish writes canonical bytes and its response settles', async () => {
+    const events: string[] = [];
+    const stdout: Uint8Array[] = [];
+    const coordinator = new AttachedCompletionCoordinator();
+    let attached: { coordinator: AttachedCompletionCoordinator; deliver: (bytes: Uint8Array) => Promise<void> } | undefined;
+    const app = {
+      listen: vi.fn(async () => {}),
+      server: { address: () => ({ address: '127.0.0.1', port: 43123 }) },
+      bindSessionSecurity: vi.fn(),
+      close: vi.fn(async () => {
+        events.push('shutdown');
+      }),
+    } as unknown as SessionApp;
+
+    const running = runOrdinaryAction(
+      { cwd: '/repo' },
+      {
+        isTTY: false,
+        input: chunks(),
+        readRequest: async () => AgentReviewRequestSchema.parse(request()),
+        createRangeComparison: async () => comparison,
+        createSessionApp: (_comparison, options) => {
+          attached = options.attachedCompletion;
+          return app;
+        },
+        launchComparison: vi.fn(async () => {
+          throw new Error('non-TTY review must use the attached launcher');
+        }),
+        openBrowser: async () => {
+          events.push('open');
+        },
+        output: (message) => {
+          events.push(`stderr:${message}`);
+        },
+        stdout: async (bytes) => {
+          events.push('stdout');
+          stdout.push(bytes);
+        },
+        setExitStatus: (status) => {
+          events.push(`exit:${status}`);
+        },
+      },
+    );
+    void running.catch(() => {});
+
+    await Promise.resolve();
+    expect(attached).toBeDefined();
+    expect(stdout).toEqual([]);
+    expect(events).toContain('open');
+
+    const canonical = new TextEncoder().encode('{"schemaVersion":2}');
+    await attached!.coordinator.finish(0, async () => {
+      await attached!.deliver(canonical);
+      return { kind: 'completed', revision: 0 };
+    });
+    attached!.coordinator.markResponseSettled();
+    await running;
+
+    expect(stdout).toEqual([canonical]);
+    expect(events).toEqual(['stderr:http://127.0.0.1:43123/#token=expect.any(String)']);
   });
 
   it.each([
