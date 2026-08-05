@@ -1211,9 +1211,9 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
         };
         viewport.scrollLeft = 0;
         const baseReachableAtStart = intersectsViewport(document.querySelector('.monaco-diff-pane--base'));
-        const baseLabelReachableAtStart = intersectsViewport(document.querySelector('.diff-workspace__side-labels span:first-child'));
+        const baseLabelReachableAtStart = intersectsViewport(document.querySelector('.diff-workspace__side-labels > span:first-child > span:first-child'));
         viewport.scrollLeft = viewport.scrollWidth;
-        const headLabelReachableAtEnd = intersectsViewport(document.querySelector('.diff-workspace__side-labels span:last-child'));
+        const headLabelReachableAtEnd = intersectsViewport(document.querySelector('.diff-workspace__side-labels > span:last-child > span:first-child'));
         const headReachableAtEnd = intersectsViewport(document.querySelector('.monaco-diff-pane--head'));
         const actionReachableAtEnd = intersectsViewport(document.querySelector('.diff-workspace__gutter-action'));
         const canvasWidth = document.querySelector<HTMLElement>('.diff-workspace__canvas')?.getBoundingClientRect().width;
