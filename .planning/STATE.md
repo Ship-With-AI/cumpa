@@ -5,10 +5,10 @@ milestone_name: Agent Review Handoff
 current_phase: 14
 current_phase_name: Attached Lifecycle & Canonical Completion
 status: planning
-stopped_at: Phase 13 Plan 04 complete; phase verification pending
-last_updated: "2026-08-05T13:12:32.451Z"
+stopped_at: Phase 14 AI applicability gate skipped; UI-SPEC approved and committed; ready for plan-phase
+last_updated: "2026-08-05T13:53:50.140Z"
 last_activity: 2026-08-05
-last_activity_desc: Phase 13 complete, transitioned to Phase 14
+last_activity_desc: Phase 14 AI applicability gate skipped; UI-SPEC approved and committed
 progress:
   total_phases: 2
   completed_phases: 2
@@ -23,15 +23,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 13 — Exact Patch Grounding
+**Current focus:** Phase 14 — Attached Lifecycle & Canonical Completion
 
 ## Current Position
 
 Phase: 14 — Attached Lifecycle & Canonical Completion
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-08-05 — Phase 13 complete, transitioned to Phase 14
-Progress: Phase 13 plans complete (4/4); phase not marked complete
+Last activity: 2026-08-05 — Phase 14 AI applicability gate skipped; UI-SPEC approved and committed
+Progress: Phase 14 design hooks complete; ready for planning
 
 ## Performance Metrics
 
