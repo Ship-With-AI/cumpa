@@ -82,9 +82,16 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 5. Finish settles pending draft mutations and validates current anchors and scope before returning; stale feedback fails explicitly instead of becoming a successful result.
 
 **Plans**: 3 plan placeholders
+**Wave 1**
 
 - [ ] 14-01-PLAN.md — Attach the authenticated browser session to an explicit, one-shot Finish lifecycle.
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 14-02-PLAN.md — Settle draft state and enforce final scope, drift, and anchor validation at completion.
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 14-03-PLAN.md — Deliver exact canonical bytes over stdout with deterministic response, shutdown, and failure ordering.
 
 **UI hint**: yes
