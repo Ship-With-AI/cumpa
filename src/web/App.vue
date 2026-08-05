@@ -144,9 +144,7 @@ const rangeHasPathspecs = computed(() => (pinnedSession.value?.range?.pathspecs.
 const unavailableHeading = computed(() =>
   patchSnapshotUnavailable.value
     ? 'Frozen patch unavailable'
-    : isExactPatchSession.value
-      ? 'Exact patch review unavailable'
-      : 'Pinned session unavailable',
+    : 'Exact patch review unavailable',
 );
 const unavailableMessage = computed(() =>
   patchSnapshotUnavailable.value
@@ -866,10 +864,11 @@ onBeforeUnmount(() => {
   </main>
 
   <main v-else-if="errorMessage !== '' || patchSnapshotUnavailable" class="unavailable-shell">
+    <h1 v-if="!isExactPatchSession">Review unavailable</h1>
     <ErrorState
       :alert="!patchSnapshotUnavailable"
       :focus-heading="patchSnapshotUnavailable"
-      :heading="unavailableHeading"
+      :heading="isExactPatchSession ? unavailableHeading : undefined"
       :message="unavailableMessage"
     />
   </main>
