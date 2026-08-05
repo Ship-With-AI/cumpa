@@ -10,8 +10,10 @@ const props = defineProps<{
   observation: SelectorDriftResponse;
   stale: boolean;
   pending: boolean;
-  pinnedBase: PinnedEndpoint;
-  pinnedHead: PinnedEndpoint;
+  pinnedEndpoints: Readonly<{
+    base: PinnedEndpoint;
+    head: PinnedEndpoint;
+  }>;
 }>();
 
 const emit = defineEmits<{
@@ -22,8 +24,8 @@ const emit = defineEmits<{
 const acknowledged = ref(false);
 const heading = ref<HTMLElement>();
 const rows = computed(() => [
-  { observed: props.observation.base, pinned: props.pinnedBase },
-  { observed: props.observation.head, pinned: props.pinnedHead },
+  { observed: props.observation.base, pinned: props.pinnedEndpoints.base },
+  { observed: props.observation.head, pinned: props.pinnedEndpoints.head },
 ]);
 
 function focusHeading(): void {

@@ -22,8 +22,10 @@ const props = defineProps<{
   inventory: readonly { identity: string; display: string }[];
   summary: string;
   revision: number;
-  pinnedBase: Readonly<{ label: string; oid: string }>;
-  pinnedHead: Readonly<{ label: string; oid: string }>;
+  pinnedEndpoints?: Readonly<{
+    base: Readonly<{ label: string; oid: string }>;
+    head: Readonly<{ label: string; oid: string }>;
+  }>;
   summaryBuffer: string;
   commentBuffers: ReadonlyMap<string, string>;
   pending: ReviewPendingOperation | null;
@@ -585,8 +587,7 @@ watch(reviewFailure, (failed) => {
     <section class="review-panel__section review-panel__section--export">
       <ExportSection
         :revision="revision"
-        :pinned-base="pinnedBase"
-        :pinned-head="pinnedHead"
+        :pinned-endpoints="pinnedEndpoints"
         :summary="summary"
         :summary-buffer="summaryBuffer"
         :comments="comments"

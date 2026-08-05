@@ -17,8 +17,10 @@ const props = defineProps<{
   summary: string;
   summaryBuffer: string;
   comments: readonly WorkspaceComment[];
-  pinnedBase: Readonly<{ label: string; oid: string }>;
-  pinnedHead: Readonly<{ label: string; oid: string }>;
+  pinnedEndpoints?: Readonly<{
+    base: Readonly<{ label: string; oid: string }>;
+    head: Readonly<{ label: string; oid: string }>;
+  }>;
   commentBuffers: ReadonlyMap<string, string>;
   exportState: ReviewExportState;
   appendIgnoreRule: () => Promise<AppendCompareIgnoreResult>;
@@ -92,11 +94,10 @@ watch(() => props.exportState.phase, (phase) => {
         </div>
       </section>
       <DriftExportAcknowledgement
-        v-else-if="exportState.phase === 'drift' && exportState.driftObservation !== null"
+        v-else-if="exportState.phase === 'drift' && exportState.driftObservation !== null && pinnedEndpoints !== undefined"
         :observation="exportState.driftObservation"
         :stale="exportState.driftStale"
-        :pinned-base="pinnedBase"
-        :pinned-head="pinnedHead"
+        :pinned-endpoints="pinnedEndpoints"
         :pending="exportState.pending"
         @cancel="emit('cancel')"
         @confirm="emit('export')"

@@ -286,6 +286,12 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
 });
 
 test('exact patch sessions observe only their frozen patch status', async ({ page }) => {
+  const pinnedPropWarnings: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'warning' && /prop "pinned(?:Base|Head)"/u.test(message.text())) {
+      pinnedPropWarnings.push(message.text());
+    }
+  });
   session = exactPatchSession();
   await openReview(page);
 
@@ -312,4 +318,5 @@ test('exact patch sessions observe only their frozen patch status', async ({ pag
     'The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Compare will not substitute current content. Relaunch with a patch that matches the current implementation.',
   );
   await expect(page.getByRole('button', { name: 'View patch scope' })).toBeVisible();
+  expect(pinnedPropWarnings).toEqual([]);
 });
