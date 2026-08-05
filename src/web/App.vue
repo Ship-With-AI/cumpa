@@ -962,7 +962,7 @@ onBeforeUnmount(() => {
           </template>
           <template v-else>
             <h2>No PR-style changes in this pinned comparison</h2>
-            <p>The selected head has no changes beyond the displayed merge base.</p>
+            <p>The selected head has no changes from the displayed merge base.</p>
           </template>
         </section>
         <section v-else-if="selectedFile?.availability.kind !== 'text'" class="empty-state">
