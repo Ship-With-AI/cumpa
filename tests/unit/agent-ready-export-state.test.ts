@@ -106,3 +106,30 @@ test('keeps recovery-required export state distinct from ordinary publication fa
     failure: 'recoveryRequired',
   });
 });
+
+test('uses strict attached completion status and revision-zero Finish requests', async () => {
+  const requests: Array<{ readonly path: string; readonly body: unknown }> = [];
+  const responses = [
+    new Response(JSON.stringify({ kind: 'waiting' })),
+    new Response(JSON.stringify({ kind: 'completed', revision: 0 }), { status: 201 }),
+    new Response(JSON.stringify({ kind: 'waiting', unexpected: true })),
+  ];
+  const client = createSessionClient({
+    location: { hash: `#token=${token}`, pathname: '/', search: '' },
+    history: { state: null, replaceState() {} },
+    fetch: async (path, init) => {
+      requests.push({ path: String(path), body: init?.body === undefined ? undefined : JSON.parse(String(init.body)) });
+      return responses.shift()!;
+    },
+  });
+
+  await expect(client.getAttachedCompletionStatus()).resolves.toEqual({ kind: 'waiting' });
+  await expect(client.finishReview({ expectedRevision: 0 })).resolves.toEqual({ kind: 'completed', revision: 0 });
+  await expect(client.getAttachedCompletionStatus()).rejects.toThrow('Local draft couldn’t be opened');
+
+  expect(requests).toEqual([
+    { path: '/api/attached-completion', body: undefined },
+    { path: '/api/attached-completion/finish', body: { expectedRevision: 0 } },
+    { path: '/api/attached-completion', body: undefined },
+  ]);
+});
