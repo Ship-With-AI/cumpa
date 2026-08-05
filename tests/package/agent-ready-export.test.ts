@@ -11,7 +11,7 @@ import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.
 const projectRoot = resolve(import.meta.dirname, '../..');
 const packagedCli = join(projectRoot, 'dist', 'bin', 'cumpa.mjs');
 const playwrightExecutable = join(projectRoot, 'node_modules', '.bin', 'playwright');
-const scenarioCommand = ['test', 'tests/e2e'] as const;
+const scenarioCommand = ['test', 'tests/e2e/agent-ready-export.spec.ts'] as const;
 const resumeTest = 'packaged-resume-after-relaunch preserves accepted review state, completes target-aware second export, and recovers exact bytes';
 
 const requirements = [

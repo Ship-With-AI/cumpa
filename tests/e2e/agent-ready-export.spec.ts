@@ -57,6 +57,15 @@ interface RunningCli {
   readonly outputDescriptor: number;
 }
 
+interface RunningAttachedCli {
+  readonly child: ChildProcess;
+  readonly markerPath: string;
+  readonly stderrPath: string;
+  readonly stdoutPath: string;
+  readonly stderrDescriptor: number;
+  readonly stdoutDescriptor: number;
+}
+
 interface PersistedDraft {
   readonly revision: number;
   readonly summary: string;
@@ -112,6 +121,73 @@ function startGeneratedCli(
     stdio: ['ignore', outputDescriptor, outputDescriptor],
   });
   return { child, markerPath, outputPath, outputDescriptor };
+}
+
+function startAttachedCli(
+  fixture: DirtyGitFixture,
+  selections: Readonly<{ readonly base: string; readonly head: string }>,
+): RunningAttachedCli {
+  const markerPath = join(packedRoot, `attached-browser-open-${crypto.randomUUID()}.log`);
+  const stderrPath = join(packedRoot, `attached-stderr-${crypto.randomUUID()}.log`);
+  const stdoutPath = join(packedRoot, `attached-stdout-${crypto.randomUUID()}.json`);
+  const stderrDescriptor = openSync(stderrPath, 'w');
+  const stdoutDescriptor = openSync(stdoutPath, 'w');
+  const environment = { ...process.env };
+  delete environment.CMUX_WORKSPACE_ID;
+  delete environment.COMPARE_LAUNCH_OPTIONS;
+  const child = spawn(process.execPath, [executablePath], {
+    cwd: fixture.nestedCwd,
+    env: {
+      ...environment,
+      PATH: `${fakeBinRoot}:${environment.PATH ?? ''}`,
+      COMPARE_BROWSER_OPEN_MARKER: markerPath,
+    },
+    stdio: ['pipe', stdoutDescriptor, stderrDescriptor],
+  });
+  child.stdin.end(JSON.stringify({
+    kind: 'compare.review-request',
+    schemaVersion: 1,
+    mode: 'revisions',
+    revisions: { base: selections.base, head: selections.head },
+  }));
+  return {
+    child,
+    markerPath,
+    stderrPath,
+    stdoutPath,
+    stderrDescriptor,
+    stdoutDescriptor,
+  };
+}
+
+async function waitForAttachedLoopbackUrl(running: RunningAttachedCli): Promise<string> {
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    const stderr = existsSync(running.stderrPath) ? readFileSync(running.stderrPath, 'utf8') : '';
+    const match = stderr.match(/http:\/\/127\.0\.0\.1:\d+\/#token=[A-Za-z0-9_-]{43,}/);
+    if (match !== null && existsSync(running.markerPath)) return match[0];
+    if (running.child.exitCode !== null || running.child.signalCode !== null) {
+      throw new Error(`[behavioral] attached CLI exited before publishing a loopback URL:\n${stderr}`);
+    }
+    const { promise, resolve } = Promise.withResolvers<void>();
+    setTimeout(resolve, 25);
+    await promise;
+  }
+  throw new Error('[behavioral] timed out waiting for attached CLI loopback URL');
+}
+
+async function waitForAttachedExit(running: RunningAttachedCli): Promise<number | null> {
+  const events = running.child as unknown as EventEmitter;
+  if (running.child.exitCode !== null) return running.child.exitCode;
+  const { promise, reject, resolve } = Promise.withResolvers<number | null>();
+  events.once('error', reject);
+  events.once('exit', resolve);
+  return await promise;
+}
+
+function closeAttachedCliFiles(running: RunningAttachedCli): void {
+  closeSync(running.stderrDescriptor);
+  closeSync(running.stdoutDescriptor);
 }
 
 async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
@@ -207,7 +283,7 @@ test.beforeAll(() => {
     '#!/usr/bin/env node',
     "const { appendFileSync } = require('node:fs');",
     "if (process.env.COMPARE_BROWSER_OPEN_MARKER) appendFileSync(process.env.COMPARE_BROWSER_OPEN_MARKER, `${JSON.stringify(process.argv.slice(2))}\\n`);",
-    'process.exitCode = 1;',
+    'process.exitCode = 0;',
     '',
   ].join('\n'));
   copyFileSync(opener, join(packedRoot, 'open'));
@@ -427,4 +503,49 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
   }
 
   await fixture.cleanup();
+});
+
+test('attached range review stays silent until Finish then emits one canonical V2 document', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
+  const selections = { base: fixture.baseRef, head: fixture.headRef };
+  const running = startAttachedCli(fixture, selections);
+  let closed = false;
+
+  try {
+    const url = await waitForAttachedLoopbackUrl(running);
+    expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
+    await openSession(page, url);
+    await ensureReviewOpen(page);
+    await expect(page.getByRole('button', { name: 'Finish review', exact: true })).toBeVisible();
+
+    const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
+    await page.getByRole('button', { name: 'Finish review', exact: true }).click();
+    expect((await finished).status()).toBe(201);
+    expect(await waitForAttachedExit(running)).toBe(0);
+
+    const stdout = readFileSync(running.stdoutPath);
+    expect(stdout).not.toHaveLength(0);
+    expect(stdout.at(-1)).not.toBe(0x0a);
+    expect(parseCanonicalReviewExport(stdout)).toMatchObject({
+      schemaVersion: 2,
+      acceptedDraftRevision: 0,
+      range: {
+        kind: 'revisions',
+        requestedBase: selections.base,
+        requestedHead: selections.head,
+      },
+    });
+    expect(readFileSync(running.stderrPath, 'utf8')).toContain(url);
+    expect(existsSync(join(fixture.root, '.compare', 'drafts'))).toBe(false);
+    closeAttachedCliFiles(running);
+    closed = true;
+  } finally {
+    if (running.child.exitCode === null && running.child.signalCode === null) {
+      running.child.kill('SIGINT');
+      await waitForAttachedExit(running);
+    }
+    if (!closed) closeAttachedCliFiles(running);
+    await fixture.cleanup();
+  }
 });
