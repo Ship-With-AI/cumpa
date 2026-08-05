@@ -5,15 +5,15 @@ milestone_name: Agent Review Handoff
 current_phase: 14
 current_phase_name: attached-lifecycle-canonical-completion
 status: executing
-stopped_at: Phase 14 Plan 01 complete; attached lifecycle completion ready for plan 14-02
-last_updated: "2026-08-05T16:28:27Z"
+stopped_at: Phase 14 Plan 02 complete; attached lifecycle browser interface ready for plan 14-03
+last_updated: "2026-08-05T17:11:50Z"
 last_activity: 2026-08-05
-last_activity_desc: Completed Phase 14 Plan 01 attached lifecycle canonical completion
+last_activity_desc: Completed Phase 14 Plan 02 attached lifecycle browser interface
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 50
 ---
 
@@ -29,16 +29,16 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 ## Current Position
 
 Phase: 14 (attached-lifecycle-canonical-completion) — EXECUTING
-Plan: 1 of 3 complete
+Plan: 2 of 3 complete
 Status: Executing Phase 14
-Last activity: 2026-08-05 — Completed Phase 14 Plan 01 attached lifecycle canonical completion
-Progress: Phase 14 Plan 01 complete; Wave 2 plans remain
+Last activity: 2026-08-05 — Completed Phase 14 Plan 02 attached lifecycle browser interface
+Progress: Phase 14 Plans 01 and 02 complete; Plan 03 remains
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 66
+- Total plans completed: 67
 - Average duration: 23 min
 - Total execution time: 4.7 hours
 
@@ -69,6 +69,7 @@ Progress: Phase 14 Plan 01 complete; Wave 2 plans remain
 | Phase 13 P03 | 18min | 3 tasks | 7 files |
 | Phase 13 P04 | 17min | 3 tasks | 6 files |
 | Phase 14 P01 | 14min | 3 tasks | 8 files |
+| Phase 14 P02 | N/A | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 13]: Exact patch sessions own an atomic private snapshot and exact server-derived draft key; content never falls back to live readers. — Drift is latched explicitly while frozen review feedback remains available.
 - [Phase 13]: Exact patch launch passes GroundedExactPatch directly to createExactPatchSessionApp. — V3 exports retain frozen server provenance without range or live-source fallback.
 
+- [Phase 14]: Attached browser lifecycle state is server-authoritative; the UI submits only an accepted revision to Finish and never canonical bytes.
+- [Phase 14]: Finishing/completed attached reviews lock mutations while retaining readable review content and navigation.
 ### Pending Todos
 
 None yet.

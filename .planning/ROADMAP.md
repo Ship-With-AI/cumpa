@@ -81,14 +81,14 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 4. Returned JSON binds the accepted summary, comments, and drift-detectable anchors to the exact submitted range/pathspec or patch identity.
 5. Finish settles pending draft mutations and validates current anchors and scope before returning; stale feedback fails explicitly instead of becoming a successful result.
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 **Wave 1**
 
 - [x] 14-01-PLAN.md — Attach the authenticated browser session to an explicit, one-shot Finish lifecycle.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 14-02-PLAN.md — Settle draft state and enforce final scope, drift, and anchor validation at completion.
+- [x] 14-02-PLAN.md — Render and enforce the attached lifecycle in the existing browser workspace.
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
