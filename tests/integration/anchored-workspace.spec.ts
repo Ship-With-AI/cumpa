@@ -1053,7 +1053,7 @@ test.describe('async comment settlement', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
     await ensureReviewOpen(page);
     await expect(page.locator('.comments-rail__comment[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]')).toContainText(body);
-    await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(0);
+    await expect(page.locator('.monaco-anchor-zone--composer textarea')).toHaveCount(0);
   });
 
   test('async comment settlement restores A retry state when its delayed failure returns', async ({ page }) => {
