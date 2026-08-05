@@ -8,11 +8,11 @@ Compare is a local-first code review application for developers who want a GitHu
 
 A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
 
-## Current State: v1.3 Agent Review Handoff — Phase 12 Complete
+## Current State: v1.3 Agent Review Handoff — Phase 13 Complete
 
-**Current progress:** Phase 12 delivered safe range-request launch and immutable review scope; Phase 13 has not started.
+**Current progress:** Phase 13 delivered exact-patch grounding and an immutable, drift-aware review/export path; Phase 14 has not started.
 
-Compare now accepts one strict, bounded versioned stdin range request without changing TTY launch. Native Git resolves and pins range commits and ordered pathspecs once; that scope remains authoritative through the browser session, draft identity, and V2 export.
+Compare accepts one strict, bounded versioned stdin request for either a pinned revision range or an already-applied patch. Exact patches are verified against repository/worktree target bytes, materialized as private immutable snapshots, and remain readable/exportable during explicit source drift.
 
 <details>
 <summary>v1.2 milestone intent</summary>
@@ -75,9 +75,10 @@ Validated in Phase 11: Production Performance Gate proved the compiled picker pa
 
 Validated in Phase 12: Request Protocol & Range Grounding accepts one strict, bounded versioned stdin range request while preserving TTY launch; native Git pins range commits and ordered pathspec scope through the browser session, draft identity, and V2 export.
 
+Validated in Phase 13: Exact Patch Grounding accepts a strict exact already-applied patch, proves repository-object preimages and target postimages, preserves a frozen snapshot with explicit drift, and emits canonical V3 patch export provenance without modifying Git state.
+
 ### Active
 
-- [ ] Coding agents can submit a repository-grounded exact patch through CLI stdin.
 - [ ] Developers can explicitly finish an agent-submitted review.
 - [ ] The waiting CLI returns canonical review JSON on stdout.
 
@@ -170,4 +171,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-08-04 after Phase 12 Request Protocol & Range Grounding*
+*Last updated: 2026-08-05 after Phase 13 Exact Patch Grounding*
