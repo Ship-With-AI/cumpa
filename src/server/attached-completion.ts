@@ -11,6 +11,25 @@ export class AttachedCompletionCoordinator {
   #status: AttachedCompletionStatus = AttachedCompletionStatusSchema.parse({ kind: 'waiting' });
   #inFlight: Promise<FinishReviewResult> | undefined;
   #terminal: FinishReviewResult | undefined;
+  #resolveDelivery!: (result: FinishReviewResult) => void;
+  #resolveResponseSettled!: () => void;
+
+  readonly delivery: Promise<FinishReviewResult>;
+  readonly responseSettled: Promise<void>;
+
+  constructor() {
+    const delivery = Promise.withResolvers<FinishReviewResult>();
+    this.delivery = delivery.promise;
+    this.#resolveDelivery = delivery.resolve;
+    const responseSettled = Promise.withResolvers<void>();
+    this.responseSettled = responseSettled.promise;
+    this.#resolveResponseSettled = responseSettled.resolve;
+  }
+
+  markResponseSettled(): void {
+    if (this.#status.kind === 'completed') this.#resolveResponseSettled();
+  }
+
 
   status(): AttachedCompletionStatus {
     return this.#status;
@@ -37,8 +56,10 @@ export class AttachedCompletionCoordinator {
       }
       if (result.kind === 'completed') {
         this.#status = AttachedCompletionStatusSchema.parse({ kind: 'completed', revision: result.revision });
+        this.#resolveDelivery(result);
       } else if (result.kind === 'deliveryFailed') {
         this.#terminal = result;
+        this.#resolveDelivery(result);
       } else {
         this.#status = AttachedCompletionStatusSchema.parse({ kind: 'waiting' });
       }
@@ -53,4 +74,8 @@ export class AttachedCompletionCoordinator {
       }
     }
   }
+}
+
+export function createAttachedCompletionCoordinator(): AttachedCompletionCoordinator {
+  return new AttachedCompletionCoordinator();
 }

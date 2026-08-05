@@ -159,6 +159,7 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
         const result = FinishReviewResultSchema.parse(await capabilities.attachedCompletion!.finish(input.data.expectedRevision));
         switch (result.kind) {
           case 'completed':
+            reply.raw.once('finish', () => capabilities.attachedCompletion!.markResponseSettled());
             return reply.code(201).send(result);
           case 'alreadyCompleted':
             return reply.code(200).send(result);

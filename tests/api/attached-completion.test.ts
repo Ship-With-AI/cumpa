@@ -73,6 +73,8 @@ describe('attached completion API', () => {
     const first = await app.inject({ method: 'POST', url: '/api/review-completion/finish', headers, payload: { expectedRevision: 0 } });
     expect(first.statusCode).toBe(201);
     expect(first.json()).toEqual({ kind: 'completed', revision: 0 });
+    await expect(coordinator.delivery).resolves.toEqual({ kind: 'completed', revision: 0 });
+    await expect(coordinator.responseSettled).resolves.toBeUndefined();
     const duplicate = await app.inject({ method: 'POST', url: '/api/review-completion/finish', headers, payload: { expectedRevision: 0 } });
     expect(duplicate.statusCode).toBe(200);
     expect(duplicate.json()).toEqual({ kind: 'alreadyCompleted', revision: 0 });

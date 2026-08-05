@@ -118,6 +118,7 @@ export type CapabilityRegistry = Readonly<{
   readonly attachedCompletion?: Readonly<{
     readonly status: () => AttachedCompletionStatus;
     readonly finish: (expectedRevision: number) => Promise<FinishReviewResult>;
+    readonly markResponseSettled: () => void;
   }>;
   readonly lookup: (fileId: string) => Promise<FileMetadataResponse | undefined>;
   readonly readContent: (fileId: string) => Promise<FileContentResponse | undefined>;
@@ -355,6 +356,7 @@ export function createCapabilityRegistry(
 
   const attachedCompletion = options.attachedCompletion === undefined ? undefined : {
     status: () => options.attachedCompletion!.coordinator.status(),
+    markResponseSettled: () => options.attachedCompletion!.coordinator.markResponseSettled(),
     finish: async (expectedRevision: number): Promise<FinishReviewResult> => {
       return options.attachedCompletion!.coordinator.finish(expectedRevision, async () => {
         const settled = await draftStore.settle(expectedRevision, {
@@ -643,6 +645,7 @@ export async function createExactPatchCapabilityRegistry(
 
   const attachedCompletion = options.attachedCompletion === undefined ? undefined : {
     status: () => options.attachedCompletion!.coordinator.status(),
+    markResponseSettled: () => options.attachedCompletion!.coordinator.markResponseSettled(),
     finish: async (expectedRevision: number): Promise<FinishReviewResult> => {
       return options.attachedCompletion!.coordinator.finish(expectedRevision, async () => {
         const settled = await draftStore.settle(expectedRevision, {
