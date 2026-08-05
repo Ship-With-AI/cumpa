@@ -61,11 +61,12 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 4. Patch validation and review leave the real worktree, index, refs, and object store unchanged.
 5. Accepted patch content remains frozen and readable until completion; later repository drift produces an explicit failure rather than different reviewed bytes.
 
-**Plans**: 3 plan placeholders
+**Plans**: 4 plans
 
-- [ ] 13-01-PLAN.md — Run the focused Git patch-mechanism validation across content, metadata, path, binary, and overlay-lifetime cases.
-- [ ] 13-02-PLAN.md — Implement exact preimage/postimage grounding with isolated, read-only snapshot ownership.
-- [ ] 13-03-PLAN.md — Feed frozen patch inventory, blobs, metadata, digest, and scoped identity into the existing review model.
+- [ ] 13-01-PLAN.md — Validate strict exact-patch input, repository-object preimages, byte-exact implemented postimages, truthful metadata, and read-only grounding.
+- [ ] 13-02-PLAN.md — Materialize one private PatchSnapshot with exact draft identity, authenticated capabilities, and a dedicated patch-status endpoint.
+- [ ] 13-03-PLAN.md — Dispatch GroundedExactPatch through createExactPatchSessionApp and preserve frozen provenance in ordinary JSON/Markdown exports.
+- [ ] 13-04-PLAN.md — Wire the dedicated patch status into the approved exact-patch workspace, persistent readable drift, same-snapshot retry, and blocking snapshot loss.
 
 ### Phase 14: Attached Lifecycle & Canonical Completion
 
