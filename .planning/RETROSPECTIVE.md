@@ -105,6 +105,47 @@
 
 ---
 
+## Milestone: v1.3 — Agent Review Handoff
+
+**Shipped:** 2026-08-06
+**Phases:** 4 | **Plans:** 14 | **Executed tasks:** 42
+
+### What Was Built
+
+- Strict agent stdin framing for either pinned native-Git ranges or repository-grounded exact patches, while preserving interactive CLI selection.
+- Immutable range and patch provenance through browser review, repository-local drafts, and canonical V2/V3 exports.
+- An authenticated, explicit Finish lifecycle that validates final state and anchors before delivering one canonical stdout document.
+- Isolated mutable draft/export storage for concurrent or equivalent agent submissions.
+
+### What Worked
+
+- Native Git and repository objects remained the source of truth for range and patch grounding.
+- The existing browser review workspace and its persistence/export authorities were reused instead of creating a parallel agent-review product.
+- Focused API, Git, canonical-export, and packaged Chromium checks together covered request framing, explicit completion, and invocation isolation.
+
+### What Was Inefficient
+
+- The milestone accumulated advisory code, UI, and audit-evidence debt that required an explicit acceptance decision at close.
+- Automatic accomplishment extraction was plan-granular; the release record required manual curation.
+
+### Patterns Established
+
+- Agent input is strict and bounded before browser launch; canonical stdout is emitted only after one server-authoritative completion transaction.
+- Immutable submitted provenance and per-invocation mutable storage are separate concerns.
+
+### Key Lessons
+
+1. Exact-patch workflows need a single package-boundary Finish journey and stale-anchor server journey in addition to segmented contract proof.
+2. Non-blocking review warnings still need an explicit milestone disposition rather than being left implicit.
+
+### Cost Observations
+
+- Model mix: Not measured.
+- Sessions: Not measured in planning artifacts.
+- Notable: 110 files changed (+14,765 / -553) from the first to final feature commit; 61 TypeScript, Vue, and CSS files changed (+7,437 / -476).
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -113,6 +154,8 @@
 |-----------|--------|-------|------------|
 | v1.0 | 5 | 40 | Established TDD, threat registers, package-first browser acceptance, cross-phase integration audit, and closure-phase remediation |
 | v1.1 | 4 | 16 | Established one semantic UI/Monaco contract, browser-composite accessibility evidence, and final product/design contracts |
+| v1.2 | 3 | 4 | Established eager source discovery, bounded search, and a compiled 10,000-ref performance gate |
+| v1.3 | 4 | 14 | Established strict agent handoff, immutable range/patch grounding, explicit Finish, and invocation isolation |
 
 ### Cumulative Quality
 
@@ -120,9 +163,13 @@
 |-----------|------|-----|-----|------------|--------------|--------------|-------|
 | v1.0 | 108 | 35 | 98 | 56 | 51/51 | 22/22 | 8/8 |
 | v1.1 | Not recorded | Not recorded | Not recorded | Focused release gates passed | 18/18 | 12/12 | 7/7 |
+| v1.2 | Focused release gates passed | 5/5 | 12/12 | 5/5 |
+| v1.3 | Focused Git/API/CLI/package gates passed | 17/17 | 10/10 | 10/10 |
 
 ### Top Lessons (Verified Across Milestones)
 
 1. Package-boundary browser evidence remains the strongest detector of integration, CSP, layout, and accessibility defects.
 2. Cross-source milestone audits are necessary because phase frontmatter can lag accepted UAT evidence.
 3. One canonical authority per state or visual role reduces both correctness risk and review complexity.
+
+4. Attached agent workflows must prove both immutable provenance and per-invocation mutable-state isolation at the generated-package boundary.
