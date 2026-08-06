@@ -505,6 +505,45 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
   await fixture.cleanup();
 });
 
+test('attached review blocks Finish while an inline composer has unsaved text', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
+  const running = startAttachedCli(fixture, { base: fixture.baseRef, head: fixture.headRef });
+
+  try {
+    await openSession(page, await waitForAttachedLoopbackUrl(running));
+    const review = page.getByRole('button', { name: 'Review', exact: true });
+    if (await review.getAttribute('aria-expanded') === 'true') await review.click();
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    const surface = page.locator('.monaco-diff-editor .editor.modified .monaco-scrollable-element.editor-scrollable').first();
+    await surface.click({ position: { x: 16, y: 16 } });
+    await page.keyboard.press('Meta+g');
+    await page.keyboard.insertText('10');
+    await page.keyboard.press('Enter');
+    const line = page.locator('.monaco-diff-editor .editor.modified .view-line').filter({ hasText: 'export const stableContext10 = 10;' });
+    await expect(line).toBeVisible();
+    await line.click();
+    await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+    const composer = page.locator('.monaco-anchor-zone--composer textarea');
+    await composer.fill('Unsaved inline feedback');
+
+    await ensureReviewOpen(page);
+    const completion = page.getByRole('region', { name: 'Finish attached review' });
+    const finish = completion.getByRole('button', { name: 'Finish review', exact: true });
+    await expect(finish).toBeDisabled();
+    await finish.evaluate((button) => button.click());
+    expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
+
+    await composer.fill('');
+    await expect(finish).toBeEnabled();
+  } finally {
+    if (running.child.exitCode === null && running.child.signalCode === null) running.child.kill('SIGINT');
+    await waitForAttachedExit(running);
+    closeAttachedCliFiles(running);
+    await fixture.cleanup();
+  }
+});
+
 test('attached range review stays silent until Finish then emits one canonical V2 document', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);

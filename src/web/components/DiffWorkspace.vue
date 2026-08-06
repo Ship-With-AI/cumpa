@@ -133,6 +133,7 @@ function renderAnnotation(): void {
   render(h(CommentComposer, {
     ...props.composer,
     path: props.path,
+    mutationsLocked: props.mutationsLocked,
     onCancel: () => emit('cancel'),
     onAdd: () => emit('add'),
     onConfirmDiscard: () => emit('confirmDiscard'),

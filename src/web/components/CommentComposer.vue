@@ -11,6 +11,7 @@ const props = defineProps<{
   line: number;
   text: string;
   status: 'ready' | 'pending' | 'confirm-discard' | 'confirm-move';
+  mutationsLocked?: boolean;
   validation?: string;
   error?: string;
 }>();
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 }>();
 
 const sideLabel = () => props.side === 'base' ? 'Base' : 'Head';
+const mutationDisabled = computed(() => props.mutationsLocked === true || props.status === 'pending');
 const commentSupportId = computed(() => `comment-support-${props.side}-${props.line}`);
 const commentFeedbackId = computed(() => `comment-feedback-${props.side}-${props.line}`);
 const commentDescribedBy = computed(() => [
@@ -58,7 +60,7 @@ const commentDescribedBy = computed(() => [
           aria-label="Comment"
           :aria-describedby="commentDescribedBy"
           :value="text"
-          :disabled="status === 'pending'"
+          :disabled="mutationDisabled"
           placeholder="Describe the issue or requested change…"
           @input="emit('updateText', ($event.target as HTMLTextAreaElement).value)"
         />
@@ -76,8 +78,8 @@ const commentDescribedBy = computed(() => [
     <footer v-if="status === 'confirm-discard' || status === 'confirm-move'" class="conversation-card__footer inline-comment-composer__confirm">
       <p>Discard this comment draft? Your text hasn’t been saved.</p>
       <div class="conversation-card__actions">
-        <button type="button" class="ui-button" @click="emit('keepWriting')">Keep writing</button>
-        <button type="button" class="ui-button ui-button--destructive" @click="status === 'confirm-move' ? emit('confirmMove') : emit('confirmDiscard')">Discard draft</button>
+        <button type="button" class="ui-button" :disabled="mutationDisabled" @click="emit('keepWriting')">Keep writing</button>
+        <button type="button" class="ui-button ui-button--destructive" :disabled="mutationDisabled" @click="status === 'confirm-move' ? emit('confirmMove') : emit('confirmDiscard')">Discard draft</button>
       </div>
     </footer>
     <footer v-else class="conversation-card__footer">
@@ -87,13 +89,13 @@ const commentDescribedBy = computed(() => [
           class="ui-button ui-button--primary"
           :class="{ 'ui-button--busy': status === 'pending' }"
           :aria-busy="status === 'pending' ? 'true' : undefined"
-          :disabled="status === 'pending'"
+          :disabled="mutationDisabled"
           @click="emit('add')"
         >
           <span v-if="status === 'pending'" class="ui-spinner" aria-hidden="true" />
           {{ status === 'pending' ? 'Adding comment…' : 'Add comment' }}
         </button>
-        <button type="button" class="ui-button ui-button--destructive" :disabled="status === 'pending'" @click="emit('cancel')">Discard draft</button>
+        <button type="button" class="ui-button ui-button--destructive" :disabled="mutationDisabled" @click="emit('cancel')">Discard draft</button>
       </div>
     </footer>
   </section>

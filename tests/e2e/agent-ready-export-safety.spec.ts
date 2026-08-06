@@ -16,6 +16,7 @@ let lifecycleUrl: string;
 const lifecycleHarness = `
 import { createApp, h, ref } from 'vue';
 import ReviewPanel from '/components/ReviewPanel.vue';
+import CommentComposer from '/components/CommentComposer.vue';
 import '/styles.css';
 
 export function mountLifecycleHarness() {
@@ -25,6 +26,7 @@ export function mountLifecycleHarness() {
   const isExactPatch = ref(false);
   const summaryBuffer = ref('');
   const conflict = ref(null);
+  const composerMutations = ref(0);
   const exportState = {
     pending: false, progress: null, phase: 'ready', failure: null, conflict: null,
     receipt: null, previousConfirmedReceipt: null, driftObservation: null,
@@ -42,7 +44,24 @@ export function mountLifecycleHarness() {
         attachedFailure: result.value, isExactPatch: isExactPatch.value,
         onFinishReview: () => { finished.value += 1; },
       }),
+      h('section', { 'aria-label': 'Inline composer lock harness' }, [
+        h(CommentComposer, {
+          path: 'src/changed.ts', side: 'head', line: 2, text: 'Ready draft', status: 'ready',
+          mutationsLocked: lifecycle.value === 'finishing' || lifecycle.value === 'completed',
+          onAdd: () => { composerMutations.value += 1; },
+          onCancel: () => { composerMutations.value += 1; },
+          onUpdateText: () => { composerMutations.value += 1; },
+        }),
+        h(CommentComposer, {
+          path: 'src/changed.ts', side: 'head', line: 3, text: 'Confirm draft', status: 'confirm-discard',
+          mutationsLocked: lifecycle.value === 'finishing' || lifecycle.value === 'completed',
+          onConfirmDiscard: () => { composerMutations.value += 1; },
+          onKeepWriting: () => { composerMutations.value += 1; },
+          onUpdateText: () => { composerMutations.value += 1; },
+        }),
+      ]),
       h('output', { id: 'finish-count' }, String(finished.value)),
+      h('output', { id: 'composer-mutation-count' }, String(composerMutations.value)),
     ]),
   }).mount('#lifecycle-harness');
   globalThis.__setAttachedLifecycle = (next, nextResult, context = {}) => {
@@ -130,20 +149,38 @@ test('attached lifecycle renders waiting, progress, completion, and safe recover
   });
 
   const completion = page.getByRole('region', { name: 'Finish attached review' });
+  const composerHarness = page.getByRole('region', { name: 'Inline composer lock harness' });
+  const composerControls = composerHarness.locator('textarea, button');
+  const expectComposerLocked = async () => {
+    await expect(composerControls).toHaveCount(6);
+    for (let index = 0; index < 6; index += 1) {
+      await expect(composerControls.nth(index)).toBeDisabled();
+    }
+    await composerControls.evaluateAll((controls) => {
+      controls.forEach((control) => (control as HTMLButtonElement | HTMLTextAreaElement).click());
+    });
+    await expect(page.locator('#composer-mutation-count')).toHaveText('0');
+  };
   await expect(completion.getByText('Waiting', { exact: true })).toBeVisible();
   await expect(completion.getByText('The requesting agent is waiting. Only Finish review returns the accepted summary and comments. Exporting, closing, reloading, or disconnecting leaves this review unfinished.', { exact: true })).toBeVisible();
   await expect(completion.getByText('No feedback added', { exact: true })).toBeVisible();
   await expect(completion.getByText('This review has no accepted summary or comments. You can still finish and return an empty review result, or add feedback first.', { exact: true })).toBeVisible();
+  await expect(composerHarness.getByRole('textbox', { name: 'Comment' }).first()).toBeEnabled();
+  await expect(composerHarness.getByRole('button', { name: 'Add comment' })).toBeEnabled();
+  await expect(composerHarness.getByRole('button', { name: 'Discard draft' }).first()).toBeEnabled();
+  await expect(composerHarness.getByRole('button', { name: 'Keep writing' })).toBeEnabled();
   await completion.getByRole('button', { name: 'Finish review', exact: true }).click();
   await expect(page.locator('#finish-count')).toHaveText('1');
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('finishing'));
   await expect(completion.getByRole('button', { name: 'Finishing review…', exact: true })).toBeDisabled();
   await expect(completion.getByText('Validating accepted revision 7 and its recorded anchors…', { exact: true })).toHaveAttribute('role', 'status');
+  await expectComposerLocked();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('completed'));
   await expect(completion.getByText('Review finished', { exact: true })).toBeFocused();
   await expect(completion.getByText('The accepted review was returned to the requesting agent from revision 7. You can close this tab.', { exact: true })).toBeVisible();
+  await expectComposerLocked();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', {
     kind: 'staleAnchors', affectedCommentIds: [], affectedCount: 1,
