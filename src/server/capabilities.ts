@@ -405,7 +405,9 @@ export function createCapabilityRegistry(
               return { kind: 'canonicalizationFailure' as const };
             }
             try {
-              await options.attachedCompletion!.deliver(prepared.bytes);
+              if (!await options.attachedCompletion!.coordinator.runDelivery(
+                async () => await options.attachedCompletion!.deliver(prepared.bytes),
+              )) return { kind: 'deliveryFailed' as const };
               return { kind: 'completed' as const, revision: prepared.revision };
             } catch {
               return { kind: 'deliveryFailed' as const };
@@ -675,7 +677,9 @@ export async function createExactPatchCapabilityRegistry(
               return { kind: 'canonicalizationFailure' as const };
             }
             try {
-              await options.attachedCompletion!.deliver(prepared.bytes);
+              if (!await options.attachedCompletion!.coordinator.runDelivery(
+                async () => await options.attachedCompletion!.deliver(prepared.bytes),
+              )) return { kind: 'deliveryFailed' as const };
               return { kind: 'completed' as const, revision: prepared.revision };
             } catch {
               return { kind: 'deliveryFailed' as const };

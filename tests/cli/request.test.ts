@@ -1,3 +1,5 @@
+import { EventEmitter } from 'node:events';
+
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -13,7 +15,7 @@ import {
 } from '../../src/cli/request.js';
 import { runOrdinaryAction } from '../../src/cli/run.js';
 import { AttachedCompletionCoordinator } from '../../src/server/attached-completion.js';
-import type { SessionApp } from '../../src/server/app.js';
+import { createSessionApp as createRealSessionApp, type SessionApp } from '../../src/server/app.js';
 import type { PinnedComparison } from '../../src/contracts/comparison.js';
 import { LaunchError } from '../../src/domain/errors.js';
 
@@ -334,6 +336,95 @@ describe('ordinary action request ownership', () => {
       'shutdown',
       'exit:0',
     ]);
+  });
+
+  it('cancels an in-flight Finish before stdout delivery when signalled', async () => {
+    const signalSource = new EventEmitter();
+    const events: string[] = [];
+    const stdout: Uint8Array[] = [];
+    const finalizing = Promise.withResolvers<void>();
+    const releaseFinalization = Promise.withResolvers<void>();
+    let observations = 0;
+    let sessionToken = '';
+    let app!: SessionApp;
+
+    const running = runOrdinaryAction(
+      { cwd: '/repo' },
+      {
+        isTTY: false,
+        input: chunks(),
+        readRequest: async () => AgentReviewRequestSchema.parse(request()),
+        createRangeComparison: async () => comparison,
+        createSessionApp: (pinned, options) => {
+          sessionToken = options.sessionToken;
+          app = createRealSessionApp(pinned, {
+            ...options,
+            selectorDriftObserver: {
+              observe: async () => {
+                observations += 1;
+                if (observations === 2) {
+                  finalizing.resolve();
+                  await releaseFinalization.promise;
+                }
+                return {
+                  base: { kind: 'unchanged', role: 'base' as const },
+                  head: { kind: 'unchanged', role: 'head' as const },
+                };
+              },
+            },
+          });
+          const close = app.close.bind(app);
+          vi.spyOn(app, 'close').mockImplementation(async () => {
+            events.push('shutdown');
+            await close();
+          });
+          return app;
+        },
+        openBrowser: async () => {
+          events.push('open');
+        },
+        output: () => {},
+        stdout: async (bytes) => {
+          stdout.push(bytes);
+        },
+        signalSource,
+        setExitStatus: (status) => {
+          events.push(`exit:${status}`);
+        },
+      },
+    );
+
+    await vi.waitFor(() => {
+      expect(events).toContain('open');
+    });
+    const address = app.server.address();
+    expect(address).toMatchObject({ address: '127.0.0.1' });
+    if (address === null || typeof address === 'string') throw new Error('Expected loopback address');
+    const authority = `127.0.0.1:${address.port}`;
+    const finish = app.inject({
+      method: 'POST',
+      url: '/api/review-completion/finish',
+      headers: {
+        host: authority,
+        origin: `http://${authority}`,
+        authorization: `Bearer ${sessionToken}`,
+      },
+      payload: { expectedRevision: 0 },
+    });
+
+    await finalizing.promise;
+    signalSource.emit('SIGINT');
+    await vi.waitFor(() => {
+      expect(events).toContain('shutdown');
+    });
+    releaseFinalization.resolve();
+
+    const response = await finish;
+    await running;
+    expect(response.json()).toEqual({ kind: 'deliveryFailed' });
+    expect(stdout).toEqual([]);
+    expect(events).toContain('exit:130');
+    expect(events).not.toContain('exit:0');
   });
 
   it('treats exact-patch stdout failure as terminal without retrying delivery', async () => {

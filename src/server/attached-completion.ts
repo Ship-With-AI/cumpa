@@ -6,6 +6,7 @@ import {
 } from '../contracts/api.js';
 
 export type AttachedCompletionOperation = () => Promise<FinishReviewResult>;
+export type AttachedDeliveryOperation = () => Promise<void>;
 
 export class AttachedCompletionCoordinator {
   #status: AttachedCompletionStatus = AttachedCompletionStatusSchema.parse({ kind: 'waiting' });
@@ -29,6 +30,19 @@ export class AttachedCompletionCoordinator {
   markResponseSettled(): void {
     if (this.#status.kind === 'completed') this.#resolveResponseSettled();
   }
+  cancel(): void {
+    if (this.#status.kind === 'completed' || this.#terminal !== undefined) return;
+    const result = FinishReviewResultSchema.parse({ kind: 'deliveryFailed' });
+    this.#terminal = result;
+    this.#resolveDelivery(result);
+  }
+
+  async runDelivery(operation: AttachedDeliveryOperation): Promise<boolean> {
+    if (this.#status.kind === 'completed' || this.#terminal !== undefined) return false;
+    await operation();
+    return true;
+  }
+
 
 
   status(): AttachedCompletionStatus {
@@ -54,6 +68,7 @@ export class AttachedCompletionCoordinator {
       } catch {
         result = FinishReviewResultSchema.parse({ kind: 'deliveryFailed' });
       }
+      if (this.#terminal !== undefined) return this.#terminal;
       if (result.kind === 'completed') {
         this.#status = AttachedCompletionStatusSchema.parse({ kind: 'completed', revision: result.revision });
         this.#resolveDelivery(result);

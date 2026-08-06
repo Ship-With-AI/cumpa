@@ -419,6 +419,7 @@ async function launchAttachedSession(
   const shutdown = createShutdownController({
     signalSource: dependencies.signalSource,
     abortActiveWork: () => {
+      coordinator.cancel();
       activeGit.abort();
     },
     closeListener: async () => {
