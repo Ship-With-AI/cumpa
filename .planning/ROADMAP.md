@@ -15,7 +15,7 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 
 - [x] **Phase 12: Request Protocol & Range Grounding** — Accept one strict stdin request while preserving interactive launch and pinning native-Git range scope. (completed 2026-08-04)
 - [x] **Phase 13: Exact Patch Grounding** — Prove and deliver read-only review of an exact repository-grounded, already-applied patch. (4/4 plans complete; phase verification pending) (completed 2026-08-05)
-- [ ] **Phase 14: Attached Lifecycle & Canonical Completion** — Reuse the browser review flow and return one validated canonical result only after explicit Finish.
+- [x] **Phase 14: Attached Lifecycle & Canonical Completion** — Reuse the browser review flow and return one validated canonical result only after explicit Finish. (completed 2026-08-06)
 - [ ] **Phase 15: Adversarial Integration Gate** — Prove attached and interactive review scopes remain isolated through the complete production handoff.
 
 ## Phase Details
@@ -143,5 +143,5 @@ v1.3 adds one attached agent-to-human review handoff without creating a second r
 |-------|-----------|----------------|--------|-----------|
 | 12. Request Protocol & Range Grounding | v1.3 | 6/6 | Complete    | 2026-08-04 |
 | 13. Exact Patch Grounding | v1.3 | 4/4 | Complete    | 2026-08-05 |
-| 14. Attached Lifecycle & Canonical Completion | v1.3 | 3/3 | Verification pending | - |
+| 14. Attached Lifecycle & Canonical Completion | v1.3 | 3/3 | Complete    | 2026-08-06 |
 | 15. Adversarial Integration Gate | v1.3 | 0/1 | Not started | - |

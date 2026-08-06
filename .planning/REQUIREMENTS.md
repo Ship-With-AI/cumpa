@@ -27,11 +27,11 @@
 
 ### Attached Handoff
 
-- [ ] **HAND-01**: Either input mode opens the existing authenticated human browser workspace with file navigation, Monaco diffs, comments, summary, persistence, and export behavior.
-- [ ] **HAND-02**: The developer can explicitly Finish review; browser close, reload, ordinary export, and disconnect do not report successful completion.
-- [ ] **HAND-03**: The invoking CLI remains attached until completion and writes exactly one canonical JSON success document to stdout while URLs, progress, and diagnostics stay on stderr.
-- [ ] **HAND-04**: Returned JSON binds comments, summary, and drift-detectable anchors to the exact submitted range/pathspec or patch identity.
-- [ ] **HAND-05**: Finish validates pending draft state and anchors before returning feedback; stale feedback fails explicitly instead of being emitted as successful.
+- [x] **HAND-01**: Either input mode opens the existing authenticated human browser workspace with file navigation, Monaco diffs, comments, summary, persistence, and export behavior.
+- [x] **HAND-02**: The developer can explicitly Finish review; browser close, reload, ordinary export, and disconnect do not report successful completion.
+- [x] **HAND-03**: The invoking CLI remains attached until completion and writes exactly one canonical JSON success document to stdout while URLs, progress, and diagnostics stay on stderr.
+- [x] **HAND-04**: Returned JSON binds comments, summary, and drift-detectable anchors to the exact submitted range/pathspec or patch identity.
+- [x] **HAND-05**: Finish validates pending draft state and anchors before returning feedback; stale feedback fails explicitly instead of being emitted as successful.
 - [ ] **HAND-06**: Agent-submitted scopes cannot collide with each other or with existing interactive draft/export identities.
 
 ## Future Requirements
@@ -79,11 +79,11 @@
 | PATCH-03 | Phase 13 | Complete |
 | PATCH-04 | Phase 13 | Complete |
 | PATCH-05 | Phase 13 | Complete |
-| HAND-01 | Phase 14 | Pending |
-| HAND-02 | Phase 14 | Pending |
-| HAND-03 | Phase 14 | Pending |
-| HAND-04 | Phase 14 | Pending |
-| HAND-05 | Phase 14 | Pending |
+| HAND-01 | Phase 14 | Complete |
+| HAND-02 | Phase 14 | Complete |
+| HAND-03 | Phase 14 | Complete |
+| HAND-04 | Phase 14 | Complete |
+| HAND-05 | Phase 14 | Complete |
 | HAND-06 | Phase 15 | Pending |
 
 **Coverage:**
