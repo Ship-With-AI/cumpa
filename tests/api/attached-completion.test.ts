@@ -98,6 +98,7 @@ describe('attached completion API', () => {
       },
       attachedCompletion: {
         coordinator,
+        storageScope: `agent-${'a'.repeat(32)}`,
         deliver: async () => {
           deliveries += 1;
           return true;
@@ -144,6 +145,7 @@ describe('attached completion API', () => {
       observePatchTarget: async () => false,
       attachedCompletion: {
         coordinator,
+        storageScope: `agent-${'b'.repeat(32)}`,
         deliver: async () => {
           deliveries += 1;
           return true;

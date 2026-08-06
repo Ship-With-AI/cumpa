@@ -62,6 +62,36 @@ describe('AttachedCompletionCoordinator', () => {
     expect(terminal.status()).toEqual({ kind: 'finishing', expectedRevision: 0 });
     await expect(terminal.finish(0, async () => ({ kind: 'completed', revision: 0 }))).resolves.toEqual({ kind: 'deliveryFailed' });
   });
+
+  test('keeps concurrent peer coordinators and terminal failure invocation-local', async () => {
+    const first = new AttachedCompletionCoordinator();
+    const second = new AttachedCompletionCoordinator();
+    let firstDeliveries = 0;
+    let secondDeliveries = 0;
+
+    await expect(first.finish(0, async () => {
+      firstDeliveries += 1;
+      return { kind: 'deliveryFailed' as const };
+    })).resolves.toEqual({ kind: 'deliveryFailed' });
+    expect(first.status()).toEqual({ kind: 'finishing', expectedRevision: 0 });
+    expect(second.status()).toEqual({ kind: 'waiting' });
+
+    await expect(Promise.all([
+      second.finish(0, async () => {
+        secondDeliveries += 1;
+        return { kind: 'completed' as const, revision: 0 };
+      }),
+      second.finish(0, async () => {
+        secondDeliveries += 1;
+        return { kind: 'completed' as const, revision: 0 };
+      }),
+    ])).resolves.toEqual([
+      { kind: 'completed', revision: 0 },
+      { kind: 'completed', revision: 0 },
+    ]);
+    expect(firstDeliveries).toBe(1);
+    expect(secondDeliveries).toBe(1);
+  });
 });
 
 describe('DraftStore.settle', () => {

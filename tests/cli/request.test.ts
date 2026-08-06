@@ -307,6 +307,7 @@ describe('ordinary action request ownership', () => {
       expect(attached).toBeDefined();
     });
     expect(attached).toBeDefined();
+    expect(attached!.storageScope).toMatch(/^agent-[0-9a-f]{32}$/u);
     expect(stdout).toEqual([]);
     expect(events).toContain('open');
     await attached!.coordinator.finish(0, async () => ({
