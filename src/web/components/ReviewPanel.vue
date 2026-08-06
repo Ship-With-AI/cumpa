@@ -37,7 +37,7 @@ const props = defineProps<{
   readonly pending: ReviewPendingOperation | null;
   readonly conflict: ReviewConflict | null;
   readonly failure: ReviewFailure | null;
-  readonly retainedSummary: string | null;
+  readonly retainedSummary: boolean;
   readonly exportState: ReviewExportState;
   readonly appendIgnoreRule: AppendCompareIgnoreRule | undefined;
   readonly refreshIgnoreStatus: RefreshCompareIgnoreStatus | undefined;
@@ -390,7 +390,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
         :saving="pending === 'summary'"
         :conflict="conflict !== null"
         :failure="summaryFailure"
-        :retained="retainedSummary !== null"
+        :retained="retainedSummary"
         @cancel="emit('cancelSummary')"
         @save="emit('saveSummary')"
         @update:model-value="emit('update:summaryBuffer', $event)"
