@@ -697,8 +697,8 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
         <div class="inline-notice inline-notice--error" role="alert">
           <UiIcon name="error" class="inline-notice__icon" />
           <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Waiting for agent connection</h4>
-            <p>Compare can’t confirm whether this attached review was finished. Reload this page to check the coordinator.</p>
+            <h4 ref="completionFailure" tabindex="-1">Attached review disconnected</h4>
+            <p>The browser lost its connection to Compare. This review is still unfinished. Reload this page while Compare is running, then choose Finish review.</p>
             <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload page</button>
           </div>
         </div>
@@ -708,8 +708,8 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
         <div class="inline-notice inline-notice--error" role="alert">
           <UiIcon name="error" class="inline-notice__icon" />
           <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Finish status is ambiguous</h4>
-            <p>Compare may have finished this review, but the coordinator did not confirm delivery. Reload this page to check the coordinator. Do not retry Finish review from this tab.</p>
+            <h4 ref="completionFailure" tabindex="-1">Completion status unavailable</h4>
+            <p>Compare disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Compare is still running, reload to reconnect.</p>
             <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload page</button>
           </div>
         </div>
@@ -719,8 +719,8 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
         <div class="inline-notice inline-notice--warning" role="alert">
           <UiIcon name="warning" class="inline-notice__icon" />
           <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Review changed before finishing</h4>
-            <p>This tab expected revision {{ attachedFailure.expectedRevision }}, but the accepted review is now revision {{ attachedFailure.actualRevision }}. Nothing was finished. Reload the latest review before trying again.</p>
+            <h4 ref="completionFailure" tabindex="-1">Review changed before finish</h4>
+            <p>Accepted revision {{ attachedFailure.expectedRevision }} is no longer current. Latest revision is {{ attachedFailure.actualRevision }}. No feedback was returned. Reload the latest review, check the comments and summary, then choose Finish review again.</p>
             <button type="button" class="ui-button" @click="emit('reloadLatest')">Reload latest</button>
           </div>
         </div>
@@ -731,7 +731,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
           <UiIcon name="warning" class="inline-notice__icon" />
           <div class="inline-notice__content">
             <h4 ref="completionFailure" tabindex="-1">Review can’t be finished</h4>
-            <p>{{ attachedFailure.affectedCount }} comment{{ attachedFailure.affectedCount === 1 ? '' : 's' }} no longer {{ attachedFailure.affectedCount === 1 ? 'has' : 'have' }} a verified anchor. Update or delete stale feedback before finishing.</p>
+            <p>Compare found stale or unavailable feedback anchors in the accepted review. Affected comments: {{ attachedFailure.affectedCount }}. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.</p>
             <button type="button" class="ui-button" @click="focusStaleFeedback">Review stale feedback</button>
           </div>
         </div>
@@ -741,9 +741,9 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
         <div class="inline-notice inline-notice--warning" role="alert">
           <UiIcon name="warning" class="inline-notice__icon" />
           <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Review scope is no longer valid</h4>
-            <p>{{ isExactPatch ? 'The exact patch request is no longer available. Relaunch the review from the requesting agent.' : 'The selected review range no longer resolves to the requested commits. Relaunch the review from the requesting agent.' }}</p>
-            <button type="button" class="ui-button" @click="emit('viewAttachedScope')">View requested scope</button>
+            <h4 ref="completionFailure" tabindex="-1">Reviewed content changed</h4>
+            <p>{{ isExactPatch ? 'The submitted patch content no longer passes completion validation. No feedback was returned. Inspect the recorded patch scope, then relaunch the agent request against valid content.' : 'The submitted review scope no longer passes completion validation. No feedback was returned. Inspect the recorded review scope, then relaunch the agent request against valid content.' }}</p>
+            <button type="button" class="ui-button" @click="emit('viewAttachedScope')">{{ isExactPatch ? 'View patch scope' : 'View review scope' }}</button>
           </div>
         </div>
       </template>
@@ -752,8 +752,8 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
         <div class="inline-notice inline-notice--warning" role="alert">
           <UiIcon name="warning" class="inline-notice__icon" />
           <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Review draft needs recovery</h4>
-            <p>The local review draft could not be accepted. Reload the review before trying again.</p>
+            <h4 ref="completionFailure" tabindex="-1">Review draft can’t be validated</h4>
+            <p>The accepted local draft is corrupt, incomplete, or read-only. No feedback was returned. Reload the review; if it remains unavailable, relaunch Compare.</p>
             <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload review</button>
           </div>
         </div>
@@ -764,7 +764,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
           <UiIcon name="error" class="inline-notice__icon" />
           <div class="inline-notice__content">
             <h4 ref="completionFailure" tabindex="-1">Review was not finished</h4>
-            <p>The accepted review could not be finished. Your saved feedback is unchanged. Try again after checking Compare is running.</p>
+            <p>No feedback was returned. Check that Compare is still running, then try Finish review again.</p>
             <button type="button" class="ui-button ui-button--primary" @click="finishAttachedReview">Try Finish review again</button>
           </div>
         </div>
@@ -780,16 +780,16 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
         </div>
         <div v-if="attachedHasUnsavedText" class="inline-notice inline-notice--warning">
           <div class="inline-notice__content">
-            <h4>Save or discard your changes first</h4>
-            <p>Finish review uses only the accepted review. Save your summary or comment changes, or discard them before finishing.</p>
-            <button type="button" class="ui-button" @click="emit('reviewUnsavedText')">Review unsaved changes</button>
+            <h4>Unsaved text must be reviewed</h4>
+            <p>Save or discard unsaved summary or comment text before finishing. The requesting agent only receives the accepted review.</p>
+            <button type="button" class="ui-button" @click="emit('reviewUnsavedText')">Review unsaved text</button>
           </div>
         </div>
         <p v-else-if="attachedBlockedByPending" class="attached-completion__pending" role="status">Saving review changes…</p>
         <div v-else-if="attachedBlockedByConflict" class="inline-notice inline-notice--warning">
           <div class="inline-notice__content">
-            <h4>Review changed in another tab</h4>
-            <p>Nothing from your attempt was written. Unsaved text retained in this tab.</p>
+            <h4>Review changed before finish</h4>
+            <p>Accepted revision {{ conflict?.expectedRevision }} is no longer current. Latest revision is {{ conflict?.actualRevision }}. No feedback was returned. Reload the latest review, check the comments and summary, then choose Finish review again.</p>
             <button type="button" class="ui-button" @click="emit('reloadLatest')">Reload latest</button>
           </div>
         </div>
