@@ -8,11 +8,28 @@ Compare is a local-first code review application for developers who want a GitHu
 
 A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
 
-## Current State: v1.3 Agent Review Handoff — Phase 13 Complete
+## Current State
 
-**Current progress:** Phase 13 delivered exact-patch grounding and an immutable, drift-aware review/export path; Phase 14 has not started.
+**Shipped:** v1.3 Agent Review Handoff on 2026-08-06.
 
-Compare accepts one strict, bounded versioned stdin request for either a pinned revision range or an already-applied patch. Exact patches are verified against repository/worktree target bytes, materialized as private immutable snapshots, and remain readable/exportable during explicit source drift.
+Compare now accepts one strict, bounded versioned stdin request for either a pinned Git revision range or an already-applied patch. The existing authenticated browser workspace supports an explicit Finish review action; the waiting CLI then receives exactly one validated canonical JSON result on stdout. Range and patch reviews retain immutable, drift-detectable provenance without changing the interactive TTY workflow.
+
+## Next Milestone Goals
+
+To be defined when the next milestone is initiated.
+
+<details>
+<summary>v1.3 Agent Review Handoff (shipped)</summary>
+
+**Goal:** Let a coding agent submit an exact, repository-grounded review request, wait while the developer reviews it in Compare, and receive canonical JSON feedback on completion.
+
+**Delivered features:**
+- Accepted a versioned review request on CLI stdin without changing the existing interactive launch flow.
+- Grounded contiguous Git ranges with native pathspec filters and exact already-applied patches against repository-backed bytes.
+- Reused the normal browser review workspace for human review.
+- Finished attached sessions explicitly and emitted one canonical JSON response to the waiting coding agent.
+
+</details>
 
 <details>
 <summary>v1.2 milestone intent</summary>
@@ -27,16 +44,6 @@ Compare accepts one strict, bounded versioned stdin request for either a pinned 
 - Preserved correct identity, ordering, worktree state, cancellation, recovery, and failure behavior without mutating refs.
 
 </details>
-## Current Milestone: v1.3 Agent Review Handoff
-
-**Goal:** Let a coding agent submit an exact, repository-grounded review request, wait while the developer reviews it in Compare, and receive canonical JSON feedback on completion.
-
-**Target features:**
-- Accept a versioned review request on CLI stdin without changing the existing interactive launch flow.
-- Derive a review from either a contiguous Git revision range with optional Git pathspec filters or an exact repository-grounded patch.
-- Open the normal browser review workspace for human review.
-- End the attached session through an explicit Finish review action.
-- Emit canonical review JSON on stdout for the waiting coding agent.
 ## Requirements
 
 ### Validated
@@ -79,8 +86,7 @@ Validated in Phase 13: Exact Patch Grounding accepts a strict exact already-appl
 
 ### Active
 
-- [ ] Developers can explicitly finish an agent-submitted review.
-- [ ] The waiting CLI returns canonical review JSON on stdout.
+None — define the next milestone's requirements when it is initiated.
 
 ### Out of Scope
 
@@ -104,6 +110,10 @@ Exports are versioned and machine-validated. Canonical JSON owns comparison iden
 v1.2 completed 5/5 requirements, 12/12 cross-phase integrations, and 5/5 end-to-end flows. Its compiled production gate proved exactly 10,000 packed local heads with zero loose heads, one discarded warmup, five serial measurements, readiness median 221.532417 ms against a 400 ms budget, and search median 38.266167 ms against a 500 ms budget.
 
 Phase 12 completed the first v1.3 vertical slice: an agent can launch a strict native-Git range review without an interactive prompt, while interactive reviews retain their existing merge-base behavior. The browser discloses the frozen range scope and preserves it in the range draft and export provenance.
+
+v1.3 shipped 17/17 requirements across four phases and 14 plans. A coding agent can submit a strict range or exact-patch review, while the developer completes the existing browser workspace and receives one validated canonical result. The milestone integration audit found 10/10 links and 10/10 end-to-end flows passing.
+
+The user accepted the milestone audit's non-blocking debt: range recovery diagnostics, narrow UI contract warnings, patch-status polling rejection handling, missing Phase 13 security evidence, and segmented exact-patch/stale-anchor integration proof. No critical gap, unsatisfied requirement, broken flow, or open security flaw was found.
 
 Retained debt is bounded: one authenticated orphan metadata route/client method, Phase 3 UI polish, accepted Phase 4 filesystem/power-loss durability limits, focused rather than compiled black-box coverage for uncommon worktree recovery states, and host-sensitive absolute performance evidence. No shipped requirement or user flow remains blocked.
 ## Constraints
@@ -153,6 +163,10 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 | Gate discovery performance through the compiled production binary | Prevent injected seams or spike-only measurements from claiming release budgets | Good — the packed-10,000-ref gate passes fixed 400 ms readiness and 500 ms search medians |
 | Accept only one bounded strict V1 stdin range request | Keep agent launch deterministic while preserving the established interactive CLI path | Good — malformed, oversized, ambiguous, or unsupported requests fail before browser launch; TTY remains interactive |
 | Pin range revisions and native pathspecs once | Prevent selector drift or browser-authored scope from changing agent review provenance | Good — session, draft identity, and V2 exports use the same immutable Git-authoritative scope |
+| Ground exact patches from repository preimages and target bytes | Ensure an agent-submitted patch describes implemented repository content without invoking a mutating Git apply path | Good — immutable snapshot sessions preserve exact bytes and expose source drift explicitly |
+| Keep exact-patch snapshots private and server-owned | Prevent live-source fallback or shared mutable state from changing reviewed content | Good — frozen V3 provenance, readable drift handling, and snapshot-loss failure stay explicit |
+| Make attached Finish server-authoritative and one-shot | Only an accepted revision may trigger canonical delivery; browser lifecycle events must not imply success | Good — authenticated Finish validates scope and anchors before exactly one stdout result |
+| Give every attached launch an isolated mutable storage scope | Equivalent agent requests must not share drafts or export receipts | Good — deterministic provenance remains shared only where intended while drafts, queues, and exports cannot collide |
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -171,4 +185,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-08-05 after Phase 13 Exact Patch Grounding*
+*Last updated: 2026-08-06 after v1.3 Agent Review Handoff shipped*

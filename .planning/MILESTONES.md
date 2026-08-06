@@ -1,5 +1,42 @@
 # Milestones
 
+## v1.3 Agent Review Handoff (Shipped: 2026-08-06)
+
+**Delivered:** A coding agent can submit a grounded range or exact-patch review, await explicit browser completion, and receive one canonical JSON result.
+
+**Phases completed:** 4 phases, 14 plans, 42 tasks
+
+**Key accomplishments:**
+
+- Added bounded, strict stdin request framing while preserving the TTY picker.
+- Pinned Git ranges and native ordered pathspecs through sessions, drafts, and canonical V2 exports.
+- Grounded exact already-applied patches against repository bytes and served immutable snapshots with V3 provenance.
+- Added an authenticated, server-authoritative Finish lifecycle that validates anchors before one stdout delivery.
+- Isolated mutable draft and export storage for every attached agent invocation.
+
+### Final Evidence
+
+- Requirements: 17/17
+- Cross-phase integrations: 10/10
+- End-to-end flows: 10/10
+- Plans and summaries: 14/14
+- Milestone audit: no critical gaps, unsatisfied requirements, integration blockers, or broken flows
+
+### Retained Technical Debt
+
+- Range draft-equivalence diagnostics and scoped Git-failure taxonomy.
+- Non-blocking narrow-screen and lifecycle UI contract warnings.
+- Patch-status polling rejection handling and missing Phase 13 security report.
+- Single-command exact-patch Finish and server-level stale-anchor integration evidence.
+
+### Archives
+
+- Roadmap: `.planning/milestones/v1.3-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.3-REQUIREMENTS.md`
+- Milestone audit: `.planning/milestones/v1.3-MILESTONE-AUDIT.md`
+
+---
+
 ## v1.2 Fast Source Discovery (Shipped: 2026-07-30)
 
 **Phases completed:** 3 phases, 4 plans, 9 tasks
