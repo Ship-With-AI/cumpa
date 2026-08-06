@@ -8,6 +8,7 @@ import type { GroundedExactPatch } from '../../src/contracts/comparison.js';
 import { createExactPatchSessionApp } from '../../src/server/app.js';
 import { ExportReviewResultSchema } from '../../src/contracts/api.js';
 import { ReviewExportV3Schema } from '../../src/contracts/draft.js';
+import { createAttachedCompletionCoordinator } from '../../src/server/attached-completion.js';
 
 const token = 'p'.repeat(43);
 const host = '127.0.0.1:43130';
@@ -167,6 +168,62 @@ describe('exact patch snapshot sessions', () => {
         head: { exists: true, text: 'after\n' },
       });
     }
+  });
+
+  test('keeps equivalent attached patch drafts and exports separate while preserving the patch review key', async () => {
+    const repositoryRoot = await root();
+    const firstScope = `agent-${'c'.repeat(32)}`;
+    const secondScope = `agent-${'d'.repeat(32)}`;
+    await writeFile(join(repositoryRoot, 'new-name.ts'), 'after\n');
+    await chmod(join(repositoryRoot, 'new-name.ts'), 0o755);
+    await writeFile(join(repositoryRoot, 'binary.bin'), Buffer.from([0]));
+    const createAttachedApp = async (storageScope: string) => {
+      const app = await createExactPatchSessionApp(grounded(repositoryRoot, 'worktree'), {
+        sessionToken: token,
+        snapshotParent: repositoryRoot,
+        attachedCompletion: {
+          coordinator: createAttachedCompletionCoordinator(),
+          storageScope,
+          deliver: async () => true,
+        },
+      });
+      app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
+      apps.add(app);
+      return app;
+    };
+    const first = await createAttachedApp(firstScope);
+    const second = await createAttachedApp(secondScope);
+    const firstReviewKey = (await first.inject({ method: 'GET', url: '/api/session', headers })).json().patch.reviewKey;
+    const secondReviewKey = (await second.inject({ method: 'GET', url: '/api/session', headers })).json().patch.reviewKey;
+    expect(firstReviewKey).toBe(secondReviewKey);
+
+    expect((await first.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      kind: 'missing',
+      path: `.compare/drafts/${firstScope}.json`,
+    });
+    await setSummary(first, 'First patch.');
+    const firstExport = await exportReview(first);
+    expect(firstExport.statusCode).toBe(201);
+    const firstReceipt = ExportReviewResultSchema.parse(firstExport.json());
+    expect(firstReceipt).toMatchObject({
+      kind: 'exported',
+      patch: { reviewKey: firstReviewKey },
+    });
+    if (firstReceipt.kind !== 'exported') throw new Error('Expected an exact patch export receipt.');
+    expect(firstReceipt.files.map((file) => file.path)).toEqual([
+      `.compare/exports/${firstScope}/review.json`,
+      `.compare/exports/${firstScope}/review.md`,
+    ]);
+    expect((await second.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      kind: 'missing',
+      path: `.compare/drafts/${secondScope}.json`,
+    });
+    await expect(readFile(join(repositoryRoot, '.compare', 'drafts', `${secondScope}.json`))).rejects.toMatchObject({ code: 'ENOENT' });
+    await first.close();
+    apps.delete(first);
+    expect((await second.inject({ method: 'GET', url: '/api/session', headers })).json()).toMatchObject({
+      patch: { reviewKey: firstReviewKey },
+    });
   });
 
   test('latches drift while frozen content and draft mutations remain available', async () => {

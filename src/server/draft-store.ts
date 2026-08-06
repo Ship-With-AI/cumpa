@@ -141,10 +141,16 @@ export type DraftStore = Readonly<{
 export function createDraftStore(options: Readonly<{
   readonly repositoryRoot: string;
   readonly comparison: DraftComparison;
+  readonly storageScope?: string;
   readonly fileSystem?: DraftFileSystem;
 }>): DraftStore {
   const fileSystem = options.fileSystem ?? nodeFileSystem;
-  const loader = createDraftLoader({ repositoryRoot: options.repositoryRoot, comparison: options.comparison, fileSystem });
+  const loader = createDraftLoader({
+    repositoryRoot: options.repositoryRoot,
+    comparison: options.comparison,
+    ...(options.storageScope === undefined ? {} : { storageScope: options.storageScope }),
+    fileSystem,
+  });
   const { canonicalPath, directory, key, relativePath } = loader.paths;
   const queueKey = `${options.repositoryRoot}\u0000${key}`;
 

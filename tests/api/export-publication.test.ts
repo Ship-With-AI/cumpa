@@ -247,6 +247,36 @@ describe('literal export publication state machine', () => {
       },
     });
     await expect(recoverReviewExport(repositoryRoot, { kind: 'range', reviewKey: rangeReviewKey })).resolves.toMatchObject({ json, markdown });
+    const attachedScope = `agent-${'e'.repeat(32)}`;
+    await expect(publishReviewExport({
+      repositoryRoot,
+      identity: { kind: 'range', reviewKey: rangeReviewKey },
+      storageScope: attachedScope,
+      json,
+      markdown,
+      reExportCapability: { kind: 'reExportUnsupported' },
+    })).resolves.toMatchObject({
+      kind: 'exported',
+      receipt: {
+        files: [
+          { path: `.compare/exports/${attachedScope}/review.json` },
+          { path: `.compare/exports/${attachedScope}/review.md` },
+        ],
+      },
+    });
+    await expect(recoverReviewExport(
+      repositoryRoot,
+      { kind: 'range', reviewKey: rangeReviewKey },
+      attachedScope,
+    )).resolves.toMatchObject({ json, markdown });
+    await expect(publishReviewExport({
+      repositoryRoot,
+      identity: { kind: 'range', reviewKey: rangeReviewKey },
+      storageScope: '../controlled',
+      json,
+      markdown,
+      reExportCapability: { kind: 'reExportUnsupported' },
+    })).resolves.toEqual({ kind: 'publicationFailed' });
     await expect(publishReviewExport({
       repositoryRoot,
       identity: { kind: 'range', reviewKey: `${rangeReviewKey}x` },

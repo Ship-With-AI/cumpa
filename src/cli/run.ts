@@ -433,8 +433,10 @@ async function launchAttachedSession(
 
   try {
     const token = randomBytes(32).toString('base64url');
+    const storageScope = `agent-${randomBytes(16).toString('hex')}`;
     app = await createApp(token, {
       coordinator,
+      storageScope,
       deliver: async (bytes) => await coordinator.runDelivery(
         async () => await stdout(bytes),
       ),

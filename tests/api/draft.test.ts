@@ -8,6 +8,7 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import type { PinnedComparison } from '../../src/contracts/comparison.js';
 import { comparisonKey, rangeReviewKey } from '../../src/domain/comparison-key.js';
 import { createSessionApp } from '../../src/server/app.js';
+import { createAttachedCompletionCoordinator } from '../../src/server/attached-completion.js';
 
 const token = 'a'.repeat(43);
 const host = '127.0.0.1:43129';
@@ -77,6 +78,7 @@ function buildApp(
   headText = 'after\n',
   missingHead = false,
   reviewRange?: ReviewRange,
+  storageScope?: string,
 ) {
   const app = createSessionApp(comparison(root, baseOid, headOid, reviewRange), {
     sessionToken: token,
@@ -93,6 +95,15 @@ function buildApp(
         };
       },
     },
+    ...(storageScope === undefined
+      ? {}
+      : {
+          attachedCompletion: {
+            coordinator: createAttachedCompletionCoordinator(),
+            storageScope,
+            deliver: async () => true,
+          },
+        }),
   });
   apps.add(app);
   app.bindSessionSecurity({ expectedHost: host, expectedOrigin: origin });
@@ -178,6 +189,32 @@ describe('comparison-local draft routes', () => {
       kind: 'current',
       draft: { revision: 1, comparison: { range: firstRange } },
     });
+  });
+
+  test('gives equivalent attached ranges distinct draft keys without changing their provenance', async () => {
+    const repositoryRoot = await root();
+    const reviewRange = range(['src']);
+    const firstScope = `agent-${'a'.repeat(32)}`;
+    const secondScope = `agent-${'b'.repeat(32)}`;
+    const first = buildApp(repositoryRoot, undefined, undefined, undefined, 'after\n', false, reviewRange, firstScope);
+    const second = buildApp(repositoryRoot, undefined, undefined, undefined, 'after\n', false, reviewRange, secondScope);
+
+    expect(reviewRange.reviewKey).toBe(range(['src']).reviewKey);
+    expect((await first.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      kind: 'missing',
+      path: `.compare/drafts/${firstScope}.json`,
+    });
+    expect((await first.inject({
+      method: 'POST',
+      url: '/api/draft/mutations',
+      headers,
+      payload: { type: 'setSummary', expectedRevision: 0, markdown: 'First attached review.' },
+    })).statusCode).toBe(200);
+    expect((await second.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
+      kind: 'missing',
+      path: `.compare/drafts/${secondScope}.json`,
+    });
+    expect(await readFile(join(repositoryRoot, '.compare', 'drafts', `${firstScope}.json`), 'utf8')).toContain('First attached review.');
   });
 
   test.each([

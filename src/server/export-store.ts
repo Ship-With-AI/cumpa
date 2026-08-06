@@ -6,6 +6,7 @@ import type { Stats } from 'node:fs';
 import { hashExportBytes, parseCanonicalReviewExport } from '../export/review-export.js';
 import type { ExportHash, ReviewExport } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
+import { assertAttachedStorageScope } from './draft-loader.js';
 
 export class ReExportUnsupported extends Error {
   constructor() {
@@ -42,6 +43,7 @@ export type PublishReviewExportInput = Readonly<{
   readonly revalidate?: () => Promise<boolean>;
   readonly repositoryRoot: string;
   readonly identity: ExportPublicationIdentity;
+  readonly storageScope?: string;
   readonly json: Uint8Array;
   readonly markdown: Uint8Array;
   readonly reExportCapability: ReExportCapability;
@@ -118,7 +120,17 @@ async function stableExists(path: string): Promise<boolean> {
   }
 }
 
-function stableNameFor(identity: ExportPublicationIdentity): string | undefined {
+function stableNameFor(
+  identity: ExportPublicationIdentity,
+  storageScope?: string,
+): string | undefined {
+  if (storageScope !== undefined) {
+    try {
+      return assertAttachedStorageScope(storageScope);
+    } catch {
+      return undefined;
+    }
+  }
   if (identity.kind === 'range' || identity.kind === 'exact-patch') {
     return Object.keys(identity).length === 2 && /^[0-9a-f]{64}$/u.test(identity.reviewKey)
       ? identity.reviewKey
@@ -210,7 +222,7 @@ export async function assertManagedExportsRoot(managedRoot: ManagedExportsRoot):
 
 export async function publishReviewExport(input: PublishReviewExportInput): Promise<PublishReviewExportResult> {
   const publication = input.identity;
-  const stableName = stableNameFor(publication);
+  const stableName = stableNameFor(publication, input.storageScope);
   if (stableName === undefined) return Object.freeze({ kind: 'publicationFailed' });
   const repositoryRoot = resolve(input.repositoryRoot);
   let managedRoot: ManagedExportsRoot | undefined;
@@ -320,8 +332,9 @@ export async function publishReviewExport(input: PublishReviewExportInput): Prom
 export async function recoverReviewExport(
   repositoryRoot: string,
   identity: ExportPublicationIdentity,
+  storageScope?: string,
 ): Promise<CompletePair | undefined> {
-  const stableName = stableNameFor(identity);
+  const stableName = stableNameFor(identity, storageScope);
   if (stableName === undefined) return undefined;
   const managedRoot = await ensureManagedExportsRoot(repositoryRoot, false);
   if (managedRoot === undefined) return undefined;

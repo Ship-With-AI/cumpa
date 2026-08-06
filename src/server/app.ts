@@ -106,6 +106,7 @@ function createAppDraftStore(
           mergeBaseOid: comparison.mergeBaseOid,
           range: comparison.range,
         },
+    ...(options.attachedCompletion === undefined ? {} : { storageScope: options.attachedCompletion.storageScope }),
     ...(failure === undefined ? {} : { fileSystem: createRecoveryFaultFileSystem(failure) }),
   });
 }

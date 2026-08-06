@@ -14,6 +14,13 @@ import type { DraftComparison, DraftFileSystem } from './draft-store.js';
 const draftsDirectory = '.compare/drafts';
 const strictUtf8 = new TextDecoder('utf-8', { fatal: true });
 
+export function assertAttachedStorageScope(storageScope: string): string {
+  if (!/^agent-[0-9a-f]{32}$/u.test(storageScope)) {
+    throw new Error('Attached storage scope is invalid.');
+  }
+  return storageScope;
+}
+
 export type DraftIssue = Readonly<{ readonly path: string; readonly message: string }>;
 
 export type DraftLoadState =
@@ -86,11 +93,16 @@ function invalidState(path: string, raw: Buffer, details: readonly DraftIssue[])
   });
 }
 
-export function draftPaths(repositoryRoot: string, comparison: DraftComparison): DraftPaths {
-  const key =
-    'kind' in comparison
+export function draftPaths(
+  repositoryRoot: string,
+  comparison: DraftComparison,
+  storageScope?: string,
+): DraftPaths {
+  const key = storageScope === undefined
+    ? ('kind' in comparison
       ? comparison.reviewKey
-      : comparison.range?.reviewKey ?? comparisonKey(comparison.baseCommitOid, comparison.headCommitOid);
+      : comparison.range?.reviewKey ?? comparisonKey(comparison.baseCommitOid, comparison.headCommitOid))
+    : assertAttachedStorageScope(storageScope);
   const relativePath = `${draftsDirectory}/${key}.json`;
   const directory = join(repositoryRoot, draftsDirectory);
   return Object.freeze({ key, directory, canonicalPath: join(repositoryRoot, relativePath), relativePath });
@@ -145,9 +157,10 @@ export function classifyDraft(raw: Buffer, path: string, comparison: DraftCompar
 export function createDraftLoader(options: Readonly<{
   readonly repositoryRoot: string;
   readonly comparison: DraftComparison;
+  readonly storageScope?: string;
   readonly fileSystem?: Pick<DraftFileSystem, 'readFile'>;
 }>): Readonly<{ load(): Promise<DraftLoadState>; paths: DraftPaths }> {
-  const paths = draftPaths(options.repositoryRoot, options.comparison);
+  const paths = draftPaths(options.repositoryRoot, options.comparison, options.storageScope);
   const fileSystem = options.fileSystem ?? { readFile: async (path: string) => fs.readFile(path) };
   return Object.freeze({
     paths,

@@ -466,14 +466,14 @@ export const PatchStatusResponseSchema = z
   .readonly();
 
 const ExportReceiptDirectoryPattern =
-  /^\.compare\/exports\/((?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64}))|[0-9a-f]{64})\/review\.(?:json|md)$/u;
+  /^\.compare\/exports\/((?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64}))|(?:[0-9a-f]{64}|agent-[0-9a-f]{32}))\/review\.(?:json|md)$/u;
 
 const ExportReceiptJsonFileSchema = z
   .strictObject({
     path: z
       .string()
       .regex(
-        /^\.compare\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|[0-9a-f]{64})\/review\.json$/u,
+        /^\.compare\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|(?:[0-9a-f]{64}|agent-[0-9a-f]{32}))\/review\.json$/u,
       ),
     algorithm: z.literal('sha256'),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),
@@ -486,7 +486,7 @@ const ExportReceiptMarkdownFileSchema = z
     path: z
       .string()
       .regex(
-        /^\.compare\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|[0-9a-f]{64})\/review\.md$/u,
+        /^\.compare\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|(?:[0-9a-f]{64}|agent-[0-9a-f]{32}))\/review\.md$/u,
       ),
     algorithm: z.literal('sha256'),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),

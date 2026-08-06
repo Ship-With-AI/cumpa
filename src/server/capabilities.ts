@@ -104,6 +104,7 @@ export type CapabilityRegistryOptions = Readonly<{
 
 export type AttachedCompletionOptions = Readonly<{
   readonly coordinator: AttachedCompletionCoordinator;
+  readonly storageScope: string;
   readonly deliver: (bytes: Uint8Array) => Promise<boolean>;
 }>;
 
@@ -282,6 +283,7 @@ export function createCapabilityRegistry(
             mergeBaseOid: comparison.mergeBaseOid,
             range: comparison.range,
           },
+      ...(options.attachedCompletion === undefined ? {} : { storageScope: options.attachedCompletion.storageScope }),
     });
   const selectorDriftObserver =
     options.selectorDriftObserver ?? createSelectorDriftObserver(comparison);
@@ -439,11 +441,13 @@ export function createCapabilityRegistry(
       return filesByCapability.get(fileId);
     },
     async revealExportDirectory() {
-    const managedRoot = await ensureManagedExportsRoot(comparison.repositoryRoot, false);
-    const exportName = comparison.range?.reviewKey ?? `${comparison.base.oid}..${comparison.head.oid}`;
-    const exportDirectory = managedRoot === undefined
-      ? undefined
-      : join(managedRoot.exportsRoot, exportName);
+      const managedRoot = await ensureManagedExportsRoot(comparison.repositoryRoot, false);
+      const exportName = options.attachedCompletion?.storageScope
+        ?? comparison.range?.reviewKey
+        ?? `${comparison.base.oid}..${comparison.head.oid}`;
+      const exportDirectory = managedRoot === undefined
+        ? undefined
+        : join(managedRoot.exportsRoot, exportName);
       if (
         options.revealDraftFile === undefined
         || managedRoot === undefined
@@ -547,12 +551,13 @@ export function createCapabilityRegistry(
       : buildReviewExportV2(exportSnapshot, range, exportedAt);
       const json = canonicalizeReviewExport(document);
       const markdown = Buffer.from(renderReviewMarkdown(json), 'utf8');
-    const published = await publishReviewExport({
-      repositoryRoot: comparison.repositoryRoot,
-      identity: range === undefined
-        ? { kind: 'interactive', baseOid: comparison.base.oid, headOid: comparison.head.oid }
-        : { kind: 'range', reviewKey: range.reviewKey },
-      json,
+      const published = await publishReviewExport({
+        repositoryRoot: comparison.repositoryRoot,
+        identity: range === undefined
+          ? { kind: 'interactive', baseOid: comparison.base.oid, headOid: comparison.head.oid }
+          : { kind: 'range', reviewKey: range.reviewKey },
+        ...(options.attachedCompletion === undefined ? {} : { storageScope: options.attachedCompletion.storageScope }),
+        json,
         markdown,
         reExportCapability: await getObservedNativeExchangeCapability(),
         revalidate: async () => {
@@ -620,6 +625,7 @@ export async function createExactPatchCapabilityRegistry(
       validationTarget: patchSession.validationTarget,
       reviewKey: patchSession.reviewKey,
     },
+    ...(options.attachedCompletion === undefined ? {} : { storageScope: options.attachedCompletion.storageScope }),
   });
 
   const verifyAnchor = async (anchor: DurableAnchorV1): Promise<AnchorVerification> => {
@@ -757,7 +763,7 @@ export async function createExactPatchCapabilityRegistry(
       if (options.revealDraftFile === undefined) throw new Error('Export reveal adapter is unavailable.');
       const managedRoot = await ensureManagedExportsRoot(grounded.repositoryRoot, false);
       if (managedRoot === undefined) throw new Error('Export reveal adapter is unavailable.');
-      const exportDirectory = join(managedRoot.exportsRoot, patchSession.reviewKey);
+      const exportDirectory = join(managedRoot.exportsRoot, options.attachedCompletion?.storageScope ?? patchSession.reviewKey);
       await assertManagedExportsRoot(managedRoot);
       if (!(await isCompleteExportDirectory(exportDirectory))) throw new Error('Export reveal adapter is unavailable.');
       await assertManagedExportsRoot(managedRoot);
@@ -788,6 +794,7 @@ export async function createExactPatchCapabilityRegistry(
       const published = await publishReviewExport({
         repositoryRoot: grounded.repositoryRoot,
         identity: { kind: 'exact-patch', reviewKey: patch.reviewKey },
+        ...(options.attachedCompletion === undefined ? {} : { storageScope: options.attachedCompletion.storageScope }),
         json,
         markdown: Buffer.from(renderReviewMarkdown(json), 'utf8'),
         reExportCapability: await getObservedNativeExchangeCapability(),
