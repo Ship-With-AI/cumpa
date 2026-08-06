@@ -78,7 +78,18 @@ status: complete
 
 ---
 
-**Total deviations:** 1 auto-fixed (missing critical). **Impact:** Required to expose the planned scoped receipt path; no protocol or provenance fields changed.
+**2. [Rule 1 - Bug] Validate the attached scope at capability-registry entry**
+- **Found during:** Post-execution code and security review
+- **Issue:** A supplied draft store bypassed the app-level validation, leaving the attached scope unvalidated before the capability registry constructed reveal paths.
+- **Fix:** Validate once at each range/exact-patch registry boundary before draft, export, or reveal operations; add an injected-store malformed-scope regression.
+- **Files modified:** `src/server/capabilities.ts`, `tests/api/attached-completion.test.ts`
+- **Verification:** Focused Vitest 74/74, packaged Chromium 4/4, and package-contract 12/12 passed.
+- **Committed in:** `477199c`, `ae0892d`
+
+---
+
+**Total deviations:** 2 auto-fixed (one missing critical, one bug). **Impact:** Scoped receipt paths and safe factory-boundary validation were required; no protocol or provenance fields changed.
+
 
 ## Issues Encountered
 
@@ -90,7 +101,7 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- HAND-06 implementation and planned evidence are ready for phase-level verification and configured review gates.
+- HAND-06 implementation and all configured phase gates passed; ready for the next roadmap phase.
 
 ---
 *Phase: 15-adversarial-integration-gate*
