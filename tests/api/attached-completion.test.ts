@@ -7,6 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import type { GroundedExactPatch, PinnedComparison } from '../../src/contracts/comparison.js';
 import { AttachedCompletionCoordinator } from '../../src/server/attached-completion.js';
 import { createExactPatchSessionApp, createSessionApp } from '../../src/server/app.js';
+import { createDraftStore } from '../../src/server/draft-store.js';
 
 const token = 'a'.repeat(43);
 const host = '127.0.0.1:43132';
@@ -135,6 +136,26 @@ describe('attached completion API', () => {
     ordinary.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
 
     await expect(ordinary.inject({ method: 'GET', url: '/api/review-completion', headers })).resolves.toMatchObject({ statusCode: 404 });
+  });
+
+  test('rejects malformed attached scope even when a caller supplies the draft store', async () => {
+    const repositoryRoot = await root();
+    expect(() => createSessionApp(comparison(), {
+      sessionToken: token,
+      draftStore: createDraftStore({
+        repositoryRoot,
+        comparison: {
+          baseCommitOid: '1'.repeat(40),
+          headCommitOid: '2'.repeat(40),
+          mergeBaseOid: '3'.repeat(40),
+        },
+      }),
+      attachedCompletion: {
+        coordinator: new AttachedCompletionCoordinator(),
+        storageScope: '../controlled',
+        deliver: async () => true,
+      },
+    })).toThrow('Attached storage scope is invalid.');
   });
   test('settles exact-patch completion only through the attached finish response', async () => {
     let deliveries = 0;
