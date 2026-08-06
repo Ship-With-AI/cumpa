@@ -100,6 +100,7 @@ describe('attached completion API', () => {
         coordinator,
         deliver: async () => {
           deliveries += 1;
+          return true;
         },
       },
     });
@@ -145,6 +146,7 @@ describe('attached completion API', () => {
         coordinator,
         deliver: async () => {
           deliveries += 1;
+          return true;
         },
       },
     });

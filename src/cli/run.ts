@@ -435,9 +435,9 @@ async function launchAttachedSession(
     const token = randomBytes(32).toString('base64url');
     app = await createApp(token, {
       coordinator,
-      deliver: async (bytes) => {
-        await stdout(bytes);
-      },
+      deliver: async (bytes) => await coordinator.runDelivery(
+        async () => await stdout(bytes),
+      ),
     }, revealDraftFile);
     await app.listen({ host: '127.0.0.1', port: 0 });
     if (shutdown.isShuttingDown) return;

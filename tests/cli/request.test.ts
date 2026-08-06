@@ -254,7 +254,7 @@ describe('ordinary action request ownership', () => {
   it('keeps a non-TTY range attached until Finish writes canonical bytes and its response settles', async () => {
     const events: string[] = [];
     const stdout: Uint8Array[] = [];
-    let attached: { coordinator: AttachedCompletionCoordinator; deliver: (bytes: Uint8Array) => Promise<void> } | undefined;
+    let attached: { coordinator: AttachedCompletionCoordinator; deliver: (bytes: Uint8Array) => Promise<boolean> } | undefined;
     const app = {
       listen: vi.fn(async () => {}),
       server: { address: () => ({ address: '127.0.0.1', port: 43123 }) },
@@ -338,13 +338,12 @@ describe('ordinary action request ownership', () => {
     ]);
   });
 
-  it('cancels an in-flight Finish before stdout delivery when signalled', async () => {
+  it('prevents stdout from starting when cancellation wins at the delivery boundary', async () => {
     const signalSource = new EventEmitter();
     const events: string[] = [];
     const stdout: Uint8Array[] = [];
-    const finalizing = Promise.withResolvers<void>();
-    const releaseFinalization = Promise.withResolvers<void>();
-    let observations = 0;
+    const deliveryAuthorized = Promise.withResolvers<void>();
+    const releaseDelivery = Promise.withResolvers<void>();
     let sessionToken = '';
     let app!: SessionApp;
 
@@ -357,19 +356,15 @@ describe('ordinary action request ownership', () => {
         createRangeComparison: async () => comparison,
         createSessionApp: (pinned, options) => {
           sessionToken = options.sessionToken;
+          const deliver = options.attachedCompletion!.deliver;
           app = createRealSessionApp(pinned, {
             ...options,
-            selectorDriftObserver: {
-              observe: async () => {
-                observations += 1;
-                if (observations === 2) {
-                  finalizing.resolve();
-                  await releaseFinalization.promise;
-                }
-                return {
-                  base: { kind: 'unchanged', role: 'base' as const },
-                  head: { kind: 'unchanged', role: 'head' as const },
-                };
+            attachedCompletion: {
+              ...options.attachedCompletion!,
+              deliver: async (bytes) => {
+                deliveryAuthorized.resolve();
+                await releaseDelivery.promise;
+                return await deliver(bytes);
               },
             },
           });
@@ -385,6 +380,7 @@ describe('ordinary action request ownership', () => {
         },
         output: () => {},
         stdout: async (bytes) => {
+          events.push('stdout');
           stdout.push(bytes);
         },
         signalSource,
@@ -412,12 +408,12 @@ describe('ordinary action request ownership', () => {
       payload: { expectedRevision: 0 },
     });
 
-    await finalizing.promise;
+    await deliveryAuthorized.promise;
     signalSource.emit('SIGINT');
     await vi.waitFor(() => {
       expect(events).toContain('shutdown');
     });
-    releaseFinalization.resolve();
+    releaseDelivery.resolve();
 
     const response = await finish;
     await running;
@@ -429,7 +425,7 @@ describe('ordinary action request ownership', () => {
 
   it('treats exact-patch stdout failure as terminal without retrying delivery', async () => {
     const events: string[] = [];
-    let attached: { coordinator: AttachedCompletionCoordinator; deliver: (bytes: Uint8Array) => Promise<void> } | undefined;
+    let attached: { coordinator: AttachedCompletionCoordinator; deliver: (bytes: Uint8Array) => Promise<boolean> } | undefined;
     const app = {
       listen: vi.fn(async () => {}),
       server: { address: () => ({ address: '127.0.0.1', port: 43124 }) },
