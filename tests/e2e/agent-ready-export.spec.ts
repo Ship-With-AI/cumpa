@@ -126,6 +126,12 @@ function startGeneratedCli(
 function startAttachedCli(
   fixture: DirtyGitFixture,
   selections: Readonly<{ readonly base: string; readonly head: string }>,
+  request: unknown = {
+    kind: 'compare.review-request',
+    schemaVersion: 1,
+    mode: 'revisions',
+    revisions: { base: selections.base, head: selections.head },
+  },
 ): RunningAttachedCli {
   const markerPath = join(packedRoot, `attached-browser-open-${crypto.randomUUID()}.log`);
   const stderrPath = join(packedRoot, `attached-stderr-${crypto.randomUUID()}.log`);
@@ -144,12 +150,7 @@ function startAttachedCli(
     },
     stdio: ['pipe', stdoutDescriptor, stderrDescriptor],
   });
-  child.stdin.end(JSON.stringify({
-    kind: 'compare.review-request',
-    schemaVersion: 1,
-    mode: 'revisions',
-    revisions: { base: selections.base, head: selections.head },
-  }));
+  child.stdin.end(JSON.stringify(request));
   return {
     child,
     markerPath,
@@ -597,6 +598,64 @@ test('attached range review stays silent until Finish then emits one canonical V
       await waitForAttachedExit(running);
     }
     if (!closed) closeAttachedCliFiles(running);
+    await fixture.cleanup();
+  }
+});
+
+test('equivalent packaged attached ranges retain canonical provenance while owning isolated drafts and delivery', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
+  const selections = { base: fixture.baseRef, head: fixture.headRef };
+  const first = startAttachedCli(fixture, selections);
+  const second = startAttachedCli(fixture, selections);
+  const secondPage = await browser.newPage();
+
+  try {
+    await Promise.all([
+      openSession(page, await waitForAttachedLoopbackUrl(first)),
+      openSession(secondPage, await waitForAttachedLoopbackUrl(second)),
+    ]);
+    await Promise.all([ensureReviewOpen(page), ensureReviewOpen(secondPage)]);
+    await saveSummary(page, 'First equivalent attached review.');
+    await saveSummary(secondPage, 'Second equivalent attached review.');
+    const drafts = readdirSync(join(fixture.root, '.compare', 'drafts')).sort();
+    expect(drafts).toEqual([
+      expect.stringMatching(/^agent-[0-9a-f]{32}\.json$/u),
+      expect.stringMatching(/^agent-[0-9a-f]{32}\.json$/u),
+    ]);
+    expect(drafts[0]).not.toBe(drafts[1]);
+
+    await ensureReviewOpen(page);
+    const firstFinished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
+    await page.getByRole('button', { name: 'Finish review', exact: true }).click();
+    expect((await firstFinished).status()).toBe(201);
+    expect(await waitForAttachedExit(first)).toBe(0);
+    expect(readFileSync(second.stdoutPath)).toEqual(Buffer.alloc(0));
+
+    await ensureReviewOpen(secondPage);
+    const secondFinished = secondPage.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
+    await secondPage.getByRole('button', { name: 'Finish review', exact: true }).click();
+    expect((await secondFinished).status()).toBe(201);
+    expect(await waitForAttachedExit(second)).toBe(0);
+
+    const firstBytes = readFileSync(first.stdoutPath);
+    const secondBytes = readFileSync(second.stdoutPath);
+    expect(firstBytes.at(-1)).not.toBe(0x0a);
+    expect(secondBytes.at(-1)).not.toBe(0x0a);
+    const firstExport = parseCanonicalReviewExport(firstBytes);
+    const secondExport = parseCanonicalReviewExport(secondBytes);
+    expect(firstExport).toMatchObject({ schemaVersion: 2, summary: { markdown: 'First equivalent attached review.' } });
+    expect(secondExport).toMatchObject({ schemaVersion: 2, summary: { markdown: 'Second equivalent attached review.' } });
+    expect(firstExport.range?.reviewKey).toBe(secondExport.range?.reviewKey);
+  } finally {
+    for (const running of [first, second]) {
+      if (running.child.exitCode === null && running.child.signalCode === null) {
+        running.child.kill('SIGINT');
+        await waitForAttachedExit(running);
+      }
+      closeAttachedCliFiles(running);
+    }
+    await secondPage.close();
     await fixture.cleanup();
   }
 });
