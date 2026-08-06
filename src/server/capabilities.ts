@@ -603,10 +603,11 @@ export async function createExactPatchCapabilityRegistry(
   snapshot: PatchSnapshot,
   options: CapabilityRegistryOptions = {},
 ): Promise<CapabilityRegistry> {
-  const session = SessionResponseSchema.parse({
+  const sessionResponse = async () => SessionResponseSchema.parse({
     ...(await snapshot.session()),
     ...(options.attachedCompletion === undefined ? {} : { attached: { kind: 'agent-review' as const } }),
   });
+  const session = await sessionResponse();
   if (!('patch' in session)) throw new Error('Exact patch snapshot did not provide patch provenance.');
   const patchSession = session.patch;
   const draftStore = options.draftStore ?? createDraftStore({
@@ -691,7 +692,7 @@ export async function createExactPatchCapabilityRegistry(
 
   return Object.freeze({
     isExactPatch: true as const,
-    session: async () => session,
+    session: sessionResponse,
     attachedCompletion,
     onAnchorAdd: options.onAnchorAdd,
     draftStore,

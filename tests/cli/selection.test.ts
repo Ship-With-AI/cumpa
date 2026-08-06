@@ -1,3 +1,5 @@
+import { EventEmitter } from 'node:events';
+
 import { describe, expect, it } from 'vitest';
 
 import { Separator } from '@inquirer/search';
@@ -594,6 +596,7 @@ describe('exact patch CLI dispatch', () => {
   it('grounds once, creates the exact session app with that authority, and opens only after readiness', async () => {
     const events: string[] = [];
     const grounded = {} as GroundedExactPatch;
+    const signalSource = new EventEmitter();
     const app = {
       listen: async () => {
         events.push('listen');
@@ -607,7 +610,7 @@ describe('exact patch CLI dispatch', () => {
       close: async () => undefined,
     } as unknown as SessionApp;
 
-    await runOrdinaryAction(
+    const running = runOrdinaryAction(
       { cwd: '/repo' },
       {
         isTTY: false,
@@ -633,8 +636,12 @@ describe('exact patch CLI dispatch', () => {
         openBrowser: async () => {
           events.push('browser');
         },
+        signalSource,
       },
     );
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    signalSource.emit('SIGINT');
+    await running;
 
     expect(events).toEqual(['ground', 'app', 'listen', 'security', 'browser']);
   });
