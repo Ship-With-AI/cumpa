@@ -526,6 +526,7 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
     await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
     const composer = page.locator('.monaco-anchor-zone--composer textarea');
     await composer.fill('Unsaved inline feedback');
+    await page.getByRole('treeitem', { name: /added\.ts/ }).click();
 
     await ensureReviewOpen(page);
     const completion = page.getByRole('region', { name: 'Finish attached review' });
@@ -534,7 +535,9 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
     await finish.evaluate((button) => button.click());
     expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
 
-    await composer.fill('');
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    const restoredComposer = page.locator('.monaco-anchor-zone--composer textarea');
+    await restoredComposer.fill('');
     await expect(finish).toBeEnabled();
   } finally {
     if (running.child.exitCode === null && running.child.signalCode === null) running.child.kill('SIGINT');

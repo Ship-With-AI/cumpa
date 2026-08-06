@@ -178,7 +178,7 @@ const attachedMutationLocked = computed(() =>
 const hasUnsavedReviewText = computed(() => {
   const current = reviewDraft.value;
   if (current === undefined) return false;
-  return (activeComposer.value?.text.trim().length ?? 0) > 0
+  return Object.values(workspaceState.value?.files ?? {}).some((file) => (file.composer?.text.trim().length ?? 0) > 0)
     || current.summaryBuffer !== current.canonical.summary
     || [...current.commentBuffers].some(([commentId, body]) =>
       current.canonical.comments.find((comment) => comment.id === commentId)?.body !== body,
