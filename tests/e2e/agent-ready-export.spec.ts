@@ -535,9 +535,18 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
     await finish.evaluate((button) => button.click());
     expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
 
-    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+    const reviewDraft = completion.getByRole('button', { name: /Review draft in .*changed\.ts/ });
+    await expect(completion).toContainText('Inline comment draft must be reviewed');
+    await expect(completion).toContainText('has unsaved text. Save or discard it before finishing.');
+    await expect(reviewDraft).toBeVisible();
+    await reviewDraft.click();
+    await expect(page.locator('#review-panel')).toHaveAttribute('aria-hidden', 'true');
     const restoredComposer = page.locator('.monaco-anchor-zone--composer textarea');
+    await expect(restoredComposer).toBeVisible();
+    await expect(restoredComposer).toHaveValue('Unsaved inline feedback');
+    await expect(page.locator('.inline-comment-composer__header')).toContainText('src/changed.ts');
     await restoredComposer.fill('');
+    await ensureReviewOpen(page);
     await expect(finish).toBeEnabled();
   } finally {
     if (running.child.exitCode === null && running.child.signalCode === null) running.child.kill('SIGINT');

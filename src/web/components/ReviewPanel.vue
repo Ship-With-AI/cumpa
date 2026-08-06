@@ -46,6 +46,7 @@ const props = defineProps<{
   readonly attachedLifecycle?: AttachedLifecycle;
   readonly attachedReady?: boolean;
   readonly attachedFailure?: FinishReviewResult;
+  readonly unsavedInlineComposerFile?: Readonly<{ fileId: string; display: string }>;
   readonly mutationLocked?: boolean;
   readonly isExactPatch?: boolean;
 }>();
@@ -71,6 +72,7 @@ const emit = defineEmits<{
   saveComment: [commentId: string];
   reloadLatest: [];
   reviewUnsavedText: [];
+  reviewInlineComposer: [fileId: string];
   refreshIgnoreStatus: [];
   revealExportDirectory: [];
   exportReview: [];
@@ -131,6 +133,9 @@ const attachedHasUnsavedText = computed(() => (
   props.summaryBuffer !== props.summary
   || props.comments.some((comment) => buffer(comment) !== comment.body)
 ));
+const attachedBlockedByUnsavedText = computed(
+  () => attachedHasUnsavedText.value || props.unsavedInlineComposerFile !== undefined,
+);
 const attachedBlockedByPending = computed(() => props.pending !== null);
 const attachedBlockedByConflict = computed(() => props.conflict !== null);
 const attachedNoFeedback = computed(() => props.summary === '' && props.comments.length === 0);
@@ -785,8 +790,22 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
             <button type="button" class="ui-button" @click="emit('reviewUnsavedText')">Review unsaved text</button>
           </div>
         </div>
-        <p v-else-if="attachedBlockedByPending" class="attached-completion__pending" role="status">Saving review changes…</p>
-        <div v-else-if="attachedBlockedByConflict" class="inline-notice inline-notice--warning">
+        <div
+          v-if="unsavedInlineComposerFile !== undefined"
+          class="inline-notice inline-notice--warning"
+          role="region"
+          aria-labelledby="inline-composer-finish-block-heading"
+        >
+          <div class="inline-notice__content">
+            <h4 id="inline-composer-finish-block-heading">Inline comment draft must be reviewed</h4>
+            <p><PathText :display="unsavedInlineComposerFile.display" /> has unsaved text. Save or discard it before finishing.</p>
+            <button type="button" class="ui-button" @click="emit('reviewInlineComposer', unsavedInlineComposerFile.fileId)">
+              Review draft in <PathText :display="unsavedInlineComposerFile.display" />
+            </button>
+          </div>
+        </div>
+        <p v-if="!attachedBlockedByUnsavedText && attachedBlockedByPending" class="attached-completion__pending" role="status">Saving review changes…</p>
+        <div v-else-if="!attachedBlockedByUnsavedText && attachedBlockedByConflict" class="inline-notice inline-notice--warning">
           <div class="inline-notice__content">
             <h4>Review changed before finish</h4>
             <p>Accepted revision {{ conflict?.expectedRevision }} is no longer current. Latest revision is {{ conflict?.actualRevision }}. No feedback was returned. Reload the latest review, check the comments and summary, then choose Finish review again.</p>

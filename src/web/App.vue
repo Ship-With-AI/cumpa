@@ -163,6 +163,17 @@ const atFirstFile = computed(() => selectedIndex.value <= 0);
 const atLastFile = computed(() => selectedIndex.value === -1 || selectedIndex.value === reviewableFiles.value.length - 1);
 const activeWorkspaceFile = computed(() => workspaceState.value?.files[workspaceState.value.activeFileId]);
 const activeComposer = computed(() => activeWorkspaceFile.value?.composer);
+const unsavedInlineComposerFile = computed(() => {
+  const file = reviewableFiles.value.find(
+    (candidate) => (workspaceState.value?.files[candidate.fileId]?.composer?.text.trim().length ?? 0) > 0,
+  );
+  return file === undefined
+    ? undefined
+    : {
+        fileId: file.fileId,
+        display: file.newPath?.display ?? file.oldPath?.display ?? 'Changed file',
+      };
+});
 const workspaceComments = computed(() => workspaceState.value?.comments ?? []);
 const openCommentCount = computed(
   () => workspaceComments.value.filter((comment) => comment.state === 'open').length,
@@ -178,7 +189,7 @@ const attachedMutationLocked = computed(() =>
 const hasUnsavedReviewText = computed(() => {
   const current = reviewDraft.value;
   if (current === undefined) return false;
-  return Object.values(workspaceState.value?.files ?? {}).some((file) => (file.composer?.text.trim().length ?? 0) > 0)
+  return unsavedInlineComposerFile.value !== undefined
     || current.summaryBuffer !== current.canonical.summary
     || [...current.commentBuffers].some(([commentId, body]) =>
       current.canonical.comments.find((comment) => comment.id === commentId)?.body !== body,
@@ -576,6 +587,11 @@ async function revealExportDirectory() {
 
 function reviewUnsavedText(): void {
   document.querySelector<HTMLButtonElement>('.review-summary button')?.focus();
+}
+
+function reviewInlineComposer(fileId: string): void {
+  selectFile(fileId);
+  if (isCommentsDrawer.value) commentsOpen.value = false;
 }
 
 async function reloadLatestReview(): Promise<void> {
@@ -1178,6 +1194,7 @@ onBeforeUnmount(() => {
           :retained-summary="reviewDraft.retained.summary"
           :attached-lifecycle="isAttachedSession ? attachedLifecycle : undefined"
           :attached-ready="attachedFinishReady"
+          :unsaved-inline-composer-file="unsavedInlineComposerFile"
           :attached-failure="attachedResult"
           :mutation-locked="attachedMutationLocked"
           :is-exact-patch="isExactPatchSession"
@@ -1201,6 +1218,7 @@ onBeforeUnmount(() => {
           @cancel-export="cancelExport"
           @export="exportReview"
           @review-unsaved-text="reviewUnsavedText"
+          @review-inline-composer="reviewInlineComposer"
           @finish-review="finishAttachedReview"
           @reload-attached="reloadPage"
           @view-attached-scope="openIdentityScope"
