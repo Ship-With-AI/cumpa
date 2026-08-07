@@ -15,10 +15,10 @@ import { createServer, type ViteDevServer } from 'vite';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
 const token = 't'.repeat(43);
-const safeDraftPath = '.compare/drafts/active-review.json';
-const safeBackupPath = '.compare/drafts/active-review.corrupt-backup.json';
+const safeDraftPath = '.cumpa/drafts/active-review.json';
+const safeBackupPath = '.cumpa/drafts/active-review.corrupt-backup.json';
 const fingerprint = 'a'.repeat(64);
-const absolutePath = '/private/repositories/review/.compare/drafts/active-review.json';
+const absolutePath = '/private/repositories/review/.cumpa/drafts/active-review.json';
 
 let server: ViteDevServer | undefined;
 let origin = '';
@@ -315,8 +315,8 @@ test('newer drafts are upgrade-only and expose only fixed reveal and safe copy a
   });
 
   await openDraft(page);
-  await expect(page.getByRole('heading', { name: 'This draft needs a newer Compare' })).toBeVisible();
-  await expect(page.getByText('Draft schema version 2 is newer than supported version 1. Upgrade Compare to open it. The file has not been changed.', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'This draft needs a newer Cumpa' })).toBeVisible();
+  await expect(page.getByText('Draft schema version 2 is newer than supported version 1. Upgrade Cumpa to open it. The file has not been changed.', { exact: true })).toBeVisible();
   await expect(page.getByText('Read only', { exact: true })).toBeVisible();
   await expect(page.locator('.draft-recovery__status')).toContainText('Read only');
   await expect(page.locator('.draft-recovery__status .ui-icon')).toHaveCount(1);
@@ -324,7 +324,7 @@ test('newer drafts are upgrade-only and expose only fixed reveal and safe copy a
   await expect(page.getByText(safeDraftPath, { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Reveal draft file' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Copy draft path' })).toBeVisible();
-  await expect(page.getByRole('alert')).toContainText('This draft needs a newer Compare');
+  await expect(page.getByRole('alert')).toContainText('This draft needs a newer Cumpa');
   await page.locator('html').evaluate((element) => { element.style.zoom = '2'; });
   const reveal = page.getByRole('button', { name: 'Reveal draft file' });
   await reveal.focus();
@@ -354,7 +354,7 @@ test('exact patch recovery opens a frozen draft without pinned-session language'
   recoveryResult = exactRecoveredResult();
 
   await openDraft(page);
-  await expect(page.getByRole('heading', { name: 'Compare: exact patch · dddddddddddd' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Cumpa: exact patch · dddddddddddd' })).toBeVisible();
   await expect(page.locator('body')).not.toContainText(/\bpinned\b/iu);
   await page.getByRole('button', { name: 'Back up and start new' }).click();
   await page.getByRole('button', { name: 'Back up and start new' }).last().click();

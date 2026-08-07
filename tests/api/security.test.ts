@@ -12,7 +12,7 @@ const expectedHost = '127.0.0.1:43127';
 const expectedOrigin = `http://${expectedHost}`;
 const fileId = `file_${'f'.repeat(43)}`;
 const securityMessage =
-  'This request is not available in the current session. Relaunch Compare from the terminal.';
+  'This request is not available in the current session. Relaunch Cumpa from the terminal.';
 
 const comparison: PinnedComparison = {
   repositoryRoot: '/private/repository/that-must-not-leak',

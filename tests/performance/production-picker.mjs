@@ -23,7 +23,7 @@ for (const key of [
   'GIT_INDEX_FILE',
   'GIT_OBJECT_DIRECTORY',
   'GIT_ALTERNATE_OBJECT_DIRECTORIES',
-  'COMPARE_LAUNCH_OPTIONS',
+  'CUMPA_LAUNCH_OPTIONS',
   'CMUX_WORKSPACE_ID',
 ]) {
   delete baseEnvironment[key];
@@ -162,7 +162,7 @@ async function createFixture(tempRoot) {
   const repository = join(tempRoot, 'repository');
   await mkdir(repository);
   await git(repository, ['init', '-q', '-b', 'main']);
-  await git(repository, ['config', 'user.name', 'Compare performance fixture']);
+  await git(repository, ['config', 'user.name', 'Cumpa performance fixture']);
   await git(repository, ['config', 'user.email', 'performance@example.invalid']);
   await git(repository, ['commit', '--allow-empty', '-q', '-m', 'fixture']);
   const commitOid = (await git(repository, ['rev-parse', 'HEAD'])).stdout.trim();
@@ -366,7 +366,7 @@ const report = {
   budgets: { readinessMs: READY_BUDGET_MS, searchMs: SEARCH_BUDGET_MS },
   cleanup: { childrenSettled: false, tempRemoved: false },
   environment: {
-    removedCompareLaunchOptions: true,
+    removedCumpaLaunchOptions: true,
     removedCmuxWorkspaceId: true,
     shell: false,
     stdinTerm: 'branch-09999',
@@ -379,7 +379,7 @@ try {
   if (!existsSync(executablePath)) {
     throw new Error(`compiled executable is absent: ${executablePath}`);
   }
-  tempRoot = await mkdtemp(join(tmpdir(), 'compare-production-picker-'));
+  tempRoot = await mkdtemp(join(tmpdir(), 'cumpa-production-picker-'));
   const fixture = await createFixture(tempRoot);
   report.fixture = fixture.proof;
   const warmup = await runPickerSample({ ...fixture, kind: 'warmup' });
@@ -389,7 +389,7 @@ try {
     const sample = await runPickerSample({ ...fixture, kind: 'measured' });
     report.samples.push(sample);
     report.completed.measured += 1;
-    console.log(`COMPARE_PERF_SAMPLE=${JSON.stringify(sample)}`);
+    console.log(`CUMPA_PERF_SAMPLE=${JSON.stringify(sample)}`);
   }
   if (report.completed.warmups !== 1 || report.completed.measured !== SAMPLE_COUNT) {
     throw new Error('incomplete warmup or measured invocation set');
@@ -425,5 +425,5 @@ try {
 if (!report.cleanup.tempRemoved || report.classification === 'HARD_FAILURE') {
   report.classification = 'HARD_FAILURE';
 }
-console.log(`COMPARE_PERF_RESULT=${JSON.stringify(report)}`);
+console.log(`CUMPA_PERF_RESULT=${JSON.stringify(report)}`);
 process.exitCode = report.classification === 'PASS' || (report.classification === 'BUDGET_RED' && process.argv.includes('--accept-budget-red')) ? 0 : report.classification === 'BUDGET_RED' ? 2 : 1;

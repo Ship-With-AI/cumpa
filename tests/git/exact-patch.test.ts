@@ -24,11 +24,11 @@ function git(cwd: string, arguments_: readonly string[]): Buffer {
 }
 
 async function repository(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'compare-exact-patch-'));
+  const root = await mkdtemp(join(tmpdir(), 'cumpa-exact-patch-'));
   fixtures.push(root);
   git(root, ['init', '--quiet']);
   git(root, ['config', 'user.email', 'tests@example.com']);
-  git(root, ['config', 'user.name', 'Compare tests']);
+  git(root, ['config', 'user.name', 'Cumpa tests']);
   return root;
 }
 

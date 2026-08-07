@@ -14,7 +14,7 @@ const roots: string[] = [];
 const apps = new Set<FastifyInstance>();
 
 async function buildApp(revealDraftFile = vi.fn(async () => undefined)) {
-  const repositoryRoot = await mkdtemp(join(tmpdir(), 'compare-draft-reveal-'));
+  const repositoryRoot = await mkdtemp(join(tmpdir(), 'cumpa-draft-reveal-'));
   roots.push(repositoryRoot);
   const app = createSessionApp({
     repositoryRoot,
@@ -66,7 +66,7 @@ describe('fixed active-draft reveal API', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({ kind: 'revealed' });
     expect(revealDraftFile).toHaveBeenCalledTimes(1);
-    expect(revealDraftFile).toHaveBeenCalledWith(expect.stringContaining(join(repositoryRoot, '.compare', 'drafts')));
+    expect(revealDraftFile).toHaveBeenCalledWith(expect.stringContaining(join(repositoryRoot, '.cumpa', 'drafts')));
     expect(JSON.stringify(response.json())).not.toContain(repositoryRoot);
   });
 

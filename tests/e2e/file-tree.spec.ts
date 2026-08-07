@@ -27,7 +27,7 @@ import {
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'compare-tree-pack-'));
+const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-tree-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 const executablePath = join(
@@ -167,13 +167,13 @@ function startGeneratedCli(repository: GitFixture): RunningCli {
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
-      COMPARE_LAUNCH_OPTIONS: JSON.stringify({
+      CUMPA_LAUNCH_OPTIONS: JSON.stringify({
         cwd: repository.nestedCwd,
         base: { label: 'Base tree fixture', revision: repository.baseRef },
         head: { label: 'Head tree fixture', revision: repository.headRef },
       }),
-      COMPARE_OPENER_LOG: openerLogPath,
-      COMPARE_TERMINAL_CAPTURE: outputPath,
+      CUMPA_OPENER_LOG: openerLogPath,
+      CUMPA_TERMINAL_CAPTURE: outputPath,
     },
     stdio: ['ignore', outputDescriptor, outputDescriptor],
   });

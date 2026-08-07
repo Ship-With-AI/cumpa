@@ -65,7 +65,7 @@ interface InventoryFixtureOptions {
 async function createInventoryFixture(
   options: InventoryFixtureOptions = {},
 ): Promise<InventoryFixture> {
-  const root = await mkdtemp(join(tmpdir(), 'compare-inventory-'));
+  const root = await mkdtemp(join(tmpdir(), 'cumpa-inventory-'));
   const git = (arguments_: readonly string[]): Buffer =>
     execFileSync('git', [...safeGitArguments, ...arguments_], {
       cwd: root,
@@ -76,17 +76,17 @@ async function createInventoryFixture(
     });
 
   git(['init', '--initial-branch=main']);
-  git(['config', '--local', 'user.name', 'Compare Inventory Fixture']);
+  git(['config', '--local', 'user.name', 'Cumpa Inventory Fixture']);
   git(['config', '--local', 'user.email', 'inventory@test.invalid']);
   git(['config', '--local', 'commit.gpgSign', 'false']);
 
 
   if (options.includeInternalPaths === true) {
-    await mkdir(join(root, '.compare'));
+    await mkdir(join(root, '.cumpa'));
     await Promise.all([
-      writeFile(join(root, '.compare', 'deleted.txt'), 'deleted internal\n'),
-      writeFile(join(root, '.compare', 'rename-out.txt'), 'rename internal\n'),
-      writeFile(join(root, '.compare', 'copy-out.txt'), 'copy internal\n'),
+      writeFile(join(root, '.cumpa', 'deleted.txt'), 'deleted internal\n'),
+      writeFile(join(root, '.cumpa', 'rename-out.txt'), 'rename internal\n'),
+      writeFile(join(root, '.cumpa', 'copy-out.txt'), 'copy internal\n'),
       writeFile(join(root, 'rename-in.txt'), 'rename public\n'),
       writeFile(join(root, 'copy-in.txt'), 'copy public\n'),
     ]);
@@ -124,30 +124,30 @@ async function createInventoryFixture(
 
   if (options.includeInternalPaths === true) {
     await Promise.all([
-      rm(join(root, '.compare', 'deleted.txt')),
+      rm(join(root, '.cumpa', 'deleted.txt')),
       rename(
-        join(root, '.compare', 'rename-out.txt'),
+        join(root, '.cumpa', 'rename-out.txt'),
         join(root, 'rename-out.txt'),
       ),
       copyFile(
-        join(root, '.compare', 'copy-out.txt'),
+        join(root, '.cumpa', 'copy-out.txt'),
         join(root, 'copy-out.txt'),
       ),
       rename(
         join(root, 'rename-in.txt'),
-        join(root, '.compare', 'rename-in.txt'),
+        join(root, '.cumpa', 'rename-in.txt'),
       ),
       copyFile(
         join(root, 'copy-in.txt'),
-        join(root, '.compare', 'copy-in.txt'),
+        join(root, '.cumpa', 'copy-in.txt'),
       ),
-      writeFile(join(root, '.compare', 'added.txt'), 'added internal\n'),
-      writeFile(join(root, '.compareish.txt'), 'near internal name\n'),
-      writeFile(join(root, 'compare.txt'), 'missing dot\n'),
-      mkdir(join(root, 'src', '.compare'), { recursive: true }),
+      writeFile(join(root, '.cumpa', 'added.txt'), 'added internal\n'),
+      writeFile(join(root, '.cumpaish.txt'), 'near internal name\n'),
+      writeFile(join(root, 'cumpa.txt'), 'missing dot\n'),
+      mkdir(join(root, 'src', '.cumpa'), { recursive: true }),
     ]);
     await Promise.all([
-      writeFile(join(root, 'src', '.compare', 'nested.txt'), 'nested\n'),
+      writeFile(join(root, 'src', '.cumpa', 'nested.txt'), 'nested\n'),
     ]);
   }
   const [composedStat, decomposedStat] = await Promise.all([
@@ -390,7 +390,7 @@ describe('native-Git changed-file inventory', () => {
       .split('\0')
       .filter(
         (path) =>
-          path.length > 0 && path !== '.compare' && !path.startsWith('.compare/'),
+          path.length > 0 && path !== '.cumpa' && !path.startsWith('.cumpa/'),
       )
       .sort();
     const inheritedLiteral = process.env.GIT_LITERAL_PATHSPECS;
@@ -420,9 +420,9 @@ describe('native-Git changed-file inventory', () => {
       cwd: repository.root,
       baseRevision: repository.baseOid,
       headRevision: repository.headOid,
-      pathspecs: [':(attr:compare-scope)'],
+      pathspecs: [':(attr:cumpa-scope)'],
     });
-    expect(accepted.range?.pathspecs).toEqual([':(attr:compare-scope)']);
+    expect(accepted.range?.pathspecs).toEqual([':(attr:cumpa-scope)']);
 
     const error = await (async () => {
       try {
@@ -505,19 +505,19 @@ describe('native-Git changed-file inventory', () => {
     });
 
     const isInternalPath = (path: ChangedFile['oldPath']): boolean =>
-      path?.utf8 === '.compare' || path?.utf8?.startsWith('.compare/') === true;
+      path?.utf8 === '.cumpa' || path?.utf8?.startsWith('.cumpa/') === true;
 
     expect(
       files.some(
         (file) => isInternalPath(file.oldPath) || isInternalPath(file.newPath),
       ),
     ).toBe(false);
-    expect(pathText(fileByPath(files, '.compareish.txt'))).toBe(
-      '.compareish.txt',
+    expect(pathText(fileByPath(files, '.cumpaish.txt'))).toBe(
+      '.cumpaish.txt',
     );
-    expect(pathText(fileByPath(files, 'compare.txt'))).toBe('compare.txt');
-    expect(pathText(fileByPath(files, 'src/.compare/nested.txt'))).toBe(
-      'src/.compare/nested.txt',
+    expect(pathText(fileByPath(files, 'cumpa.txt'))).toBe('cumpa.txt');
+    expect(pathText(fileByPath(files, 'src/.cumpa/nested.txt'))).toBe(
+      'src/.cumpa/nested.txt',
     );
   });
 

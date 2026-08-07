@@ -128,7 +128,7 @@ function exactPatchContent() {
 function resumedDraft(): DraftLoadResponse {
   return DraftLoadResponseSchema.parse({
     kind: 'current',
-    path: '.compare/drafts/active-review.json',
+    path: '.cumpa/drafts/active-review.json',
     draft: {
       schemaVersion: 1,
       comparison: {
@@ -221,7 +221,7 @@ async function startAppServer(): Promise<string> {
 
 async function openReview(page: Page): Promise<void> {
   await page.goto(`${origin}#token=${token}`);
-  await expect(page.getByRole('heading', { name: /Compare:/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Cumpa:/ })).toBeVisible();
 }
 
 test.beforeAll(async () => {
@@ -236,7 +236,7 @@ test.beforeEach(() => {
   session = pinnedSession();
   draftResponse = DraftLoadResponseSchema.parse({
     kind: 'missing',
-    path: '.compare/drafts/active-review.json',
+    path: '.cumpa/drafts/active-review.json',
   });
   driftResponse = unchanged();
   patchStatusResponse = PatchStatusResponseSchema.parse({
@@ -369,7 +369,7 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   await expect(notice).toContainText(headOid);
   await expect(notice).toContainText('This source is no longer available.');
   await page.getByRole('button', { name: 'Launch new comparison' }).click();
-  await expect(notice).toContainText('Return to the terminal and launch Compare again, then choose the current sources. This open review will remain pinned.');
+  await expect(notice).toContainText('Return to the terminal and launch Cumpa again, then choose the current sources. This open review will remain pinned.');
 
   for (const request of browserRequests) {
     expect(request.method).toBe('GET');
@@ -391,7 +391,7 @@ test('exact patch sessions observe only their frozen patch status', async ({ pag
   session = exactPatchSession();
   await openReview(page);
 
-  await expect(page.getByRole('heading', { name: 'Compare: exact patch · dddddddddddd' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Cumpa: exact patch · dddddddddddd' })).toBeVisible();
   await expect(page.getByText('Frozen verified patch')).toBeVisible();
   await expect(page.getByRole('button', { name: 'View patch scope' })).toBeVisible();
   expect(patchStatusRequests).toHaveLength(1);
@@ -411,7 +411,7 @@ test('exact patch sessions observe only their frozen patch status', async ({ pag
   const notice = page.getByRole('alert');
   await expect(notice).toContainText('Implemented content changed');
   await expect(notice).toContainText(
-    'The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Compare will not substitute current content. Relaunch with a patch that matches the current implementation.',
+    'The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.',
   );
   await expect(page.getByRole('button', { name: 'View patch scope' })).toBeVisible();
   expect(pinnedPropWarnings).toEqual([]);
@@ -448,7 +448,7 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
   await openReview(page);
   await expect(page.getByRole('heading', { name: 'Frozen patch file unavailable' })).toBeVisible();
   await expect(page.getByText(
-    'Compare could not read this file from the frozen patch snapshot. Try the same snapshot again; current repository or worktree bytes will not be substituted.',
+    'Cumpa could not read this file from the frozen patch snapshot. Try the same snapshot again; current repository or worktree bytes will not be substituted.',
     { exact: true },
   )).toBeVisible();
   await expect(page.locator('body')).not.toContainText(/\bpinned\b/iu);
@@ -490,7 +490,7 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
   await expect(blockingHeading).toHaveCount(1);
   await expect(blockingHeading).toBeFocused();
   await expect(page.getByText(
-    'The accepted patch snapshot is missing, corrupt, incomplete, or unreadable. Relaunch Compare with an exact patch that matches the current implementation.',
+    'The accepted patch snapshot is missing, corrupt, incomplete, or unreadable. Relaunch Cumpa with an exact patch that matches the current implementation.',
     { exact: true },
   )).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Pinned session unavailable' })).toHaveCount(0);

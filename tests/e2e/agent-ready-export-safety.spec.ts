@@ -96,7 +96,7 @@ test.afterAll(async () => {
 function pair(summary: string): Readonly<{ readonly json: Buffer; readonly markdown: Buffer }> {
   const json = Buffer.from(canonicalizeReviewExport(ReviewExportV1Schema.parse({
     schemaVersion: 1,
-    kind: 'compare/export',
+    kind: 'cumpa/export',
     exportedAt: '2026-07-23T00:00:00.000Z',
     acceptedDraftRevision: 1,
     comparison: {
@@ -122,7 +122,7 @@ test('forced unavailable capability refuses re-export before touching the comple
   const fixture = await createDirtyGitFixture();
   try {
     const before = await captureSourceControlSnapshot(fixture.root);
-    const stable = join(fixture.root, '.compare', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
+    const stable = join(fixture.root, '.cumpa', 'exports', `${'1'.repeat(40)}..${'2'.repeat(40)}`);
     const oldPair = pair('old generation');
 
     await expect(runGeneratedExport(fixture.root, oldPair, 'unsupported')).resolves.toMatchObject({ kind: 'exported' });
@@ -186,7 +186,7 @@ test('attached lifecycle renders waiting, progress, completion, and safe recover
     kind: 'staleAnchors', affectedCommentIds: [], affectedCount: 1,
   }));
   await expect(completion.getByRole('alert').getByText('Review can’t be finished', { exact: true })).toBeFocused();
-  await expect(completion.getByText('Compare found stale or unavailable feedback anchors in the accepted review. Affected comments: 1. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.', { exact: true })).toBeVisible();
+  await expect(completion.getByText('Cumpa found stale or unavailable feedback anchors in the accepted review. Affected comments: 1. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.', { exact: true })).toBeVisible();
   await expect(completion.getByRole('button', { name: 'Review stale feedback', exact: true })).toBeVisible();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', {
@@ -207,22 +207,22 @@ test('attached lifecycle renders waiting, progress, completion, and safe recover
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', { kind: 'draftReadOnly' }));
   await expect(completion.getByRole('alert').getByText('Review draft can’t be validated', { exact: true })).toBeFocused();
-  await expect(completion.getByText('The accepted local draft is corrupt, incomplete, or read-only. No feedback was returned. Reload the review; if it remains unavailable, relaunch Compare.', { exact: true })).toBeVisible();
+  await expect(completion.getByText('The accepted local draft is corrupt, incomplete, or read-only. No feedback was returned. Reload the review; if it remains unavailable, relaunch Cumpa.', { exact: true })).toBeVisible();
   await expect(completion.getByRole('button', { name: 'Reload review', exact: true })).toBeVisible();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', { kind: 'persistenceFailure' }));
   await expect(completion.getByRole('alert').getByText('Review was not finished', { exact: true })).toBeFocused();
-  await expect(completion.getByText('No feedback was returned. Check that Compare is still running, then try Finish review again.', { exact: true })).toBeVisible();
+  await expect(completion.getByText('No feedback was returned. Check that Cumpa is still running, then try Finish review again.', { exact: true })).toBeVisible();
   await expect(completion.getByRole('button', { name: 'Try Finish review again', exact: true })).toBeVisible();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('terminalFailure'));
   await expect(completion.getByRole('alert').getByText('Completion status unavailable', { exact: true })).toBeFocused();
-  await expect(completion.getByText('Compare disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Compare is still running, reload to reconnect.', { exact: true })).toBeVisible();
+  await expect(completion.getByText('Cumpa disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Cumpa is still running, reload to reconnect.', { exact: true })).toBeVisible();
   await expect(completion.getByRole('button', { name: 'Reload page', exact: true })).toBeVisible();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('waitingDisconnected'));
   await expect(completion.getByRole('alert').getByText('Attached review disconnected', { exact: true })).toBeFocused();
-  await expect(completion.getByText('The browser lost its connection to Compare. This review is still unfinished. Reload this page while Compare is running, then choose Finish review.', { exact: true })).toBeVisible();
+  await expect(completion.getByText('The browser lost its connection to Cumpa. This review is still unfinished. Reload this page while Cumpa is running, then choose Finish review.', { exact: true })).toBeVisible();
   await expect(completion.getByRole('button', { name: 'Reload page', exact: true })).toBeVisible();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('waiting', undefined, { summaryBuffer: 'Unsaved summary' }));

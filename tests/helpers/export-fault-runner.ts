@@ -37,7 +37,7 @@ export async function runGeneratedExport(
   pair: ExportPair,
   mode: GeneratedExportMode,
 ): Promise<GeneratedExportResult> {
-  const temporaryRoot = await mkdtemp(join(tmpdir(), 'compare-export-fault-runner-'));
+  const temporaryRoot = await mkdtemp(join(tmpdir(), 'cumpa-export-fault-runner-'));
   const inputPath = join(temporaryRoot, 'input.json');
   const outputPath = join(temporaryRoot, 'output.json');
   const runnerPath = join(temporaryRoot, 'publish.mjs');
@@ -77,7 +77,7 @@ export async function runGeneratedExport(
 }
 
 export async function runGeneratedRecovery(repositoryRoot: string): Promise<ExportPair | undefined> {
-  const temporaryRoot = await mkdtemp(join(tmpdir(), 'compare-export-recovery-'));
+  const temporaryRoot = await mkdtemp(join(tmpdir(), 'cumpa-export-recovery-'));
   const inputPath = join(temporaryRoot, 'input.json');
   const outputPath = join(temporaryRoot, 'output.json');
   const runnerPath = join(temporaryRoot, 'recover.mjs');
@@ -106,7 +106,7 @@ export async function sampleGeneratedStablePair(
   stablePath: string,
   observations: number,
 ): Promise<readonly ExportPair[]> {
-  const temporaryRoot = await mkdtemp(join(tmpdir(), 'compare-export-reader-'));
+  const temporaryRoot = await mkdtemp(join(tmpdir(), 'cumpa-export-reader-'));
   const outputPath = join(temporaryRoot, 'observations.json');
   const runnerPath = join(temporaryRoot, 'reader.mjs');
   try {
@@ -134,7 +134,7 @@ export async function sampleGeneratedStablePair(
 }
 
 export async function runGeneratedIgnoreAppend(repositoryRoot: string): Promise<Readonly<{ readonly kind: string }>> {
-  const temporaryRoot = await mkdtemp(join(tmpdir(), 'compare-export-ignore-'));
+  const temporaryRoot = await mkdtemp(join(tmpdir(), 'cumpa-export-ignore-'));
   const inputPath = join(temporaryRoot, 'input.json');
   const outputPath = join(temporaryRoot, 'output.json');
   const runnerPath = join(temporaryRoot, 'ignore.mjs');
@@ -142,9 +142,9 @@ export async function runGeneratedIgnoreAppend(repositoryRoot: string): Promise<
     await writeFile(inputPath, JSON.stringify({ repositoryRoot }));
     await writeFile(runnerPath, `
       import { readFile, writeFile } from 'node:fs/promises';
-      import { appendCompareIgnoreRule } from ${JSON.stringify(gitignoreCapabilityUrl)};
+      import { appendCumpaIgnoreRule } from ${JSON.stringify(gitignoreCapabilityUrl)};
       const input = JSON.parse(await readFile(process.argv[2], 'utf8'));
-      const result = await appendCompareIgnoreRule({ repositoryRoot: input.repositoryRoot });
+      const result = await appendCumpaIgnoreRule({ repositoryRoot: input.repositoryRoot });
       await writeFile(process.argv[3], JSON.stringify(result));
     `);
     await childProcess(process.execPath, [runnerPath, inputPath, outputPath]);

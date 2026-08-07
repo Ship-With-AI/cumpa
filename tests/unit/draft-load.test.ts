@@ -31,10 +31,10 @@ function rangeComparison(pathspecs: readonly string[]) {
 const roots: string[] = [];
 
 async function fixture(bytes?: Buffer): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'compare-draft-load-'));
+  const root = await mkdtemp(join(tmpdir(), 'cumpa-draft-load-'));
   roots.push(root);
   if (bytes !== undefined) {
-    const directory = join(root, '.compare', 'drafts');
+    const directory = join(root, '.cumpa', 'drafts');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, `${comparisonKey(comparison.baseCommitOid, comparison.headCommitOid)}.json`), bytes);
   }
@@ -43,7 +43,7 @@ async function fixture(bytes?: Buffer): Promise<string> {
 
 async function rangeFixture(scope: { readonly range: { readonly reviewKey: string } }, bytes: Buffer): Promise<string> {
   const root = await fixture();
-  const directory = join(root, '.compare', 'drafts');
+  const directory = join(root, '.cumpa', 'drafts');
   await mkdir(directory, { recursive: true });
   await writeFile(join(directory, `${scope.range.reviewKey}.json`), bytes);
   return root;
@@ -73,7 +73,7 @@ describe('raw draft load classification', () => {
     const missing = await fixture();
     await expect(createDraftLoader({ repositoryRoot: missing, comparison }).load()).resolves.toMatchObject({
       kind: 'missing',
-      path: '.compare/drafts/' + comparisonKey(comparison.baseCommitOid, comparison.headCommitOid) + '.json',
+      path: '.cumpa/drafts/' + comparisonKey(comparison.baseCommitOid, comparison.headCommitOid) + '.json',
     });
 
     const bytes = Buffer.from(`{\n  "comments": [], "summary": "", "revision": 0,\n  "comparison": ${JSON.stringify(comparison)}, "schemaVersion": 1\n}\n`, 'utf8');
@@ -92,7 +92,7 @@ describe('raw draft load classification', () => {
 
     expect(draftPaths('/repository', first)).toMatchObject({
       key: first.range.reviewKey,
-      relativePath: `.compare/drafts/${first.range.reviewKey}.json`,
+      relativePath: `.cumpa/drafts/${first.range.reviewKey}.json`,
     });
     expect(draftPaths('/repository', first)).not.toEqual(draftPaths('/repository', reordered));
     expect(draftPaths('/repository', first)).toEqual(draftPaths('/repository', same));

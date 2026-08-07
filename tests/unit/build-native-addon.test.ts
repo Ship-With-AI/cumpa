@@ -11,7 +11,7 @@ const script = join(projectRoot, 'scripts', 'build-native-addon.mjs');
 const roots: string[] = [];
 
 async function fixtureRoot(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'compare-native-build-'));
+  const root = await mkdtemp(join(tmpdir(), 'cumpa-native-build-'));
   roots.push(root);
   await mkdir(join(root, 'src', 'native'), { recursive: true });
   await copyFile(join(projectRoot, 'src', 'native', 'directory-exchange.cc'), join(root, 'src', 'native', 'directory-exchange.cc'));
@@ -24,9 +24,9 @@ function runBuild(root: string, platform: string, arch: string) {
     encoding: 'utf8',
     env: {
       ...process.env,
-      COMPARE_NATIVE_BUILD_ROOT: root,
-      COMPARE_NATIVE_BUILD_PLATFORM: platform,
-      COMPARE_NATIVE_BUILD_ARCH: arch,
+      CUMPA_NATIVE_BUILD_ROOT: root,
+      CUMPA_NATIVE_BUILD_PLATFORM: platform,
+      CUMPA_NATIVE_BUILD_ARCH: arch,
     },
   });
 }

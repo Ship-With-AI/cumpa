@@ -298,7 +298,7 @@ describe('truthful native-Git source candidate discovery', () => {
       [...matches]
         .map((candidate) => candidate.refName)
         .sort((left, right) =>
-          Buffer.compare(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8')),
+          Buffer.cumpa(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8')),
         ),
     );
     expect(matches.every((candidate) => candidate.id !== candidate.commitOid)).toBe(

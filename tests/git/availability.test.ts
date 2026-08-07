@@ -49,7 +49,7 @@ interface AvailabilityFixture {
 const fixtures: AvailabilityFixture[] = [];
 
 async function createAvailabilityFixture(): Promise<AvailabilityFixture> {
-  const root = await mkdtemp(join(tmpdir(), 'compare-availability-'));
+  const root = await mkdtemp(join(tmpdir(), 'cumpa-availability-'));
   const git = (arguments_: readonly string[], input?: Uint8Array): Buffer =>
     execFileSync('git', [...safeGitArguments, ...arguments_], {
       cwd: root,
@@ -61,7 +61,7 @@ async function createAvailabilityFixture(): Promise<AvailabilityFixture> {
     });
 
   git(['init', '--initial-branch=main']);
-  git(['config', '--local', 'user.name', 'Compare Availability Fixture']);
+  git(['config', '--local', 'user.name', 'Cumpa Availability Fixture']);
   git([
     'config',
     '--local',

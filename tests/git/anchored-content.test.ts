@@ -23,10 +23,10 @@ function git(root: string, arguments_: readonly string[]): string {
 }
 
 async function createFixture(): Promise<{ readonly root: string }> {
-  const root = await mkdtemp(join(tmpdir(), 'compare-anchor-'));
+  const root = await mkdtemp(join(tmpdir(), 'cumpa-anchor-'));
   roots.push(root);
   git(root, ['init', '--initial-branch=main']);
-  git(root, ['config', 'user.name', 'Compare Anchor Fixture']);
+  git(root, ['config', 'user.name', 'Cumpa Anchor Fixture']);
   git(root, ['config', 'user.email', 'anchor@test.invalid']);
   await writeFile(join(root, 'old-name.ts'), 'shared\nbase only\nunchanged\n');
   await writeFile(join(root, 'deleted.ts'), 'delete me\n');

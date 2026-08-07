@@ -64,7 +64,7 @@ function bytes(
   };
   return canonicalizeReviewExport(ReviewExportV1Schema.parse({
     schemaVersion: 1,
-    kind: 'compare/export',
+    kind: 'cumpa/export',
     exportedAt: '2026-07-23T08:02:00.000Z',
     acceptedDraftRevision: 4,
     comparison: {
@@ -151,7 +151,7 @@ describe('exact patch Markdown', () => {
   test('identifies frozen patch provenance with preimage/postimage terminology', () => {
     const document = ReviewExportV3Schema.parse({
       schemaVersion: 3,
-      kind: 'compare/export',
+      kind: 'cumpa/export',
       exportedAt: '2026-07-23T08:02:00.000Z',
       acceptedDraftRevision: 4,
       patch: {

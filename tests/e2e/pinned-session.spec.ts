@@ -38,7 +38,7 @@ import type {
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'compare-session-pack-'));
+const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-session-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 const executablePath = join(
@@ -139,7 +139,7 @@ interface GeneratedCliSelections {
 }
 
 interface GeneratedRangeRequest {
-  readonly kind: 'compare.review-request';
+  readonly kind: 'cumpa.review-request';
   readonly schemaVersion: 1;
   readonly mode: 'revisions';
   readonly revisions: Readonly<{
@@ -156,7 +156,7 @@ function rangeRequest(
   head = repository.headRef,
 ): GeneratedRangeRequest {
   return {
-    kind: 'compare.review-request',
+    kind: 'cumpa.review-request',
     schemaVersion: 1,
     mode: 'revisions',
     revisions: { base, head, ...(pathspecs.length === 0 ? {} : { pathspecs }) },
@@ -254,14 +254,14 @@ function startGeneratedCli(
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
       ...(request === undefined
         ? {
-            COMPARE_LAUNCH_OPTIONS: JSON.stringify({
+            CUMPA_LAUNCH_OPTIONS: JSON.stringify({
               cwd: repository.nestedCwd,
               ...selections,
             }),
           }
         : {}),
-      COMPARE_OPENER_LOG: openerLogPath,
-      COMPARE_TERMINAL_CAPTURE: outputPath,
+      CUMPA_OPENER_LOG: openerLogPath,
+      CUMPA_TERMINAL_CAPTURE: outputPath,
     },
     stdio: [request === undefined ? 'ignore' : 'pipe', outputDescriptor, outputDescriptor],
   });
@@ -285,8 +285,8 @@ async function runGeneratedRequest(
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
-      COMPARE_OPENER_LOG: openerLogPath,
-      COMPARE_TERMINAL_CAPTURE: stdoutPath,
+      CUMPA_OPENER_LOG: openerLogPath,
+      CUMPA_TERMINAL_CAPTURE: stdoutPath,
     },
     stdio: ['pipe', stdoutDescriptor, stderrDescriptor],
   });
@@ -372,8 +372,8 @@ test.beforeAll(() => {
     join(packedRoot, 'fake-open.mjs'),
     `#!/usr/bin/env node
 import { appendFileSync, readFileSync } from 'node:fs';
-const terminal = readFileSync(process.env.COMPARE_TERMINAL_CAPTURE, 'utf8');
-appendFileSync(process.env.COMPARE_OPENER_LOG, JSON.stringify({ arguments: process.argv.slice(2), terminal }) + '\\n');
+const terminal = readFileSync(process.env.CUMPA_TERMINAL_CAPTURE, 'utf8');
+appendFileSync(process.env.CUMPA_OPENER_LOG, JSON.stringify({ arguments: process.argv.slice(2), terminal }) + '\\n');
 process.exitCode = 1;
 `,
     'utf8',
@@ -431,7 +431,7 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
 
     await proveLoadingTransition(page, url);
   await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-    `Compare: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
+    `Cumpa: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
   );
     await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
     await page
@@ -576,7 +576,7 @@ test('range content error does not fall back to current refs', async ({ browser 
     await expect(page.getByRole('heading', { name: 'Pinned range unavailable' })).toBeVisible();
     await expect(
       page.getByText(
-        'Compare could not load the pinned commits or scoped file inventory. Relaunch the same request; this review will not substitute current refs.',
+        'Cumpa could not load the pinned commits or scoped file inventory. Relaunch the same request; this review will not substitute current refs.',
       ),
     ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Try loading pinned diff again' })).toBeVisible();
@@ -868,7 +868,7 @@ test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) 
 
         await page.goto(launchUrl, { waitUntil: 'domcontentloaded' });
         await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-          `Compare: ${matrixCase.selections.base.label} · ${expectedBase.slice(0, 7)} → ${matrixCase.selections.head.label} · ${expectedHead.slice(0, 7)}`,
+          `Cumpa: ${matrixCase.selections.base.label} · ${expectedBase.slice(0, 7)} → ${matrixCase.selections.head.label} · ${expectedHead.slice(0, 7)}`,
         );
         await expect(
           page.getByRole('heading', { name: 'Changed files (3)' }),
@@ -970,7 +970,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     await proveLoadingTransition(page, url);
     await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-      `Compare: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
+      `Cumpa: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
     );
     await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
 
@@ -1061,7 +1061,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       'Pinned session unavailable',
     );
     await expect(securityPage.getByRole('alert')).toHaveText(
-      'This request is not available in the current session. Relaunch Compare from the terminal.',
+      'This request is not available in the current session. Relaunch Cumpa from the terminal.',
     );
     await expect(securityPage.locator('body')).not.toContainText(repository.root);
     await expect(securityPage.locator('.unavailable-shell')).toHaveCSS('background-color', 'rgb(13, 17, 23)');
@@ -1088,7 +1088,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       'Review unavailable',
     );
     await expect(errorPage.getByRole('alert')).toHaveText(
-      'This pinned session is unavailable. Return to the terminal and launch Compare again. Diagnostic details are shown in the terminal.',
+      'This pinned session is unavailable. Return to the terminal and launch Cumpa again. Diagnostic details are shown in the terminal.',
     );
     await expect(errorPage.locator('body')).not.toContainText(repository.root);
     await expect(errorPage.getByRole('button', { name: /retry/i })).toHaveCount(0);
@@ -1103,7 +1103,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       'Review unavailable',
     );
     await expect(stoppedPage.getByRole('alert')).toHaveText(
-      'This pinned session has stopped. Relaunch Compare from the terminal to continue.',
+      'This pinned session has stopped. Relaunch Cumpa from the terminal to continue.',
     );
     await expect(stoppedPage.getByRole('button', { name: /retry/i })).toHaveCount(0);
     await expect(stoppedPage.getByRole('navigation', { name: 'Changed files' })).toHaveCount(0);
@@ -1181,7 +1181,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     const emptyUrl = await waitForLoopbackUrl(emptyRunning);
     await emptyPage.goto(emptyUrl, { waitUntil: 'domcontentloaded' });
     await expect(emptyPage.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-      /Compare: Base fixture · [0-9a-f]{7} → Head fixture · [0-9a-f]{7}/,
+      /Cumpa: Base fixture · [0-9a-f]{7} → Head fixture · [0-9a-f]{7}/,
     );
     await expect(
       emptyPage.getByRole('heading', { level: 2, name: 'No PR-style changes in this pinned comparison' }),
@@ -1474,7 +1474,7 @@ test('fragment token protects loopback API', async ({ browser, page, request }, 
     const apiResponse = await apiResponsePromise;
 
     await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toContainText(
-      'Compare: Base fixture',
+      'Cumpa: Base fixture',
     );
     expect(new URL(page.url()).hash).toBe('');
     expect(apiRequest.url()).not.toContain(token);
@@ -1538,7 +1538,7 @@ test('fragment token protects loopback API', async ({ browser, page, request }, 
     ]) {
       const body = await response.text();
       expect(body).toContain(
-        'This request is not available in the current session. Relaunch Compare from the terminal.',
+        'This request is not available in the current session. Relaunch Cumpa from the terminal.',
       );
       expect(body).not.toContain(token);
       expect(body).not.toContain(repository.root);

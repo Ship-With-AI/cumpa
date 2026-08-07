@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  compareExactPaths,
+  orderExactPaths,
   createExactPath,
 } from '../../src/domain/path-bytes.js';
 import {
@@ -64,8 +64,8 @@ describe('lossless path byte boundary', () => {
     expect(second.utf8).toBeUndefined();
     expect(first.display).toBe(second.display);
     expect(first.bytesBase64url).not.toBe(second.bytesBase64url);
-    expect(compareExactPaths(first, second)).not.toBe(0);
-    expect(compareExactPaths(first, createExactPath(Buffer.from([0x62, 0x61, 0x64, 0x2d, 0x80])))).toBe(0);
+    expect(orderExactPaths(first, second)).not.toBe(0);
+    expect(orderExactPaths(first, createExactPath(Buffer.from([0x62, 0x61, 0x64, 0x2d, 0x80])))).toBe(0);
   });
 
   it('does not normalize composed and decomposed Unicode identities', () => {
@@ -75,7 +75,7 @@ describe('lossless path byte boundary', () => {
     expect(composed.utf8).toBe('caf\u00e9.txt');
     expect(decomposed.utf8).toBe('cafe\u0301.txt');
     expect(composed.bytesBase64url).not.toBe(decomposed.bytesBase64url);
-    expect(compareExactPaths(composed, decomposed)).not.toBe(0);
+    expect(orderExactPaths(composed, decomposed)).not.toBe(0);
   });
 });
 

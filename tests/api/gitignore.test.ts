@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { appendCompareIgnoreRule } from '../../src/server/gitignore-capability.js';
+import { appendCumpaIgnoreRule } from '../../src/server/gitignore-capability.js';
 import { createSessionApp } from '../../src/server/app.js';
 
 const token = 'a'.repeat(43);
@@ -16,7 +16,7 @@ const apps = new Set<FastifyInstance>();
 const roots: string[] = [];
 
 async function createRepository(): Promise<string> {
-  const repositoryRoot = await mkdtemp(join(tmpdir(), 'compare-gitignore-api-'));
+  const repositoryRoot = await mkdtemp(join(tmpdir(), 'cumpa-gitignore-api-'));
   roots.push(repositoryRoot);
   execFileSync('git', ['init', '--initial-branch=main'], { cwd: repositoryRoot, stdio: 'ignore' });
   return repositoryRoot;
@@ -76,7 +76,7 @@ describe('fixed append-only gitignore capability', () => {
     const appended = await app.inject({ method: 'POST', url: '/api/export/gitignore', headers });
     expect(appended.statusCode).toBe(200);
     expect(appended.json()).toEqual({ kind: 'appended' });
-    expect(await readFile(join(repositoryRoot, '.gitignore'))).toEqual(Buffer.from('/.compare/\n'));
+    expect(await readFile(join(repositoryRoot, '.gitignore'))).toEqual(Buffer.from('/.cumpa/\n'));
 
     const after = await app.inject({ method: 'GET', url: '/api/export/gitignore', headers });
     expect(after.json()).toEqual({ kind: 'ignored' });
@@ -98,12 +98,12 @@ describe('fixed append-only gitignore capability', () => {
         await writeFile(ignorePath, original);
       }
 
-      const result = await appendCompareIgnoreRule({ repositoryRoot });
+      const result = await appendCumpaIgnoreRule({ repositoryRoot });
       const expected = Buffer.concat([
         original ?? Buffer.alloc(0),
         original === undefined || original.byteLength === 0 || original.at(-1) === 0x0a
-          ? Buffer.from('/.compare/\n')
-          : Buffer.from('\n/.compare/\n'),
+          ? Buffer.from('/.cumpa/\n')
+          : Buffer.from('\n/.cumpa/\n'),
       ]);
 
       expect(result).toEqual({ kind: 'appended' });
@@ -114,8 +114,8 @@ describe('fixed append-only gitignore capability', () => {
 
   it('does not modify already-effective, symlink, or externally changed targets', async () => {
     const alreadyIgnored = await createRepository();
-    await writeFile(join(alreadyIgnored, '.git', 'info', 'exclude'), '/.compare/\n');
-    await expect(appendCompareIgnoreRule({ repositoryRoot: alreadyIgnored })).resolves.toEqual({ kind: 'alreadyIgnored' });
+    await writeFile(join(alreadyIgnored, '.git', 'info', 'exclude'), '/.cumpa/\n');
+    await expect(appendCumpaIgnoreRule({ repositoryRoot: alreadyIgnored })).resolves.toEqual({ kind: 'alreadyIgnored' });
     await expect(lstat(join(alreadyIgnored, '.gitignore'))).rejects.toMatchObject({ code: 'ENOENT' });
 
     const symlinkRoot = await createRepository();
@@ -123,20 +123,20 @@ describe('fixed append-only gitignore capability', () => {
     const targetBytes = Buffer.from('target bytes\n');
     await writeFile(target, targetBytes);
     await symlink(target, join(symlinkRoot, '.gitignore'));
-    await expect(appendCompareIgnoreRule({ repositoryRoot: symlinkRoot })).resolves.toEqual({ kind: 'unconfirmed' });
+    await expect(appendCumpaIgnoreRule({ repositoryRoot: symlinkRoot })).resolves.toEqual({ kind: 'unconfirmed' });
     expect(await readFile(target)).toEqual(targetBytes);
 
     const directoryRoot = await createRepository();
     const directoryPath = join(directoryRoot, '.gitignore');
     await mkdir(directoryPath);
-    await expect(appendCompareIgnoreRule({ repositoryRoot: directoryRoot })).resolves.toEqual({ kind: 'unconfirmed' });
+    await expect(appendCumpaIgnoreRule({ repositoryRoot: directoryRoot })).resolves.toEqual({ kind: 'unconfirmed' });
     expect((await lstat(directoryPath)).isDirectory()).toBe(true);
 
     const concurrentRoot = await createRepository();
     const concurrentPath = join(concurrentRoot, '.gitignore');
     await writeFile(concurrentPath, Buffer.from('# initial\n'));
     await expect(
-      appendCompareIgnoreRule(
+      appendCumpaIgnoreRule(
         { repositoryRoot: concurrentRoot },
         { beforeAppend: async () => writeFile(concurrentPath, Buffer.from('# external\n')) },
       ),
@@ -145,7 +145,7 @@ describe('fixed append-only gitignore capability', () => {
   });
   it('classifies partial-write, sync, and close failures by the reread target bytes', async () => {
     const original = Buffer.from('# keep\n');
-    const rule = Buffer.from('/.compare/\n');
+    const rule = Buffer.from('/.cumpa/\n');
     const cases = [
       {
         inject: {
@@ -179,7 +179,7 @@ describe('fixed append-only gitignore capability', () => {
       const ignorePath = join(repositoryRoot, '.gitignore');
       await writeFile(ignorePath, original);
       await expect(
-        appendCompareIgnoreRule({ repositoryRoot }, testCase.inject),
+        appendCumpaIgnoreRule({ repositoryRoot }, testCase.inject),
       ).resolves.toEqual(testCase.expected);
       expect(await readFile(ignorePath)).toEqual(testCase.bytes);
     }

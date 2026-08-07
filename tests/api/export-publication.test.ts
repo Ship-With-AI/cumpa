@@ -20,13 +20,13 @@ const headOid = '2'.repeat(40);
 const rangeReviewKey = 'a'.repeat(64);
 
 async function root(): Promise<string> {
-  const directory = await mkdtemp(join(tmpdir(), 'compare-export-publication-'));
+  const directory = await mkdtemp(join(tmpdir(), 'cumpa-export-publication-'));
   roots.push(directory);
   return directory;
 }
 
 async function readStable(repositoryRoot: string): Promise<readonly [string, string]> {
-  const stable = join(repositoryRoot, '.compare', 'exports', `${baseOid}..${headOid}`);
+  const stable = join(repositoryRoot, '.cumpa', 'exports', `${baseOid}..${headOid}`);
   return Promise.all([
     readFile(join(stable, 'review.json'), 'utf8'),
     readFile(join(stable, 'review.md'), 'utf8'),
@@ -38,7 +38,7 @@ function candidatePair(kind: string): Readonly<{ readonly json: Buffer; readonly
     canonicalizeReviewExport(
       ReviewExportV1Schema.parse({
         schemaVersion: 1,
-        kind: 'compare/export',
+        kind: 'cumpa/export',
         exportedAt: '2026-07-23T08:02:00.000Z',
         acceptedDraftRevision: 0,
         comparison: {
@@ -83,8 +83,8 @@ describe('literal export publication state machine', () => {
     expect(await readStable(repositoryRoot)).toEqual([pair.json.toString('utf8'), pair.markdown.toString('utf8')]);
     if (result.kind === 'exported') {
       expect(result.receipt.files.map((file) => file.path)).toEqual([
-        `.compare/exports/${baseOid}..${headOid}/review.json`,
-        `.compare/exports/${baseOid}..${headOid}/review.md`,
+        `.cumpa/exports/${baseOid}..${headOid}/review.json`,
+        `.cumpa/exports/${baseOid}..${headOid}/review.md`,
       ]);
       expect(result.receipt.files.every((file) => /^[0-9a-f]{64}$/u.test(file.sha256))).toBe(true);
     }
@@ -106,7 +106,7 @@ describe('literal export publication state machine', () => {
 
   test('refuses unsupported re-export before exchange or stable mutation while retaining the exact old pair', async () => {
     const repositoryRoot = await root();
-    const stable = join(repositoryRoot, '.compare', 'exports', `${baseOid}..${headOid}`);
+    const stable = join(repositoryRoot, '.cumpa', 'exports', `${baseOid}..${headOid}`);
     const oldPair = candidatePair('old');
     const newPair = candidatePair('new');
     await mkdir(stable, { recursive: true });
@@ -125,7 +125,7 @@ describe('literal export publication state machine', () => {
     expect(await readStable(repositoryRoot)).toEqual([oldPair.json.toString('utf8'), oldPair.markdown.toString('utf8')]);
   });
 
-  test.each(['.compare', 'exports'] as const)(
+  test.each(['.cumpa', 'exports'] as const)(
     'detects %s parent replacement after candidate validation before it can rename an external candidate',
     async (managedParent) => {
       const repositoryRoot = await root();
@@ -133,7 +133,7 @@ describe('literal export publication state machine', () => {
       const pair = candidatePair(`race ${managedParent}`);
       const stableName = `${baseOid}..${headOid}`;
       const candidateName = `.${stableName}.candidate-race`;
-      const outsideExportsRoot = managedParent === '.compare' ? join(outside, 'exports') : outside;
+      const outsideExportsRoot = managedParent === '.cumpa' ? join(outside, 'exports') : outside;
       const outsideCandidate = join(outsideExportsRoot, candidateName);
       const outsideStable = join(outsideExportsRoot, stableName);
       await mkdir(outsideCandidate, { recursive: true });
@@ -147,12 +147,12 @@ describe('literal export publication state machine', () => {
         markdown: pair.markdown,
         reExportCapability: { kind: 'reExportUnsupported' },
         revalidate: async () => {
-          if (managedParent === '.compare') {
-            await rm(join(repositoryRoot, '.compare'), { recursive: true });
-            await symlink(outside, join(repositoryRoot, '.compare'), 'dir');
+          if (managedParent === '.cumpa') {
+            await rm(join(repositoryRoot, '.cumpa'), { recursive: true });
+            await symlink(outside, join(repositoryRoot, '.cumpa'), 'dir');
           } else {
-            await rm(join(repositoryRoot, '.compare', 'exports'), { recursive: true });
-            await symlink(outside, join(repositoryRoot, '.compare', 'exports'), 'dir');
+            await rm(join(repositoryRoot, '.cumpa', 'exports'), { recursive: true });
+            await symlink(outside, join(repositoryRoot, '.cumpa', 'exports'), 'dir');
           }
           return true;
         },
@@ -167,23 +167,23 @@ describe('literal export publication state machine', () => {
     },
   );
 
-  test.each(['.compare', 'exports'] as const)(
+  test.each(['.cumpa', 'exports'] as const)(
     'rejects %s symlink parent for publication and recovery without touching its target',
     async (managedParent) => {
       const repositoryRoot = await root();
       const outside = await root();
       const oldPair = candidatePair(`outside ${managedParent}`);
       const stableName = `${baseOid}..${headOid}`;
-      const outsideExportsRoot = managedParent === '.compare' ? join(outside, 'exports') : outside;
+      const outsideExportsRoot = managedParent === '.cumpa' ? join(outside, 'exports') : outside;
       const outsideStable = join(outsideExportsRoot, stableName);
       await mkdir(outsideStable, { recursive: true });
       await writeFile(join(outsideStable, 'review.json'), oldPair.json);
       await writeFile(join(outsideStable, 'review.md'), oldPair.markdown);
-      if (managedParent === '.compare') {
-        await symlink(outside, join(repositoryRoot, '.compare'), 'dir');
+      if (managedParent === '.cumpa') {
+        await symlink(outside, join(repositoryRoot, '.cumpa'), 'dir');
       } else {
-        await mkdir(join(repositoryRoot, '.compare'));
-        await symlink(outside, join(repositoryRoot, '.compare', 'exports'), 'dir');
+        await mkdir(join(repositoryRoot, '.cumpa'));
+        await symlink(outside, join(repositoryRoot, '.cumpa', 'exports'), 'dir');
       }
 
       await expect(publishReviewExport({
@@ -241,8 +241,8 @@ describe('literal export publication state machine', () => {
       kind: 'exported',
       receipt: {
         files: [
-          { path: `.compare/exports/${rangeReviewKey}/review.json` },
-          { path: `.compare/exports/${rangeReviewKey}/review.md` },
+          { path: `.cumpa/exports/${rangeReviewKey}/review.json` },
+          { path: `.cumpa/exports/${rangeReviewKey}/review.md` },
         ],
       },
     });
@@ -259,8 +259,8 @@ describe('literal export publication state machine', () => {
       kind: 'exported',
       receipt: {
         files: [
-          { path: `.compare/exports/${attachedScope}/review.json` },
-          { path: `.compare/exports/${attachedScope}/review.md` },
+          { path: `.cumpa/exports/${attachedScope}/review.json` },
+          { path: `.cumpa/exports/${attachedScope}/review.md` },
         ],
       },
     });

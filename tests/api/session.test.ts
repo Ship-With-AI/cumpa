@@ -10,7 +10,7 @@ const expectedOrigin = `http://${expectedHost}`;
 const fileId = `file_${'a'.repeat(43)}`;
 const unknownFileId = `file_${'z'.repeat(43)}`;
 const securityMessage =
-  'This request is not available in the current session. Relaunch Compare from the terminal.';
+  'This request is not available in the current session. Relaunch Cumpa from the terminal.';
 
 function path(value: string) {
   return {

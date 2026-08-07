@@ -15,7 +15,7 @@ const comparison = {
 };
 
 async function root(): Promise<string> {
-  const value = await mkdtemp(join(tmpdir(), 'compare-attached-completion-'));
+  const value = await mkdtemp(join(tmpdir(), 'cumpa-attached-completion-'));
   roots.push(value);
   return value;
 }

@@ -84,7 +84,7 @@ function assertSha256(value: string): void {
 }
 
 function runPackagedScenario(): ScenarioEvidenceReport {
-  const reportDirectory = mkdtempSync(join(tmpdir(), 'compare-agent-ready-evidence-'));
+  const reportDirectory = mkdtempSync(join(tmpdir(), 'cumpa-agent-ready-evidence-'));
   const reportPath = join(reportDirectory, 'scenario.json');
   const runId = randomUUID();
   try {
@@ -92,8 +92,8 @@ function runPackagedScenario(): ScenarioEvidenceReport {
       cwd: projectRoot,
       env: {
         ...process.env,
-        COMPARE_AGENT_READY_EVIDENCE_REPORT: reportPath,
-        COMPARE_AGENT_READY_EVIDENCE_RUN_ID: runId,
+        CUMPA_AGENT_READY_EVIDENCE_REPORT: reportPath,
+        CUMPA_AGENT_READY_EVIDENCE_RUN_ID: runId,
       },
       stdio: 'inherit',
     });
@@ -117,8 +117,8 @@ function runPackagedScenario(): ScenarioEvidenceReport {
     });
     expect(report.execution.selectorKind).toBe('branch-to-worktree');
     const expectedReceiptPaths = [
-      `.compare/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.json`,
-      `.compare/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.md`,
+      `.cumpa/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.json`,
+      `.cumpa/exports/${report.execution.originalOrderedFullOidPair.baseOid}..${report.execution.originalOrderedFullOidPair.headOid}/review.md`,
     ];
     expect(report.execution.export.firstReceiptPaths).toEqual(expectedReceiptPaths);
     assertSha256(report.execution.export.firstStablePairSha256.json);

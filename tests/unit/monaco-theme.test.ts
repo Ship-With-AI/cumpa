@@ -13,9 +13,9 @@ vi.mock('monaco-editor', () => ({
 }));
 
 import {
-  applyCompareTheme,
-  COMPARE_THEME,
-  COMPARE_THEME_ID,
+  applyCumpaTheme,
+  CUMPA_THEME,
+  CUMPA_THEME_ID,
 } from '../../src/web/monaco/theme.js';
 
 type RootMapping = Readonly<{ token: string; alpha?: number }>;
@@ -129,10 +129,10 @@ function themeHex(tokens: ReadonlyMap<string, string>, mapping: RootMapping): st
   return `#${[rgb[1], rgb[2], rgb[3]].map((part) => Number(part).toString(16).padStart(2, '0').toUpperCase()).join('')}${Math.round(alpha * 255).toString(16).padStart(2, '0').toUpperCase()}`;
 }
 
-describe('compare Monaco theme', () => {
+describe('cumpa Monaco theme', () => {
   it('maps every semantic Monaco color and token foreground to the canonical root bytes', () => {
     const tokens = rootTokens();
-    const colors = COMPARE_THEME.colors;
+    const colors = CUMPA_THEME.colors;
     const mappedKeys = Object.keys(THEME_COLOR_ROOT_MAP).sort();
     expect(Object.keys(colors).filter((key) => !(key in UNPAINTED_THEME_COLORS)).sort()).toEqual(mappedKeys);
 
@@ -147,7 +147,7 @@ describe('compare Monaco theme', () => {
       Number.parseInt(colors['diffEditor.removedLineBackground'].slice(-2), 16),
     );
 
-    const rules = new Map(COMPARE_THEME.rules.map((rule) => [rule.token, rule]));
+    const rules = new Map(CUMPA_THEME.rules.map((rule) => [rule.token, rule]));
     expect([...rules.keys()].sort()).toEqual(Object.keys(TOKEN_ROOT_MAP).sort());
     for (const [scope, mapping] of Object.entries(TOKEN_ROOT_MAP)) {
       const rule = rules.get(scope);
@@ -157,13 +157,13 @@ describe('compare Monaco theme', () => {
   });
 
   it('redefines then selects the stable theme on every invocation', () => {
-    applyCompareTheme();
-    applyCompareTheme();
+    applyCumpaTheme();
+    applyCumpaTheme();
 
-    expect(defineTheme).toHaveBeenNthCalledWith(1, COMPARE_THEME_ID, COMPARE_THEME);
-    expect(setTheme).toHaveBeenNthCalledWith(1, COMPARE_THEME_ID);
-    expect(defineTheme).toHaveBeenNthCalledWith(2, COMPARE_THEME_ID, COMPARE_THEME);
-    expect(setTheme).toHaveBeenNthCalledWith(2, COMPARE_THEME_ID);
+    expect(defineTheme).toHaveBeenNthCalledWith(1, CUMPA_THEME_ID, CUMPA_THEME);
+    expect(setTheme).toHaveBeenNthCalledWith(1, CUMPA_THEME_ID);
+    expect(defineTheme).toHaveBeenNthCalledWith(2, CUMPA_THEME_ID, CUMPA_THEME);
+    expect(setTheme).toHaveBeenNthCalledWith(2, CUMPA_THEME_ID);
     expect(defineTheme.mock.invocationCallOrder[0]).toBeLessThan(setTheme.mock.invocationCallOrder[0]);
     expect(defineTheme.mock.invocationCallOrder[1]).toBeLessThan(setTheme.mock.invocationCallOrder[1]);
   });

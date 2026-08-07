@@ -29,7 +29,7 @@ import { createGitFixture, type GitFixture } from '../helpers/git-fixture.js';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'compare-complete-draft-pack-'));
+const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-complete-draft-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const executablePath = join(extractedPackageRoot, 'dist/bin/cumpa.mjs');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
@@ -113,17 +113,17 @@ function startGeneratedCli(
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
-      COMPARE_LAUNCH_OPTIONS: JSON.stringify({ cwd: repository.nestedCwd, ...selections }),
+      CUMPA_LAUNCH_OPTIONS: JSON.stringify({ cwd: repository.nestedCwd, ...selections }),
       ...(options.recoveryFailure === undefined
         ? {}
         : {
             NODE_ENV: 'test',
-            COMPARE_TEST_RECOVERY_FAILURE: options.recoveryFailure,
+            CUMPA_TEST_RECOVERY_FAILURE: options.recoveryFailure,
           }),
       ...(options.revealMarkerPath === undefined
         ? {}
-        : { COMPARE_TEST_REVEAL_MARKER: options.revealMarkerPath }),
-      ...(options.revealSucceeds === true ? { COMPARE_TEST_REVEAL_SUCCESS: '1' } : {}),
+        : { CUMPA_TEST_REVEAL_MARKER: options.revealMarkerPath }),
+      ...(options.revealSucceeds === true ? { CUMPA_TEST_REVEAL_SUCCESS: '1' } : {}),
     },
     stdio: ['ignore', outputDescriptor, outputDescriptor],
   });
@@ -299,8 +299,8 @@ test.beforeAll(() => {
       '#!/usr/bin/env node',
       "const { appendFileSync } = require('node:fs');",
       "const openedDraft = process.argv.slice(2).some((argument) => !argument.startsWith('-') && !argument.startsWith('http://'));",
-      "if (process.env.COMPARE_TEST_REVEAL_MARKER !== undefined && openedDraft) appendFileSync(process.env.COMPARE_TEST_REVEAL_MARKER, 'revealed\\n');",
-      "process.exitCode = process.env.COMPARE_TEST_REVEAL_SUCCESS === '1' ? 0 : 1;",
+      "if (process.env.CUMPA_TEST_REVEAL_MARKER !== undefined && openedDraft) appendFileSync(process.env.CUMPA_TEST_REVEAL_MARKER, 'revealed\\n');",
+      "process.exitCode = process.env.CUMPA_TEST_REVEAL_SUCCESS === '1' ? 0 : 1;",
       '',
     ].join('\n'),
   );
@@ -478,7 +478,7 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     await page.getByRole('button', { name: 'Save summary' }).click();
     expect((await accepted).status()).toBe(200);
 
-    const draftsDirectory = join(fixture.root, '.compare', 'drafts');
+    const draftsDirectory = join(fixture.root, '.cumpa', 'drafts');
     const draftFilename = readdirSync(draftsDirectory).find((candidate) => candidate.endsWith('.json'));
     expect(draftFilename).toBeDefined();
     const draftPath = join(draftsDirectory, draftFilename!);
@@ -647,7 +647,7 @@ async function createPersistedDraft(page: Page, fixture: GitFixture): Promise<st
     await stopGeneratedCli(running);
   }
 
-  const directory = join(fixture.root, '.compare', 'drafts');
+  const directory = join(fixture.root, '.cumpa', 'drafts');
   const filename = readdirSync(directory).find((candidate) => candidate.endsWith('.json') && !candidate.includes('.bak'));
   expect(filename).toBeDefined();
   return join(directory, filename!);
@@ -674,10 +674,10 @@ test('corrupt draft recovery backs up exact bytes before starting a fresh packag
     await page.getByRole('button', { name: 'Back up and start new' }).last().click();
     await expect(page.getByRole('heading', { name: 'New draft started' })).toBeVisible();
 
-    const backup = readdirSync(join(fixture.root, '.compare', 'drafts'))
+    const backup = readdirSync(join(fixture.root, '.cumpa', 'drafts'))
       .find((candidate) => candidate.endsWith('.bak'));
     expect(backup).toBeDefined();
-    const backupSnapshot = snapshotFile(join(fixture.root, '.compare', 'drafts', backup!));
+    const backupSnapshot = snapshotFile(join(fixture.root, '.cumpa', 'drafts', backup!));
     expect(backupSnapshot.bytes).toEqual(original.bytes);
     expect(backupSnapshot.sha256).toBe(original.sha256);
     expect(backupSnapshot.size).toBe(original.size);
@@ -719,13 +719,13 @@ test('corrupt recovery failures retain raw draft bytes and read-only packaged st
       expectSameFileSnapshot(original, draftPath);
       expect(snapshotSource(fixture)).toEqual(source);
 
-      const backups = readdirSync(join(fixture.root, '.compare', 'drafts'))
+      const backups = readdirSync(join(fixture.root, '.cumpa', 'drafts'))
         .filter((candidate) => candidate.endsWith('.bak'));
       if (failure === 'backup') {
         expect(backups).toEqual([]);
       } else {
         expect(backups).toHaveLength(1);
-        const backup = snapshotFile(join(fixture.root, '.compare', 'drafts', backups[0]!));
+        const backup = snapshotFile(join(fixture.root, '.cumpa', 'drafts', backups[0]!));
         expect(backup.bytes).toEqual(original.bytes);
         expect(backup.sha256).toBe(original.sha256);
         expect(backup.size).toBe(original.size);
@@ -781,7 +781,7 @@ test('newer draft stays immutable while fixed reveal and safe copy reject browse
 
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    await expect(page.getByRole('heading', { name: 'This draft needs a newer Compare' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'This draft needs a newer Cumpa' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Back up and start new' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /reset|downgrade|migrat/i })).toHaveCount(0);
     await expect(page.locator('body')).not.toContainText(fixture.root);
@@ -824,7 +824,7 @@ test('newer draft stays immutable while fixed reveal and safe copy reject browse
     expect(readFileSync(revealMarker, 'utf8')).toBe('revealed\n');
     await page.getByRole('button', { name: 'Copy draft path' }).click();
     const copiedPath = await page.evaluate(async () => await navigator.clipboard.readText());
-    expect(copiedPath).toMatch(/^\.compare\/drafts\/[a-z0-9_-]+\.json$/u);
+    expect(copiedPath).toMatch(/^\.cumpa\/drafts\/[a-z0-9_-]+\.json$/u);
     for (const value of [await page.locator('body').innerText(), copiedPath, revealBody]) {
       expect(value).not.toContain(fixture.root);
       expect(value).not.toContain(rawDraftSentinel);

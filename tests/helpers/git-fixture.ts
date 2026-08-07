@@ -57,7 +57,7 @@ export interface DirtyGitFixture extends GitFixture {
 export async function createGitFixture(
   options: GitFixtureOptions = {},
 ): Promise<GitFixture> {
-  const temporaryRoot = await mkdtemp(join(tmpdir(), 'compare-git-'));
+  const temporaryRoot = await mkdtemp(join(tmpdir(), 'cumpa-git-'));
   const repositoryRoot = join(temporaryRoot, 'repository');
 
   const invokeGit = (arguments_: readonly string[]): Buffer =>
@@ -79,7 +79,7 @@ export async function createGitFixture(
       stdio: ['pipe', 'pipe', 'pipe'],
     },
   );
-  invokeGit(['config', '--local', 'user.name', 'Compare Fixture']);
+  invokeGit(['config', '--local', 'user.name', 'Cumpa Fixture']);
   invokeGit(['config', '--local', 'user.email', 'fixture@test.invalid']);
   invokeGit(['config', '--local', 'commit.gpgSign', 'false']);
 
@@ -233,7 +233,7 @@ export async function createValidationGitFixture(
   kind: ValidationFixtureKind,
 ): Promise<ValidationGitFixture> {
   const temporaryRoot = await mkdtemp(
-    join(tmpdir(), 'compare-validation-git-'),
+    join(tmpdir(), 'cumpa-validation-git-'),
   );
   const repositoryRoot = join(temporaryRoot, 'repository');
   const invokeGit = (arguments_: readonly string[]): Buffer =>
@@ -272,7 +272,7 @@ export async function createValidationGitFixture(
   let headOid: string | undefined;
 
   if (kind !== 'bare' && kind !== 'non-repository') {
-    invokeGit(['config', '--local', 'user.name', 'Compare Fixture']);
+    invokeGit(['config', '--local', 'user.name', 'Cumpa Fixture']);
     invokeGit(['config', '--local', 'user.email', 'fixture@test.invalid']);
     invokeGit(['config', '--local', 'commit.gpgSign', 'false']);
   }

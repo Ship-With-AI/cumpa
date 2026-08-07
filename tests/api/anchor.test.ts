@@ -11,7 +11,7 @@ const fileId = `file_${'a'.repeat(43)}`;
 const unsupportedFileId = `file_${'b'.repeat(43)}`;
 const unknownFileId = `file_${'z'.repeat(43)}`;
 const securityMessage =
-  'This request is not available in the current session. Relaunch Compare from the terminal.';
+  'This request is not available in the current session. Relaunch Cumpa from the terminal.';
 const apps = new Set<FastifyInstance>();
 
 function path(value: string) {

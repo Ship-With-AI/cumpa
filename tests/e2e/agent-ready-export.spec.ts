@@ -33,12 +33,12 @@ import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'compare-agent-ready-pack-'));
+const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-agent-ready-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const executablePath = join(extractedPackageRoot, 'dist/bin/cumpa.mjs');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
-const scenarioEvidencePath = process.env.COMPARE_AGENT_READY_EVIDENCE_REPORT;
-const scenarioEvidenceRunId = process.env.COMPARE_AGENT_READY_EVIDENCE_RUN_ID;
+const scenarioEvidencePath = process.env.CUMPA_AGENT_READY_EVIDENCE_REPORT;
+const scenarioEvidenceRunId = process.env.CUMPA_AGENT_READY_EVIDENCE_RUN_ID;
 
 test.setTimeout(120_000);
 
@@ -111,8 +111,8 @@ function startGeneratedCli(
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${environment.PATH ?? ''}`,
-      COMPARE_BROWSER_OPEN_MARKER: markerPath,
-      COMPARE_LAUNCH_OPTIONS: JSON.stringify({
+      CUMPA_BROWSER_OPEN_MARKER: markerPath,
+      CUMPA_LAUNCH_OPTIONS: JSON.stringify({
         cwd: fixture.nestedCwd,
         base: { label: selections.base.slice('refs/heads/'.length), revision: selections.base },
         head: { label: selections.head.slice('refs/heads/'.length), revision: selections.head },
@@ -127,7 +127,7 @@ function startAttachedCli(
   fixture: DirtyGitFixture,
   selections: Readonly<{ readonly base: string; readonly head: string }>,
   request: unknown = {
-    kind: 'compare.review-request',
+    kind: 'cumpa.review-request',
     schemaVersion: 1,
     mode: 'revisions',
     revisions: { base: selections.base, head: selections.head },
@@ -140,13 +140,13 @@ function startAttachedCli(
   const stdoutDescriptor = openSync(stdoutPath, 'w');
   const environment = { ...process.env };
   delete environment.CMUX_WORKSPACE_ID;
-  delete environment.COMPARE_LAUNCH_OPTIONS;
+  delete environment.CUMPA_LAUNCH_OPTIONS;
   const child = spawn(process.execPath, [executablePath], {
     cwd: fixture.nestedCwd,
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${environment.PATH ?? ''}`,
-      COMPARE_BROWSER_OPEN_MARKER: markerPath,
+      CUMPA_BROWSER_OPEN_MARKER: markerPath,
     },
     stdio: ['pipe', stdoutDescriptor, stderrDescriptor],
   });
@@ -259,9 +259,9 @@ async function saveSummary(page: Page, summary: string): Promise<void> {
 }
 
 function readOnlyDraft(fixture: DirtyGitFixture): Readonly<{ readonly bytes: Buffer; readonly draft: PersistedDraft }> {
-  const drafts = readdirSync(join(fixture.root, '.compare', 'drafts')).filter((entry) => entry.endsWith('.json'));
+  const drafts = readdirSync(join(fixture.root, '.cumpa', 'drafts')).filter((entry) => entry.endsWith('.json'));
   expect(drafts).toHaveLength(1);
-  const bytes = readFileSync(join(fixture.root, '.compare', 'drafts', drafts[0]!));
+  const bytes = readFileSync(join(fixture.root, '.cumpa', 'drafts', drafts[0]!));
   const raw = JSON.parse(bytes.toString('utf8')) as { revision: number; summary: string; comments: PersistedDraft['comments'] };
   return Object.freeze({ bytes, draft: Object.freeze(raw) });
 }
@@ -283,7 +283,7 @@ test.beforeAll(() => {
   writeFileSync(opener, [
     '#!/usr/bin/env node',
     "const { appendFileSync } = require('node:fs');",
-    "if (process.env.COMPARE_BROWSER_OPEN_MARKER) appendFileSync(process.env.COMPARE_BROWSER_OPEN_MARKER, `${JSON.stringify(process.argv.slice(2))}\\n`);",
+    "if (process.env.CUMPA_BROWSER_OPEN_MARKER) appendFileSync(process.env.CUMPA_BROWSER_OPEN_MARKER, `${JSON.stringify(process.argv.slice(2))}\\n`);",
     'process.exitCode = 0;',
     '',
   ].join('\n'));
@@ -350,7 +350,7 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
 
     const stablePairDirectory = join(
       fixture.root,
-      '.compare',
+      '.cumpa',
       'exports',
       `${fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim()}..${fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim()}`,
     );
@@ -425,7 +425,7 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
   const baseOid = fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim();
   const headOid = fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim();
   const alternateHeadOid = fixture.git(['rev-parse', fixture.alternateHeadRef!]).toString('ascii').trim();
-  const pairDirectory = join(fixture.root, '.compare', 'exports', `${baseOid}..${headOid}`);
+  const pairDirectory = join(fixture.root, '.cumpa', 'exports', `${baseOid}..${headOid}`);
   const [json, markdown, names] = await Promise.all([
     import('node:fs/promises').then(({ readFile }) => readFile(join(pairDirectory, 'review.json'))),
     import('node:fs/promises').then(({ readFile }) => readFile(join(pairDirectory, 'review.md'))),
@@ -589,7 +589,7 @@ test('attached range review stays silent until Finish then emits one canonical V
       },
     });
     expect(readFileSync(running.stderrPath, 'utf8')).toContain(url);
-    expect(existsSync(join(fixture.root, '.compare', 'drafts'))).toBe(false);
+    expect(existsSync(join(fixture.root, '.cumpa', 'drafts'))).toBe(false);
     closeAttachedCliFiles(running);
     closed = true;
   } finally {
@@ -618,7 +618,7 @@ test('equivalent packaged attached ranges retain canonical provenance while owni
     await Promise.all([ensureReviewOpen(page), ensureReviewOpen(secondPage)]);
     await saveSummary(page, 'First equivalent attached review.');
     await saveSummary(secondPage, 'Second equivalent attached review.');
-    const drafts = readdirSync(join(fixture.root, '.compare', 'drafts')).sort();
+    const drafts = readdirSync(join(fixture.root, '.cumpa', 'drafts')).sort();
     expect(drafts).toEqual([
       expect.stringMatching(/^agent-[0-9a-f]{32}\.json$/u),
       expect.stringMatching(/^agent-[0-9a-f]{32}\.json$/u),

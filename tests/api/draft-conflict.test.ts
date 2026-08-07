@@ -46,7 +46,7 @@ function comparison(repositoryRoot: string): PinnedComparison {
 }
 
 async function app(): Promise<{ readonly app: FastifyInstance; readonly repositoryRoot: string }> {
-  const repositoryRoot = await mkdtemp(join(tmpdir(), 'compare-conflict-'));
+  const repositoryRoot = await mkdtemp(join(tmpdir(), 'cumpa-conflict-'));
   roots.push(repositoryRoot);
   const value = createSessionApp(comparison(repositoryRoot), {
     sessionToken: token,
@@ -82,7 +82,7 @@ describe('aggregate draft revision conflicts', () => {
     ]);
     expect([edit.statusCode, summary.statusCode].sort()).toEqual([200, 409]);
 
-    const directory = join(repositoryRoot, '.compare', 'drafts');
+    const directory = join(repositoryRoot, '.cumpa', 'drafts');
     const canonicalPath = join(directory, `${comparisonKey('1'.repeat(40), '2'.repeat(40))}.json`);
     const before = await readFile(canonicalPath);
     const beforeHash = createHash('sha256').update(before).digest('hex');

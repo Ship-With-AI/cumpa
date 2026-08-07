@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import {
-  inspectCompareIgnore,
-  type CompareIgnoreStatus,
+  inspectCumpaIgnore,
+  type CumpaIgnoreStatus,
 } from '../../src/git/ignore-status.js';
 import { GitRunnerError, type GitRunner } from '../../src/git/runner.js';
 
@@ -33,7 +33,7 @@ const gitEnvironment = {
 const fixtures: string[] = [];
 
 async function createRepository(): Promise<string> {
-  const root = await mkdtemp(join(tmpdir(), 'compare-ignore-status-'));
+  const root = await mkdtemp(join(tmpdir(), 'cumpa-ignore-status-'));
   fixtures.push(root);
   execFileSync('git', [...safeGitArguments, 'init', '--initial-branch=main'], {
     cwd: root,
@@ -47,40 +47,40 @@ afterEach(async () => {
   await Promise.all(fixtures.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-describe('effective Compare ignore inspection', () => {
+describe('effective Cumpa ignore inspection', () => {
   it('uses Git effective-ignore semantics for root, nested, info, global, and negated rules', async () => {
     const rootRule = await createRepository();
-    await writeFile(join(rootRule, '.gitignore'), '/.compare/\n');
-    expect((await inspectCompareIgnore({ repositoryRoot: rootRule })).kind).toBe('ignored');
+    await writeFile(join(rootRule, '.gitignore'), '/.cumpa/\n');
+    expect((await inspectCumpaIgnore({ repositoryRoot: rootRule })).kind).toBe('ignored');
 
     const nestedRule = await createRepository();
-    await mkdir(join(nestedRule, '.compare'));
+    await mkdir(join(nestedRule, '.cumpa'));
     await writeFile(
-      join(nestedRule, '.compare', '.gitignore'),
-      '/.compare-ignore-probe\n',
+      join(nestedRule, '.cumpa', '.gitignore'),
+      '/.cumpa-ignore-probe\n',
     );
-    expect((await inspectCompareIgnore({ repositoryRoot: nestedRule })).kind).toBe('ignored');
+    expect((await inspectCumpaIgnore({ repositoryRoot: nestedRule })).kind).toBe('ignored');
 
     const infoRule = await createRepository();
-    await writeFile(join(infoRule, '.git', 'info', 'exclude'), '/.compare/\n');
-    expect((await inspectCompareIgnore({ repositoryRoot: infoRule })).kind).toBe('ignored');
+    await writeFile(join(infoRule, '.git', 'info', 'exclude'), '/.cumpa/\n');
+    expect((await inspectCumpaIgnore({ repositoryRoot: infoRule })).kind).toBe('ignored');
 
     const globalRule = await createRepository();
     const globalExclude = join(globalRule, 'global-excludes');
-    await writeFile(globalExclude, '/.compare/\n');
+    await writeFile(globalExclude, '/.cumpa/\n');
     execFileSync('git', ['config', '--local', 'core.excludesFile', globalExclude], {
       cwd: globalRule,
       env: gitEnvironment,
       stdio: 'ignore',
     });
-    expect((await inspectCompareIgnore({ repositoryRoot: globalRule })).kind).toBe('ignored');
+    expect((await inspectCumpaIgnore({ repositoryRoot: globalRule })).kind).toBe('ignored');
 
     const negatedRule = await createRepository();
     await writeFile(
       join(negatedRule, '.gitignore'),
-      '/.compare/*\n!/.compare/.compare-ignore-probe\n',
+      '/.cumpa/*\n!/.cumpa/.cumpa-ignore-probe\n',
     );
-    expect((await inspectCompareIgnore({ repositoryRoot: negatedRule })).kind).toBe('not-ignored');
+    expect((await inspectCumpaIgnore({ repositoryRoot: negatedRule })).kind).toBe('not-ignored');
   });
 
   it('exposes only fixed probe outcomes and fixed runner authority', async () => {
@@ -92,7 +92,7 @@ describe('effective Compare ignore inspection', () => {
       },
     };
 
-    const status: CompareIgnoreStatus = await inspectCompareIgnore(
+    const status: CumpaIgnoreStatus = await inspectCumpaIgnore(
       { repositoryRoot: '/fixed-repository-root' },
       { runner },
     );
@@ -105,7 +105,7 @@ describe('effective Compare ignore inspection', () => {
           '--no-index',
           '--quiet',
           '--',
-          '.compare/.compare-ignore-probe',
+          '.cumpa/.cumpa-ignore-probe',
         ],
         cwd: '/fixed-repository-root',
       },
@@ -120,7 +120,7 @@ describe('effective Compare ignore inspection', () => {
     };
 
     await expect(
-      inspectCompareIgnore({ repositoryRoot: '/fixed-repository-root' }, { runner }),
+      inspectCumpaIgnore({ repositoryRoot: '/fixed-repository-root' }, { runner }),
     ).resolves.toEqual({ kind: 'unavailable' });
   });
 });

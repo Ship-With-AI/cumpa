@@ -30,7 +30,7 @@ import type { GitFixture } from '../helpers/git-fixture.js';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'compare-responsive-pack-'));
+const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-responsive-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 const executablePath = join(extractedPackageRoot, 'dist/bin/cumpa.mjs');
@@ -121,16 +121,16 @@ function startGeneratedCli(repository: GitFixture): RunningCli {
     env: {
       ...environment,
       PATH: `${fakeBinRoot}:${process.env.PATH ?? ''}`,
-      COMPARE_LAUNCH_OPTIONS: JSON.stringify({
+      CUMPA_LAUNCH_OPTIONS: JSON.stringify({
         cwd: repository.nestedCwd,
         base: { label: 'Base responsive fixture', revision: repository.baseRef },
         head: { label: 'Head responsive fixture', revision: repository.headRef },
       }),
-      COMPARE_OPENER_LOG: join(
+      CUMPA_OPENER_LOG: join(
         packedRoot,
         `opener-${crypto.randomUUID()}.log`,
       ),
-      COMPARE_TERMINAL_CAPTURE: outputPath,
+      CUMPA_TERMINAL_CAPTURE: outputPath,
     },
     stdio: ['ignore', outputDescriptor, outputDescriptor],
   });
@@ -796,7 +796,7 @@ test('responsive keyboard and accessibility contract', async ({
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toContainText(
-      'Compare: Base responsive fixture',
+      'Cumpa: Base responsive fixture',
     );
 
   await test.step('rendered real workspace contrast contract', async () => {
@@ -1058,7 +1058,7 @@ test('responsive keyboard and accessibility contract', async ({
 
       for (const [name, destination] of [
         ['Skip to changed files', 'changed-files-heading'],
-        ['Skip to diff', 'compare-heading'],
+        ['Skip to diff', 'cumpa-heading'],
         ['Skip review', 'review-heading'],
       ] as const) {
         const skipLink = page.getByRole('link', { name, exact: true });
@@ -1559,7 +1559,7 @@ test('responsive keyboard and accessibility contract', async ({
       await page.getByRole('button', { name: 'Close files' }).click();
     });
 
-    if (process.env.COMPARE_TRUE_ZOOM === '1') {
+    if (process.env.CUMPA_TRUE_ZOOM === '1') {
       test.setTimeout(90_000);
       await test.step('headed true 4× browser zoom preserves the effective 320px contract', async () => {
         await page.setViewportSize({ width: 1280, height: 640 });

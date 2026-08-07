@@ -142,7 +142,7 @@ describe('comparison validation matrix', () => {
       name: 'LaunchError',
       kind: 'git-unsupported',
       message:
-        'Git 2.43.0 or newer with the required machine protocols is required. Upgrade Git, then run Compare again.',
+        'Git 2.43.0 or newer with the required machine protocols is required. Upgrade Git, then run Cumpa again.',
       recovery: { kind: 'exit' },
     });
     expect(commands).toEqual([['--version']]);
@@ -172,7 +172,7 @@ describe('comparison validation matrix', () => {
       name: 'LaunchError',
       kind: 'git-missing',
       message:
-        'Git is required but was not found. Install Git, then run Compare again.',
+        'Git is required but was not found. Install Git, then run Cumpa again.',
       recovery: { kind: 'exit' },
     });
     expect(commands).toEqual([['--version']]);
@@ -225,17 +225,17 @@ describe('comparison validation matrix', () => {
     [
       'non-repository',
       'not-worktree',
-      'This directory is not inside a Git worktree. Run Compare from a Git worktree.',
+      'This directory is not inside a Git worktree. Run Cumpa from a Git worktree.',
     ],
     [
       'bare',
       'bare-repository',
-      'Bare repositories are not supported. Run Compare from a non-bare Git worktree.',
+      'Bare repositories are not supported. Run Cumpa from a non-bare Git worktree.',
     ],
     [
       'unborn',
       'empty-repository',
-      'This repository has no commits yet. Create the first commit, then run Compare again.',
+      'This repository has no commits yet. Create the first commit, then run Cumpa again.',
     ],
   ] as const)(
     'maps the real %s fixture to its exact fatal repository state',

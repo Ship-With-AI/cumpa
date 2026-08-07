@@ -39,7 +39,7 @@ function runPrerequisite(command: string, args: string[], cwd = repositoryRoot):
 }
 
 test('packed artifact contains runtime and production Vue assets', () => {
-  const temporaryDirectory = mkdtempSync(join(tmpdir(), 'compare-pack-'));
+  const temporaryDirectory = mkdtempSync(join(tmpdir(), 'cumpa-pack-'));
 
   try {
     const hasProductionBootstrap = existsSync(
@@ -85,7 +85,7 @@ test('packed artifact contains runtime and production Vue assets', () => {
         readFileSync(join(temporaryDirectory, 'package', path), 'utf8'),
       )
       .join('\n');
-    expect(packagedJavaScript).toContain('Compare: loading pinned comparison');
+    expect(packagedJavaScript).toContain('Cumpa: loading pinned comparison');
     expect(packagedJavaScript).toContain('Opening local draft…');
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });

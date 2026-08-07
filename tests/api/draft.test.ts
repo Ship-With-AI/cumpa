@@ -111,7 +111,7 @@ function buildApp(
 }
 
 async function root(): Promise<string> {
-  const value = await mkdtemp(join(tmpdir(), 'compare-draft-'));
+  const value = await mkdtemp(join(tmpdir(), 'cumpa-draft-'));
   roots.push(value);
   return value;
 }
@@ -129,7 +129,7 @@ describe('comparison-local draft routes', () => {
 
     expect((await first.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
       kind: 'missing',
-      path: '.compare/drafts/' + comparisonKey('1'.repeat(40), '2'.repeat(40)) + '.json',
+      path: '.cumpa/drafts/' + comparisonKey('1'.repeat(40), '2'.repeat(40)) + '.json',
     });
 
     const added = await first.inject({
@@ -142,7 +142,7 @@ describe('comparison-local draft routes', () => {
     expect(added.json()).toMatchObject({ kind: 'accepted', draft: { comments: [{ state: 'open', body: 'Keep this exact line.' }] } });
 
     const persisted = JSON.parse(await readFile(
-      join(repositoryRoot, '.compare', 'drafts', `${comparisonKey('1'.repeat(40), '2'.repeat(40))}.json`),
+      join(repositoryRoot, '.cumpa', 'drafts', `${comparisonKey('1'.repeat(40), '2'.repeat(40))}.json`),
       'utf8',
     )) as { comparison: Record<string, unknown> };
     expect(persisted.comparison).not.toHaveProperty('range');
@@ -169,11 +169,11 @@ describe('comparison-local draft routes', () => {
 
     expect((await first.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
       kind: 'missing',
-      path: `.compare/drafts/${firstRange.reviewKey}.json`,
+      path: `.cumpa/drafts/${firstRange.reviewKey}.json`,
     });
     expect((await second.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
       kind: 'missing',
-      path: `.compare/drafts/${secondRange.reviewKey}.json`,
+      path: `.cumpa/drafts/${secondRange.reviewKey}.json`,
     });
 
     expect((await first.inject({
@@ -202,7 +202,7 @@ describe('comparison-local draft routes', () => {
     expect(reviewRange.reviewKey).toBe(range(['src']).reviewKey);
     expect((await first.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
       kind: 'missing',
-      path: `.compare/drafts/${firstScope}.json`,
+      path: `.cumpa/drafts/${firstScope}.json`,
     });
     expect((await first.inject({
       method: 'POST',
@@ -212,14 +212,14 @@ describe('comparison-local draft routes', () => {
     })).statusCode).toBe(200);
     expect((await second.inject({ method: 'GET', url: '/api/draft', headers })).json()).toMatchObject({
       kind: 'missing',
-      path: `.compare/drafts/${secondScope}.json`,
+      path: `.cumpa/drafts/${secondScope}.json`,
     });
-    expect(await readFile(join(repositoryRoot, '.compare', 'drafts', `${firstScope}.json`), 'utf8')).toContain('First attached review.');
+    expect(await readFile(join(repositoryRoot, '.cumpa', 'drafts', `${firstScope}.json`), 'utf8')).toContain('First attached review.');
   });
 
   test.each([
     ['reviewKey', 'f'.repeat(64)],
-    ['path', '.compare/drafts/controlled.json'],
+    ['path', '.cumpa/drafts/controlled.json'],
     ['baseCommitOid', 'f'.repeat(40)],
     ['headCommitOid', 'f'.repeat(40)],
     ['label', 'controlled'],
@@ -318,7 +318,7 @@ describe('comparison-local draft routes', () => {
     expect(denied.statusCode).toBe(401);
     expect(onLookup).not.toHaveBeenCalled();
 
-    const directory = join(repositoryRoot, '.compare', 'drafts');
+    const directory = join(repositoryRoot, '.cumpa', 'drafts');
     await mkdir(directory, { recursive: true });
     const file = join(
       directory,

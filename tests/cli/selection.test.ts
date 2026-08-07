@@ -225,9 +225,9 @@ describe('ordered searchable source picker', () => {
     );
 
     expect(seen.map((config) => config.message)).toEqual([
-      'Choose base — changes will be compared from its merge base with head',
+      'Choose base — changes will be cumpad from its merge base with head',
       'Choose head — this committed state will be reviewed',
-      'Choose base — changes will be compared from its merge base with head',
+      'Choose base — changes will be cumpad from its merge base with head',
       'Choose head — this committed state will be reviewed',
     ]);
     expect(seen[0]?.default).toBeUndefined();
@@ -585,7 +585,7 @@ describe('pinned comparison confirmation and CLI integration', () => {
 describe('exact patch CLI dispatch', () => {
   const request = {
     version: 1 as const,
-    kind: 'compare.review-request' as const,
+    kind: 'cumpa.review-request' as const,
     mode: 'patch' as const,
     patch: {
       content: 'diff --git a/src/a.ts b/src/a.ts\n',
