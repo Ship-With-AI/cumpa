@@ -2,8 +2,8 @@
 
 ## Product
 
-Compare is a local-first code review application for committed changes between two local Git branch or registered-worktree heads. Its core value is precise review feedback without publishing the comparison to a remote host.
-Compare reads as English “compare” and Italian “comrade/friend”.
+Cumpa is a local-first code review application for committed changes between two local Git branch or registered-worktree heads. Its core value is precise review feedback without publishing the comparison to a remote host.
+Cumpa is the product name used across the CLI, browser workspace, exports, and repository-local state.
 
 ## Audience
 
@@ -17,7 +17,7 @@ Compare reads as English “compare” and Italian “comrade/friend”.
 - A Fastify server binds to loopback only and opens a browser workspace.
 - The Vue interface uses Monaco for side-by-side text diffs, syntax highlighting, line mapping, and inline review controls.
 - Reviewers can leave line comments and an overall summary.
-- Versioned JSON drafts live in the repository-local, gitignored `.compare/` directory.
+- Versioned JSON drafts live in the repository-local, gitignored `.cumpa/` directory.
 - Exports provide Markdown and canonical JSON for a coding agent.
 - Version 1 reviews text files; binary, generated, oversized, and unsupported files remain visible but non-reviewable.
 
