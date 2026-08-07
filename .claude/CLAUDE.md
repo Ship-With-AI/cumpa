@@ -2,9 +2,9 @@
 
 ## Project
 
-**Compare**
+**Cumpa**
 
-Compare is a local-first code review application for developers who want a GitHub pull-request-style review experience without publishing branches or worktrees to a remote host. A CLI launched inside a Git repository opens a browser workspace where the developer selects two local branches or registered worktrees, reviews PR-style changes side by side, leaves line comments and an overall summary, and exports the result as Markdown plus canonical JSON that a coding agent can apply.
+Cumpa is a local-first code review application for developers who want a GitHub pull-request-style review experience without publishing branches or worktrees to a remote host. A CLI launched inside a Git repository opens a browser workspace where the developer selects two local branches or registered worktrees, reviews PR-style changes side by side, leaves line comments and an overall summary, and exports the result as Markdown plus canonical JSON that a coding agent can apply.
 
 **Core Value:** A developer can accurately review committed changes between any two local branch or worktree heads and export precise, drift-detectable feedback an agent can act on.
 
@@ -16,7 +16,7 @@ Compare is a local-first code review application for developers who want a GitHu
 - **Server**: Fastify bound only to `127.0.0.1` on an ephemeral port — the default browser opens automatically and no LAN service is exposed.
 - **UI**: Vue 3 with Vite and Monaco Diff Editor — side-by-side diff rendering, line mapping, syntax highlighting, and inline review controls run in the browser.
 - **Contracts**: Zod schemas shared by API, draft persistence, and export generation — incompatible or corrupt data fails explicitly.
-- **Persistence**: Versioned JSON files in a gitignored repository-local `.compare/` directory — no database or browser-only source of truth.
+- **Persistence**: Versioned JSON files in a gitignored repository-local `.cumpa/` directory — no database or browser-only source of truth.
 - **Content**: Text files only in v1 — binary, generated, oversized, or unsupported files remain visible as non-reviewable entries.
 - **Testing**: Vitest for Git, diff, persistence, and export contracts; Playwright for the browser review flow.
 
@@ -106,7 +106,7 @@ Architecture not yet mapped. Follow existing patterns found in the codebase.
 
 ## Project Skills
 
-- **Spike findings for Compare** (implementation patterns, constraints, gotchas) → `Skill("spike-findings-compare")`
+- **Spike findings for Cumpa** (implementation patterns, constraints, gotchas) → `Skill("spike-findings-cumpa")`
 <!-- GSD:skills-end -->
 
 <!-- GSD:workflow-start source:GSD defaults -->

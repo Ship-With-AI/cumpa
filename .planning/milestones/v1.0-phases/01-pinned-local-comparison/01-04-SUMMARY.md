@@ -138,7 +138,7 @@ No branches or worktrees match this search.
 The picker order and copy are:
 
 ```text
-Choose base — changes will be compared from its merge base with head
+Choose base — changes will be cumpad from its merge base with head
 Choose head — this committed state will be reviewed
 ```
 

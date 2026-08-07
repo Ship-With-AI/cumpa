@@ -1,8 +1,8 @@
 # Architecture Research
 
-**Domain:** Agent-to-human review handoff in the existing local-first Compare CLI
+**Domain:** Agent-to-human review handoff in the existing local-first Cumpa CLI
 **Researched:** 2026-08-04
-**Confidence:** HIGH for existing integration boundaries and native-Git mechanisms; MEDIUM-HIGH for the exact-patch overlay sequence until exercised against Compare's complete patch fixture set
+**Confidence:** HIGH for existing integration boundaries and native-Git mechanisms; MEDIUM-HIGH for the exact-patch overlay sequence until exercised against Cumpa's complete patch fixture set
 
 ## Recommendation
 
@@ -25,7 +25,7 @@ Preserve interactive compatibility structurally:
 ### System Overview
 
 ```text
-                         one Compare process
+                         one Cumpa process
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ CLI ingress                                                                  │
 │                                                                              │
@@ -83,19 +83,19 @@ The normalization seam is the central decision. The browser never receives raw r
 | `src/cli/handoff.ts` | **New** | Bounded stdin read, fatal UTF-8/JSON/Zod handling, stderr diagnostics, attached-session wait, canonical stdout write with EPIPE/backpressure handling, failure exits | handoff contract, Git adapter, launch runtime, completion channel |
 | `src/git/handoff.ts` | **New** | Resolve both modes, compute a domain-separated review key, own any patch overlay, and return a normal `PinnedComparison` plus attached runtime resources | repository discovery, `GitRunner`, comparison builder, inventory, object reader |
 | `src/git/comparison.ts` | **Modify by extraction** | Expose one lower-level builder from already-resolved base/head/diff-base snapshots so interactive and handoff paths share object verification, inventory, freezing, and schema parsing | interactive source resolution, handoff adapter, inventory |
-| `src/git/inventory.ts` | **Modify** | Accept optional pathspec strings and append them after the existing `--` in both raw and numstat Git calls; keep parsing and `.compare` exclusion unchanged | `GitRunner`, object reader, availability classifier |
+| `src/git/inventory.ts` | **Modify** | Accept optional pathspec strings and append them after the existing `--` in both raw and numstat Git calls; keep parsing and `.cumpa` exclusion unchanged | `GitRunner`, object reader, availability classifier |
 | `src/git/runner.ts` | **Modify narrowly** | Support a controlled per-runner Git environment overlay for temporary index/object directories and deterministic `commit-tree`; retain argument arrays, safe config, aborts, timeouts, and caps | all Git adapters |
 | `src/domain/comparison-key.ts` | **Modify** | Preserve current two-OID key bytes for interactive sessions; add a domain-separated handoff key over normalized mode, resolved OIDs, ordered pathspecs, and/or patch digest | handoff adapter, draft/export namespaces |
 | `src/server/attached-review.ts` | **New** | One-shot completion primitive with `finish(receipt)`, `cancel(reason)`, and a promise; reject duplicate completion and unblock on signals/errors | launch runtime, routes, CLI handoff runner |
 | `src/server/app.ts` | **Modify** | Accept optional attached metadata, scoped review key, completion port, and patch-overlay `ObjectReader`; pass them into current stores/capabilities/routes | launch runtime, capability registry, draft store |
 | `src/server/capabilities.ts` | **Modify** | Use the supplied review key for attached draft/export identity and exported `comparisonKey`; use the supplied overlay reader for patch blobs; otherwise retain current defaults | draft/export stores, routes, object reader |
 | `src/server/routes.ts` | **Modify narrowly** | For a successful existing `/api/export` in an attached session, complete only after the raw response `finish`/Fastify response hook; do nothing for interactive or unsuccessful responses | capability registry, optional completion port |
-| `src/server/draft-loader.ts`, `src/server/draft-store.ts` | **Modify narrowly** | Accept an optional caller-selected storage key while continuing to store and validate the existing draft comparison tuple with atomic replacement | app/capabilities, `.compare/drafts` |
-| `src/server/export-store.ts` | **Modify narrowly** | Accept an optional safe stable directory name. Preserve `<base>..<head>` for interactive exports; use the full review key for attached exports | capability registry, `.compare/exports` |
+| `src/server/draft-loader.ts`, `src/server/draft-store.ts` | **Modify narrowly** | Accept an optional caller-selected storage key while continuing to store and validate the existing draft comparison tuple with atomic replacement | app/capabilities, `.cumpa/drafts` |
+| `src/server/export-store.ts` | **Modify narrowly** | Accept an optional safe stable directory name. Preserve `<base>..<head>` for interactive exports; use the full review key for attached exports | capability registry, `.cumpa/exports` |
 | `src/contracts/api.ts` | **Modify compatibly** | Add an optional attached marker to `SessionResponseSchema`; allow the scoped export receipt path form without weakening repository-relative path validation | routes, browser client |
 | `src/web/api/client.ts` | **Reuse with type update** | Continue invoking the authenticated existing export endpoint and parsing shared schemas | Vue app, Fastify |
 | `src/web/App.vue`, `src/web/components/ExportSection.vue` | **Modify conditionally** | When attached, label the explicit successful action **Finish review** and state that success closes the session; retain current Export behavior/copy otherwise | session API, current review/export state |
-| `src/export/review-export.ts`, `src/export/render-review-markdown.ts` | **Unchanged authority** | Build/canonicalize the existing `compare/export` v1 document and derive Markdown; stdout uses these exact canonical bytes | capability registry, export store, CLI result writer |
+| `src/export/review-export.ts`, `src/export/render-review-markdown.ts` | **Unchanged authority** | Build/canonicalize the existing `cumpa/export` v1 document and derive Markdown; stdout uses these exact canonical bytes | capability registry, export store, CLI result writer |
 | `src/web/monaco/*`, draft/comment/anchor models | **Unchanged** | Review normalized immutable blobs exactly as today | existing session APIs |
 | `src/cli/picker.ts`, `src/cli/confirm.ts`, `src/git/candidates.ts` | **Unchanged** | Interactive-only selection; never entered for piped requests | current `runCli()` only |
 
@@ -259,7 +259,7 @@ strict patch bytes
     ├─ git apply --cached --binary -
     ├─ git write-tree
     └─ git commit-tree <tree> -p <base OID>
-           fixed Compare author/committer metadata
+           fixed Cumpa author/committer metadata
            message contains exact patch digest
            no ref update
                  │
@@ -351,7 +351,7 @@ PinnedComparison
 scoped review key → existing browser runtime
 ```
 
-Do not call the interactive `createPinnedComparison()` policy unchanged. It intentionally compares the selected branch's merge base to head. The handoff contract names an exact base-to-head ancestry interval. Share a lower-level resolved-snapshot builder, not the picker-specific merge-base decision.
+Do not call the interactive `createPinnedComparison()` policy unchanged. It intentionally cumpas the selected branch's merge base to head. The handoff contract names an exact base-to-head ancestry interval. Share a lower-level resolved-snapshot builder, not the picker-specific merge-base decision.
 
 ### Mode 2: Exact Patch Already Applied in the Repository
 
@@ -436,7 +436,7 @@ waiting CLI
     ├── dispose patch overlay if present
     └── write exact canonical bytes to stdout
           ↓
-agent receives one `compare/export` v1 document
+agent receives one `cumpa/export` v1 document
 ```
 
 ### Cancellation and Failure
@@ -484,7 +484,7 @@ There is no new long-lived session registry. The completion channel is process-l
 
 **What people do:** Parse unified diff in TypeScript and feed hunks directly to Monaco.
 
-**Why wrong:** Rename/copy metadata, modes, binary handling, exact paths, blob IDs, anchors, and export verification diverge from Compare's Git-backed model.
+**Why wrong:** Rename/copy metadata, modes, binary handling, exact paths, blob IDs, anchors, and export verification diverge from Cumpa's Git-backed model.
 
 **Do instead:** Validate/materialize with native Git, then reuse `PinnedComparison`, inventory, and blob readers.
 
@@ -550,11 +550,11 @@ There is no new long-lived session registry. The completion channel is process-l
 
 | Boundary | Pattern | Required invariants |
 |----------|---------|---------------------|
-| Coding agent → Compare | One bounded versioned UTF-8 JSON document on stdin | Strict Zod union; exactly one mode; no prompts or streaming protocol |
-| Compare → Git | Existing `GitRunner`, argument arrays, stdin bytes, optional controlled overlay | No shell; `--` before pathspecs; safe config retained; patch work abortable/bounded |
-| Compare → browser | Existing loopback Fastify and fragment token | `127.0.0.1`, ephemeral port, Host/Origin/Bearer checks; no LAN/agent API |
-| Compare → repository | Existing `.compare` atomic persistence | Scoped key; no real index/worktree/ref/object mutation for patch preparation |
-| Compare → agent | Exact canonical `ReviewExportV1` bytes on stdout | No token/diagnostic/wrapper; validate receipt/file first; failure leaves stdout empty |
+| Coding agent → Cumpa | One bounded versioned UTF-8 JSON document on stdin | Strict Zod union; exactly one mode; no prompts or streaming protocol |
+| Cumpa → Git | Existing `GitRunner`, argument arrays, stdin bytes, optional controlled overlay | No shell; `--` before pathspecs; safe config retained; patch work abortable/bounded |
+| Cumpa → browser | Existing loopback Fastify and fragment token | `127.0.0.1`, ephemeral port, Host/Origin/Bearer checks; no LAN/agent API |
+| Cumpa → repository | Existing `.cumpa` atomic persistence | Scoped key; no real index/worktree/ref/object mutation for patch preparation |
+| Cumpa → agent | Exact canonical `ReviewExportV1` bytes on stdout | No token/diagnostic/wrapper; validate receipt/file first; failure leaves stdout empty |
 
 ### Internal Boundaries
 
@@ -655,22 +655,22 @@ Do not start with the button or stdin detection. Without the first three layers,
 ## Compatibility Checklist
 
 - TTY launch still discovers candidates, prompts Base then Head, confirms, and opens the browser as today.
-- interactive selections still compare merge base to head; only revision handoff uses exact base-to-head ancestry.
+- interactive selections still cumpa merge base to head; only revision handoff uses exact base-to-head ancestry.
 - interactive terminal URL/fallback output remains unchanged.
 - Fastify still binds only `127.0.0.1:0` with current security.
 - browser requests still use shared Zod API contracts and bearer token.
 - changed files, modes, rename/copy metadata, availability, blob reads, Monaco mapping, comments, summaries, and anchors remain on current implementations.
 - current drafts remain readable at current comparison-key paths.
-- interactive exports remain `.compare/exports/<base>..<head>/review.{json,md}`.
+- interactive exports remain `.cumpa/exports/<base>..<head>/review.{json,md}`.
 - interactive Export does not stop the server.
 - attached Finish does not complete on conflicts, acknowledgements, failed publication, tab close, or disconnect.
 - patch object overlays remain alive through anchor verification/export and are disposed on every exit.
-- successful attached stdout is exactly one canonical `compare/export` v1 document; every diagnostic and token-bearing URL is stderr-only.
+- successful attached stdout is exactly one canonical `cumpa/export` v1 document; every diagnostic and token-bearing URL is stderr-only.
 - no agent HTTP API, headless path, arbitrary commit composition, or detached patch launch is added.
 
 ## Sources
 
-### Existing Compare implementation (primary integration evidence)
+### Existing Cumpa implementation (primary integration evidence)
 
 - `src/cli/run.ts` — Commander action, interactive loop, launch, loopback bind, browser output, shutdown.
 - `src/git/comparison.ts` — revision resolution, merge-base policy, object verification, inventory creation, `PinnedComparison` boundary.
@@ -692,5 +692,5 @@ Do not start with the button or stdin detection. Without the first three layers,
 - [Git glossary: pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) — native pathspec syntax and magic remain Git's authority.
 
 ---
-*Architecture research for: Compare v1.3 Agent Review Handoff*
+*Architecture research for: Cumpa v1.3 Agent Review Handoff*
 *Researched: 2026-08-04*

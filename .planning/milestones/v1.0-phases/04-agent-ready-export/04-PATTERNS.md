@@ -92,7 +92,7 @@ Extend the actual strict Zod owner with one versioned export document and strict
 
 **Export document invariants:** schema/kind/version; accepted revision; full launch base/head/merge-base/comparison identity; launch/current drift observation and acknowledgement; optional exact summary; every retained comment including resolved; exact immutable anchors; derived counts consistent with records; no absolute paths; no unknown keys; resolved-state/timestamp invariants.
 
-**D-02 reconciliation:** the draft may change while generation runs, but stale bytes must never publish. Capture once, derive both formats from it, then compare revision and fingerprint immediately before commit.
+**D-02 reconciliation:** the draft may change while generation runs, but stale bytes must never publish. Capture once, derive both formats from it, then cumpa revision and fingerprint immediately before commit.
 
 ### 2. Canonical ordering, serialization, and exact-byte hashes
 
@@ -163,7 +163,7 @@ Under a per-comparison export mutex:
 recover validated remnants
 → create unpredictable sibling candidate under fixed .diff-review/exports authority
 → exclusive mode-0600 writes of both Buffers with flush/sync
-→ close, re-read, hash, parse/validate JSON, rerender Markdown, byte-compare
+→ close, re-read, hash, parse/validate JSON, rerender Markdown, byte-cumpa
 → require candidate contains exactly two regular files
 → sync candidate directory/parent where supported and tested
 → revalidate draft revision/fingerprint and drift observation
@@ -198,7 +198,7 @@ For a missing/empty file, reconcile the exact no-spurious-leading-LF behavior in
 
 **Contract source:** Phase 1 lossless raw/numstat changed-record construction (`01-04-PLAN.md`).
 
-Deepen the one actual canonical inventory seam. Exclude a changed record if **either** exact old/base path or exact new/head path equals `.diff-review` or has the exact root prefix `.diff-review/`. This covers add/delete/rename/copy crossings. Compare lossless canonical repository-relative identity—not substrings, case-folded text, display-escaped labels, absolute paths, globs, or host separators. Apply regardless of tracked/untracked/ignored/negated/absent state. Do not filter only in the tree or Markdown; internal records must never enter the reviewed comparison.
+Deepen the one actual canonical inventory seam. Exclude a changed record if **either** exact old/base path or exact new/head path equals `.diff-review` or has the exact root prefix `.diff-review/`. This covers add/delete/rename/copy crossings. Cumpa lossless canonical repository-relative identity—not substrings, case-folded text, display-escaped labels, absolute paths, globs, or host separators. Apply regardless of tracked/untracked/ignored/negated/absent state. Do not filter only in the tree or Markdown; internal records must never enter the reviewed comparison.
 
 ### 8. Browser canonical state, Export section, and receipt
 
@@ -259,7 +259,7 @@ Fixtures: missing/empty `.gitignore`, LF, CRLF, no final newline, comments, blan
 
 #### Packaged non-mutation proof
 
-Extend the real generated CLI/Fastify/Vue/Monaco fixture, not a dev-server/fake DTO. Seed distinguishable HEAD, staged, unstaged, untracked, mode, and binary states before export. Snapshot and compare:
+Extend the real generated CLI/Fastify/Vue/Monaco fixture, not a dev-server/fake DTO. Seed distinguishable HEAD, staged, unstaged, untracked, mode, and binary states before export. Snapshot and cumpa:
 
 - HEAD/ref/remotes;
 - exact index file bytes/hash at the worktree-specific Git path;

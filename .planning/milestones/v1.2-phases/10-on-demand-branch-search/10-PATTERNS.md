@@ -42,7 +42,7 @@ const abbreviated = await runner.run(
 );
 ```
 
-Escape Git wildcard metacharacters `\\`, `*`, `?`, `[`, `]`; this is Git wildcard syntax, not regex syntax. Pass the pattern as one argv value: `shell: false` means quote characters would be data. Use `--list` without `-r`/`-a` so only local branches match. `--ignore-case` is needed for matching, but can alter sort behavior: after parsing and literal post-filtering, canonical-sort full refs with raw UTF-8/`Buffer.compare`, not `localeCompare`, completion order, or popularity. No-match returns frozen `[]` and skips abbreviation.
+Escape Git wildcard metacharacters `\\`, `*`, `?`, `[`, `]`; this is Git wildcard syntax, not regex syntax. Pass the pattern as one argv value: `shell: false` means quote characters would be data. Use `--list` without `-r`/`-a` so only local branches match. `--ignore-case` is needed for matching, but can alter sort behavior: after parsing and literal post-filtering, canonical-sort full refs with raw UTF-8/`orderByteSequences`, not `orderText`, completion order, or popularity. No-match returns frozen `[]` and skips abbreviation.
 
 Deduplicate only full OIDs sent to the batch; map each abbreviation back to every matching ref. Validate every batch record and require a complete OID-to-short-OID map before creating selectable candidates; malformed/incomplete output rejects the whole search. Check `signal` before work, after each Git stage, and after parsing. Propagate non-abort runner failures; never convert them to `[]`.
 
@@ -75,7 +75,7 @@ return promptItems(buildSourceSearchItems(
 
 ### Native parsing and identity analogs
 
-`src/git/repository.ts:89-119` keeps startup `for-each-ref --count=1` bounded; do not change it. `src/git/selector-drift.ts:198-205` verifies refs with `rev-parse --verify --end-of-options` and compares full OIDs. Its NUL parser (`41-82`) reinforces the established parser style, but use the existing `candidates.ts` helpers instead of duplicating a service.
+`src/git/repository.ts:89-119` keeps startup `for-each-ref --count=1` bounded; do not change it. `src/git/selector-drift.ts:198-205` verifies refs with `rev-parse --verify --end-of-options` and cumpas full OIDs. Its NUL parser (`41-82`) reinforces the established parser style, but use the existing `candidates.ts` helpers instead of duplicating a service.
 
 ## Shared Patterns
 
@@ -92,7 +92,7 @@ Check before Git work, forward the exact signal, check after every await/stage, 
 ### Deterministic ordering
 **Sources:** `src/cli/picker.ts:239-280`, Phase 09 verification `09-VERIFICATION.md`.
 
-Git lists refs with explicit sorting, but `--ignore-case` may alter ordering; restore raw full-ref canonical order after parsing. Fresh branches remain before worktrees; worktrees retain porcelain record order. Do not globally sort or use `localeCompare`.
+Git lists refs with explicit sorting, but `--ignore-case` may alter ordering; restore raw full-ref canonical order after parsing. Fresh branches remain before worktrees; worktrees retain porcelain record order. Do not globally sort or use `orderText`.
 
 ### Truthful, immutable candidates
 **Sources:** `src/git/candidates.ts:151-261`, `src/cli/picker.ts:177-212`.

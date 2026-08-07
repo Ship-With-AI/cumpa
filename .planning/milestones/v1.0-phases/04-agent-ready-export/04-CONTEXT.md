@@ -37,7 +37,7 @@ Phase 4 explicitly exports one accepted pinned-review revision as a versioned, s
 - **D-15:** Generate both formats in a temporary sibling generation, validate canonical JSON, Markdown derivation, content hashes, and snapshot revision, durably flush, then publish as one pair. A failed generation exposes neither new file.
 - **D-16:** Success feedback shows accepted draft revision, export timestamp, repository-relative output paths, SHA-256 content hashes, drift acknowledgement state, and actions to copy paths or reveal the directory.
 - **D-17:** Export may create files only beneath `.diff-review/` plus an explicitly approved append to `.gitignore`. It must never call add/commit/push/apply, write source, or execute repository code.
-- **D-18:** Packaged tests compare HEAD, index, and source worktree state before/after export, excluding the explicitly permitted `.diff-review/` output and approved gitignore append, and cover pair-write failure without partial publication.
+- **D-18:** Packaged tests cumpa HEAD, index, and source worktree state before/after export, excluding the explicitly permitted `.diff-review/` output and approved gitignore append, and cover pair-write failure without partial publication.
 
 ### Claude's Discretion
 The user delegated all four export areas to Claude's recommendations. Planning may choose schema field names, canonical JSON encoder mechanics, temporary-generation naming, fsync/rename strategy per supported platform, and exact receipt styling while preserving every decision above.

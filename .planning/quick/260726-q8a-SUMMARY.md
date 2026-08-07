@@ -39,7 +39,7 @@ status: complete
 
 # Quick Plan 260726-q8a Summary
 
-**Dev-only Phase 6 Monaco semantics compare board with three shareable visual treatments, URL-stable switching, and responsive smoke evidence**
+**Dev-only Phase 6 Monaco semantics cumpa board with three shareable visual treatments, URL-stable switching, and responsive smoke evidence**
 
 ## Performance
 
@@ -64,7 +64,7 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 - `src/web/main.ts` - Adds the dev-only `?prototype=phase6` mount gate and preserves normal `App.vue` behavior for every other URL.
-- `src/web/prototypes/Phase6DiffSemanticsPrototype.vue` - Throwaway compare board with three treatments, static shell mock data, semantic checklist, responsive layout, and switcher interactions.
+- `src/web/prototypes/Phase6DiffSemanticsPrototype.vue` - Throwaway cumpa board with three treatments, static shell mock data, semantic checklist, responsive layout, and switcher interactions.
 - `.planning/quick/260726-q8a-SUMMARY.md` - Execution summary, smoke URLs, observations, and cleanup disposition.
 
 ## Decisions Made

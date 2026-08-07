@@ -53,12 +53,12 @@ status: complete
 
 ### Fixture and execution boundary
 
-The terminal `COMPARE_PERF_RESULT` records proved, before any child process:
+The terminal `CUMPA_PERF_RESULT` records proved, before any child process:
 
 - `expectedCount: 10000`, `logicalCount: 10000`, `packedCount: 10000`, `looseHeadFiles: 0`.
 - `logicalMatchesExpected`, `packedMatchesExpected`, and `logicalMatchesPacked`: all `true`.
 - Absolute executable: `/Users/alessandro/projects/diff-review/dist/bin/cumpa.mjs`.
-- Child launch: `process.execPath` plus the absolute executable, `shell: false`, fixed child pipes, real `PATH`, and removed `COMPARE_LAUNCH_OPTIONS` / `CMUX_WORKSPACE_ID`.
+- Child launch: `process.execPath` plus the absolute executable, `shell: false`, fixed child pipes, real `PATH`, and removed `CUMPA_LAUNCH_OPTIONS` / `CMUX_WORKSPACE_ID`.
 - Terminal markers: `[Branch] main · <fixture short OID>` for readiness and `[Branch] branch-09999 · <fixture short OID>` after exactly one `stdin.write('branch-09999')` without Enter.
 - Node `24.15.0`; Git `2.50.1 (Apple Git-155)`; Darwin arm64; Apple M5 (10 CPUs); `CI=1`. The raw terminal record also contains the runner load and CI identity fields.
 
@@ -103,7 +103,7 @@ It passed **5 test files / 57 tests**, then emitted `classification: "PASS"`, `c
 
 ### Post-CR-03/WR-04 gate — `PASS`
 
-With the shared environment deleting `COMPARE_LAUNCH_OPTIONS` and `CMUX_WORKSPACE_ID`, and parent clocks starting immediately before `spawn()` and the guarded `stdin.write('branch-09999')`, `npm run test:performance` exited `0`. It emitted `classification: "PASS"`, `completed: { warmups: 1, measured: 5 }`, `childrenSettled: true`, `tempRemoved: true`, `diagnostics: null`, and `environment: { removedCompareLaunchOptions: true, removedCmuxWorkspaceId: true, shell: false, stdinTerm: "branch-09999" }`. Fixture proof: `expectedCount: 10000`, `logicalCount: 10000`, `packedCount: 10000`, `looseHeadFiles: 0`; all three set comparisons were `true`.
+With the shared environment deleting `CUMPA_LAUNCH_OPTIONS` and `CMUX_WORKSPACE_ID`, and parent clocks starting immediately before `spawn()` and the guarded `stdin.write('branch-09999')`, `npm run test:performance` exited `0`. It emitted `classification: "PASS"`, `completed: { warmups: 1, measured: 5 }`, `childrenSettled: true`, `tempRemoved: true`, `diagnostics: null`, and `environment: { removedCumpaLaunchOptions: true, removedCmuxWorkspaceId: true, shell: false, stdinTerm: "branch-09999" }`. Fixture proof: `expectedCount: 10000`, `logicalCount: 10000`, `packedCount: 10000`, `looseHeadFiles: 0`; all three set comparisons were `true`.
 
 | Invocation | Readiness ms | Search ms |
 |---|---:|---:|
@@ -131,7 +131,7 @@ With the shared environment deleting `COMPARE_LAUNCH_OPTIONS` and `CMUX_WORKSPAC
 ## Decisions Made
 
 - Initial valid `PASS` is the only evidence permitted to decide Task 2; no production files were changed.
-- The fixed median compares unrounded parent-clock durations. Display rounding is not used for acceptance.
+- The fixed median cumpas unrounded parent-clock durations. Display rounding is not used for acceptance.
 
 ## Deviations from Plan
 

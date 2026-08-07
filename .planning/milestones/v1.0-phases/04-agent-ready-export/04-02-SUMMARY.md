@@ -28,7 +28,7 @@ key-files:
 
 key-decisions:
   - "Compose ReviewExportV1 from the reconciled draft/anchor vocabulary; the export snapshot supplies current anchor verification by stable comment ID."
-  - "Use bytewise compareExactPaths and explicit base-before-head anchor ordering before RFC 8785-compatible object-key serialization."
+  - "Use bytewise orderExactPaths and explicit base-before-head anchor ordering before RFC 8785-compatible object-key serialization."
   - "Make Markdown take canonical bytes and call parseCanonicalReviewExport before every projection."
 
 patterns-established:
@@ -97,7 +97,7 @@ status: complete
 
 ## Schema and Ordering Profile
 
-The document includes schema/kind/version, one injected export timestamp, accepted revision, launch base/head/merge-base/comparison identity, drift observation/acknowledgement, optional summary, every retained comment, verification state, full durable anchor, and derived counts. Arrays are first ordered by `compareExactPaths`, then side (`base`, `head`), line, blob OID, context hash, and stable comment ID. Object keys are serialized by unsigned UTF-16 code-unit order; arrays retain domain order; JSON has no trailing newline.
+The document includes schema/kind/version, one injected export timestamp, accepted revision, launch base/head/merge-base/comparison identity, drift observation/acknowledgement, optional summary, every retained comment, verification state, full durable anchor, and derived counts. Arrays are first ordered by `orderExactPaths`, then side (`base`, `head`), line, blob OID, context hash, and stable comment ID. Object keys are serialized by unsigned UTF-16 code-unit order; arrays retain domain order; JSON has no trailing newline.
 
 ## Markdown Actionability
 

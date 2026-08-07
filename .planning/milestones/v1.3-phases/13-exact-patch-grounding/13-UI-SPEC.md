@@ -88,7 +88,7 @@ Accent is reserved for the selected file indicator, active disclosure state, lin
 
 ## Visual Hierarchy
 
-1. The session header identifies the source as an exact patch before any file-specific detail. Its heading is `Compare: exact patch · {first 12 digest characters}`.
+1. The session header identifies the source as an exact patch before any file-specific detail. Its heading is `Cumpa: exact patch · {first 12 digest characters}`.
 2. A neutral existing pin-cue treatment adjacent to the heading reads `Frozen verified patch`. This cue is not a success toast and does not imply the worktree can no longer drift.
 3. The header disclosure reads `View patch scope`. Opening it is informational and MUST NOT alter the selected file, scroll position, comments, draft revision, or snapshot.
 4. The changed-files tree remains the primary navigation surface. It contains exactly the server-authoritative patch inventory and no repository changes outside the submitted patch.
@@ -105,7 +105,7 @@ Do not add a landing page, agent avatar, patch-status dashboard, digest banner a
 | Component | Contract |
 |-----------|----------|
 | `App` session state | Add an exact-patch presentation branch while preserving interactive and revision-range branches. Initial loading, empty inventory, selected unsupported file, frozen-snapshot failure, and post-launch drift use the state matrix and exact copy below. |
-| `IdentityHeader` | Reuse the established header geometry. For patch sessions show `Compare: exact patch · {12-char digest}`, cue `Frozen verified patch`, and disclosure `View patch scope`. Do not show dirty-worktree badges that claim bytes were ignored; the submitted patch's implemented postimages were explicitly validated. |
+| `IdentityHeader` | Reuse the established header geometry. For patch sessions show `Cumpa: exact patch · {12-char digest}`, cue `Frozen verified patch`, and disclosure `View patch scope`. Do not show dirty-worktree badges that claim bytes were ignored; the submitted patch's implemented postimages were explicitly validated. |
 | `IdentityPanel` | Extend the existing disclosure panel rather than create a second overlay pattern. Patch heading is `Patch scope`. Show full digest, changed-file count, validation target, and the grounding statement below. Keep all values server-authoritative. |
 | Patch digest row | Label `Patch digest`; render the complete lowercase 64-character SHA-256 digest in monospace with wrapping and selection enabled. Reuse `CopyButton` with accessible label `Copy full patch digest`; copy the full value, never the 12-character header abbreviation. The browser MUST NOT recompute the digest. |
 | Validation target row | Label `Verified against`; value is exactly one server-authoritative form: `Repository content` or `Worktree · {control-safe path}`. Do not infer this from browser state. Long paths wrap and are not ellipsized in the panel. |
@@ -121,7 +121,7 @@ Do not add a landing page, agent avatar, patch-status dashboard, digest banner a
 
 Patch scope footer copy is exactly:
 
-`This review is frozen to the accepted patch. Every preimage is repository-grounded and every postimage matched implemented content at launch. Compare never refreshes reviewed bytes from the worktree.`
+`This review is frozen to the accepted patch. Every preimage is repository-grounded and every postimage matched implemented content at launch. Cumpa never refreshes reviewed bytes from the worktree.`
 
 ---
 
@@ -141,7 +141,7 @@ Patch scope footer copy is exactly:
 - Renames and copies show both Git-derived old and new paths with similarity when available. Paths use existing exact-path DTOs and control-safe display; invalid display bytes are never decoded optimistically.
 - Mode-only entries show `Mode changed`, both modes in File Details, and `Line counts unavailable` when no meaningful text count exists.
 - Binary, symlink, submodule, non-UTF-8, oversized, and mode/type entries use existing metadata notices and reasons. No fake text preview, patch-source view, or download fallback is introduced.
-- The browser does not independently parse unified diff text, infer status, calculate paths, or compare the live worktree.
+- The browser does not independently parse unified diff text, infer status, calculate paths, or cumpa the live worktree.
 
 ### Frozen snapshot and repository drift
 
@@ -149,7 +149,7 @@ Patch scope footer copy is exactly:
 - A later repository or worktree change MUST NOT alter the file tree, active diff, modes, paths, digest, comments, or summary already shown.
 - When the server reports post-launch implementation drift, keep the frozen workspace readable and display the persistent error notice below. Do not silently continue as current, dismiss the notice, acknowledge drift, or offer `Refresh`, `Use current files`, `Revalidate`, `Apply patch`, or `Continue anyway`.
 - A browser reload may reconnect to the same owned snapshot. If that snapshot no longer exists, is corrupt, is incomplete, or is read-only in a way that prevents its authenticated read, show the blocking frozen-snapshot failure; never rebuild from current repository content.
-- The only recovery from implementation drift or lost snapshot is to relaunch Compare with an exact already-applied patch that matches current repository/worktree content.
+- The only recovery from implementation drift or lost snapshot is to relaunch Cumpa with an exact already-applied patch that matches current repository/worktree content.
 
 ### Review behavior retained
 
@@ -179,9 +179,9 @@ Patch scope footer copy is exactly:
 
 | Element | Copy |
 |---------|------|
-| Loading heading | `Compare: loading exact patch` |
+| Loading heading | `Cumpa: loading exact patch` |
 | Loading status | `Opening frozen patch review…` |
-| Header heading | `Compare: exact patch · {first 12 digest characters}` |
+| Header heading | `Cumpa: exact patch · {first 12 digest characters}` |
 | Header cue | `Frozen verified patch` |
 | Primary CTA | `View patch scope` |
 | Scope panel heading | `Patch scope` |
@@ -192,12 +192,12 @@ Patch scope footer copy is exactly:
 | Empty state heading | `No files in this exact patch` |
 | Empty state body | `This accepted patch contains no changed file entries. View patch scope to inspect its digest, then relaunch with a non-empty already-applied patch.` |
 | Drift heading | `Implemented content changed` |
-| Drift error state | `The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Compare will not substitute current content. Relaunch with a patch that matches the current implementation.` |
+| Drift error state | `The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.` |
 | Frozen file heading | `Frozen patch file unavailable` |
-| Frozen file error | `Compare could not read this file from the frozen patch snapshot. Try the same snapshot again; current repository or worktree bytes will not be substituted.` |
+| Frozen file error | `Cumpa could not read this file from the frozen patch snapshot. Try the same snapshot again; current repository or worktree bytes will not be substituted.` |
 | Frozen file retry | `Try frozen snapshot again` |
 | Blocking snapshot heading | `Frozen patch unavailable` |
-| Blocking snapshot error | `The accepted patch snapshot is missing, corrupt, incomplete, or unreadable. Relaunch Compare with an exact patch that matches the current implementation.` |
+| Blocking snapshot error | `The accepted patch snapshot is missing, corrupt, incomplete, or unreadable. Relaunch Cumpa with an exact patch that matches the current implementation.` |
 | Unsupported file heading | `Diff unavailable for this file` |
 | Destructive confirmation | Not applicable — Phase 13 adds no destructive action |
 

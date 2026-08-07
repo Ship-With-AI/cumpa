@@ -83,7 +83,7 @@ status: complete
 
 - Same full OIDs plus reordered pathspecs produce distinct `rangeReviewKey` paths and independent mutation queues; identical ordered scopes reopen revision 1 with their exact stored provenance.
 - Range drafts reject missing, partial, malformed, unknown, reordered, and mismatched scope data as `schemaInvalid`, retaining the original bytes and fingerprint.
-- Interactive drafts retain `.compare/drafts/${comparisonKey(baseOid, headOid)}.json` and persisted comparison objects with no `range` member.
+- Interactive drafts retain `.cumpa/drafts/${comparisonKey(baseOid, headOid)}.json` and persisted comparison objects with no `range` member.
 - API mutation bodies with `reviewKey`, `path`, endpoint OIDs, `label`, or `pathspecs` are rejected with 400 before any draft write.
 
 ## Verification

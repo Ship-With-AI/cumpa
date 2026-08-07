@@ -14,7 +14,7 @@ must_haves:
   truths:
     - "Running `cumpa --help` prints Commander help and exits successfully without starting repository discovery or the interactive picker."
     - "Running `cumpa` with no arguments retains the current interactive comparison flow."
-    - "Programmatic `run(options)` calls and `COMPARE_LAUNCH_OPTIONS` packaged-session launches retain their current behavior."
+    - "Programmatic `run(options)` calls and `CUMPA_LAUNCH_OPTIONS` packaged-session launches retain their current behavior."
   artifacts:
     - path: "src/cli/run.ts"
       provides: "Commander-owned CLI argument parsing and native help output"
@@ -56,9 +56,9 @@ Output: One Commander integration in `src/cli/run.ts` and one focused executable
   <behavior>
     - `cumpa --help` exits with status 0, writes Commander's usage, package description, and `-h, --help` option to stdout, and writes no launch failure to stderr.
     - Help succeeds from a non-repository working directory, proving repository discovery and the interactive picker never start.
-    - The generated `cumpa` entrypoint still reaches the existing interactive flow with no arguments; `run(options)` still creates a pinned comparison directly; `COMPARE_LAUNCH_OPTIONS` still launches the packaged session path.
+    - The generated `cumpa` entrypoint still reaches the existing interactive flow with no arguments; `run(options)` still creates a pinned comparison directly; `CUMPA_LAUNCH_OPTIONS` still launches the packaged session path.
   </behavior>
-  <action>Add a focused `tests/cli/help.test.ts` executable-boundary test using `node:child_process.spawnSync` against `dist/bin/cumpa.mjs`. Run it from a non-repository temporary directory with a finite timeout and assert exit status 0, empty stderr, and stdout containing `Usage: cumpa [options]`, the existing package description `Local-first review of pinned Git comparisons`, and Commander's native `-h, --help` entry. Then import `Command` from the already-installed `commander` dependency in `src/cli/run.ts`. In only the zero-argument `run()` path, configure one command named `cumpa` with that existing package description and an async default action containing the current `COMPARE_LAUNCH_OPTIONS` dispatch: absent means `runCli({ cwd: process.cwd() })`; present means parse the payload and call `launchPinnedSession`. Await `parseAsync(process.argv)` so Commander handles `--help` and `-h` before the action. Preserve the `run(options)` overload and `runCli` unchanged. Do not edit `package.json` or `scripts/build-bin.mjs`, add a custom help option/parser/subcommand, duplicate help text, or add a dependency: Commander 15 and the generated entrypoint already exist.</action>
+  <action>Add a focused `tests/cli/help.test.ts` executable-boundary test using `node:child_process.spawnSync` against `dist/bin/cumpa.mjs`. Run it from a non-repository temporary directory with a finite timeout and assert exit status 0, empty stderr, and stdout containing `Usage: cumpa [options]`, the existing package description `Local-first review of pinned Git comparisons`, and Commander's native `-h, --help` entry. Then import `Command` from the already-installed `commander` dependency in `src/cli/run.ts`. In only the zero-argument `run()` path, configure one command named `cumpa` with that existing package description and an async default action containing the current `CUMPA_LAUNCH_OPTIONS` dispatch: absent means `runCli({ cwd: process.cwd() })`; present means parse the payload and call `launchPinnedSession`. Await `parseAsync(process.argv)` so Commander handles `--help` and `-h` before the action. Preserve the `run(options)` overload and `runCli` unchanged. Do not edit `package.json` or `scripts/build-bin.mjs`, add a custom help option/parser/subcommand, duplicate help text, or add a dependency: Commander 15 and the generated entrypoint already exist.</action>
   <verify>
     <automated>npm run build:runtime &amp;&amp; node scripts/run-focused-vitest.mjs tests/cli/help.test.ts</automated>
   </verify>

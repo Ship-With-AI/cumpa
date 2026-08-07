@@ -199,7 +199,7 @@ Secondary corrections:
 |------|---------------------------------------|----------------|--------------------|
 | Medium identity panel | Fixed positioning indicates a likely overlap, but no screenshot was captured and the test does not measure the open panel at 900px. | Open identities at 900×560 and confirm the panel border, heading, and first row are entirely below the header and unobscured. | **true** |
 | Visible copy labels | Accessibility names are exact, but whether repeated visible `Copy` labels remain unambiguous is a visual/scanning judgment. | Review identity and rename/copy metadata rows at wide and 320px widths; test rapid task identification without a screen reader. | **true** |
-| Visual hierarchy and density | DOM/CSS show intended hierarchy but cannot establish perceived calmness, density, or crowding. | Compare wide, medium, narrow, empty, unavailable, and long-path screenshots against the dense/calm developer-tool contract. | **true** |
+| Visual hierarchy and density | DOM/CSS show intended hierarchy but cannot establish perceived calmness, density, or crowding. | Cumpa wide, medium, narrow, empty, unavailable, and long-path screenshots against the dense/calm developer-tool contract. | **true** |
 | Color allocation | Token roles can be inspected, but visible-area 60/30/10 balance is compositional. | Review screenshots for neutral-surface dominance and ensure blue does not become a general decoration color. | **true** |
 
 ---

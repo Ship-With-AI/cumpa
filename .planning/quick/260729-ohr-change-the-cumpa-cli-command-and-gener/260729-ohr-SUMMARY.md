@@ -5,7 +5,7 @@ subsystem: cli-packaging
 tags: [npm, cli, packaging, documentation]
 requires:
   - phase: 260729-lga
-    provides: Compare project and private package identity
+    provides: Cumpa project and private package identity
 provides:
   - A sole `cumpa` npm bin and generated executable at `dist/bin/cumpa.mjs`
   - Synchronized packed-package fixtures and user-facing CLI documentation
@@ -29,8 +29,8 @@ key-files:
     - tests/e2e/agent-ready-export.spec.ts
     - README.md
 key-decisions:
-  - "Cut over cleanly to the single `cumpa` command; retain no `compare` bin alias."
-  - "Keep Compare as product identity and `compare` as the private npm package while documenting the Neapolitan-derived command name."
+  - "Cut over cleanly to the single `cumpa` command; retain no `cumpa` bin alias."
+  - "Keep Cumpa as product identity and `cumpa` as the private npm package while documenting the Neapolitan-derived command name."
 patterns-established:
   - "CLI artifact names are synchronized across manifest, generator, verifier, package fixtures, and README."
 requirements-completed: [QUICK-260729-OHR]
@@ -41,7 +41,7 @@ status: complete
 
 # Quick 260729-ohr: Cumpa CLI Summary
 
-**The private `compare` package now ships one `cumpa` executable, with build, packaging evidence, fixtures, and README guidance aligned to `dist/bin/cumpa.mjs`.**
+**The private `cumpa` package now ships one `cumpa` executable, with build, packaging evidence, fixtures, and README guidance aligned to `dist/bin/cumpa.mjs`.**
 
 ## Performance
 
@@ -53,15 +53,15 @@ status: complete
 
 ## Accomplishments
 
-- Replaced the sole npm bin and generated executable with `cumpa -> dist/bin/cumpa.mjs` while retaining both package-name records as `compare`.
+- Replaced the sole npm bin and generated executable with `cumpa -> dist/bin/cumpa.mjs` while retaining both package-name records as `cumpa`.
 - Aligned production-artifact verification and all generated-package inventory, launch, fingerprint, and evidence fixtures to the same executable path.
-- Documented Compare product, `compare` package, and `cumpa` command identities, including the ASCII Neapolitan spelling `cumpà` and its colloquial meaning.
+- Documented Cumpa product, `cumpa` package, and `cumpa` command identities, including the ASCII Neapolitan spelling `cumpà` and its colloquial meaning.
 
 ## Task Commits
 
 1. **Task 1: Cut over the package and generated-bin contract** — `a7ea612` (`chore`)
 2. **Task 2: Synchronize every packaged CLI fixture and assertion** — `640e5be` (`test`)
-3. **Task 3: Document Compare and cumpa without renaming protected identities** — `322d8ac` (`docs`)
+3. **Task 3: Document Cumpa and cumpa without renaming protected identities** — `322d8ac` (`docs`)
 
 Planning artifacts are intentionally uncommitted; orchestration owns `PLAN.md`, `SUMMARY.md`, and `STATE.md`.
 
@@ -77,19 +77,19 @@ Planning artifacts are intentionally uncommitted; orchestration owns `PLAN.md`, 
 - `tests/e2e/complete-review-draft.spec.ts` — launches the new generated artifact.
 - `tests/e2e/file-tree.spec.ts` — launches the new generated artifact.
 - `tests/e2e/agent-ready-export.spec.ts` — reports and hashes the new generated artifact.
-- `README.md` — distinguishes Compare, `compare`, and `cumpa` and updates shell commands.
+- `README.md` — distinguishes Cumpa, `cumpa`, and `cumpa` and updates shell commands.
 
 ## Decisions Made
 
-- Used a clean cutover: only `cumpa` is declared or generated; no `compare` compatibility alias exists.
-- Kept protected Compare product, package, persistence, schema, and test-protocol identifiers unchanged.
+- Used a clean cutover: only `cumpa` is declared or generated; no `cumpa` compatibility alias exists.
+- Kept protected Cumpa product, package, persistence, schema, and test-protocol identifiers unchanged.
 
 ## Verification
 
 - **Build and production artifact:** PASS — `npm run build`, `npm run verify:production-artifacts`, executable presence/absence checks, and manifest/lock identity assertions passed.
-- **Packed inventory and focused generated-name search:** PASS — `npm pack --dry-run --json --ignore-scripts` includes `dist/bin/cumpa.mjs`, excludes `dist/bin/compare.mjs`, and all six focused fixture files use `cumpa.mjs` with no legacy generated filename.
-- **README acceptance:** PASS — required Compare/package/`cumpa`/`cumpà`/meaning/persistence tokens are present; legacy executable forms are absent.
-- **Protected contracts and scope:** PASS — `compare/export`, `compareExactPaths`, and `COMPARE_AGENT_READY_EVIDENCE_REPORT` remain present; final diff is exactly the eleven planned files, contains no `src/` changes, and `git diff --check` passed.
+- **Packed inventory and focused generated-name search:** PASS — `npm pack --dry-run --json --ignore-scripts` includes `dist/bin/cumpa.mjs`, excludes `dist/bin/cumpa.mjs`, and all six focused fixture files use `cumpa.mjs` with no legacy generated filename.
+- **README acceptance:** PASS — required Cumpa/package/`cumpa`/`cumpà`/meaning/persistence tokens are present; legacy executable forms are absent.
+- **Protected contracts and scope:** PASS — `cumpa/export`, `orderExactPaths`, and `CUMPA_AGENT_READY_EVIDENCE_REPORT` remain present; final diff is exactly the eleven planned files, contains no `src/` changes, and `git diff --check` passed.
 
 ## Deviations from Plan
 

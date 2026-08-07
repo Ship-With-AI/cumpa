@@ -112,7 +112,7 @@ Copy is direct, technical, and explicit about immutable committed objects. Say �
 
 | Moment | Required copy pattern |
 |--------|-----------------------|
-| Base prompt | `Choose base — changes will be compared from its merge base with head` |
+| Base prompt | `Choose base — changes will be cumpad from its merge base with head` |
 | Head prompt | `Choose head — this committed state will be reviewed` |
 | Current-source suggestion | Append `Suggested: current checkout`; never preselect or infer base |
 | Equal commit block | `Base and head resolve to the same commit. Choose a different head.` Preserve the selected base and return focus to head selection. |

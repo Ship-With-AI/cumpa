@@ -79,7 +79,7 @@
 **Key accomplishments:**
 
 - A single GitHub-dark semantic stylesheet now renders the local review workflow with role-based surfaces, typography, controls, status states, constrained overlay elevation, and deterministic Chromium evidence.
-- A complete, typed `compare-dark` Monaco theme now maps Phase 05 semantic roles into canvas, syntax, diff, selection, widget, and scrollbar colors with deterministic source/generated CSS parity enforcement.
+- A complete, typed `cumpa-dark` Monaco theme now maps Phase 05 semantic roles into canvas, syntax, diff, selection, widget, and scrollbar colors with deterministic source/generated CSS parity enforcement.
 - Pure Monaco line-change normalization now produces continuous Base/Head change bars and sparse non-interactive gutter-sign decorations without recomputing diffs or altering model text.
 - The production Monaco adapter now selects the shared dark theme before construction and composes sparse signed diffs, selection contrast, anchors, focus, flat empty regions, and hidden hunks without changing review mechanics or editor geometry.
 - A compact, framed Base/path/Head context header now keeps every shipped diff navigation and review control available while presenting safe renamed-file identity with local icon controls.
@@ -135,7 +135,7 @@
 
 - Built byte-safe local branch/worktree discovery, explicit ordered selection, immutable merge-base-to-head comparison, and a token-protected loopback browser session.
 - Delivered a real Monaco side-by-side review workspace with exact durable anchors, per-file state restoration, keyboard/responsive interaction, and explicit stale or orphaned records.
-- Added repository-local canonical drafts with complete comment and summary lifecycle, serialized compare-and-swap mutation, conflict recovery, selector drift, and loss-safe corrupt/newer-draft handling.
+- Added repository-local canonical drafts with complete comment and summary lifecycle, serialized cumpa-and-swap mutation, conflict recovery, selector drift, and loss-safe corrupt/newer-draft handling.
 - Published versioned canonical JSON and derived Markdown as an atomic export pair with content hashes, receipts, safe reveal, ignore management, source-control safety checks, and target-aware re-export.
 - Closed the audited cross-file async settlement gap across acceptance, persistence failure, concurrent revision conflict, controller replacement, and repeated accessible announcements.
 

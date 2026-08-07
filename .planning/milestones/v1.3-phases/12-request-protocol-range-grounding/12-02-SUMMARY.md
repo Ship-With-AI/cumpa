@@ -88,7 +88,7 @@ git diff --raw -z --no-abbrev ... <baseOid> <headOid> -- <exact ordered pathspec
 git diff --numstat -z ... <baseOid> <headOid> -- <exact ordered pathspecs>
 ```
 
-The focused recording tests prove the two submitted revision occurrences and byte-for-byte equivalent ordered tails for empty, include, exclude, exclude-only, magic, leading-dash, and whitespace scopes. Real-Git tests compare the scoped inventory to direct native output and prove `GIT_LITERAL_PATHSPECS=1` cannot reinterpret submitted scope.
+The focused recording tests prove the two submitted revision occurrences and byte-for-byte equivalent ordered tails for empty, include, exclude, exclude-only, magic, leading-dash, and whitespace scopes. Real-Git tests cumpa the scoped inventory to direct native output and prove `GIT_LITERAL_PATHSPECS=1` cannot reinterpret submitted scope.
 
 ## Scoped Key Vectors
 

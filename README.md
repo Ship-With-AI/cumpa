@@ -1,10 +1,10 @@
-# Compare
+# Cumpa
 
-Compare gives committed local Git comparisons a pull-request-style review workspace without publishing a branch or worktree. Choose local branches or registered worktrees, leave durable feedback, and export it for an agent or teammate to use.
+Cumpa gives committed local Git comparisons a pull-request-style review workspace without publishing a branch or worktree. Choose local branches or registered worktrees, leave durable feedback, and export it for an agent or teammate to use.
 
-This is a **local source setup** for the private `compare@0.0.0` package. It is not a published npm package.
+This is a **local source setup** for the private `cumpa@0.0.0` package. It is not a published npm package.
 
-Compare is the project and product; `compare` is its private npm package; `cumpa` is the command. `cumpa` is the ASCII terminal spelling of Neapolitan `cumpà`, used colloquially for a friend, mate, or comrade.
+Cumpa is the project and product; `cumpa` is its private npm package; `cumpa` is the command. `cumpa` is the ASCII terminal spelling of Neapolitan `cumpà`, used colloquially for a friend, mate, or comrade.
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ You need:
 
 ## Install and build from this checkout
 
-Run these commands in the Compare source checkout:
+Run these commands in the Cumpa source checkout:
 
 ```sh
 npm ci
@@ -29,20 +29,20 @@ npm link
 
 ## Start a review
 
-Change to the Git worktree whose local branches or registered worktrees you want to compare, then run:
+Change to the Git worktree whose local branches or registered worktrees you want to cumpa, then run:
 
 ```sh
 cd /path/to/repository-to-review
 cumpa
 ```
 
-Compare first asks you to choose the **base**, then the **head**, using searchable lists of local branches and registered worktrees. The base is the reference point; the selected head is the committed state under review.
+Cumpa first asks you to choose the **base**, then the **head**, using searchable lists of local branches and registered worktrees. The base is the reference point; the selected head is the committed state under review.
 
-The comparison is a diff from the selected base and head’s merge base to the selected head. If a selected worktree is dirty, Compare uses its committed HEAD only; uncommitted worktree bytes are not reviewed.
+The comparison is a diff from the selected base and head’s merge base to the selected head. If a selected worktree is dirty, Cumpa uses its committed HEAD only; uncommitted worktree bytes are not reviewed.
 
 Before launch, the confirmation screen shows the full base, head, and merge base OIDs. Confirm only after checking them: the session is pinned to those commits and does not follow later ref movement.
 
-Compare listens only on an ephemeral `127.0.0.1` loopback port. It prints the review URL before attempting to open your default browser. If no browser opens, use the printed URL directly.
+Cumpa listens only on an ephemeral `127.0.0.1` loopback port. It prints the review URL before attempting to open your default browser. If no browser opens, use the printed URL directly.
 
 ## Review in the browser
 
@@ -57,10 +57,10 @@ Saved comments and the saved summary are repository-local, versioned JSON state.
 
 ### Draft location
 
-Compare stores a draft at:
+Cumpa stores a draft at:
 
 ```text
-.compare/drafts/<comparison-key>.json
+.cumpa/drafts/<comparison-key>.json
 ```
 
 `<comparison-key>` is a 64-hex SHA-256 hash derived from the ordered, pinned base and head commit OIDs. It is an application-generated draft identity, not a filename you choose or a literal base/head path.
@@ -70,15 +70,15 @@ Compare stores a draft at:
 Export creates this pair together from the accepted draft revision:
 
 ```text
-.compare/exports/<baseOid>..<headOid>/review.json
-.compare/exports/<baseOid>..<headOid>/review.md
+.cumpa/exports/<baseOid>..<headOid>/review.json
+.cumpa/exports/<baseOid>..<headOid>/review.md
 ```
 
 `review.json` is the canonical export; `review.md` is derived from it. Export does not apply, stage, commit, or push changes.
 
-After a successful export, the receipt offers **Reveal export directory**. The export area also shows `.gitignore` status and offers an optional flow to append the Compare ignore rule. Ignore status is not a prerequisite for reviewing or exporting.
+After a successful export, the receipt offers **Reveal export directory**. The export area also shows `.gitignore` status and offers an optional flow to append the Cumpa ignore rule. Ignore status is not a prerequisite for reviewing or exporting.
 
-## Stop Compare
+## Stop Cumpa
 
 Return to the terminal where you launched `cumpa` and press `Ctrl+C`. This stops the local loopback server.
 
@@ -101,7 +101,7 @@ Visible controls remain available for every action. These shortcuts are addition
 
 ## Review changes from a coding agent
 
-Run these commands from the repository being reviewed. Redirect `stdout` to the review JSON file your agent will consume; Compare sends the browser URL and diagnostics to `stderr`.
+Run these commands from the repository being reviewed. Redirect `stdout` to the review JSON file your agent will consume; Cumpa sends the browser URL and diagnostics to `stderr`.
 
 ### Review a revision range
 
@@ -110,7 +110,7 @@ Provide full, pinned commit OIDs with the base before the head. This example lim
 ```sh
 node --input-type=module -e '
 const request = {
-  kind: "compare.review-request",
+  kind: "cumpa.review-request",
   schemaVersion: 1,
   mode: "revisions",
   revisions: {
@@ -134,7 +134,7 @@ node --input-type=module -e '
 import { readFileSync } from "node:fs";
 
 const request = {
-  kind: "compare.review-request",
+  kind: "cumpa.review-request",
   schemaVersion: 1,
   mode: "patch",
   patch: {
@@ -146,24 +146,24 @@ process.stdout.write(JSON.stringify(request));
 ' | cumpa > agent-review.json
 ```
 
-Choose `repository` to ground the patch against the current committed `HEAD` tree, or `worktree` to ground it against current on-disk entries. The patch’s preimages and modes must exactly match that target before Compare freezes the grounded bytes. Compare never applies, stages, commits, or pushes the patch.
+Choose `repository` to ground the patch against the current committed `HEAD` tree, or `worktree` to ground it against current on-disk entries. The patch’s preimages and modes must exactly match that target before Cumpa freezes the grounded bytes. Cumpa never applies, stages, commits, or pushes the patch.
 
 ### Finish and receive canonical JSON
 
 When stdin is a TTY, `cumpa` runs the existing interactive picker. A pipe or redirected stdin selects this agent-request protocol instead: the browser opens and the process stays attached. The URL, fallback text, and safe diagnostics go to `stderr`; `stdout` stays empty while the review is open.
 
-In the browser, save the feedback and choose **Finish**. Once Finish successfully settles the accepted saved revision, Compare writes exactly one canonical review JSON document to `stdout`, waits for the Finish response to settle, closes the local server, and exits `0`. Revision conflicts and failed Finish attempts leave canonical `stdout` empty. Validation, grounding, or delivery failures also leave it empty and exit `1`. Pressing `Ctrl+C` before delivery cancels without partial JSON and exits `130`.
+In the browser, save the feedback and choose **Finish**. Once Finish successfully settles the accepted saved revision, Cumpa writes exactly one canonical review JSON document to `stdout`, waits for the Finish response to settle, closes the local server, and exits `0`. Revision conflicts and failed Finish attempts leave canonical `stdout` empty. Validation, grounding, or delivery failures also leave it empty and exit `1`. Pressing `Ctrl+C` before delivery cancels without partial JSON and exits `130`.
 
 Treat a zero exit plus parseable captured `stdout` as the agent handoff contract.
 
 ### Request reference
 
-Both v1 requests are strict JSON objects with `kind` set to `compare.review-request` and `schemaVersion` set to `1`.
+Both v1 requests are strict JSON objects with `kind` set to `cumpa.review-request` and `schemaVersion` set to `1`.
 
 <!-- agent-request-example:revisions -->
 ```json
 {
-  "kind": "compare.review-request",
+  "kind": "cumpa.review-request",
   "schemaVersion": 1,
   "mode": "revisions",
   "revisions": {
@@ -179,7 +179,7 @@ Both v1 requests are strict JSON objects with `kind` set to `compare.review-requ
 <!-- agent-request-example:patch -->
 ```json
 {
-  "kind": "compare.review-request",
+  "kind": "cumpa.review-request",
   "schemaVersion": 1,
   "mode": "patch",
   "patch": {
@@ -201,6 +201,6 @@ For exact-patch reviews, the frozen source snapshot is private to the session. I
 
 ## v1 file limits
 
-Compare reviews regular UTF-8 text files only. Each inspected blob side must be at most 1,048,576 bytes (1 MiB).
+Cumpa reviews regular UTF-8 text files only. Each inspected blob side must be at most 1,048,576 bytes (1 MiB).
 
-Binary, non-UTF-8, oversized, symlink, submodule, and unsupported mode/type entries stay visible but are not reviewable. Missing-object cases (missing objects) are separately unavailable rather than unsupported file kinds. Compare does not separately detect arbitrary generated source files. Its own `.compare/` internal output is always excluded from the review inventory.
+Binary, non-UTF-8, oversized, symlink, submodule, and unsupported mode/type entries stay visible but are not reviewable. Missing-object cases (missing objects) are separately unavailable rather than unsupported file kinds. Cumpa does not separately detect arbitrary generated source files. Its own `.cumpa/` internal output is always excluded from the review inventory.

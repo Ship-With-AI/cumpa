@@ -249,7 +249,7 @@ await fastify.listen({ host: '127.0.0.1', port: 0 });
 - Generate a process-scoped high-entropy token.
 - Put it in the URL fragment, remove the fragment immediately in the SPA, retain it in memory, and send it as a bearer token.
 - Require exact Host; reject any present Origin that differs from the expected origin; allow absent Origin only with exact Host and token.
-- Compare tokens in constant time.
+- Cumpa tokens in constant time.
 - Do not enable CORS.
 - Apply no-store/no-referrer/nosniff/frame/base/CSP protections.
 - Browser denials are generic; terminal diagnostics carry correlation and actionable detail without logging the token.
@@ -275,7 +275,7 @@ The app factory should close over a frozen session and `Map<FileId, FrozenChange
 
 Required order:
 
-1. Discover, select, resolve, compare, inventory, classify, and confirm.
+1. Discover, select, resolve, cumpa, inventory, classify, and confirm.
 2. Freeze session, capabilities, and token.
 3. Bind to `127.0.0.1` with an OS-assigned port.
 4. Print URL and shutdown instructions.

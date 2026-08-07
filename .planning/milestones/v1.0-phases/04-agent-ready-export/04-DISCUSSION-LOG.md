@@ -57,7 +57,7 @@
 | Gitignore | Explicit byte-preserving append offer | Silent mutation; no help |
 | Pair failure | Temporary generation + transactional publication | Independent files; delete-first |
 | Receipt | Revision, timestamp, relative paths, SHA-256 hashes, drift state | Generic toast; auto-open |
-| Non-mutation proof | Behaviorally compare Git/source state before/after | Trust review; cleanup afterward |
+| Non-mutation proof | Behaviorally cumpa Git/source state before/after | Trust review; cleanup afterward |
 
 **Notes:** Declining gitignore setup still allows export with a warning. `.diff-review/` remains excluded from the reviewed change set regardless. Source-control writes/commands are prohibited.
 

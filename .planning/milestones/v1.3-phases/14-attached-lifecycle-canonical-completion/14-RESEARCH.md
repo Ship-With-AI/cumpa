@@ -86,7 +86,7 @@ Completion must execute in this order inside the draft store's per-repository/co
 
 1. Join the same `runSerialized(queueKey, …)` boundary used by `mutate`; do not call an unqueued `loadState()` and then validate outside the queue.
 2. Load canonical draft bytes inside the critical section. Reject `malformed`, `schemaInvalid`, and `newerUnsupported`; do not recover or overwrite during finish.
-3. Compare the supplied `expectedRevision` with the current accepted revision. On mismatch return both expected and actual revisions and no bytes.
+3. Cumpa the supplied `expectedRevision` with the current accepted revision. On mismatch return both expected and actual revisions and no bytes.
 4. Clone/freeze the accepted draft and retain a fingerprint of the raw canonical bytes.
 5. Revalidate the attached identity: exact frozen range plus selector observation for range mode; digest/target/review key plus current patch snapshot status for exact-patch mode.
 6. Verify every accepted comment's exact recorded anchor through `capabilities.verifyAnchor`. Any `stale` or `orphaned` result fails the whole finish. Never rewrite, relocate, or reactivate the record.

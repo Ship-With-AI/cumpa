@@ -43,7 +43,7 @@ must_haves:
 | `src/server/draft-loader.ts`, `src/server/draft-store.ts` | VERIFIED | Strict validator feeds one scope-derived canonical path, temporary name, and queue key. |
 | `src/server/export-store.ts` | VERIFIED | Scope selects storage name only; canonical V2/V3 provenance matcher remains independent. |
 | `src/server/capabilities.ts` | VERIFIED | Range/patch registries reuse validated scope for draft/export/reveal/Finish boundaries. |
-| `tests/e2e/agent-ready-export.spec.ts` | VERIFIED | Extracted CLI, real loopback/browser/pages, descriptor-backed stdout, and actual `.compare` files. |
+| `tests/e2e/agent-ready-export.spec.ts` | VERIFIED | Extracted CLI, real loopback/browser/pages, descriptor-backed stdout, and actual `.cumpa` files. |
 
 ## Recorded focused evidence
 

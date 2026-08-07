@@ -87,7 +87,7 @@ Accent is reserved for the selected file indicator, active disclosure state, lin
 
 ## Visual Hierarchy
 
-1. The existing comparison header remains first: `Compare: {base label} · {base short OID} → {head label} · {head short OID}`.
+1. The existing comparison header remains first: `Cumpa: {base label} · {base short OID} → {head label} · {head short OID}`.
 2. The existing pin cue remains adjacent: `Pinned to displayed commits`.
 3. For an agent range, the header disclosure label is `View review scope`. It opens the scope panel without changing the diff or file selection.
 4. The changed-files inventory remains the primary navigation surface and shows only files produced by the pinned base/head and exact ordered Git pathspec scope.
@@ -158,7 +158,7 @@ Scope panel footer copy: `This review is pinned to these commits and ordered Git
 | Empty state heading | `No changes match this review scope` |
 | Empty state body | `The pinned commits have no changed files selected by this scope. View review scope to inspect the commits and ordered Git pathspecs.` |
 | Error state heading | `Pinned range unavailable` |
-| Error state | `Compare could not load the pinned commits or scoped file inventory. Relaunch the same request; this review will not substitute current refs.` |
+| Error state | `Cumpa could not load the pinned commits or scoped file inventory. Relaunch the same request; this review will not substitute current refs.` |
 | Diff-load retry | `Try loading pinned diff again` |
 | Destructive confirmation | Not applicable — Phase 12 adds no destructive action or confirmation. |
 

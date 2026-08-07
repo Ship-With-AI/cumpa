@@ -188,7 +188,7 @@ The packaged browser case observes the following semantic contract:
 
 **1. [Rule 3 - Blocking] Removed Node-only Buffer dependency from the browser tree execution path**
 - **Found during:** Task 2 (GREEN — compose accessible opaque-ID tree navigation)
-- **Issue:** The tested Plan 09 projection decoded and compared exact paths with Node `Buffer`. Once the Vue tree executed that model in production browser assets, the packaged tree could not render without a Node global/polyfill.
+- **Issue:** The tested Plan 09 projection decoded and cumpad exact paths with Node `Buffer`. Once the Vue tree executed that model in production browser assets, the packaged tree could not render without a Node global/polyfill.
 - **Fix:** Replaced exact-path ownership, base64url conversion, decoding, and bytewise comparison with `Uint8Array`, `btoa`/`atob`, and an explicit lexicographic comparator; the tree projection now consumes those shared helpers.
 - **Files modified:** `src/domain/path-bytes.ts`, `src/domain/file-tree.ts`
 - **Verification:** The exact packaged Chromium command reaches and passes the complete tree interaction case using production assets and invalid-UTF-8 fixture paths.

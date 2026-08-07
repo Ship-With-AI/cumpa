@@ -1,8 +1,8 @@
-# Compare
+# Cumpa
 
 ## What This Is
 
-Compare is a local-first code review application for developers who want a GitHub pull-request-style review experience without publishing branches or worktrees to a remote host. A CLI launched inside a Git repository opens a browser workspace where the developer selects two local branches or registered worktrees, reviews PR-style changes side by side, leaves line comments and an overall summary, and exports the result as Markdown plus canonical JSON that a coding agent can apply.
+Cumpa is a local-first code review application for developers who want a GitHub pull-request-style review experience without publishing branches or worktrees to a remote host. A CLI launched inside a Git repository opens a browser workspace where the developer selects two local branches or registered worktrees, reviews PR-style changes side by side, leaves line comments and an overall summary, and exports the result as Markdown plus canonical JSON that a coding agent can apply.
 
 ## Core Value
 
@@ -12,7 +12,7 @@ A developer can accurately review repository-grounded changes chosen by a develo
 
 **Shipped:** v1.3 Agent Review Handoff on 2026-08-06.
 
-Compare now accepts one strict, bounded versioned stdin request for either a pinned Git revision range or an already-applied patch. The existing authenticated browser workspace supports an explicit Finish review action; the waiting CLI then receives exactly one validated canonical JSON result on stdout. Range and patch reviews retain immutable, drift-detectable provenance without changing the interactive TTY workflow.
+Cumpa now accepts one strict, bounded versioned stdin request for either a pinned Git revision range or an already-applied patch. The existing authenticated browser workspace supports an explicit Finish review action; the waiting CLI then receives exactly one validated canonical JSON result on stdout. Range and patch reviews retain immutable, drift-detectable provenance without changing the interactive TTY workflow.
 
 ## Next Milestone Goals
 
@@ -21,7 +21,7 @@ To be defined when the next milestone is initiated.
 <details>
 <summary>v1.3 Agent Review Handoff (shipped)</summary>
 
-**Goal:** Let a coding agent submit an exact, repository-grounded review request, wait while the developer reviews it in Compare, and receive canonical JSON feedback on completion.
+**Goal:** Let a coding agent submit an exact, repository-grounded review request, wait while the developer reviews it in Cumpa, and receive canonical JSON feedback on completion.
 
 **Delivered features:**
 - Accepted a versioned review request on CLI stdin without changing the existing interactive launch flow.
@@ -90,7 +90,7 @@ None — define the next milestone's requirements when it is initiated.
 
 ### Out of Scope
 
-- Automatic review of staged, unstaged, or untracked worktree state — v1.3 accepts only an exact agent-supplied patch proven against repository/worktree content; Compare does not discover or synthesize a working-tree diff.
+- Automatic review of staged, unstaged, or untracked worktree state — v1.3 accepts only an exact agent-supplied patch proven against repository/worktree content; Cumpa does not discover or synthesize a working-tree diff.
 - Hosting reviews remotely or supporting multiple simultaneous reviewers — the product is a single-developer local tool.
 - Posting reviews to GitHub, GitLab, or another forge — export files are the integration boundary for v1.
 - Applying requested changes from inside the application — a separate coding agent consumes the export.
@@ -99,13 +99,13 @@ None — define the next milestone's requirements when it is initiated.
 
 ## Context
 
-Compare has shipped three milestones: the complete local browser-review-to-agent loop, a GitHub-dark accessible review workspace, and scalable local source discovery. The CLI now opens source selection from the attached current branch and registered worktrees without waiting for a complete local-branch scan; non-empty input performs fresh, literal, case-insensitive local-head search through native Git.
+Cumpa has shipped three milestones: the complete local browser-review-to-agent loop, a GitHub-dark accessible review workspace, and scalable local source discovery. The CLI now opens source selection from the attached current branch and registered worktrees without waiting for a complete local-branch scan; non-empty input performs fresh, literal, case-insensitive local-head search through native Git.
 
-Each comparison remains ordered and frozen to full commit IDs. The displayed change is the merge base of those commits compared with the selected head; selected worktrees resolve to committed `HEAD` values and dirty bytes never enter the review.
+Each comparison remains ordered and frozen to full commit IDs. The displayed change is the merge base of those commits cumpad with the selected head; selected worktrees resolve to committed `HEAD` values and dirty bytes never enter the review.
 
 The browser workspace provides an exact changed-file tree, real Monaco side-by-side text diffs, expandable context, keyboard navigation, durable line comments, review summary and comment lifecycle, conflict recovery, selector-drift reporting, and explicit unsupported, stale, and orphaned states.
 
-Exports are versioned and machine-validated. Canonical JSON owns comparison identities, accepted summary and comments, timestamps, blob identities, and context anchors; Markdown is derived from that same validated model. Publication is an atomic pair beneath `.compare/exports/`, with hashes and a bounded receipt.
+Exports are versioned and machine-validated. Canonical JSON owns comparison identities, accepted summary and comments, timestamps, blob identities, and context anchors; Markdown is derived from that same validated model. Publication is an atomic pair beneath `.cumpa/exports/`, with hashes and a bounded receipt.
 
 v1.2 completed 5/5 requirements, 12/12 cross-phase integrations, and 5/5 end-to-end flows. Its compiled production gate proved exactly 10,000 packed local heads with zero loose heads, one discarded warmup, five serial measurements, readiness median 221.532417 ms against a 400 ms budget, and search median 38.266167 ms against a 500 ms budget.
 
@@ -124,7 +124,7 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 - **Server**: Fastify bound only to `127.0.0.1` on an ephemeral port — the default browser opens automatically and no LAN service is exposed.
 - **UI**: Vue 3 with Vite and Monaco Diff Editor — side-by-side diff rendering, line mapping, syntax highlighting, and inline review controls run in the browser.
 - **Contracts**: Zod schemas shared by API, draft persistence, and export generation — incompatible or corrupt data fails explicitly.
-- **Persistence**: Versioned JSON files in a gitignored repository-local `.compare/` directory — no database or browser-only source of truth.
+- **Persistence**: Versioned JSON files in a gitignored repository-local `.cumpa/` directory — no database or browser-only source of truth.
 - **Content**: Text files only in v1 — binary, generated, oversized, or unsupported files remain visible as non-reviewable entries.
 - **Testing**: Vitest for Git, diff, persistence, and export contracts; Playwright for the browser review flow.
 

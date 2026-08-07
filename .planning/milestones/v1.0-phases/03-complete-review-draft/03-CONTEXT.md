@@ -78,7 +78,7 @@ No external specs or ADRs exist.
 - The review panel consumes the canonical draft and existing file/anchor navigation, not a duplicate client-only comment index.
 - Summary mutations share the same revision and atomic persistence boundary as comments.
 - Draft loading must distinguish valid/current, valid/newer-unsupported, malformed/schema-invalid, and missing states before exposing mutation routes.
-- Selector-drift checks compare the launch-time source selectors with current resolved commits without changing pinned base/head/merge-base/blob identities.
+- Selector-drift checks cumpa the launch-time source selectors with current resolved commits without changing pinned base/head/merge-base/blob identities.
 
 </code_context>
 

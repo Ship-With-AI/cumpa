@@ -16,7 +16,7 @@ created: 2026-08-05
 
 ## UI Impact Boundary
 
-Phase 14 adds an attached completion lifecycle to agent-submitted range and exact-patch reviews. Both input modes MUST continue to open directly in Compare's existing authenticated Vue review workspace. File navigation, Monaco side-by-side diffs, line comments, open/resolved comment organization, summary editing, repository-local draft persistence and recovery, keyboard help, identity disclosures, file metadata, selector-drift presentation, and ordinary export remain visually and functionally unchanged.
+Phase 14 adds an attached completion lifecycle to agent-submitted range and exact-patch reviews. Both input modes MUST continue to open directly in Cumpa's existing authenticated Vue review workspace. File navigation, Monaco side-by-side diffs, line comments, open/resolved comment organization, summary editing, repository-local draft persistence and recovery, keyboard help, identity disclosures, file metadata, selector-drift presentation, and ordinary export remain visually and functionally unchanged.
 
 Only an agent-submitted attached session shows completion UI. Interactive TTY-launched comparisons MUST NOT show an attached status or `Finish review` action. Phase 14 does not create a second review workspace, a request-status page, or a terminal monitor.
 
@@ -158,16 +158,16 @@ Existing semantic colors remain available without changing the 60/30/10 surface 
 - A revision conflict shows `Review changed before finish`, both expected and actual revisions, the statement `No feedback was returned.`, and `Reload latest`. After reload, the developer reviews the accepted state and must explicitly choose `Finish review` again.
 - For a stale or unavailable anchor, render only the Copywriting Contract's exact `Review can’t be finished` heading, stale-feedback body, and `Review stale feedback` action. The action opens the relevant comment group and focuses the first affected comment heading only; it MUST NOT change a recorded anchor, focus a Monaco line, relocate or rebind an anchor, or reactivate a stale/orphaned comment. The developer may delete and recreate affected feedback against a verified line or relaunch the review, then explicitly finish again.
 - For stale submitted range scope, render only the exact `Reviewed content changed` heading, range-scope body, and `View review scope` action. For stale submitted exact-patch content, render only that heading, the exact-patch body, and `View patch scope`. Both recoveries inspect the recorded source scope and require relaunching the agent request against valid content; neither acknowledges drift nor refreshes reviewed bytes.
-- A corrupt, incomplete, or read-only accepted draft shows `Review draft can’t be validated`, states that no feedback was returned, and provides `Reload review`. If reload cannot recover the authenticated draft, copy instructs the developer to relaunch Compare.
-- A retryable generic failure shows `Review was not finished`, the exact statement `No feedback was returned. Check that Compare is still running, then try Finish review again.`, and the action `Try Finish review again` only after the current attempt has definitively failed.
+- A corrupt, incomplete, or read-only accepted draft shows `Review draft can’t be validated`, states that no feedback was returned, and provides `Reload review`. If reload cannot recover the authenticated draft, copy instructs the developer to relaunch Cumpa.
+- A retryable generic failure shows `Review was not finished`, the exact statement `No feedback was returned. Check that Cumpa is still running, then try Finish review again.`, and the action `Try Finish review again` only after the current attempt has definitively failed.
 
 ### Reload, close, export, and disconnect are not success
 
 - Ordinary export retains its existing states and receipts. After a confirmed export in an attached session, add support copy: `Export complete. This attached review is still unfinished. Choose Finish review when you are ready.` Export success remains export success only.
 - Closing the review rail or tab/browser produces no lifecycle request and no completion toast. The persistent waiting copy already explains the consequence; do not add a new unload confirmation solely for attachment.
 - Reloading while waiting reconnects to the same server-authoritative attached state and returns to `Agent attached · waiting for Finish review`. Reload MUST NOT replay the finish request or infer completion from an earlier click.
-- If connection is lost while waiting, show `Attached review disconnected` and `The browser lost its connection to Compare. This review is still unfinished. Reload this page while Compare is running, then choose Finish review.` Action: `Reload page`.
-- If connection is lost after Finish was sent but before confirmation, show `Completion status unavailable` and `Compare disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Compare is still running, reload to reconnect.` Action: `Reload page`. Do not automatically retry an outcome whose status is ambiguous.
+- If connection is lost while waiting, show `Attached review disconnected` and `The browser lost its connection to Cumpa. This review is still unfinished. Reload this page while Cumpa is running, then choose Finish review.` Action: `Reload page`.
+- If connection is lost after Finish was sent but before confirmation, show `Completion status unavailable` and `Cumpa disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Cumpa is still running, reload to reconnect.` Action: `Reload page`. Do not automatically retry an outcome whose status is ambiguous.
 
 ---
 
@@ -221,23 +221,23 @@ Existing semantic colors remain available without changing the 60/30/10 surface 
 | Revision conflict body | `Accepted revision {expectedRevision} is no longer current. Latest revision is {actualRevision}. No feedback was returned. Reload the latest review, check the comments and summary, then choose Finish review again.` |
 | Revision conflict action | `Reload latest` |
 | Stale feedback heading | `Review can’t be finished` |
-| Stale feedback body | `Compare found stale or unavailable feedback anchors in the accepted review. Affected comments: {count}. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.` |
+| Stale feedback body | `Cumpa found stale or unavailable feedback anchors in the accepted review. Affected comments: {count}. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.` |
 | Stale feedback action | `Review stale feedback` |
 | Stale scope heading | `Reviewed content changed` |
 | Stale range-scope body | `The submitted review scope no longer passes completion validation. No feedback was returned. Inspect the recorded review scope, then relaunch the agent request against valid content.` |
 | Stale exact-patch body | `The submitted patch content no longer passes completion validation. No feedback was returned. Inspect the recorded patch scope, then relaunch the agent request against valid content.` |
 | Stale scope action | Range mode: `View review scope`; exact-patch mode: `View patch scope` |
 | Draft validation heading | `Review draft can’t be validated` |
-| Draft validation body | `The accepted local draft is corrupt, incomplete, or read-only. No feedback was returned. Reload the review; if it remains unavailable, relaunch Compare.` |
+| Draft validation body | `The accepted local draft is corrupt, incomplete, or read-only. No feedback was returned. Reload the review; if it remains unavailable, relaunch Cumpa.` |
 | Draft validation action | `Reload review` |
 | Generic error heading | `Review was not finished` |
-| Generic error body | `No feedback was returned. Check that Compare is still running, then try Finish review again.` |
+| Generic error body | `No feedback was returned. Check that Cumpa is still running, then try Finish review again.` |
 | Generic retry | `Try Finish review again` |
 | Export non-success support | `Export complete. This attached review is still unfinished. Choose Finish review when you are ready.` |
 | Waiting disconnect heading | `Attached review disconnected` |
-| Waiting disconnect body | `The browser lost its connection to Compare. This review is still unfinished. Reload this page while Compare is running, then choose Finish review.` |
+| Waiting disconnect body | `The browser lost its connection to Cumpa. This review is still unfinished. Reload this page while Cumpa is running, then choose Finish review.` |
 | Ambiguous disconnect heading | `Completion status unavailable` |
-| Ambiguous disconnect body | `Compare disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Compare is still running, reload to reconnect.` |
+| Ambiguous disconnect body | `Cumpa disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Cumpa is still running, reload to reconnect.` |
 | Disconnect action | `Reload page` |
 | Destructive confirmation | Not applicable — Phase 14 adds no destructive action. `Finish review` is final but uses explicit adjacent consequence copy rather than a modal. Existing `Delete comment` confirmations remain unchanged. |
 

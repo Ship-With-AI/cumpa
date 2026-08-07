@@ -32,7 +32,7 @@ Copy the one-stream fast-import algorithm from `support.mjs:33-49`: `main` plus 
 
 **Production launch analog:** `tests/cli/help.test.ts:1-25` resolves `dist/bin/cumpa.mjs` with `fileURLToPath(new URL(...))` and invokes `spawnSync(process.execPath, [executablePath], { cwd, encoding: 'utf8', timeout: 10_000 })`. Use asynchronous `spawn` with the same executable/argv, `shell: false`, `cwd: fixture.repository`, and piped stdin/stdout/stderr. `scripts/build-bin.mjs:6-10` proves this wrapper imports `run` from `../cli/run.js` and is the shipped entrypoint.
 
-The child environment must explicitly omit `COMPARE_LAUNCH_OPTIONS` and `CMUX_WORKSPACE_ID`: `src/cli/run.ts:460-483` bypasses the picker when the former is present. Do not import `runCli`, inject dependencies, wrap Git, or add a PTY dependency. Installed Inquirer over direct pipes is the real prompt path.
+The child environment must explicitly omit `CUMPA_LAUNCH_OPTIONS` and `CMUX_WORKSPACE_ID`: `src/cli/run.ts:460-483` bypasses the picker when the former is present. Do not import `runCli`, inject dependencies, wrap Git, or add a PTY dependency. Installed Inquirer over direct pipes is the real prompt path.
 
 **Markers and timing:** Use parent `performance.now()` only. Start PERF-01 immediately before child `spawn()`; stop only when stdout contains the exact rendered eager row `[Branch] main · ${mainShortOid}` from `src/cli/picker.ts:145-159`. Start PERF-02 immediately before `child.stdin.write('branch-09999')`; stop only on `[Branch] branch-09999 · ${targetShortOid}`. This covers the actual chain `run.ts:330-453` → `candidates.ts:287-507` → `picker.ts:263-381` → `@inquirer/search` renderer. Do not stop on prompt title, Git completion, echoed input, or synthetic child output.
 

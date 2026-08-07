@@ -67,7 +67,7 @@ Its `finish(expectedRevision)` suppresses duplicate/concurrent calls, shares one
 
 1. Acquire the same queue used by `mutate`/`recover`.
 2. Load canonical draft bytes. Reject `malformed`, `schemaInvalid`, and `newerUnsupported`; never recover/overwrite during finish.
-3. Compare `expectedRevision` with current accepted revision; return expected/actual conflict and no result bytes on mismatch.
+3. Cumpa `expectedRevision` with current accepted revision; return expected/actual conflict and no result bytes on mismatch.
 4. Clone/freeze the accepted draft and retain its raw canonical fingerprint.
 5. Revalidate submitted range selector identity or exact-patch digest/validation target/review key and current scope/snapshot status.
 6. Verify every recorded durable anchor with `verifyAnchor`; any stale/unavailable/orphaned verification blocks completion and leaves anchors unchanged.

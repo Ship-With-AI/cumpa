@@ -30,7 +30,7 @@ None — discuss phase skipped.
 
 ## Summary
 
-Phase 11 should add one standalone performance acceptance harness and one package command; it should not begin with production optimization. The harness must create and prove a 10,000-local-branch packed fixture outside timed intervals, perform one discarded warmup, then run five serial samples by spawning Node with the compiled production executable. The child must use the unmodified Commander → `runCli()` → `discoverSourceCandidates()` → `pickOrderedSources()` → `@inquirer/search` path, with `COMPARE_LAUNCH_OPTIONS` absent. [VERIFIED: `package.json`, `scripts/build-bin.mjs`, `src/cli/run.ts`, `.planning/ROADMAP.md`]
+Phase 11 should add one standalone performance acceptance harness and one package command; it should not begin with production optimization. The harness must create and prove a 10,000-local-branch packed fixture outside timed intervals, perform one discarded warmup, then run five serial samples by spawning Node with the compiled production executable. The child must use the unmodified Commander → `runCli()` → `discoverSourceCandidates()` → `pickOrderedSources()` → `@inquirer/search` path, with `CUMPA_LAUNCH_OPTIONS` absent. [VERIFIED: `package.json`, `scripts/build-bin.mjs`, `src/cli/run.ts`, `.planning/ROADMAP.md`]
 
 The parent process should own both monotonic timing boundaries. Picker readiness is not prompt text or a fake callback: it is the first real rendered eager branch row. Search completion is not a Git subprocess completion or a mocked promise: it is the first real rendered row for a unique entered branch term. This includes module loading, Commander parsing, Git prerequisite discovery, candidate construction, prompt state, renderer scheduling, native filtered lookup, batch abbreviation, and terminal rendering. [VERIFIED: `src/cli/run.ts`, `src/cli/picker.ts`, `src/git/candidates.ts`, `node_modules/@inquirer/search/dist/index.js`, `node_modules/@inquirer/core/dist/lib/create-prompt.js`]
 
@@ -42,7 +42,7 @@ Checked-in spikes show substantial packed-ref headroom, but they use injected or
 
 - Use Node.js 24 and TypeScript end to end for production code; Git CLI is the source of truth for refs and object identity. The acceptance harness may be `.mjs` because it executes the already-compiled product and adds no production runtime language. [VERIFIED: loaded `.claude/CLAUDE.md`, `package.json`]
 - Preserve Commander and the Inquirer searchable ordered Base/Head picker; an alternate benchmark-only UI is not the production path. [VERIFIED: loaded `.claude/CLAUDE.md`, `src/cli/run.ts`, `src/cli/picker.ts`]
-- Do not make Compare pack or otherwise mutate a user's repository. `git pack-refs` belongs only in a newly created benchmark fixture before measurement. [VERIFIED: `.planning/REQUIREMENTS.md`, `.planning/spikes/002-staged-source-discovery/README.md`]
+- Do not make Cumpa pack or otherwise mutate a user's repository. `git pack-refs` belongs only in a newly created benchmark fixture before measurement. [VERIFIED: `.planning/REQUIREMENTS.md`, `.planning/spikes/002-staged-source-discovery/README.md`]
 - Use existing code patterns before adding dependencies or abstractions. This phase needs only Node standard-library modules, installed Git, the existing compiled binary, and the installed prompt. [VERIFIED: loaded project instructions, `package.json`, `.planning/spikes/CONVENTIONS.md`]
 - The task explicitly forbids implementation edits or commits during research and asks to skip formatters, linters, builds, and project-wide tests; this research performs none of them. [VERIFIED: upstream Phase 11 research contract]
 
@@ -175,13 +175,13 @@ const child = spawn(process.execPath, [executablePath], {
 });
 ```
 
-`executablePath` must resolve to repository-root `dist/bin/cumpa.mjs`. `COMPARE_LAUNCH_OPTIONS` must be deleted from the child environment because `run()` uses that variable to bypass the picker and launch a pinned session. `CMUX_WORKSPACE_ID` should also be removed so terminal integration cannot alter behavior. Set deterministic terminal dimensions/color flags and Git non-interactive flags, but do not replace `PATH`, wrap `git`, inject `RunCliDependencies`, or import `runCli()` in the harness. [VERIFIED: `src/cli/run.ts`, `src/git/runner.ts`, `tests/cli/help.test.ts`]
+`executablePath` must resolve to repository-root `dist/bin/cumpa.mjs`. `CUMPA_LAUNCH_OPTIONS` must be deleted from the child environment because `run()` uses that variable to bypass the picker and launch a pinned session. `CMUX_WORKSPACE_ID` should also be removed so terminal integration cannot alter behavior. Set deterministic terminal dimensions/color flags and Git non-interactive flags, but do not replace `PATH`, wrap `git`, inject `RunCliDependencies`, or import `runCli()` in the harness. [VERIFIED: `src/cli/run.ts`, `src/git/runner.ts`, `tests/cli/help.test.ts`]
 
 Direct pipes are intentional, not a fake terminal implementation. Installed `@inquirer/core` defaults to process stdin/stdout and creates readline with `terminal: true`; installed `@inquirer/search` processes keypresses, calls the production source, and renders returned item names. [VERIFIED: `node_modules/@inquirer/core/dist/lib/create-prompt.js`, `node_modules/@inquirer/search/dist/index.js`]
 
 ### Stable Boundaries and Markers
 
-Use only `performance.now()` in the parent; never compare a child timestamp to a parent timestamp. Node documents Performance API timestamps as high-resolution and monotonic relative to the process time origin. [CITED: https://nodejs.org/docs/latest-v24.x/api/perf_hooks.html#performancenow]
+Use only `performance.now()` in the parent; never cumpa a child timestamp to a parent timestamp. Node documents Performance API timestamps as high-resolution and monotonic relative to the process time origin. [CITED: https://nodejs.org/docs/latest-v24.x/api/perf_hooks.html#performancenow]
 
 **PERF-01 start:** take `readyStartedAt = performance.now()` on the statement immediately before `spawn()`. This is a conservative, reproducible proxy for process start because it includes the launch call rather than starting after a child message. [CITED: https://nodejs.org/docs/latest-v24.x/api/child_process.html#child_processspawncommand-args-options; boundary choice is Claude's discretion from `11-CONTEXT.md`]
 
@@ -273,7 +273,7 @@ const searchMs = performance.now() - searchStartedAt;
 | `tests/helpers/git-fixture.ts` | Keep for small correctness tests. [VERIFIED: `tests/helpers/git-fixture.ts`] | It creates a few refs with synchronous Git calls and is not the 10,000-ref performance fixture seam. [VERIFIED: `tests/helpers/git-fixture.ts`] |
 | `tests/cli/selection.test.ts` | Preserve as ordered picker/cancellation/exact-ID behavior coverage. [VERIFIED: `tests/cli/selection.test.ts`] | Its injected `SourceSearchPrompt` and fake discovery deliberately bypass real command/render timing. [VERIFIED: `tests/cli/selection.test.ts`] |
 | `tests/git/candidates.test.ts` | Preserve as Git command shape, literal matching, batching, strict parsing, and cancellation coverage. [VERIFIED: `tests/git/candidates.test.ts`] | Direct service tests do not measure command startup or picker rendering. [VERIFIED: `tests/git/candidates.test.ts`] |
-| Package/browser E2E launch helpers | Reuse no code initially. [VERIFIED: existing package/browser test structure] | Paths that set `COMPARE_LAUNCH_OPTIONS` intentionally bypass the picker and cannot satisfy PERF-01/PERF-02. [VERIFIED: `src/cli/run.ts`, package/browser test launch helpers] |
+| Package/browser E2E launch helpers | Reuse no code initially. [VERIFIED: existing package/browser test structure] | Paths that set `CUMPA_LAUNCH_OPTIONS` intentionally bypass the picker and cannot satisfy PERF-01/PERF-02. [VERIFIED: `src/cli/run.ts`, package/browser test launch helpers] |
 
 ## Don't Hand-Roll
 
@@ -293,7 +293,7 @@ const searchMs = performance.now() - searchStartedAt;
 ### Pitfall 1: A Fixture Called “Packed” Without Proof
 **What goes wrong:** The command succeeds but some branches remain loose, or the count differs from 10,000, invalidating the benchmark. [CITED: https://git-scm.com/docs/git-pack-refs]  
 **Why it happens:** Setup trusts `pack-refs` exit status or checks only logical enumeration. [ASSUMED]  
-**How to avoid:** Compare the exact Git-enumerated set with the exact `packed-refs` branch set and require zero loose `refs/heads` files before warmup. [CITED: https://git-scm.com/docs/git-pack-refs]  
+**How to avoid:** Cumpa the exact Git-enumerated set with the exact `packed-refs` branch set and require zero loose `refs/heads` files before warmup. [CITED: https://git-scm.com/docs/git-pack-refs]  
 **Warning signs:** Missing `packed-refs`, nonzero loose count, duplicate/missing expected names, or logical/physical set mismatch. [VERIFIED: fixture invariants recommended above]
 
 ### Pitfall 2: Measuring an Internal Callback Instead of Usability
@@ -303,7 +303,7 @@ const searchMs = performance.now() - searchStartedAt;
 **Warning signs:** The benchmark imports `runCli`, supplies `pickSources`, calls `searchBranches` directly, or emits benchmark-only `ready` JSON from the child. [VERIFIED: invalid seams visible in checked-in spikes and unit tests]
 
 ### Pitfall 3: Accidentally Taking the Packaged Session Bypass
-**What goes wrong:** `COMPARE_LAUNCH_OPTIONS` makes `run()` skip the picker entirely. [VERIFIED: `src/cli/run.ts`]  
+**What goes wrong:** `CUMPA_LAUNCH_OPTIONS` makes `run()` skip the picker entirely. [VERIFIED: `src/cli/run.ts`]  
 **Why it happens:** A developer/CI environment inherits the variable from another test. [ASSUMED]  
 **How to avoid:** Explicitly delete it from the child environment and include the sanitized env keys in diagnostics. [VERIFIED: `src/cli/run.ts`; mitigation is Claude's discretion from `11-CONTEXT.md`]  
 **Warning signs:** Server/session output appears before a Base prompt, or no eager branch marker appears. [VERIFIED: `src/cli/run.ts`]
@@ -317,7 +317,7 @@ const searchMs = performance.now() - searchStartedAt;
 ### Pitfall 5: Conflating Timeout With Budget Failure
 **What goes wrong:** A 401 ms readiness becomes an opaque timeout, losing the evidence needed to optimize. [VERIFIED: `.planning/ROADMAP.md`; diagnostic consequence is Claude's discretion from `11-CONTEXT.md`]  
 **Why it happens:** The acceptance threshold is reused as an operational watchdog. [ASSUMED]  
-**How to avoid:** Use a generous 10-second marker watchdog, record actual latency, and compare against budgets afterward. [VERIFIED: existing 10-second project subprocess convention; policy is Claude's discretion from `11-CONTEXT.md`]  
+**How to avoid:** Use a generous 10-second marker watchdog, record actual latency, and cumpa against budgets afterward. [VERIFIED: existing 10-second project subprocess convention; policy is Claude's discretion from `11-CONTEXT.md`]  
 **Warning signs:** Failure says only “timed out after 400 ms” with no rendered duration or output tail. [ASSUMED]
 
 ### Pitfall 6: Hiding CI Noise by Weakening the Contract
@@ -464,7 +464,7 @@ No product design or runner-ownership question blocks planning. The acceptance e
 | Command injection through paths/terms | Tampering/Elevation | Always use `spawn(command, args, { shell: false })`; generate fixed safe ref names and never interpolate a shell command. [VERIFIED: `src/git/runner.ts`, `tests/cli/help.test.ts`] |
 | Destructive packing of a real repository | Tampering/Denial of Service | Create the repository inside a harness-owned temp root, retain its identity, and permit `pack-refs` only there. [VERIFIED: `.planning/REQUIREMENTS.md`, `.planning/spikes/001-large-repo-startup-baseline/support.mjs`] |
 | Unbounded child output | Denial of Service | Drain both streams continuously and retain bounded diagnostic tails; use marker watchdogs and termination escalation. [CITED: https://nodejs.org/docs/latest-v24.x/api/child_process.html] |
-| Environment bypass of picker | Tampering | Remove `COMPARE_LAUNCH_OPTIONS` and terminal-integration variables from child env; log sanitized relevant env state. [VERIFIED: `src/cli/run.ts`] |
+| Environment bypass of picker | Tampering | Remove `CUMPA_LAUNCH_OPTIONS` and terminal-integration variables from child env; log sanitized relevant env state. [VERIFIED: `src/cli/run.ts`] |
 | ANSI/control text in diagnostics | Spoofing | Fixture labels are fixed safe ASCII; escape captured output tails before printing structured diagnostics. [VERIFIED: fixture naming above; mitigation is Claude's discretion from `11-CONTEXT.md`] |
 
 ## Sources

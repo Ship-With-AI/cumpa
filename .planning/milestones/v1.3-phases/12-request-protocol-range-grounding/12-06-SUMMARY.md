@@ -85,7 +85,7 @@ Each task was committed atomically:
 
 **1. [Rule 1 - Test harness correctness] Generated stdin requests initially retained a test-only launch override.**
 - **Found during:** Task 1 (RED browser assertions)
-- **Issue:** `COMPARE_LAUNCH_OPTIONS` bypassed the ordinary stdin dispatch, so the generated-range test exercised an interactive session instead of the request protocol.
+- **Issue:** `CUMPA_LAUNCH_OPTIONS` bypassed the ordinary stdin dispatch, so the generated-range test exercised an interactive session instead of the request protocol.
 - **Fix:** Omitted the override when the helper supplies stdin and corrected the intercepted content route to cover the nested file-content endpoint.
 - **Files modified:** `tests/e2e/pinned-session.spec.ts`
 - **Verification:** The intended RED failures occurred only after generated range setup reached the missing UI; the final focused browser command passed all 11 tests.

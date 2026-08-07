@@ -11,7 +11,7 @@
 | sharedSchema | `src/contracts/draft.ts` | `ReviewDraftV1Schema` | `shared-schema` |
 | draftStore | `src/server/draft-store.ts` | `createDraftStore` | `draft-store` |
 | draftAnchorVocabulary | `src/contracts/draft.ts` | `DurableAnchorV1Schema` | `draft-anchor-vocabulary` |
-| exactPathIdentity | `src/domain/path-bytes.ts` | `compareExactPaths` | `exact-path-identity` |
+| exactPathIdentity | `src/domain/path-bytes.ts` | `orderExactPaths` | `exact-path-identity` |
 | comparisonInventory | `src/git/inventory.ts` | `createChangedFileInventory` | `comparison-inventory` |
 | selectorDriftResolver | `src/git/selector-drift.ts` | `createSelectorDriftObserver` | `selector-drift-resolver` |
 | safeGitRunner | `src/git/runner.ts` | `createGitRunner` | `safe-git-runner` |

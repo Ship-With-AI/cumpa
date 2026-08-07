@@ -1,6 +1,6 @@
 ---
 status: resolved
-trigger: "I launched the diff-review tool to compare two branches but the diff showed no files changed"
+trigger: "I launched the diff-review tool to cumpa two branches but the diff showed no files changed"
 created: 2026-07-24T08:02:47Z
 updated: 2026-07-24T08:16:11Z
 ---
@@ -43,7 +43,7 @@ started: First attempt with this branch pair.
   evidence: The implementation-equivalent raw and numstat Git commands for the observed order already returned zero bytes, before parsing or presentation; the same application layer parsed all 18 records in the reversed order.
   timestamp: 2026-07-24T08:16:11Z
 
-- hypothesis: The compared repository lacked the feature branch changes or the displayed identities were stale/wrong.
+- hypothesis: The cumpad repository lacked the feature branch changes or the displayed identities were stale/wrong.
   evidence: Direct ref resolution matched the displayed short OIDs, and direct Git plus createPinnedComparison both returned the same 18 changed paths when only base/head order was reversed.
   timestamp: 2026-07-24T08:16:11Z
 

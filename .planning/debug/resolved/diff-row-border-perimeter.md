@@ -8,7 +8,7 @@ updated: 2026-07-31T12:55:26Z
 ## Current Focus
 
 reasoning_checkpoint:
-  hypothesis: "Compare explicitly assigns diffEditor.insertedTextBorder and diffEditor.removedTextBorder, so Monaco emits a 1px border on every .line-insert/.char-insert and .line-delete/.char-delete node."
+  hypothesis: "Cumpa explicitly assigns diffEditor.insertedTextBorder and diffEditor.removedTextBorder, so Monaco emits a 1px border on every .line-insert/.char-insert and .line-delete/.char-delete node."
   confirming_evidence:
     - "Browser reproduction found three consecutive .line-insert and .line-delete nodes, each with computed 1px borders on all four sides."
     - "Monaco style.css applies border: 1px solid from exactly those optional theme variables to line and character diff nodes."
@@ -29,12 +29,12 @@ started: Existing behavior; exact introduction date not supplied.
 ## Ranked Hypotheses
 
 1. **Confirmed — explicit Monaco diff text-border theme colors.** `theme.ts` assigns opaque green/red values; Monaco consumes them as four-sided 1px borders on every changed line and intraline span; browser computed styles reproduce this on consecutive nodes.
-2. **Eliminated — Compare workspace CSS creates the repeated row outline.** `styles.css` defines the workspace perimeter/divider and selection/focus outlines, but no selector targeting `.line-insert`, `.line-delete`, `.char-insert`, or `.char-delete`.
+2. **Eliminated — Cumpa workspace CSS creates the repeated row outline.** `styles.css` defines the workspace perimeter/divider and selection/focus outlines, but no selector targeting `.line-insert`, `.line-delete`, `.char-insert`, or `.char-delete`.
 3. **Eliminated — `diffEditor.border` creates each row outline.** Monaco documents and registers it as the border between the two editors; the per-node CSS instead references only `insertedTextBorder` and `removedTextBorder`.
 
 ## Eliminated
 
-- hypothesis: Compare workspace CSS applies an outline to all changed rows.
+- hypothesis: Cumpa workspace CSS applies an outline to all changed rows.
   evidence: The only relevant app-level outlines target selected text, anchors, or focused panes; none target Monaco changed-line/text classes, while browser computed rules resolve to Monaco's diff CSS.
   timestamp: 2026-07-31T12:53:13Z
 - hypothesis: diffEditor.border is reused as each changed row's border.
@@ -45,12 +45,12 @@ started: Existing behavior; exact introduction date not supplied.
 
 - timestamp: 2026-07-31T12:53:13Z
   checked: src/web/monaco/theme.ts
-  found: The Compare theme explicitly sets diffEditor.insertedTextBorder to #3FB950 and diffEditor.removedTextBorder to #F85149 alongside separate background, gutter, overview, and editor-divider colors.
-  implication: Compare opts into borders that Monaco leaves unpainted by default.
+  found: The Cumpa theme explicitly sets diffEditor.insertedTextBorder to #3FB950 and diffEditor.removedTextBorder to #F85149 alongside separate background, gutter, overview, and editor-divider colors.
+  implication: Cumpa opts into borders that Monaco leaves unpainted by default.
 - timestamp: 2026-07-31T12:53:13Z
   checked: Monaco diffEditor/style.css and editorColors.js
   found: Monaco applies each optional text-border variable as a four-sided 1px border to line and character insert/delete nodes; ordinary dark/light defaults are null, while high-contrast defaults remain colored.
-  implication: Omitting the two Compare overrides is Monaco's native ordinary-theme behavior and preserves high-contrast semantics.
+  implication: Omitting the two Cumpa overrides is Monaco's native ordinary-theme behavior and preserves high-contrast semantics.
 - timestamp: 2026-07-31T12:53:13Z
   checked: Browser reproduction supplied by parent agent
   found: Three consecutive .line-insert and .line-delete nodes each computed 1px borders on all four sides.
@@ -66,7 +66,7 @@ started: Existing behavior; exact introduction date not supplied.
 
 ## Resolution
 
-root_cause: Compare overrides Monaco's optional diffEditor.insertedTextBorder and diffEditor.removedTextBorder colors; Monaco renders those colors as a four-sided 1px border on every changed line and intraline span, whereas standard dark/light themes leave them null.
-fix: Removed only diffEditor.insertedTextBorder and diffEditor.removedTextBorder from the Compare theme and their directly coupled root-token mappings.
+root_cause: Cumpa overrides Monaco's optional diffEditor.insertedTextBorder and diffEditor.removedTextBorder colors; Monaco renders those colors as a four-sided 1px border on every changed line and intraline span, whereas standard dark/light themes leave them null.
+fix: Removed only diffEditor.insertedTextBorder and diffEditor.removedTextBorder from the Cumpa theme and their directly coupled root-token mappings.
 verification: Focused check `npx vitest run tests/unit/monaco-theme.test.ts` passed (1 file, 2 tests); exhaustive theme-color key/value assertions confirm the two optional border overrides are absent and all retained theme semantics remain mapped.
 files_changed: [src/web/monaco/theme.ts, tests/unit/monaco-theme.test.ts]

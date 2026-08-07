@@ -1,13 +1,13 @@
 # Stack Research
 
-**Domain:** Agent-to-human review handoff for Compare's local-first Node.js CLI
+**Domain:** Agent-to-human review handoff for Cumpa's local-first Node.js CLI
 **Milestone:** v1.3 Agent Review Handoff
 **Researched:** 2026-08-04
-**Confidence:** MEDIUM — recommendations are grounded in the installed repository, current primary Node/Git/Fastify/Zod documentation, and registry metadata. The isolated Git object-overlay composition still needs implementation proof at Compare's Git 2.43.0 floor.
+**Confidence:** MEDIUM — recommendations are grounded in the installed repository, current primary Node/Git/Fastify/Zod documentation, and registry metadata. The isolated Git object-overlay composition still needs implementation proof at Cumpa's Git 2.43.0 floor.
 
 ## Executive Recommendation
 
-**Add no dependency and perform no v1.3-driven upgrade.** The confirmed handoff is an integration of capabilities Compare already ships or requires:
+**Add no dependency and perform no v1.3-driven upgrade.** The confirmed handoff is an integration of capabilities Cumpa already ships or requires:
 
 - Node.js 24 can consume one EOF-delimited, size-bounded stdin document and write exact bytes to stdout while diagnostics remain on stderr.
 - Installed `zod@4.4.3` can enforce a strict, versioned request with exactly one discriminated mode.
@@ -137,7 +137,7 @@ No WebSocket, SSE, polling timer, child IPC, lockfile watcher, or agent-controll
 
 Treat stdout as a protocol channel in attached mode:
 
-- **stdout:** exactly one canonical `ReviewExportV1` byte sequence from `canonicalizeReviewExport`, and nothing else. Do not append `\n`; the current canonical parser compares exact byte length and representation.
+- **stdout:** exactly one canonical `ReviewExportV1` byte sequence from `canonicalizeReviewExport`, and nothing else. Do not append `\n`; the current canonical parser cumpas exact byte length and representation.
 - **stderr:** URL, fallback instructions, warnings, validation details, Git failures, security diagnostics, and shutdown errors.
 - Await the `process.stdout.write(bytes, callback)` completion before allowing natural process exit.
 - Set `process.exitCode` for failures; do not call `process.exit()`, which Node documents can truncate pending stdout.
@@ -161,13 +161,13 @@ Fastify `5.11.2` and Vue `3.5.40` are newer than the pinned `5.10.0` and `3.5.39
 | Recommended | Alternative | When the alternative would be appropriate | Why not for v1.3 |
 |-------------|-------------|-------------------------------------------|------------------|
 | EOF-delimited bounded JSON + `JSON.parse` | NDJSON, length-prefix framing, `stream-json` | Multiple requests or unbounded documents over one long-lived channel | Contract has exactly one request and one response per process. Extra framing creates another protocol. |
-| Installed Zod strict union | JSON Schema validator, TypeBox, hand-written guards | A project without a shared runtime-schema authority | Compare already uses Zod across trust boundaries and exports. |
-| Existing `GitRunner` + Git CLI | `simple-git`, `isomorphic-git`, `nodegit`/libgit2 | A product that cannot rely on installed Git or intentionally accepts different Git semantics | Compare requires installed Git and already owns safe subprocess, cancellation, and byte-limit behavior. |
+| Installed Zod strict union | JSON Schema validator, TypeBox, hand-written guards | A project without a shared runtime-schema authority | Cumpa already uses Zod across trust boundaries and exports. |
+| Existing `GitRunner` + Git CLI | `simple-git`, `isomorphic-git`, `nodegit`/libgit2 | A product that cannot rely on installed Git or intentionally accepts different Git semantics | Cumpa requires installed Git and already owns safe subprocess, cancellation, and byte-limit behavior. |
 | `git apply` | `parse-diff`, `gitdiff-parser`, `unidiff`, custom parser | A detached patch viewer that intentionally does not validate against a repository | Patch grammar, quoted paths, modes, renames, binary markers, object formats, and applicability belong to Git. Detached patches are out of scope. |
 | Temp index + temp object overlay | Temporary worktree/clone, stash, real-index mutation | A workflow that explicitly needs a checkout users can edit | Review is read-only. Worktrees/clones are slower and introduce cleanup/ref/worktree metadata; stashing or real-index use risks user state. |
 | Tree OID from `write-tree` | `commit-tree` synthetic commit | A later feature that explicitly needs commit graph identity for a generated revision | Existing inventory reads tree-ish objects; writing an unnecessary commit adds identity and lifecycle questions. |
 | Fastify `onResponse` one-shot completion | WebSocket, SSE, polling, file watcher | Continuous bidirectional updates or many completion events | Finish is one browser action and one terminal result. Existing HTTP response lifecycle is sufficient. |
-| Existing canonical serializer | `fast-json-stable-stringify`, `json-stable-stringify`, ordinary `JSON.stringify` | A project without an established canonical byte contract | Compare already validates and canonicalizes its review export; a second serializer risks byte drift. |
+| Existing canonical serializer | `fast-json-stable-stringify`, `json-stable-stringify`, ordinary `JSON.stringify` | A project without an established canonical byte contract | Cumpa already validates and canonicalizes its review export; a second serializer risks byte drift. |
 | Awaited `process.stdout.write` | `console.log`, stdout logger, forced `process.exit` | Human-only output with no machine contract | Attached stdout must contain only exact canonical JSON and must not be truncated. |
 
 ## What NOT to Add or Change
@@ -218,7 +218,7 @@ Fastify `5.11.2` and Vue `3.5.40` are newer than the pinned `5.10.0` and `3.5.39
 | Zod `4.4.3` | TypeScript `7.0.2` | Use idiomatic `z.strictObject`; do not use stripping object schemas for the stdin trust boundary. |
 | Fastify `5.10.0` | Route-level `onResponse`, Promise-returning `close()` | Installed version documents both required lifecycle APIs. No update is required. |
 | Vue `3.5.39` | Existing Vite/UI stack | A Finish button and existing API client need no additional UI package or minor upgrade. |
-| Existing `canonicalizeReviewExport` | Existing `ReviewExportV1Schema` | Write its bytes directly. Appending whitespace or using a different serializer breaks Compare's exact canonical-byte contract. |
+| Existing `canonicalizeReviewExport` | Existing `ReviewExportV1Schema` | Write its bytes directly. Appending whitespace or using a different serializer breaks Cumpa's exact canonical-byte contract. |
 | Existing `GitRunner` | Patch overlay environment | Extend the runner with a narrow, trusted internal environment input rather than accepting request-controlled environment variables. Preserve `shell: false`, timeout, limits, disabled hooks/fsmonitor/external diff, and `AbortSignal`. |
 
 ## Sources
@@ -258,5 +258,5 @@ Fastify `5.11.2` and Vue `3.5.40` are newer than the pinned `5.10.0` and `3.5.39
 - `/colinhacks/zod` — Zod 4 strict objects and discriminated unions.
 
 ---
-*Stack research for: Compare v1.3 Agent Review Handoff*
+*Stack research for: Cumpa v1.3 Agent Review Handoff*
 *Researched: 2026-08-04*

@@ -146,7 +146,7 @@ Each app retains its own expected host/origin and bearer token. Each launcher re
 
 ### `tests/api/draft.test.ts` — range and interactive path identity
 
-Reuse its real `createSessionApp()`/`app.inject()` setup, temporary roots, app cleanup set, strict auth headers, and raw filesystem reads. Existing tests prove interactive pair drafts resume only the same pair and same-OID ranges isolate by frozen ordered scope (`tests/api/draft.test.ts:42-181`). Extend the `buildApp()` seam with two distinct trusted attached scopes over equivalent ranges. Assert missing initial drafts, distinct exact `.compare/drafts/*.json` names, equal persisted `comparison.range.reviewKey`, independent revisions/comments, and no resume through the interactive pair path. Do not replace this with mocked stores or object-only equality.
+Reuse its real `createSessionApp()`/`app.inject()` setup, temporary roots, app cleanup set, strict auth headers, and raw filesystem reads. Existing tests prove interactive pair drafts resume only the same pair and same-OID ranges isolate by frozen ordered scope (`tests/api/draft.test.ts:42-181`). Extend the `buildApp()` seam with two distinct trusted attached scopes over equivalent ranges. Assert missing initial drafts, distinct exact `.cumpa/drafts/*.json` names, equal persisted `comparison.range.reviewKey`, independent revisions/comments, and no resume through the interactive pair path. Do not replace this with mocked stores or object-only equality.
 
 ### `tests/api/exact-patch.test.ts` — patch storage and snapshot ownership
 
@@ -199,7 +199,7 @@ Production changes are the storage option/threading seam only. API tests prove s
 - Accepting a client-supplied request/storage ID, browser-provided storage scope, or bearer token as storage authority.
 - Using a bare unprefixed nonce that can occupy existing 40/64-hex/OID grammar; relying on probability instead of structural namespace separation.
 - Allocating scope in multiple layers, deriving draft and export names independently, or letting draft/export receipt paths disagree.
-- Changing interactive draft filenames/export directories or migrating legacy `.compare/` data.
+- Changing interactive draft filenames/export directories or migrating legacy `.cumpa/` data.
 - Sharing coordinators, queues, stdout descriptors, Fastify listeners, tokens, shutdown controllers, or patch snapshots between invocations.
 - Weakening path validation, managed-root/symlink protection, atomic publication, canonical provenance validation, revision fencing, or response-settlement ordering.
 - Treating ordinary browser Export, reload, close, or disconnect as attached completion.

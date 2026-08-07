@@ -2,7 +2,7 @@
 spike: 002
 name: staged-source-discovery
 type: comparison
-validates: "Given the same repository, when eager discovery is compared with current-branch/worktree-first discovery, then both latency budgets hold without serial per-branch Git calls."
+validates: "Given the same repository, when eager discovery is cumpad with current-branch/worktree-first discovery, then both latency budgets hold without serial per-branch Git calls."
 verdict: PARTIAL
 related: [001]
 tags: [cli, git, performance, search]

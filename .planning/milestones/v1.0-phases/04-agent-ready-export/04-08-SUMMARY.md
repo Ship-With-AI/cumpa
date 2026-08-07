@@ -29,7 +29,7 @@ key-decisions:
   - "Record the roadmap resume criterion only against the named close/relaunch/recover/export journey, with different ordered-pair isolation."
 
 patterns-established:
-  - "Resume acceptance: preserve accepted state in a real repository, terminate browser and generated server, relaunch the packed CLI, and compare recovered draft and independently reread exports exactly."
+  - "Resume acceptance: preserve accepted state in a real repository, terminate browser and generated server, relaunch the packed CLI, and cumpa recovered draft and independently reread exports exactly."
   - "Evidence maps: emit bounded machine-readable records with concrete executed commands and package artifact identity."
 
 requirements-completed: [EXP-01, EXP-02, EXP-03, EXP-04, EXP-05, EXP-06, EXP-07, EXP-08, SAFE-04]

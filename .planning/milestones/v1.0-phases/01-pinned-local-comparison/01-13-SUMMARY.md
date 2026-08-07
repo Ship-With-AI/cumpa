@@ -85,7 +85,7 @@ status: complete
 
 ## Git, Security, and Shutdown Proof
 
-- Each ordering resolves commit IDs and merge base independently with Git before launch and compares the returned immutable session to those values.
+- Each ordering resolves commit IDs and merge base independently with Git before launch and cumpas the returned immutable session to those values.
 - The test advances `refs/heads/feature` after the generated server is listening; the browser and capability API continue to expose the pinned commit and three-file comparison, including exactly-limit text and limit-plus-one oversized classification.
 - Missing/wrong bearer tokens return 401; hostile Origin and Host return 403; unknown opaque capability returns 404; arbitrary repository/ref query fields return the generic 400 fail-closed response. Error bodies expose neither the token nor repository paths.
 - Existing generated-package cases retain opener failure fallback, stopped-session UI, object-loss recovery guidance, and empty comparison behavior.

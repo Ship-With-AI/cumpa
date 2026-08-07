@@ -54,16 +54,16 @@
 | CMT-07 | User can write and edit one overall review summary. | Canonical Markdown string, local edit buffer, safe preview renderer, and explicit revision-checked summary mutation. |
 | DRFT-04 | User cannot unknowingly overwrite newer review state from another browser tab. | One whole-draft revision precondition inside the serialized repository mutation; explicit `409 revision_conflict` returns latest canonical state and writes nothing. |
 | DRFT-05 | User receives a recoverable error when a draft is corrupt or uses an unsupported schema; the existing file is preserved. | Raw-buffer-first loader state machine, mutation lockout, byte-preserving backup handshake, and distinct newer-version read-only state. |
-| DRFT-06 | User's open review remains pinned if a selected branch or worktree advances and visibly reports selector drift. | Read-only re-resolution of retained launch selectors compared with launch-time OIDs; drift never replaces pinned commits, blobs, merge base, inventory, draft identity, or anchors. |
+| DRFT-06 | User's open review remains pinned if a selected branch or worktree advances and visibly reports selector drift. | Read-only re-resolution of retained launch selectors cumpad with launch-time OIDs; drift never replaces pinned commits, blobs, merge base, inventory, draft identity, or anchors. |
 </phase_requirements>
 
 ## Summary
 
-Phase 3 should extend the future Phase 2 draft repository through **one mutation gateway**, not add route-specific writers. Every accepted add/edit/delete/resolve/reopen/summary operation must enter the same per-draft serialization queue, load a current schema-valid document, compare the request's `expectedRevision` with the canonical whole-draft revision, apply exactly one operation in memory, increment once, validate the complete next document, and atomically replace the file before returning success. A mismatch returns an explicit conflict containing the latest canonical draft view and performs no write. This makes the revision an aggregate compare-and-swap token rather than a per-comment counter. [RECOMMENDATION grounded in D-12–D-14, DRFT-01, and DRFT-04]
+Phase 3 should extend the future Phase 2 draft repository through **one mutation gateway**, not add route-specific writers. Every accepted add/edit/delete/resolve/reopen/summary operation must enter the same per-draft serialization queue, load a current schema-valid document, cumpa the request's `expectedRevision` with the canonical whole-draft revision, apply exactly one operation in memory, increment once, validate the complete next document, and atomically replace the file before returning success. A mismatch returns an explicit conflict containing the latest canonical draft view and performs no write. This makes the revision an aggregate cumpa-and-swap token rather than a per-comment counter. [RECOMMENDATION grounded in D-12–D-14, DRFT-01, and DRFT-04]
 
 Draft loading must begin with bytes, not `JSON.parse` followed by a default-on-error catch. The loader should return a discriminated state: `missing`, `current`, `malformed`, `schemaInvalid`, or `newerUnsupported`. Only `missing` and `current` permit normal mutations. Corrupt states retain the original `Buffer`, a SHA-256 recovery fingerprint, repository-relative path, and bounded validation details. Newer schema versions are recognized from a minimal envelope and remain untouched/read-only. Explicit corrupt recovery rechecks the fingerprint under the same mutation queue, creates and syncs a byte-identical exclusive backup first, and only then atomically creates a new current-version draft. [RECOMMENDATION grounded in D-15–D-17 and DRFT-05; filesystem primitives cited at https://nodejs.org/docs/latest-v24.x/api/fs.html]
 
-The browser should maintain canonical server state separately from unsaved edit buffers. Comment and summary preview/edit state is never the authoritative draft. A failed write or `409` leaves the attempted buffer intact; only an accepted response replaces canonical state and clears the corresponding buffer. Selector drift is a separate read-only session projection: re-resolve the retained typed base/head source descriptors, compare full OIDs with launch-time OIDs, and display any movement while all comparison capabilities continue serving launch-pinned objects. [RECOMMENDATION grounded in D-02, D-10, D-14, DRFT-06, SAFE-03, and Vue reactivity guidance at https://vuejs.org/guide/essentials/reactivity-fundamentals.html]
+The browser should maintain canonical server state separately from unsaved edit buffers. Comment and summary preview/edit state is never the authoritative draft. A failed write or `409` leaves the attempted buffer intact; only an accepted response replaces canonical state and clears the corresponding buffer. Selector drift is a separate read-only session projection: re-resolve the retained typed base/head source descriptors, cumpa full OIDs with launch-time OIDs, and display any movement while all comparison capabilities continue serving launch-pinned objects. [RECOMMENDATION grounded in D-02, D-10, D-14, DRFT-06, SAFE-03, and Vue reactivity guidance at https://vuejs.org/guide/essentials/reactivity-fundamentals.html]
 
 **Primary recommendation:** Plan two vertical slices: (1) the aggregate draft repository/loader/mutation/conflict/recovery contracts with focused repository and API tests, then (2) the grouped review/summary UI plus read-only selector-drift service and packaged browser-flow tests; retrofit Phase 2's planned comment-add route through the same revision gateway before any Phase 3 UI mutation is exposed. [RECOMMENDATION]
 
@@ -72,7 +72,7 @@ The browser should maintain canonical server state separately from unsaved edit 
 | Capability | Primary Tier | Secondary Tier | Rationale |
 |---|---|---|---|
 | Canonical draft validation and load classification | API / Backend | Repository-local storage | The server owns bytes, schema interpretation, supported-version policy, and mutation availability. Browser state cannot repair or reinterpret disk data. [VERIFIED: D-15–D-17] |
-| Whole-draft revision compare-and-swap | API / Backend | Repository-local storage | The precondition must be checked inside the same serialization boundary as the atomic replacement; a UI-only check races. [VERIFIED: D-12–D-14, DRFT-04] |
+| Whole-draft revision cumpa-and-swap | API / Backend | Repository-local storage | The precondition must be checked inside the same serialization boundary as the atomic replacement; a UI-only check races. [VERIFIED: D-12–D-14, DRFT-04] |
 | Comment and summary mutation semantics | Domain / Application | API / Backend | Pure operations validate IDs/transitions/text and construct a complete next draft; the route only authenticates, parses, invokes, and maps results. [RECOMMENDATION grounded in DRFT-01/04] |
 | Grouped counts and ordering | Browser / Client | Shared pure selectors | Counts/groups are projections of canonical comments and must not be persisted as a second source of truth. [RECOMMENDATION grounded in D-01 and D-04] |
 | Jump-to-anchor and inline edit placement | Browser / Client | Planned Phase 2 Monaco adapter | Navigation changes file/context/focus state only; durable path/blob/side/line anchors remain immutable. [VERIFIED: D-02–D-03 and Phase 2 D-09/D-12] |
@@ -111,7 +111,7 @@ The Phase 3 planner should phrase every prerequisite as “extend the actual Pha
 | D-10 | Canonical summary and local summary buffer are separate; failure/conflict never replaces the buffer. | Injected persistence failure and two-tab conflict browser tests. |
 | D-11 | Exact empty string is schema-valid and renders `No summary yet`; comments remain enabled. | Unit/component test and relaunch flow. |
 | D-12 | All add/edit/delete/resolve/reopen/summary operations require the one current aggregate revision. | Shared request schema tests and route-surface tests, including retrofit of add comment. |
-| D-13 | Compare revision after serialized load and before operation; accepted operation increments exactly once; stale operation writes zero bytes. | Concurrent API test plus before/after file hash/revision assertions. |
+| D-13 | Cumpa revision after serialized load and before operation; accepted operation increments exactly once; stale operation writes zero bytes. | Concurrent API test plus before/after file hash/revision assertions. |
 | D-14 | `409 revision_conflict` carries latest canonical state; local attempted text remains; only `Reload latest` adopts latest state; no force/merge route. | Two-page Playwright test and API response-schema test. |
 | D-15 | Malformed/current-schema-invalid files preserve raw bytes, return read-only recovery view, and reject every mutation. | Byte-for-byte fixtures and route denial tests. |
 | D-16 | Explicit recovery rechecks fingerprint, creates durable byte-identical backup first, then atomically installs empty current draft; reveal/copy use fixed path only. | Fault injection at every backup/replacement step plus hash/byte equality tests. |
@@ -320,7 +320,7 @@ The pure reducer enforces: IDs exist; edit changes only `body` and `updatedAt`; 
 **What:** Revision comparison belongs after the queue acquires ownership and reloads canonical disk state, never at request arrival and never against an in-memory browser/session copy. [RECOMMENDATION grounded in D-12/D-13]
 
 ```typescript
-// Source: recommended aggregate compare-and-swap boundary
+// Source: recommended aggregate cumpa-and-swap boundary
 async function mutateDraft(command: DraftMutationCommand): Promise<MutationResult> {
   return queue.forKey(activeDraftKey, async () => {
     const loaded = await repository.load();
@@ -388,7 +388,7 @@ async function saveSummary() {
 Recommended algorithm under the per-draft queue:
 
 1. Re-read the canonical file as `Buffer`; reject if it is now missing/current/newer-unsupported or its SHA-256 fingerprint differs. Return the latest load state without writing. [RECOMMENDATION]
-2. Choose a repository-relative backup name such as `draft-file-name.corrupt.<full-sha256>.bak`. Open with exclusive creation (`wx`). If that exact name already exists, read and byte-compare it; accept it as the preserved backup only if identical. If not identical, choose deterministic numeric suffixes with exclusive creation until one succeeds. [RECOMMENDATION grounded in collision-safe D-16]
+2. Choose a repository-relative backup name such as `draft-file-name.corrupt.<full-sha256>.bak`. Open with exclusive creation (`wx`). If that exact name already exists, read and byte-cumpa it; accept it as the preserved backup only if identical. If not identical, choose deterministic numeric suffixes with exclusive creation until one succeeds. [RECOMMENDATION grounded in collision-safe D-16]
 3. Write the untouched raw `Buffer`, sync and close the backup. Verify size and SHA-256 from a fresh backup read before proceeding. [RECOMMENDATION]
 4. Create a fresh schema-valid draft for the same pinned comparison with `revision: 0`, empty summary, and no comments; validate it completely. [RECOMMENDATION grounded in the planned Phase 2 V1 initial draft]
 5. Atomically replace the corrupt canonical path using the existing same-directory temp/sync/rename writer. Never delete/truncate the corrupt path first. [RECOMMENDATION; Node primitives cited at https://nodejs.org/docs/latest-v24.x/api/fs.html]
@@ -414,7 +414,7 @@ For `stale` or `orphaned` presentation, the list action remains available but re
 
 ### Pattern 8: Canonical Markdown and safe preview
 
-**What:** Persist one exact Markdown string. Edit mode binds a local textarea to the attempted string. Preview mode renders that same local string so users can inspect unsaved formatting; saved/unsaved status still compares it with canonical state. Save and Ctrl/Cmd+Enter invoke the same mutation. Blur and preview toggling never save. [RECOMMENDATION grounded in D-08–D-10]
+**What:** Persist one exact Markdown string. Edit mode binds a local textarea to the attempted string. Preview mode renders that same local string so users can inspect unsaved formatting; saved/unsaved status still cumpas it with canonical state. Save and Ctrl/Cmd+Enter invoke the same mutation. Blur and preview toggling never save. [RECOMMENDATION grounded in D-08–D-10]
 
 ```typescript
 // Source: markdown-it official README and safety guide
@@ -492,9 +492,9 @@ Fastify supports response schemas keyed by HTTP status. Define every 2xx and `40
 
 ### Conflict semantics and precedence
 
-After request schema/auth validation, repository-level precedence should be: acquire queue → load state → reject read-only state → materialize missing current draft → compare expected revision → validate operation target/transition → compute/validate/write next state. Thus a stale request always yields the canonical revision conflict before a target-not-found result caused by the newer draft. This makes stale-tab behavior stable and prevents accidental reapplication against changed state. [RECOMMENDATION grounded in DRFT-04]
+After request schema/auth validation, repository-level precedence should be: acquire queue → load state → reject read-only state → materialize missing current draft → cumpa expected revision → validate operation target/transition → compute/validate/write next state. Thus a stale request always yields the canonical revision conflict before a target-not-found result caused by the newer draft. This makes stale-tab behavior stable and prevents accidental reapplication against changed state. [RECOMMENDATION grounded in DRFT-04]
 
-A conflict must not advance revision, update timestamps, alter temp/canonical files, or alter server in-memory canonical state. Tests should compare canonical raw bytes and stat/hash before/after, not merely check status code. [RECOMMENDATION grounded in D-13]
+A conflict must not advance revision, update timestamps, alter temp/canonical files, or alter server in-memory canonical state. Tests should cumpa canonical raw bytes and stat/hash before/after, not merely check status code. [RECOMMENDATION grounded in D-13]
 
 ## Review Panel Interaction Contract
 
@@ -545,7 +545,7 @@ The panel/drawer remains non-modal. Toggle returns focus predictably; collapsed 
 ### 2. Checking revision before entering the mutation queue
 **What goes wrong:** Two requests both observe revision N and both write N+1, losing one accepted operation.  
 **Why it happens:** The handler checks an in-memory/current value before serialized disk reload.  
-**How to avoid:** Queue, reload, classify, then compare and write in one critical section.  
+**How to avoid:** Queue, reload, classify, then cumpa and write in one critical section.  
 **Warning signs:** concurrency test yields two successes for the same expected revision. [RECOMMENDATION grounded in D-12/D-13]
 
 ### 3. Giving each comment its own revision
@@ -587,7 +587,7 @@ The panel/drawer remains non-modal. Toggle returns focus predictably; collapsed 
 ### 9. Resetting a corrupt file without rechecking it
 **What goes wrong:** a stale recovery page overwrites a file repaired or changed elsewhere.  
 **Why it happens:** recovery has no raw-byte precondition.  
-**How to avoid:** server-issued full SHA-256 fingerprint, queue, reread, compare, then backup.  
+**How to avoid:** server-issued full SHA-256 fingerprint, queue, reread, cumpa, then backup.  
 **Warning signs:** recovery endpoint has no expected fingerprint. [RECOMMENDATION grounded in DRFT-04/D-16]
 
 ### 10. Running current schema validation before version discrimination
@@ -629,7 +629,7 @@ The panel/drawer remains non-modal. Toggle returns focus predictably; collapsed 
 ### 16. Comparing short OIDs or labels
 **What goes wrong:** movement is missed or misattributed.  
 **Why it happens:** display identity is reused as authority.  
-**How to avoid:** compare full commit IDs and typed exact source descriptors.  
+**How to avoid:** cumpa full commit IDs and typed exact source descriptors.  
 **Warning signs:** drift equality uses a seven-character SHA or branch display label. [VERIFIED: CMP-02 and selector-drift discretion]
 
 ### 17. Letting recovery or drift increment draft revision
@@ -675,7 +675,7 @@ Required repository scenarios:
 6. Existing deterministic backup with identical bytes is reusable/idempotent; existing mismatched bytes choose a safe suffix and are never overwritten. [RECOMMENDATION under D-16 discretion]
 7. Newer-version file is unchanged across GET, every mutation, and recovery attempts. [VERIFIED target from D-17]
 
-Fixtures must compare `Buffer.equals`, byte length, and SHA-256, not normalized text. [RECOMMENDATION grounded in D-15/D-16]
+Fixtures must cumpa `Buffer.equals`, byte length, and SHA-256, not normalized text. [RECOMMENDATION grounded in D-15/D-16]
 
 ### Layer 3 — Fastify route/security tests
 
@@ -785,7 +785,7 @@ No source implementation or package installation was performed. Phase 1/2 are ex
 1. Reconcile actual Phase 2 schema/repository/routes/tests and retrofit comment-add to require aggregate `expectedRevision`; preserve actual Phase 1 security/path/capability conventions. [RECOMMENDATION]
 2. TDD the raw-buffer loader state algebra and strict current draft lifecycle schema. [RECOMMENDATION]
 3. TDD the pure operation reducer for edit/delete/resolve/reopen/summary and all invariants. [RECOMMENDATION]
-4. TDD the serialized repository compare-and-swap, explicit conflict response, full-document validation, and one-increment rule across all operations. [RECOMMENDATION]
+4. TDD the serialized repository cumpa-and-swap, explicit conflict response, full-document validation, and one-increment rule across all operations. [RECOMMENDATION]
 5. TDD malformed/schema-invalid/newer read-only route behavior and fingerprinted backup-first recovery with fault injection. [RECOMMENDATION]
 6. Extend secured Fastify routes and shared client contracts only after repository behavior is green. [RECOMMENDATION]
 
@@ -815,7 +815,7 @@ Tests in Phase 3 may assert that summary/comments are present in canonical state
 | Last-write-wins browser saves | Aggregate optimistic concurrency with explicit `409` latest state | Prevents silent cross-tab overwrite. [VERIFIED: D-12–D-14] |
 | Catch parse failure and initialize empty | Raw-buffer classification plus read-only recovery | Prevents corrupt draft destruction. [VERIFIED: D-15/D-16] |
 | Validate unknown documents with current schema | Version-envelope discrimination before current-schema validation | Preserves newer unsupported documents. [VERIFIED: D-17] |
-| Follow branch/worktree refs live | Compare moving selectors while serving frozen launch identities | Reports drift without changing review meaning. [VERIFIED: DRFT-06] |
+| Follow branch/worktree refs live | Cumpa moving selectors while serving frozen launch identities | Reports drift without changing review meaning. [VERIFIED: DRFT-06] |
 | Rich-text summary model plus Markdown conversion | Canonical Markdown text with safe local preview | Keeps one source for future human export. [VERIFIED: D-08] |
 | Line/viewport-based jump | Exact durable path/blob/side/model-line navigation | Preserves anchors through layout/context changes. [VERIFIED: D-02 and Phase 2 D-12] |
 

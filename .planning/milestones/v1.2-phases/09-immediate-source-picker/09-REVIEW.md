@@ -28,7 +28,7 @@ status: clean
 
 Re-reviewed the exact Phase 09 source scope after the CR-01 and WR-01 fixes. `escapeTerminalText()` now renders every C0 control, DEL, and the complete C1 range (`U+0080`–`U+009F`) as a literal escape while retaining the intentional tab/newline/carriage-return representations and backslash escaping. Every Git-derived terminal-visible candidate label and path in this scope passes through it; row-disabled copy is the fixed `UNAVAILABLE_WORKTREE_REASON`.
 
-`discoverGitRepository()` now preserves an aborted `--show-toplevel` failure before attempting its fallback, and the fallback rethrows when its own work is aborted. The `SourceDiscovery` caller passes its signal through unchanged, while the other repository probes retain their existing abort propagation. The staged picker, exact-ID registry, recovery flow, bounded discovery, and `.compare` inventory filtering remain consistent with the phase contracts.
+`discoverGitRepository()` now preserves an aborted `--show-toplevel` failure before attempting its fallback, and the fallback rethrows when its own work is aborted. The `SourceDiscovery` caller passes its signal through unchanged, while the other repository probes retain their existing abort propagation. The staged picker, exact-ID registry, recovery flow, bounded discovery, and `.cumpa` inventory filtering remain consistent with the phase contracts.
 
 No actionable critical or warning findings remain. Per review constraints, no formatter, linter, build, or test command was run.
 

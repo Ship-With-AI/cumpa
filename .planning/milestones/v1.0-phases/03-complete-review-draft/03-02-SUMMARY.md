@@ -8,7 +8,7 @@ requires:
     provides: reconciled paths, owners, and executable verification argv
 provides:
   - strict aggregate mutation request/result contracts
-  - serialized compare-and-swap draft persistence
+  - serialized cumpa-and-swap draft persistence
   - one mutation gateway for every draft write
   - deterministic lifecycle, conflict, atomicity, and reducer-matrix evidence
 affects: [draft-persistence, session-api, review-ui]
@@ -41,7 +41,7 @@ completed: 2026-07-22
 
 # Phase 03 Plan 02: Aggregate Draft Mutation Engine Summary
 
-**A strict, serialized draft aggregate now accepts all six review mutations through one compare-and-swap gateway, acknowledges only committed state, and returns authoritative state on revision conflicts.**
+**A strict, serialized draft aggregate now accepts all six review mutations through one cumpa-and-swap gateway, acknowledges only committed state, and returns authoritative state on revision conflicts.**
 
 ## Performance
 

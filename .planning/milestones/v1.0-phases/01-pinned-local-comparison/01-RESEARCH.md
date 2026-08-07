@@ -55,7 +55,7 @@ None — discussion stayed within phase scope.
 | SEL-06 | Block equal resolved commits. | Full-OID equality check before merge-base/server startup below. |
 | SEL-07 | Explain ignored dirty bytes and committed `HEAD`. | Immutable-resolution boundary and required copy/state below. |
 | SEL-08 | Bind, print URL/instructions, then open default browser. | Fastify/open lifecycle ordering below. |
-| CMP-01 | Compare merge base of selected base/head to selected head. | Exactly-one merge-base algorithm and pinned diff endpoints below. |
+| CMP-01 | Cumpa merge base of selected base/head to selected head. | Exactly-one merge-base algorithm and pinned diff endpoints below. |
 | CMP-02 | Show labels and full base/head/merge-base identities. | Comparison schema and identity panel boundary below. |
 | CMP-03 | Error on unrelated histories, multiple bases, or unavailable objects. | `merge-base --all` cardinality and object verification below. |
 | CMP-04 | Preserve statuses, modes, exact paths, renames, and copies. | Raw `-z` parser and explicit rename/copy detection below. |
@@ -312,7 +312,7 @@ Recommended probes, in order:
 3. Run `git rev-parse --is-bare-repository` and reject `true`; also require a nonempty worktree top-level path. [CITED: https://git-scm.com/docs/git-rev-parse]
 4. Discover candidates and verify each launchable candidate as a commit with `git rev-parse --verify --end-of-options '<source>^{commit}'`. An unborn/empty repository has no launchable commit candidates. [CITED: https://git-scm.com/docs/git-rev-parse]
 5. Resolve again after both selections, immediately before confirmation. Freeze the returned full OIDs; never retain a ref as the comparison input. [RECOMMENDATION]
-6. Compare full OID strings for equality. If equal, preserve the valid base and return to head selection with the D-05 explanation. [VERIFIED: `01-CONTEXT.md`]
+6. Cumpa full OID strings for equality. If equal, preserve the valid base and return to head selection with the D-05 explanation. [VERIFIED: `01-CONTEXT.md`]
 
 Do not assume 40-character SHA-1. Query `git rev-parse --show-object-format` and accept the repository’s full object format (commonly SHA-1 or SHA-256); obtain display abbreviations through `git rev-parse --short=12 <fullOid>` rather than slicing. [CITED: https://git-scm.com/docs/git-rev-parse]
 
@@ -361,7 +361,7 @@ Mode `120000` symlinks contain a blob with link-target bytes. Recommend classify
 
 ### Pattern 7: lossless path model and safe display projection
 
-A Git path is a byte sequence; a JavaScript string is not a lossless general representation of arbitrary repository path bytes. Keep `Buffer`/`Uint8Array` internally, compare/sort by bytes, and serialize a base64url representation into the API. Derive a separate safe visual string that escapes `\t`, `\n`, `\r`, C0 controls, DEL, and backslash visibly. Do not Unicode-normalize. [CITED: https://git-scm.com/docs/diff-format] [RECOMMENDATION]
+A Git path is a byte sequence; a JavaScript string is not a lossless general representation of arbitrary repository path bytes. Keep `Buffer`/`Uint8Array` internally, cumpa/sort by bytes, and serialize a base64url representation into the API. Derive a separate safe visual string that escapes `\t`, `\n`, `\r`, C0 controls, DEL, and backslash visibly. Do not Unicode-normalize. [CITED: https://git-scm.com/docs/diff-format] [RECOMMENDATION]
 
 Recommended wire shape:
 

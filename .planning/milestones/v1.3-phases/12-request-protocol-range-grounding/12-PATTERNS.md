@@ -48,7 +48,7 @@ const RevisionRangeSchema = z.strictObject({
   pathspecs: z.array(boundedGitString).max(MAX_PATHSPEC_COUNT).default([]),
 });
 export const AgentReviewRequestV1Schema = z.strictObject({
-  kind: z.literal('compare.review-request'),
+  kind: z.literal('cumpa.review-request'),
   schemaVersion: z.literal(1),
   mode: z.literal('revisions'),
   revisions: RevisionRangeSchema,
@@ -66,7 +66,7 @@ The range orchestrator should resolve endpoint labels exactly once, verify ances
 
 ### `src/cli/run.ts` (modified dispatcher)
 
-Insert ownership selection before Commander/Inquirer can consume stdin. `process.stdin.isTTY === true` routes unchanged to `runCli({ cwd: process.cwd() })`; non-TTY routes request reader. Preserve packaged `COMPARE_LAUNCH_OPTIONS` behavior at `src/cli/run.ts:460-487` and keep `runCli()` untouched as the TTY regression seam. Existing launch error boundary `reportFatalLaunchError()` (`:287-296`) prints actionable message and status 1; request failures should use equivalent boundary without binding server/opening browser.
+Insert ownership selection before Commander/Inquirer can consume stdin. `process.stdin.isTTY === true` routes unchanged to `runCli({ cwd: process.cwd() })`; non-TTY routes request reader. Preserve packaged `CUMPA_LAUNCH_OPTIONS` behavior at `src/cli/run.ts:460-487` and keep `runCli()` untouched as the TTY regression seam. Existing launch error boundary `reportFatalLaunchError()` (`:287-296`) prints actionable message and status 1; request failures should use equivalent boundary without binding server/opening browser.
 
 ### `src/git/comparison.ts` (modified, pinned range)
 
@@ -76,7 +76,7 @@ Do not reuse interactive equal-commit or multiple-merge-base rejection for the a
 
 ### `src/git/inventory.ts` (modified, native pathspec)
 
-Extend `CreateChangedFileInventoryOptions` with ordered `pathspecs?: readonly string[]`. In both existing parallel invocations (`:123-150`), append one shared `['--', ...pathspecs]` after OIDs. Preserve exact order/spelling, including exclusion/magic/leading-dash values; do not sort, normalize, deduplicate, expand, or post-filter in TypeScript. Keep `.compare` filtering (`isCompareInternalPath`, `:48-62`) as a separate repository invariant. Tests should record both commands and assert identical pathspec tails.
+Extend `CreateChangedFileInventoryOptions` with ordered `pathspecs?: readonly string[]`. In both existing parallel invocations (`:123-150`), append one shared `['--', ...pathspecs]` after OIDs. Preserve exact order/spelling, including exclusion/magic/leading-dash values; do not sort, normalize, deduplicate, expand, or post-filter in TypeScript. Keep `.cumpa` filtering (`isCumpaInternalPath`, `:48-62`) as a separate repository invariant. Tests should record both commands and assert identical pathspec tails.
 
 ### `src/git/runner.ts` (modified environment)
 

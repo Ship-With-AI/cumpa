@@ -133,7 +133,7 @@ The strict `PinnedComparisonSchema` returns:
 - one full `mergeBaseOid`;
 - `hasCommittedChanges`, derived from the pinned merge-base/head diff.
 
-The endpoint records and outer DTO are frozen. Tests independently query Git for base, head, and merge-base identities and compare them to the descriptor. A dirty-only fixture has an empty committed diff despite simultaneous staged, unstaged, and untracked paths; moving the selected head ref afterward leaves the serialized descriptor byte-for-byte unchanged.
+The endpoint records and outer DTO are frozen. Tests independently query Git for base, head, and merge-base identities and cumpa them to the descriptor. A dirty-only fixture has an empty committed diff despite simultaneous staged, unstaged, and untracked paths; moving the selected head ref afterward leaves the serialized descriptor byte-for-byte unchanged.
 
 ## Task Commits
 

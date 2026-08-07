@@ -1,13 +1,13 @@
 # Project Research Summary
 
-**Project:** Compare
+**Project:** Cumpa
 **Domain:** Local-first agent-to-human code-review handoff
 **Researched:** 2026-08-04
 **Confidence:** MEDIUM-HIGH
 
 ## Executive Summary
 
-Compare v1.3 should add an attached agent handoff ingress and completion path, not a second review product. A coding agent submits exactly one bounded, versioned JSON request on stdin; Compare validates it before opening the existing loopback-authenticated Vue/Monaco workspace; the human explicitly finishes or cancels; and the invoking process emits one canonical, request-bound JSON result on stdout. Interactive TTY behavior, Git semantics, draft persistence, anchors, export, Markdown, and browser security remain authoritative.
+Cumpa v1.3 should add an attached agent handoff ingress and completion path, not a second review product. A coding agent submits exactly one bounded, versioned JSON request on stdin; Cumpa validates it before opening the existing loopback-authenticated Vue/Monaco workspace; the human explicitly finishes or cancels; and the invoking process emits one canonical, request-bound JSON result on stdout. Interactive TTY behavior, Git semantics, draft persistence, anchors, export, Markdown, and browser security remain authoritative.
 
 The recommended implementation adds no dependency or runtime upgrade. Reuse Node 24 streams and process lifecycle, Zod 4 strict discriminated schemas, native Git through the existing safe runner, Fastify 5 response hooks, and the existing canonical export serializer. Range requests resolve and pin ordered base/head commits and pass native pathspecs through Git. Patch requests are accepted only when an exact already-applied patch can be proven against the repository and materialized in an isolated temporary Git index/object overlay. The primary risks are false patch grounding, scope/draft identity collisions, stdout contamination, and races between autosave, Finish, cancellation, drift, and shutdown; each requires explicit gates and an adversarial integration phase.
 
@@ -92,7 +92,7 @@ Build in the confirmed research order; do not merge the four boundaries into one
 
 **Avoids:** Pitfalls 4–6 and false confidence from forward `git apply --check` alone.
 
-**Research flag:** **Mandatory focused implementation spike/research-phase.** Exercise Git 2.43 behavior with Compare fixtures for binary, rename/copy, mode/symlink, quoting, zero-context, attributes, concurrent worktree changes, and object-overlay lifetime before committing the final mechanism.
+**Research flag:** **Mandatory focused implementation spike/research-phase.** Exercise Git 2.43 behavior with Cumpa fixtures for binary, rename/copy, mode/symlink, quoting, zero-context, attributes, concurrent worktree changes, and object-overlay lifetime before committing the final mechanism.
 
 ### Phase 3: Attached Lifecycle Canonical Completion
 
@@ -139,7 +139,7 @@ Build in the confirmed research order; do not merge the four boundaries into one
 - **Accepted patch dialect:** document and test full-index/binary, rename/copy, mode, symlink, quoting, and unsupported combined/partial forms; do not silently broaden parsing.
 - **Finish ordering and drift policy:** establish the accepted draft revision, pending-save settlement, repository drift response, and cancellation commit point against current draft/anchor APIs during Phase 3 planning.
 - **Result contract evolution:** decide the minimal versioned request-bound wrapper/provenance union while preserving canonical export compatibility and exact-byte guarantees.
-- **Pathspec/environment edge behavior:** verify supported native pathspec subset, `.compare/` exclusion, inherited Git environment neutralization, and deterministic zero-match behavior.
+- **Pathspec/environment edge behavior:** verify supported native pathspec subset, `.cumpa/` exclusion, inherited Git environment neutralization, and deterministic zero-match behavior.
 
 ## Sources
 
@@ -149,11 +149,11 @@ Build in the confirmed research order; do not merge the four boundaries into one
 - Fastify 5 hooks and server `close` documentation — response-flush completion and graceful shutdown.
 - Zod 4 objects and discriminated-union documentation — strict request boundary and schema-derived types.
 - Node.js 24 releases and stream/process documentation — supported runtime APIs, bounded stdin, fatal decoding, stdout backpressure, and exit behavior.
-- Compare repository evidence (`package.json`, Git runner/inventory, comparison, server/session, draft, export, and UI modules) — existing authority and compatibility boundaries.
+- Cumpa repository evidence (`package.json`, Git runner/inventory, comparison, server/session, draft, export, and UI modules) — existing authority and compatibility boundaries.
 
 ### Secondary (MEDIUM confidence)
 
-- `diffmux` and `PRless` local review precedents — ecosystem expectations for local review annotations and agent delivery; useful comparison, not normative for Compare's contract.
+- `diffmux` and `PRless` local review precedents — ecosystem expectations for local review annotations and agent delivery; useful comparison, not normative for Cumpa's contract.
 - npm registry metadata for Fastify, Vue, Zod, Commander, and TypeScript — current-version checks; no upgrade is justified by this milestone.
 
 ### Tertiary (LOW confidence)

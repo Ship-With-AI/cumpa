@@ -39,7 +39,7 @@ status: complete
 ## Accomplishments
 
 - Routed only zero-argument `run()` calls through a named Commander command with the existing package description.
-- Kept direct `run(options)`, normal interactive launch, and `COMPARE_LAUNCH_OPTIONS` session dispatch inside the command's default action.
+- Kept direct `run(options)`, normal interactive launch, and `CUMPA_LAUNCH_OPTIONS` session dispatch inside the command's default action.
 - Added executable-boundary coverage that invokes `dist/bin/cumpa.mjs --help` from a temporary non-repository directory.
 
 ## Task Commit

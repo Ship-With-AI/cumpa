@@ -25,7 +25,7 @@ None — discuss phase skipped.
 
 | ID | Description | Research Support |
 |----|-------------|------------------|
-| PICK-01 | User can interact with the ordered source picker before Compare enumerates all remaining local branches. | Split the monolithic candidate discovery into an eager worktree/current-branch snapshot and a non-empty-term branch lookup; make the picker consume the snapshot before any unbounded `refs/heads` command. |
+| PICK-01 | User can interact with the ordered source picker before Cumpa enumerates all remaining local branches. | Split the monolithic candidate discovery into an eager worktree/current-branch snapshot and a non-empty-term branch lookup; make the picker consume the snapshot before any unbounded `refs/heads` command. |
 | PICK-02 | User initially sees the attached current branch and registered worktrees as selectable sources. | Derive the attached branch from the current registered worktree record, retain every registered worktree row and its existing availability semantics, and preserve the current branch/worktree stable IDs. |
 </phase_requirements>
 

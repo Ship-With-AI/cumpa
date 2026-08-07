@@ -20,7 +20,7 @@
 - RED-to-GREEN plan commits made state-machine and persistence contracts explicit before implementation. The final Phase 04.1 TDD review found zero sequence violations.
 - Generated-package Playwright journeys exercised real Git repositories, the shipped CLI/server/browser assets, Monaco, persisted drafts, and export bytes instead of relying only on development seams.
 - Independent code, security, UI, and goal verification found load-bearing issues that focused implementation tests initially missed: replaced-controller callbacks, mutable conflict revision metadata, hidden live-region styling, revision-conflict announcements, and repeated identical announcements.
-- Canonical server-returned state and serialized compare-and-swap mutation prevented browser state from becoming persistence authority.
+- Canonical server-returned state and serialized cumpa-and-swap mutation prevented browser state from becoming persistence authority.
 
 ### What Was Inefficient
 

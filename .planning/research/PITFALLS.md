@@ -43,7 +43,7 @@ Request Protocol and Range Grounding; exercise both TTY and pipe entry paths aga
 ### Pitfall 2: Free-form revision syntax creates ambiguous or non-contiguous comparisons
 
 **What goes wrong:**
-A field described as a revision accepts expressions such as `A..B`, `A...B`, `^A`, reflog selectors, or a name that resolves differently as a ref and a path. Compare reviews a set of commits rather than two explicit endpoints, selects the wrong object type, or changes meaning after refs move.
+A field described as a revision accepts expressions such as `A..B`, `A...B`, `^A`, reflog selectors, or a name that resolves differently as a ref and a path. Cumpa reviews a set of commits rather than two explicit endpoints, selects the wrong object type, or changes meaning after refs move.
 
 **Why it happens:**
 Git revision syntax is deliberately rich. Commands interpret two-dot and three-dot notation differently, while `git diff A..B` is only an endpoint comparison and not the same conceptual operation as a revision walk. Refname resolution also has precedence rules that make short names ambiguous.
@@ -72,7 +72,7 @@ A filter beginning with `-` is parsed as a Git option, pathspec magic changes ma
 Git pathspec is a language, not a list of plain relative paths. It supports magic such as `top`, `literal`, `glob`, `icase`, `attr`, and `exclude`; exclusions have special behavior when no positive pathspec exists. Attribute requirements are obtained from the working tree even when matching another tree.
 
 **How to avoid:**
-Pass every submitted pathspec as one argv element after `--`; never construct a shell string. Reject NUL bytes and bound count and byte length. Run from the discovered repository root with the existing safe Git runner and neutralize inherited Git environment variables that alter pathspec parsing. Define the supported native pathspec subset explicitly: either preserve all accepted pathspecs byte-for-byte with their documented Git semantics or reject unstable forms such as `attr:` rather than pretending they are ordinary globs. Materialize and persist the exact file inventory at launch. Repository-internal `.compare/` exclusion must remain authoritative and must not be defeated by user exclusions or magic.
+Pass every submitted pathspec as one argv element after `--`; never construct a shell string. Reject NUL bytes and bound count and byte length. Run from the discovered repository root with the existing safe Git runner and neutralize inherited Git environment variables that alter pathspec parsing. Define the supported native pathspec subset explicitly: either preserve all accepted pathspecs byte-for-byte with their documented Git semantics or reject unstable forms such as `attr:` rather than pretending they are ordinary globs. Materialize and persist the exact file inventory at launch. Repository-internal `.cumpa/` exclusion must remain authoritative and must not be defeated by user exclusions or magic.
 
 **Warning signs:**
 - Filters are concatenated into a command string.
@@ -96,7 +96,7 @@ Binary changes appear as “Binary files differ” without bytes, renames are re
 Git patch format carries meaning outside `@@` hunks: `old mode`, `new mode`, `new file mode`, `deleted file mode`, similarity indices, rename/copy headers, full blob IDs, and binary payloads. Extended headers may have no text hunks at all, and patch paths have Git quoting and prefix rules.
 
 **How to avoid:**
-Define the accepted payload as a documented Git-generated patch dialect capable of carrying full-index and binary data, equivalent to `git diff --full-index --binary` for supported changes. Let native Git validate and materialize it; do not build a second JavaScript patch parser as the semantic authority. Preserve exact old/new paths, old/new blob OIDs, modes, status, and similarity metadata in the existing changed-file model. Reject combined diffs and incomplete binary summaries explicitly. Keep content types that Compare cannot render visible as non-reviewable rather than dropping them.
+Define the accepted payload as a documented Git-generated patch dialect capable of carrying full-index and binary data, equivalent to `git diff --full-index --binary` for supported changes. Let native Git validate and materialize it; do not build a second JavaScript patch parser as the semantic authority. Preserve exact old/new paths, old/new blob OIDs, modes, status, and similarity metadata in the existing changed-file model. Reject combined diffs and incomplete binary summaries explicitly. Keep content types that Cumpa cannot render visible as non-reviewable rather than dropping them.
 
 **Warning signs:**
 - Validation only searches for `diff --git` and `@@` lines.
@@ -159,7 +159,7 @@ Patch Grounding and Review Model.
 ### Pitfall 7: Friendly CLI output corrupts canonical stdout
 
 **What goes wrong:**
-A startup banner, browser URL, progress indicator, warning, newline, shutdown message, or stack trace is mixed with the canonical review JSON. The coding agent cannot parse the result or receives different bytes from those persisted by Compare.
+A startup banner, browser URL, progress indicator, warning, newline, shutdown message, or stack trace is mixed with the canonical review JSON. The coding agent cannot parse the result or receives different bytes from those persisted by Cumpa.
 
 **Why it happens:**
 The current interactive CLI can reasonably use console output, while an attached subprocess contract makes stdout a data channel. Global `console.log`, dependencies that print, and abrupt process termination bypass that distinction. On POSIX, writes to piped stdout are asynchronous; `process.exit()` can truncate them.
@@ -188,7 +188,7 @@ Another local process can read or mutate the review; a request chooses the bind 
 Loopback prevents LAN exposure but not same-device interception. OAuth native-app guidance explicitly treats loopback interception as possible. Bearer tokens grant access by possession, and URL-carried tokens are especially prone to logging and history leakage.
 
 **How to avoid:**
-Preserve the existing random per-session token, exact Host/Origin checks, bearer authorization, loopback IP binding, ephemeral port, CSP, `no-store`, and no-referrer policy. Keep the existing fragment-based browser bootstrap and history removal. The stdin schema must not accept network routing, callbacks, browser commands, tokens, or arbitrary URLs. Never place the capability on stdout or in durable state. Revoke it and close the listener after a terminal outcome. State explicitly that stderr and the spawned browser are observable by the invoking local agent; do not claim protection from the process that launched Compare.
+Preserve the existing random per-session token, exact Host/Origin checks, bearer authorization, loopback IP binding, ephemeral port, CSP, `no-store`, and no-referrer policy. Keep the existing fragment-based browser bootstrap and history removal. The stdin schema must not accept network routing, callbacks, browser commands, tokens, or arbitrary URLs. Never place the capability on stdout or in durable state. Revoke it and close the listener after a terminal outcome. State explicitly that stderr and the spawned browser are observable by the invoking local agent; do not claim protection from the process that launched Cumpa.
 
 **Warning signs:**
 - An attached request has `host`, `port`, `callback`, `token`, or `url` fields.
@@ -407,9 +407,9 @@ These are local single-review workloads; prevention should be bounded and boring
 - [Node.js 24 stream documentation](https://nodejs.org/docs/latest-v24.x/api/stream.html) — writable backpressure, completion, and error handling. **Confidence: HIGH**
 - [RFC 8252: OAuth 2.0 for Native Apps](https://www.rfc-editor.org/rfc/rfc8252) — loopback IP literals, ephemeral ports, prompt listener closure, and interception considerations. **Confidence: HIGH**
 - [RFC 6750: Bearer Token Usage](https://www.rfc-editor.org/rfc/rfc6750) — possession semantics and URI/log/history leakage risks. **Confidence: HIGH**
-- [GitHub REST review comments](https://docs.github.com/en/rest/pulls/comments) — established side/path/line/original-commit anchoring precedent. **Confidence: MEDIUM** for Compare design; this is precedent, not a required dependency.
+- [GitHub REST review comments](https://docs.github.com/en/rest/pulls/comments) — established side/path/line/original-commit anchoring precedent. **Confidence: MEDIUM** for Cumpa design; this is precedent, not a required dependency.
 
-### Existing Compare authority
+### Existing Cumpa authority
 
 The recommendations were checked against the repository's current request/server boundary, Git runner, comparison identity, changed-file model, durable-anchor schema, draft store, export store/canonicalizer, loopback security plugin, browser launcher, and Vue review/export flow. Those implementations remain the source of truth for behavior v1.3 must preserve.
 

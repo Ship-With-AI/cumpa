@@ -41,7 +41,7 @@ status: complete
 
 ## Accomplishments
 
-- Added the public Zod-inferred `compare.review-request` v1 contract with immutable revisions and ordered pathspecs.
+- Added the public Zod-inferred `cumpa.review-request` v1 contract with immutable revisions and ordered pathspecs.
 - Added a byte-first, one-MiB reader that rejects empty, oversized, invalid UTF-8, malformed, unsupported-version, and invalid requests without reflecting input.
 - Captured RED, GREEN, and no-op REFACTOR evidence through one focused 21-case Vitest matrix.
 

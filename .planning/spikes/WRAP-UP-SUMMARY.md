@@ -3,7 +3,7 @@
 **Date:** 2026-07-30
 **Spikes processed:** 2
 **Feature areas:** CLI startup and source discovery
-**Skill output:** `./.kimi-code/skills/spike-findings-compare/`
+**Skill output:** `./.kimi-code/skills/spike-findings-cumpa/`
 
 ## Processed Spikes
 

@@ -27,7 +27,7 @@ None — discuss phase skipped.
 
 | ID | Description | Research Support |
 |---|---|---|
-| AGENT-01 | An agent can pipe one versioned JSON review request into Compare without encountering an interactive prompt. | Dispatch on stdin ownership before Inquirer, then decode one EOF-delimited bounded JSON document. |
+| AGENT-01 | An agent can pipe one versioned JSON review request into Cumpa without encountering an interactive prompt. | Dispatch on stdin ownership before Inquirer, then decode one EOF-delimited bounded JSON document. |
 | AGENT-02 | Malformed, oversized, invalid UTF-8, unknown-field, unsupported-version, and non-exclusive-mode requests fail actionably and nonzero before browser launch. | Use byte-first accumulation, fatal UTF-8 decode, one `JSON.parse`, and strict Zod schemas; preserve the existing pre-launch error boundary. |
 | AGENT-03 | TTY launch retains the existing interactive picker flow. | Leave `runCli()` unchanged and add a thin dispatcher ahead of it; retain `tests/cli/selection.test.ts` as the regression authority. |
 | RANGE-01 | A request carries one explicit contiguous base/head range resolved once to full commit IDs. | Resolve both revision strings once, use `merge-base --is-ancestor`, and build the comparison only from pinned OIDs. |
@@ -61,7 +61,7 @@ The most important cross-cutting change is scope identity. Existing `comparisonK
 
 | File / symbol | Planned impact | Why |
 |---|---|---|
-| `src/cli/run.ts` — `run`, `runCli`, `launchPinnedSession` | Narrow dispatch edit | Decide TTY versus request before Inquirer; preserve `runCli()` and the packaged `COMPARE_LAUNCH_OPTIONS` test seam. [VERIFIED: codebase] |
+| `src/cli/run.ts` — `run`, `runCli`, `launchPinnedSession` | Narrow dispatch edit | Decide TTY versus request before Inquirer; preserve `runCli()` and the packaged `CUMPA_LAUNCH_OPTIONS` test seam. [VERIFIED: codebase] |
 | `src/contracts/*` — new request schema | New focused module | Strict, versioned request contract shared by CLI and tests; no parallel TypeScript interface. |
 | `src/cli/*` — new request reader/orchestrator | New focused module | Byte cap, fatal UTF-8, JSON/Zod errors, stderr-only failures, and range launch orchestration do not belong in Commander action glue. |
 | `src/git/comparison.ts` | Extract/reuse lower-level pinned builder | Interactive source selection and requested range ancestry differ, while object verification, inventory, availability, and freezing should remain single-source. |
@@ -105,7 +105,7 @@ const RevisionRangeSchema = z.strictObject({
 });
 
 const AgentReviewRequestV1Schema = z.strictObject({
-  kind: z.literal('compare.review-request'),
+  kind: z.literal('cumpa.review-request'),
   schemaVersion: z.literal(1),
   mode: z.literal('revisions'),
   revisions: RevisionRangeSchema,
@@ -178,7 +178,7 @@ await runner.run([...numstatDiffArguments, baseOid, headOid, ...scope], options)
 
 Preserve array order and exact string spelling. Do not sort, deduplicate, slash-normalize, pre-expand, infer inclusion/exclusion, or perform a post-hoc JavaScript filter. Git defines pathspec magic and exclusion behavior; forwarding the same argv to both calls keeps metadata/numstat joins consistent and avoids fetching excluded blobs. [CITED: https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec] [VERIFIED: `src/git/inventory.ts`]
 
-Keep the existing `.compare` internal-path exclusion as a separate repository invariant after Git selection. Test it under pathspec-scoped calls; do not encode it by mutating the submitted pathspec list. [VERIFIED: `src/git/inventory.ts`, `tests/git/inventory.test.ts`]
+Keep the existing `.cumpa` internal-path exclusion as a separate repository invariant after Git selection. Test it under pathspec-scoped calls; do not encode it by mutating the submitted pathspec list. [VERIFIED: `src/git/inventory.ts`, `tests/git/inventory.test.ts`]
 
 ### Pattern 3: Domain-separated scoped persistence identity
 
@@ -322,7 +322,7 @@ No missing external dependency blocks planning. [VERIFIED: local runtime probes 
 
 3. **Native Git attribute pathspec magic**
    - Resolution: accept attribute pathspec magic exactly as submitted and delegate its interpretation to installed Git with the same ordered argv used for both inventory diff protocols.
-   - Semantics: Compare does not parse, allowlist, normalize, expand, or otherwise reinterpret attribute or other native pathspec magic. Git evaluates attribute predicates using its native launch-time rules; Compare freezes the resulting inventory and preserves the exact submitted string in provenance. Invalid native magic is translated at the range/process boundary into a stable actionable pre-browser error.
+   - Semantics: Cumpa does not parse, allowlist, normalize, expand, or otherwise reinterpret attribute or other native pathspec magic. Git evaluates attribute predicates using its native launch-time rules; Cumpa freezes the resulting inventory and preserves the exact submitted string in provenance. Invalid native magic is translated at the range/process boundary into a stable actionable pre-browser error.
 
 ## Sources
 

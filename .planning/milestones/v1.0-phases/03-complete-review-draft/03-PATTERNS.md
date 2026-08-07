@@ -151,7 +151,7 @@ Required sequence for every accepted mutation:
 2. Reload and classify canonical disk state inside the critical section.
 3. Reject read-only corrupt/newer states.
 4. Materialize the valid missing-state initial draft only through the actual factory.
-5. Compare `expectedRevision` to the reloaded whole-draft revision.
+5. Cumpa `expectedRevision` to the reloaded whole-draft revision.
 6. On mismatch, return explicit conflict with expected revision, actual revision, and latest canonical draft; write nothing.
 7. Only after a match, validate target/transition and apply exactly one pure operation.
 8. Increment revision exactly once; validate the entire next document.
@@ -286,7 +286,7 @@ Newer unsupported is a separate upgrade-required screen with found/supported ver
 **Planning analog:** Phase 1 typed source identities, immutable pinned comparison, native-Git helpers, and identity header; planned-not-implemented.
 
 - Retain server-owned typed launch descriptors separately for Base and Head. Branch identity uses exact full ref; worktree identity uses actual registered worktree identity/path representation and committed launch HEAD, including detached worktrees.
-- Re-resolve using the actual native-Git discipline and worktree `--porcelain -z` parser. Compare full OIDs, never short display IDs or labels.
+- Re-resolve using the actual native-Git discipline and worktree `--porcelain -z` parser. Cumpa full OIDs, never short display IDs or labels.
 - Return each side independently as unchanged, moved, or unavailable. Moved reports role, safe label/type, full old and new OIDs; unavailable reports old OID and bounded reason without fabricated identity.
 - Check on initial load, visibility regain, and a modest visible interval, coalescing overlapping checks. Announce only transitions/new current identities.
 - Warning remains below pinned identity header; it names affected source(s), shows full old/new identities, states the open review remains pinned, and offers only explicit **Launch new comparison** guidance. Default is CLI relaunch instructions unless actual Phase 1 already provides a safe pre-authorized no-body action.
@@ -299,7 +299,7 @@ Newer unsupported is a separate upgrade-required screen with found/supported ver
 
 **Apply to:** add, edit, delete, resolve, reopen, and summary.
 
-One document revision is the aggregate compare-and-swap token. Queue ownership, disk reload/classification, expected-revision comparison, pure operation, single increment, full validation, atomic replacement, and accepted response are one ordered boundary. Two same-revision requests must yield exactly one accepted operation and one conflict containing the latest canonical state.
+One document revision is the aggregate cumpa-and-swap token. Queue ownership, disk reload/classification, expected-revision comparison, pure operation, single increment, full validation, atomic replacement, and accepted response are one ordered boundary. Two same-revision requests must yield exactly one accepted operation and one conflict containing the latest canonical state.
 
 ### Canonical State Versus Local Buffers
 

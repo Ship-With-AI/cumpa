@@ -31,7 +31,7 @@ tdd_checkpoint:
 expected: Running the shipped `cumpa` command in `../../trustlayer/cwt` should make the ordered source picker usable quickly, with the attached current branch and registered worktrees visible before remaining local branches are searched.
 actual: Startup in `../../trustlayer/cwt` remains perceptibly very slow after the v1.2 Fast Source Discovery change.
 errors: No error message was reported.
-reproduction: Build or link the current Compare checkout, change directory to `../../trustlayer/cwt`, run `cumpa`, and measure from process start until the ordered source picker is usable.
+reproduction: Build or link the current Cumpa checkout, change directory to `../../trustlayer/cwt`, run `cumpa`, and measure from process start until the ordered source picker is usable.
 started: Observed while manually testing the shipped v1.2 change on 2026-07-31.
 
 ## Eliminated
@@ -105,7 +105,7 @@ started: Observed while manually testing the shipped v1.2 change on 2026-07-31.
 
 - timestamp: 2026-07-31T08:14:49Z
   checked: Diagnostic instrumentation cleanup and CWT mutation boundary.
-  found: Both `COMPARE_DIAG_CWT_STARTUP` temporary harnesses were removed and `/tmp/compare-cwt-*-diag.mjs` matches no files. All CWT commands issued were read-only Git discovery/status commands; no tool wrote within CWT.
+  found: Both `CUMPA_DIAG_CWT_STARTUP` temporary harnesses were removed and `/tmp/cumpa-cwt-*-diag.mjs` matches no files. All CWT commands issued were read-only Git discovery/status commands; no tool wrote within CWT.
   implication: Tagged instrumentation is gone and the real repository was not modified.
 
 - timestamp: 2026-07-31T08:24:34Z
@@ -140,7 +140,7 @@ started: Observed while manually testing the shipped v1.2 change on 2026-07-31.
 
 - timestamp: 2026-07-31T08:35:46Z
   checked: CWT repository identity and dirty state after timing, plus temporary diagnostic cleanup.
-  found: CWT remained at `3dfb3d37be6d80079ef02d5b3cff34d18ed3e76f` with empty porcelain status (`e3b0c442…b855`); no `/tmp/compare-cwt-*-diag.mjs` files or diagnostic tags remained.
+  found: CWT remained at `3dfb3d37be6d80079ef02d5b3cff34d18ed3e76f` with empty porcelain status (`e3b0c442…b855`); no `/tmp/cumpa-cwt-*-diag.mjs` files or diagnostic tags remained.
   implication: Verification did not mutate CWT and all instrumentation/prototypes were removed.
 
 - timestamp: 2026-07-31T08:47:15Z
@@ -170,7 +170,7 @@ started: Observed while manually testing the shipped v1.2 change on 2026-07-31.
 
 - timestamp: 2026-07-31T09:19:35Z
   checked: Final unchanged `npm run test:performance`, final scoped tests, diagnostics cleanup, and CWT immutability.
-  found: Production gate PASS with 240.06 ms readiness and 46.12 ms search medians; candidate and picker suites passed 28/28; no diagnostic tags or `/tmp/compare-cwt-*-diag.mjs` remained; CWT stayed clean at `3dfb3d37be6d80079ef02d5b3cff34d18ed3e76f`.
+  found: Production gate PASS with 240.06 ms readiness and 46.12 ms search medians; candidate and picker suites passed 28/28; no diagnostic tags or `/tmp/cumpa-cwt-*-diag.mjs` remained; CWT stayed clean at `3dfb3d37be6d80079ef02d5b3cff34d18ed3e76f`.
   implication: Thresholds, output order, exact Git identity, dirty/unavailable selection semantics, cancellation-aware enrichment, and repository immutability are preserved.
 
 ## Resolution

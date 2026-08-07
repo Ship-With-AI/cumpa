@@ -131,7 +131,7 @@ Effective-path policy is deterministic:
 | Deleted | exact `oldPath` |
 | Modified, type-changed, unsupported | exact `newPath`, falling back to exact `oldPath` |
 
-Ordering compares exact effective bytes first, exact old-path bytes second, and opaque file IDs third. The hierarchy orders each directory at the position of its first exact-byte-sorted leaf, then emits that directory before its descendants. This preserves global leaf order even at delimiter edges such as `src-early.ts` versus `src/a-added.ts`.
+Ordering cumpas exact effective bytes first, exact old-path bytes second, and opaque file IDs third. The hierarchy orders each directory at the position of its first exact-byte-sorted leaf, then emits that directory before its descendants. This preserves global leaf order even at delimiter edges such as `src-early.ts` versus `src/a-added.ts`.
 
 ### `createFileTreeModel(files)`
 

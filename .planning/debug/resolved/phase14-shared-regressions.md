@@ -8,7 +8,7 @@ updated: 2026-08-05T19:52:45Z
 ## Current Focus
 
 hypothesis: Phase 14 changed the definition of “attached” at shared launch/app-composition boundaries, causing ordinary legacy callers to inherit completion waiting while session composition stopped forcing snapshot validation on session reads
-test: compare src/cli/run.ts and exact-patch capability/app composition against their pre-Phase-14 versions and trace every caller
+test: cumpa src/cli/run.ts and exact-patch capability/app composition against their pre-Phase-14 versions and trace every caller
 expecting: a single opt-in dependency or launcher distinction was lost or broadened in Phase 14
 next_action: none — fixed and verified in Phase 14
 
