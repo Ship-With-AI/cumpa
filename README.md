@@ -160,7 +160,7 @@ Treat a zero exit plus parseable captured `stdout` as the agent handoff contract
 
 Both v1 requests are strict JSON objects with `kind` set to `compare.review-request` and `schemaVersion` set to `1`.
 
-agent-request-example:revisions
+<!-- agent-request-example:revisions -->
 ```json
 {
   "kind": "compare.review-request",
@@ -176,7 +176,7 @@ agent-request-example:revisions
 
 `pathspecs` defaults to `[]` when omitted. Its order is preserved and passed to Git.
 
-agent-request-example:patch
+<!-- agent-request-example:patch -->
 ```json
 {
   "kind": "compare.review-request",
