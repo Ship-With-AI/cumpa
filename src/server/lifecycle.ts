@@ -35,7 +35,7 @@ export function createShutdownController(
   const reportError =
     options.reportError ??
     ((error: unknown) => {
-      console.error('Compare shutdown failed.', error);
+      console.error('Cumpa shutdown failed.', error);
     });
   let shutdownPromise: Promise<void> | undefined;
 

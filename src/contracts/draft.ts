@@ -7,7 +7,7 @@ import {
   GitObjectIdSchema,
   RangeReviewScopeSchema,
 } from './comparison.js';
-import { compareExactPaths, decodeBase64url } from '../domain/path-bytes.js';
+import { orderExactPaths, decodeBase64url } from '../domain/path-bytes.js';
 
 export const RevisionSchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 export const CommentIdSchema = z.string().regex(/^comment_[0-9a-f-]{36}$/u);
@@ -223,7 +223,7 @@ const ExportFileSchema = z
 
 export type ReviewExportCommentV1 = z.infer<typeof ExportCommentSchema>;
 
-export function compareUtf16CodeUnits(left: string, right: string): number {
+export function orderUtf16CodeUnits(left: string, right: string): number {
   const sharedLength = Math.min(left.length, right.length);
   for (let index = 0; index < sharedLength; index += 1) {
     const difference = left.charCodeAt(index) - right.charCodeAt(index);
@@ -232,16 +232,16 @@ export function compareUtf16CodeUnits(left: string, right: string): number {
   return left.length - right.length;
 }
 
-export function compareReviewExportComments(left: ReviewExportCommentV1, right: ReviewExportCommentV1): number {
+export function orderReviewExportComments(left: ReviewExportCommentV1, right: ReviewExportCommentV1): number {
   const sideDifference = (left.anchor.side === 'base' ? 0 : 1) - (right.anchor.side === 'base' ? 0 : 1);
   if (sideDifference !== 0) return sideDifference;
   const lineDifference = left.anchor.line - right.anchor.line;
   if (lineDifference !== 0) return lineDifference;
-  const blobDifference = compareUtf16CodeUnits(left.anchor.blobOid, right.anchor.blobOid);
+  const blobDifference = orderUtf16CodeUnits(left.anchor.blobOid, right.anchor.blobOid);
   if (blobDifference !== 0) return blobDifference;
-  const contextDifference = compareUtf16CodeUnits(left.anchor.contextHash.value, right.anchor.contextHash.value);
+  const contextDifference = orderUtf16CodeUnits(left.anchor.contextHash.value, right.anchor.contextHash.value);
   if (contextDifference !== 0) return contextDifference;
-  return compareUtf16CodeUnits(left.id, right.id);
+  return orderUtf16CodeUnits(left.id, right.id);
 }
 
 const ExportCountsSchema = z
@@ -279,7 +279,7 @@ const ExportDriftEndpointSchema = z
 export const ReviewExportV1Schema = z
   .strictObject({
     schemaVersion: z.literal(1),
-    kind: z.literal('compare/export'),
+    kind: z.literal('cumpa/export'),
     exportedAt: z.string().datetime(),
     acceptedDraftRevision: RevisionSchema,
     comparison: z
@@ -310,14 +310,14 @@ export const ReviewExportV1Schema = z
       if (file.comments.length === 0) {
         context.addIssue({ code: 'custom', message: 'Export file groups must not be empty.', path: ['files', fileIndex, 'comments'] });
       }
-      if (fileIndex > 0 && compareExactPaths(document.files[fileIndex - 1]!.path, file.path) >= 0) {
+      if (fileIndex > 0 && orderExactPaths(document.files[fileIndex - 1]!.path, file.path) >= 0) {
         context.addIssue({ code: 'custom', message: 'Export file groups must have unique exact paths in total order.', path: ['files', fileIndex, 'path'] });
       }
       for (const [commentIndex, comment] of file.comments.entries()) {
-        if (compareExactPaths(file.path, comment.anchor.path) !== 0) {
+        if (orderExactPaths(file.path, comment.anchor.path) !== 0) {
           context.addIssue({ code: 'custom', message: 'Comment anchor path must match its export file group.', path: ['files', fileIndex, 'comments', commentIndex, 'anchor', 'path'] });
         }
-        if (commentIndex > 0 && compareReviewExportComments(file.comments[commentIndex - 1]!, comment) >= 0) {
+        if (commentIndex > 0 && orderReviewExportComments(file.comments[commentIndex - 1]!, comment) >= 0) {
           context.addIssue({ code: 'custom', message: 'Export comments must have total anchor order.', path: ['files', fileIndex, 'comments', commentIndex] });
         }
       }
@@ -348,7 +348,7 @@ export const ReviewExportV1Schema = z
 export const ReviewExportV2Schema = z
   .strictObject({
     schemaVersion: z.literal(2),
-    kind: z.literal('compare/export'),
+    kind: z.literal('cumpa/export'),
     exportedAt: z.string().datetime(),
     acceptedDraftRevision: RevisionSchema,
     comparison: z
@@ -407,7 +407,7 @@ const ExactPatchExportScopeSchema = z
 export const ReviewExportV3Schema = z
   .strictObject({
     schemaVersion: z.literal(3),
-    kind: z.literal('compare/export'),
+    kind: z.literal('cumpa/export'),
     exportedAt: z.string().datetime(),
     acceptedDraftRevision: RevisionSchema,
     patch: ExactPatchExportScopeSchema,

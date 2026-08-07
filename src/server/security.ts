@@ -5,7 +5,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { ApiErrorSchema, type ApiError } from '../contracts/api.js';
 
 export const REQUEST_UNAVAILABLE_MESSAGE =
-  'This request is not available in the current session. Relaunch Compare from the terminal.';
+  'This request is not available in the current session. Relaunch Cumpa from the terminal.';
 
 export const REQUEST_UNAVAILABLE_ERROR: ApiError = ApiErrorSchema.parse({
   code: 'request-unavailable',

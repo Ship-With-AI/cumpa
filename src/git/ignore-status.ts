@@ -1,21 +1,21 @@
 import { createGitRunner, GitRunnerError } from './runner.js';
 import type { GitRunner } from './runner.js';
 
-const compareIgnoreProbe = '.compare/.compare-ignore-probe';
-const compareIgnoreArguments = [
+const cumpaIgnoreProbe = '.cumpa/.cumpa-ignore-probe';
+const cumpaIgnoreArguments = [
   'check-ignore',
   '--no-index',
   '--quiet',
   '--',
-  compareIgnoreProbe,
+  cumpaIgnoreProbe,
 ] as const;
 
-export type CompareIgnoreStatus =
+export type CumpaIgnoreStatus =
   | Readonly<{ kind: 'ignored' }>
   | Readonly<{ kind: 'not-ignored' }>
   | Readonly<{ kind: 'unavailable' }>;
 
-export interface InspectCompareIgnoreOptions {
+export interface InspectCumpaIgnoreOptions {
   readonly repositoryRoot: string;
 }
 
@@ -23,13 +23,13 @@ export interface IgnoreStatusDependencies {
   readonly runner?: GitRunner;
 }
 
-export async function inspectCompareIgnore(
-  options: InspectCompareIgnoreOptions,
+export async function inspectCumpaIgnore(
+  options: InspectCumpaIgnoreOptions,
   dependencies: IgnoreStatusDependencies = {},
-): Promise<CompareIgnoreStatus> {
+): Promise<CumpaIgnoreStatus> {
   const runner = dependencies.runner ?? createGitRunner();
   try {
-    await runner.run(compareIgnoreArguments, { cwd: options.repositoryRoot });
+    await runner.run(cumpaIgnoreArguments, { cwd: options.repositoryRoot });
     return Object.freeze({ kind: 'ignored' });
   } catch (error) {
     if (error instanceof GitRunnerError && error.kind === 'exit' && error.exitCode === 1) {

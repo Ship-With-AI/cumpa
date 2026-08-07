@@ -54,9 +54,9 @@ type CompletePair = Readonly<{ readonly json: Buffer; readonly markdown: Buffer 
 type DirectoryIdentity = Readonly<{ readonly dev: number; readonly ino: number }>;
 
 export type ManagedExportsRoot = Readonly<{
-  readonly compareRoot: string;
+  readonly cumpaRoot: string;
   readonly exportsRoot: string;
-  readonly compareIdentity: DirectoryIdentity;
+  readonly cumpaIdentity: DirectoryIdentity;
   readonly exportsIdentity: DirectoryIdentity;
 }>;
 
@@ -159,8 +159,8 @@ function receipt(exportsRoot: string, stable: string, pair: CompletePair): Expor
   const json = hashExportBytes(pair.json);
   const markdown = hashExportBytes(pair.markdown);
   const files: ExportReceipt['files'] = [
-    Object.freeze({ path: `.compare/exports/${stableRelative}/review.json`, ...json }),
-    Object.freeze({ path: `.compare/exports/${stableRelative}/review.md`, ...markdown }),
+    Object.freeze({ path: `.cumpa/exports/${stableRelative}/review.json`, ...json }),
+    Object.freeze({ path: `.cumpa/exports/${stableRelative}/review.md`, ...markdown }),
   ];
   return Object.freeze({ files: Object.freeze(files) as ExportReceipt['files'] });
 }
@@ -194,20 +194,20 @@ export async function ensureManagedExportsRoot(
   create: boolean,
 ): Promise<ManagedExportsRoot | undefined> {
   const root = resolve(repositoryRoot);
-  const compareRoot = join(root, '.compare');
-  const compareIdentity = await managedDirectory(compareRoot, create);
-  if (compareIdentity === undefined) return undefined;
-  const exportsRoot = join(compareRoot, 'exports');
+  const cumpaRoot = join(root, '.cumpa');
+  const cumpaIdentity = await managedDirectory(cumpaRoot, create);
+  if (cumpaIdentity === undefined) return undefined;
+  const exportsRoot = join(cumpaRoot, 'exports');
   const exportsIdentity = await managedDirectory(exportsRoot, create);
   if (exportsIdentity === undefined) return undefined;
-  return Object.freeze({ compareRoot, exportsRoot, compareIdentity, exportsIdentity });
+  return Object.freeze({ cumpaRoot, exportsRoot, cumpaIdentity, exportsIdentity });
 }
 
 export async function assertManagedExportsRoot(managedRoot: ManagedExportsRoot): Promise<void> {
-  const compareIdentity = await managedDirectory(managedRoot.compareRoot, false);
+  const cumpaIdentity = await managedDirectory(managedRoot.cumpaRoot, false);
   if (
-    compareIdentity === undefined
-    || !sameIdentity(compareIdentity, managedRoot.compareIdentity)
+    cumpaIdentity === undefined
+    || !sameIdentity(cumpaIdentity, managedRoot.cumpaIdentity)
   ) {
     throw new Error('Managed export directory identity changed.');
   }

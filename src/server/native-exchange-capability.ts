@@ -31,7 +31,7 @@ export function createNativeExchangeCapabilityObserver(
     let capability = unsupportedCapability;
 
     try {
-      probeRoot = await dependencies.mkdtemp(join(tmpdir(), 'compare-native-exchange-probe-'));
+      probeRoot = await dependencies.mkdtemp(join(tmpdir(), 'cumpa-native-exchange-probe-'));
       const addon = dependencies.loadAddon();
       if (addon.probeDirectoryExchange(probeRoot).kind === 'supported') {
         capability = Object.freeze({

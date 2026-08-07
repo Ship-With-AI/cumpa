@@ -29,7 +29,7 @@ function pathBytes(identity: string): Uint8Array {
   return Uint8Array.from(decoded, (character) => character.charCodeAt(0));
 }
 
-function comparePathIdentity(left: string, right: string): number {
+function orderPathIdentity(left: string, right: string): number {
   const leftBytes = pathBytes(left);
   const rightBytes = pathBytes(right);
   const length = Math.min(leftBytes.length, rightBytes.length);
@@ -40,12 +40,21 @@ function comparePathIdentity(left: string, right: string): number {
   return leftBytes.length - rightBytes.length;
 }
 
-function compareComments(left: ReviewCommentProjection, right: ReviewCommentProjection): number {
+function orderText(left: string, right: string): number {
+  const sharedLength = Math.min(left.length, right.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    const difference = left.charCodeAt(index) - right.charCodeAt(index);
+    if (difference !== 0) return difference;
+  }
+  return left.length - right.length;
+}
+
+function orderComments(left: ReviewCommentProjection, right: ReviewCommentProjection): number {
   const side = (left.side === 'base' ? 0 : 1) - (right.side === 'base' ? 0 : 1);
   if (side !== 0) return side;
   if (left.line !== right.line) return left.line - right.line;
-  if (left.createdAt !== right.createdAt) return left.createdAt.localeCompare(right.createdAt);
-  return left.id.localeCompare(right.id);
+  if (left.createdAt !== right.createdAt) return left.createdAt.orderText(right.createdAt);
+  return left.id.orderText(right.id);
 }
 
 function groupsForState(
@@ -68,11 +77,11 @@ function groupsForState(
       if (leftInventory !== undefined && rightInventory !== undefined) return leftInventory - rightInventory;
       if (leftInventory !== undefined) return -1;
       if (rightInventory !== undefined) return 1;
-      return comparePathIdentity(left, right);
+      return orderPathIdentity(left, right);
     })
     .map(([, group]) => ({
       path: group.path,
-      comments: [...group.comments].sort(compareComments),
+      comments: [...group.comments].sort(orderComments),
     }));
 }
 

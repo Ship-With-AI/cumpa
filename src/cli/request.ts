@@ -17,12 +17,12 @@ export type AgentRequestErrorKind =
   | 'invalid-request';
 
 const requestErrorMessages = {
-  'empty-request': 'Request input is empty. Pipe one compare.review-request JSON document.',
+  'empty-request': 'Request input is empty. Pipe one cumpa.review-request JSON document.',
   'request-too-large': 'Request input exceeds 1048576 bytes. Reduce the request and try again.',
   'invalid-utf8': 'Request input must be valid UTF-8 JSON.',
   'malformed-json': 'Request input must contain one JSON document.',
   'unsupported-version': 'Request schema version is unsupported. Use schemaVersion 1.',
-  'invalid-request': 'Request is invalid. Use kind "compare.review-request", schemaVersion 1, and one supported source mode.',
+  'invalid-request': 'Request is invalid. Use kind "cumpa.review-request", schemaVersion 1, and one supported source mode.',
 } as const satisfies Record<AgentRequestErrorKind, string>;
 
 export class AgentRequestError extends Error {

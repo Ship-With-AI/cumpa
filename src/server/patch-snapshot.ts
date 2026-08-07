@@ -31,7 +31,7 @@ const MAX_SNAPSHOT_BYTES = 64 * 1024 * 1024;
 const MAX_SIDE_BYTES = 2 * 1024 * 1024;
 const MAX_MANIFEST_BYTES = 16 * 1024 * 1024;
 const MAX_TARGET_TREE_BYTES = 64 * 1024 * 1024;
-const PATCH_KEY_DOMAIN = Buffer.from('compare-exact-patch-review-key-v1', 'utf8');
+const PATCH_KEY_DOMAIN = Buffer.from('cumpa-exact-patch-review-key-v1', 'utf8');
 const fileIdPattern = /^file_[A-Za-z0-9_-]{43}$/u;
 const strictText = new TextDecoder('utf-8', { fatal: true });
 
@@ -540,8 +540,8 @@ export async function materializePatchSnapshot(
     throw new PatchSnapshotError('snapshot-unavailable', false);
   }
   const parent = options.parent ?? tmpdir();
-  const staging = await mkdir(parent, { recursive: true, mode: 0o700 }).then(() => join(parent, `.compare-patch-stage-${randomUUID()}`));
-  const accepted = join(parent, `compare-patch-${randomUUID()}`);
+  const staging = await mkdir(parent, { recursive: true, mode: 0o700 }).then(() => join(parent, `.cumpa-patch-stage-${randomUUID()}`));
+  const accepted = join(parent, `cumpa-patch-${randomUUID()}`);
   let total = 0;
   try {
     await mkdir(staging, { mode: 0o700 });

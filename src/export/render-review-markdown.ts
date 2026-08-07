@@ -46,7 +46,7 @@ function appendComment(
 export function renderReviewMarkdown(canonicalBytes: Uint8Array): string {
   const document = parseCanonicalReviewExport(canonicalBytes);
   const exactPatch = document.schemaVersion === 3;
-  const lines: string[] = ['# Compare Export', ''];
+  const lines: string[] = ['# Cumpa Export', ''];
 
   if (exactPatch) {
     lines.push(

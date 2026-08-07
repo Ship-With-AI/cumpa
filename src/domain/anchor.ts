@@ -44,8 +44,8 @@ export type AnchorVerification = Readonly<{
   readonly reason: 'exact-match' | 'anchor-mismatch' | 'anchor-unavailable';
 }>;
 
-const CONTEXT_DOMAIN = Buffer.from('compare-anchor-context-v1', 'utf8');
-const UNIQUE_DOMAIN = Buffer.from('compare-anchor-unique-v1', 'utf8');
+const CONTEXT_DOMAIN = Buffer.from('cumpa-anchor-context-v1', 'utf8');
+const UNIQUE_DOMAIN = Buffer.from('cumpa-anchor-unique-v1', 'utf8');
 const UTF8 = new TextEncoder();
 
 function framedSha256(domain: Uint8Array, fields: readonly Uint8Array[]): string {

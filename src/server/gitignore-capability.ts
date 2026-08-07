@@ -2,12 +2,12 @@ import { constants } from 'node:fs';
 import { lstat, open, type FileHandle } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
-import { inspectCompareIgnore } from '../git/ignore-status.js';
+import { inspectCumpaIgnore } from '../git/ignore-status.js';
 
-const compareIgnoreRule = Buffer.from('/.compare/\n', 'ascii');
+const cumpaIgnoreRule = Buffer.from('/.cumpa/\n', 'ascii');
 const appendQueues = new Map<string, Promise<void>>();
 
-export type AppendCompareIgnoreResult =
+export type AppendCumpaIgnoreResult =
   | Readonly<{ kind: 'appended' }>
   | Readonly<{ kind: 'alreadyIgnored' }>
   | Readonly<{ kind: 'unconfirmed' }>
@@ -15,11 +15,11 @@ export type AppendCompareIgnoreResult =
   | Readonly<{ kind: 'appendUnconfirmed' }>
   | Readonly<{ kind: 'ambiguous' }>;
 
-export interface AppendCompareIgnoreOptions {
+export interface AppendCumpaIgnoreOptions {
   readonly repositoryRoot: string;
 }
 
-export interface AppendCompareIgnoreDependencies {
+export interface AppendCumpaIgnoreDependencies {
   readonly beforeAppend?: () => Promise<void>;
   readonly writeAddition?: (handle: FileHandle, addition: Buffer) => Promise<void>;
   readonly sync?: (handle: FileHandle) => Promise<void>;
@@ -32,11 +32,11 @@ function isMissingPath(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT';
 }
 
-function result(kind: AppendCompareIgnoreResult['kind']): AppendCompareIgnoreResult {
+function result(kind: AppendCumpaIgnoreResult['kind']): AppendCumpaIgnoreResult {
   return Object.freeze({ kind });
 }
 
-async function closeAsUnconfirmed(handle: FileHandle): Promise<AppendCompareIgnoreResult> {
+async function closeAsUnconfirmed(handle: FileHandle): Promise<AppendCumpaIgnoreResult> {
   try {
     await handle.close();
   } catch {
@@ -50,9 +50,9 @@ async function inspectFailedMutation(
   identity: FileIdentity,
   original: Buffer,
   addition: Buffer,
-): Promise<AppendCompareIgnoreResult> {
+): Promise<AppendCumpaIgnoreResult> {
   let confirmation: FileHandle | undefined;
-  let outcome: AppendCompareIgnoreResult = result('ambiguous');
+  let outcome: AppendCumpaIgnoreResult = result('ambiguous');
   try {
     confirmation = await open(ignorePath, constants.O_RDONLY | constants.O_NOFOLLOW);
     const stat = await confirmation.stat();
@@ -78,10 +78,10 @@ async function inspectFailedMutation(
   return outcome;
 }
 
-export async function appendCompareIgnoreRule(
-  options: AppendCompareIgnoreOptions,
-  dependencies: AppendCompareIgnoreDependencies = {},
-): Promise<AppendCompareIgnoreResult> {
+export async function appendCumpaIgnoreRule(
+  options: AppendCumpaIgnoreOptions,
+  dependencies: AppendCumpaIgnoreDependencies = {},
+): Promise<AppendCumpaIgnoreResult> {
   const repositoryRoot = resolve(options.repositoryRoot);
   const previous = appendQueues.get(repositoryRoot) ?? Promise.resolve();
   let release!: () => void;
@@ -93,7 +93,7 @@ export async function appendCompareIgnoreRule(
   await previous;
 
   try {
-    const status = await inspectCompareIgnore({ repositoryRoot });
+    const status = await inspectCumpaIgnore({ repositoryRoot });
     if (status.kind === 'ignored') {
       return result('alreadyIgnored');
     }
@@ -171,8 +171,8 @@ export async function appendCompareIgnoreRule(
     }
 
     const addition = original.byteLength === 0 || original.at(-1) === 0x0a
-      ? compareIgnoreRule
-      : Buffer.concat([Buffer.from('\n', 'ascii'), compareIgnoreRule]);
+      ? cumpaIgnoreRule
+      : Buffer.concat([Buffer.from('\n', 'ascii'), cumpaIgnoreRule]);
     let mutationFailed = false;
 
     try {
@@ -229,7 +229,7 @@ export async function appendCompareIgnoreRule(
       return result('ambiguous');
     }
 
-    return (await inspectCompareIgnore({ repositoryRoot })).kind === 'ignored'
+    return (await inspectCumpaIgnore({ repositoryRoot })).kind === 'ignored'
       ? result('appended')
       : result('appendUnconfirmed');
   } catch {

@@ -195,7 +195,7 @@ defineExpose({ focusClose });
     <p class="identity-statement">
       {{
         isExactPatch
-          ? 'This review is frozen to the accepted patch. Every preimage is repository-grounded and every postimage matched implemented content at launch. Compare never refreshes reviewed bytes from the worktree.'
+          ? 'This review is frozen to the accepted patch. Every preimage is repository-grounded and every postimage matched implemented content at launch. Cumpa never refreshes reviewed bytes from the worktree.'
           : isRange && range?.kind === 'revisions'
             ? range.pathspecs.length === 0
               ? 'This review is pinned to these commits and all changed paths. Moving refs do not change its files or content.'

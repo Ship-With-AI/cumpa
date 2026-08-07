@@ -45,7 +45,7 @@ function testRecoveryFailure(): TestRecoveryFailure | undefined {
     return undefined;
   }
 
-  const configured = process.env.COMPARE_TEST_RECOVERY_FAILURE;
+  const configured = process.env.CUMPA_TEST_RECOVERY_FAILURE;
   return configured === 'backup' || configured === 'replacement' ? configured : undefined;
 }
 

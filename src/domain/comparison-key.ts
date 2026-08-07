@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
-const DOMAIN = Buffer.from('compare-comparison-key-v1', 'utf8');
-const RANGE_DOMAIN = Buffer.from('compare-range-review-key-v1', 'utf8');
+const DOMAIN = Buffer.from('cumpa-comparison-key-v1', 'utf8');
+const RANGE_DOMAIN = Buffer.from('cumpa-range-review-key-v1', 'utf8');
 const encoder = new TextEncoder();
 
 function frame(value: string): Buffer {

@@ -2,10 +2,10 @@ import {
   DraftLoadResponseSchema,
   DraftMutationResultSchema,
   DraftMutationRequestSchema,
-  AppendCompareIgnoreResultSchema,
+  AppendCumpaIgnoreResultSchema,
   ExportDirectoryRevealResultSchema,
   DraftRecoveryRequestSchema,
-  CompareIgnoreStatusSchema,
+  CumpaIgnoreStatusSchema,
   DraftRecoveryResultSchema,
   DraftRevealResultSchema,
   ExportReviewRequestSchema,
@@ -16,12 +16,12 @@ import {
   FinishReviewResultSchema,
   FileMetadataResponseSchema,
   type DraftLoadResponse,
-  type AppendCompareIgnoreResult,
+  type AppendCumpaIgnoreResult,
   type DraftMutationRequest,
   type DraftMutationResult,
   type DraftRecoveryResult,
   type DraftRevealResult,
-  type CompareIgnoreStatus,
+  type CumpaIgnoreStatus,
   type ExportDirectoryRevealResult,
   type ExportReviewRequest,
   type ExportReviewResult,
@@ -38,15 +38,15 @@ import {
 } from '../../contracts/api.js';
 
 export const SECURITY_FAILURE_MESSAGE =
-  'This request is not available in the current session. Relaunch Compare from the terminal.';
+  'This request is not available in the current session. Relaunch Cumpa from the terminal.';
 export const SESSION_UNAVAILABLE_MESSAGE =
-  'This pinned session is unavailable. Return to the terminal and launch Compare again. Diagnostic details are shown in the terminal.';
+  'This pinned session is unavailable. Return to the terminal and launch Cumpa again. Diagnostic details are shown in the terminal.';
 export const SESSION_STOPPED_MESSAGE =
-  'This pinned session has stopped. Relaunch Compare from the terminal to continue.';
+  'This pinned session has stopped. Relaunch Cumpa from the terminal to continue.';
 export const FILE_UNAVAILABLE_MESSAGE =
   'File details could not be loaded. Retry this file. If the problem continues, check the terminal diagnostic.';
 export const DRAFT_UNAVAILABLE_MESSAGE =
-  'Local draft couldn’t be opened. Existing review data was left unchanged. Relaunch Compare or check the terminal for details.';
+  'Local draft couldn’t be opened. Existing review data was left unchanged. Relaunch Cumpa or check the terminal for details.';
 export type DraftView = Extract<DraftLoadResponse, { readonly kind: 'current' }>['draft'];
 export type SessionClientErrorKind = 'security' | 'session' | 'stopped' | 'file' | 'draft';
 
@@ -66,8 +66,8 @@ export interface SessionClient {
   finishReview(input: { readonly expectedRevision: number }): Promise<FinishReviewResult>;
   exportReview(request: ExportReviewRequest): Promise<ExportReviewResult>;
   getDraft(): Promise<DraftLoadResponse>;
-  appendCompareIgnoreRule(): Promise<AppendCompareIgnoreResult>;
-  getCompareIgnoreStatus(): Promise<CompareIgnoreStatus>;
+  appendCumpaIgnoreRule(): Promise<AppendCumpaIgnoreResult>;
+  getCumpaIgnoreStatus(): Promise<CumpaIgnoreStatus>;
   recoverDraft(expectedFingerprint: string): Promise<DraftRecoveryResult>;
   revealDraftFile(): Promise<DraftRevealResult>;
   revealExportDirectory(): Promise<ExportDirectoryRevealResult>;
@@ -176,8 +176,8 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       }
       return result.data;
     },
-    async appendCompareIgnoreRule() {
-      const result = AppendCompareIgnoreResultSchema.safeParse(
+    async appendCumpaIgnoreRule() {
+      const result = AppendCumpaIgnoreResultSchema.safeParse(
         await requestJson('/api/export/gitignore', 'POST', 'draft'),
       );
       if (!result.success) {
@@ -185,8 +185,8 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       }
       return result.data;
     },
-    async getCompareIgnoreStatus() {
-      const result = CompareIgnoreStatusSchema.safeParse(
+    async getCumpaIgnoreStatus() {
+      const result = CumpaIgnoreStatusSchema.safeParse(
         await requestJson('/api/export/gitignore', 'GET', 'draft'),
       );
       if (!result.success) {

@@ -61,7 +61,7 @@ const ExactPatchTargetSchema = z
 
 export const ExactPatchRequestSchema = z
   .strictObject({
-    kind: z.literal('compare.review-request'),
+    kind: z.literal('cumpa.review-request'),
     schemaVersion: z.literal(1),
     mode: z.literal('patch'),
     patch: z
@@ -75,7 +75,7 @@ export const ExactPatchRequestSchema = z
 
 const RevisionRequestSchema = z
   .strictObject({
-    kind: z.literal('compare.review-request'),
+    kind: z.literal('cumpa.review-request'),
     schemaVersion: z.literal(1),
     mode: z.literal('revisions'),
     revisions: RevisionRangeSchema,

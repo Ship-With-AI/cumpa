@@ -125,7 +125,7 @@ function exactPath(value: string, prefix: 'a/' | 'b/' | undefined): ParsedPath |
   const path = prefix !== undefined && bytes.subarray(0, 2).equals(Buffer.from(prefix, 'ascii')) ? bytes.subarray(2) : bytes;
   if (path.length === 0 || path[0] === 47 || path[0] === 92 || path.includes(0)) fail();
   for (const part of path.toString('latin1').split('/')) {
-    if (part === '' || part === '.' || part === '..' || part === '.git' || part === '.compare') fail();
+    if (part === '' || part === '.' || part === '..' || part === '.git' || part === '.cumpa') fail();
   }
   return Object.freeze({ bytes: Buffer.from(path), path: createExactPath(path) });
 }

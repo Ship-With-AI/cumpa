@@ -6,8 +6,8 @@ import {
   ReviewExportV1Schema,
   ReviewExportV2Schema,
   ReviewExportV3Schema,
-  compareReviewExportComments,
-  compareUtf16CodeUnits,
+  orderReviewExportComments,
+  orderUtf16CodeUnits,
   type AnchorVerificationDto,
   type ExactPatchExportScope,
   type ReviewDraftV1,
@@ -23,7 +23,7 @@ export type {
   ReviewExportV3,
 } from '../contracts/draft.js';
 import type { RangeReviewScope } from '../contracts/comparison.js';
-import { compareExactPaths } from '../domain/path-bytes.js';
+import { orderExactPaths } from '../domain/path-bytes.js';
 
 
 
@@ -84,7 +84,7 @@ function serializeCanonicalJson(value: unknown): string {
   }
   const object = value as Record<string, unknown>;
   return `{${Object.keys(object)
-    .sort(compareUtf16CodeUnits)
+    .sort(orderUtf16CodeUnits)
     .map((key) => `${serializeCanonicalJson(key)}:${serializeCanonicalJson(object[key])}`)
     .join(',')}}`;
 }
@@ -121,12 +121,12 @@ export function buildReviewExportV1(snapshot: AcceptedReviewSnapshotV1, exported
   }
 
   const files = [...groups.values()]
-    .sort((left, right) => compareExactPaths(left.path, right.path))
-    .map((group) => ({ path: group.path, comments: group.comments.sort(compareReviewExportComments) }));
+    .sort((left, right) => orderExactPaths(left.path, right.path))
+    .map((group) => ({ path: group.path, comments: group.comments.sort(orderReviewExportComments) }));
   const allComments = files.flatMap((file) => file.comments);
   const document = {
     schemaVersion: 1 as const,
-    kind: 'compare/export' as const,
+    kind: 'cumpa/export' as const,
     exportedAt,
     acceptedDraftRevision: draft.revision,
     comparison: snapshot.comparison,

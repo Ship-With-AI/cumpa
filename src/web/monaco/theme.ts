@@ -1,8 +1,8 @@
 import * as monaco from 'monaco-editor';
 
-export const COMPARE_THEME_ID = 'compare-dark';
+export const CUMPA_THEME_ID = 'cumpa-dark';
 
-export const COMPARE_THEME = {
+export const CUMPA_THEME = {
   base: 'vs-dark',
   inherit: true,
   rules: [
@@ -85,7 +85,7 @@ export const COMPARE_THEME = {
   },
 } satisfies monaco.editor.IStandaloneThemeData;
 
-export function applyCompareTheme(): void {
-  monaco.editor.defineTheme(COMPARE_THEME_ID, COMPARE_THEME);
-  monaco.editor.setTheme(COMPARE_THEME_ID);
+export function applyCumpaTheme(): void {
+  monaco.editor.defineTheme(CUMPA_THEME_ID, CUMPA_THEME);
+  monaco.editor.setTheme(CUMPA_THEME_ID);
 }

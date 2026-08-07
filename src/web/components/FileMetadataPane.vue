@@ -52,7 +52,7 @@ const UNSUPPORTED_EXPLANATION: Record<
 };
 
 const MISSING_OBJECT_EXPLANATION =
-  "The required object for this pinned file is missing or unreadable. Metadata already loaded remains inspectable, but inline content is unavailable. Compare will not fall back to a moving ref or worktree file. Repair the repository's object data with Git, then relaunch this comparison.";
+  "The required object for this pinned file is missing or unreadable. Metadata already loaded remains inspectable, but inline content is unavailable. Cumpa will not fall back to a moving ref or worktree file. Repair the repository's object data with Git, then relaunch this comparison.";
 
 const selectedRecord = computed(() => props.metadata ?? props.file);
 const isMove = computed(

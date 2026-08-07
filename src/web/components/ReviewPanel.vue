@@ -4,7 +4,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 
 import type { ReviewPendingOperation } from '../model/review-draft-state.js';
 import type { ReviewExportState } from '../model/review-draft-state.js';
-import type { AppendCompareIgnoreResult, ExportDirectoryRevealResult } from '../../contracts/api.js';
+import type { AppendCumpaIgnoreResult, ExportDirectoryRevealResult } from '../../contracts/api.js';
 import { projectCommentGroups } from '../model/comment-groups.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import SummarySection from './SummarySection.vue';
@@ -39,8 +39,8 @@ const props = defineProps<{
   readonly failure: ReviewFailure | null;
   readonly retainedSummary: boolean;
   readonly exportState: ReviewExportState;
-  readonly appendIgnoreRule: AppendCompareIgnoreRule | undefined;
-  readonly refreshIgnoreStatus: RefreshCompareIgnoreStatus | undefined;
+  readonly appendIgnoreRule: AppendCumpaIgnoreRule | undefined;
+  readonly refreshIgnoreStatus: RefreshCumpaIgnoreStatus | undefined;
   readonly revealExportDirectory: RevealExportDirectory | undefined;
   readonly selectedCommentId?: string;
   readonly attachedLifecycle?: AttachedLifecycle;
@@ -383,7 +383,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
       <div class="inline-notice__content">
         <h3 id="review-operation-failed-heading">Review change failed</h3>
         <p v-if="failure?.operation === 'comment'">Comment wasn’t saved. Your text is still here in this tab.</p>
-        <p v-else>The review change wasn’t saved. The accepted local draft is unchanged. Try again after checking Compare is running.</p>
+        <p v-else>The review change wasn’t saved. The accepted local draft is unchanged. Try again after checking Cumpa is running.</p>
       </div>
     </section>
 
@@ -527,7 +527,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
               <h6 :id="`delete-comment-heading-${comment.id}`">Delete comment?</h6>
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p>
               <p>{{ comment.body }}</p>
-              <p>This permanently removes the comment from this local draft. Compare has no undo history.</p>
+              <p>This permanently removes the comment from this local draft. Cumpa has no undo history.</p>
               <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null || mutationLocked === true" @click="cancelDelete(comment.id)">Keep comment</button>
               <button
                 type="button"
@@ -641,7 +641,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
               <h6 :id="`delete-comment-heading-${comment.id}`">Delete comment?</h6>
               <p>{{ comment.recordedAnchor.safeDisplayPath }} · {{ comment.side === 'base' ? 'Base' : 'Head' }} line {{ comment.line }}</p>
               <p>{{ comment.body }}</p>
-              <p>This permanently removes the comment from this local draft. Compare has no undo history.</p>
+              <p>This permanently removes the comment from this local draft. Cumpa has no undo history.</p>
               <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null || mutationLocked === true" @click="cancelDelete(comment.id)">Keep comment</button>
               <button type="button" class="ui-button ui-button--destructive" :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null || mutationLocked === true" @click="confirmDelete(comment.id)"><span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'delete' && pendingFocus?.commentId === comment.id ? 'Deleting…' : 'Delete comment' }}</button>
             </section>
@@ -703,7 +703,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
           <UiIcon name="error" class="inline-notice__icon" />
           <div class="inline-notice__content">
             <h4 ref="completionFailure" tabindex="-1">Attached review disconnected</h4>
-            <p>The browser lost its connection to Compare. This review is still unfinished. Reload this page while Compare is running, then choose Finish review.</p>
+            <p>The browser lost its connection to Cumpa. This review is still unfinished. Reload this page while Cumpa is running, then choose Finish review.</p>
             <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload page</button>
           </div>
         </div>
@@ -714,7 +714,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
           <UiIcon name="error" class="inline-notice__icon" />
           <div class="inline-notice__content">
             <h4 ref="completionFailure" tabindex="-1">Completion status unavailable</h4>
-            <p>Compare disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Compare is still running, reload to reconnect.</p>
+            <p>Cumpa disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Cumpa is still running, reload to reconnect.</p>
             <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload page</button>
           </div>
         </div>
@@ -736,7 +736,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
           <UiIcon name="warning" class="inline-notice__icon" />
           <div class="inline-notice__content">
             <h4 ref="completionFailure" tabindex="-1">Review can’t be finished</h4>
-            <p>Compare found stale or unavailable feedback anchors in the accepted review. Affected comments: {{ attachedFailure.affectedCount }}. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.</p>
+            <p>Cumpa found stale or unavailable feedback anchors in the accepted review. Affected comments: {{ attachedFailure.affectedCount }}. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.</p>
             <button type="button" class="ui-button" @click="focusStaleFeedback">Review stale feedback</button>
           </div>
         </div>
@@ -758,7 +758,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
           <UiIcon name="warning" class="inline-notice__icon" />
           <div class="inline-notice__content">
             <h4 ref="completionFailure" tabindex="-1">Review draft can’t be validated</h4>
-            <p>The accepted local draft is corrupt, incomplete, or read-only. No feedback was returned. Reload the review; if it remains unavailable, relaunch Compare.</p>
+            <p>The accepted local draft is corrupt, incomplete, or read-only. No feedback was returned. Reload the review; if it remains unavailable, relaunch Cumpa.</p>
             <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload review</button>
           </div>
         </div>
@@ -769,7 +769,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
           <UiIcon name="error" class="inline-notice__icon" />
           <div class="inline-notice__content">
             <h4 ref="completionFailure" tabindex="-1">Review was not finished</h4>
-            <p>No feedback was returned. Check that Compare is still running, then try Finish review again.</p>
+            <p>No feedback was returned. Check that Cumpa is still running, then try Finish review again.</p>
             <button type="button" class="ui-button ui-button--primary" @click="finishAttachedReview">Try Finish review again</button>
           </div>
         </div>

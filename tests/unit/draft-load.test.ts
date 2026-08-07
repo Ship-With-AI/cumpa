@@ -85,6 +85,19 @@ describe('raw draft load classification', () => {
     expect(fingerprint(state.raw)).toBe(fingerprint(bytes));
   });
 
+  test('treats the legacy namespace as ordinary repository content', async () => {
+    const root = await fixture();
+    const legacyNamespace = String.fromCharCode(99, 111, 109, 112, 97, 114, 101);
+    const directory = join(root, `.${legacyNamespace}`, 'drafts');
+    await mkdir(directory, { recursive: true });
+    await writeFile(join(directory, `${comparisonKey(comparison.baseCommitOid, comparison.headCommitOid)}.json`), current());
+
+    await expect(createDraftLoader({ repositoryRoot: root, comparison }).load()).resolves.toMatchObject({
+      kind: 'missing',
+      path: `.cumpa/drafts/${comparisonKey(comparison.baseCommitOid, comparison.headCommitOid)}.json`,
+    });
+  });
+
   test('keys exact ordered range scopes independently and resumes matching provenance', async () => {
     const first = rangeComparison(['src', ':(exclude)src/generated']);
     const reordered = rangeComparison([':(exclude)src/generated', 'src']);

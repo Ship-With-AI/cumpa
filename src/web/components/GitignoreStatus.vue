@@ -1,25 +1,25 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue';
 
-import type { AppendCompareIgnoreResult, CompareIgnoreStatus } from '../../contracts/api.js';
+import type { AppendCumpaIgnoreResult, CumpaIgnoreStatus } from '../../contracts/api.js';
 import UiIcon from './ui/UiIcon.vue';
 
 const props = defineProps<{
-  status: CompareIgnoreStatus | null;
-  appendIgnoreRule: () => Promise<AppendCompareIgnoreResult>;
+  status: CumpaIgnoreStatus | null;
+  appendIgnoreRule: () => Promise<AppendCumpaIgnoreResult>;
   refreshIgnoreStatus: () => Promise<void>;
 }>();
 
 const confirming = ref(false);
 const appending = ref(false);
-const appendOutcome = ref<Exclude<AppendCompareIgnoreResult['kind'], 'appended' | 'alreadyIgnored'> | null>(null);
+const appendOutcome = ref<Exclude<AppendCumpaIgnoreResult['kind'], 'appended' | 'alreadyIgnored'> | null>(null);
 const statusMessage = ref('');
 const addButton = ref<HTMLButtonElement>();
 const keepButton = ref<HTMLButtonElement>();
 
 
 function appendFailureMessage(
-  outcome: Exclude<AppendCompareIgnoreResult['kind'], 'appended' | 'alreadyIgnored'>,
+  outcome: Exclude<AppendCumpaIgnoreResult['kind'], 'appended' | 'alreadyIgnored'>,
 ): string {
   switch (outcome) {
     case 'unchanged':
@@ -59,7 +59,7 @@ async function appendRule(): Promise<void> {
     await props.refreshIgnoreStatus();
     confirming.value = false;
     statusMessage.value = result.kind === 'appended'
-      ? 'Added /.compare/ to .gitignore.'
+      ? 'Added /.cumpa/ to .gitignore.'
       : 'Export directory is already ignored.';
   } catch {
     appendOutcome.value = 'unconfirmed';
@@ -80,7 +80,7 @@ async function appendRule(): Promise<void> {
       <span class="ui-spinner" aria-hidden="true" />
       <div class="inline-notice__content">
         <h4 id="gitignore-status-heading">Checking export directory ignore status</h4>
-        <p>Export can continue while Compare checks whether Git ignores <code>/.compare/</code>.</p>
+        <p>Export can continue while Cumpa checks whether Git ignores <code>/.cumpa/</code>.</p>
       </div>
     </section>
 
@@ -88,7 +88,7 @@ async function appendRule(): Promise<void> {
       <UiIcon name="check" class="inline-notice__icon" />
       <div class="inline-notice__content">
         <h4 id="gitignore-status-heading">Export directory ignored</h4>
-        <p>Git already ignores <code>/.compare/</code>.</p>
+        <p>Git already ignores <code>/.cumpa/</code>.</p>
       </div>
     </section>
 
@@ -96,7 +96,7 @@ async function appendRule(): Promise<void> {
       <UiIcon name="error" class="inline-notice__icon" />
       <div class="inline-notice__content">
         <h4 id="gitignore-status-heading">Ignore status unavailable</h4>
-        <p>Compare could not check whether Git ignores <code>/.compare/</code>. Export can continue without changing <code>.gitignore</code>.</p>
+        <p>Cumpa could not check whether Git ignores <code>/.cumpa/</code>. Export can continue without changing <code>.gitignore</code>.</p>
       </div>
     </section>
 
@@ -104,7 +104,7 @@ async function appendRule(): Promise<void> {
       <UiIcon name="warning" class="inline-notice__icon" />
       <div class="inline-notice__content">
         <h4 id="gitignore-status-heading">Export directory is not ignored</h4>
-        <p>Export can continue. Compare always excludes <code>.compare/</code> from this review, but Git may show the generated files as untracked.</p>
+        <p>Export can continue. Cumpa always excludes <code>.cumpa/</code> from this review, but Git may show the generated files as untracked.</p>
         <div v-if="!confirming" class="export-actions">
           <button ref="addButton" type="button" class="ui-button" @click="beginAppendConfirmation">Add to .gitignore</button>
           <button type="button" class="ui-button" @click="keepUnchanged">Keep .gitignore unchanged</button>
@@ -118,13 +118,13 @@ async function appendRule(): Promise<void> {
           @keydown.escape.prevent.stop="keepUnchanged"
         >
           <h5 id="gitignore-confirm-heading">Add export directory to .gitignore?</h5>
-          <p>Compare will append exactly <code>/.compare/</code> to the repository-root <code>.gitignore</code>. Existing bytes and rules will be preserved.</p>
+          <p>Cumpa will append exactly <code>/.cumpa/</code> to the repository-root <code>.gitignore</code>. Existing bytes and rules will be preserved.</p>
           <p v-if="appending" role="status">Appending one ignore rule…</p>
           <section v-if="appendOutcome !== null" class="inline-notice inline-notice--error" role="alert" aria-labelledby="gitignore-failed-heading">
             <UiIcon name="error" class="inline-notice__icon" />
             <div class="inline-notice__content">
               <h6 id="gitignore-failed-heading">{{ appendFailureMessage(appendOutcome) }}</h6>
-              <p>Compare did not replace existing bytes or apply any rollback. Export can continue.</p>
+              <p>Cumpa did not replace existing bytes or apply any rollback. Export can continue.</p>
             </div>
           </section>
           <div class="export-actions">

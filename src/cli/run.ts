@@ -216,7 +216,7 @@ function createLaunchRuntime(
     },
     setExitStatus: dependencies.setExitStatus,
     reportError: (error) => {
-      console.error('Compare shutdown failed.', error);
+      console.error('Cumpa shutdown failed.', error);
     },
   });
 
@@ -244,7 +244,7 @@ function createLaunchRuntime(
         sessionToken: token,
         revealDraftFile,
         diagnostics: ({ correlationId, reason }) => {
-          console.error(`Compare request denied [${correlationId}]: ${reason}.`);
+          console.error(`Cumpa request denied [${correlationId}]: ${reason}.`);
         },
       });
       await app.listen({ host: '127.0.0.1', port: 0 });
@@ -550,7 +550,7 @@ export async function runOrdinaryAction(
           revealDraftFile,
           attachedCompletion,
           diagnostics: ({ correlationId, reason }) => {
-            output(`Compare request denied [${correlationId}]: ${reason}.`);
+            output(`Cumpa request denied [${correlationId}]: ${reason}.`);
           },
         });
       },
@@ -717,7 +717,7 @@ export async function run(
     .name('cumpa')
     .description('Local-first review of pinned Git comparisons')
     .action(async () => {
-      const serializedLaunchOptions = process.env.COMPARE_LAUNCH_OPTIONS;
+      const serializedLaunchOptions = process.env.CUMPA_LAUNCH_OPTIONS;
       if (serializedLaunchOptions === undefined) {
         await runOrdinaryAction({ cwd: process.cwd() });
         return;

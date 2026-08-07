@@ -1,6 +1,6 @@
 import type { SessionFile } from '../contracts/api.js';
 import {
-  compareExactPaths,
+  orderExactPaths,
   createExactPath,
   decodeBase64url,
   encodeBase64url,
@@ -72,7 +72,7 @@ function effectivePath(file: SessionFile): ExactPath {
   return path;
 }
 
-function compareOptionalPaths(
+function orderOptionalPaths(
   left: ExactPath | undefined,
   right: ExactPath | undefined,
 ): number {
@@ -82,10 +82,10 @@ function compareOptionalPaths(
   if (right === undefined) {
     return 1;
   }
-  return compareExactPaths(left, right);
+  return orderExactPaths(left, right);
 }
 
-function compareProjectedFiles(
+function orderProjectedFiles(
   left: ProjectedFile,
   right: ProjectedFile,
 ): number {
@@ -96,8 +96,8 @@ function compareProjectedFiles(
         ? 1
         : 0;
   return (
-    compareExactPaths(left.effectivePath, right.effectivePath) ||
-    compareOptionalPaths(left.file.oldPath, right.file.oldPath) ||
+    orderExactPaths(left.effectivePath, right.effectivePath) ||
+    orderOptionalPaths(left.file.oldPath, right.file.oldPath) ||
     fileIdOrder
   );
 }
@@ -191,7 +191,7 @@ function projectChildren(
     });
   }
   projectedNodes.sort((left, right) =>
-    compareProjectedFiles(left.firstFile, right.firstFile),
+    orderProjectedFiles(left.firstFile, right.firstFile),
   );
   return {
     nodes: Object.freeze(projectedNodes.map((projected) => projected.node)),
@@ -204,7 +204,7 @@ export function buildFileTree(
 ): readonly FileTreeNode[] {
   const projectedFiles = files
     .map((file) => ({ file, effectivePath: effectivePath(file) }))
-    .sort(compareProjectedFiles);
+    .sort(orderProjectedFiles);
   const root: MutableRoot = { directories: new Map(), files: [] };
 
   for (const projected of projectedFiles) {

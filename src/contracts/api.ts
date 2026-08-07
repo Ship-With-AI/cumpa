@@ -110,7 +110,7 @@ export const DraftViewSchema = z
 
 export const SafeDraftPathSchema = z
   .string()
-  .regex(/^\.compare\/drafts\/[A-Za-z0-9._-]+$/u);
+  .regex(/^\.cumpa\/drafts\/[A-Za-z0-9._-]+$/u);
 
 const DraftMalformedLoadSchema = z
   .strictObject({
@@ -226,7 +226,7 @@ export const ExportDirectoryRevealResultSchema = z
   ])
   .readonly();
 
-export const CompareIgnoreStatusSchema = z
+export const CumpaIgnoreStatusSchema = z
   .discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('ignored') }).readonly(),
     z.strictObject({ kind: z.literal('notIgnored') }).readonly(),
@@ -234,7 +234,7 @@ export const CompareIgnoreStatusSchema = z
   ])
   .readonly();
 
-export const AppendCompareIgnoreResultSchema = z
+export const AppendCumpaIgnoreResultSchema = z
   .discriminatedUnion('kind', [
     z.strictObject({ kind: z.literal('appended') }).readonly(),
     z.strictObject({ kind: z.literal('alreadyIgnored') }).readonly(),
@@ -244,9 +244,9 @@ export const AppendCompareIgnoreResultSchema = z
     z.strictObject({ kind: z.literal('ambiguous') }).readonly(),
   ])
   .readonly();
-export type CompareIgnoreStatus = z.infer<typeof CompareIgnoreStatusSchema>;
-export type AppendCompareIgnoreResult = z.infer<
-  typeof AppendCompareIgnoreResultSchema
+export type CumpaIgnoreStatus = z.infer<typeof CumpaIgnoreStatusSchema>;
+export type AppendCumpaIgnoreResult = z.infer<
+  typeof AppendCumpaIgnoreResultSchema
 >;
 
 export type ExportReviewRequest = z.infer<typeof ExportReviewRequestSchema>;
@@ -466,14 +466,14 @@ export const PatchStatusResponseSchema = z
   .readonly();
 
 const ExportReceiptDirectoryPattern =
-  /^\.compare\/exports\/((?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64}))|(?:[0-9a-f]{64}|agent-[0-9a-f]{32}))\/review\.(?:json|md)$/u;
+  /^\.cumpa\/exports\/((?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64}))|(?:[0-9a-f]{64}|agent-[0-9a-f]{32}))\/review\.(?:json|md)$/u;
 
 const ExportReceiptJsonFileSchema = z
   .strictObject({
     path: z
       .string()
       .regex(
-        /^\.compare\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|(?:[0-9a-f]{64}|agent-[0-9a-f]{32}))\/review\.json$/u,
+        /^\.cumpa\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|(?:[0-9a-f]{64}|agent-[0-9a-f]{32}))\/review\.json$/u,
       ),
     algorithm: z.literal('sha256'),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),
@@ -486,7 +486,7 @@ const ExportReceiptMarkdownFileSchema = z
     path: z
       .string()
       .regex(
-        /^\.compare\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|(?:[0-9a-f]{64}|agent-[0-9a-f]{32}))\/review\.md$/u,
+        /^\.cumpa\/exports\/(?:(?:[0-9a-f]{40}|[0-9a-f]{64})\.\.(?:[0-9a-f]{40}|[0-9a-f]{64})|(?:[0-9a-f]{64}|agent-[0-9a-f]{32}))\/review\.md$/u,
       ),
     algorithm: z.literal('sha256'),
     sha256: z.string().regex(/^[0-9a-f]{64}$/u),

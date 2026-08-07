@@ -241,7 +241,7 @@ watch(() => props.failure, (failed) => {
         <UiIcon name="error" class="inline-notice__icon" />
         <div class="inline-notice__content">
           <h4 id="summary-save-failed-heading">Summary wasn’t saved</h4>
-          <p>Your text is still here in this tab. Try again after checking Compare is running.</p>
+          <p>Your text is still here in this tab. Try again after checking Cumpa is running.</p>
         </div>
       </section>
       <section

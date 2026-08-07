@@ -2,7 +2,7 @@ import * as monaco from 'monaco-editor';
 
 import { counterpartBoundary, type DiffSide } from './line-mapping';
 import { buildDiffDecorations } from './diff-semantics';
-import { applyCompareTheme } from './theme';
+import { applyCumpaTheme } from './theme';
 import type { WorkspaceCommand } from '../model/workspace-command.js';
 
 export type { DiffSide } from './line-mapping';
@@ -95,7 +95,7 @@ class PublicMonacoDiffAdapter {
     private readonly languageForPath: (path: string) => string,
     private readonly onChange: () => void,
   ) {
-    applyCompareTheme();
+    applyCumpaTheme();
     this.diffEditor = monaco.editor.createDiffEditor(host, {
       ariaLabel: 'Immutable base and head side-by-side diff',
       automaticLayout: false,
@@ -140,13 +140,13 @@ class PublicMonacoDiffAdapter {
       this.originalEditor.onDidScrollChange(() => this.refreshAnchorAffordance()),
       this.modifiedEditor.onDidScrollChange(() => this.refreshAnchorAffordance()),
       this.originalEditor.addAction({
-        id: 'compare.add-base-comment',
+        id: 'cumpa.add-base-comment',
         label: 'Add comment to base line',
         keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Enter],
         run: () => this.activateFocusedAnchor('base'),
       }),
       this.modifiedEditor.addAction({
-        id: 'compare.add-head-comment',
+        id: 'cumpa.add-head-comment',
         label: 'Add comment to head line',
         keybindings: [monaco.KeyMod.Alt | monaco.KeyCode.Enter],
         run: () => this.activateFocusedAnchor('head'),
@@ -169,12 +169,12 @@ class PublicMonacoDiffAdapter {
     this.originalModel = monaco.editor.createModel(
       file.base.text,
       this.languageForPath(file.base.path),
-      monaco.Uri.parse(`inmemory://compare/${encodeURIComponent(file.id)}/base/${file.base.path.split('/').map(encodeURIComponent).join('/')}`),
+      monaco.Uri.parse(`inmemory://cumpa/${encodeURIComponent(file.id)}/base/${file.base.path.split('/').map(encodeURIComponent).join('/')}`),
     );
     this.modifiedModel = monaco.editor.createModel(
       file.head.text,
       this.languageForPath(file.head.path),
-      monaco.Uri.parse(`inmemory://compare/${encodeURIComponent(file.id)}/head/${file.head.path.split('/').map(encodeURIComponent).join('/')}`),
+      monaco.Uri.parse(`inmemory://cumpa/${encodeURIComponent(file.id)}/head/${file.head.path.split('/').map(encodeURIComponent).join('/')}`),
     );
     const ready = new Promise<void>((resolve) => {
       const disposable = this.diffEditor.onDidUpdateDiff(() => {
@@ -293,7 +293,7 @@ class PublicMonacoDiffAdapter {
   }
 
   getDiagnostics(): AdapterDiagnostics {
-    const liveModels = monaco.editor.getModels().filter((model) => model.uri.scheme === 'inmemory' && model.uri.authority === 'compare').length;
+    const liveModels = monaco.editor.getModels().filter((model) => model.uri.scheme === 'inmemory' && model.uri.authority === 'cumpa').length;
     return {
       diffUpdates: this.diffUpdates,
       liveModels,

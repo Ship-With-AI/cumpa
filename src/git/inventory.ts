@@ -68,21 +68,21 @@ const sharedDiffOptions = [
   '--no-textconv',
 ] as const;
 
-const comparePath = Buffer.from('.compare', 'ascii');
-const comparePathPrefix = Buffer.from('.compare/', 'ascii');
+const cumpaPath = Buffer.from('.cumpa', 'ascii');
+const cumpaPathPrefix = Buffer.from('.cumpa/', 'ascii');
 
-function isCompareInternalPath(path: ExactPath | undefined): boolean {
+function isCumpaInternalPath(path: ExactPath | undefined): boolean {
   if (path === undefined) {
     return false;
   }
 
   const bytes = decodeBase64url(path.bytesBase64url);
-  if (bytes.byteLength === comparePath.byteLength) {
-    return bytes.every((byte, index) => byte === comparePath[index]);
+  if (bytes.byteLength === cumpaPath.byteLength) {
+    return bytes.every((byte, index) => byte === cumpaPath[index]);
   }
   return (
-    bytes.byteLength >= comparePathPrefix.byteLength &&
-    comparePathPrefix.every((byte, index) => byte === bytes[index])
+    bytes.byteLength >= cumpaPathPrefix.byteLength &&
+    cumpaPathPrefix.every((byte, index) => byte === bytes[index])
   );
 }
 
@@ -179,7 +179,7 @@ export async function createChangedFileInventory(
   );
   const reviewable = joined.filter(({ diff }) => {
     const { oldPath, newPath } = inventoryPaths(diff);
-    return !isCompareInternalPath(oldPath) && !isCompareInternalPath(newPath);
+    return !isCumpaInternalPath(oldPath) && !isCumpaInternalPath(newPath);
   });
   const namespace = options.fileIdNamespace ?? processFileIdNamespace;
   if (namespace.byteLength === 0) {

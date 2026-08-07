@@ -3,9 +3,9 @@ import { mkdirSync, rmSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = resolve(process.env.COMPARE_NATIVE_BUILD_ROOT ?? dirname(dirname(fileURLToPath(import.meta.url))));
-const platform = process.env.COMPARE_NATIVE_BUILD_PLATFORM ?? process.platform;
-const arch = process.env.COMPARE_NATIVE_BUILD_ARCH ?? process.arch;
+const root = resolve(process.env.CUMPA_NATIVE_BUILD_ROOT ?? dirname(dirname(fileURLToPath(import.meta.url))));
+const platform = process.env.CUMPA_NATIVE_BUILD_PLATFORM ?? process.platform;
+const arch = process.env.CUMPA_NATIVE_BUILD_ARCH ?? process.arch;
 const nodeRoot = dirname(dirname(process.execPath));
 const output = join(root, 'dist', 'native', 'directory_exchange.node');
 

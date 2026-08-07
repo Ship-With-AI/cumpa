@@ -61,19 +61,21 @@ export function createExactPath(bytes: Uint8Array): ExactPath {
   return path;
 }
 
-export function compareExactPaths(left: ExactPath, right: ExactPath): number {
+export function orderByteSequences(left: Uint8Array, right: Uint8Array): number {
+  const sharedLength = Math.min(left.length, right.length);
+  for (let index = 0; index < sharedLength; index += 1) {
+    const difference = left[index]! - right[index]!;
+    if (difference !== 0) return difference;
+  }
+  return left.length - right.length;
+}
+
+export function orderExactPaths(left: ExactPath, right: ExactPath): number {
   const leftBytes =
     bytesByPath.get(left) ?? decodeBase64url(left.bytesBase64url);
   const rightBytes =
     bytesByPath.get(right) ?? decodeBase64url(right.bytesBase64url);
-  const sharedLength = Math.min(leftBytes.length, rightBytes.length);
-  for (let index = 0; index < sharedLength; index += 1) {
-    const difference = leftBytes[index]! - rightBytes[index]!;
-    if (difference !== 0) {
-      return difference;
-    }
-  }
-  return leftBytes.length - rightBytes.length;
+  return orderByteSequences(leftBytes, rightBytes);
 }
 
 export function decodeBase64url(value: string): Uint8Array {

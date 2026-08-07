@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 
 import {
-  AppendCompareIgnoreResultSchema,
-  CompareIgnoreStatusSchema,
+  AppendCumpaIgnoreResultSchema,
+  CumpaIgnoreStatusSchema,
   DraftLoadResponseSchema,
   DraftMutationRequestSchema,
   DraftMutationResultSchema,
@@ -394,8 +394,8 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       ) {
         return unavailable(reply, 400);
       }
-      return CompareIgnoreStatusSchema.parse(
-        await capabilities.inspectCompareIgnore(),
+      return CumpaIgnoreStatusSchema.parse(
+        await capabilities.inspectCumpaIgnore(),
       );
     },
   );
@@ -413,8 +413,8 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
         return unavailable(reply, 400);
       }
       return reply.code(200).send(
-        AppendCompareIgnoreResultSchema.parse(
-          await capabilities.appendCompareIgnoreRule(),
+        AppendCumpaIgnoreResultSchema.parse(
+          await capabilities.appendCumpaIgnoreRule(),
         ),
       );
     },

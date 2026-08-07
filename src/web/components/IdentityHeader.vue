@@ -21,8 +21,8 @@ const patchSession = computed(() => 'patch' in props.session ? props.session : u
 const pinnedSession = computed(() => 'base' in props.session ? props.session : undefined);
 const heading = computed(() =>
   isExactPatch.value
-    ? `Compare: exact patch · ${patchSession.value!.patch.digest.slice(0, 12)}`
-    : `Compare: ${controlSafeDisplay(pinnedSession.value!.base.label)} · ${pinnedSession.value!.base.oid.slice(0, 7)} → ${controlSafeDisplay(pinnedSession.value!.head.label)} · ${pinnedSession.value!.head.oid.slice(0, 7)}`,
+    ? `Cumpa: exact patch · ${patchSession.value!.patch.digest.slice(0, 12)}`
+    : `Cumpa: ${controlSafeDisplay(pinnedSession.value!.base.label)} · ${pinnedSession.value!.base.oid.slice(0, 7)} → ${controlSafeDisplay(pinnedSession.value!.head.label)} · ${pinnedSession.value!.head.oid.slice(0, 7)}`,
 );
 const isRange = computed(() => pinnedSession.value?.range?.kind === 'revisions');
 const panelId = computed(() =>

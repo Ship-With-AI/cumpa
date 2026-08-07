@@ -5,8 +5,8 @@ import { join } from 'node:path';
 import type { GroundedExactPatch, PinnedComparison, ChangedFile } from '../contracts/comparison.js';
 import {
   ExportReviewResultSchema,
-  AppendCompareIgnoreResultSchema,
-  CompareIgnoreStatusSchema,
+  AppendCumpaIgnoreResultSchema,
+  CumpaIgnoreStatusSchema,
   FileContentResponseSchema,
   FileMetadataResponseSchema,
   PatchStatusResponseSchema,
@@ -17,8 +17,8 @@ import {
   type FileMetadataResponse,
   type PatchStatusResponse,
   type SessionResponse,
-  type AppendCompareIgnoreResult,
-  type CompareIgnoreStatus,
+  type AppendCumpaIgnoreResult,
+  type CumpaIgnoreStatus,
   type SelectorDriftResponse,
 } from '../contracts/api.js';
 import type {
@@ -52,8 +52,8 @@ import { parseCanonicalReviewExport } from '../export/review-export.js';
 import { renderReviewMarkdown } from '../export/render-review-markdown.js';
 import { getObservedNativeExchangeCapability } from './native-exchange-capability.js';
 import { assertManagedExportsRoot, ensureManagedExportsRoot, publishReviewExport } from './export-store.js';
-import { inspectCompareIgnore } from '../git/ignore-status.js';
-import { appendCompareIgnoreRule } from './gitignore-capability.js';
+import { inspectCumpaIgnore } from '../git/ignore-status.js';
+import { appendCumpaIgnoreRule } from './gitignore-capability.js';
 import { PatchSnapshot } from './patch-snapshot.js';
 
 export type AnchorAddPort = (
@@ -128,8 +128,8 @@ export type CapabilityRegistry = Readonly<{
   readonly revealDraftFile: () => Promise<void>;
   readonly revealExportDirectory: () => Promise<void>;
   readonly exportReview: (input: ExportReviewRequest) => Promise<ExportReviewResult>;
-  readonly inspectCompareIgnore: () => Promise<CompareIgnoreStatus>;
-  readonly appendCompareIgnoreRule: () => Promise<AppendCompareIgnoreResult>;
+  readonly inspectCumpaIgnore: () => Promise<CumpaIgnoreStatus>;
+  readonly appendCumpaIgnoreRule: () => Promise<AppendCumpaIgnoreResult>;
 }>;
 
 function toSessionEndpoint(endpoint: PinnedComparison['base']) {
@@ -466,17 +466,17 @@ export function createCapabilityRegistry(
       await assertManagedExportsRoot(managedRoot);
       await options.revealDraftFile(exportDirectory);
     },
-    async inspectCompareIgnore() {
-      const status = await inspectCompareIgnore({
+    async inspectCumpaIgnore() {
+      const status = await inspectCumpaIgnore({
         repositoryRoot: comparison.repositoryRoot,
       });
-      return CompareIgnoreStatusSchema.parse({
+      return CumpaIgnoreStatusSchema.parse({
         kind: status.kind === 'not-ignored' ? 'notIgnored' : status.kind,
       });
     },
-    async appendCompareIgnoreRule() {
-      return AppendCompareIgnoreResultSchema.parse(
-        await appendCompareIgnoreRule({
+    async appendCumpaIgnoreRule() {
+      return AppendCumpaIgnoreResultSchema.parse(
+        await appendCumpaIgnoreRule({
           repositoryRoot: comparison.repositoryRoot,
         }),
       );
@@ -831,11 +831,11 @@ export async function createExactPatchCapabilityRegistry(
         files: published.receipt.files,
       });
     },
-    async inspectCompareIgnore() {
-      return CompareIgnoreStatusSchema.parse({ kind: 'unavailable' });
+    async inspectCumpaIgnore() {
+      return CumpaIgnoreStatusSchema.parse({ kind: 'unavailable' });
     },
-    async appendCompareIgnoreRule() {
-      return AppendCompareIgnoreResultSchema.parse({ kind: 'unconfirmed' });
+    async appendCumpaIgnoreRule() {
+      return AppendCumpaIgnoreResultSchema.parse({ kind: 'unconfirmed' });
     },
   });
 }

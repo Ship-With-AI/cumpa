@@ -8,6 +8,7 @@ import {
   type SourceCandidate,
   type WorktreeCandidate,
 } from '../domain/source.js';
+import { orderByteSequences } from '../domain/path-bytes.js';
 import { discoverGitRepository } from './repository.js';
 import {
   createGitRunner,
@@ -495,7 +496,7 @@ export async function discoverSourceCandidates(
       const records = parseBranchRecords(branchResult.stdout)
         .filter((record) => record.label.toLowerCase().includes(query))
         .sort((left, right) =>
-          Buffer.compare(
+          orderByteSequences(
             Buffer.from(left.refName, 'utf8'),
             Buffer.from(right.refName, 'utf8'),
           ),
