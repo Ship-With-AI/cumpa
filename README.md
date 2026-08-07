@@ -99,6 +99,106 @@ Visible controls remain available for every action. These shortcuts are addition
 | Move in the changed-file tree; open a file | Arrow keys; Enter |
 | Open Monaco accessibility help | Alt+F1 |
 
+## Review changes from a coding agent
+
+Run these commands from the repository being reviewed. Redirect `stdout` to the review JSON file your agent will consume; Compare sends the browser URL and diagnostics to `stderr`.
+
+### Review a revision range
+
+Provide full, pinned commit OIDs with the base before the head. This example limits the review to the ordered pathspecs shown:
+
+```sh
+node --input-type=module -e '
+const request = {
+  kind: "compare.review-request",
+  schemaVersion: 1,
+  mode: "revisions",
+  revisions: {
+    base: "0123456789abcdef0123456789abcdef01234567",
+    head: "89abcdef0123456789abcdef0123456789abcdef",
+    pathspecs: ["src", ":(exclude)src/generated"],
+  },
+};
+process.stdout.write(JSON.stringify(request));
+' | cumpa > agent-review.json
+```
+
+Replace those OIDs with real full object IDs from the repository. Explicit range mode requires the base to be an ancestor of the head, resolves both revisions to full object IDs, and freezes those resolved IDs for the session. It does not use the interactive picker’s merge-base selection or follow moving references.
+
+### Review an exact patch
+
+Use Node to read a named UTF-8 patch file and `JSON.stringify` its content. This avoids shell interpolation, hand-escaped patch text, `eval`, and source mutation that could alter quoting or newlines:
+
+```sh
+node --input-type=module -e '
+import { readFileSync } from "node:fs";
+
+const request = {
+  kind: "compare.review-request",
+  schemaVersion: 1,
+  mode: "patch",
+  patch: {
+    content: readFileSync("review.patch", "utf8"),
+    target: { kind: "repository" },
+  },
+};
+process.stdout.write(JSON.stringify(request));
+' | cumpa > agent-review.json
+```
+
+Choose `repository` to ground the patch against the current committed `HEAD` tree, or `worktree` to ground it against current on-disk entries. The patch’s preimages and modes must exactly match that target before Compare freezes the grounded bytes. Compare never applies, stages, commits, or pushes the patch.
+
+### Finish and receive canonical JSON
+
+When stdin is a TTY, `cumpa` runs the existing interactive picker. A pipe or redirected stdin selects this agent-request protocol instead: the browser opens and the process stays attached. The URL, fallback text, and safe diagnostics go to `stderr`; `stdout` stays empty while the review is open.
+
+In the browser, save the feedback and choose **Finish**. Once Finish successfully settles the accepted saved revision, Compare writes exactly one canonical review JSON document to `stdout`, waits for the Finish response to settle, closes the local server, and exits `0`. Revision conflicts and failed Finish attempts leave canonical `stdout` empty. Validation, grounding, or delivery failures also leave it empty and exit `1`. Pressing `Ctrl+C` before delivery cancels without partial JSON and exits `130`.
+
+Treat a zero exit plus parseable captured `stdout` as the agent handoff contract.
+
+### Request reference
+
+Both v1 requests are strict JSON objects with `kind` set to `compare.review-request` and `schemaVersion` set to `1`.
+
+agent-request-example:revisions
+```json
+{
+  "kind": "compare.review-request",
+  "schemaVersion": 1,
+  "mode": "revisions",
+  "revisions": {
+    "base": "0123456789abcdef0123456789abcdef01234567",
+    "head": "89abcdef0123456789abcdef0123456789abcdef",
+    "pathspecs": ["src", ":(exclude)src/generated"]
+  }
+}
+```
+
+`pathspecs` defaults to `[]` when omitted. Its order is preserved and passed to Git.
+
+agent-request-example:patch
+```json
+{
+  "kind": "compare.review-request",
+  "schemaVersion": 1,
+  "mode": "patch",
+  "patch": {
+    "content": "diff --git a/src/example.ts b/src/example.ts\nindex 1111111..2222222 100644\n--- a/src/example.ts\n+++ b/src/example.ts\n@@ -1 +1 @@\n-before\n+after\n",
+    "target": {
+      "kind": "repository"
+    }
+  }
+}
+```
+
+For patches, `target.kind` is exclusively `repository` or `worktree`; revision and patch fields cannot be mixed. Unknown fields are rejected. The complete request must be one non-empty valid UTF-8 JSON document of at most 1,048,576 bytes. Each revision and pathspec Git argument must be non-empty, NUL-free valid Unicode, and at most 4,096 UTF-8 bytes; there can be at most 256 pathspecs. Patch content must be non-empty, NUL-free valid Unicode and fit within the total request budget, so its usable size is less than 1 MiB after JSON overhead.
+
+### Isolation and persistence
+
+Every piped launch receives a fresh repository-local `agent-` scope followed by 32 lowercase hexadecimal characters. Its saved draft cannot resume or overwrite an ordinary comparison draft or another agent launch. Saved draft state is durable; unsaved browser text is not. A successful Finish makes the accepted result terminal and read-only, and the captured canonical `stdout` is the agent handoff.
+
+For exact-patch reviews, the frozen source snapshot is private to the session. It is never replaced by later live repository or worktree bytes, and is disposed when the server closes.
+
 ## v1 file limits
 
 Compare reviews regular UTF-8 text files only. Each inspected blob side must be at most 1,048,576 bytes (1 MiB).
