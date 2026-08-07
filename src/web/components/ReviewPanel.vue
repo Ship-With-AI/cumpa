@@ -235,7 +235,7 @@ function openDeleteConfirmation(commentId: string): void {
 
 function cancelDelete(commentId: string): void {
   confirmingDelete.value = null;
-  focusWithinComment(commentId, '[data-delete-trigger]');
+  focusWithinComment(commentId, '[data-comment-delete-trigger]');
 }
 
 function confirmDelete(commentId: string): void {
