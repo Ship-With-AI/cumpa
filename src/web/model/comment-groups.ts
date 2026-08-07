@@ -53,8 +53,8 @@ function orderComments(left: ReviewCommentProjection, right: ReviewCommentProjec
   const side = (left.side === 'base' ? 0 : 1) - (right.side === 'base' ? 0 : 1);
   if (side !== 0) return side;
   if (left.line !== right.line) return left.line - right.line;
-  if (left.createdAt !== right.createdAt) return left.createdAt.orderText(right.createdAt);
-  return left.id.orderText(right.id);
+  if (left.createdAt !== right.createdAt) return orderText(left.createdAt, right.createdAt);
+  return orderText(left.id, right.id);
 }
 
 function groupsForState(

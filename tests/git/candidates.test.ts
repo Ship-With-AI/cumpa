@@ -10,6 +10,7 @@ import {
   createGitFixture,
   type GitFixture,
 } from '../helpers/git-fixture.js';
+import { orderByteSequences } from '../../src/domain/path-bytes.js';
 
 const fixtures: GitFixture[] = [];
 
@@ -298,7 +299,7 @@ describe('truthful native-Git source candidate discovery', () => {
       [...matches]
         .map((candidate) => candidate.refName)
         .sort((left, right) =>
-          Buffer.cumpa(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8')),
+          orderByteSequences(Buffer.from(left, 'utf8'), Buffer.from(right, 'utf8')),
         ),
     );
     expect(matches.every((candidate) => candidate.id !== candidate.commitOid)).toBe(
