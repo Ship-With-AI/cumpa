@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-06)
 Phase: Milestone v1.3 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-08-06 — v1.3 Agent Review Handoff shipped
+Last activity: 2026-08-07 - Completed quick task 260807-d9e: Rename full project to Cumpa
 
 ## Performance Metrics
 
@@ -117,6 +117,7 @@ None yet.
 | 260731-ll9 | Maximize diff space with collapsible Files sidebar | 2026-07-31 | 62ebd25 | [260731-ll9-maximize-diff-space](./quick/260731-ll9-maximize-diff-space/) |
 | 260803-fx5 | Add generated artifacts to gitignore | 2026-08-03 | e1a87be | [260803-fx5-add-generated-artifacts-to-gitignore](./quick/260803-fx5-add-generated-artifacts-to-gitignore/) |
 | 260807-c3t | Document agent range and exact-patch review workflows in README | 2026-08-07 | 7c16851 | [260807-c3t-document-agent-range-and-exact-patch-rev](./quick/260807-c3t-document-agent-range-and-exact-patch-rev/) |
+| 260807-d9e | Rename full project to Cumpa | 2026-08-07 | 7ae6687 | [260807-d9e-rename-the-full-project-as-cumpa-remove-](./quick/260807-d9e-rename-the-full-project-as-cumpa-remove-/) |
 
 ## Deferred Items
 
