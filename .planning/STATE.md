@@ -116,6 +116,7 @@ None yet.
 | 260731-hdw | Standardize CLI-managed directory and live product naming | 2026-07-31 | b6fef23 | [260731-hdw-the-directory-created-by-the-cli-should-](./quick/260731-hdw-the-directory-created-by-the-cli-should-/) |
 | 260731-ll9 | Maximize diff space with collapsible Files sidebar | 2026-07-31 | 62ebd25 | [260731-ll9-maximize-diff-space](./quick/260731-ll9-maximize-diff-space/) |
 | 260803-fx5 | Add generated artifacts to gitignore | 2026-08-03 | e1a87be | [260803-fx5-add-generated-artifacts-to-gitignore](./quick/260803-fx5-add-generated-artifacts-to-gitignore/) |
+| 260807-c3t | Document agent range and exact-patch review workflows in README | 2026-08-07 | 7c16851 | [260807-c3t-document-agent-range-and-exact-patch-rev](./quick/260807-c3t-document-agent-range-and-exact-patch-rev/) |
 
 ## Deferred Items
 
