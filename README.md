@@ -27,6 +27,24 @@ npm link
 
 `npm run build` creates the `dist/bin/cumpa.mjs` executable, and `npm link` makes this locally built `cumpa` command available from your shell.
 
+## Install the `/cumpa` coding-agent skill
+
+From this source checkout, copy the project-owned skill into the coding agent's skill directory:
+
+```sh
+mkdir -p "$HOME/.agents/skills/cumpa"
+cp .kimi-code/skills/cumpa/SKILL.md "$HOME/.agents/skills/cumpa/SKILL.md"
+```
+
+If Cumpa is published in the future, after `npm install --global cumpa`, copy the installed package artifact instead:
+
+```sh
+mkdir -p "$HOME/.agents/skills/cumpa"
+cp "$(npm root --global)/cumpa/.kimi-code/skills/cumpa/SKILL.md" "$HOME/.agents/skills/cumpa/SKILL.md"
+```
+
+Reload or restart the coding-agent session so it discovers `/cumpa`. For another compatible agent, substitute that agent's configured skill directory. npm does not register the skill automatically.
+
 ## Start a review
 
 Change to the Git worktree whose local branches or registered worktrees you want to cumpa, then run:

@@ -11,7 +11,8 @@
     "cumpa": "dist/bin/cumpa.mjs"
   },
   "files": [
-    "dist/"
+    "dist/",
+    ".kimi-code/skills/cumpa/"
   ],
   "scripts": {
     "build:bin": "node scripts/build-bin.mjs",
