@@ -38,6 +38,7 @@ export interface FileTreeModel {
   readonly selectedFileId: string | null;
   readonly focusRow: (rowId: string) => FileTreeModel;
   readonly toggleDirectory: (directoryId: string) => FileTreeModel;
+  readonly selectFile: (fileId: string) => FileTreeModel;
   readonly handleKey: (key: FileTreeNavigationKey) => FileTreeModel;
 }
 
@@ -170,6 +171,17 @@ function createModel(
     );
   };
 
+  const selectFile = (fileId: string): FileTreeModel =>
+    selectedFileId === fileId
+      ? model
+      : createModel(
+          tree,
+          allDirectoryIds,
+          expandedDirectoryIds,
+          focusedRowId,
+          fileId,
+        );
+
   const handleKey = (key: FileTreeNavigationKey): FileTreeModel => {
     if (focusedRowId === null || frozenVisibleRows.length === 0) {
       return model;
@@ -236,6 +248,7 @@ function createModel(
     selectedFileId,
     focusRow,
     toggleDirectory,
+    selectFile,
     handleKey,
   });
   return model;

@@ -465,6 +465,7 @@ test('diff navigation and session state', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Next file' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
+  await expect(page.getByRole('treeitem', { name: /src\/second\.ts/ })).toHaveAttribute('aria-selected', 'true');
   await page.keyboard.press('Alt+Shift+[');
   await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
 

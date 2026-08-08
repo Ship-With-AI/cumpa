@@ -135,6 +135,16 @@ onMounted(() => {
   }
 });
 
+watch(
+  () => props.initialSelectedFileId,
+  (fileId) => {
+    if (fileId !== undefined) {
+      model.value = model.value.selectFile(fileId);
+    }
+  },
+  { immediate: true },
+);
+
 
 watch(
   () => props.files,
