@@ -462,12 +462,20 @@ test('diff navigation and session state', async ({ page }) => {
   await expect(contextHeadLabel).toHaveCSS('text-transform', 'uppercase');
   await expect(page.getByText(/Unchanged regions begin collapsed/)).toBeVisible();
 
+  const selectedFile = page.locator('[role="treeitem"][aria-selected="true"]');
+  await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
+  await expect(selectedFile).toHaveCount(1);
+  await expect(selectedFile).toHaveText(/src\/first\.ts/);
 
   await page.getByRole('button', { name: 'Next file' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
-  await expect(page.getByRole('treeitem', { name: /src\/second\.ts/ })).toHaveAttribute('aria-selected', 'true');
-  await page.keyboard.press('Alt+Shift+[');
+  await expect(selectedFile).toHaveCount(1);
+  await expect(selectedFile).toHaveText(/src\/second\.ts/);
+
+  await page.getByRole('button', { name: 'Previous file' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
+  await expect(selectedFile).toHaveCount(1);
+  await expect(selectedFile).toHaveText(/src\/first\.ts/);
 
   await page.getByRole('button', { name: 'Keyboard help' }).click();
   await expect(page.getByRole('heading', { name: 'Keyboard actions' })).toBeVisible();
