@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-08-06)
 Phase: Milestone v1.3 complete
 Plan: —
 Status: Awaiting next milestone
-Last activity: 2026-08-08 - Completed quick task 260808-lo1: Ship Cumpa coding-agent skill project make installable published releases
+Last activity: 2026-08-11 - Completed quick task 260811-h3x: Keep sidebar highlight synchronized with viewed file
 
 ## Performance Metrics
 
@@ -111,14 +111,15 @@ None yet.
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260731-hdw | Standardize CLI-managed directory and live product naming | 2026-07-31 | b6fef23 | [260731-hdw-the-directory-created-by-the-cli-should-](./quick/260731-hdw-the-directory-created-by-the-cli-should-/) |
-| 260731-ll9 | Maximize diff space with collapsible Files sidebar | 2026-07-31 | 62ebd25 | [260731-ll9-maximize-diff-space](./quick/260731-ll9-maximize-diff-space/) |
-| 260803-fx5 | Add generated artifacts to gitignore | 2026-08-03 | e1a87be | [260803-fx5-add-generated-artifacts-to-gitignore](./quick/260803-fx5-add-generated-artifacts-to-gitignore/) |
-| 260807-c3t | Document agent range and exact-patch review workflows in README | 2026-08-07 | 7c16851 | [260807-c3t-document-agent-range-and-exact-patch-rev](./quick/260807-c3t-document-agent-range-and-exact-patch-rev/) |
-| 260807-d9e | Rename full project to Cumpa | 2026-08-07 | 7ae6687 | [260807-d9e-rename-the-full-project-as-cumpa-remove-](./quick/260807-d9e-rename-the-full-project-as-cumpa-remove-/) |
-| 260808-lo1 | Ship Cumpa coding-agent skill project make installable published releases | 2026-08-08 | 47ffec9 | [260808-lo1-ship-the-cumpa-coding-agent-skill-with-t](./quick/260808-lo1-ship-the-cumpa-coding-agent-skill-with-t/) |
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260731-hdw | Standardize CLI-managed directory and live product naming | 2026-07-31 | b6fef23 |  | [260731-hdw-the-directory-created-by-the-cli-should-](./quick/260731-hdw-the-directory-created-by-the-cli-should-/) |
+| 260731-ll9 | Maximize diff space with collapsible Files sidebar | 2026-07-31 | 62ebd25 |  | [260731-ll9-maximize-diff-space](./quick/260731-ll9-maximize-diff-space/) |
+| 260803-fx5 | Add generated artifacts to gitignore | 2026-08-03 | e1a87be |  | [260803-fx5-add-generated-artifacts-to-gitignore](./quick/260803-fx5-add-generated-artifacts-to-gitignore/) |
+| 260807-c3t | Document agent range and exact-patch review workflows in README | 2026-08-07 | 7c16851 |  | [260807-c3t-document-agent-range-and-exact-patch-rev](./quick/260807-c3t-document-agent-range-and-exact-patch-rev/) |
+| 260807-d9e | Rename full project to Cumpa | 2026-08-07 | 7ae6687 |  | [260807-d9e-rename-the-full-project-as-cumpa-remove-](./quick/260807-d9e-rename-the-full-project-as-cumpa-remove-/) |
+| 260808-lo1 | Ship Cumpa coding-agent skill project make installable published releases | 2026-08-08 | 47ffec9 |  | [260808-lo1-ship-the-cumpa-coding-agent-skill-with-t](./quick/260808-lo1-ship-the-cumpa-coding-agent-skill-with-t/) |
+| 260811-h3x | Keep sidebar highlight synchronized with viewed file | 2026-08-11 | fca1d8a | passed | [260811-h3x-the-sidebar-highlighted-file-should-alwa](./quick/260811-h3x-the-sidebar-highlighted-file-should-alwa/) |
 
 ## Deferred Items
 
