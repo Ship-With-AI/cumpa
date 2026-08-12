@@ -64,6 +64,8 @@ test('packed artifact contains runtime and production Vue assets', () => {
     expect(inventory).toContain('dist/cli/run.js');
     expect(inventory).not.toContainEqual(expect.stringMatching(/^src\//));
     expect(inventory).not.toContainEqual(expect.stringMatching(/\.(?:ts|vue)$/));
+    expect(inventory).not.toContainEqual(expect.stringMatching(/^services\/support\//));
+    expect(inventory).not.toContainEqual(expect.stringMatching(/(?:\.env|STRIPE_WEBHOOK_SECRET|DATABASE_URL|RESEND_API_KEY)/));
 
     const archivePath = join(temporaryDirectory, packResult.filename);
     runPrerequisite('tar', [

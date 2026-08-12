@@ -1,28 +1,19 @@
-import { access, readdir, stat } from 'node:fs/promises';
-import { constants } from 'node:fs';
-import { resolve } from 'node:path';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-const repositoryRoot = resolve(import.meta.dirname, '..');
-const executablePath = resolve(repositoryRoot, 'dist/bin/cumpa.mjs');
-const indexPath = resolve(repositoryRoot, 'dist/web/index.html');
-const assetsPath = resolve(repositoryRoot, 'dist/web/assets');
-
-await access(executablePath, constants.X_OK);
-
-const index = await stat(indexPath);
-if (!index.isFile() || index.size === 0) {
-  throw new Error('Expected non-empty production web index.html');
+const directory = mkdtempSync(join(tmpdir(), 'cumpa-artifact-'));
+try {
+  const [pack] = JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', directory], { encoding: 'utf8' }));
+  const inventory = pack.files.map((file) => file.path);
+  const forbidden = /(^|\/)(services\/support|\.env)|STRIPE_(?:API_KEY|WEBHOOK_SECRET)|DATABASE_URL|RESEND_API_KEY|EMAIL_LOOKUP_HMAC_KEY|RECOVERY_TOKEN_HMAC_KEY/;
+  if (inventory.some((path) => forbidden.test(path))) throw new Error('npm artifact includes hosted source or secret-shaped file');
+  execFileSync('tar', ['-xzf', join(directory, pack.filename), '-C', directory]);
+  for (const file of inventory.filter((path) => /\.(?:js|mjs|json|html|css)$/.test(path))) {
+    if (forbidden.test(readFileSync(join(directory, 'package', file), 'utf8'))) throw new Error(`npm artifact includes forbidden content: ${file}`);
+  }
+  process.stdout.write('Production artifact scan passed.\n');
+} finally {
+  rmSync(directory, { recursive: true, force: true });
 }
-
-const assets = await readdir(assetsPath, { withFileTypes: true });
-const assetSizes = await Promise.all(
-  assets
-    .filter((entry) => entry.isFile())
-    .map(async (entry) => (await stat(resolve(assetsPath, entry.name))).size),
-);
-
-if (!assetSizes.some((size) => size > 0)) {
-  throw new Error('Expected at least one non-empty production web asset');
-}
-
-console.log('Production artifacts verified: executable CLI, web index, and assets.');
