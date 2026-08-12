@@ -27,8 +27,15 @@ export function createHostedSupportClient(options: Readonly<{
 }> = {}): HostedSupportClient {
   const serviceUrl = options.serviceUrl ?? process.env.CUMPA_SUPPORT_SERVICE_URL;
   const paymentUrl = options.paymentUrl ?? process.env.CUMPA_SUPPORT_PAYMENT_URL;
-  const service = serviceUrl === undefined ? undefined : new URL(serviceUrl);
-  const payment = paymentUrl === undefined ? undefined : new URL(paymentUrl);
+  let service: URL | undefined;
+  let payment: URL | undefined;
+  try {
+    service = serviceUrl === undefined ? undefined : new URL(serviceUrl);
+    payment = paymentUrl === undefined ? undefined : new URL(paymentUrl);
+  } catch {
+    service = undefined;
+    payment = undefined;
+  }
   if (service?.protocol !== 'https:' || payment?.protocol !== 'https:') {
     return { checkoutUrl: () => undefined, status: async () => undefined, requestRecovery: async () => undefined, recoveryStatus: async () => undefined, close: () => undefined };
   }

@@ -46,6 +46,9 @@ import {
 } from '../server/attached-completion.js';
 import type { AttachedCompletionOptions } from '../server/capabilities.js';
 import type { DraftRevealPort } from '../server/capabilities.js';
+import { createSupportCapability, type SupportCapability } from '../server/capabilities.js';
+import { createHostedSupportClient } from '../server/support-client.js';
+import { createSupportStore } from '../server/support-store.js';
 import { PatchSnapshotError } from '../server/patch-snapshot.js';
 import {
   createShutdownController,
@@ -116,6 +119,7 @@ export interface LaunchPinnedSessionDependencies {
   readonly output?: (message: string) => void;
   readonly signalSource?: ShutdownSignalSource;
   readonly setExitStatus?: (status: number) => void;
+  readonly support?: SupportCapability;
   readonly webRoot?: string;
 }
 
@@ -195,6 +199,7 @@ interface LaunchRuntime {
 function createLaunchRuntime(
   dependencies: LaunchPinnedSessionDependencies,
 ): LaunchRuntime {
+  const support = dependencies.support ?? createSupportCapability(createSupportStore(), createHostedSupportClient());
   const activeGit = new AbortController();
   const output = dependencies.output ?? console.log;
   const openBrowser = dependencies.openBrowser ?? createBrowserUrlOpener();
@@ -241,6 +246,7 @@ function createLaunchRuntime(
       const token = randomBytes(32).toString('base64url');
       app = createSessionApp(comparison, {
         webRoot: dependencies.webRoot,
+        support,
         sessionToken: token,
         revealDraftFile,
         diagnostics: ({ correlationId, reason }) => {
