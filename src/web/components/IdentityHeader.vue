@@ -21,8 +21,8 @@ const patchSession = computed(() => 'patch' in props.session ? props.session : u
 const pinnedSession = computed(() => 'base' in props.session ? props.session : undefined);
 const heading = computed(() =>
   isExactPatch.value
-    ? `Cumpa: exact patch · ${patchSession.value!.patch.digest.slice(0, 12)}`
-    : `Cumpa: ${controlSafeDisplay(pinnedSession.value!.base.label)} · ${pinnedSession.value!.base.oid.slice(0, 7)} → ${controlSafeDisplay(pinnedSession.value!.head.label)} · ${pinnedSession.value!.head.oid.slice(0, 7)}`,
+    ? `exact patch · ${patchSession.value!.patch.digest.slice(0, 12)}`
+    : `${controlSafeDisplay(pinnedSession.value!.base.label)} · ${pinnedSession.value!.base.oid.slice(0, 7)} → ${controlSafeDisplay(pinnedSession.value!.head.label)} · ${pinnedSession.value!.head.oid.slice(0, 7)}`,
 );
 const isRange = computed(() => pinnedSession.value?.range?.kind === 'revisions');
 const panelId = computed(() =>
@@ -58,7 +58,7 @@ defineExpose({ focusDisclosure });
 
 <template>
   <header class="session-header">
-    <h1>{{ heading }}</h1>
+    <h1><span class="session-header__product">Cumpa:</span> <span class="session-header__comparison">{{ heading }}</span></h1>
     <div class="header-facts">
       <span class="pin-cue">{{ isExactPatch ? 'Frozen verified patch' : 'Pinned to displayed commits' }}</span>
       <span

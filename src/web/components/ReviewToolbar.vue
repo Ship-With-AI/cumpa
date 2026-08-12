@@ -24,6 +24,7 @@ const emit = defineEmits<{
 <template>
   <div class="review-toolbar" aria-label="Diff navigation">
     <div class="review-toolbar__group" aria-label="File navigation">
+      <span class="review-toolbar__label" aria-hidden="true">File</span>
       <UiTooltip :text="atFirstFile ? 'Previous file · Alt+Shift+[ · First changed file.' : 'Previous file · Alt+Shift+['">
         <button
           type="button"
@@ -48,6 +49,7 @@ const emit = defineEmits<{
       </UiTooltip>
     </div>
     <div class="review-toolbar__group" aria-label="Change navigation">
+      <span class="review-toolbar__label" aria-hidden="true">Change</span>
       <UiTooltip text="Previous change · Shift+F7">
         <button
           type="button"

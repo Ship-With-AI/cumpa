@@ -183,7 +183,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-lg);
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
   border-bottom: 1px solid var(--border-default);
   background: var(--surface-panel);
   box-shadow: none;
@@ -198,6 +198,31 @@ body {
   font-size: var(--font-size-page-heading);
   font-weight: var(--font-weight-semibold);
   line-height: var(--line-height-page-heading);
+}
+
+.session-header h1 {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: var(--space-xs);
+}
+
+.session-header__product {
+  flex: 0 0 auto;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: var(--font-weight-semibold);
+  line-height: 24px;
+}
+
+.session-header__comparison {
+  min-width: 0;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
+  line-height: 20px;
+  overflow-wrap: anywhere;
 }
 
 .state-card h1,
@@ -242,7 +267,10 @@ body {
   align-items: center;
 }
 
-.header-facts,
+.header-facts {
+  gap: var(--space-xs);
+}
+
 .review-toolbar__group,
 .export-section__heading,
 .export-actions,
@@ -277,8 +305,9 @@ body {
   white-space: nowrap;
 }
 
-.pin-cue,
-.dirty-badge {
+
+.pin-cue {
+  padding-inline: var(--space-xs);
 }
 
 .status-badge {
@@ -510,7 +539,7 @@ input:-webkit-autofill:focus {
 
 .ui-button--selected {
   border-color: var(--selection-border);
-  background: var(--surface-raised);
+  background: var(--status-information-background);
   color: var(--text-primary);
 }
 
@@ -809,8 +838,9 @@ input:-webkit-autofill:focus {
 }
 
 .review-files .tree-row {
-  font-size: var(--font-size-metadata);
-  line-height: var(--line-height-metadata);
+  min-height: 44px;
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
 }
 
 .review-files .tree-row:focus-visible {
@@ -824,7 +854,7 @@ input:-webkit-autofill:focus {
 .tree-row--selected {
   border-left: 3px solid var(--selection-border);
   background: var(--selection-background);
-  box-shadow: inset 3px 0 var(--selection-border);
+  box-shadow: none;
   font-weight: var(--font-weight-semibold);
 }
 
@@ -1164,7 +1194,7 @@ input:-webkit-autofill:focus {
 .comments-rail {
   display: grid;
   grid-template-rows: minmax(0, 1fr);
-  padding: var(--space-md);
+  padding: 0;
   border-left: 1px solid var(--border-default);
 }
 
@@ -1183,8 +1213,9 @@ input:-webkit-autofill:focus {
 
 .review-context-header {
   min-width: 0;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-control);
+  border: 0;
+  border-bottom: 1px solid var(--border-default);
+  border-radius: 0;
   background: var(--surface-panel);
 }
 
@@ -1242,7 +1273,7 @@ input:-webkit-autofill:focus {
 }
 
 .review-context-header__endpoint-name {
-  color: var(--text-primary);
+  color: var(--text-secondary);
   font-size: var(--font-size-metadata);
   line-height: var(--line-height-metadata);
 }
@@ -1263,8 +1294,8 @@ input:-webkit-autofill:focus {
   min-width: 0;
   max-width: 100%;
   overflow-wrap: anywhere;
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
+  font-size: var(--font-size-section-heading);
+  line-height: var(--line-height-section-heading);
 }
 
 .review-context-header__toolbar {
@@ -1293,6 +1324,15 @@ input:-webkit-autofill:focus {
 .review-toolbar__group {
   flex: 0 0 auto;
   flex-wrap: nowrap;
+}
+
+.review-toolbar__label {
+  color: var(--text-muted);
+  font-size: var(--font-size-metadata);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.04em;
+  line-height: var(--line-height-metadata);
+  text-transform: uppercase;
 }
 
 .review-toolbar__group + .review-toolbar__group {
@@ -1671,8 +1711,8 @@ h3.conversation-card__identity {
   display: flex;
   min-height: 0;
   flex-direction: column;
-  gap: var(--space-md);
-  padding: var(--space-md);
+  gap: 0;
+  padding: 0;
   overflow-y: auto;
 }
 
@@ -1690,6 +1730,13 @@ h3.conversation-card__identity {
 
 .review-panel__heading {
   justify-content: space-between;
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.review-panel__heading > .ui-button {
+  align-self: start;
+  white-space: nowrap;
 }
 
 .review-panel__heading-counts,
@@ -1700,9 +1747,10 @@ h3.conversation-card__identity {
 
 .review-panel__section {
   min-width: 0;
-  border: 1px solid var(--border-default);
-  border-radius: var(--radius-control);
-  background: var(--surface-panel);
+  border: 0;
+  border-bottom: 1px solid var(--border-default);
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
@@ -1712,6 +1760,36 @@ h3.conversation-card__identity {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
+}
+
+.comments-rail .review-panel__section > h3 {
+  margin: 0;
+}
+
+.review-panel__disclosure {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.review-panel__disclosure::after {
+  margin-left: var(--space-sm);
+  content: "▸";
+}
+
+.review-panel__disclosure[aria-expanded="true"]::after {
+  content: "▾";
+}
+
+.review-panel__disclosure:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--surface-interactive-hover);
 }
 
 .attached-completion {
@@ -2154,13 +2232,12 @@ h3.conversation-card__identity {
 
 @media (max-width: 767px) {
   .session-header {
-
     display: grid;
     min-width: 0;
-    min-height: 96px;
+    min-height: 0;
     align-content: start;
     gap: var(--space-sm);
-    padding: var(--space-md);
+    padding: 12px;
   }
 
   .session-header h1,
@@ -2172,6 +2249,11 @@ h3.conversation-card__identity {
     overflow-wrap: anywhere;
   }
 
+  .session-header h1 {
+    display: grid;
+    gap: 0;
+  }
+
   .header-facts,
   .export-actions {
     flex-wrap: wrap;
@@ -2180,6 +2262,10 @@ h3.conversation-card__identity {
   .pin-cue,
   .dirty-badge {
     white-space: normal;
+  }
+
+  .review-toolbar__label {
+    display: none;
   }
 
   .attached-completion__action {
