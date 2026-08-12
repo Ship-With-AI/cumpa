@@ -28,6 +28,7 @@ export async function withTestPostgres(callback) {
     }
     const databaseUrl = `postgresql://cumpa:cumpa@127.0.0.1:${port}/cumpa_test`;
     const env = { ...process.env, DATABASE_URL: databaseUrl, TEST_DATABASE_URL: databaseUrl };
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
     run(process.execPath, ['scripts/migrate.mjs'], { cwd: serviceRoot, env });
     await callback({ databaseUrl, env });
   } finally {
