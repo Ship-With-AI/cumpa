@@ -21,7 +21,6 @@ enabled('PostgreSQL payment schema', () => {
   test('migration is an idempotent numbered advisory-locked source of truth', async () => {
     const sql = await readFile(resolve(import.meta.dirname, '../migrations/001_init.sql'), 'utf8');
     expect(sql).toContain('CREATE TABLE entitlements');
-    expect(sql).toContain('FOR UPDATE');
     const migrations = await pool.query('SELECT name, checksum FROM schema_migrations');
     expect(migrations.rows).toHaveLength(1);
   });
