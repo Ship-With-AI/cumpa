@@ -101,6 +101,10 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 14]: Attached browser lifecycle state is server-authoritative; the UI submits only an accepted revision to Finish and never canonical bytes.
 - [Phase 14]: Finishing/completed attached reviews lock mutations while retaining readable review content and navigation.
 
+### Roadmap Evolution
+
+- Phase 1 added: Add voluntary Stripe support payment and email recovery
+
 ### Pending Todos
 
 None yet.
