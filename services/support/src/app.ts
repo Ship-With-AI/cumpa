@@ -6,6 +6,7 @@ import { createRecoveryEmailSender } from './email.js';
 import { createPostgresRecoveryStore } from './recovery-store.js';
 import { registerInstallationRoutes } from './routes/installations.js';
 import { registerRecoveryRoutes } from './routes/recovery.js';
+import { registerStripeWebhookRoute, type StripeWebhookPort } from './routes/stripe-webhook.js';
 
 export interface SupportAppDependencies {
   pool: DatabasePool;
