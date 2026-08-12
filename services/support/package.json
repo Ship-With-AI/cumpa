@@ -1,0 +1,25 @@
+{
+  "name": "@cumpa/support-service",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "vitest",
+    "migrate": "node scripts/migrate.mjs",
+    "test:postgres": "node scripts/test-postgres.mjs"
+  },
+  "dependencies": {
+    "fastify": "5.10.0",
+    "pg": "8.23.0",
+    "stripe": "22.5.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.13",
+    "@types/pg": "8.21.0",
+    "typescript": "7.0.2",
+    "vitest": "4.1.10"
+  }
+}
