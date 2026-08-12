@@ -20,8 +20,8 @@ export function registerStripeWebhookRoute(app: FastifyInstance, config: Support
     } catch {
       return reply.code(400).send({ error: 'invalid-webhook' });
     }
-    if (!event.data.object || typeof event.data.object !== 'object' || !('id' in event.data.object) || typeof event.data.object.id !== 'string') return reply.code(400).send({ error: 'invalid-webhook' });
     if (event.type !== 'checkout.session.completed') return reply.code(200).send({ received: true });
+    if (!event.data.object || typeof event.data.object !== 'object' || !('id' in event.data.object) || typeof event.data.object.id !== 'string') return reply.code(400).send({ error: 'invalid-webhook' });
     try {
       await fulfillCheckoutSession(event.id, event.type, event.data.object.id, stripe.checkout.sessions, pool, config);
       return reply.code(200).send({ received: true });

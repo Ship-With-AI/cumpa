@@ -47,11 +47,13 @@ function sessionInvariant(session: unknown, config: SupportServiceConfig): Retri
 export async function fulfillCheckoutSession(eventId: string, eventType: string, checkoutSessionId: string, retrieve: StripeSessionRetriever, pool: DatabasePool, config: SupportServiceConfig): Promise<'fulfilled' | 'ignored'> {
   const session = sessionInvariant(await retrieve.retrieve(checkoutSessionId, { expand: ['line_items.data.price'] }), config);
   if (!session) throw new Error('invalid-payment-session');
+  const lookup = emailLookup(session.customer_details!.email!, config.emailLookupHmacKey);
   return withTransaction(pool, async (client) => {
+    await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [session.id]);
     const event = await client.query('INSERT INTO stripe_events (event_id, event_type, object_id) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING RETURNING event_id', [eventId, eventType, session.id]);
     if (event.rowCount === 0) return 'ignored';
-    const existing = await client.query('SELECT id FROM entitlements WHERE source_session_id = $1 FOR UPDATE', [session.id]);
-    const entitlementId = existing.rows[0]?.id ?? (await client.query('INSERT INTO entitlements (email_lookup, source_session_id) VALUES ($1, $2) RETURNING id', [emailLookup(session.customer_details!.email!, config.emailLookupHmacKey), session.id])).rows[0]!.id;
+    const entitlement = await client.query('SELECT id FROM entitlements WHERE source_session_id = $1 FOR UPDATE', [session.id]);
+    const entitlementId = entitlement.rows[0]?.id ?? (await client.query('INSERT INTO entitlements (email_lookup, source_session_id) VALUES ($1, $2) RETURNING id', [lookup, session.id])).rows[0]!.id;
     const binding = await client.query('SELECT entitlement_id FROM installation_bindings WHERE installation_id = $1 FOR UPDATE', [session.client_reference_id]);
     if (binding.rowCount === 0) await client.query("INSERT INTO installation_bindings (installation_id, entitlement_id, verified_at, source) VALUES ($1, $2, now(), 'payment')", [session.client_reference_id, entitlementId]);
     else if (Number(binding.rows[0]!.entitlement_id) !== Number(entitlementId)) throw new Error('installation-already-bound');
