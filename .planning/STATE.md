@@ -120,6 +120,7 @@ None yet.
 | 260807-d9e | Rename full project to Cumpa | 2026-08-07 | 7ae6687 |  | [260807-d9e-rename-the-full-project-as-cumpa-remove-](./quick/260807-d9e-rename-the-full-project-as-cumpa-remove-/) |
 | 260808-lo1 | Ship Cumpa coding-agent skill project make installable published releases | 2026-08-08 | 47ffec9 |  | [260808-lo1-ship-the-cumpa-coding-agent-skill-with-t](./quick/260808-lo1-ship-the-cumpa-coding-agent-skill-with-t/) |
 | 260811-h3x | Keep sidebar highlight synchronized with viewed file | 2026-08-11 | fca1d8a | passed | [260811-h3x-the-sidebar-highlighted-file-should-alwa](./quick/260811-h3x-the-sidebar-highlighted-file-should-alwa/) |
+| 260812-dqa | Improve current app visibility and style without features | 2026-08-12 | d98277a | complete | [260812-dqa-improve-current-app-visibility-and-style](./quick/260812-dqa-improve-current-app-visibility-and-style/) |
 
 ## Deferred Items
 
