@@ -613,6 +613,46 @@ input:-webkit-autofill:focus {
   border-radius: var(--radius-overlay);
 }
 
+.support-dialog-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-md);
+  background: rgb(1 4 9 / 68%);
+}
+
+.support-dialog {
+  display: grid;
+  width: min(100%, 460px);
+  gap: var(--space-md);
+  padding: var(--space-lg);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-overlay);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-overlay);
+}
+
+.support-dialog h2,
+.support-dialog p {
+  margin: 0;
+}
+
+.support-dialog__close {
+  justify-self: end;
+}
+
+.support-dialog__status:empty {
+  display: none;
+}
+
+.support-dialog__actions,
+.support-dialog__form {
+  display: grid;
+  gap: var(--space-sm);
+}
+
 .identity-list,
 .review-panel,
 .review-summary__content,

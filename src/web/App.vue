@@ -27,6 +27,7 @@ import ReviewPanel from './components/ReviewPanel.vue';
 import ErrorState from './components/ErrorState.vue';
 import FileTree from './components/FileTree.vue';
 import IdentityHeader from './components/IdentityHeader.vue';
+import SupportDialog from './components/SupportDialog.vue';
 import IdentityPanel from './components/IdentityPanel.vue';
 import InlineNotice from './components/InlineNotice.vue';
 import SelectorDriftNotice from './components/SelectorDriftNotice.vue';
@@ -105,6 +106,13 @@ const selectedCommentId = ref<string | null>(null);
 const attachedLifecycle = ref<AttachedLifecycle>('ordinary');
 const attachedResult = shallowRef<FinishReviewResult>();
 const attachedStatus = shallowRef<AttachedCompletionStatus>();
+const supportStatus = ref<'loading' | 'unverified' | 'verified' | 'unavailable'>('loading');
+const supportDialogOpen = ref(false);
+const supportDialogMode = ref<'invitation' | 'waiting' | 'recovery' | 'recoveryPending' | 'verified' | 'thankYou'>('invitation');
+const supportBusy = ref(false);
+const dismissedForSession = ref(false);
+const supportOnDemand = ref(false);
+const supportDialog = ref<InstanceType<typeof SupportDialog>>();
 const primarySurface = computed(() => recoveredDraftOpen.value
   ? 'workspace'
   : reviewPrimarySurface(draftLoad.value));
@@ -127,6 +135,12 @@ let filesDrawerMedia: MediaQueryList | undefined;
 let commentsDrawerMedia: MediaQueryList | undefined;
 let filesOpener: HTMLElement | undefined;
 let compactIdentityMedia: MediaQueryList | undefined;
+let supportRefreshInFlight = false;
+let supportBackgroundTimer: number | undefined;
+let supportWaitingTimer: number | undefined;
+let supportThankYouTimer: number | undefined;
+let supportPollAbort: AbortController | undefined;
+let supportOpener: HTMLElement | undefined;
 let commentsOpener: HTMLElement | undefined;
 let latestConflictDraft: CanonicalReviewDraft | undefined;
 
@@ -899,6 +913,115 @@ function refreshPatchStatusWhenVisible(): void {
     void refreshPatchStatus();
   }
 }
+async function refreshSupportStatus(): Promise<void> {
+  if (sessionClient === undefined || supportRefreshInFlight) return;
+  supportRefreshInFlight = true;
+  try {
+    const result = await sessionClient.refreshSupportStatus();
+    supportStatus.value = result.status;
+    if (result.status === 'verified') {
+      if (supportDialogOpen.value && supportDialogMode.value !== 'verified') {
+        supportDialogMode.value = 'thankYou';
+        announce('Thank you for supporting Cumpa.');
+        if (supportThankYouTimer !== undefined) window.clearTimeout(supportThankYouTimer);
+        supportThankYouTimer = window.setTimeout(closeSupportDialog, 1_500);
+      }
+      stopSupportWaiting();
+    }
+  } catch {
+    supportStatus.value = 'unavailable';
+  } finally {
+    supportRefreshInFlight = false;
+  }
+}
+
+function refreshSupportWhenVisible(): void {
+  if (document.visibilityState === 'visible') void refreshSupportStatus();
+}
+
+function stopSupportWaiting(): void {
+  supportPollAbort?.abort();
+  supportPollAbort = undefined;
+  if (supportWaitingTimer !== undefined) {
+    window.clearTimeout(supportWaitingTimer);
+    supportWaitingTimer = undefined;
+  }
+}
+
+function scheduleSupportPoll(delays = [2_000, 3_000, 5_000, 8_000, 10_000]): void {
+  stopSupportWaiting();
+  supportPollAbort = new AbortController();
+  let index = 0;
+  const poll = (): void => {
+    if (supportPollAbort?.signal.aborted || supportStatus.value === 'verified') return;
+    void refreshSupportStatus().finally(() => {
+      if (supportPollAbort?.signal.aborted || supportStatus.value === 'verified') return;
+      supportWaitingTimer = window.setTimeout(poll, delays[index++] ?? 15_000);
+    });
+  };
+  poll();
+}
+function startSupportStatus(): void {
+  document.addEventListener('visibilitychange', refreshSupportWhenVisible);
+  supportBackgroundTimer = window.setInterval(refreshSupportWhenVisible, 30_000);
+}
+
+function stopSupportStatus(): void {
+  document.removeEventListener('visibilitychange', refreshSupportWhenVisible);
+  stopSupportWaiting();
+  if (supportBackgroundTimer !== undefined) window.clearInterval(supportBackgroundTimer);
+  if (supportThankYouTimer !== undefined) window.clearTimeout(supportThankYouTimer);
+}
+
+function openSupportDialog(): void {
+  supportOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+  supportOnDemand.value = true;
+  supportDialogOpen.value = true;
+  supportDialogMode.value = supportStatus.value === 'verified' ? 'verified' : 'invitation';
+  void nextTick(() => supportDialog.value?.focusInitial());
+}
+
+function closeSupportDialog(): void {
+  supportDialogOpen.value = false;
+  void nextTick(() => (supportOpener === undefined ? identityHeader.value?.focusSupport() : supportOpener.focus()));
+  stopSupportWaiting();
+}
+
+function dismissSupportDialog(): void {
+  dismissedForSession.value = true;
+  closeSupportDialog();
+}
+
+async function checkoutSupport(): Promise<void> {
+  if (sessionClient === undefined || supportBusy.value) return;
+  supportBusy.value = true;
+  try {
+    const result = await sessionClient.openSupportCheckout();
+    if (result.kind === 'ready') {
+      window.open(result.url, '_blank', 'noopener,noreferrer');
+      supportDialogMode.value = 'waiting';
+      scheduleSupportPoll();
+    }
+  } finally {
+    supportBusy.value = false;
+  }
+}
+
+function restoreSupport(): void {
+  supportDialogMode.value = 'recovery';
+}
+
+async function submitSupportRecovery(email: string): Promise<void> {
+  if (sessionClient === undefined || supportBusy.value) return;
+  supportBusy.value = true;
+  try {
+    await sessionClient.requestSupportRecovery(email);
+    supportDialogMode.value = 'recoveryPending';
+    scheduleSupportPoll();
+  } finally {
+    supportBusy.value = false;
+  }
+}
 
 function startPatchStatus(): void {
   void refreshPatchStatus();
@@ -959,6 +1082,13 @@ onMounted(async () => {
         : draft.comments.length > 0
           ? 'Local draft resumed. Accepted comments for this pinned comparison are ready.'
           : 'New local draft for this pinned comparison.');
+      await refreshSupportStatus();
+      startSupportStatus();
+      if (supportStatus.value === 'unverified' && !dismissedForSession.value && primarySurface.value === 'workspace') {
+        supportDialogOpen.value = true;
+        supportDialogMode.value = 'invitation';
+        void nextTick(() => supportDialog.value?.focusInitial());
+      }
     }
   } catch (error) {
     errorMessage.value = error instanceof SessionClientError ? error.message : SECURITY_FAILURE_MESSAGE;
@@ -972,6 +1102,7 @@ onBeforeUnmount(() => {
   compactIdentityMedia?.removeEventListener('change', handleViewportChange);
   selectorDriftState?.stop();
   stopPatchStatus();
+  stopSupportStatus();
 });
 </script>
 
@@ -1001,9 +1132,12 @@ onBeforeUnmount(() => {
       ref="identityHeader"
       :session="session"
       :expanded="identityOpen"
+      :support-open="supportDialogOpen"
+      :support-inert="supportDialogOpen"
       :attached-lifecycle="isAttachedSession ? (attachedLifecycle === 'finishing' || attachedLifecycle === 'completed' ? attachedLifecycle : 'waiting') : undefined"
       :inert="isExactPatchSession && identityOpen && identityModal"
       @toggle="toggleIdentity"
+      @support="openSupportDialog"
     />
     <InlineNotice v-if="patchDrifted" tone="error" role="alert">
       <h2>Implemented content changed</h2>
@@ -1024,7 +1158,7 @@ onBeforeUnmount(() => {
       v-else
       class="review-shell"
       :class="{ 'review-shell--files-collapsed': !isFilesDrawer && filesCollapsed }"
-      :inert="identityOpen && identityModal"
+      :inert="(identityOpen && identityModal) || supportDialogOpen"
     >
       <nav
         v-if="isFilesDrawer || !filesCollapsed"
@@ -1225,6 +1359,17 @@ onBeforeUnmount(() => {
         />
       </aside>
     </div>
+    <SupportDialog
+      ref="supportDialog"
+      :open="supportDialogOpen"
+      :mode="supportDialogMode"
+      :busy="supportBusy"
+      @checkout="checkoutSupport"
+      @restore="restoreSupport"
+      @submit-recovery="submitSupportRecovery"
+      @dismiss="dismissSupportDialog"
+      @close="closeSupportDialog"
+    />
     <p class="visually-hidden" aria-live="polite">
       <span :key="liveMessageVersion" :data-announcement-version="liveMessageVersion">{{ liveMessage }}</span>
     </p>

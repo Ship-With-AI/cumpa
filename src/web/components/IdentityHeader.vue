@@ -8,12 +8,17 @@ const props = defineProps<{
   readonly attachedLifecycle?: 'waiting' | 'finishing' | 'completed';
   readonly expanded: boolean;
   readonly inert?: boolean;
+  readonly supportInert?: boolean;
+  readonly supportOpen?: boolean;
   readonly session: SessionResponse;
 }>();
 
 const emit = defineEmits<{
   toggle: [];
+  support: [];
 }>();
+
+const support = ref<HTMLButtonElement>();
 
 const disclosure = ref<HTMLButtonElement>();
 const isExactPatch = computed(() => 'patch' in props.session);
@@ -49,11 +54,15 @@ const attachedFact = computed(() => {
   }
 });
 
+
+function focusSupport(): void {
+  support.value?.focus();
+}
 function focusDisclosure(): void {
   disclosure.value?.focus();
 }
 
-defineExpose({ focusDisclosure });
+defineExpose({ focusDisclosure, focusSupport });
 </script>
 
 <template>
@@ -72,6 +81,16 @@ defineExpose({ focusDisclosure });
         </span>
       </span>
       <span v-if="attachedFact !== ''" class="attached-fact">{{ attachedFact }}</span>
+      <button
+        ref="support"
+        type="button"
+        class="identity-disclosure"
+        :disabled="supportInert"
+        :aria-expanded="supportOpen"
+        @click="emit('support')"
+      >
+        Support Cumpa
+      </button>
       <button
         ref="disclosure"
         type="button"
