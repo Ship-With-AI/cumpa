@@ -77,6 +77,15 @@ export function createSupportStore(options: Readonly<{ path?: string; fileSystem
       return SupportStateV1Schema.parse(JSON.parse((await fileSystem.readFile(canonicalPath)).toString('utf8')));
     } catch { return undefined; }
   };
+  const exists = async (): Promise<boolean> => {
+    try {
+      await fileSystem.lstat(canonicalPath);
+      return true;
+    } catch (error) {
+      return !(typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT');
+    }
+  };
+
   const persist = async (next: SupportStateV1): Promise<void> => {
     const bytes = Buffer.from(`${JSON.stringify(SupportStateV1Schema.parse(next))}\n`);
     const temporaryPath = join(directory, `.support.${randomUUID()}.tmp`);
@@ -101,12 +110,36 @@ export function createSupportStore(options: Readonly<{ path?: string; fileSystem
   };
   return {
     canonicalPath,
-    async state() { return await serialized(async () => { state ??= await load() ?? initial(); if (!(await load())) await persist(state); return state; }); },
-    async markVerified(verifiedAt) { return await serialized(async () => {
-      state ??= await load() ?? initial();
-      if (state.status === 'verified') return state;
-      const next = SupportStateV1Schema.parse({ ...state, status: 'verified', verifiedAt });
-      await persist(next); state = next; return state;
-    }); },
+    async state() {
+      return await serialized(async () => {
+        state ??= await load();
+        if (state === undefined) {
+          const created = initial();
+          if (!(await exists())) {
+            try {
+              await persist(created);
+            } catch {
+              return created;
+            }
+          }
+          state = created;
+        }
+        return state;
+      });
+    },
+    async markVerified(verifiedAt) {
+      return await serialized(async () => {
+        state ??= await load();
+        if (state === undefined) {
+          state = initial();
+          await persist(state);
+        }
+        if (state.status === 'verified') return state;
+        const next = SupportStateV1Schema.parse({ ...state, status: 'verified', verifiedAt });
+        await persist(next);
+        state = next;
+        return state;
+      });
+    },
   };
 }

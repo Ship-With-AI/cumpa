@@ -405,6 +405,7 @@ function waitForAttachedOutcome(
 
 async function launchAttachedSession(
   dependencies: OrdinaryActionDependencies,
+  support: SupportCapability,
   activeGit: AbortController,
   createApp: (
     sessionToken: string,
@@ -488,8 +489,10 @@ async function launchExactPatchSession(
   dependencies: OrdinaryActionDependencies,
   activeGit: AbortController,
 ): Promise<void> {
+  const support = createSupportCapability(createSupportStore(), createHostedSupportClient());
   await launchAttachedSession(
     dependencies,
+    createSupportCapability(createSupportStore(), createHostedSupportClient()),
     activeGit,
     async (sessionToken, attachedCompletion, revealDraftFile) => {
       return await (dependencies.createExactPatchSessionApp ?? createExactPatchSessionApp)(
@@ -498,6 +501,7 @@ async function launchExactPatchSession(
           webRoot: dependencies.webRoot,
           sessionToken,
           revealDraftFile,
+          support,
           attachedCompletion,
           diagnostics: () => {
             (dependencies.output ?? console.error)('Exact patch review request denied.');
@@ -546,8 +550,10 @@ export async function runOrdinaryAction(
       headRevision: request.revisions.head,
       pathspecs: request.revisions.pathspecs,
     });
+    const support = createSupportCapability(createSupportStore(), createHostedSupportClient());
     await launchAttachedSession(
       dependencies,
+      support,
       activeGit,
       async (sessionToken, attachedCompletion, revealDraftFile) => {
         return (dependencies.createSessionApp ?? createSessionApp)(comparison, {
@@ -555,6 +561,7 @@ export async function runOrdinaryAction(
           sessionToken,
           revealDraftFile,
           attachedCompletion,
+          support,
           diagnostics: ({ correlationId, reason }) => {
             output(`Cumpa request denied [${correlationId}]: ${reason}.`);
           },
