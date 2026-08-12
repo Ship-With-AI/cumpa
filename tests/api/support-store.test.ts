@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vitest';
+import { resolveSupportStatePath } from '../../src/server/support-store.js';
 
 
 describe('machine support state', () => {

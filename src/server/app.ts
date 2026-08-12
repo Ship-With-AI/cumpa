@@ -8,8 +8,12 @@ import type { GroundedExactPatch, PinnedComparison } from '../contracts/comparis
 import {
   createCapabilityRegistry,
   createExactPatchCapabilityRegistry,
+  createSupportCapability,
   type CapabilityRegistryOptions,
+  type SupportCapability,
 } from './capabilities.js';
+import { createHostedSupportClient } from './support-client.js';
+import { createSupportStore } from './support-store.js';
 import {
   createDraftStore,
   type DraftFileSystem,
@@ -27,6 +31,7 @@ export interface CreateSessionAppOptions extends CapabilityRegistryOptions {
   readonly sessionToken: string;
   readonly webRoot?: string;
   readonly diagnostics?: (diagnostic: SecurityDiagnostic) => void;
+  readonly support?: SupportCapability;
 }
 
 export interface CreateExactPatchSessionAppOptions extends CreateSessionAppOptions {
@@ -119,12 +124,14 @@ export function createSessionApp(
     logger: false,
     ajv: { customOptions: { removeAdditional: false } },
   }) as unknown as SessionApp;
+  const support = options.support ?? createSupportCapability(createSupportStore(), createHostedSupportClient());
   const webRoot = options.webRoot ?? resolve(import.meta.dirname, '../web');
   const draftStore = createAppDraftStore(comparison, options);
-  const capabilities = createCapabilityRegistry(comparison, { ...options, draftStore });
+  const capabilities = createCapabilityRegistry(comparison, { ...options, draftStore, support });
   const security = registerSessionSecurity(app, options);
 
   app.decorate('bindSessionSecurity', security.bind);
+  app.addHook('onClose', async () => support.close());
   registerSessionRoutes(app, capabilities);
   void app.register(fastifyStatic, {
     root: webRoot,
@@ -147,9 +154,11 @@ export async function createExactPatchSessionApp(
     ajv: { customOptions: { removeAdditional: false } },
   }) as unknown as SessionApp;
   const webRoot = options.webRoot ?? resolve(import.meta.dirname, '../web');
-  const capabilities = await createExactPatchCapabilityRegistry(grounded, snapshot, options);
+  const support = options.support ?? createSupportCapability(createSupportStore(), createHostedSupportClient());
+  const capabilities = await createExactPatchCapabilityRegistry(grounded, snapshot, { ...options, support });
   const security = registerSessionSecurity(app, options);
 
+  app.addHook('onClose', async () => support.close());
   app.decorate('bindSessionSecurity', security.bind);
   app.addHook('onClose', async () => snapshot.dispose());
   registerSessionRoutes(app, capabilities);

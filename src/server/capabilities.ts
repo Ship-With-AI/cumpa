@@ -56,6 +56,9 @@ import { inspectCumpaIgnore } from '../git/ignore-status.js';
 import { appendCumpaIgnoreRule } from './gitignore-capability.js';
 import { PatchSnapshot } from './patch-snapshot.js';
 
+import type { HostedSupportClient } from './support-client.js';
+import type { SupportStore } from './support-store.js';
+
 export type AnchorAddPort = (
   input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
 ) => Promise<unknown>;
@@ -90,8 +93,16 @@ const LANGUAGE_BY_BASENAME: Readonly<Record<string, string>> = {
   makefile: 'makefile',
 };
 const strictTextDecoder = new TextDecoder('utf-8', { fatal: true });
-
 export type DraftRevealPort = (canonicalPath: string) => Promise<void>;
+
+export type SupportCapability = Readonly<{
+  status(): Promise<{ readonly status: 'unverified' | 'verified' }>;
+  checkout(): Promise<{ readonly kind: 'ready'; readonly url: string } | { readonly kind: 'unavailable' }>;
+  refresh(): Promise<{ readonly status: 'unverified' | 'verified' }>;
+  requestRecovery(email: string): Promise<{ readonly kind: 'accepted' }>;
+  recoveryStatus(): Promise<{ readonly kind: 'idle' | 'pending' | 'verified' | 'expired' }>;
+  close(): void;
+}>;
 
 export type CapabilityRegistryOptions = Readonly<{
   readonly onCapabilityLookup?: (fileId: string) => void;
@@ -101,6 +112,7 @@ export type CapabilityRegistryOptions = Readonly<{
   readonly revealDraftFile?: DraftRevealPort;
   readonly selectorDriftObserver?: SelectorDriftObserver;
   readonly attachedCompletion?: AttachedCompletionOptions;
+  readonly support?: SupportCapability;
 }>;
 
 export type AttachedCompletionOptions = Readonly<{
@@ -130,7 +142,39 @@ export type CapabilityRegistry = Readonly<{
   readonly exportReview: (input: ExportReviewRequest) => Promise<ExportReviewResult>;
   readonly inspectCumpaIgnore: () => Promise<CumpaIgnoreStatus>;
   readonly appendCumpaIgnoreRule: () => Promise<AppendCumpaIgnoreResult>;
+  readonly support?: SupportCapability;
 }>;
+
+export function createSupportCapability(store: SupportStore, client: HostedSupportClient): SupportCapability {
+  let recovery: Readonly<{ challengeId: string; pollToken: string; expiresAt: string }> | undefined;
+  const status = async () => ({ status: (await store.state()).status });
+  const promote = async (remote: 'unverified' | 'verified' | undefined) => {
+    if (remote === 'verified') await store.markVerified(new Date().toISOString());
+    return await status();
+  };
+  return Object.freeze({
+    status,
+    async checkout() {
+      const url = client.checkoutUrl((await store.state()).installationId);
+      return url === undefined ? { kind: 'unavailable' as const } : { kind: 'ready' as const, url };
+    },
+    async refresh() { return await promote(await client.status((await store.state()).installationId)); },
+    async requestRecovery(email) {
+      const result = await client.requestRecovery({ installationId: (await store.state()).installationId, email });
+      if (result !== undefined) recovery = result;
+      return { kind: 'accepted' as const };
+    },
+    async recoveryStatus() {
+      if (recovery === undefined) return { kind: 'idle' as const };
+      if (Date.parse(recovery.expiresAt) <= Date.now()) { recovery = undefined; return { kind: 'expired' as const }; }
+      const result = await client.recoveryStatus(recovery);
+      if (result === 'verified') { recovery = undefined; await promote('verified'); }
+      if (result === 'expired') recovery = undefined;
+      return { kind: (result ?? 'pending') as 'pending' | 'verified' | 'expired' };
+    },
+    close() { recovery = undefined; client.close(); },
+  });
+}
 
 function toSessionEndpoint(endpoint: PinnedComparison['base']) {
   return {
@@ -434,6 +478,7 @@ export function createCapabilityRegistry(
     onAnchorAdd: options.onAnchorAdd,
     draftStore,
     selectorDriftObserver,
+    support: options.support,
     async revealDraftFile() {
       if (options.revealDraftFile === undefined) {
         throw new Error('Draft reveal adapter is unavailable.');
@@ -713,6 +758,7 @@ export async function createExactPatchCapabilityRegistry(
     attachedCompletion,
     onAnchorAdd: options.onAnchorAdd,
     draftStore,
+    support: options.support,
     patchStatus: async () => {
       const status = await snapshot.observe();
       return PatchStatusResponseSchema.parse(
