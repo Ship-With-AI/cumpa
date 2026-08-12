@@ -26,7 +26,8 @@ try {
   const env = { ...process.env, TEST_DATABASE_URL: `postgresql://cumpa:cumpa@127.0.0.1:${port}/cumpa_test` };
   await new Promise((resolve) => setTimeout(resolve, 1000));
   run(process.execPath, ['scripts/migrate.mjs'], { env });
-  const test = spawn(process.execPath, ['node_modules/vitest/vitest.mjs', '--run', 'tests/postgres-payment.integration.test.ts'], { stdio: 'inherit', env });
+  const paths = process.argv.slice(2);
+  const test = spawn(process.execPath, ['node_modules/vitest/vitest.mjs', '--run', ...(paths.length > 0 ? paths : ['tests/postgres-payment.integration.test.ts'])], { stdio: 'inherit', env });
   await new Promise((resolve, reject) => test.once('exit', (code) => code === 0 ? resolve() : reject(new Error('PostgreSQL integration tests failed'))));
 } catch (error) {
   process.stderr.write(spawnSync('docker', ['logs', name], { encoding: 'utf8' }).stdout);
