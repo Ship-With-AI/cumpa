@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { spawn, spawnSync } from 'node:child_process';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const serviceRoot = dirname(fileURLToPath(new URL('..', import.meta.url)));
+const serviceRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, { encoding: 'utf8', ...options });
