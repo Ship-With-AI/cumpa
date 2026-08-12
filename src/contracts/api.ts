@@ -666,6 +666,39 @@ export const FileMetadataResponseSchema = z
   })
   .readonly();
 
+const SupportStatusValueSchema = z.enum(['unverified', 'verified']);
+
+export const SupportStatusSchema = z
+  .strictObject({ status: SupportStatusValueSchema })
+  .readonly();
+
+export const SupportCheckoutResultSchema = z
+  .discriminatedUnion('kind', [
+    z
+      .strictObject({
+        kind: z.literal('ready'),
+        url: z
+          .string()
+          .url()
+          .refine((value) => new URL(value).protocol === 'https:'),
+      })
+      .readonly(),
+    z.strictObject({ kind: z.literal('unavailable') }).readonly(),
+  ])
+  .readonly();
+
+export const SupportRecoveryRequestSchema = z
+  .strictObject({ email: z.string().email().max(320) })
+  .readonly();
+
+export const SupportRecoveryResultSchema = z
+  .strictObject({ kind: z.literal('accepted') })
+  .readonly();
+
+export const SupportRecoveryStatusSchema = z
+  .strictObject({ kind: z.enum(['idle', 'pending', 'verified', 'expired']) })
+  .readonly();
+
 export const ApiErrorSchema = z
   .strictObject({
     code: z.enum(['request-unavailable', 'session-unavailable']),
@@ -690,3 +723,8 @@ export type SelectorDriftStatus = z.infer<typeof SelectorDriftStatusSchema>;
 export type SelectorDriftResponse = z.infer<typeof SelectorDriftResponseSchema>;
 export type PatchStatusResponse = z.infer<typeof PatchStatusResponseSchema>;
 export type ApiError = z.infer<typeof ApiErrorSchema>;
+export type SupportStatus = z.infer<typeof SupportStatusSchema>;
+export type SupportCheckoutResult = z.infer<typeof SupportCheckoutResultSchema>;
+export type SupportRecoveryRequest = z.infer<typeof SupportRecoveryRequestSchema>;
+export type SupportRecoveryResult = z.infer<typeof SupportRecoveryResultSchema>;
+export type SupportRecoveryStatus = z.infer<typeof SupportRecoveryStatusSchema>;
