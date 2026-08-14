@@ -17,6 +17,23 @@
 
 ## Recovery
 
+
 - **REC-01:** A supporter can restore support status on another installation by entering the email associated with the Stripe payment and completing an emailed magic link.
 - **REC-02:** Recovery responses do not disclose whether an email has paid, and recovery tokens are high-entropy, single-use, short-lived, and bound to the requesting installation.
 - **REC-03:** A paid email can restore support status on unlimited installations; no device-management or transfer flow is required.
+## Traceability
+
+| Requirement | Phase | Plans | Status |
+|---|---|---|---|
+| PAY-01 | Phases 1, 2 | 01-02, 01-05; 02-03, 02-05, 02-06, 02-11 | Planned |
+| PAY-02 | Phases 1, 2 | 01-02, 01-04, 01-05; 02-05, 02-06, 02-11 | Planned |
+| PAY-03 | Phases 1, 2 | 01-01, 01-02, 01-04, 01-05; 02-01, 02-02, 02-03, 02-04, 02-06, 02-08, 02-10, 02-11 | Planned |
+| PAY-04 | Phases 1, 2 | 01-01, 01-02, 01-03, 01-04, 01-05; 02-01, 02-06, 02-07, 02-09, 02-10, 02-11 | Planned |
+| SUP-01 | Phases 1, 2 | 01-04, 01-05; 02-05, 02-06, 02-11 | Planned |
+| SUP-02 | Phases 1, 2 | 01-05; 02-03, 02-05, 02-06, 02-11 | Planned |
+| SUP-03 | Phases 1, 2 | 01-05; 02-05, 02-06, 02-11 | Planned |
+| SUP-04 | Phases 1, 2 | 01-02, 01-04, 01-05; 02-05, 02-06, 02-11 | Planned |
+| SUP-05 | Phases 1, 2 | 01-02, 01-04, 01-05; 02-05, 02-06, 02-11 | Planned |
+| REC-01 | Phases 1, 2 | 01-03, 01-04, 01-05; 02-01, 02-03, 02-05, 02-06, 02-07, 02-08, 02-09, 02-10, 02-11 | Planned |
+| REC-02 | Phases 1, 2 | 01-03, 01-04, 01-05; 02-01, 02-02, 02-03, 02-04, 02-05, 02-06, 02-07, 02-08, 02-09, 02-10, 02-11 | Planned |
+| REC-03 | Phases 1, 2 | 01-03, 01-04, 01-05; 02-02, 02-03, 02-05, 02-06, 02-10, 02-11 | Planned |

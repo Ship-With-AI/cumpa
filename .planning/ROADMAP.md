@@ -27,13 +27,49 @@ Plans:
 **Goal:** Replace the blocked standalone support backend with Supabase Postgres, Auth, and Edge Functions while preserving optional webhook-authoritative USD $49.99 support and machine-wide prompt suppression, replacing email recovery with installation-bound GitHub OAuth restoration, and completing a verified Supabase-only production cutover.
 **Requirements:** PAY-01, PAY-02, PAY-03, PAY-04, SUP-01, SUP-02, SUP-03, SUP-04, SUP-05, REC-01, REC-02, REC-03 (REC-01/REC-02 mechanisms superseded by Phase 2 D-10)
 **Depends on:** Phase 1
-**Plans:** 6 plans
+**Plans:** 11 plans
 
 Plans:
+**Wave 1**
 
-- [ ] 02-01-PLAN.md — Approve exact Supabase and Stripe package provenance
-- [ ] 02-02-PLAN.md — Build and apply the RLS/RPC support-authority schema locally
-- [ ] 02-03-PLAN.md — Implement GitHub OAuth, Checkout, status, and webhook Edge Functions
-- [ ] 02-04-PLAN.md — Cut every Cumpa caller to hosted Support/Restore actions
-- [ ] 02-05-PLAN.md — Deploy and approve real hosted-development acceptance evidence
-- [ ] 02-06-PLAN.md — Delete the legacy backend and prove production CI deployment
+- [ ] 02-01-PLAN.md — Approve four exact Supabase and Stripe package provenance records
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — TDD the RLS/RPC support authority and prove two clean schema applications
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-03-PLAN.md — Implement GitHub OAuth, fixed-price Checkout, status, and webhook Edge Functions
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-04-PLAN.md — Cut shared/server contracts to the hosted action and monotonic status boundary
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-05-PLAN.md — Cut every browser caller to Support/Restore actions with rendered RED/GREEN proof
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 02-06-PLAN.md — Deploy and approve hosted-development OAuth, Stripe, restore, E2E, and package evidence
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 02-07-PLAN.md — Delete ten exact legacy application-core, schema, and Render paths
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 02-08-PLAN.md — Delete ten exact legacy route, recovery, and service-test paths
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
+- [ ] 02-09-PLAN.md — Delete nine exact service-toolchain and root-package paths
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
+- [ ] 02-10-PLAN.md — Install protected schema-first production CI and its evidence/runbook policy
+
+**Wave 11** *(blocked on Wave 10 completion)*
+
+- [ ] 02-11-PLAN.md — Approve the actual production run, live providers, canonical behavior, and retirement
