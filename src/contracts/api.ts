@@ -666,18 +666,18 @@ export const FileMetadataResponseSchema = z
   })
   .readonly();
 
-const SupportStatusValueSchema = z.enum(['unverified', 'verified']);
+export const SupportActionSchema = z.enum(['support', 'restore']);
 
-export const SupportStatusSchema = z
-  .strictObject({ status: SupportStatusValueSchema })
+export const SupportStartRequestSchema = z
+  .strictObject({ action: SupportActionSchema })
   .readonly();
 
-export const SupportCheckoutResultSchema = z
+export const SupportStartResultSchema = z
   .discriminatedUnion('kind', [
     z
       .strictObject({
         kind: z.literal('ready'),
-        url: z
+        flowUrl: z
           .string()
           .url()
           .refine((value) => new URL(value).protocol === 'https:'),
@@ -687,16 +687,8 @@ export const SupportCheckoutResultSchema = z
   ])
   .readonly();
 
-export const SupportRecoveryRequestSchema = z
-  .strictObject({ email: z.string().email().max(320) })
-  .readonly();
-
-export const SupportRecoveryResultSchema = z
-  .strictObject({ kind: z.literal('accepted') })
-  .readonly();
-
-export const SupportRecoveryStatusSchema = z
-  .strictObject({ kind: z.enum(['idle', 'pending', 'verified', 'expired']) })
+export const SupportStatusSchema = z
+  .strictObject({ status: z.enum(['unverified', 'verified']) })
   .readonly();
 
 export const ApiErrorSchema = z
@@ -722,9 +714,7 @@ export type FileContentResponse = z.infer<typeof FileContentResponseSchema>;
 export type SelectorDriftStatus = z.infer<typeof SelectorDriftStatusSchema>;
 export type SelectorDriftResponse = z.infer<typeof SelectorDriftResponseSchema>;
 export type PatchStatusResponse = z.infer<typeof PatchStatusResponseSchema>;
-export type ApiError = z.infer<typeof ApiErrorSchema>;
+export type SupportAction = z.infer<typeof SupportActionSchema>;
+export type SupportStartRequest = z.infer<typeof SupportStartRequestSchema>;
+export type SupportStartResult = z.infer<typeof SupportStartResultSchema>;
 export type SupportStatus = z.infer<typeof SupportStatusSchema>;
-export type SupportCheckoutResult = z.infer<typeof SupportCheckoutResultSchema>;
-export type SupportRecoveryRequest = z.infer<typeof SupportRecoveryRequestSchema>;
-export type SupportRecoveryResult = z.infer<typeof SupportRecoveryResultSchema>;
-export type SupportRecoveryStatus = z.infer<typeof SupportRecoveryStatusSchema>;

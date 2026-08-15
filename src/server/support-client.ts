@@ -1,57 +1,81 @@
+import type { SupportAction } from '../contracts/api.js';
 import { z } from 'zod';
 
+const responseLimit = 8192;
+const timeoutMs = 5000;
 const installationStatusSchema = z.strictObject({ status: z.enum(['unverified', 'verified']) });
-const recoveryRequestSchema = z.strictObject({ kind: z.literal('accepted'), challengeId: z.string().min(1), pollToken: z.string().min(1), expiresAt: z.string().datetime() });
-const recoveryStatusSchema = z.strictObject({ kind: z.enum(['pending', 'verified', 'expired']) });
+const supportStartSchema = z.strictObject({ flowUrl: z.string().url() });
 
 export type HostedSupportClient = Readonly<{
-  checkoutUrl(installationId: string): string | undefined;
+  start(action: SupportAction, installationId: string): Promise<Readonly<{ flowUrl: string }> | undefined>;
   status(installationId: string): Promise<'unverified' | 'verified' | undefined>;
-  requestRecovery(input: Readonly<{ installationId: string; email: string }>): Promise<Readonly<{ challengeId: string; pollToken: string; expiresAt: string }> | undefined>;
-  recoveryStatus(input: Readonly<{ challengeId: string; pollToken: string }>): Promise<'pending' | 'verified' | 'expired' | undefined>;
   close(): void;
 }>;
 
 async function responseJson(response: Response): Promise<unknown | undefined> {
   const contentLength = Number(response.headers.get('content-length') ?? '0');
-  if (!response.ok || contentLength > 8192) return undefined;
+  if (!response.ok || contentLength > responseLimit) return undefined;
   const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.length > 8192) return undefined;
-  try { return JSON.parse(new TextDecoder().decode(bytes)); } catch { return undefined; }
+  if (bytes.length > responseLimit) return undefined;
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes));
+  } catch {
+    return undefined;
+  }
 }
 
 export function createHostedSupportClient(options: Readonly<{
   serviceUrl?: string;
-  paymentUrl?: string;
   fetch?: typeof fetch;
 }> = {}): HostedSupportClient {
-  const serviceUrl = options.serviceUrl ?? process.env.CUMPA_SUPPORT_SERVICE_URL;
-  const paymentUrl = options.paymentUrl ?? process.env.CUMPA_SUPPORT_PAYMENT_URL;
+  const configuredServiceUrl = options.serviceUrl ?? process.env.CUMPA_SUPPORT_SERVICE_URL;
   let service: URL | undefined;
-  let payment: URL | undefined;
   try {
-    service = serviceUrl === undefined ? undefined : new URL(serviceUrl);
-    payment = paymentUrl === undefined ? undefined : new URL(paymentUrl);
+    service = configuredServiceUrl === undefined ? undefined : new URL(configuredServiceUrl);
   } catch {
     service = undefined;
-    payment = undefined;
   }
-  if (service?.protocol !== 'https:' || payment?.protocol !== 'https:') {
-    return { checkoutUrl: () => undefined, status: async () => undefined, requestRecovery: async () => undefined, recoveryStatus: async () => undefined, close: () => undefined };
-  }
-  const request = options.fetch ?? fetch;
+  if (service?.protocol !== 'https:') service = undefined;
+
+  const fetcher = options.fetch ?? globalThis.fetch;
   const controller = new AbortController();
-  const fetchJson = async (path: string, init: RequestInit = {}): Promise<unknown | undefined> => {
-    const timeout = setTimeout(() => controller.abort(), 5000);
+  const fetchJson = async (path: string, init?: RequestInit): Promise<unknown | undefined> => {
+    if (service === undefined) return undefined;
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await responseJson(await request(new URL(path, service), { ...init, signal: controller.signal, headers: { accept: 'application/json', 'cache-control': 'no-store', ...(init.headers ?? {}) } }));
-    } catch { return undefined; } finally { clearTimeout(timeout); }
+      return await responseJson(await fetcher(new URL(path, service).toString(), { ...init, signal: controller.signal }));
+    } catch {
+      return undefined;
+    } finally {
+      clearTimeout(timeout);
+    }
   };
-  return {
-    checkoutUrl(installationId) { const url = new URL(payment); url.searchParams.set('client_reference_id', installationId); return url.toString(); },
-    async status(installationId) { const result = installationStatusSchema.safeParse(await fetchJson(`/v1/installations/${encodeURIComponent(installationId)}/status`)); return result.success ? result.data.status : undefined; },
-    async requestRecovery(input) { const result = recoveryRequestSchema.safeParse(await fetchJson('/v1/recovery-requests', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) })); return result.success ? result.data : undefined; },
-    async recoveryStatus(input) { const result = recoveryStatusSchema.safeParse(await fetchJson(`/v1/recovery-requests/${encodeURIComponent(input.challengeId)}/status`, { headers: { authorization: `Bearer ${input.pollToken}` } })); return result.success ? result.data.kind : undefined; },
-    close() { controller.abort(); },
+  const validFlowUrl = (flowUrl: string): boolean => {
+    try {
+      const flow = new URL(flowUrl);
+      return flow.protocol === 'https:' && flow.origin === service?.origin;
+    } catch {
+      return false;
+    }
   };
+
+  return Object.freeze({
+    async start(action, installationId) {
+      const result = supportStartSchema.safeParse(await fetchJson('/functions/v1/support-api/start', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action, installationId }),
+      }));
+      return result.success && validFlowUrl(result.data.flowUrl) ? result.data : undefined;
+    },
+    async status(installationId) {
+      const result = installationStatusSchema.safeParse(
+        await fetchJson(`/functions/v1/support-api/status?installationId=${encodeURIComponent(installationId)}`),
+      );
+      return result.success ? result.data.status : undefined;
+    },
+    close() {
+      controller.abort();
+    },
+  });
 }

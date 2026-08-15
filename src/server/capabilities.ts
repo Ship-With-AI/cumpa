@@ -58,6 +58,7 @@ import { PatchSnapshot } from './patch-snapshot.js';
 
 import type { HostedSupportClient } from './support-client.js';
 import type { SupportStore } from './support-store.js';
+import type { SupportAction } from '../contracts/api.js';
 
 export type AnchorAddPort = (
   input: Readonly<{ readonly body: string; readonly anchor: DurableAnchorV1 }>,
@@ -97,10 +98,8 @@ export type DraftRevealPort = (canonicalPath: string) => Promise<void>;
 
 export type SupportCapability = Readonly<{
   status(): Promise<{ readonly status: 'unverified' | 'verified' }>;
-  checkout(): Promise<{ readonly kind: 'ready'; readonly url: string } | { readonly kind: 'unavailable' }>;
+  start(action: SupportAction): Promise<{ readonly kind: 'ready'; readonly flowUrl: string } | { readonly kind: 'unavailable' }>;
   refresh(): Promise<{ readonly status: 'unverified' | 'verified' }>;
-  requestRecovery(email: string): Promise<{ readonly kind: 'accepted' }>;
-  recoveryStatus(): Promise<{ readonly kind: 'idle' | 'pending' | 'verified' | 'expired' }>;
   close(): void;
 }>;
 
@@ -146,7 +145,6 @@ export type CapabilityRegistry = Readonly<{
 }>;
 
 export function createSupportCapability(store: SupportStore, client: HostedSupportClient): SupportCapability {
-  let recovery: Readonly<{ challengeId: string; pollToken: string; expiresAt: string }> | undefined;
   const status = async () => ({ status: (await store.state()).status });
   const promote = async (remote: 'unverified' | 'verified' | undefined) => {
     if (remote === 'verified') await store.markVerified(new Date().toISOString());
@@ -154,25 +152,16 @@ export function createSupportCapability(store: SupportStore, client: HostedSuppo
   };
   return Object.freeze({
     status,
-    async checkout() {
-      const url = client.checkoutUrl((await store.state()).installationId);
-      return url === undefined ? { kind: 'unavailable' as const } : { kind: 'ready' as const, url };
+    async start(action) {
+      const result = await client.start(action, (await store.state()).installationId);
+      return result === undefined ? { kind: 'unavailable' as const } : { kind: 'ready' as const, flowUrl: result.flowUrl };
     },
-    async refresh() { return await promote(await client.status((await store.state()).installationId)); },
-    async requestRecovery(email) {
-      const result = await client.requestRecovery({ installationId: (await store.state()).installationId, email });
-      if (result !== undefined) recovery = result;
-      return { kind: 'accepted' as const };
+    async refresh() {
+      return await promote(await client.status((await store.state()).installationId));
     },
-    async recoveryStatus() {
-      if (recovery === undefined) return { kind: 'idle' as const };
-      if (Date.parse(recovery.expiresAt) <= Date.now()) { recovery = undefined; return { kind: 'expired' as const }; }
-      const result = await client.recoveryStatus(recovery);
-      if (result === 'verified') { recovery = undefined; await promote('verified'); }
-      if (result === 'expired') recovery = undefined;
-      return { kind: (result ?? 'pending') as 'pending' | 'verified' | 'expired' };
+    close() {
+      client.close();
     },
-    close() { recovery = undefined; client.close(); },
   });
 }
 

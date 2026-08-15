@@ -18,10 +18,8 @@ import {
   AttachedCompletionStatusSchema,
   FinishReviewRequestSchema,
   FinishReviewResultSchema,
-  SupportCheckoutResultSchema,
-  SupportRecoveryRequestSchema,
-  SupportRecoveryResultSchema,
-  SupportRecoveryStatusSchema,
+  SupportStartRequestSchema,
+  SupportStartResultSchema,
   SupportStatusSchema,
   type DraftMutationResult as ApiDraftMutationResult,
   type DraftRecoveryResult as ApiDraftRecoveryResult,
@@ -134,23 +132,15 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       if (request.body !== undefined || request.headers['content-length'] !== undefined) return unavailable(reply, 400);
       return SupportStatusSchema.parse(await capabilities.support!.status());
     });
-    app.post<{ Querystring: Record<string, never>; Body: unknown }>('/api/support/checkout', { schema: { querystring: EMPTY_QUERY_SCHEMA }, bodyLimit: 1 }, async (request, reply) => {
-      if (request.body !== undefined || request.headers['content-length'] !== undefined || request.headers['content-type'] !== undefined) return unavailable(reply, 400);
-      return SupportCheckoutResultSchema.parse(await capabilities.support!.checkout());
+    app.post<{ Querystring: Record<string, never>; Body: unknown }>('/api/support/start', { schema: { querystring: EMPTY_QUERY_SCHEMA }, bodyLimit: 1024 }, async (request, reply) => {
+      if (request.headers['content-type']?.split(';', 1)[0] !== 'application/json') return unavailable(reply, 400);
+      const body = SupportStartRequestSchema.safeParse(request.body);
+      if (!body.success) return unavailable(reply, 400);
+      return SupportStartResultSchema.parse(await capabilities.support!.start(body.data.action));
     });
     app.post<{ Querystring: Record<string, never>; Body: unknown }>('/api/support/refresh', { schema: { querystring: EMPTY_QUERY_SCHEMA }, bodyLimit: 1 }, async (request, reply) => {
       if (request.body !== undefined || request.headers['content-length'] !== undefined || request.headers['content-type'] !== undefined) return unavailable(reply, 400);
       return SupportStatusSchema.parse(await capabilities.support!.refresh());
-    });
-    app.post<{ Querystring: Record<string, never>; Body: unknown }>('/api/support/recovery', { schema: { querystring: EMPTY_QUERY_SCHEMA }, bodyLimit: 2048 }, async (request, reply) => {
-      if (request.headers['content-type']?.split(';', 1)[0] !== 'application/json') return unavailable(reply, 400);
-      const body = SupportRecoveryRequestSchema.safeParse(request.body);
-      if (!body.success) return unavailable(reply, 400);
-      return SupportRecoveryResultSchema.parse(await capabilities.support!.requestRecovery(body.data.email));
-    });
-    app.get<{ Querystring: Record<string, never> }>('/api/support/recovery-status', { schema: { querystring: EMPTY_QUERY_SCHEMA } }, async (request, reply) => {
-      if (request.body !== undefined || request.headers['content-length'] !== undefined) return unavailable(reply, 400);
-      return SupportRecoveryStatusSchema.parse(await capabilities.support!.recoveryStatus());
     });
   }
 

@@ -2,18 +2,11 @@ import Fastify from 'fastify';
 import { describe, expect, test, vi } from 'vitest';
 
 import * as contracts from '../../src/contracts/api.js';
-import {
-  createSupportCapability,
-  type CapabilityRegistry,
-} from '../../src/server/capabilities.js';
-import {
-  createHostedSupportClient,
-  type HostedSupportClient,
-} from '../../src/server/support-client.js';
-import {
-  type SupportStateV1,
-  type SupportStore,
-} from '../../src/server/support-store.js';
+import { createSupportCapability } from '../../src/server/capabilities.js';
+import type { CapabilityRegistry } from '../../src/server/capabilities.js';
+import { createHostedSupportClient } from '../../src/server/support-client.js';
+import type { HostedSupportClient } from '../../src/server/support-client.js';
+import type { SupportStateV1, SupportStore } from '../../src/server/support-store.js';
 import { registerSessionRoutes } from '../../src/server/routes.js';
 
 const installationId = 'a'.repeat(43);
@@ -128,9 +121,13 @@ describe('hosted support contracts', () => {
     const app = Fastify();
     registerSessionRoutes(app, { support: capability } as CapabilityRegistry);
 
-    expect(app.printRoutes()).toContain('/api/support/start');
-    expect(app.printRoutes()).not.toContain('/api/support/checkout');
-    expect(app.printRoutes()).not.toContain('/api/support/recovery');
+    await expect(app.inject({
+      method: 'POST',
+      url: '/api/support/start',
+      payload: { action: 'support' },
+    })).resolves.toMatchObject({ statusCode: 200, json: expect.any(Function) });
+    await expect(app.inject({ method: 'POST', url: '/api/support/checkout' })).resolves.toMatchObject({ statusCode: 404 });
+    await expect(app.inject({ method: 'POST', url: '/api/support/recovery' })).resolves.toMatchObject({ statusCode: 404 });
     await expect(app.inject({
       method: 'POST',
       url: '/api/support/start',
