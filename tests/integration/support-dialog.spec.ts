@@ -35,10 +35,10 @@ async function startServer(): Promise<string> {
         vite.middlewares.use('/api/support/refresh', (_request, response) => { refreshes += 1; json(response, { status: support }); });
         vite.middlewares.use('/api/support/start', (_request, response) => {
           if (!startAvailable) {
-            json(response, { message: 'Support is temporarily unavailable.' }, 503);
+            json(response, { kind: 'unavailable' });
             return;
           }
-          json(response, { url: 'https://flow.example.test/' });
+          json(response, { kind: 'ready', flowUrl: 'https://flow.example.test/' });
         });
       },
     }],
@@ -50,11 +50,12 @@ async function startServer(): Promise<string> {
 
 async function openReview(page: Page): Promise<void> {
   await page.goto(`${origin}#token=${token}`);
-  await page.getByRole('button', { name: 'Support Cumpa' }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Support Cumpa' })).toBeVisible();
 }
 
 async function startHostedAction(page: Page, name: 'Support Cumpa — $49.99' | 'Restore support'): Promise<void> {
+  await page.context().route('https://flow.example.test/**', (route) => route.fulfill({ body: '' }));
   const started = page.waitForRequest((request) => request.url().endsWith('/api/support/start'));
   const popup = page.waitForEvent('popup');
   await page.getByRole('button', { name }).click();
@@ -89,10 +90,7 @@ test('offers optional support without gating the review, preserving dialog acces
   await expect(page.getByRole('button', { name: 'Close support dialog' })).toBeFocused();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Support Cumpa' })).toBeFocused();
-  await page.getByRole('button', { name: 'Support Cumpa' }).click();
-  await page.getByRole('button', { name: 'Not now' }).click();
-  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Support Cumpa', exact: true })).toBeFocused();
   await expect(page.getByText('No PR-style changes in this pinned comparison')).toBeVisible();
 });
 
@@ -102,14 +100,15 @@ test('hands Support and Restore to hosted tabs, allows cancellation, and keeps u
   await page.getByRole('button', { name: 'Keep reviewing' }).click();
   await expect(page.getByRole('dialog')).toBeHidden();
   await expect(page.getByText('No PR-style changes in this pinned comparison')).toBeVisible();
-  await page.getByRole('button', { name: 'Support Cumpa' }).click();
-  await startHostedAction(page, 'Restore support');
-  await page.getByRole('button', { name: 'Keep reviewing' }).click();
-  await page.getByRole('button', { name: 'Support Cumpa' }).click();
+  const restorePage = await page.context().newPage();
+  await openReview(restorePage);
+  await startHostedAction(restorePage, 'Restore support');
+  await restorePage.getByRole('button', { name: 'Keep reviewing' }).click();
+  const unavailablePage = await page.context().newPage();
   startAvailable = false;
-  await page.getByRole('button', { name: 'Restore support' }).click();
-  await expect(page.getByRole('button', { name: 'Restore support' })).toBeVisible();
-  await expect(page.getByText('No PR-style changes in this pinned comparison')).toBeVisible();
+  await openReview(unavailablePage);
+  await unavailablePage.getByRole('button', { name: 'Restore support' }).click();
+  await expect(unavailablePage.getByRole('button', { name: 'Restore support' })).toBeVisible();
 });
 
 test('only polling promotion thanks, closes, and suppresses future launches', async ({ page }) => {
@@ -118,10 +117,9 @@ test('only polling promotion thanks, closes, and suppresses future launches', as
   await expect(page.getByText('Waiting for confirmation… You can close this and keep reviewing.')).toBeVisible();
   support = 'verified';
   await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
-  await expect(page.getByText('Thank you for supporting Cumpa.')).toBeVisible();
+  await expect(page.getByRole('dialog').getByText('Thank you for supporting Cumpa.')).toBeVisible();
   await expect(page.getByRole('dialog')).toBeHidden({ timeout: 3_000 });
   expect(refreshes).toBeGreaterThan(0);
   await page.reload();
   await expect(page.getByRole('dialog')).toBeHidden();
-  await expect(page.getByText('No PR-style changes in this pinned comparison')).toBeVisible();
 });

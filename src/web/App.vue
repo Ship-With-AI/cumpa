@@ -108,10 +108,9 @@ const attachedResult = shallowRef<FinishReviewResult>();
 const attachedStatus = shallowRef<AttachedCompletionStatus>();
 const supportStatus = ref<'loading' | 'unverified' | 'verified' | 'unavailable'>('loading');
 const supportDialogOpen = ref(false);
-const supportDialogMode = ref<'invitation' | 'waiting' | 'recovery' | 'recoveryPending' | 'verified' | 'thankYou'>('invitation');
+const supportDialogMode = ref<'invitation' | 'waiting' | 'verified' | 'thankYou'>('invitation');
 const supportBusy = ref(false);
 const dismissedForSession = ref(false);
-const supportOnDemand = ref(false);
 const supportDialog = ref<InstanceType<typeof SupportDialog>>();
 const primarySurface = computed(() => recoveredDraftOpen.value
   ? 'workspace'
@@ -992,13 +991,13 @@ function dismissSupportDialog(): void {
   closeSupportDialog();
 }
 
-async function checkoutSupport(): Promise<void> {
+async function startSupportAction(action: 'support' | 'restore'): Promise<void> {
   if (sessionClient === undefined || supportBusy.value) return;
   supportBusy.value = true;
   try {
-    const result = await sessionClient.openSupportCheckout();
+    const result = await sessionClient.startSupportAction(action);
     if (result.kind === 'ready') {
-      window.open(result.url, '_blank', 'noopener,noreferrer');
+      window.open(result.flowUrl, '_blank', 'noopener,noreferrer');
       supportDialogMode.value = 'waiting';
       scheduleSupportPoll();
     }
@@ -1008,19 +1007,7 @@ async function checkoutSupport(): Promise<void> {
 }
 
 function restoreSupport(): void {
-  supportDialogMode.value = 'recovery';
-}
-
-async function submitSupportRecovery(email: string): Promise<void> {
-  if (sessionClient === undefined || supportBusy.value) return;
-  supportBusy.value = true;
-  try {
-    await sessionClient.requestSupportRecovery(email);
-    supportDialogMode.value = 'recoveryPending';
-    scheduleSupportPoll();
-  } finally {
-    supportBusy.value = false;
-  }
+  void startSupportAction('restore');
 }
 
 function startPatchStatus(): void {
@@ -1364,9 +1351,8 @@ onBeforeUnmount(() => {
       :open="supportDialogOpen"
       :mode="supportDialogMode"
       :busy="supportBusy"
-      @checkout="checkoutSupport"
+      @support="() => { void startSupportAction('support'); }"
       @restore="restoreSupport"
-      @submit-recovery="submitSupportRecovery"
       @dismiss="dismissSupportDialog"
       @close="closeSupportDialog"
     />

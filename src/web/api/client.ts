@@ -15,10 +15,8 @@ import {
   FinishReviewRequestSchema,
   FinishReviewResultSchema,
   FileMetadataResponseSchema,
-  SupportCheckoutResultSchema,
-  SupportRecoveryRequestSchema,
-  SupportRecoveryResultSchema,
-  SupportRecoveryStatusSchema,
+  SupportStartRequestSchema,
+  SupportStartResultSchema,
   SupportStatusSchema,
   type DraftLoadResponse,
   type AppendCumpaIgnoreResult,
@@ -32,9 +30,8 @@ import {
   type ExportReviewResult,
   type FileContentResponse,
   type FileMetadataResponse,
-  type SupportCheckoutResult,
-  type SupportRecoveryStatus,
-  type SupportStatus,
+  type SupportAction,
+  type SupportStartResult,
   SelectorDriftResponseSchema,
   type SelectorDriftResponse,
   PatchStatusResponseSchema,
@@ -85,10 +82,8 @@ export interface SessionClient {
   getSelectorDrift(): Promise<SelectorDriftResponse>;
   getPatchStatus(): Promise<PatchStatusResponse>;
   getSupportStatus(): Promise<SupportStatus>;
-  openSupportCheckout(): Promise<SupportCheckoutResult>;
+  startSupportAction(action: SupportAction): Promise<SupportStartResult>;
   refreshSupportStatus(): Promise<SupportStatus>;
-  requestSupportRecovery(email: string): Promise<void>;
-  getSupportRecoveryStatus(): Promise<SupportRecoveryStatus>;
 }
 
 export interface SessionClientEnvironment {
@@ -168,23 +163,17 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       if (!result.success) throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
       return result.data;
     },
-    async openSupportCheckout() {
-      const result = SupportCheckoutResultSchema.safeParse(await requestJson('/api/support/checkout', 'POST', 'session'));
+    async startSupportAction(action) {
+      const payload = SupportStartRequestSchema.safeParse({ action });
+      if (!payload.success) throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
+      const result = SupportStartResultSchema.safeParse(
+        await requestJson('/api/support/start', 'POST', 'session', payload.data),
+      );
       if (!result.success) throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
       return result.data;
     },
     async refreshSupportStatus() {
       const result = SupportStatusSchema.safeParse(await requestJson('/api/support/refresh', 'POST', 'session'));
-      if (!result.success) throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
-      return result.data;
-    },
-    async requestSupportRecovery(email) {
-      const payload = SupportRecoveryRequestSchema.safeParse({ email });
-      const result = payload.success && SupportRecoveryResultSchema.safeParse(await requestJson('/api/support/recovery', 'POST', 'session', payload.data));
-      if (result === false || !result.success) throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
-    },
-    async getSupportRecoveryStatus() {
-      const result = SupportRecoveryStatusSchema.safeParse(await requestJson('/api/support/recovery-status', 'GET', 'session'));
       if (!result.success) throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
       return result.data;
     },
