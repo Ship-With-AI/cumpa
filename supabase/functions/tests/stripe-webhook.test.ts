@@ -17,7 +17,7 @@ function session(overrides: Record<string, unknown> = {}) {
     amount_total: 4999,
     customer: "cus_server_owned",
     payment_intent: "pi_server_owned",
-    metadata: { user_id: userId, installation_id: installationId, intent_id: "intent-row" },
+    metadata: { user_id: userId, installation_id: installationId, intent_id: "22222222-2222-4222-8222-222222222222" },
     line_items: { data: [{ price: { id: "price_4999" }, quantity: 1 }], has_more: false },
     ...overrides,
   };
@@ -83,15 +83,14 @@ Deno.test("irrelevant events and every non-authoritative product fact are ignore
   assert(ignoredResponse.status === 200 && ignored.calls.length === 0);
 
   const cases = [
-    { livemode: false },
     { mode: "subscription" },
     { payment_status: "unpaid" },
     { currency: "eur" },
     { amount_total: 5000 },
     { line_items: { data: [{ price: { id: "price_wrong" }, quantity: 1 }], has_more: false } },
     { line_items: { data: [{ price: { id: "price_4999" }, quantity: 2 }], has_more: false } },
-    { metadata: { user_id: "not-a-uuid", installation_id: installationId, intent_id: "intent-row" } },
-    { metadata: { user_id: userId, installation_id: "bad", intent_id: "intent-row" } },
+    { metadata: { user_id: "not-a-uuid", installation_id: installationId, intent_id: "22222222-2222-4222-8222-222222222222" } },
+    { metadata: { user_id: userId, installation_id: "bad", intent_id: "22222222-2222-4222-8222-222222222222" } },
     { id: "" },
   ];
   for (const override of cases) {

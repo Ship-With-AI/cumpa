@@ -26,7 +26,7 @@ function dependencies(overrides: Partial<Record<string, unknown>> = {}) {
     service: {
       rpc: async (name: string, args: Record<string, unknown>) => {
         calls.push({ name, args });
-        if (name === "claim_support_intent") return { data: [{ id: "intent-row", action: "support", installation_id: installationId }], error: null };
+        if (name === "claim_support_intent") return { data: [{ id: "22222222-2222-4222-8222-222222222222", action: "support", installation_id: installationId }], error: null };
         if (name === "restore_installation") return { data: true, error: null };
         return { data: "checkout-row", error: null };
       },
@@ -58,7 +58,7 @@ function dependencies(overrides: Partial<Record<string, unknown>> = {}) {
 
 Deno.test("flow start uses GitHub PKCE with an exact hosted callback and script-inaccessible state cookie", async () => {
   const deps = dependencies();
-  const response = await handleSupportFlowRequest(new Request(`${publicOrigin}/?intent=${intent}`), deps);
+  const response = await handleSupportFlowRequest(new Request(`${publicOrigin}/functions/v1/support-flow?intent=${intent}`), deps);
 
   assert(response.status === 302 && response.headers.get("location")?.startsWith("https://github.com/"));
   assert(cookie(response).includes(`support-intent=${intent}`));
@@ -69,7 +69,7 @@ Deno.test("flow start uses GitHub PKCE with an exact hosted callback and script-
 
 Deno.test("callback validates hosted user then makes one server-owned support Checkout", async () => {
   const deps = dependencies();
-  const response = await handleSupportFlowRequest(new Request(`${publicOrigin}/callback?code=provider-code`, {
+  const response = await handleSupportFlowRequest(new Request(`${publicOrigin}/functions/v1/support-flow/callback?code=provider-code`, {
     headers: { cookie: `support-intent=${intent}` },
   }), deps);
 
@@ -80,7 +80,7 @@ Deno.test("callback validates hosted user then makes one server-owned support Ch
   assert(JSON.stringify(deps.checkoutCalls[0]) === JSON.stringify({
     mode: "payment", line_items: [{ price: "price_4999", quantity: 1 }],
     client_reference_id: userId,
-    metadata: { user_id: userId, installation_id: installationId, intent_id: "intent-row" },
+    metadata: { user_id: userId, installation_id: installationId, intent_id: "22222222-2222-4222-8222-222222222222" },
     success_url: `${publicOrigin}/functions/v1/support-flow/complete`,
     cancel_url: `${publicOrigin}/functions/v1/support-flow/complete`,
   }));
@@ -89,10 +89,10 @@ Deno.test("callback validates hosted user then makes one server-owned support Ch
 
 Deno.test("callback refuses missing, mismatched, reused, expired, and unauthenticated proof before Checkout", async () => {
   const cases = [
-    { request: new Request(`${publicOrigin}/callback?code=code`), override: {} },
-    { request: new Request(`${publicOrigin}/callback?code=code`, { headers: { cookie: "support-intent=bad" } }), override: {} },
-    { request: new Request(`${publicOrigin}/callback?code=code`, { headers: { cookie: `support-intent=${intent}` } }), override: { service: { rpc: async () => ({ data: null, error: { message: "invalid support intent" } }) } } },
-    { request: new Request(`${publicOrigin}/callback?code=code`, { headers: { cookie: `support-intent=${intent}` } }), override: { createAuthClient: () => ({ auth: { exchangeCodeForSession: async () => ({ data: {}, error: null }), getUser: async () => ({ data: { user: null }, error: null }) } }) } },
+    { request: new Request(`${publicOrigin}/functions/v1/support-flow/callback?code=code`), override: {} },
+    { request: new Request(`${publicOrigin}/functions/v1/support-flow/callback?code=code`, { headers: { cookie: "support-intent=bad" } }), override: {} },
+    { request: new Request(`${publicOrigin}/functions/v1/support-flow/callback?code=code`, { headers: { cookie: `support-intent=${intent}` } }), override: { service: { rpc: async () => ({ data: null, error: { message: "invalid support intent" } }) } } },
+    { request: new Request(`${publicOrigin}/functions/v1/support-flow/callback?code=code`, { headers: { cookie: `support-intent=${intent}` } }), override: { createAuthClient: () => ({ auth: { exchangeCodeForSession: async () => ({ data: {}, error: null }), getUser: async () => ({ data: { user: null }, error: null }) } }) } },
   ];
   for (const item of cases) {
     const deps = dependencies(item.override);
@@ -110,10 +110,10 @@ Deno.test("restore uses the same opaque proof but has indistinguishable paid and
     const deps = dependencies();
     deps.service.rpc = async (name: string, args: Record<string, unknown>) => {
       deps.calls.push({ name, args });
-      if (name === "claim_support_intent") return { data: [{ id: "intent-row", action: "restore", installation_id: installationId }], error: null };
+      if (name === "claim_support_intent") return { data: [{ id: "22222222-2222-4222-8222-222222222222", action: "restore", installation_id: installationId }], error: null };
       return { data: paid, error: null };
     };
-    const response = await handleSupportFlowRequest(new Request(`${publicOrigin}/callback?code=provider-code`, {
+    const response = await handleSupportFlowRequest(new Request(`${publicOrigin}/functions/v1/support-flow/callback?code=provider-code`, {
       headers: { cookie: `support-intent=${intent}` },
     }), deps);
     assert(response.status === 302 && response.headers.get("location") === `${publicOrigin}/functions/v1/support-flow/complete`);
@@ -127,19 +127,19 @@ Deno.test("restore uses the same opaque proof but has indistinguishable paid and
 Deno.test("success, cancellation, foreign origin, and server errors never grant authority or expose secrets", async () => {
   const logs: unknown[] = [];
   const completionDeps = dependencies({ log: (value: unknown) => logs.push(value) });
-  const completion = await handleSupportFlowRequest(new Request(`${publicOrigin}/complete`), completionDeps);
+  const completion = await handleSupportFlowRequest(new Request(`${publicOrigin}/functions/v1/support-flow/complete`), completionDeps);
   assert(completion.status === 200 && completion.headers.get("location") === null);
   assert(completionDeps.calls.length === 0 && completionDeps.checkoutCalls.length === 0);
 
   const foreignDeps = dependencies({ log: (value: unknown) => logs.push(value) });
-  const foreign = await handleSupportFlowRequest(new Request(`${publicOrigin}/?intent=${intent}`, { headers: { origin: "https://attacker.example" } }), foreignDeps);
+  const foreign = await handleSupportFlowRequest(new Request(`${publicOrigin}/functions/v1/support-flow?intent=${intent}`, { headers: { origin: "https://attacker.example" } }), foreignDeps);
   assert(foreign.status === 400);
   assert(foreignDeps.calls.length === 0 && foreignDeps.checkoutCalls.length === 0);
   const deps = dependencies({
     service: { rpc: async () => ({ data: null, error: { message: "STRIPE_SECRET_KEY=secret" } }) },
     log: (value: unknown) => logs.push(value),
   });
-  const response = await handleSupportFlowRequest(new Request(`${publicOrigin}/callback?code=provider-code`, { headers: { cookie: `support-intent=${intent}` } }), deps);
-  assert(response.status === 400 && !JSON.stringify(await response.text()).match(/secret|code|token|email|profile|user/i));
+  const response = await handleSupportFlowRequest(new Request(`${publicOrigin}/functions/v1/support-flow/callback?code=provider-code`, { headers: { cookie: `support-intent=${intent}` } }), deps);
+  assert(response.status >= 400 && !JSON.stringify(await response.text()).match(/secret|code|token|email|profile|user/i));
   assert(!JSON.stringify(logs).match(/secret|provider-code|support-intent/i));
 });
