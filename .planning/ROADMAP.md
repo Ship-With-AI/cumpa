@@ -32,7 +32,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Approve four exact Supabase and Stripe package provenance records
+- [x] 02-01-PLAN.md — Approve four exact Supabase and Stripe package provenance records
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
