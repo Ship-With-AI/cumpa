@@ -5,16 +5,16 @@ milestone_name: Agent Review Handoff
 current_phase: 02
 current_phase_name: move-the-implementation-to-supabase
 status: executing
-stopped_at: Plan 02-01 complete; ready for Plan 02-02
-last_updated: "2026-08-15T09:49:00Z"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-08-15T10:23:59.456Z"
 last_activity: 2026-08-15
-last_activity_desc: Plan 02-01 exact hosted package provenance approved
+last_activity_desc: Plan 02-02 database-only Supabase authority schema verified
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 16
-  completed_plans: 6
-  percent: 38
+  completed_plans: 7
+  percent: 44
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-08-06)
 ## Current Position
 
 Phase: 02 (move-the-implementation-to-supabase) — EXECUTING
-Plan: 2 of 11
-Status: Ready to execute Plan 02-02
-Last activity: 2026-08-15 — Plan 02-01 exact hosted package provenance approved
+Plan: 3 of 11
+Status: Ready to execute Plan 02-03
+Last activity: 2026-08-15 — Plan 02-02 database-only Supabase authority schema verified
 
 ## Performance Metrics
 
@@ -70,6 +70,7 @@ Last activity: 2026-08-15 — Plan 02-01 exact hosted package provenance approve
 | Phase 14 P01 | 14min | 3 tasks | 8 files |
 | Phase 14 P02 | N/A | 3 tasks | 9 files |
 | Phase 14 P03 | N/A | 3 tasks | 5 files |
+| Phase 02 P02 | 23min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Decisions are logged in PROJECT.md Key Decisions.
 
 - [Phase 14]: Attached browser lifecycle state is server-authoritative; the UI submits only an accepted revision to Finish and never canonical bytes.
 - [Phase 14]: Finishing/completed attached reviews lock mutations while retaining readable review content and navigation.
+- [Phase 02]: Authority data remains in a private RLS schema; only service_role executes the six transactional RPCs. — Prevents browser roles from directly reading or mutating payment and installation authority.
+- [Phase 02]: Intent plaintext, identity/profile data, OAuth tokens, email, and recovery-token fields are structurally excluded. — The authority schema retains only operational identifiers and Supabase user IDs.
+- [Phase 02]: Root supabase@2.114.0 is development/CI tooling only, using the exact approved pin. — Keeps hosted dependencies outside the published Cumpa runtime.
 
 ### Roadmap Evolution
 
@@ -144,8 +148,8 @@ None yet.
 
 ## Session Continuity
 
-**Last session:** 2026-08-14T15:05:08.490Z
-**Stopped at:** Phase 02 context gathered
+**Last session:** 2026-08-15T10:23:59.451Z
+**Stopped at:** Completed 02-02-PLAN.md
 **Resume file:** .planning/phases/02-move-the-implementation-to-supabase/02-CONTEXT.md
 
 No active phase execution session.
