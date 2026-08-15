@@ -1,0 +1,31 @@
+project_id = "cumpa"
+
+[api]
+enabled = false
+
+[auth]
+enabled = false
+
+[studio]
+enabled = false
+
+[local_smtp]
+enabled = false
+
+[storage]
+enabled = false
+
+[realtime]
+enabled = false
+
+[analytics]
+enabled = false
+
+[functions.support-api]
+verify_jwt = false
+
+[functions.support-flow]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
