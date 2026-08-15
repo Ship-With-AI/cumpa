@@ -5,15 +5,16 @@ milestone_name: Agent Review Handoff
 current_phase: 02
 current_phase_name: move-the-implementation-to-supabase
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-08-15T11:03:50.519Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-08-15T11:29:08.816Z"
 last_activity: 2026-08-15
 last_activity_desc: Plan 02-02 database-only Supabase authority schema verified
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 16
-  completed_plans: 8
+  completed_plans: 9
+  percent: 50
 ---
 
 # Project State
@@ -28,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-08-06)
 ## Current Position
 
 Phase: 02 (move-the-implementation-to-supabase) — EXECUTING
-Plan: 4 of 11
+Plan: 5 of 11
 Status: Ready to execute Plan 02-03
 Last activity: 2026-08-15 — Plan 02-02 database-only Supabase authority schema verified
 
@@ -71,6 +72,7 @@ Last activity: 2026-08-15 — Plan 02-02 database-only Supabase authority schema
 | Phase 14 P03 | N/A | 3 tasks | 5 files |
 | Phase 02 P02 | 23min | 2 tasks | 6 files |
 | Phase 02 P03 | 26min | 3 tasks | 10 files |
+| Phase 02 P04 | 13min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -105,6 +107,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Intent plaintext, identity/profile data, OAuth tokens, email, and recovery-token fields are structurally excluded. — The authority schema retains only operational identifiers and Supabase user IDs.
 - [Phase 02]: Root supabase@2.114.0 is development/CI tooling only, using the exact approved pin. — Keeps hosted dependencies outside the published Cumpa runtime.
 - [Phase 02]: Hosted functions keep Cumpa anonymous: only a flow URL and boolean installation status cross the local boundary. — OAuth credentials and Stripe authority remain on Supabase; fulfillment is webhook-only through a service-role RPC.
+- [Phase 02]: Support actions never establish local authority; only verified hosted refresh may promote persisted status. — Keeps hosted redirects and action responses outside the machine-wide authority boundary.
 
 ### Roadmap Evolution
 
@@ -149,8 +152,8 @@ None yet.
 
 ## Session Continuity
 
-**Last session:** 2026-08-15T11:03:50.515Z
-**Stopped at:** Completed 02-03-PLAN.md
+**Last session:** 2026-08-15T11:29:08.813Z
+**Stopped at:** Completed 02-04-PLAN.md
 **Resume file:** None
 
 No active phase execution session.
