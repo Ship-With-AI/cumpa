@@ -1,6 +1,6 @@
 begin;
 
-select extensions.plan(38);
+select extensions.plan(39);
 
 select extensions.ok(exists (select 1 from pg_namespace where nspname = 'support_private'), 'private authority schema exists');
 select extensions.ok((select count(*) from pg_tables where schemaname = 'support_private') = 5, 'exactly five authority tables exist');
@@ -25,8 +25,22 @@ select extensions.ok(not has_function_privilege('public', 'support_private.insta
 select extensions.ok(not has_function_privilege('anon', 'support_private.installation_status(text)', 'execute'), 'anon cannot execute authority RPCs');
 select extensions.ok(not has_function_privilege('authenticated', 'support_private.installation_status(text)', 'execute'), 'authenticated cannot execute authority RPCs');
 select extensions.ok(has_function_privilege('service_role', 'support_private.installation_status(text)', 'execute'), 'service_role can execute authority RPCs');
+select extensions.ok((
+  select bool_and(has_function_privilege('service_role', pg_proc.oid, 'execute'))
+  from pg_proc
+  join pg_namespace on pg_namespace.oid = pg_proc.pronamespace
+  where nspname = 'support_private'
+), 'service_role can execute every authority RPC');
+select extensions.ok(not exists (
+  select 1
+  from pg_proc
+  join pg_namespace on pg_namespace.oid = pg_proc.pronamespace
+  cross join (values ('public'), ('anon'), ('authenticated')) as untrusted(role_name)
+  where nspname = 'support_private'
+    and has_function_privilege(untrusted.role_name, pg_proc.oid, 'execute')
+), 'untrusted roles cannot execute any authority RPC');
 
-insert into auth.users (id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+insert into auth.users (id, aud, role, email, encrypted_password, confirmed_at, created_at, updated_at)
 values
   ('00000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'supporter-one@example.test', '', now(), now(), now()),
   ('00000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'supporter-two@example.test', '', now(), now(), now()),
