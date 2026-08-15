@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@supabase/ssr": "npm:@supabase/ssr@0.12.4",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.112.3",
+    "stripe": "npm:stripe@22.5.0",
+    "zod": "npm:zod@4.4.3"
+  }
+}
