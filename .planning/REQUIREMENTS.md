@@ -1,39 +1,14 @@
-# Requirements: Voluntary Support Payment
-
-## Payment
-
-- **PAY-01:** The application offers exactly one optional, one-time support payment priced at USD $49.99 through Stripe-hosted Checkout.
-- **PAY-02:** Paying does not unlock, restrict, or alter any application feature except automatic support-dialog visibility.
-- **PAY-03:** The application treats only server-side, signature-verified Stripe webhook fulfillment as proof of payment; a client redirect or local claim is insufficient.
-- **PAY-04:** The local application and published package contain no Stripe secret key or webhook secret.
-
-## Support dialog
-
-- **SUP-01:** The application shows the support dialog on every launch until support status is verified for that installation.
-- **SUP-02:** The dialog clearly describes the payment as optional support for application development and links to the fixed Stripe payment page.
-- **SUP-03:** An unpaid user can dismiss the dialog and use the complete application without restriction.
-- **SUP-04:** After the hosted service verifies payment for the current installation, the open dialog closes automatically without requiring a relaunch or manual refresh.
-- **SUP-05:** Once support status is verified and persisted, that installation no longer shows the dialog on launch.
-
-## Recovery
-
-
-- **REC-01:** A supporter can restore support status on another installation by entering the email associated with the Stripe payment and completing an emailed magic link.
-- **REC-02:** Recovery responses do not disclose whether an email has paid, and recovery tokens are high-entropy, single-use, short-lived, and bound to the requesting installation.
-- **REC-03:** A paid email can restore support status on unlimited installations; no device-management or transfer flow is required.
-## Traceability
-
-| Requirement | Phase | Plans | Status |
-|---|---|---|---|
-| PAY-01 | Phases 1, 2 | 01-02, 01-05; 02-03, 02-05, 02-06, 02-11 | Planned |
-| PAY-02 | Phases 1, 2 | 01-02, 01-04, 01-05; 02-05, 02-06, 02-11 | Planned |
-| PAY-03 | Phases 1, 2 | 01-01, 01-02, 01-04, 01-05; 02-01, 02-02, 02-03, 02-04, 02-06, 02-08, 02-10, 02-11 | Planned |
-| PAY-04 | Phases 1, 2 | 01-01, 01-02, 01-03, 01-04, 01-05; 02-01, 02-06, 02-07, 02-09, 02-10, 02-11 | Planned |
-| SUP-01 | Phases 1, 2 | 01-04, 01-05; 02-05, 02-06, 02-11 | Planned |
-| SUP-02 | Phases 1, 2 | 01-05; 02-03, 02-05, 02-06, 02-11 | Planned |
-| SUP-03 | Phases 1, 2 | 01-05; 02-05, 02-06, 02-11 | Planned |
-| SUP-04 | Phases 1, 2 | 01-02, 01-04, 01-05; 02-05, 02-06, 02-11 | Planned |
-| SUP-05 | Phases 1, 2 | 01-02, 01-04, 01-05; 02-05, 02-06, 02-11 | Planned |
-| REC-01 | Phases 1, 2 | 01-03, 01-04, 01-05; 02-01, 02-03, 02-05, 02-06, 02-07, 02-08, 02-09, 02-10, 02-11 | Planned |
-| REC-02 | Phases 1, 2 | 01-03, 01-04, 01-05; 02-01, 02-02, 02-03, 02-04, 02-05, 02-06, 02-07, 02-08, 02-09, 02-10, 02-11 | Planned |
-| REC-03 | Phases 1, 2 | 01-03, 01-04, 01-05; 02-02, 02-03, 02-05, 02-06, 02-10, 02-11 | Planned |
+| Requirement | Description | Phase | Plans | Status |
+|---|---|---|---|---|
+| PAY-01 | One optional one-time USD $49.99 Stripe-hosted support payment | Phases 1, 2 | 01-02, 01-05; 02-03, 02-05, 02-07, 02-12, 02-13 | Planned |
+| PAY-02 | Payment changes no feature except support-dialog visibility | Phases 1, 2 | 01-02, 01-04, 01-05; 02-05, 02-06, 02-07, 02-12, 02-13 | Planned |
+| PAY-03 | Only signature-verified server webhook fulfillment proves payment | Phases 1, 2 | 01-01, 01-02, 01-04, 01-05; 02-01, 02-02, 02-03, 02-04, 02-07, 02-08, 02-12, 02-13 | Planned |
+| PAY-04 | Local app and package contain no Stripe or webhook secret | Phases 1, 2 | 01-01, 01-02, 01-03, 01-04, 01-05; 02-01, 02-06, 02-07, 02-09, 02-10, 02-11, 02-12, 02-13 | Planned |
+| SUP-01 | Configured production launch shows support dialog until verified | Phases 1, 2 | 01-04, 01-05; 02-05, 02-06, 02-07, 02-12, 02-13 | Planned |
+| SUP-02 | Dialog describes optional support and links fixed Stripe Checkout | Phases 1, 2 | 01-05; 02-03, 02-05, 02-07, 02-12, 02-13 | Planned |
+| SUP-03 | Unpaid users dismiss and retain unrestricted application use | Phases 1, 2 | 01-05; 02-05, 02-06, 02-07, 02-13 | Planned |
+| SUP-04 | Hosted verification closes the open dialog automatically | Phases 1, 2 | 01-02, 01-04, 01-05; 02-05, 02-07, 02-13 | Planned |
+| SUP-05 | Persisted verification suppresses later launch dialogs | Phases 1, 2 | 01-02, 01-04, 01-05; 02-05, 02-07, 02-13 | Planned |
+| REC-01 | GitHub OAuth restoration supersedes email/magic-link mechanism per D-10 | Phases 1, 2 | 01-03, 01-04, 01-05; 02-01, 02-03, 02-05, 02-06, 02-07, 02-09, 02-10, 02-11, 02-12, 02-13 | Planned |
+| REC-02 | Privacy-safe one-use installation-bound OAuth intent supersedes recovery tokens per D-10 | Phases 1, 2 | 01-03, 01-04, 01-05; 02-01, 02-02, 02-03, 02-04, 02-05, 02-06, 02-07, 02-09, 02-10, 02-11, 02-12, 02-13 | Planned |
+| REC-03 | One paid account restores unlimited installations | Phases 1, 2 | 01-03, 01-04, 01-05; 02-02, 02-03, 02-05, 02-07, 02-12, 02-13 | Planned |

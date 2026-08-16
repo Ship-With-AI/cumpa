@@ -27,7 +27,7 @@ Plans:
 **Goal:** Replace the blocked standalone support backend with Supabase Postgres, Auth, and Edge Functions while preserving optional webhook-authoritative USD $49.99 support and machine-wide prompt suppression, replacing email recovery with installation-bound GitHub OAuth restoration, and completing a verified Supabase-only production cutover.
 **Requirements:** PAY-01, PAY-02, PAY-03, PAY-04, SUP-01, SUP-02, SUP-03, SUP-04, SUP-05, REC-01, REC-02, REC-03 (REC-01/REC-02 mechanisms superseded by Phase 2 D-10)
 **Depends on:** Phase 1
-**Plans:** 5/11 plans executed
+**Plans:** 5/13 plans executed
 
 Plans:
 **Wave 1**
@@ -52,24 +52,32 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 02-06-PLAN.md — Deploy and approve hosted-development OAuth, Stripe, restore, E2E, and package evidence
+- [ ] 02-06-PLAN.md — Prove complete ordinary-local support disablement while preserving configured contracts
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 02-07-PLAN.md — Delete ten exact legacy application-core, schema, and Render paths
+- [ ] 02-07-PLAN.md — Run and approve sole-project prelaunch acceptance with full-ref fingerprint and fixture inventory
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 02-08-PLAN.md — Delete ten exact legacy route, recovery, and service-test paths
+- [ ] 02-08-PLAN.md — Delete exact acceptance fixtures, prove zero authority, and promote the same project in place
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 02-09-PLAN.md — Delete nine exact service-toolchain and root-package paths
+- [ ] 02-09-PLAN.md — Delete legacy hosted service source, schema, routes, tests, and Render declaration
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 02-10-PLAN.md — Install protected schema-first production CI and its evidence/runbook policy
+- [ ] 02-10-PLAN.md — Remove legacy service toolchain, workspace, and root dependency graph entries
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 02-11-PLAN.md — Approve the actual production run, live providers, canonical behavior, and retirement
+- [ ] 02-11-PLAN.md — Replace operations docs and prove generated/package legacy absence
+
+**Wave 12** *(blocked on Wave 11 completion)*
+
+- [ ] 02-12-PLAN.md — Land protected sole-production deployment and release the configured public-capability package
+
+**Wave 13** *(blocked on Wave 12 completion)*
+
+- [ ] 02-13-PLAN.md — Approve final local, package, security, requirements, and non-destructive evidence verification
