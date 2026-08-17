@@ -490,9 +490,9 @@ async function launchAttachedSession(
 async function launchExactPatchSession(
   grounded: GroundedExactPatch,
   dependencies: OrdinaryActionDependencies,
+  support: SupportCapability | undefined,
   activeGit: AbortController,
 ): Promise<void> {
-  const support = dependencies.support ?? createConfiguredSupportCapability();
   await launchAttachedSession(
     dependencies,
     support,
@@ -536,6 +536,7 @@ export async function runOrdinaryAction(
   const activeGit = new AbortController();
   try {
     const request = await readRequest(dependencies.input ?? process.stdin);
+    const support = dependencies.support ?? createConfiguredSupportCapability();
     if (request.mode === 'patch') {
       const grounded = await (dependencies.createGroundedExactPatch ?? createGroundedExactPatch)({
         cwd: options.cwd,
@@ -543,7 +544,7 @@ export async function runOrdinaryAction(
         target: request.patch.target,
         signal: activeGit.signal,
       });
-      await launchExactPatchSession(grounded, dependencies, activeGit);
+      await launchExactPatchSession(grounded, dependencies, support, activeGit);
       return;
     }
 
@@ -553,7 +554,6 @@ export async function runOrdinaryAction(
       headRevision: request.revisions.head,
       pathspecs: request.revisions.pathspecs,
     });
-    const support = dependencies.support ?? createConfiguredSupportCapability();
     await launchAttachedSession(
       dependencies,
       support,
