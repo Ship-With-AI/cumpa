@@ -5,16 +5,15 @@ milestone_name: Agent Review Handoff
 current_phase: 02
 current_phase_name: move-the-implementation-to-supabase
 status: executing
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-08-16T15:13:19.609Z"
-last_activity: 2026-08-16
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-08-17T06:07:15.023Z"
+last_activity: 2026-08-17
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 16
-  completed_plans: 10
-  percent: 50
+  total_plans: 18
+  completed_plans: 11
 ---
 
 # Project State
@@ -29,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-08-06)
 ## Current Position
 
 Phase: 02 (move-the-implementation-to-supabase) — EXECUTING
-Plan: 1 of 11
+Plan: 7 of 13
 Status: Ready to execute
-Last activity: 2026-08-16 — Phase 02 execution started
+Last activity: 2026-08-17 — Phase 02 execution started
 
 ## Performance Metrics
 
@@ -74,6 +73,7 @@ Last activity: 2026-08-16 — Phase 02 execution started
 | Phase 02 P03 | 26min | 3 tasks | 10 files |
 | Phase 02 P04 | 13min | 2 tasks | 5 files |
 | Phase 02 P05 | 20min | 2 tasks | 4 files |
+| Phase 02 P06 | 10min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -110,6 +110,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Hosted functions keep Cumpa anonymous: only a flow URL and boolean installation status cross the local boundary. — OAuth credentials and Stripe authority remain on Supabase; fulfillment is webhook-only through a service-role RPC.
 - [Phase 02]: Support actions never establish local authority; only verified hosted refresh may promote persisted status. — Keeps hosted redirects and action responses outside the machine-wide authority boundary.
 - [Phase 02]: Browser Support and Restore actions share one strict startSupportAction contract. — Removes Checkout/email recovery browser compatibility seams while preserving verified-only local authority.
+- [Phase 02]: Only explicit HTTPS support configuration constructs hosted dependencies — Absent or invalid values produce no capability.
+- [Phase 02]: Session support metadata solely enables browser support work — Controls, dialog, polling, and prompts follow the advertised capability.
 
 ### Roadmap Evolution
 
@@ -154,8 +156,8 @@ None yet.
 
 ## Session Continuity
 
-**Last session:** 2026-08-15T11:58:55.188Z
-**Stopped at:** Completed 02-05-PLAN.md
+**Last session:** 2026-08-17T06:07:15.019Z
+**Stopped at:** Completed 02-06-PLAN.md
 **Resume file:** None
 
 No active phase execution session.
