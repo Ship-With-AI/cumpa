@@ -1,7 +1,12 @@
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import Fastify from 'fastify';
-import { describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 
 import * as contracts from '../../src/contracts/api.js';
+import type { GroundedExactPatch, PinnedComparison } from '../../src/contracts/comparison.js';
+import { createExactPatchSessionApp, createSessionApp, type SessionApp } from '../../src/server/app.js';
 import { createSupportCapability } from '../../src/server/capabilities.js';
 import type { CapabilityRegistry } from '../../src/server/capabilities.js';
 import { createHostedSupportClient } from '../../src/server/support-client.js';
@@ -11,6 +16,78 @@ import { registerSessionRoutes } from '../../src/server/routes.js';
 
 const installationId = 'a'.repeat(43);
 const serviceUrl = 'https://support.example.test';
+
+const token = 's'.repeat(43);
+const host = '127.0.0.1:43128';
+const headers = { host, origin: `http://${host}`, authorization: `Bearer ${token}` };
+const apps = new Set<SessionApp>();
+const roots: string[] = [];
+
+function comparison(repositoryRoot: string): PinnedComparison {
+  return {
+    repositoryRoot,
+    objectFormat: 'sha1',
+    base: { label: 'main', oid: '1'.repeat(40) },
+    head: { label: 'feature', oid: '2'.repeat(40) },
+    mergeBaseOid: '3'.repeat(40),
+    changedFiles: [],
+    hasCommittedChanges: false,
+  };
+}
+
+function path(value: string) {
+  return {
+    bytesBase64url: Buffer.from(value).toString('base64url'),
+    display: value,
+    utf8: value,
+  };
+}
+
+function exactPatch(repositoryRoot: string): GroundedExactPatch {
+  const fileId = `file_${'p'.repeat(43)}`;
+  return {
+    repositoryRoot,
+    objectFormat: 'sha1',
+    scope: {
+      kind: 'exact-patch',
+      digest: 'a'.repeat(64),
+      validationTarget: { kind: 'repository' },
+      submittedByteLength: 42,
+    },
+    changedFiles: [{
+      id: fileId,
+      status: { code: 'M', kind: 'modified', similarity: null },
+      oldMode: '100644',
+      newMode: '100644',
+      oldBlobOid: '1'.repeat(40),
+      newBlobOid: '2'.repeat(40),
+      oldPath: path('old.ts'),
+      newPath: path('new.ts'),
+      additions: 1,
+      deletions: 1,
+      availability: { kind: 'text' },
+    }],
+    contents: new Map([[fileId, { preimage: Buffer.from('before\n'), postimage: Buffer.from('after\n') }]]),
+  };
+}
+
+async function root(): Promise<string> {
+  const value = await mkdtemp(join(tmpdir(), 'cumpa-support-'));
+  roots.push(value);
+  return value;
+}
+
+function bind(app: SessionApp): void {
+  app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
+  apps.add(app);
+}
+
+afterEach(async () => {
+  vi.unstubAllEnvs();
+  await Promise.all([...apps].map(async (app) => await app.close()));
+  apps.clear();
+  await Promise.all(roots.splice(0).map(async (directory) => await rm(directory, { recursive: true, force: true })));
+});
 
 function supportStore(status: 'unverified' | 'verified' = 'unverified') {
   let state: SupportStateV1 = status === 'verified'
@@ -109,6 +186,42 @@ describe('hosted support contracts', () => {
     expect(client.status).not.toHaveBeenCalled();
     await expect(capability.refresh()).resolves.toEqual({ status: 'verified' });
     expect(markVerified).not.toHaveBeenCalled();
+  });
+
+  test('omits support routes from pinned and exact sessions when no HTTPS service is configured', async () => {
+    vi.stubEnv('CUMPA_SUPPORT_SERVICE_URL', '');
+    const repositoryRoot = await root();
+    const pinned = createSessionApp(comparison(repositoryRoot), { sessionToken: token });
+    const exact = await createExactPatchSessionApp(exactPatch(repositoryRoot), {
+      sessionToken: token,
+      snapshotParent: repositoryRoot,
+      observePatchTarget: async () => false,
+    });
+    bind(pinned);
+    bind(exact);
+
+    for (const app of [pinned, exact]) {
+      const session = await app.inject({ method: 'GET', url: '/api/session', headers });
+      expect(session.statusCode).toBe(200);
+      expect(session.json()).not.toHaveProperty('support');
+      await expect(app.inject({ method: 'GET', url: '/api/support/status', headers })).resolves.toMatchObject({
+        statusCode: 404,
+      });
+    }
+  });
+
+  test('advertises support for an explicit HTTPS service', async () => {
+    vi.stubEnv('CUMPA_SUPPORT_SERVICE_URL', serviceUrl);
+    const app = createSessionApp(comparison(await root()), { sessionToken: token });
+    bind(app);
+
+    await expect(app.inject({ method: 'GET', url: '/api/session', headers })).resolves.toMatchObject({
+      statusCode: 200,
+      json: expect.any(Function),
+    });
+    expect((await app.inject({ method: 'GET', url: '/api/session', headers })).json()).toMatchObject({
+      support: { enabled: true },
+    });
   });
 
   test('exposes only action start, status, and refresh loopback routes', async () => {

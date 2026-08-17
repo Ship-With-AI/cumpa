@@ -13,6 +13,7 @@ let origin = '';
 let support = 'unverified';
 let startAvailable = true;
 let refreshes = 0;
+let supportEnabled = true;
 
 function json(response: ServerResponse, body: unknown, statusCode = 200): void {
   response.statusCode = statusCode;
@@ -27,7 +28,11 @@ async function startServer(): Promise<string> {
       name: 'support-dialog-api',
       configureServer(vite) {
         vite.middlewares.use('/api/session', (_request, response) => json(response, SessionResponseSchema.parse({
-          base: { label: 'base', oid: 'a'.repeat(40) }, head: { label: 'head', oid: 'b'.repeat(40) }, mergeBaseOid: 'c'.repeat(40), files: [],
+          base: { label: 'base', oid: 'a'.repeat(40) },
+          head: { label: 'head', oid: 'b'.repeat(40) },
+          mergeBaseOid: 'c'.repeat(40),
+          files: [],
+          ...(supportEnabled ? { support: { enabled: true } } : {}),
         })));
         vite.middlewares.use('/api/draft', (_request, response) => json(response, DraftLoadResponseSchema.parse({ kind: 'missing', path: '.cumpa/drafts/review.json' })));
         vite.middlewares.use('/api/selector-drift', (_request, response) => json(response, { base: { kind: 'unchanged', role: 'base' }, head: { kind: 'unchanged', role: 'head' } }));
@@ -73,6 +78,18 @@ test.beforeEach(() => {
   support = 'unverified';
   startAvailable = true;
   refreshes = 0;
+  supportEnabled = true;
+});
+
+test('keeps anonymous review support-free when the session omits the capability', async ({ page }) => {
+  supportEnabled = false;
+
+  await page.goto(`${origin}#token=${token}`);
+
+  await expect(page.getByText('No PR-style changes in this pinned comparison')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Support Cumpa', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect.poll(() => refreshes).toBe(0);
 });
 
 test('offers optional support without gating the review, preserving dialog accessibility and dismissal', async ({ page }) => {

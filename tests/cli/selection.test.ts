@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { Separator } from '@inquirer/search';
 import { confirmPinnedComparison } from '../../src/cli/confirm.js';
@@ -27,6 +27,10 @@ import type { SourceCandidate } from '../../src/domain/source.js';
 const baseOid = '1'.repeat(40);
 const headOid = '2'.repeat(40);
 const mergeBaseOid = '3'.repeat(40);
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 const candidates = [
   {
@@ -610,6 +614,8 @@ describe('exact patch CLI dispatch', () => {
       close: async () => undefined,
     } as unknown as SessionApp;
 
+    vi.stubEnv('CUMPA_SUPPORT_SERVICE_URL', '');
+
     const running = runOrdinaryAction(
       { cwd: '/repo' },
       {
@@ -628,8 +634,9 @@ describe('exact patch CLI dispatch', () => {
           events.push('ground');
           return grounded;
         },
-        createExactPatchSessionApp: async (received) => {
+        createExactPatchSessionApp: async (received, options) => {
           expect(received).toBe(grounded);
+          expect(options.support).toBeUndefined();
           events.push('app');
           return app;
         },

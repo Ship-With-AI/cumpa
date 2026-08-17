@@ -1,6 +1,6 @@
 import { EventEmitter } from 'node:events';
 
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   AgentReviewRequestSchema,
@@ -20,6 +20,10 @@ import type { PinnedComparison } from '../../src/contracts/comparison.js';
 import { LaunchError } from '../../src/domain/errors.js';
 
 const encoder = new TextEncoder();
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 function request(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -264,6 +268,8 @@ describe('ordinary action request ownership', () => {
       }),
     } as unknown as SessionApp;
 
+    vi.stubEnv('CUMPA_SUPPORT_SERVICE_URL', '');
+
     const running = runOrdinaryAction(
       { cwd: '/repo' },
       {
@@ -280,6 +286,7 @@ describe('ordinary action request ownership', () => {
           return comparison;
         },
         createSessionApp: (_comparison, options) => {
+          expect(options.support).toBeUndefined();
           attached = options.attachedCompletion;
           return app;
         },
@@ -435,6 +442,8 @@ describe('ordinary action request ownership', () => {
         events.push('shutdown');
       }),
     } as unknown as SessionApp;
+    vi.stubEnv('CUMPA_SUPPORT_SERVICE_URL', 'http://support.example.test');
+
     const running = runOrdinaryAction(
       { cwd: '/repo' },
       {
@@ -448,6 +457,7 @@ describe('ordinary action request ownership', () => {
         }),
         createGroundedExactPatch: async () => ({}) as never,
         createExactPatchSessionApp: async (_grounded, options) => {
+          expect(options.support).toBeUndefined();
           attached = options.attachedCompletion;
           return app;
         },
