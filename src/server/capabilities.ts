@@ -343,6 +343,8 @@ export function createCapabilityRegistry(
           },
         }),
     ...(options.attachedCompletion === undefined ? {} : { attached: { kind: 'agent-review' as const } }),
+    ...(options.support === undefined ? {} : { support: { enabled: true as const } }),
+
     files: comparison.changedFiles.map((file) => {
       const status =
         file.status.similarity === null
@@ -654,6 +656,7 @@ export async function createExactPatchCapabilityRegistry(
   const sessionResponse = async () => SessionResponseSchema.parse({
     ...(await snapshot.session()),
     ...(options.attachedCompletion === undefined ? {} : { attached: { kind: 'agent-review' as const } }),
+    ...(options.support === undefined ? {} : { support: { enabled: true as const } }),
   });
   const session = await sessionResponse();
   if (!('patch' in session)) throw new Error('Exact patch snapshot did not provide patch provenance.');

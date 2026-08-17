@@ -36,6 +36,7 @@ import {
   ExactPatchGroundingError,
 } from '../git/exact-patch.js';
 import {
+  createConfiguredSupportCapability,
   createExactPatchSessionApp,
   createSessionApp,
   type SessionApp,
@@ -44,11 +45,11 @@ import {
   createAttachedCompletionCoordinator,
   type AttachedCompletionCoordinator,
 } from '../server/attached-completion.js';
-import type { AttachedCompletionOptions } from '../server/capabilities.js';
-import type { DraftRevealPort } from '../server/capabilities.js';
-import { createSupportCapability, type SupportCapability } from '../server/capabilities.js';
-import { createHostedSupportClient } from '../server/support-client.js';
-import { createSupportStore } from '../server/support-store.js';
+import type {
+  AttachedCompletionOptions,
+  DraftRevealPort,
+  SupportCapability,
+} from '../server/capabilities.js';
 import { PatchSnapshotError } from '../server/patch-snapshot.js';
 import {
   createShutdownController,
@@ -173,6 +174,8 @@ export interface OrdinaryActionDependencies {
   readonly output?: (message: string) => void;
   readonly stdout?: (bytes: Uint8Array) => Promise<void> | void;
   readonly signalSource?: ShutdownSignalSource;
+  readonly support?: SupportCapability;
+
   readonly setExitStatus?: (status: number) => void;
 }
 
@@ -199,7 +202,7 @@ interface LaunchRuntime {
 function createLaunchRuntime(
   dependencies: LaunchPinnedSessionDependencies,
 ): LaunchRuntime {
-  const support = dependencies.support ?? createSupportCapability(createSupportStore(), createHostedSupportClient());
+  const support = dependencies.support ?? createConfiguredSupportCapability();
   const activeGit = new AbortController();
   const output = dependencies.output ?? console.log;
   const openBrowser = dependencies.openBrowser ?? createBrowserUrlOpener();
@@ -405,7 +408,7 @@ function waitForAttachedOutcome(
 
 async function launchAttachedSession(
   dependencies: OrdinaryActionDependencies,
-  support: SupportCapability,
+  support: SupportCapability | undefined,
   activeGit: AbortController,
   createApp: (
     sessionToken: string,
@@ -489,10 +492,10 @@ async function launchExactPatchSession(
   dependencies: OrdinaryActionDependencies,
   activeGit: AbortController,
 ): Promise<void> {
-  const support = createSupportCapability(createSupportStore(), createHostedSupportClient());
+  const support = dependencies.support ?? createConfiguredSupportCapability();
   await launchAttachedSession(
     dependencies,
-    createSupportCapability(createSupportStore(), createHostedSupportClient()),
+    support,
     activeGit,
     async (sessionToken, attachedCompletion, revealDraftFile) => {
       return await (dependencies.createExactPatchSessionApp ?? createExactPatchSessionApp)(
@@ -550,7 +553,7 @@ export async function runOrdinaryAction(
       headRevision: request.revisions.head,
       pathspecs: request.revisions.pathspecs,
     });
-    const support = createSupportCapability(createSupportStore(), createHostedSupportClient());
+    const support = dependencies.support ?? createConfiguredSupportCapability();
     await launchAttachedSession(
       dependencies,
       support,

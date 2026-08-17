@@ -43,6 +43,20 @@ export interface SessionApp extends FastifyInstance {
   bindSessionSecurity(target: SessionSecurityTarget): void;
 }
 
+export function createConfiguredSupportCapability(
+  environment: NodeJS.ProcessEnv = process.env,
+): SupportCapability | undefined {
+  const serviceUrl = environment.CUMPA_SUPPORT_SERVICE_URL;
+  try {
+    if (serviceUrl === undefined || new URL(serviceUrl).protocol !== 'https:') return undefined;
+  } catch {
+    return undefined;
+  }
+
+  return createSupportCapability(createSupportStore(), createHostedSupportClient({ serviceUrl }));
+}
+
+
 type TestRecoveryFailure = 'backup' | 'replacement';
 
 function testRecoveryFailure(): TestRecoveryFailure | undefined {
@@ -124,14 +138,14 @@ export function createSessionApp(
     logger: false,
     ajv: { customOptions: { removeAdditional: false } },
   }) as unknown as SessionApp;
-  const support = options.support ?? createSupportCapability(createSupportStore(), createHostedSupportClient());
+  const support = options.support ?? createConfiguredSupportCapability();
   const webRoot = options.webRoot ?? resolve(import.meta.dirname, '../web');
   const draftStore = createAppDraftStore(comparison, options);
   const capabilities = createCapabilityRegistry(comparison, { ...options, draftStore, support });
   const security = registerSessionSecurity(app, options);
 
   app.decorate('bindSessionSecurity', security.bind);
-  app.addHook('onClose', async () => support.close());
+  app.addHook('onClose', async () => support?.close());
   registerSessionRoutes(app, capabilities);
   void app.register(fastifyStatic, {
     root: webRoot,
@@ -154,11 +168,11 @@ export async function createExactPatchSessionApp(
     ajv: { customOptions: { removeAdditional: false } },
   }) as unknown as SessionApp;
   const webRoot = options.webRoot ?? resolve(import.meta.dirname, '../web');
-  const support = options.support ?? createSupportCapability(createSupportStore(), createHostedSupportClient());
+  const support = options.support ?? createConfiguredSupportCapability();
   const capabilities = await createExactPatchCapabilityRegistry(grounded, snapshot, { ...options, support });
   const security = registerSessionSecurity(app, options);
 
-  app.addHook('onClose', async () => support.close());
+  app.addHook('onClose', async () => support?.close());
   app.decorate('bindSessionSecurity', security.bind);
   app.addHook('onClose', async () => snapshot.dispose());
   registerSessionRoutes(app, capabilities);

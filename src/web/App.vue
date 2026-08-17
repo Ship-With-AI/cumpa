@@ -150,6 +150,8 @@ const exactPatchSession = computed(() =>
   session.value !== undefined && 'patch' in session.value ? session.value : undefined,
 );
 const isExactPatchSession = computed(() => exactPatchSession.value !== undefined);
+const supportEnabled = computed(() => session.value?.support?.enabled === true);
+
 const patchSnapshotUnavailable = computed(() => patchStatus.value?.kind === 'snapshotUnavailable');
 const identityModal = computed(() =>
   isExactPatchSession.value ? isCompact.value : isNarrow.value,
@@ -913,7 +915,7 @@ function refreshPatchStatusWhenVisible(): void {
   }
 }
 async function refreshSupportStatus(): Promise<void> {
-  if (sessionClient === undefined || supportRefreshInFlight) return;
+  if (!supportEnabled.value || sessionClient === undefined || supportRefreshInFlight) return;
   supportRefreshInFlight = true;
   try {
     const result = await sessionClient.refreshSupportStatus();
@@ -935,7 +937,7 @@ async function refreshSupportStatus(): Promise<void> {
 }
 
 function refreshSupportWhenVisible(): void {
-  if (document.visibilityState === 'visible') void refreshSupportStatus();
+  if (supportEnabled.value && document.visibilityState === 'visible') void refreshSupportStatus();
 }
 
 function stopSupportWaiting(): void {
@@ -948,6 +950,7 @@ function stopSupportWaiting(): void {
 }
 
 function scheduleSupportPoll(delays = [2_000, 3_000, 5_000, 8_000, 10_000]): void {
+  if (!supportEnabled.value) return;
   stopSupportWaiting();
   supportPollAbort = new AbortController();
   let index = 0;
@@ -961,6 +964,7 @@ function scheduleSupportPoll(delays = [2_000, 3_000, 5_000, 8_000, 10_000]): voi
   poll();
 }
 function startSupportStatus(): void {
+  if (!supportEnabled.value) return;
   document.addEventListener('visibilitychange', refreshSupportWhenVisible);
   supportBackgroundTimer = window.setInterval(refreshSupportWhenVisible, 30_000);
 }
@@ -973,6 +977,7 @@ function stopSupportStatus(): void {
 }
 
 function openSupportDialog(): void {
+  if (!supportEnabled.value) return;
   supportOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
   supportOnDemand.value = true;
   supportDialogOpen.value = true;
@@ -992,7 +997,7 @@ function dismissSupportDialog(): void {
 }
 
 async function startSupportAction(action: 'support' | 'restore'): Promise<void> {
-  if (sessionClient === undefined || supportBusy.value) return;
+  if (!supportEnabled.value || sessionClient === undefined || supportBusy.value) return;
   supportBusy.value = true;
   try {
     const result = await sessionClient.startSupportAction(action);
@@ -1069,12 +1074,14 @@ onMounted(async () => {
         : draft.comments.length > 0
           ? 'Local draft resumed. Accepted comments for this pinned comparison are ready.'
           : 'New local draft for this pinned comparison.');
-      await refreshSupportStatus();
-      startSupportStatus();
-      if (supportStatus.value === 'unverified' && !dismissedForSession.value && primarySurface.value === 'workspace') {
-        supportDialogOpen.value = true;
-        supportDialogMode.value = 'invitation';
-        void nextTick(() => supportDialog.value?.focusInitial());
+      if (supportEnabled.value) {
+        await refreshSupportStatus();
+        startSupportStatus();
+        if (supportStatus.value === 'unverified' && !dismissedForSession.value && primarySurface.value === 'workspace') {
+          supportDialogOpen.value = true;
+          supportDialogMode.value = 'invitation';
+          void nextTick(() => supportDialog.value?.focusInitial());
+        }
       }
     }
   } catch (error) {
@@ -1119,6 +1126,7 @@ onBeforeUnmount(() => {
       ref="identityHeader"
       :session="session"
       :expanded="identityOpen"
+      :support-enabled="supportEnabled"
       :support-open="supportDialogOpen"
       :support-inert="supportDialogOpen"
       :attached-lifecycle="isAttachedSession ? (attachedLifecycle === 'finishing' || attachedLifecycle === 'completed' ? attachedLifecycle : 'waiting') : undefined"
@@ -1347,6 +1355,7 @@ onBeforeUnmount(() => {
       </aside>
     </div>
     <SupportDialog
+      v-if="supportEnabled"
       ref="supportDialog"
       :open="supportDialogOpen"
       :mode="supportDialogMode"

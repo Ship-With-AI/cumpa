@@ -362,6 +362,11 @@ export type AttachedCompletionStatus = z.infer<typeof AttachedCompletionStatusSc
 export type FinishReviewRequest = z.infer<typeof FinishReviewRequestSchema>;
 export type FinishReviewResult = z.infer<typeof FinishReviewResultSchema>;
 
+export const SessionSupportCapabilitySchema = z
+  .strictObject({ enabled: z.literal(true) })
+  .readonly();
+
+
 const PinnedSessionResponseSchema = z
   .strictObject({
     base: ApiPinnedEndpointSchema,
@@ -370,6 +375,8 @@ const PinnedSessionResponseSchema = z
     range: SessionRangeSchema.optional(),
     files: z.array(SessionFileSchema).readonly(),
     attached: AttachedSessionMarkerSchema.optional(),
+    support: SessionSupportCapabilitySchema.optional(),
+
   })
   .superRefine((session, context) => {
     if (
@@ -398,6 +405,7 @@ const ExactPatchSessionResponseSchema = z
       .readonly(),
     files: z.array(SessionFileSchema).readonly(),
     attached: AttachedSessionMarkerSchema.optional(),
+    support: SessionSupportCapabilitySchema.optional(),
   })
   .readonly();
 

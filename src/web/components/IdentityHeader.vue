@@ -8,6 +8,7 @@ const props = defineProps<{
   readonly attachedLifecycle?: 'waiting' | 'finishing' | 'completed';
   readonly expanded: boolean;
   readonly inert?: boolean;
+  readonly supportEnabled?: boolean;
   readonly supportInert?: boolean;
   readonly supportOpen?: boolean;
   readonly session: SessionResponse;
@@ -82,6 +83,7 @@ defineExpose({ focusDisclosure, focusSupport });
       </span>
       <span v-if="attachedFact !== ''" class="attached-fact">{{ attachedFact }}</span>
       <button
+        v-if="supportEnabled"
         ref="support"
         type="button"
         class="identity-disclosure"
