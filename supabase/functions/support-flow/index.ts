@@ -22,8 +22,14 @@ type SupportFlowDependencies = Readonly<{
 
 type ClaimedIntent = Readonly<{ id: string; action: "support" | "restore"; installation_id: string }>;
 
-function response(status: number, body = "") {
-  return new Response(body, { status, headers: { "content-type": "text/plain; charset=utf-8" } });
+const browserPage = "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Support</title><body><p>Support flow complete.</p></body></html>";
+
+function response(status: number) {
+  return new Response("", { status, headers: { "content-type": "text/plain; charset=utf-8" } });
+}
+
+function browserResponse(status: number) {
+  return new Response(browserPage, { status, headers: { "content-type": "text/html; charset=utf-8" } });
 }
 
 function parseCookies(request: Request) {
@@ -33,13 +39,37 @@ function parseCookies(request: Request) {
   });
 }
 
+export function validateSupportPublicOrigin(value: string, projectRef = "") {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error("invalid SUPPORT_PUBLIC_ORIGIN");
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.port ||
+    url.pathname !== "/" ||
+    url.search ||
+    url.hash ||
+    url.hostname.endsWith(".supabase.co") ||
+    (projectRef.length > 0 && url.hostname.includes(projectRef))
+  ) {
+    throw new Error("invalid SUPPORT_PUBLIC_ORIGIN");
+  }
+  return url.origin;
+}
+
 function defaultDependencies(): SupportFlowDependencies {
-  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const publicOrigin = validateSupportPublicOrigin(Deno.env.get("SUPPORT_PUBLIC_ORIGIN") ?? "", new URL(serviceUrl).hostname.split(".")[0] ?? "");
   const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", { httpClient: Stripe.createFetchHttpClient() });
   return {
-    service: createClient(url, key) as unknown as { rpc: Rpc },
-    createAuthClient: (request, setCookie) => createServerClient(url, key, {
+    service: createClient(serviceUrl, key) as unknown as { rpc: Rpc },
+    createAuthClient: (request, setCookie) => createServerClient(publicOrigin, key, {
       cookies: {
         getAll: () => parseCookies(request).map(([name, value]) => ({ name, value })),
         setAll: (values) => {
@@ -48,7 +78,7 @@ function defaultDependencies(): SupportFlowDependencies {
       },
     }) as unknown as AuthClient,
     stripe: stripe as unknown as StripeClient,
-    publicOrigin: Deno.env.get("SUPPORT_PUBLIC_ORIGIN") ?? "",
+    publicOrigin,
     priceId: Deno.env.get("STRIPE_PRICE_ID") ?? "",
     log: (value) => console.error(value),
   };
@@ -92,27 +122,27 @@ function redirect(location: string, cookies: string[] = []) {
 
 export async function handleSupportFlowRequest(request: Request, dependencies = defaultDependencies()): Promise<Response> {
   const url = new URL(request.url);
-  if (request.method !== "GET" || !allowedOrigin(request, dependencies.publicOrigin)) return response(400, "Invalid request");
+  if (request.method !== "GET" || !allowedOrigin(request, dependencies.publicOrigin)) return response(400);
   const callbackPath = "/functions/v1/support-flow/callback";
   const completionPath = "/functions/v1/support-flow/complete";
 
-  if (url.pathname.endsWith("/complete")) return response(200, "Complete");
+  if (url.pathname.endsWith("/complete")) return browserResponse(200);
   if (url.pathname.endsWith("/callback")) {
     const code = url.searchParams.get("code");
     const intent = opaqueIntent(parseCookies(request).find(([name]) => name === "support-intent")?.[1] ?? null);
-    if (!code || !intent) return response(400, "Invalid request");
+    if (!code || !intent) return browserResponse(400);
     const cookies: string[] = [clearStateCookie()];
     const auth = dependencies.createAuthClient(request, (cookie) => cookies.push(cookie));
     const exchanged = await auth.auth.exchangeCodeForSession(code);
-    if (exchanged.error) return response(400, "Invalid request");
+    if (exchanged.error) return browserResponse(400);
     const user = await auth.auth.getUser();
-    if (user.error || !user.data.user?.id) return response(400, "Invalid request");
+    if (user.error || !user.data.user?.id) return browserResponse(400);
     const claim = await dependencies.service.rpc("claim_support_intent", {
       p_intent_hash: await intentHash(intent),
       p_user_id: user.data.user.id,
     });
     const claimed = !claim.error ? claimedIntent(claim.data) : undefined;
-    if (!claimed) return response(400, "Invalid request");
+    if (!claimed) return browserResponse(400);
 
     if (claimed.action === "restore") {
       await dependencies.service.rpc("restore_installation", { p_user_id: user.data.user.id, p_installation_id: claimed.installation_id });
@@ -143,22 +173,22 @@ export async function handleSupportFlowRequest(request: Request, dependencies = 
       return redirect(checkout.url, cookies);
     } catch {
       dependencies.log?.("support_flow_unavailable");
-      return response(503, "Unavailable");
+      return browserResponse(503);
     }
   }
 
   if (url.pathname.endsWith("/support-flow")) {
     const intent = opaqueIntent(url.searchParams.get("intent"));
-    if (!intent || url.searchParams.size !== 1) return response(400, "Invalid request");
+    if (!intent || url.searchParams.size !== 1) return browserResponse(400);
     const cookies: string[] = [];
     const auth = dependencies.createAuthClient(request, (cookie) => cookies.push(cookie));
     const login = await auth.auth.signInWithOAuth({ provider: "github", options: { redirectTo: new URL(callbackPath, dependencies.publicOrigin).toString() } });
-    if (login.error || !login.data.url) return response(503, "Unavailable");
+    if (login.error || !login.data.url) return browserResponse(503);
     cookies.unshift(stateCookie(intent));
     return redirect(login.data.url, cookies);
   }
 
-  return response(400, "Invalid request");
+  return response(400);
 }
 
 if (import.meta.main) Deno.serve((request) => handleSupportFlowRequest(request));
