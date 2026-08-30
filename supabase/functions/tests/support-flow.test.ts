@@ -1,4 +1,4 @@
-import { handleSupportFlowRequest } from "../support-flow/index.ts";
+import { handleSupportFlowRequest, validateSupportPublicOrigin } from "../support-flow/index.ts";
 
 const installationId = "i".repeat(43);
 const intent = "a".repeat(43);
@@ -55,6 +55,40 @@ function dependencies(overrides: Partial<Record<string, unknown>> = {}) {
     ...overrides,
   };
 }
+
+Deno.test("custom origin rejects all non-browser-safe values before client construction", () => {
+  assert(validateSupportPublicOrigin(publicOrigin, "projectref") === publicOrigin);
+  for (const value of [
+    "",
+    "http://support.example",
+    "https://user:pass@support.example",
+    "https://support.example/path",
+    "https://support.example?query=value",
+    "https://support.example#fragment",
+    "https://projectref.supabase.co",
+    "https://support.supabase.co",
+    "https://projectref.example",
+  ]) {
+    let failed = false;
+    try {
+      validateSupportPublicOrigin(value, "projectref");
+    } catch {
+      failed = true;
+    }
+    assert(failed, `accepted invalid public origin ${value}`);
+  }
+});
+
+Deno.test("completion and invalid browser state use a bounded HTML response", async () => {
+  const complete = await handleSupportFlowRequest(new Request(`${publicOrigin}/functions/v1/support-flow/complete`), dependencies());
+  const invalid = await handleSupportFlowRequest(new Request(`${publicOrigin}/functions/v1/support-flow/callback`), dependencies());
+  for (const response of [complete, invalid]) {
+    const body = await response.text();
+    assert(response.headers.get("content-type") === "text/html; charset=utf-8");
+    assert(body.startsWith("<!doctype html>") && body.length < 512);
+    assert(!/supabase|projectref|token|email/i.test(body));
+  }
+});
 
 Deno.test("flow start uses GitHub PKCE with an exact hosted callback and script-inaccessible state cookie", async () => {
   const deps = dependencies();
