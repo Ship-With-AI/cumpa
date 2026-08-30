@@ -27,7 +27,7 @@ Plans:
 **Goal:** Replace the blocked standalone support backend with Supabase Postgres, Auth, and Edge Functions while preserving optional webhook-authoritative USD $49.99 support and machine-wide prompt suppression, replacing email recovery with installation-bound GitHub OAuth restoration, and completing a verified Supabase-only production cutover.
 **Requirements:** PAY-01, PAY-02, PAY-03, PAY-04, SUP-01, SUP-02, SUP-03, SUP-04, SUP-05, REC-01, REC-02, REC-03 (REC-01/REC-02 mechanisms superseded by Phase 2 D-10)
 **Depends on:** Phase 1
-**Plans:** 6/13 plans executed
+**Plans:** 7/17 plans executed
 
 Plans:
 **Wave 1**
@@ -56,28 +56,44 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [ ] 02-07-PLAN.md — Run and approve sole-project prelaunch acceptance with full-ref fingerprint and fixture inventory
+- [x] 02-07-PLAN.md — Replace local deployment with the sole guarded every-main-push workflow and supported custom-domain contract
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 02-08-PLAN.md — Delete exact acceptance fixtures, prove zero authority, and promote the same project in place
+- [ ] 02-08-PLAN.md — Configure protected custom-domain prerequisites and capture automatic activation/deployment/route proof
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 02-09-PLAN.md — Delete legacy hosted service source, schema, routes, tests, and Render declaration
+- [ ] 02-09-PLAN.md — Run browser acceptance and automatic hostile/replay/concurrency matrix with one exact fixture manifest
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 02-10-PLAN.md — Remove legacy service toolchain, workspace, and root dependency graph entries
+- [ ] 02-10-PLAN.md — Clean exact fixtures and promote the same project in place through an automatic live-mode run
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 02-11-PLAN.md — Replace operations docs and prove generated/package legacy absence
+- [ ] 02-11-PLAN.md — Gate and remove the seven-file Render/schema/provider retirement slice
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
-- [ ] 02-12-PLAN.md — Land protected sole-production deployment and release the configured public-capability package
+- [ ] 02-12-PLAN.md — Remove the remaining seven-file legacy runtime/routes slice
 
 **Wave 13** *(blocked on Wave 12 completion)*
 
-- [ ] 02-13-PLAN.md — Approve final local, package, security, requirements, and non-destructive evidence verification
+- [ ] 02-13-PLAN.md — Migrate active recovery assertions before deleting stale recovery and service tests
+
+**Wave 14** *(blocked on Wave 13 completion)*
+
+- [ ] 02-14-PLAN.md — Remove the legacy workspace/toolchain and reconcile the active npm graph
+
+**Wave 15** *(blocked on Wave 14 completion)*
+
+- [ ] 02-15-PLAN.md — Prove scoped retirement/package absence and implement the six-input final verifier
+
+**Wave 16** *(blocked on Wave 15 completion)*
+
+- [ ] 02-16-PLAN.md — Release the configured ref-free custom-origin package and smoke required surfaces non-destructively
+
+**Wave 17** *(blocked on Wave 16 completion)*
+
+- [ ] 02-17-PLAN.md — Write separate local/package/security and six-record final evidence, then approve phase closeout

@@ -5,14 +5,14 @@ milestone_name: Agent Review Handoff
 current_phase: 02
 current_phase_name: move-the-implementation-to-supabase
 status: executing
-stopped_at: Completed 02-06-PLAN.md
-last_updated: "2026-08-17T06:07:15.023Z"
-last_activity: 2026-08-17
-last_activity_desc: Phase 02 execution started
+stopped_at: Completed 02-07-PLAN.md
+last_updated: "2026-08-30T21:13:14.884Z"
+last_activity: 2026-08-30
+last_activity_desc: Completed 02-06-PLAN.md
 progress:
   total_phases: 2
   completed_phases: 1
-  total_plans: 18
+  total_plans: 22
   completed_plans: 11
 ---
 
@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-08-06)
 ## Current Position
 
 Phase: 02 (move-the-implementation-to-supabase) — EXECUTING
-Plan: 7 of 13
+Plan: 7 of 17
 Status: Ready to execute
-Last activity: 2026-08-17 — Phase 02 execution started
+Last activity: 2026-08-30 — Completed 02-06-PLAN.md
 
 ## Performance Metrics
 
@@ -74,6 +74,7 @@ Last activity: 2026-08-17 — Phase 02 execution started
 | Phase 02 P04 | 13min | 2 tasks | 5 files |
 | Phase 02 P05 | 20min | 2 tasks | 4 files |
 | Phase 02 P06 | 10min | 3 tasks | 10 files |
+| Phase 02 P07 | N/A | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Browser Support and Restore actions share one strict startSupportAction contract. — Removes Checkout/email recovery browser compatibility seams while preserving verified-only local authority.
 - [Phase 02]: Only explicit HTTPS support configuration constructs hosted dependencies — Absent or invalid values produce no capability.
 - [Phase 02]: Session support metadata solely enables browser support work — Controls, dialog, polling, and prompts follow the advertised capability.
+- [Phase 02]: GitHub Actions is the sole guarded deployment path. — Browser-facing support routes use the validated ref-free custom origin; service RPC remains internal.
 
 ### Roadmap Evolution
 
@@ -156,8 +158,8 @@ None yet.
 
 ## Session Continuity
 
-**Last session:** 2026-08-17T06:07:15.019Z
-**Stopped at:** Completed 02-06-PLAN.md
+**Last session:** 2026-08-30T21:13:14.879Z
+**Stopped at:** Completed 02-07-PLAN.md
 **Resume file:** None
 
 No active phase execution session.
