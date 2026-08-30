@@ -408,17 +408,47 @@ async function verifyWorkflow(path, options) {
     'repository-gates:', 'deploy-production:', 'needs: repository-gates', 'environment: production',
     'actions/setup-node@v4', 'node-version: 24', 'denoland/setup-deno@v2', 'deno-version: v2.7.14',
     'npm ci', 'npx vitest run', 'npx playwright test --config=tests', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests',
-    'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local', '--run-deployment', 'domains-reverify', 'domains-activate',
+    'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local', '--run-deployment',
   ];
   for (const value of required) if (!workflow.includes(value)) fail(`workflow is missing required ${value}`);
+  const commands = new Set(workflow.split("\n").map((line) => line.trim()).filter((line) => line.startsWith("- run:")).map((line) => line.slice("- run:".length).trim()));
+  for (const value of [
+    "npm ci",
+    "npx vitest run",
+    "npx playwright test --config=tests",
+    "deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests",
+    "npx supabase@2.114.0 db start",
+    "npx supabase@2.114.0 db reset --local --no-seed",
+    "npx supabase@2.114.0 test db",
+    "npx supabase@2.114.0 migration list --local",
+    "npx supabase@2.114.0 db lint --local",
+  ]) if (!commands.has(value)) fail(`workflow is missing required ${value}`);
   if (/workflow_dispatch:|paths(?:-ignore)?:/u.test(workflow)) fail('workflow has a forbidden trigger filter');
   const gates = workflow.slice(workflow.indexOf('repository-gates:'), workflow.indexOf('deploy-production:'));
+  for (const value of ['actions/setup-node@v4', 'node-version: 24', 'denoland/setup-deno@v2', 'deno-version: v2.7.14']) {
+    if (!gates.includes(value)) fail(`workflow is missing required ${value}`);
+  }
+  const gateCommands = new Set(gates.split("\n").map((line) => line.trim()).filter((line) => line.startsWith("- run:")).map((line) => line.slice("- run:".length).trim()));
+  for (const value of [
+    "npm ci",
+    "npx vitest run",
+    "npx playwright test --config=tests",
+    "deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests",
+    "npx supabase@2.114.0 db start",
+    "npx supabase@2.114.0 db reset --local --no-seed",
+    "npx supabase@2.114.0 test db",
+    "npx supabase@2.114.0 migration list --local",
+    "npx supabase@2.114.0 db lint --local",
+  ]) if (!gateCommands.has(value)) fail(`workflow is missing required ${value}`);
   if (/environment:|secrets\.|SUPABASE_|STRIPE_|SUPPORT_PUBLIC_ORIGIN|APPROVED_SUPABASE/u.test(gates)) fail('repository-gates must be credential-free');
-  const order = required.slice(-5, -1).map((value) => workflow.indexOf(value));
+  const order = required.slice(-6, -1).map((value) => workflow.indexOf(value));
   if (order.some((index) => index < 0) || order.some((index, position) => position > 0 && index < order[position - 1])) fail('workflow database gates are out of order');
   if (options.values.has('--require-environment') && options.values.get('--require-environment') !== 'production') fail('workflow only supports the production environment');
   if (options.values.has('--expected-mode') && !workflow.includes('SUPPORT_PROVIDER_MODE: ${{ vars.SUPPORT_PROVIDER_MODE }}')) fail('workflow does not map the protected deployment mode');
-  if (options.flags.has('--require-custom-domain') && (!workflow.includes('SUPPORT_PUBLIC_ORIGIN: ${{ vars.SUPPORT_PUBLIC_ORIGIN }}') || workflow.indexOf('domains-reverify') > workflow.indexOf('db push'))) fail('workflow custom-domain order is invalid');
+  if (options.flags.has('--require-custom-domain')) {
+    const verifier = await readFile(new URL('./verify-supabase-support.mjs', import.meta.url), 'utf8');
+    if (!workflow.includes('SUPPORT_PUBLIC_ORIGIN: ${{ vars.SUPPORT_PUBLIC_ORIGIN }}') || verifier.indexOf("'domains-reverify'") > verifier.indexOf("'schema'") || verifier.indexOf("'domains-activate'") > verifier.indexOf("'schema'")) fail('workflow custom-domain order is invalid');
+  }
   if (options.flags.has('--require-release-artifact') && !workflow.includes('actions/upload-artifact@v4')) fail('workflow does not upload redacted evidence');
 }
 

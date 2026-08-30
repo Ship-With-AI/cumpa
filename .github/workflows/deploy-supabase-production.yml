@@ -1,0 +1,75 @@
+name: Deploy Supabase production
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-production
+  cancel-in-progress: false
+
+jobs:
+  repository-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.14
+      - run: npm ci
+      - run: npx vitest run
+      - run: npx playwright test --config=tests
+      - run: deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests
+      - run: npx supabase@2.114.0 db start
+      - run: npx supabase@2.114.0 db reset --local --no-seed
+      - run: npx supabase@2.114.0 test db
+      - run: npx supabase@2.114.0 migration list --local
+      - run: npx supabase@2.114.0 db lint --local
+
+  deploy-production:
+    needs: repository-gates
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      CUMPA_DEPLOYMENT_ENVIRONMENT: production
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_GITHUB_CLIENT_SECRET: ${{ secrets.SUPABASE_GITHUB_CLIENT_SECRET }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      APPROVED_SUPABASE_PROJECT_REF_SHA256: ${{ vars.APPROVED_SUPABASE_PROJECT_REF_SHA256 }}
+      SUPPORT_PROVIDER_MODE: ${{ vars.SUPPORT_PROVIDER_MODE }}
+      SUPPORT_PUBLIC_ORIGIN: ${{ vars.SUPPORT_PUBLIC_ORIGIN }}
+      SUPABASE_SITE_URL: ${{ vars.SUPABASE_SITE_URL }}
+      SUPABASE_REDIRECT_URL: ${{ vars.SUPABASE_REDIRECT_URL }}
+      SUPABASE_GITHUB_CLIENT_ID: ${{ vars.SUPABASE_GITHUB_CLIENT_ID }}
+      SUPABASE_GITHUB_CALLBACK_URL: ${{ vars.SUPABASE_GITHUB_CALLBACK_URL }}
+      STRIPE_PRICE_ID: ${{ vars.STRIPE_PRICE_ID }}
+      STRIPE_WEBHOOK_ENDPOINT_ID: ${{ vars.STRIPE_WEBHOOK_ENDPOINT_ID }}
+      STRIPE_WEBHOOK_URL: ${{ vars.STRIPE_WEBHOOK_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Deploy guarded Supabase release
+        run: |
+          marker=.planning/phases/02-move-the-implementation-to-supabase/02-09-ACCEPTANCE-MARKER.json
+          args=(--run-deployment --mode "$SUPPORT_PROVIDER_MODE" --evidence supabase-deployment-evidence.json)
+          if [ "$SUPPORT_PROVIDER_MODE" = prelaunch-test ] && [ -f "$marker" ]; then
+            args+=(--acceptance-marker "$marker")
+          fi
+          node scripts/verify-supabase-support.mjs "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: supabase-production-evidence-${{ github.run_id }}
+          path: supabase-deployment-evidence.json
+          if-no-files-found: error
+          retention-days: 90

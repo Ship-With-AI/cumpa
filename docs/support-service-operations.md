@@ -1,28 +1,40 @@
-# Cumpa support service operations
+# Cumpa hosted support operations
 
-## Deploy
+## Production boundary
 
-Deploy `render.yaml` as a Render Blueprint. It creates the loopback-independent Node web service `cumpa-support` and `cumpa-support-db`. Render runs `npm ci`, starts `npm start`, and probes `/healthz`. Before production traffic, run `node scripts/migrate.mjs` from `services/support` with Render's `DATABASE_URL`; migrations create `entitlements`, `installation_bindings`, `stripe_events`, `recovery_challenges`, and `recovery_rate_limits`.
+Cumpa has one hosted Supabase production project. Ordinary local development has no hosted-support dependency and never deploys, configures providers, or receives deployment credentials. GitHub Actions is the sole deployment path: every push to protected `main` runs `.github/workflows/deploy-supabase-production.yml`.
 
-Set these server-only variables: `DATABASE_URL` (Render database connection), `STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID`, `STRIPE_PAYMENT_LINK_ID`, `RESEND_API_KEY`, `EMAIL_LOOKUP_HMAC_KEY`, and `RECOVERY_TOKEN_HMAC_KEY`. Set public service variables `PUBLIC_BASE_URL`, `EMAIL_FROM`, `HOST`, `PORT`, and `NODE_ENV=production`. Render generates the two HMAC keys; never copy a test value to live. Use distinct Stripe webhook endpoint secrets for test and live endpoints.
+The `repository-gates` job is credential-free. It sets up Node 24 and Deno 2.7.14, runs the repository test gates, and validates the local database before the `production` environment is requested. The serialized `deploy-production` job is the only job bound to that environment and the only process allowed to access protected deployment inputs.
 
-Create a card-only Stripe USD 49.99 Price and Payment Link: quantity exactly one, no adjustable quantity, optional items, discounts, delayed payment methods, automatic tax, or alternative prices. Configure the endpoint `POST /v1/stripe/webhook` for `checkout.session.completed`. Verify the Resend sender domain and use its verified address as `EMAIL_FROM`.
+## Custom-domain prerequisite
 
-## Routine operations
+Before the first protected push, register one HTTPS subdomain in the Supabase Dashboard. Follow Supabase's [custom-domain guide](https://supabase.com/docs/guides/platform/custom-domains): create its CNAME record and required TXT ownership record, then wait for DNS propagation. Configure the OAuth provider with the custom-origin callback `/auth/v1/callback` before activation.
 
-Take PostgreSQL backups through Render and restore one backup into an isolated database quarterly; run migration and verify `/healthz` before declaring recovery complete. Rotate Stripe API/webhook, Resend, and HMAC keys one at a time: deploy replacement configuration, validate a signed test event/recovery request, then revoke the old secret. Do not log email, magic token, Stripe signature, API key, or database URL. Recovery applies IP/email rate limits; investigate abnormal limits through redacted event counts only.
+`SUPPORT_PUBLIC_ORIGIN` is that one ref-free custom origin. It supplies the Auth callback and all browser-facing routes:
 
-Stripe delivery is idempotent through `stripe_events`. Replay the original signed event through Stripe's dashboard only after confirming its event ID and deployment configuration; repeated delivery must remain HTTP 200 without a second grant.
+- `/auth/v1/callback`
+- `/functions/v1/support-api`
+- `/functions/v1/support-flow`
+- `/functions/v1/stripe-webhook`
 
-## Test-mode smoke record
+The default project domain remains internal service plumbing only; it is never a browser, OAuth, webhook, or package URL.
 
-This must be completed against deployed providers before release; synthetic Stripe CLI events alone are insufficient because Payment Link configuration is part of the proof.
+## Automatic deployment order
 
-1. On an unverified installation, complete the configured test-mode Payment Link with a test card and a unique installation reference. Record the redacted Stripe event ID, the deployed webhook HTTP 200, the server-side retrieved Session/line-item invariant, and the subsequent verified installation status.
-2. Close, redirect, or abandon Checkout from a different installation. Record that it remains `unverified`; neither redirect nor tab closure proves payment.
-3. Request recovery for a paid email. Record generic HTTP 202, Resend delivery ID and receipt, and redacted logs. Opening the magic URL with GET must remain inert. Its consuming POST must cause verified poll/status. A second POST must be rejected/no-op.
-4. Inspect logs and evidence for absence of plaintext email, raw token, signature, API key, and database URL.
+After repository gates pass, the protected verifier keeps protected values in memory, validates their complete set and approved full-ref SHA-256 fingerprint, then repeats that fingerprint guard immediately before each hosted mutation:
 
-| Date | Stripe event/status | Resend delivery/single use | Operator |
-| --- | --- | --- | --- |
-| Pending deployed-provider approval | Pending | Pending | — |
+1. discover custom-domain state without mutation;
+2. reverify and activate the registered custom domain;
+3. apply database migrations;
+4. configure Auth/provider settings;
+5. update Edge Function secrets;
+6. deploy `support-api`, `support-flow`, then `stripe-webhook`;
+7. run custom-origin route probes and record authority counts.
+
+The workflow emits only an immutable, redacted evidence artifact: run and commit identity, approved fingerprint, display suffix, custom origin, activation state, deployment order, route signatures, versions, counts, hashed handles, and artifact digest. It excludes project refs, credentials, provider values, OAuth material, personal data, and raw fixture keys.
+
+The prelaunch hostile matrix runs only in the protected job, only in test mode, and only when the committed acceptance marker is present. Production-live runs remain non-destructive and may perform only read-only status and route smoke checks.
+
+## Operations response
+
+For a failed release, make a compatible forward fix and push `main`; do not add a manual deployment path, bypass the environment gate, or run destructive acceptance activity against live authority. Keep the workflow evidence with the corresponding GitHub run for audit and rollback diagnosis.
