@@ -1,7 +1,27 @@
+import { execFile } from 'node:child_process';
+import { writeFile } from 'node:fs/promises';
+import { promisify } from 'node:util';
+
 import { expect, test } from '@playwright/test';
 
-test('support payment authority remains outside the npm artifact', async () => {
-  // The packed artifact test exercises the browser package. Entitlement authority is only the hosted PostgreSQL service.
-  expect(process.env.DATABASE_URL).toMatch(/^postgresql:\/\/cumpa:cumpa@127\.0\.0\.1:\d+\/cumpa_test$/);
-  expect(process.env.TEST_DATABASE_URL).toBe(process.env.DATABASE_URL);
+const execFileAsync = promisify(execFile);
+const script = new URL('../../scripts/verify-supabase-support.mjs', import.meta.url).pathname;
+
+async function reject(args: string[], message: string) {
+  await expect(execFileAsync(process.execPath, [script, ...args])).rejects.toMatchObject({
+    stderr: expect.stringContaining(message),
+  });
+}
+
+test('the CI verifier rejects local deployment and malformed workflow verifier arguments', async ({}, testInfo) => {
+  const workflow = testInfo.outputPath('workflow.yml');
+  await writeFile(workflow, 'name: unsafe\non: workflow_dispatch\n');
+
+  await reject(['--deploy'], 'unknown option --deploy');
+  await reject(['--verify-workflow'], 'missing value --verify-workflow');
+  await reject(['--verify-workflow', workflow, '--require-environment'], 'missing value --require-environment');
+  await reject(['--verify-workflow', workflow, '--require-environment', 'production', '--require-environment', 'production'], 'duplicate option --require-environment');
+  await reject(['--verify-workflow', workflow, '--expected-mode', 'invalid'], 'invalid expected mode');
+  await reject(['--verify-workflow', workflow, '--unknown'], 'unknown option --unknown');
+  await reject(['--verify-workflow', workflow, '--require-custom-domain', '--require-custom-domain'], 'duplicate option --require-custom-domain');
 });
