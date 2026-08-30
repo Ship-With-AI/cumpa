@@ -23,6 +23,7 @@ test('acceptance and promotion evidence reject incomplete hostile lineage and co
     kind: 'acceptance',
     mode: 'prelaunch-test',
     fingerprint,
+    public_origin: 'https://support.example',
     acceptance_marker: { status: 'interactive-matrix-complete' },
     hostile_matrix: [{ id: 'wrong-signature', fixtures: [], before: {}, after: {} }],
     fixture_manifest: { 'auth.users': { count: 0, handles: [] } },

@@ -28,5 +28,5 @@ test('run evidence validation fails closed on schema, origin, raw-value, and opt
   await reject(['--check-run-evidence', evidence, '--expected-mode', 'prelaunch-test', '--expected-mode', 'prelaunch-test'], 'duplicate option --expected-mode');
   await reject(['--check-run-evidence', evidence, '--expected-mode', 'prelaunch-test', '--require-custom-domain-routes', '--require-custom-domain-routes'], 'duplicate option --require-custom-domain-routes');
   await reject(['--check-run-evidence', evidence, '--expected-mode', 'prelaunch-test', '--require-exact-cleanup', '--acceptance'], 'missing value --acceptance');
-  await reject(['--check-run-evidence', evidence, '--expected-mode', 'prelaunch-test'], 'evidence version must be 1');
+  await reject(['--check-run-evidence', evidence, '--expected-mode', 'prelaunch-test'], 'evidence contains protected or raw content');
 });
