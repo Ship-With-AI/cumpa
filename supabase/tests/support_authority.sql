@@ -1,10 +1,11 @@
 begin;
 
-select extensions.plan(39);
+select extensions.plan(44);
 
 select extensions.ok(exists (select 1 from pg_namespace where nspname = 'support_private'), 'private authority schema exists');
 select extensions.ok((select count(*) from pg_tables where schemaname = 'support_private') = 5, 'exactly five authority tables exist');
 select extensions.ok((select count(*) from pg_proc join pg_namespace on pg_namespace.oid = pg_proc.pronamespace where nspname = 'support_private' and proname in ('create_support_intent', 'claim_support_intent', 'record_checkout_session', 'restore_installation', 'fulfill_checkout_session', 'installation_status')) = 6, 'all authority RPCs exist');
+select extensions.ok((select count(*) from pg_proc join pg_namespace on pg_namespace.oid = pg_proc.pronamespace where nspname = 'public' and proname in ('create_support_intent', 'claim_support_intent', 'record_checkout_session', 'restore_installation', 'fulfill_checkout_session', 'installation_status')) = 6, 'all PostgREST authority gateways exist');
 create function _test_migration_applied() returns boolean language plpgsql as $function$
 declare applied boolean;
 begin
@@ -14,6 +15,17 @@ exception when undefined_table then
   return false;
 end;
 $function$;
+create function _test_rpc_gateway_migration_applied() returns boolean language plpgsql as $function$
+declare applied boolean;
+begin
+  execute 'select exists (select 1 from supabase_migrations.schema_migrations where version = ''20260902000000'')' into applied;
+  return applied;
+exception when undefined_table then
+  return false;
+end;
+$function$;
+
+select extensions.ok(_test_rpc_gateway_migration_applied(), 'PostgREST authority gateway migration is applied');
 
 select extensions.ok(_test_migration_applied(), 'authority migration is applied');
 select extensions.ok((select count(*) from pg_class join pg_namespace on pg_namespace.oid = pg_class.relnamespace where nspname = 'support_private' and relkind = 'r' and relrowsecurity) = 5, 'RLS is enabled on every authority table');
@@ -39,6 +51,23 @@ select extensions.ok(not exists (
   where nspname = 'support_private'
     and has_function_privilege(untrusted.role_name, pg_proc.oid, 'execute')
 ), 'untrusted roles cannot execute any authority RPC');
+select extensions.ok((
+  select bool_and(has_function_privilege('service_role', pg_proc.oid, 'execute'))
+  from pg_proc
+  join pg_namespace on pg_namespace.oid = pg_proc.pronamespace
+  where nspname = 'public'
+    and proname in ('create_support_intent', 'claim_support_intent', 'record_checkout_session', 'restore_installation', 'fulfill_checkout_session', 'installation_status')
+), 'service_role can execute every PostgREST authority gateway');
+select extensions.ok(not exists (
+  select 1
+  from pg_proc
+  join pg_namespace on pg_namespace.oid = pg_proc.pronamespace
+  cross join (values ('public'), ('anon'), ('authenticated')) as untrusted(role_name)
+  where nspname = 'public'
+    and proname in ('create_support_intent', 'claim_support_intent', 'record_checkout_session', 'restore_installation', 'fulfill_checkout_session', 'installation_status')
+    and has_function_privilege(untrusted.role_name, pg_proc.oid, 'execute')
+), 'untrusted roles cannot execute any PostgREST authority gateway');
+select extensions.is(public.installation_status(repeat('z', 43)), false, 'PostgREST authority gateway forwards to private logic');
 
 insert into auth.users (id, aud, role, email, encrypted_password, confirmed_at, created_at, updated_at)
 values
