@@ -45,7 +45,7 @@ const actual = process.argv.slice(2);
 const projectRef = process.env.SUPABASE_PROJECT_REF;
 const database = JSON.stringify(['supabase@2.114.0', 'db', 'push', '--project-ref', projectRef]);
 const functions = ['support-api', 'support-flow', 'stripe-webhook'];
-const functionDeployment = actual.length === 7 && actual[0] === 'supabase@2.114.0' && actual[1] === 'functions' && actual[2] === 'deploy' && functions.includes(actual[3]) && actual[4] === '--project-ref' && actual[5] === projectRef && actual[6] === '--use-api';
+const functionDeployment = actual.length === 9 && actual[0] === 'supabase@2.114.0' && actual[1] === 'functions' && actual[2] === 'deploy' && functions.includes(actual[3]) && actual[4] === '--project-ref' && actual[5] === projectRef && actual[6] === '--use-api' && actual[7] === '--import-map' && actual[8] === 'supabase/functions/deno.json';
 if (JSON.stringify(actual) !== database && !functionDeployment) {
   console.error(\`unexpected npx arguments: \${JSON.stringify(actual)}\`);
   process.exit(92);

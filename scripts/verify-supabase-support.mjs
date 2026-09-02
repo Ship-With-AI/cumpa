@@ -247,7 +247,7 @@ async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
     ]),
   }), order);
   for (const name of ['support-api', 'support-flow', 'stripe-webhook']) {
-    await guardedMutation(inputs, name, () => commandOutput('npx', ['supabase@2.114.0', 'functions', 'deploy', name, '--project-ref', inputs.SUPABASE_PROJECT_REF, '--use-api'], process.env), order);
+    await guardedMutation(inputs, name, () => commandOutput('npx', ['supabase@2.114.0', 'functions', 'deploy', name, '--project-ref', inputs.SUPABASE_PROJECT_REF, '--use-api', '--import-map', 'supabase/functions/deno.json'], process.env), order);
   }
   const authority = await snapshotAuthority(inputs);
   const routes = await probeRoutes(inputs.routes);
