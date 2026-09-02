@@ -246,6 +246,10 @@ describe('hosted support contracts', () => {
       url: '/api/support/start',
       payload: { action: 'checkout' },
     })).resolves.toMatchObject({ statusCode: 400 });
+    const address = await app.listen({ host: '127.0.0.1', port: 0 });
+    const refresh = await fetch(`${address}/api/support/refresh`, { method: 'POST' });
+    expect(refresh.status).toBe(200);
+    expect(await refresh.json()).toEqual({ status: 'unverified' });
     await app.close();
   });
 

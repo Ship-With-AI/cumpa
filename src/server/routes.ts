@@ -139,7 +139,7 @@ export function registerSessionRoutes(app: FastifyInstance, capabilities: Capabi
       return SupportStartResultSchema.parse(await capabilities.support!.start(body.data.action));
     });
     app.post<{ Querystring: Record<string, never>; Body: unknown }>('/api/support/refresh', { schema: { querystring: EMPTY_QUERY_SCHEMA }, bodyLimit: 1 }, async (request, reply) => {
-      if (request.body !== undefined || request.headers['content-length'] !== undefined || request.headers['content-type'] !== undefined) return unavailable(reply, 400);
+      if (request.body !== undefined || (request.headers['content-length'] !== undefined && request.headers['content-length'] !== '0') || request.headers['content-type'] !== undefined) return unavailable(reply, 400);
       return SupportStatusSchema.parse(await capabilities.support!.refresh());
     });
   }
