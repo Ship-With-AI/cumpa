@@ -34,7 +34,7 @@ test('the CI verifier rejects malformed and retired routing options', async ({},
   await reject(['--verify-workflow', workflow, '--unknown'], 'unknown option --unknown');
   await reject(['--verify-workflow', workflow, '--require-custom-domain'], 'unknown option --require-custom-domain');
 });
-test('deployment accepts empty hosted success responses without losing redacted errors', async ({}, testInfo) => {
+test('deployment accepts hosted response contracts without losing redacted errors', async ({}, testInfo) => {
   const projectRef = 'a'.repeat(20);
   const bin = testInfo.outputPath('bin');
   const npx = join(bin, 'npx');
@@ -66,7 +66,13 @@ if (JSON.stringify(actual) !== database && !functionDeployment) {
     "    if (JSON.stringify(actual) !== JSON.stringify(expected)) return new Response(JSON.stringify({ message: `unexpected secrets payload ${process.env.SUPABASE_DB_PASSWORD}` }), { status: 400 });",
     '    return new Response(null, { status: 201 });',
     '  }',
-    '  return new Response(JSON.stringify({ message: `empty success accepted ${process.env.SUPABASE_DB_PASSWORD}` }), { status: 400 });',
+    "  if (calls >= 3 && calls <= 8) return new Response('[]');",
+    "  if (calls === 9) return new Response('{}', { status: 401, headers: { 'content-type': 'application/json' } });",
+    "  if (calls === 10) return new Response('{}', { status: 400, headers: { 'content-type': 'application/json' } });",
+    "  if (calls === 11) return new Response('', { status: 400, headers: { 'content-type': 'text/plain; charset=utf-8' } });",
+    "  if (calls === 12) return new Response('{}', { status: 400, headers: { 'content-type': 'application/json' } });",
+    "  if (calls >= 13 && calls <= 17) return new Response('[]');",
+    '  return new Response(JSON.stringify({ message: `route probes accepted ${process.env.SUPABASE_DB_PASSWORD}` }), { status: 400 });',
     '};',
     '',
   ].join('\n'));
@@ -98,7 +104,7 @@ if (JSON.stringify(actual) !== database && !functionDeployment) {
     },
   }).then(() => undefined, (error: { stderr: string }) => error);
 
-  expect(failure?.stderr).toContain('HTTP 400: {"message":"empty success accepted [redacted]"}');
+  expect(failure?.stderr).toContain('HTTP 400: {"message":"route probes accepted [redacted]"}');
   expect(failure?.stderr).not.toContain('sensitive-db-value');
 });
 

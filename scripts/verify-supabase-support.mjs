@@ -295,7 +295,7 @@ async function snapshotAuthority(inputs) {
 
 async function probeRoutes(routes) {
   const probes = [
-    ['auth-settings', `${new URL(routes.authCallback).origin}/auth/v1/settings`, 200, 'application/json', 'GET'],
+    ['auth-settings', `${new URL(routes.authCallback).origin}/auth/v1/settings`, 401, 'application/json', 'GET'],
     ['support-api-invalid-input', routes.supportApi, 400, 'application/json', 'POST'],
     ['support-flow-invalid-state', routes.supportFlow, 400, 'text/plain', 'POST'],
     ['stripe-webhook-invalid-signature', routes.stripeWebhook, 400, 'application/json', 'POST'],
