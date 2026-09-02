@@ -212,7 +212,7 @@ async function guardedMutation(inputs, operation, mutate, order) {
 
 async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
   const order = [];
-  await guardedMutation(inputs, 'schema', () => commandOutput('npx', ['supabase@2.114.0', 'db', 'push', '--linked'], process.env), order);
+  await guardedMutation(inputs, 'schema', () => commandOutput('npx', ['supabase@2.114.0', 'db', 'push', '--project-ref', inputs.SUPABASE_PROJECT_REF], process.env), order);
   await guardedMutation(inputs, 'auth-provider-configuration', () => managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/config/auth`, {
     method: 'PATCH',
     body: JSON.stringify({

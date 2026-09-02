@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
-import { readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { delimiter, join } from 'node:path';
 import { promisify } from 'node:util';
 
 import { expect, test } from '@playwright/test';
@@ -32,6 +33,48 @@ test('the CI verifier rejects malformed and retired routing options', async ({},
   await reject(['--verify-workflow', workflow, '--unknown'], 'unknown option --unknown');
   await reject(['--verify-workflow', workflow, '--require-custom-domain'], 'unknown option --require-custom-domain');
 });
+test('deployment targets the protected project without local link state', async ({}, testInfo) => {
+  const projectRef = 'a'.repeat(20);
+  const bin = testInfo.outputPath('bin');
+  const npx = join(bin, 'npx');
+  await mkdir(bin, { recursive: true });
+  await writeFile(npx, `#!/usr/bin/env node
+const expected = ['supabase@2.114.0', 'db', 'push', '--project-ref', process.env.SUPABASE_PROJECT_REF];
+const actual = process.argv.slice(2);
+console.error(JSON.stringify(actual) === JSON.stringify(expected) ? 'explicit project target' : \`unexpected npx arguments: \${JSON.stringify(actual)}\`);
+process.exit(JSON.stringify(actual) === JSON.stringify(expected) ? 91 : 92);
+`);
+  await chmod(npx, 0o755);
+
+  await expect(execFileAsync(process.execPath, [
+    script,
+    '--run-deployment',
+    '--mode',
+    'prelaunch-test',
+    '--evidence',
+    testInfo.outputPath('deployment.json'),
+  ], {
+    env: {
+      ...process.env,
+      PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
+      GITHUB_ACTIONS: 'true',
+      CUMPA_DEPLOYMENT_ENVIRONMENT: 'production',
+      SUPPORT_PROVIDER_MODE: 'prelaunch-test',
+      SUPABASE_ACCESS_TOKEN: 'token',
+      SUPABASE_PROJECT_REF: projectRef,
+      SUPABASE_DB_PASSWORD: 'password',
+      SUPABASE_GITHUB_CLIENT_ID: 'client-id',
+      SUPABASE_GITHUB_CLIENT_SECRET: 'client-secret',
+      STRIPE_SECRET_KEY: 'stripe-secret',
+      STRIPE_WEBHOOK_SECRET: 'webhook-secret',
+      STRIPE_PRICE_ID: 'price',
+      STRIPE_WEBHOOK_ENDPOINT_ID: 'endpoint',
+    },
+  })).rejects.toMatchObject({
+    stderr: expect.stringContaining('explicit project target'),
+  });
+});
+
 
 test('workflow verification rejects toolchain, database-order, and retired-input regressions', async ({}, testInfo) => {
   const source = await readFile(new URL('../../.github/workflows/deploy-supabase-production.yml', import.meta.url), 'utf8');
