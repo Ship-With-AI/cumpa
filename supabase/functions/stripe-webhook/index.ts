@@ -46,19 +46,22 @@ export async function handleStripeWebhookRequest(request: Request, dependencies 
   const object = event.data.object;
   if (!event.id || !object || typeof object !== "object" || !("id" in object) || typeof object.id !== "string") return json({ error: "invalid_request" }, 400);
 
+  let session: unknown;
   try {
-    const session = await dependencies.stripe.checkout.sessions.retrieve(object.id, { expand: ["line_items.data.price"] });
-    const checkout = checkoutSessionInvariant(session, dependencies.priceId);
-    if (!checkout) return json({ error: "invalid_request" }, 400);
-    if (await fulfillVerifiedCheckout(dependencies.service.rpc, event.id, checkout) === "unavailable") {
-      dependencies.log?.("stripe_webhook_unavailable");
-      return json({ error: "unavailable" }, 503);
-    }
-    return json({ received: true });
+    session = await dependencies.stripe.checkout.sessions.retrieve(object.id, { expand: ["line_items.data.price"] });
   } catch {
-    dependencies.log?.("stripe_webhook_unavailable");
+    dependencies.log?.("stripe_webhook_provider_unavailable");
     return json({ error: "unavailable" }, 503);
   }
+  const checkout = checkoutSessionInvariant(session, dependencies.priceId);
+  if (!checkout) return json({ error: "invalid_request" }, 400);
+  try {
+    if (await fulfillVerifiedCheckout(dependencies.service.rpc, event.id, checkout) === "settled") return json({ received: true });
+  } catch {
+    // The public response remains generic; the stage-only log is safe for operations.
+  }
+  dependencies.log?.("stripe_webhook_authority_unavailable");
+  return json({ error: "unavailable" }, 503);
 }
 
 if (import.meta.main) Deno.serve((request) => handleStripeWebhookRequest(request));

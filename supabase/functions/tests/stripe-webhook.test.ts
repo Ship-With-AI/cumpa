@@ -121,4 +121,20 @@ Deno.test("transient settlement failures are retryable while invalid input and l
 
   assert(response.status === 503 && JSON.stringify(await response.json()) === '{"error":"unavailable"}');
   assert(!JSON.stringify(logs).match(/secret|signature|evt_server_owned/i));
+  assert(JSON.stringify(logs) === '["stripe_webhook_authority_unavailable"]');
+});
+
+Deno.test("provider lookup failures are retryable and stage-only", async () => {
+  const logs: unknown[] = [];
+  const deps = dependencies({
+    stripe: {
+      webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) },
+      checkout: { sessions: { retrieve: async () => { throw new Error("provider secret"); } } },
+    },
+    log: (value: unknown) => logs.push(value),
+  });
+  const response = await handleStripeWebhookRequest(request(), deps);
+
+  assert(response.status === 503 && JSON.stringify(await response.json()) === '{"error":"unavailable"}');
+  assert(JSON.stringify(logs) === '["stripe_webhook_provider_unavailable"]');
 });
