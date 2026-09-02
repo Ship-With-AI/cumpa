@@ -112,6 +112,7 @@ function startGeneratedCli(
       ...environment,
       PATH: `${fakeBinRoot}:${environment.PATH ?? ''}`,
       CUMPA_BROWSER_OPEN_MARKER: markerPath,
+      BROWSER: join(fakeBinRoot, 'open'),
       CUMPA_LAUNCH_OPTIONS: JSON.stringify({
         cwd: fixture.nestedCwd,
         base: { label: selections.base.slice('refs/heads/'.length), revision: selections.base },
@@ -147,6 +148,7 @@ function startAttachedCli(
       ...environment,
       PATH: `${fakeBinRoot}:${environment.PATH ?? ''}`,
       CUMPA_BROWSER_OPEN_MARKER: markerPath,
+      BROWSER: join(fakeBinRoot, 'open'),
     },
     stdio: ['pipe', stdoutDescriptor, stderrDescriptor],
   });
