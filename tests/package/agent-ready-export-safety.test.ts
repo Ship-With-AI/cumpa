@@ -7,6 +7,7 @@ import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
 import { canonicalizeReviewExport, parseCanonicalReviewExport } from '../../src/export/review-export.js';
 import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js';
 import { runGeneratedExport, runGeneratedIgnoreAppend, runGeneratedRecovery, sampleGeneratedStablePair } from '../helpers/export-fault-runner.js';
+import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.js';
 
 import { afterEach, describe, expect, test } from 'vitest';
 
@@ -134,7 +135,7 @@ function candidatePair(marker: string): Readonly<{ readonly json: Buffer; readon
 }
 
 describe('generated publication and recovery safety evidence', () => {
-  test('uses the declared native target to atomically replace one complete stable pair and recover the new bytes', async () => {
+  test.skipIf(!hasObservedNativeReExport(process.platform, process.arch))('uses the declared native target to atomically replace one complete stable pair and recover the new bytes', async () => {
     const fixture = await createDirtyGitFixture();
     fixtures.push(fixture);
     const beforeSource = await captureSourceControlSnapshot(fixture.root);
