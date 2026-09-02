@@ -369,7 +369,7 @@ function assertBaseRecord(record, kind) {
 
 function assertRoutes(routes) {
   const expected = {
-    'auth-settings': ['application/json', 200],
+    'auth-settings': ['application/json', 401],
     'support-api-invalid-input': ['application/json', 400],
     'support-flow-invalid-state': ['text/plain', 400],
     'stripe-webhook-invalid-signature': ['application/json', 400],
