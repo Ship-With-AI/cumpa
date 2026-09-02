@@ -13,7 +13,7 @@ async function reject(args: string[], message: string) {
   });
 }
 
-test('the CI verifier rejects local deployment and malformed workflow verifier arguments', async ({}, testInfo) => {
+test('the CI verifier rejects malformed and retired routing options', async ({}, testInfo) => {
   const workflow = testInfo.outputPath('workflow.yml');
   await writeFile(workflow, 'name: unsafe\non: workflow_dispatch\n');
 
@@ -23,24 +23,28 @@ test('the CI verifier rejects local deployment and malformed workflow verifier a
   await reject(['--verify-workflow', workflow, '--require-environment', 'production', '--require-environment', 'production'], 'duplicate option --require-environment');
   await reject(['--verify-workflow', workflow, '--expected-mode', 'invalid'], 'invalid expected mode');
   await reject(['--verify-workflow', workflow, '--unknown'], 'unknown option --unknown');
-  await reject(['--verify-workflow', workflow, '--require-custom-domain', '--require-custom-domain'], 'duplicate option --require-custom-domain');
+  await reject(['--verify-workflow', workflow, '--require-custom-domain'], 'unknown option --require-custom-domain');
 });
 
-test('workflow verification rejects toolchain pin, command, and database-order regressions', async ({}, testInfo) => {
+test('workflow verification rejects toolchain, database-order, and retired-input regressions', async ({}, testInfo) => {
   const source = await readFile(new URL('../../.github/workflows/deploy-supabase-production.yml', import.meta.url), 'utf8');
-  const cases: Array<[string, string, string]> = [
-    ['node', 'node-version: 24', 'node-version: 22'],
-    ['deno', 'deno-version: v2.7.14', 'deno-version: v2.7.13'],
-    ['install', 'npm ci', 'npm install'],
-    ['vitest', 'npx vitest run', 'npx vitest run tests/unit'],
-    ['playwright', 'npx playwright test --config=tests', 'npx playwright test'],
-    ['deno suite', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'deno test supabase/functions/tests'],
-    ['Supabase pin', 'npx supabase@2.114.0 db start', 'npx supabase db start'],
+  const cases: Array<[string, string, string, string]> = [
+    ['node', 'node-version: 24', 'node-version: 22', 'workflow is missing required'],
+    ['deno', 'deno-version: v2.7.14', 'deno-version: v2.7.13', 'workflow is missing required'],
+    ['install', 'npm ci', 'npm install', 'workflow is missing required'],
+    ['vitest', 'npx vitest run', 'npx vitest run tests/unit', 'workflow is missing required'],
+    ['playwright', 'npx playwright test --config=tests', 'npx playwright test', 'workflow is missing required'],
+    ['deno suite', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'deno test supabase/functions/tests', 'workflow is missing required'],
+    ['Supabase pin', 'npx supabase@2.114.0 db start', 'npx supabase db start', 'workflow is missing required'],
+    ['project ref', 'SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}', 'SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}', 'workflow does not map the protected project ref'],
+    ['stored origin', 'STRIPE_PRICE_ID: ${{ vars.STRIPE_PRICE_ID }}', 'SUPPORT_PUBLIC_ORIGIN: ${{ vars.SUPPORT_PUBLIC_ORIGIN }}', 'workflow contains forbidden retired input'],
+    ['configured fingerprint', 'STRIPE_PRICE_ID: ${{ vars.STRIPE_PRICE_ID }}', 'APPROVED_SUPABASE_PROJECT_REF_SHA256: ${{ vars.APPROVED_SUPABASE_PROJECT_REF_SHA256 }}', 'workflow contains forbidden retired input'],
+    ['domain command', 'node scripts/verify-supabase-support.mjs "${args[@]}"', 'npx supabase@2.114.0 domains activate --project-ref "$SUPABASE_PROJECT_REF"', 'workflow contains forbidden domain lifecycle'],
   ];
-  for (const [name, expected, replacement] of cases) {
+  for (const [name, expected, replacement, message] of cases) {
     const workflow = testInfo.outputPath(`${name}.yml`);
     await writeFile(workflow, source.replace(expected, replacement));
-    await reject(['--verify-workflow', workflow], 'workflow is missing required');
+    await reject(['--verify-workflow', workflow], message);
   }
   const reordered = testInfo.outputPath('reordered.yml');
   await writeFile(reordered, source.replace(

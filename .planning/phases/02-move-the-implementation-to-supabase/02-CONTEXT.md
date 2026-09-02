@@ -1,7 +1,7 @@
 # Phase 02: Move the Implementation to Supabase - Context
 
 **Gathered:** 2026-08-14
-**Updated:** 2026-08-16 — single hosted production project; Supabase disabled in ordinary local development
+**Updated:** 2026-08-31 — sole-project canonical default origin; no stored duplicate URLs or domain lifecycle
 **Status:** Ready for planning
 
 <domain>
@@ -35,16 +35,17 @@ Replace the unverified standalone Render/Fastify/PostgreSQL/Resend support backe
 ### Environment model
 - **D-13:** Ordinary local development runs without a hosted Supabase dependency and without `CUMPA_SUPPORT_SERVICE_URL`. Cumpa must register no support capability, make no Supabase/Auth/Edge Function/Stripe calls, and hide or disable Support/Restore UI while preserving every review feature. Database migrations and RPC authority may still be verified against local PostgreSQL; do not require a complete local Supabase stack.
 - **D-14:** Maintain exactly one hosted Supabase project: production. Before first public launch, use that still-empty project for the one-time GitHub OAuth and Stripe test-mode acceptance matrix, then promote it in place by replacing test OAuth/Stripe configuration with production configuration. Do not create or retain a hosted development/staging project.
-- **D-15:** Version database migrations and Edge Functions in Git. After local and CI checks pass, protected `main` deployments apply directly to the sole production project and run only non-destructive production smoke checks. Do not require manual database/function promotion or Supabase Git integration; initial test-to-live provider secret/configuration promotion remains an explicit launch operation.
+- **D-15:** Version database migrations and Edge Functions in Git. Every push to protected `main` triggers `.github/workflows/deploy-supabase-production.yml` with no path filter. Credential-free repository gates must pass before the job bound to GitHub's protected `production` environment can access deployment/provider inputs or mutate the sole project. That environment exclusively owns `SUPABASE_PROJECT_REF` as a protected variable, Supabase deployment credentials as secrets, and GitHub/Stripe provider inputs. The project ref is a public identifier, but GitHub protected-environment ownership is the target authority. The executor validates the complete ref's canonical 20-character shape immediately before every hosted mutation and derives exactly `https://<ref>.supabase.co`; no configured target digest or same-environment comparison participates in target selection. The default Supabase project URL may enter browser routes, configured release packages, and redacted evidence; deployment/provider credentials must not enter a local process, repository, package, log, evidence, or chat. The workflow deploys schema before functions, serializes runs without cancellation, and performs only non-destructive live smoke after promotion. The first successful run applies temporary prelaunch test configuration. After approved acceptance and exact fixture cleanup, the human replaces the protected environment's provider inputs in place; the following ordinary push to `main` applies and verifies live configuration. Do not use local/manual deployment, manual workflow dispatch, manual database/function promotion, path filters, or Supabase Git integration.
 
 ### Cutover and data
 - **D-16:** Assume no production supporter records exist. Supabase is the first real hosted launch; do not build import, dual-write, or data-reconciliation machinery for Render/PostgreSQL.
 - **D-17:** Supabase replaces the blocked Render provider checkpoint and becomes the only hosted authority. Before first public launch, real Stripe test-mode, GitHub OAuth, webhook, automatic restore, package-safety, hostile-path, and status-polling evidence must pass against the still-empty sole project. After its in-place production promotion, verification is limited to non-destructive smoke checks; do not run the destructive/test payment matrix against live authority or substitute local-only proof for the one-time hosted acceptance.
 - **D-18:** Retain only the hosted data needed for authority and operations: Supabase user ID, Stripe event/customer/session/payment identifiers required for fulfillment proof and idempotency, verification timestamps, and bound installation IDs. Do not copy GitHub profile fields or payer email into supporter records.
 - **D-19:** Make a clean API cutover. Update Cumpa and Supabase together; remove legacy email-recovery routes and schemas rather than providing temporary or permanent compatibility. Existing machine-local verified status remains valid across the package upgrade.
+- **D-20:** Use the sole project's default Supabase origin, `https://<ref>.supabase.co`, as the public support origin. The project ref is a public routing identifier; it is stored as the protected GitHub `production` environment variable `SUPABASE_PROJECT_REF` and may appear in artifacts only as part of that canonical origin in browser URLs, configured release packages, and redacted evidence. Do not provision a custom domain, paid domain add-on, DNS records, proxy, or `supabase domains` workflow steps. Validate the complete ref's canonical 20-character shape before each hosted mutation, then derive GitHub OAuth callbacks, Auth routes, `support-api`, `support-flow`, `stripe-webhook`, and the release capability from that origin. GitHub protected-environment ownership is the target authority. Cross-record target proof uses the exact canonical public origin plus immutable GitHub run/commit lineage. A SHA-256 of the ref may remain internally derived in redacted evidence solely for correlation and lineage; it is never configured, approved, compared, or treated as an independent security guard. Because hosted Edge Functions rewrite `text/html` to `text/plain` on default domains, completion and invalid-state browser responses must be bounded plain text.
 
 ### Claude's Discretion
-- Exact Supabase schema names, Edge Function boundaries, hosted support-page layout, OAuth callback mechanics, CI provider, polling cadence, and safe non-destructive production smoke checks, provided the locked single-project, local-disablement, privacy, and clean-cutover decisions above remain intact.
+- Exact Supabase schema names, Edge Function boundaries, fixed bounded plain-text completion/invalid-state wording, OAuth callback implementation, CI provider, polling cadence, and safe non-destructive production smoke checks, provided the locked single-project, local-disablement, privacy, clean-cutover, and D-20 route decisions above remain intact.
 
 </decisions>
 
@@ -68,6 +69,10 @@ Replace the unverified standalone Render/Fastify/PostgreSQL/Resend support backe
 - `.kimi-code/skills/spike-findings-cumpa/references/cli-source-discovery.md` — Startup and packaged-runtime constraints that support integration must not regress.
 
 No external design specification was supplied. Research must verify current Supabase Auth, Edge Functions, database, migration, secrets, and CI deployment behavior against official documentation.
+- `https://supabase.com/docs/guides/functions/deploy` — Official deployed Edge Function URL shape under the default project origin.
+- `https://supabase.com/docs/guides/auth/social-login/auth-github` — Official GitHub provider callback and hosted OAuth configuration.
+- `https://supabase.com/docs/guides/auth/redirect-urls` — Official Site URL, `redirectTo`, and exact redirect allow-list behavior.
+- `https://supabase.com/docs/guides/functions/limits` — Official hosted response media-type behavior and Edge Function limits.
 
 </canonical_refs>
 
@@ -84,7 +89,7 @@ No external design specification was supplied. Research must verify current Supa
 - The installed app trusts only server-verified fulfillment; browser redirects and local claims never establish supporter status.
 - Hosted calls cross a bounded HTTPS capability, while the loopback server and machine-wide JSON store remain authoritative for local state.
 - Stripe webhooks require signature verification and idempotent transactional settlement.
-- Published-package verification must prove no hosted secrets or privileged credentials enter package assets.
+- Published-package verification must allow only the exact canonical public origin in its configured launcher while excluding the bare ref elsewhere, any other Supabase host, credentials, OAuth/PII, provider identifiers/secrets, and privileged values.
 
 ### Integration Points
 - Replace `services/support/src/app.ts`, its Fastify routes, `services/support/src/db.ts`, `services/support/migrations/001_init.sql`, and `render.yaml` with Supabase functions, migrations, and deployment configuration; remove the obsolete service once migrated.

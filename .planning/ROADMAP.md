@@ -56,19 +56,19 @@ Plans:
 
 **Wave 7** *(blocked on Wave 6 completion)*
 
-- [x] 02-07-PLAN.md — Replace local deployment with the sole guarded every-main-push workflow and supported custom-domain contract
+- [x] 02-07-PLAN.md — Historical guarded workflow implementation; corrected before first push by 02-08
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 02-08-PLAN.md — Configure protected custom-domain prerequisites and capture automatic activation/deployment/route proof
+- [ ] 02-08-PLAN.md — Cut source/workflow/tests/docs to the canonical default origin, then configure protected callbacks without pushing
 
 **Wave 9** *(blocked on Wave 8 completion)*
 
-- [ ] 02-09-PLAN.md — Run browser acceptance and automatic hostile/replay/concurrency matrix with one exact fixture manifest
+- [ ] 02-09-PLAN.md — Capture the first automatic deployment, run browser acceptance, and merge the real hostile matrix with one exact fixture manifest
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 02-10-PLAN.md — Clean exact fixtures and promote the same project in place through an automatic live-mode run
+- [ ] 02-10-PLAN.md — Clean exact fixtures and promote the same canonical-origin project through an automatic live run
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
@@ -88,12 +88,12 @@ Plans:
 
 **Wave 15** *(blocked on Wave 14 completion)*
 
-- [ ] 02-15-PLAN.md — Prove scoped retirement/package absence and implement the six-input final verifier
+- [ ] 02-15-PLAN.md — Prove exact-origin-aware retirement/package safety and implement the six-input final verifier
 
 **Wave 16** *(blocked on Wave 15 completion)*
 
-- [ ] 02-16-PLAN.md — Release the configured ref-free custom-origin package and smoke required surfaces non-destructively
+- [ ] 02-16-PLAN.md — Release the canonical default-origin configured package and smoke required surfaces non-destructively
 
 **Wave 17** *(blocked on Wave 16 completion)*
 
-- [ ] 02-17-PLAN.md — Write separate local/package/security and six-record final evidence, then approve phase closeout
+- [ ] 02-17-PLAN.md — Bind six immutable records to canonical-origin final evidence, then approve phase closeout

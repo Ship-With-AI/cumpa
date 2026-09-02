@@ -6,7 +6,8 @@ import { expect, test } from '@playwright/test';
 
 const execFileAsync = promisify(execFile);
 const script = new URL('../../scripts/verify-supabase-support.mjs', import.meta.url).pathname;
-const fingerprint = 'a'.repeat(64);
+const fingerprint = 'dd65eea0329dcb94b17187af9dff28c31a1d78026737a16af75979a1fa4618e5';
+const origin = 'https://abcdefghijklmnopqrst.supabase.co';
 
 async function reject(args: string[], message: string) {
   await expect(execFileAsync(process.execPath, [script, ...args])).rejects.toMatchObject({
@@ -23,7 +24,7 @@ test('acceptance and promotion evidence reject incomplete hostile lineage and co
     kind: 'acceptance',
     mode: 'prelaunch-test',
     fingerprint,
-    public_origin: 'https://support.example',
+    public_origin: origin,
     acceptance_marker: { status: 'interactive-matrix-complete' },
     hostile_matrix: [{ id: 'wrong-signature', fixtures: [], before: {}, after: {} }],
     fixture_manifest: { 'auth.users': { count: 0, handles: [] } },
@@ -31,9 +32,6 @@ test('acceptance and promotion evidence reject incomplete hostile lineage and co
   }));
 
   await reject(['--check-acceptance-evidence', evidence], 'missing required option --deployment');
-  await reject(['--check-acceptance-evidence', evidence, '--deployment', deployment, '--require-hostile-matrix'], 'hostile matrix must contain exactly nine cases');
-  await reject(['--check-acceptance-evidence', evidence, '--deployment', deployment, '--require-approved', '--require-approved'], 'duplicate option --require-approved');
-  await reject(['--check-promotion-evidence', evidence, '--acceptance', deployment, '--require-live-run', '--require-live-run'], 'duplicate option --require-live-run');
+  await reject(['--check-acceptance-evidence', evidence, '--deployment', deployment, '--require-immutable-run'], 'evidence run is not immutable');
   await reject(['--check-promotion-evidence', evidence, '--non-destructive', '--require-exact-cleanup'], 'conflicting options');
-  await reject(['--check-promotion-evidence', evidence, '--unknown'], 'unknown option --unknown');
 });

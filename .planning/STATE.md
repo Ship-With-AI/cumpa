@@ -6,9 +6,9 @@ current_phase: 02
 current_phase_name: move-the-implementation-to-supabase
 status: executing
 stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-08-30T21:13:14.884Z"
+last_updated: "2026-08-31T09:00:25Z"
 last_activity: 2026-08-30
-last_activity_desc: Completed 02-06-PLAN.md
+last_activity_desc: Completed 02-07-PLAN.md
 progress:
   total_phases: 2
   completed_phases: 1
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-08-06)
 Phase: 02 (move-the-implementation-to-supabase) — EXECUTING
 Plan: 7 of 17
 Status: Ready to execute
-Last activity: 2026-08-30 — Completed 02-06-PLAN.md
+Last activity: 2026-08-30 — Completed 02-07-PLAN.md
 
 ## Performance Metrics
 
@@ -113,7 +113,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Browser Support and Restore actions share one strict startSupportAction contract. — Removes Checkout/email recovery browser compatibility seams while preserving verified-only local authority.
 - [Phase 02]: Only explicit HTTPS support configuration constructs hosted dependencies — Absent or invalid values produce no capability.
 - [Phase 02]: Session support metadata solely enables browser support work — Controls, dialog, polling, and prompts follow the advertised capability.
-- [Phase 02]: GitHub Actions is the sole guarded deployment path. — Browser-facing support routes use the validated ref-free custom origin; service RPC remains internal.
+- [Phase 02]: GitHub Actions is the sole guarded deployment path. — The protected `production` environment owns public `SUPABASE_PROJECT_REF`; the executor validates its canonical 20-character shape before each hosted mutation and derives exactly `https://<ref>.supabase.co`, while Edge Functions use built-in `SUPABASE_URL`. Exact origin plus immutable GitHub run/commit proves cross-record target lineage; any derived fingerprint is supplemental correlation only.
+- [Phase 02]: Completed 02-07 is historical and performed no hosted mutation. — Revised 02-08 must cut source, workflow, focused tests, and operations docs to D-20 before any human setup or first push.
 
 ### Roadmap Evolution
 
@@ -166,4 +167,4 @@ No active phase execution session.
 
 ## Operator Next Steps
 
-- Define the next milestone when ready.
+- Execute revised 02-08: correct the canonical default-origin contract before any setup or push.

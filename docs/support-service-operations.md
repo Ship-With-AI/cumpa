@@ -2,39 +2,24 @@
 
 ## Production boundary
 
-Cumpa has one hosted Supabase production project. Ordinary local development has no hosted-support dependency and never deploys, configures providers, or receives deployment credentials. GitHub Actions is the sole deployment path: every push to protected `main` runs `.github/workflows/deploy-supabase-production.yml`.
+Cumpa has one hosted Supabase production project. Ordinary local development has no hosted-support dependency and never receives deployment or provider credentials. A push to protected `main` automatically runs `.github/workflows/deploy-supabase-production.yml`; there is no manual deployment path.
 
-The `repository-gates` job is credential-free. It sets up Node 24 and Deno 2.7.14, runs the repository test gates, and validates the local database before the `production` environment is requested. The serialized `deploy-production` job is the only job bound to that environment and the only process allowed to access protected deployment inputs.
+The credential-free `repository-gates` job validates the repository and local database before the serialized `deploy-production` job enters GitHub's protected `production` environment. Only that job receives protected inputs and can mutate the project.
 
-## Custom-domain prerequisite
+## Default project origin and protected inputs
 
-Before the first protected push, register one HTTPS subdomain in the Supabase Dashboard. Follow Supabase's [custom-domain guide](https://supabase.com/docs/guides/platform/custom-domains): create its CNAME record and required TXT ownership record, then wait for DNS propagation. Configure the OAuth provider with the custom-origin callback `/auth/v1/callback` before activation.
+The sole browser-facing origin is `https://<project-ref>.supabase.co`. The protected executor reads the complete `SUPABASE_PROJECT_REF` from a protected environment variable, validates its canonical shape, then derives that origin only in memory. Do not store a separate public-origin, site URL, redirect URL, GitHub callback URL, or webhook URL input.
 
-`SUPPORT_PUBLIC_ORIGIN` is that one ref-free custom origin. It supplies the Auth callback and all browser-facing routes:
+`production` owns only the Supabase management token, project-ref variable, database password, GitHub client ID and secret, Stripe secret key, webhook secret, Price ID, webhook endpoint ID, and `SUPPORT_PROVIDER_MODE`. Keep credentials and provider values out of logs, packages, evidence, and chat; permit the project ref only inside the canonical public origin.
 
-- `/auth/v1/callback`
-- `/functions/v1/support-api`
-- `/functions/v1/support-flow`
-- `/functions/v1/stripe-webhook`
+Before the first protected push, configure GitHub OAuth to return to `https://<project-ref>.supabase.co/auth/v1/callback`. This is distinct from the post-auth callback allowlisted by Supabase Auth: `https://<project-ref>.supabase.co/functions/v1/support-flow/callback`. Stripe's webhook endpoint is `https://<project-ref>.supabase.co/functions/v1/stripe-webhook`; subscribe it only to `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
 
-The default project domain remains internal service plumbing only; it is never a browser, OAuth, webhook, or package URL.
+Delete any existing `APPROVED_SUPABASE_PROJECT_REF_SHA256`, `SUPPORT_PUBLIC_ORIGIN`, `SUPABASE_SITE_URL`, `SUPABASE_REDIRECT_URL`, `SUPABASE_GITHUB_CALLBACK_URL`, and `STRIPE_WEBHOOK_URL` environment entries without reading or recording their values.
 
-## Automatic deployment order
+## Automatic deployment and evidence
 
-After repository gates pass, the protected verifier keeps protected values in memory, validates their complete set and approved full-ref SHA-256 fingerprint, then repeats that fingerprint guard immediately before each hosted mutation:
+After repository gates pass, the protected executor validates the complete ref's canonical shape immediately before each hosted mutation. It applies database migrations, patches GitHub Auth with the derived completion and callback routes, sets the three Stripe function secrets, then deploys `support-api`, `support-flow`, and `stripe-webhook` in that order.
 
-1. discover custom-domain state without mutation;
-2. reverify and activate the registered custom domain;
-3. apply database migrations;
-4. configure Auth/provider settings;
-5. update Edge Function secrets;
-6. deploy `support-api`, `support-flow`, then `stripe-webhook`;
-7. run custom-origin route probes and record authority counts.
+The release evidence records the exact public origin, route probes, internally derived correlation fingerprint, immutable GitHub lineage, mutation order, and redacted authority snapshots. It permits only the exact canonical origin and its enumerated routes; a bare project ref, any other Supabase host, credentials, OAuth data, PII, provider identifiers, and provider secrets are rejected.
 
-The workflow emits only an immutable, redacted evidence artifact: run and commit identity, approved fingerprint, display suffix, custom origin, activation state, deployment order, route signatures, versions, counts, hashed handles, and artifact digest. It excludes project refs, credentials, provider values, OAuth material, personal data, and raw fixture keys.
-
-The prelaunch hostile matrix runs only in the protected job, only in test mode, and only when the committed acceptance marker is present. Production-live runs remain non-destructive and may perform only read-only status and route smoke checks.
-
-## Operations response
-
-For a failed release, make a compatible forward fix and push `main`; do not add a manual deployment path, bypass the environment gate, or run destructive acceptance activity against live authority. Keep the workflow evidence with the corresponding GitHub run for audit and rollback diagnosis.
+For a failed release, make a compatible forward fix on `main`. Do not bypass repository gates or the protected environment, and do not run destructive acceptance activity against live authority.

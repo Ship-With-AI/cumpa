@@ -23,7 +23,7 @@ function defaultDependencies(): SupportApiDependencies {
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   return {
     service: createClient(url, key) as unknown as { rpc: Rpc },
-    publicOrigin: Deno.env.get("SUPPORT_PUBLIC_ORIGIN") ?? "",
+    publicOrigin: url,
     randomBytes: () => crypto.getRandomValues(new Uint8Array(32)),
     now: () => new Date(),
     log: (value) => console.error(value),

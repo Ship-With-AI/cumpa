@@ -5,71 +5,50 @@ import Stripe from "stripe";
 import { InstallationIdSchema, SupportActionSchema } from "../_shared/validation.ts";
 
 type Rpc = (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
-type AuthClient = { auth: {
-  signInWithOAuth(input: unknown): Promise<{ data: { url?: string | null }; error: unknown }>;
-  exchangeCodeForSession(code: string): Promise<{ data: unknown; error: unknown }>;
-  getUser(): Promise<{ data: { user: { id: string } | null }; error: unknown }>;
-} };
+type AuthClient = {
+  auth: {
+    signInWithOAuth(input: unknown): Promise<{ data: { url?: string | null }; error: unknown }>;
+    exchangeCodeForSession(code: string): Promise<{ data: unknown; error: unknown }>;
+    getUser(): Promise<{ data: { user: { id: string } | null }; error: unknown }>;
+  };
+};
 type StripeClient = { checkout: { sessions: { create(input: unknown): Promise<{ id?: string; url?: string | null }> } } };
 type SupportFlowDependencies = Readonly<{
   service: { rpc: Rpc };
   createAuthClient: (request: Request, setCookie: (value: string) => void) => AuthClient;
   stripe: StripeClient;
-  publicOrigin: string;
+  supabaseUrl: string;
   priceId: string;
   log?: (value: string) => void;
 }>;
-
 type ClaimedIntent = Readonly<{ id: string; action: "support" | "restore"; installation_id: string }>;
+type BrowserState = "complete" | "invalid" | "unavailable";
 
-const browserPage = "<!doctype html><html lang=\"en\"><meta charset=\"utf-8\"><title>Support</title><body><p>Support flow complete.</p></body></html>";
+const browserMessages: Record<BrowserState, string> = {
+  complete: "Support flow complete. You can return to Cumpa.",
+  invalid: "This support link is invalid or expired. Return to Cumpa and try again.",
+  unavailable: "Support is temporarily unavailable. Return to Cumpa and try again.",
+};
 
-function response(status: number) {
-  return new Response("", { status, headers: { "content-type": "text/plain; charset=utf-8" } });
-}
-
-function browserResponse(status: number) {
-  return new Response(browserPage, { status, headers: { "content-type": "text/html; charset=utf-8" } });
+function browserResponse(state: BrowserState) {
+  const status = state === "complete" ? 200 : state === "invalid" ? 400 : 503;
+  return new Response(browserMessages[state], { status, headers: { "content-type": "text/plain; charset=utf-8" } });
 }
 
 function parseCookies(request: Request) {
   return (request.headers.get("cookie") ?? "").split(/;\s*/u).flatMap((part) => {
     const index = part.indexOf("=");
-    return index < 1 ? [] : [[part.slice(0, index), part.slice(index + 1)]] as const;
+    return index < 1 ? [] : [[part.slice(0, index), part.slice(index + 1)] as const];
   });
 }
 
-export function validateSupportPublicOrigin(value: string, projectRef = "") {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    throw new Error("invalid SUPPORT_PUBLIC_ORIGIN");
-  }
-  if (
-    url.protocol !== "https:" ||
-    url.username ||
-    url.password ||
-    url.port ||
-    url.pathname !== "/" ||
-    url.search ||
-    url.hash ||
-    url.hostname.endsWith(".supabase.co") ||
-    (projectRef.length > 0 && url.hostname.includes(projectRef))
-  ) {
-    throw new Error("invalid SUPPORT_PUBLIC_ORIGIN");
-  }
-  return url.origin;
-}
-
 function defaultDependencies(): SupportFlowDependencies {
-  const serviceUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const publicOrigin = validateSupportPublicOrigin(Deno.env.get("SUPPORT_PUBLIC_ORIGIN") ?? "", new URL(serviceUrl).hostname.split(".")[0] ?? "");
   const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", { httpClient: Stripe.createFetchHttpClient() });
   return {
-    service: createClient(serviceUrl, key) as unknown as { rpc: Rpc },
-    createAuthClient: (request, setCookie) => createServerClient(publicOrigin, key, {
+    service: createClient(supabaseUrl, key) as unknown as { rpc: Rpc },
+    createAuthClient: (request, setCookie) => createServerClient(supabaseUrl, key, {
       cookies: {
         getAll: () => parseCookies(request).map(([name, value]) => ({ name, value })),
         setAll: (values) => {
@@ -78,15 +57,15 @@ function defaultDependencies(): SupportFlowDependencies {
       },
     }) as unknown as AuthClient,
     stripe: stripe as unknown as StripeClient,
-    publicOrigin,
+    supabaseUrl,
     priceId: Deno.env.get("STRIPE_PRICE_ID") ?? "",
     log: (value) => console.error(value),
   };
 }
 
-function allowedOrigin(request: Request, publicOrigin: string) {
+function allowedOrigin(request: Request, supabaseUrl: string) {
   const origin = request.headers.get("origin");
-  return !origin || origin === new URL(publicOrigin).origin;
+  return !origin || origin === new URL(supabaseUrl).origin;
 }
 
 function stateCookie(intent: string) {
@@ -122,31 +101,31 @@ function redirect(location: string, cookies: string[] = []) {
 
 export async function handleSupportFlowRequest(request: Request, dependencies = defaultDependencies()): Promise<Response> {
   const url = new URL(request.url);
-  if (request.method !== "GET" || !allowedOrigin(request, dependencies.publicOrigin)) return response(400);
+  if (request.method !== "GET" || !allowedOrigin(request, dependencies.supabaseUrl)) return browserResponse("invalid");
   const callbackPath = "/functions/v1/support-flow/callback";
   const completionPath = "/functions/v1/support-flow/complete";
 
-  if (url.pathname.endsWith("/complete")) return browserResponse(200);
+  if (url.pathname.endsWith("/complete")) return browserResponse("complete");
   if (url.pathname.endsWith("/callback")) {
     const code = url.searchParams.get("code");
     const intent = opaqueIntent(parseCookies(request).find(([name]) => name === "support-intent")?.[1] ?? null);
-    if (!code || !intent) return browserResponse(400);
+    if (!code || !intent) return browserResponse("invalid");
     const cookies: string[] = [clearStateCookie()];
     const auth = dependencies.createAuthClient(request, (cookie) => cookies.push(cookie));
     const exchanged = await auth.auth.exchangeCodeForSession(code);
-    if (exchanged.error) return browserResponse(400);
+    if (exchanged.error) return browserResponse("invalid");
     const user = await auth.auth.getUser();
-    if (user.error || !user.data.user?.id) return browserResponse(400);
+    if (user.error || !user.data.user?.id) return browserResponse("invalid");
     const claim = await dependencies.service.rpc("claim_support_intent", {
       p_intent_hash: await intentHash(intent),
       p_user_id: user.data.user.id,
     });
     const claimed = !claim.error ? claimedIntent(claim.data) : undefined;
-    if (!claimed) return browserResponse(400);
+    if (!claimed) return browserResponse("invalid");
 
     if (claimed.action === "restore") {
       await dependencies.service.rpc("restore_installation", { p_user_id: user.data.user.id, p_installation_id: claimed.installation_id });
-      return redirect(new URL(completionPath, dependencies.publicOrigin).toString(), cookies);
+      return redirect(new URL(completionPath, dependencies.supabaseUrl).toString(), cookies);
     }
 
     try {
@@ -155,8 +134,8 @@ export async function handleSupportFlowRequest(request: Request, dependencies = 
         line_items: [{ price: dependencies.priceId, quantity: 1 }],
         client_reference_id: user.data.user.id,
         metadata: { user_id: user.data.user.id, installation_id: claimed.installation_id, intent_id: claimed.id },
-        success_url: new URL(completionPath, dependencies.publicOrigin).toString(),
-        cancel_url: new URL(completionPath, dependencies.publicOrigin).toString(),
+        success_url: new URL(completionPath, dependencies.supabaseUrl).toString(),
+        cancel_url: new URL(completionPath, dependencies.supabaseUrl).toString(),
       });
       if (!checkout.id || !checkout.url) throw new Error("checkout unavailable");
       const recorded = await dependencies.service.rpc("record_checkout_session", {
@@ -173,22 +152,22 @@ export async function handleSupportFlowRequest(request: Request, dependencies = 
       return redirect(checkout.url, cookies);
     } catch {
       dependencies.log?.("support_flow_unavailable");
-      return browserResponse(503);
+      return browserResponse("unavailable");
     }
   }
 
   if (url.pathname.endsWith("/support-flow")) {
     const intent = opaqueIntent(url.searchParams.get("intent"));
-    if (!intent || url.searchParams.size !== 1) return browserResponse(400);
+    if (!intent || url.searchParams.size !== 1) return browserResponse("invalid");
     const cookies: string[] = [];
     const auth = dependencies.createAuthClient(request, (cookie) => cookies.push(cookie));
-    const login = await auth.auth.signInWithOAuth({ provider: "github", options: { redirectTo: new URL(callbackPath, dependencies.publicOrigin).toString() } });
-    if (login.error || !login.data.url) return browserResponse(503);
+    const login = await auth.auth.signInWithOAuth({ provider: "github", options: { redirectTo: new URL(callbackPath, dependencies.supabaseUrl).toString() } });
+    if (login.error || !login.data.url) return browserResponse("unavailable");
     cookies.unshift(stateCookie(intent));
     return redirect(login.data.url, cookies);
   }
 
-  return response(400);
+  return browserResponse("invalid");
 }
 
 if (import.meta.main) Deno.serve((request) => handleSupportFlowRequest(request));

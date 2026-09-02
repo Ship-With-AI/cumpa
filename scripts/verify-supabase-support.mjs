@@ -31,18 +31,20 @@ const PROTECTED_INPUTS = [
   'SUPABASE_GITHUB_CLIENT_SECRET',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
-  'APPROVED_SUPABASE_PROJECT_REF_SHA256',
   'SUPPORT_PROVIDER_MODE',
+  'SUPABASE_GITHUB_CLIENT_ID',
+  'STRIPE_PRICE_ID',
+  'STRIPE_WEBHOOK_ENDPOINT_ID',
+];
+const RAW_VALUE_KEY = /(?:^|_)(?:access_token|secret|password|project_ref|client_id|oauth|email|provider|token)(?:$|_)/iu;
+const RETIRED_INPUTS = [
   'SUPPORT_PUBLIC_ORIGIN',
   'SUPABASE_SITE_URL',
   'SUPABASE_REDIRECT_URL',
-  'SUPABASE_GITHUB_CLIENT_ID',
   'SUPABASE_GITHUB_CALLBACK_URL',
-  'STRIPE_PRICE_ID',
-  'STRIPE_WEBHOOK_ENDPOINT_ID',
   'STRIPE_WEBHOOK_URL',
+  'APPROVED_SUPABASE_PROJECT_REF_SHA256',
 ];
-const RAW_VALUE_KEY = /(?:^|_)(?:access_token|secret|password|project_ref|client_id|oauth|email|provider|token)(?:$|_)/iu;
 
 function fail(message) {
   throw new Error(message);
@@ -61,37 +63,59 @@ function isHash(value) {
   return typeof value === 'string' && /^[a-f0-9]{64}$/u.test(value);
 }
 
-function strictOrigin(value, projectRef) {
+function canonicalOrigin(projectRef) {
+  if (typeof projectRef !== 'string' || !/^[a-z0-9]{20}$/u.test(projectRef)) fail('SUPABASE_PROJECT_REF must be a complete Supabase project ref');
+  return `https://${projectRef}.supabase.co`;
+}
+
+function canonicalOriginPolicy(origin) {
   let url;
   try {
-    url = new URL(requireString(value, 'SUPPORT_PUBLIC_ORIGIN'));
+    url = new URL(requireString(origin, 'public_origin'));
   } catch {
-    fail('SUPPORT_PUBLIC_ORIGIN must be an HTTPS origin');
+    fail('public_origin must be a canonical Supabase origin');
   }
-  if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash || url.port || url.hostname.endsWith('.supabase.co') || (projectRef && url.hostname.includes(projectRef))) {
-    fail('SUPPORT_PUBLIC_ORIGIN must be one ref-free HTTPS custom origin');
+  if (url.protocol !== 'https:' || url.username || url.password || url.port || url.pathname !== '/' || url.search || url.hash || !url.hostname.endsWith('.supabase.co')) {
+    fail('public_origin must be a canonical Supabase origin');
   }
-  return url.origin;
+  const projectRef = url.hostname.slice(0, -'.supabase.co'.length);
+  if (canonicalOrigin(projectRef) !== url.origin) fail('public_origin must be a canonical Supabase origin');
+  const routes = publicRoutes(url.origin);
+  return { origin: url.origin, projectRef, allowed: new Set([url.origin, ...Object.values(routes)]) };
 }
 
 function publicRoutes(origin) {
-  const base = strictOrigin(origin);
+  const base = canonicalOriginPolicyOrigin(origin);
   return {
     authCallback: `${base}/auth/v1/callback`,
     supportApi: `${base}/functions/v1/support-api`,
     supportFlow: `${base}/functions/v1/support-flow`,
+    supportFlowCallback: `${base}/functions/v1/support-flow/callback`,
+    supportFlowComplete: `${base}/functions/v1/support-flow/complete`,
     stripeWebhook: `${base}/functions/v1/stripe-webhook`,
   };
+}
+
+function canonicalOriginPolicyOrigin(origin) {
+  let url;
+  try {
+    url = new URL(origin);
+  } catch {
+    fail('canonical origin is invalid');
+  }
+  const projectRef = url.hostname.slice(0, -'.supabase.co'.length);
+  if (canonicalOrigin(projectRef) !== url.origin) fail('canonical origin is invalid');
+  return url.origin;
 }
 
 const commandDefinitions = {
   '--verify-workflow': {
     values: new Set(['--verify-workflow', '--require-environment', '--expected-mode']),
-    flags: new Set(['--require-custom-domain', '--require-release-artifact']),
+    flags: new Set(['--require-release-artifact']),
   },
   '--check-run-evidence': {
     values: new Set(['--check-run-evidence', '--expected-mode', '--acceptance']),
-    flags: new Set(['--require-immutable-run', '--require-zero-authority', '--require-custom-domain-routes', '--require-exact-cleanup']),
+    flags: new Set(['--require-immutable-run', '--require-zero-authority', '--require-exact-cleanup']),
     required: ['--expected-mode'],
   },
   '--check-acceptance-evidence': {
@@ -135,12 +159,10 @@ function parseArguments(argv) {
     }
     fail(`unknown option ${option}`);
   }
-  for (const required of definition.required ?? []) {
-    if (!values.has(required)) fail(`missing required option ${required}`);
-  }
+  for (const required of definition.required ?? []) if (!values.has(required)) fail(`missing required option ${required}`);
   if (values.has('--expected-mode') && !MODES.has(values.get('--expected-mode'))) fail('invalid expected mode');
   if (values.has('--mode') && !MODES.has(values.get('--mode'))) fail('invalid deployment mode');
-  if (flags.has('--non-destructive') && flags.has('--require-exact-cleanup')) fail('conflicting options --non-destructive and --require-exact-cleanup');
+  if (flags.has('--non-destructive') && flags.has('--require-exact-cleanup')) fail('conflicting options --non-destructive --require-exact-cleanup');
   if (flags.has('--require-exact-cleanup') && command === '--check-run-evidence' && !values.has('--acceptance')) fail('missing required option --acceptance');
   return { command, values, flags };
 }
@@ -155,23 +177,18 @@ function commandOutput(command, args, environment) {
   });
 }
 
+function guardTarget(inputs) {
+  canonicalOrigin(inputs.SUPABASE_PROJECT_REF);
+}
+
 function protectedInputs(environment) {
-  if (environment.GITHUB_ACTIONS !== 'true' || environment.CUMPA_DEPLOYMENT_ENVIRONMENT !== 'production') fail('hosted deployment is CI-only in the protected production environment');
+  if (environment.GITHUB_ACTIONS !== 'true' || environment.CUMPA_DEPLOYMENT_ENVIRONMENT !== 'production') fail('hosted deployment is CI-only in protected production environment');
   const values = Object.fromEntries(PROTECTED_INPUTS.map((name) => [name, environment[name]]));
   for (const [name, value] of Object.entries(values)) requireString(value, name);
   if (!MODES.has(values.SUPPORT_PROVIDER_MODE)) fail('SUPPORT_PROVIDER_MODE is invalid');
-  if (!isHash(values.APPROVED_SUPABASE_PROJECT_REF_SHA256)) fail('APPROVED_SUPABASE_PROJECT_REF_SHA256 is invalid');
-  if (sha256(values.SUPABASE_PROJECT_REF) !== values.APPROVED_SUPABASE_PROJECT_REF_SHA256) fail('complete project-ref SHA-256 does not match approved lineage');
-  const origin = strictOrigin(values.SUPPORT_PUBLIC_ORIGIN, values.SUPABASE_PROJECT_REF);
-  const routes = publicRoutes(origin);
-  if (values.SUPABASE_SITE_URL !== origin || values.SUPABASE_REDIRECT_URL !== routes.supportFlow || values.SUPABASE_GITHUB_CALLBACK_URL !== routes.authCallback || values.STRIPE_WEBHOOK_URL !== routes.stripeWebhook) {
-    fail('protected browser and provider URLs must derive from SUPPORT_PUBLIC_ORIGIN');
-  }
-  return { ...values, origin, routes };
-}
-
-function guardTarget(inputs) {
-  if (sha256(inputs.SUPABASE_PROJECT_REF) !== inputs.APPROVED_SUPABASE_PROJECT_REF_SHA256) fail('complete project-ref SHA-256 does not match approved lineage');
+  guardTarget(values);
+  const origin = canonicalOrigin(values.SUPABASE_PROJECT_REF);
+  return { ...values, origin, routes: publicRoutes(origin) };
 }
 
 async function managementRequest(inputs, path, options = {}) {
@@ -195,12 +212,25 @@ async function guardedMutation(inputs, operation, mutate, order) {
 
 async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
   const order = [];
-  await managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/domains`);
-  await guardedMutation(inputs, 'domains-reverify', () => commandOutput('npx', ['supabase@2.114.0', 'domains', 'reverify', '--project-ref', inputs.SUPABASE_PROJECT_REF], process.env), order);
-  await guardedMutation(inputs, 'domains-activate', () => commandOutput('npx', ['supabase@2.114.0', 'domains', 'activate', '--project-ref', inputs.SUPABASE_PROJECT_REF], process.env), order);
   await guardedMutation(inputs, 'schema', () => commandOutput('npx', ['supabase@2.114.0', 'db', 'push', '--linked'], process.env), order);
-  await guardedMutation(inputs, 'auth-provider-configuration', () => managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/config/auth`, { method: 'PATCH', body: JSON.stringify({ site_url: inputs.origin, uri_allow_list: inputs.routes.supportFlow }) }), order);
-  await guardedMutation(inputs, 'edge-function-secrets', () => managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/secrets`, { method: 'POST', body: JSON.stringify({}) }), order);
+  await guardedMutation(inputs, 'auth-provider-configuration', () => managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/config/auth`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      external_github_enabled: true,
+      external_github_client_id: inputs.SUPABASE_GITHUB_CLIENT_ID,
+      external_github_secret: inputs.SUPABASE_GITHUB_CLIENT_SECRET,
+      site_url: inputs.routes.supportFlowComplete,
+      uri_allow_list: inputs.routes.supportFlowCallback,
+    }),
+  }), order);
+  await guardedMutation(inputs, 'edge-function-secrets', () => managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/secrets`, {
+    method: 'POST',
+    body: JSON.stringify({
+      STRIPE_SECRET_KEY: inputs.STRIPE_SECRET_KEY,
+      STRIPE_WEBHOOK_SECRET: inputs.STRIPE_WEBHOOK_SECRET,
+      STRIPE_PRICE_ID: inputs.STRIPE_PRICE_ID,
+    }),
+  }), order);
   for (const name of ['support-api', 'support-flow', 'stripe-webhook']) {
     await guardedMutation(inputs, name, () => commandOutput('npx', ['supabase@2.114.0', 'functions', 'deploy', name, '--project-ref', inputs.SUPABASE_PROJECT_REF, '--use-api'], process.env), order);
   }
@@ -213,11 +243,9 @@ async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
     kind: 'deployment-run',
     status: 'passed',
     mode: inputs.SUPPORT_PROVIDER_MODE,
-    fingerprint: inputs.APPROVED_SUPABASE_PROJECT_REF_SHA256,
-    display_suffix: inputs.SUPABASE_PROJECT_REF.slice(-6),
+    fingerprint: sha256(inputs.SUPABASE_PROJECT_REF),
     public_origin: inputs.origin,
     run: immutableRunContext(process.env),
-    domain: { activated: true },
     order,
     routes,
     authority,
@@ -252,14 +280,14 @@ async function snapshotAuthority(inputs) {
 
 async function probeRoutes(routes) {
   const probes = [
-    ['auth-settings', `${new URL(routes.authCallback).origin}/auth/v1/settings`, 200, 'application/json'],
-    ['support-api-invalid-input', routes.supportApi, 400, 'application/json'],
-    ['support-flow-invalid-state', routes.supportFlow, 400, 'text/html'],
-    ['stripe-webhook-invalid-signature', routes.stripeWebhook, 400, 'application/json'],
+    ['auth-settings', `${new URL(routes.authCallback).origin}/auth/v1/settings`, 200, 'application/json', 'GET'],
+    ['support-api-invalid-input', routes.supportApi, 400, 'application/json', 'POST'],
+    ['support-flow-invalid-state', routes.supportFlow, 400, 'text/plain', 'POST'],
+    ['stripe-webhook-invalid-signature', routes.stripeWebhook, 400, 'application/json', 'POST'],
   ];
   const result = {};
-  for (const [name, url, expectedStatus, contentType] of probes) {
-    const response = await fetch(url, { method: name === 'auth-settings' ? 'GET' : 'POST' });
+  for (const [name, url, expectedStatus, contentType, method] of probes) {
+    const response = await fetch(url, { method });
     const actualContentType = response.headers.get('content-type') ?? '';
     if (response.status !== expectedStatus || !actualContentType.startsWith(contentType)) fail(`route probe failed for ${name}`);
     result[name] = { status: response.status, content_type: contentType };
@@ -267,16 +295,27 @@ async function probeRoutes(routes) {
   return result;
 }
 
-function evidenceContainsProtectedValue(value, key = '') {
+function evidencePolicy(record) {
+  try {
+    return record && typeof record.public_origin === 'string' ? canonicalOriginPolicy(record.public_origin) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function evidenceContainsProtectedValue(value, key = '', policy) {
   if (RAW_VALUE_KEY.test(key)) return true;
-  if (typeof value === 'string') return value.includes('.supabase.co') || value.includes('@') || /(?:sk_|whsec_|gh[ops]_)/u.test(value);
-  if (Array.isArray(value)) return value.some((entry) => evidenceContainsProtectedValue(entry));
-  if (value && typeof value === 'object') return Object.entries(value).some(([entryKey, entryValue]) => evidenceContainsProtectedValue(entryValue, entryKey));
+  if (typeof value === 'string') {
+    if (policy?.allowed.has(value)) return false;
+    return value.includes('.supabase.co') || (policy && value.includes(policy.projectRef)) || value.includes('@') || /(?:sk_|whsec_|gh[ops]_|price_|we_|oauth|email|token|code=|state=|profile)/iu.test(value);
+  }
+  if (Array.isArray(value)) return value.some((entry) => evidenceContainsProtectedValue(entry, '', policy));
+  if (value && typeof value === 'object') return Object.entries(value).some(([entryKey, entryValue]) => evidenceContainsProtectedValue(entryValue, entryKey, policy));
   return false;
 }
 
 async function writeEvidence(path, record) {
-  if (evidenceContainsProtectedValue(record)) fail('evidence contains protected or raw content');
+  if (evidenceContainsProtectedValue(record, '', evidencePolicy(record))) fail('evidence contains protected or raw content');
   await writeFile(path, `${JSON.stringify(record, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
 }
 
@@ -289,7 +328,7 @@ async function readEvidence(path) {
   } catch {
     fail('evidence machine record is invalid');
   }
-  if (evidenceContainsProtectedValue(record)) fail('evidence contains protected or raw content');
+  if (evidenceContainsProtectedValue(record, '', evidencePolicy(record))) fail('evidence contains protected or raw content');
   return record;
 }
 
@@ -308,18 +347,22 @@ function assertBaseRecord(record, kind) {
   if (!MODES.has(record.mode)) fail('evidence mode is invalid');
   if (!isHash(record.fingerprint)) fail('evidence fingerprint is invalid');
   if (!record.run || typeof record.run.id !== 'string' || typeof record.run.url !== 'string' || !/^https:\/\/github\.com\//u.test(record.run.url) || !/^[a-f0-9]{40}$/u.test(record.run.commit)) fail('evidence immutable run lineage is invalid');
-  strictOrigin(record.public_origin);
+  const policy = canonicalOriginPolicy(record.public_origin);
+  if (sha256(policy.projectRef) !== record.fingerprint) fail('evidence public origin does not match fingerprint');
+  return policy;
 }
 
 function assertRoutes(routes) {
   const expected = {
     'auth-settings': ['application/json', 200],
     'support-api-invalid-input': ['application/json', 400],
-    'support-flow-invalid-state': ['text/html', 400],
+    'support-flow-invalid-state': ['text/plain', 400],
     'stripe-webhook-invalid-signature': ['application/json', 400],
   };
+  if (!routes || typeof routes !== 'object' || JSON.stringify(Object.keys(routes).sort()) !== JSON.stringify(Object.keys(expected).sort())) fail('evidence routes are incomplete');
   for (const [name, [contentType, status]] of Object.entries(expected)) {
-    if (routes?.[name]?.content_type !== contentType || routes[name].status !== status) fail('custom-domain route evidence is invalid');
+    const route = routes[name];
+    if (!route || route.status !== status || route.content_type !== contentType || Object.keys(route).length !== 2) fail(`evidence route is invalid ${name}`);
   }
 }
 
@@ -328,19 +371,17 @@ function validateRun(record, options) {
   if (record.mode !== options.values.get('--expected-mode')) fail('evidence mode does not match expected mode');
   if (options.flags.has('--require-immutable-run') && record.run.immutable !== true) fail('evidence run is not immutable');
   if (options.flags.has('--require-zero-authority')) assertManifest(record.authority, true);
-  else assertManifest(record.authority);
-  if (options.flags.has('--require-custom-domain-routes')) assertRoutes(record.routes);
-  if (!Array.isArray(record.order) || record.order.join(',') !== 'domains-reverify,domains-activate,schema,auth-provider-configuration,edge-function-secrets,support-api,support-flow,stripe-webhook') fail('evidence deployment order is invalid');
-  if (options.flags.has('--require-exact-cleanup')) return readEvidence(options.values.get('--acceptance')).then((acceptance) => {
-    if (acceptance.fingerprint !== record.fingerprint) fail('evidence cleanup fingerprint does not match acceptance');
-  });
+  if (record.status !== 'passed' || JSON.stringify(record.order) !== JSON.stringify(['schema', 'auth-provider-configuration', 'edge-function-secrets', 'support-api', 'support-flow', 'stripe-webhook'])) fail('evidence mutation order is invalid');
+  if (Object.hasOwn(record, 'domain') || Object.hasOwn(record, 'display_suffix')) fail('evidence retains retired domain state');
+  assertRoutes(record.routes);
 }
 
 function validateHostileMatrix(matrix) {
-  if (!Array.isArray(matrix) || matrix.length !== HOSTILE_CASES.length || matrix.map((entry) => entry?.id).join(',') !== HOSTILE_CASES.join(',')) fail('hostile matrix must contain exactly nine cases');
+  if (!Array.isArray(matrix) || matrix.length !== HOSTILE_CASES.length) fail('hostile matrix is incomplete');
   const fixtures = new Set();
-  for (const entry of matrix) {
-    if (!Array.isArray(entry.fixtures) || entry.fixtures.length === 0 || !entry.before || !entry.after || typeof entry.expected !== 'string' || typeof entry.actual !== 'string' || entry.guard !== true) fail('hostile matrix case is incomplete');
+  for (const [index, id] of HOSTILE_CASES.entries()) {
+    const entry = matrix[index];
+    if (!entry || entry.id !== id || !Array.isArray(entry.fixtures) || !entry.before || !entry.after || entry.expected !== 'rejected-without-authority' || entry.actual !== 'rejected-without-authority' || entry.guard !== true) fail('hostile matrix case is incomplete');
     for (const fixture of entry.fixtures) {
       if (!isHash(fixture) || fixtures.has(fixture)) fail('hostile matrix reuses fixture handles');
       fixtures.add(fixture);
@@ -365,9 +406,10 @@ async function validatePromotion(record, options) {
   if (options.flags.has('--require-cleanup-run') && record.cleanup_run?.immutable !== true) fail('promotion cleanup run is not immutable');
   if (options.flags.has('--require-live-run') && record.live_run?.immutable !== true) fail('promotion live run is not immutable');
   if (options.flags.has('--require-one-fingerprint') && record.cleanup_run?.fingerprint !== record.live_run?.fingerprint) fail('promotion uses more than one fingerprint');
+  if (options.flags.has('--require-exact-cleanup') && record.cleanup_run?.status !== 'passed') fail('promotion cleanup run is incomplete');
   if (options.flags.has('--require-zero-authority')) assertManifest(record.authority, true);
-  if (options.flags.has('--require-zero-after-cleanup')) assertManifest(record.zero_after_cleanup, true);
-  if (options.flags.has('--require-live-smoke') && record.live_smoke?.non_destructive !== true) fail('promotion live smoke is invalid');
+  if (options.flags.has('--require-zero-after-cleanup') && record.cleanup_run?.authority_after !== 'zero') fail('promotion cleanup authority is not zero');
+  if (options.flags.has('--require-live-smoke') && record.live_smoke?.status !== 'passed') fail('promotion live smoke is incomplete');
   if (options.flags.has('--non-destructive') && record.live_smoke?.non_destructive !== true) fail('promotion is not non-destructive');
   if (options.flags.has('--require-immutable-runs') && (!record.cleanup_run?.immutable || !record.live_run?.immutable)) fail('promotion runs are not immutable');
   if (options.values.has('--acceptance')) {
@@ -411,44 +453,27 @@ async function verifyWorkflow(path, options) {
     'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local', '--run-deployment',
   ];
   for (const value of required) if (!workflow.includes(value)) fail(`workflow is missing required ${value}`);
-  const commands = new Set(workflow.split("\n").map((line) => line.trim()).filter((line) => line.startsWith("- run:")).map((line) => line.slice("- run:".length).trim()));
-  for (const value of [
-    "npm ci",
-    "npx vitest run",
-    "npx playwright test --config=tests",
-    "deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests",
-    "npx supabase@2.114.0 db start",
-    "npx supabase@2.114.0 db reset --local --no-seed",
-    "npx supabase@2.114.0 test db",
-    "npx supabase@2.114.0 migration list --local",
-    "npx supabase@2.114.0 db lint --local",
-  ]) if (!commands.has(value)) fail(`workflow is missing required ${value}`);
+  const commands = new Set(workflow.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('- run:')).map((line) => line.slice('- run:'.length).trim()));
+  for (const value of ['npm ci', 'npx vitest run', 'npx playwright test --config=tests', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
+    if (!commands.has(value)) fail(`workflow is missing required ${value}`);
+  }
   if (/workflow_dispatch:|paths(?:-ignore)?:/u.test(workflow)) fail('workflow has a forbidden trigger filter');
   const gates = workflow.slice(workflow.indexOf('repository-gates:'), workflow.indexOf('deploy-production:'));
   for (const value of ['actions/setup-node@v4', 'node-version: 24', 'denoland/setup-deno@v2', 'deno-version: v2.7.14']) {
     if (!gates.includes(value)) fail(`workflow is missing required ${value}`);
   }
-  const gateCommands = new Set(gates.split("\n").map((line) => line.trim()).filter((line) => line.startsWith("- run:")).map((line) => line.slice("- run:".length).trim()));
-  for (const value of [
-    "npm ci",
-    "npx vitest run",
-    "npx playwright test --config=tests",
-    "deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests",
-    "npx supabase@2.114.0 db start",
-    "npx supabase@2.114.0 db reset --local --no-seed",
-    "npx supabase@2.114.0 test db",
-    "npx supabase@2.114.0 migration list --local",
-    "npx supabase@2.114.0 db lint --local",
-  ]) if (!gateCommands.has(value)) fail(`workflow is missing required ${value}`);
-  if (/environment:|secrets\.|SUPABASE_|STRIPE_|SUPPORT_PUBLIC_ORIGIN|APPROVED_SUPABASE/u.test(gates)) fail('repository-gates must be credential-free');
-  const order = required.slice(-6, -1).map((value) => workflow.indexOf(value));
+  const gateCommands = new Set(gates.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('- run:')).map((line) => line.slice('- run:'.length).trim()));
+  for (const value of ['npm ci', 'npx vitest run', 'npx playwright test --config=tests', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
+    if (!gateCommands.has(value)) fail(`workflow is missing required ${value}`);
+  }
+  if (/environment:|secrets\.|SUPABASE_|STRIPE_|APPROVED_SUPABASE/u.test(gates)) fail('repository-gates must be credential-free');
+  const order = ['npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local'].map((value) => workflow.indexOf(value));
   if (order.some((index) => index < 0) || order.some((index, position) => position > 0 && index < order[position - 1])) fail('workflow database gates are out of order');
   if (options.values.has('--require-environment') && options.values.get('--require-environment') !== 'production') fail('workflow only supports the production environment');
   if (options.values.has('--expected-mode') && !workflow.includes('SUPPORT_PROVIDER_MODE: ${{ vars.SUPPORT_PROVIDER_MODE }}')) fail('workflow does not map the protected deployment mode');
-  if (options.flags.has('--require-custom-domain')) {
-    const verifier = await readFile(new URL('./verify-supabase-support.mjs', import.meta.url), 'utf8');
-    if (!workflow.includes('SUPPORT_PUBLIC_ORIGIN: ${{ vars.SUPPORT_PUBLIC_ORIGIN }}') || verifier.indexOf("'domains-reverify'") > verifier.indexOf("'schema'") || verifier.indexOf("'domains-activate'") > verifier.indexOf("'schema'")) fail('workflow custom-domain order is invalid');
-  }
+  if (!workflow.includes('SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}')) fail('workflow does not map the protected project ref');
+  for (const input of RETIRED_INPUTS) if (workflow.includes(input)) fail('workflow contains forbidden retired input');
+  if (/\b(?:domains|custom-domain|custom domain|dns|cname|txt)\b/iu.test(workflow)) fail('workflow contains forbidden domain lifecycle');
   if (options.flags.has('--require-release-artifact') && !workflow.includes('actions/upload-artifact@v4')) fail('workflow does not upload redacted evidence');
 }
 
