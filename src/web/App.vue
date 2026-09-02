@@ -997,15 +997,20 @@ function dismissSupportDialog(): void {
 
 async function startSupportAction(action: 'support' | 'restore'): Promise<void> {
   if (!supportEnabled.value || sessionClient === undefined || supportBusy.value) return;
+  const hostedTab = window.open('', '_blank');
+  if (hostedTab !== null) hostedTab.opener = null;
+  let handedOff = false;
   supportBusy.value = true;
   try {
     const result = await sessionClient.startSupportAction(action);
-    if (result.kind === 'ready') {
-      window.open(result.flowUrl, '_blank', 'noopener,noreferrer');
+    if (result.kind === 'ready' && hostedTab !== null) {
+      hostedTab.location.replace(result.flowUrl);
+      handedOff = true;
       supportDialogMode.value = 'waiting';
       scheduleSupportPoll();
     }
   } finally {
+    if (!handedOff) hostedTab?.close();
     supportBusy.value = false;
   }
 }

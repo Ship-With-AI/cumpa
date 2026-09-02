@@ -13,6 +13,7 @@ let origin = '';
 let support = 'unverified';
 let startAvailable = true;
 let refreshes = 0;
+let startResponseGate: Promise<void> | undefined;
 let supportEnabled = true;
 
 function json(response: ServerResponse, body: unknown, statusCode = 200): void {
@@ -38,7 +39,8 @@ async function startServer(): Promise<string> {
         vite.middlewares.use('/api/selector-drift', (_request, response) => json(response, { base: { kind: 'unchanged', role: 'base' }, head: { kind: 'unchanged', role: 'head' } }));
         vite.middlewares.use('/api/support/status', (_request, response) => json(response, { status: support }));
         vite.middlewares.use('/api/support/refresh', (_request, response) => { refreshes += 1; json(response, { status: support }); });
-        vite.middlewares.use('/api/support/start', (_request, response) => {
+        vite.middlewares.use('/api/support/start', async (_request, response) => {
+          await startResponseGate;
           if (!startAvailable) {
             json(response, { kind: 'unavailable' });
             return;
@@ -61,12 +63,22 @@ async function openReview(page: Page): Promise<void> {
 
 async function startHostedAction(page: Page, name: 'Support Cumpa — $49.99' | 'Restore support'): Promise<void> {
   await page.context().route('https://flow.example.test/**', (route) => route.fulfill({ body: '' }));
+  const gate = Promise.withResolvers<void>();
+  startResponseGate = gate.promise;
   const started = page.waitForRequest((request) => request.url().endsWith('/api/support/start'));
   const popup = page.waitForEvent('popup');
+  let popupOpened = false;
+  void popup.then(() => { popupOpened = true; });
   await page.getByRole('button', { name }).click();
   expect(JSON.parse((await started).postData() ?? '')).toEqual({
     action: name === 'Restore support' ? 'restore' : 'support',
   });
+  try {
+    await expect.poll(() => popupOpened, { timeout: 500 }).toBe(true);
+  } finally {
+    gate.resolve();
+    startResponseGate = undefined;
+  }
   await expect(await popup).toHaveURL('https://flow.example.test/');
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByText('Waiting for confirmation… You can close this and keep reviewing.')).toBeVisible();
@@ -78,6 +90,7 @@ test.beforeEach(() => {
   support = 'unverified';
   startAvailable = true;
   refreshes = 0;
+  startResponseGate = undefined;
   supportEnabled = true;
 });
 
