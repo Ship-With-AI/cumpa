@@ -44,7 +44,7 @@ Deno.test("anonymous start creates only a hashed expiring intent and fixed flow 
   assert(flowUrl.searchParams.get("intent") === "BwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwcHBwc");
   assert(deps.calls.length === 1 && deps.calls[0]?.name === "create_support_intent");
   assert(deps.calls[0]?.args.p_action === "support" && deps.calls[0]?.args.p_installation_id === installationId);
-  assert(deps.calls[0]?.args.p_intent_hash instanceof Uint8Array && (deps.calls[0]?.args.p_intent_hash as Uint8Array).byteLength === 32);
+  assert(typeof deps.calls[0]?.args.p_intent_hash === "string" && /^\\x[0-9a-f]{64}$/u.test(deps.calls[0].args.p_intent_hash));
   assert(deps.calls[0]?.args.p_expires_at === "2026-08-15T00:10:00.000Z");
   assert(!JSON.stringify(result).match(/token|code|email|profile|user/i));
 });

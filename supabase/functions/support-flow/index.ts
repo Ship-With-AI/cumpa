@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
 import { InstallationIdSchema, SupportActionSchema } from "../_shared/validation.ts";
+import { postgresBytea } from "../_shared/postgres.ts";
 
 type Rpc = (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
 type AuthClient = {
@@ -83,7 +84,8 @@ function opaqueIntent(value: string | null) {
 async function intentHash(intent: string) {
   const base64 = intent.replaceAll("-", "+").replaceAll("_", "/") + "=";
   const binary = atob(base64);
-  return new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(binary, (character) => character.charCodeAt(0))));
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", Uint8Array.from(binary, (character) => character.charCodeAt(0))));
+  return postgresBytea(digest);
 }
 
 function claimedIntent(value: unknown): ClaimedIntent | undefined {

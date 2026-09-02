@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { InstallationIdSchema, SupportStartRequestSchema } from "../_shared/validation.ts";
+import { postgresBytea } from "../_shared/postgres.ts";
 
 type Rpc = (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
 
@@ -79,7 +80,7 @@ export async function handleSupportApiRequest(request: Request, dependencies = d
     const result = await dependencies.service.rpc("create_support_intent", {
       p_action: parsed.data.action,
       p_installation_id: parsed.data.installationId,
-      p_intent_hash: digest,
+      p_intent_hash: postgresBytea(digest),
       p_expires_at: new Date(dependencies.now().getTime() + 600_000).toISOString(),
     });
     if (result.error) {

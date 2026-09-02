@@ -118,6 +118,7 @@ Deno.test("callback validates the hosted user then makes one server-owned suppor
   assert(response.status === 302 && response.headers.get("location") === "https://checkout.stripe.example/c/server");
   assert(deps.authCalls.join(",") === "exchangeCodeForSession,getUser");
   assert(deps.calls[0]?.name === "claim_support_intent" && deps.calls[0]?.args.p_user_id === userId);
+  assert(typeof deps.calls[0]?.args.p_intent_hash === "string" && /^\\x[0-9a-f]{64}$/u.test(deps.calls[0].args.p_intent_hash));
   assert(deps.calls[1]?.name === "record_checkout_session");
   assert(JSON.stringify(deps.checkoutCalls[0]) === JSON.stringify({
     mode: "payment",
