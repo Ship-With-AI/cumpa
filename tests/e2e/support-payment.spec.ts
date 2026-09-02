@@ -34,16 +34,19 @@ test('the CI verifier rejects malformed and retired routing options', async ({},
   await reject(['--verify-workflow', workflow, '--unknown'], 'unknown option --unknown');
   await reject(['--verify-workflow', workflow, '--require-custom-domain'], 'unknown option --require-custom-domain');
 });
-test('deployment targets the protected project, sends secret entries, and redacts hosted errors', async ({}, testInfo) => {
+test('deployment accepts empty hosted success responses without losing redacted errors', async ({}, testInfo) => {
   const projectRef = 'a'.repeat(20);
   const bin = testInfo.outputPath('bin');
   const npx = join(bin, 'npx');
   const fetchHook = testInfo.outputPath('fetch-hook.mjs');
   await mkdir(bin, { recursive: true });
   await writeFile(npx, `#!/usr/bin/env node
-const expected = ['supabase@2.114.0', 'db', 'push', '--project-ref', process.env.SUPABASE_PROJECT_REF];
 const actual = process.argv.slice(2);
-if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+const projectRef = process.env.SUPABASE_PROJECT_REF;
+const database = JSON.stringify(['supabase@2.114.0', 'db', 'push', '--project-ref', projectRef]);
+const functions = ['support-api', 'support-flow', 'stripe-webhook'];
+const functionDeployment = actual.length === 7 && actual[0] === 'supabase@2.114.0' && actual[1] === 'functions' && actual[2] === 'deploy' && functions.includes(actual[3]) && actual[4] === '--project-ref' && actual[5] === projectRef && actual[6] === '--use-api';
+if (JSON.stringify(actual) !== database && !functionDeployment) {
   console.error(\`unexpected npx arguments: \${JSON.stringify(actual)}\`);
   process.exit(92);
 }
@@ -53,14 +56,17 @@ if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     'let calls = 0;',
     'globalThis.fetch = async (_url, options = {}) => {',
     "  if (++calls === 1) return new Response('{}');",
-    '  const actual = JSON.parse(options.body);',
-    '  const expected = [',
-    "    { name: 'STRIPE_SECRET_KEY', value: process.env.STRIPE_SECRET_KEY },",
-    "    { name: 'STRIPE_WEBHOOK_SECRET', value: process.env.STRIPE_WEBHOOK_SECRET },",
-    "    { name: 'STRIPE_PRICE_ID', value: process.env.STRIPE_PRICE_ID },",
-    '  ];',
-    "  const message = JSON.stringify(actual) === JSON.stringify(expected) ? 'secrets array accepted' : 'unexpected secrets payload';",
-    '  return new Response(JSON.stringify({ message: `${message} ${process.env.SUPABASE_DB_PASSWORD}` }), { status: 400 });',
+    '  if (calls === 2) {',
+    '    const actual = JSON.parse(options.body);',
+    '    const expected = [',
+    "      { name: 'STRIPE_SECRET_KEY', value: process.env.STRIPE_SECRET_KEY },",
+    "      { name: 'STRIPE_WEBHOOK_SECRET', value: process.env.STRIPE_WEBHOOK_SECRET },",
+    "      { name: 'STRIPE_PRICE_ID', value: process.env.STRIPE_PRICE_ID },",
+    '    ];',
+    "    if (JSON.stringify(actual) !== JSON.stringify(expected)) return new Response(JSON.stringify({ message: `unexpected secrets payload ${process.env.SUPABASE_DB_PASSWORD}` }), { status: 400 });",
+    '    return new Response(null, { status: 201 });',
+    '  }',
+    '  return new Response(JSON.stringify({ message: `empty success accepted ${process.env.SUPABASE_DB_PASSWORD}` }), { status: 400 });',
     '};',
     '',
   ].join('\n'));
@@ -92,7 +98,7 @@ if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     },
   }).then(() => undefined, (error: { stderr: string }) => error);
 
-  expect(failure?.stderr).toContain('HTTP 400: {"message":"secrets array accepted [redacted]"}');
+  expect(failure?.stderr).toContain('HTTP 400: {"message":"empty success accepted [redacted]"}');
   expect(failure?.stderr).not.toContain('sensitive-db-value');
 });
 

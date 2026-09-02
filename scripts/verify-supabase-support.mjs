@@ -211,11 +211,12 @@ async function managementRequest(inputs, path, options = {}) {
       ...options.headers,
     },
   });
+  const body = await response.text();
   if (!response.ok) {
-    const detail = redactedHostedError(await response.text(), inputs);
+    const detail = redactedHostedError(body, inputs);
     fail(`hosted request failed with HTTP ${response.status}${detail ? `: ${detail}` : ''}`);
   }
-  return response.status === 204 ? undefined : response.json();
+  return body.length === 0 ? undefined : JSON.parse(body);
 }
 
 async function guardedMutation(inputs, operation, mutate, order) {
