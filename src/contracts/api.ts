@@ -726,3 +726,4 @@ export type SupportAction = z.infer<typeof SupportActionSchema>;
 export type SupportStartRequest = z.infer<typeof SupportStartRequestSchema>;
 export type SupportStartResult = z.infer<typeof SupportStartResultSchema>;
 export type SupportStatus = z.infer<typeof SupportStatusSchema>;
+export type ApiError = z.infer<typeof ApiErrorSchema>;

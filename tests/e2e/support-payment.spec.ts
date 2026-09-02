@@ -32,7 +32,8 @@ test('workflow verification rejects toolchain, database-order, and retired-input
     ['node', 'node-version: 24', 'node-version: 22', 'workflow is missing required'],
     ['deno', 'deno-version: v2.7.14', 'deno-version: v2.7.13', 'workflow is missing required'],
     ['install', 'npm ci', 'npm install', 'workflow is missing required'],
-    ['vitest', 'npx vitest run', 'npx vitest run tests/unit', 'workflow is missing required'],
+    ['build', 'npm run build', 'npm run build:runtime', 'workflow is missing required'],
+    ['vitest', 'npx vitest run --no-file-parallelism', 'npx vitest run --no-file-parallelism tests/unit', 'workflow is missing required'],
     ['playwright', 'npx playwright test --config=tests', 'npx playwright test', 'workflow is missing required'],
     ['deno suite', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'deno test supabase/functions/tests', 'workflow is missing required'],
     ['Supabase pin', 'npx supabase@2.114.0 db start', 'npx supabase db start', 'workflow is missing required'],
@@ -52,4 +53,10 @@ test('workflow verification rejects toolchain, database-order, and retired-input
     'npx supabase@2.114.0 db reset --local --no-seed\n      - run: npx supabase@2.114.0 db start',
   ));
   await reject(['--verify-workflow', reordered], 'workflow database gates are out of order');
+  const testsReordered = testInfo.outputPath('tests-reordered.yml');
+  await writeFile(testsReordered, source.replace(
+    'npm run build\n      - run: npx vitest run --no-file-parallelism',
+    'npx vitest run --no-file-parallelism\n      - run: npm run build',
+  ));
+  await reject(['--verify-workflow', testsReordered], 'workflow test gates are out of order');
 });
