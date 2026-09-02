@@ -128,8 +128,8 @@ const commandDefinitions = {
     flags: new Set(['--require-approved', '--require-cleanup-run', '--require-live-run', '--require-one-fingerprint', '--require-exact-cleanup', '--require-zero-authority', '--require-zero-after-cleanup', '--require-live-smoke', '--non-destructive', '--require-immutable-runs']),
   },
   '--run-deployment': {
-    values: new Set(['--run-deployment', '--mode', '--evidence', '--acceptance-marker']),
-    flags: new Set(),
+    values: new Set(['--mode', '--evidence', '--acceptance-marker']),
+    flags: new Set(['--run-deployment']),
     required: ['--mode', '--evidence'],
   },
 };

@@ -19,6 +19,13 @@ test('the CI verifier rejects malformed and retired routing options', async ({},
 
   await reject(['--deploy'], 'unknown option --deploy');
   await reject(['--verify-workflow'], 'missing value --verify-workflow');
+  await reject([
+    '--run-deployment',
+    '--mode',
+    'prelaunch-test',
+    '--evidence',
+    testInfo.outputPath('deployment.json'),
+  ], 'hosted deployment is CI-only');
   await reject(['--verify-workflow', workflow, '--require-environment'], 'missing value --require-environment');
   await reject(['--verify-workflow', workflow, '--require-environment', 'production', '--require-environment', 'production'], 'duplicate option --require-environment');
   await reject(['--verify-workflow', workflow, '--expected-mode', 'invalid'], 'invalid expected mode');
