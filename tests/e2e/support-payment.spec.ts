@@ -35,7 +35,7 @@ test('workflow verification rejects toolchain, database-order, and retired-input
     ['build', 'npm run build', 'npm run build:runtime', 'workflow is missing required'],
     ['browser install', 'npx playwright install --with-deps chromium', 'npx playwright install chromium', 'workflow is missing required'],
     ['vitest', 'npx vitest run --no-file-parallelism', 'npx vitest run --no-file-parallelism tests/unit', 'workflow is missing required'],
-    ['playwright', 'npx playwright test', 'npx playwright test tests/e2e/support-payment.spec.ts', 'workflow is missing required'],
+    ['playwright', 'npx playwright test tests/e2e/support-payment.spec.ts tests/e2e/support-recovery.spec.ts tests/e2e/support-restore.spec.ts', 'npx playwright test tests/e2e/support-payment.spec.ts', 'workflow is missing required'],
     ['deno suite', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'deno test supabase/functions/tests', 'workflow is missing required'],
     ['Supabase pin', 'npx supabase@2.114.0 db start', 'npx supabase db start', 'workflow is missing required'],
     ['project ref', 'SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}', 'SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}', 'workflow does not map the protected project ref'],

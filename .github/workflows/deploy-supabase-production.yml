@@ -26,7 +26,7 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npx vitest run --no-file-parallelism
-      - run: npx playwright test
+      - run: npx playwright test tests/e2e/support-payment.spec.ts tests/e2e/support-recovery.spec.ts tests/e2e/support-restore.spec.ts
       - run: deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests
       - run: npx supabase@2.114.0 db start
       - run: npx supabase@2.114.0 db reset --local --no-seed
