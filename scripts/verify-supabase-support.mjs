@@ -239,11 +239,11 @@ async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
   }), order);
   await guardedMutation(inputs, 'edge-function-secrets', () => managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/secrets`, {
     method: 'POST',
-    body: JSON.stringify({
-      STRIPE_SECRET_KEY: inputs.STRIPE_SECRET_KEY,
-      STRIPE_WEBHOOK_SECRET: inputs.STRIPE_WEBHOOK_SECRET,
-      STRIPE_PRICE_ID: inputs.STRIPE_PRICE_ID,
-    }),
+    body: JSON.stringify([
+      { name: 'STRIPE_SECRET_KEY', value: inputs.STRIPE_SECRET_KEY },
+      { name: 'STRIPE_WEBHOOK_SECRET', value: inputs.STRIPE_WEBHOOK_SECRET },
+      { name: 'STRIPE_PRICE_ID', value: inputs.STRIPE_PRICE_ID },
+    ]),
   }), order);
   for (const name of ['support-api', 'support-flow', 'stripe-webhook']) {
     await guardedMutation(inputs, name, () => commandOutput('npx', ['supabase@2.114.0', 'functions', 'deploy', name, '--project-ref', inputs.SUPABASE_PROJECT_REF, '--use-api'], process.env), order);

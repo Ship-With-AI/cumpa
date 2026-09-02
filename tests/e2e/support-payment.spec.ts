@@ -34,7 +34,7 @@ test('the CI verifier rejects malformed and retired routing options', async ({},
   await reject(['--verify-workflow', workflow, '--unknown'], 'unknown option --unknown');
   await reject(['--verify-workflow', workflow, '--require-custom-domain'], 'unknown option --require-custom-domain');
 });
-test('deployment targets the protected project and redacts hosted errors', async ({}, testInfo) => {
+test('deployment targets the protected project, sends secret entries, and redacts hosted errors', async ({}, testInfo) => {
   const projectRef = 'a'.repeat(20);
   const bin = testInfo.outputPath('bin');
   const npx = join(bin, 'npx');
@@ -49,7 +49,21 @@ if (JSON.stringify(actual) !== JSON.stringify(expected)) {
 }
 `);
   await chmod(npx, 0o755);
-  await writeFile(fetchHook, 'globalThis.fetch = async () => new Response(JSON.stringify({ message: `invalid site_url ${process.env.SUPABASE_DB_PASSWORD}` }), { status: 400 });\n');
+  await writeFile(fetchHook, [
+    'let calls = 0;',
+    'globalThis.fetch = async (_url, options = {}) => {',
+    "  if (++calls === 1) return new Response('{}');",
+    '  const actual = JSON.parse(options.body);',
+    '  const expected = [',
+    "    { name: 'STRIPE_SECRET_KEY', value: process.env.STRIPE_SECRET_KEY },",
+    "    { name: 'STRIPE_WEBHOOK_SECRET', value: process.env.STRIPE_WEBHOOK_SECRET },",
+    "    { name: 'STRIPE_PRICE_ID', value: process.env.STRIPE_PRICE_ID },",
+    '  ];',
+    "  const message = JSON.stringify(actual) === JSON.stringify(expected) ? 'secrets array accepted' : 'unexpected secrets payload';",
+    '  return new Response(JSON.stringify({ message: `${message} ${process.env.SUPABASE_DB_PASSWORD}` }), { status: 400 });',
+    '};',
+    '',
+  ].join('\n'));
 
   const failure = await execFileAsync(process.execPath, [
     script,
@@ -78,7 +92,7 @@ if (JSON.stringify(actual) !== JSON.stringify(expected)) {
     },
   }).then(() => undefined, (error: { stderr: string }) => error);
 
-  expect(failure?.stderr).toContain('HTTP 400: {"message":"invalid site_url [redacted]"}');
+  expect(failure?.stderr).toContain('HTTP 400: {"message":"secrets array accepted [redacted]"}');
   expect(failure?.stderr).not.toContain('sensitive-db-value');
 });
 
