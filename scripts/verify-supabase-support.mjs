@@ -449,12 +449,12 @@ async function verifyWorkflow(path, options) {
     'push:', 'branches: [main]', 'contents: read', 'group: supabase-production', 'cancel-in-progress: false',
     'repository-gates:', 'deploy-production:', 'needs: repository-gates', 'environment: production',
     'actions/setup-node@v4', 'node-version: 24', 'denoland/setup-deno@v2', 'deno-version: v2.7.14',
-    'npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test --config=tests', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests',
+    'npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests',
     'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local', '--run-deployment',
   ];
   for (const value of required) if (!workflow.includes(value)) fail(`workflow is missing required ${value}`);
   const commands = new Set(workflow.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('- run:')).map((line) => line.slice('- run:'.length).trim()));
-  for (const value of ['npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test --config=tests', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
+  for (const value of ['npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
     if (!commands.has(value)) fail(`workflow is missing required ${value}`);
   }
   if (/workflow_dispatch:|paths(?:-ignore)?:/u.test(workflow)) fail('workflow has a forbidden trigger filter');
@@ -463,7 +463,7 @@ async function verifyWorkflow(path, options) {
     if (!gates.includes(value)) fail(`workflow is missing required ${value}`);
   }
   const gateCommands = new Set(gates.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('- run:')).map((line) => line.slice('- run:'.length).trim()));
-  for (const value of ['npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test --config=tests', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
+  for (const value of ['npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
     if (!gateCommands.has(value)) fail(`workflow is missing required ${value}`);
   }
   const testOrder = ['npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism'].map((value) => workflow.indexOf(value));
