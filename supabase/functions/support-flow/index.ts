@@ -134,6 +134,7 @@ export async function handleSupportFlowRequest(request: Request, dependencies = 
       const checkout = await dependencies.stripe.checkout.sessions.create({
         mode: "payment",
         line_items: [{ price: dependencies.priceId, quantity: 1 }],
+        customer_creation: "always",
         client_reference_id: user.data.user.id,
         metadata: { user_id: user.data.user.id, installation_id: claimed.installation_id, intent_id: claimed.id },
         success_url: new URL(completionPath, dependencies.supabaseUrl).toString(),

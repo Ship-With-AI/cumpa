@@ -123,6 +123,7 @@ Deno.test("callback validates the hosted user then makes one server-owned suppor
   assert(JSON.stringify(deps.checkoutCalls[0]) === JSON.stringify({
     mode: "payment",
     line_items: [{ price: "price_4999", quantity: 1 }],
+    customer_creation: "always",
     client_reference_id: userId,
     metadata: { user_id: userId, installation_id: installationId, intent_id: "22222222-2222-4222-8222-222222222222" },
     success_url: `${supabaseUrl}/functions/v1/support-flow/complete`,
