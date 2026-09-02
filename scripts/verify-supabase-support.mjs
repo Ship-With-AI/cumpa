@@ -190,6 +190,17 @@ function protectedInputs(environment) {
   const origin = canonicalOrigin(values.SUPABASE_PROJECT_REF);
   return { ...values, origin, routes: publicRoutes(origin) };
 }
+function redactedHostedError(body, inputs) {
+  let value = body;
+  const protectedValues = [
+    ...PROTECTED_INPUTS.map((name) => inputs[name]),
+    inputs.origin,
+    ...Object.values(inputs.routes),
+  ].filter((entry) => typeof entry === 'string' && entry.length > 0).sort((left, right) => right.length - left.length);
+  for (const protectedValue of protectedValues) value = value.replaceAll(protectedValue, '[redacted]');
+  return value.replace(/[\u0000-\u001f\u007f]/gu, ' ').trim().slice(0, 512);
+}
+
 
 async function managementRequest(inputs, path, options = {}) {
   const response = await fetch(`${MANAGEMENT_ORIGIN}${path}`, {
@@ -200,7 +211,10 @@ async function managementRequest(inputs, path, options = {}) {
       ...options.headers,
     },
   });
-  if (!response.ok) fail(`hosted request failed with HTTP ${response.status}`);
+  if (!response.ok) {
+    const detail = redactedHostedError(await response.text(), inputs);
+    fail(`hosted request failed with HTTP ${response.status}${detail ? `: ${detail}` : ''}`);
+  }
   return response.status === 204 ? undefined : response.json();
 }
 

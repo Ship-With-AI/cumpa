@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process';
 import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { delimiter, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
 
 import { expect, test } from '@playwright/test';
@@ -33,20 +34,24 @@ test('the CI verifier rejects malformed and retired routing options', async ({},
   await reject(['--verify-workflow', workflow, '--unknown'], 'unknown option --unknown');
   await reject(['--verify-workflow', workflow, '--require-custom-domain'], 'unknown option --require-custom-domain');
 });
-test('deployment targets the protected project without local link state', async ({}, testInfo) => {
+test('deployment targets the protected project and redacts hosted errors', async ({}, testInfo) => {
   const projectRef = 'a'.repeat(20);
   const bin = testInfo.outputPath('bin');
   const npx = join(bin, 'npx');
+  const fetchHook = testInfo.outputPath('fetch-hook.mjs');
   await mkdir(bin, { recursive: true });
   await writeFile(npx, `#!/usr/bin/env node
 const expected = ['supabase@2.114.0', 'db', 'push', '--project-ref', process.env.SUPABASE_PROJECT_REF];
 const actual = process.argv.slice(2);
-console.error(JSON.stringify(actual) === JSON.stringify(expected) ? 'explicit project target' : \`unexpected npx arguments: \${JSON.stringify(actual)}\`);
-process.exit(JSON.stringify(actual) === JSON.stringify(expected) ? 91 : 92);
+if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+  console.error(\`unexpected npx arguments: \${JSON.stringify(actual)}\`);
+  process.exit(92);
+}
 `);
   await chmod(npx, 0o755);
+  await writeFile(fetchHook, 'globalThis.fetch = async () => new Response(JSON.stringify({ message: `invalid site_url ${process.env.SUPABASE_DB_PASSWORD}` }), { status: 400 });\n');
 
-  await expect(execFileAsync(process.execPath, [
+  const failure = await execFileAsync(process.execPath, [
     script,
     '--run-deployment',
     '--mode',
@@ -57,12 +62,13 @@ process.exit(JSON.stringify(actual) === JSON.stringify(expected) ? 91 : 92);
     env: {
       ...process.env,
       PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
+      NODE_OPTIONS: `--import=${pathToFileURL(fetchHook).href}`,
       GITHUB_ACTIONS: 'true',
       CUMPA_DEPLOYMENT_ENVIRONMENT: 'production',
       SUPPORT_PROVIDER_MODE: 'prelaunch-test',
       SUPABASE_ACCESS_TOKEN: 'token',
       SUPABASE_PROJECT_REF: projectRef,
-      SUPABASE_DB_PASSWORD: 'password',
+      SUPABASE_DB_PASSWORD: 'sensitive-db-value',
       SUPABASE_GITHUB_CLIENT_ID: 'client-id',
       SUPABASE_GITHUB_CLIENT_SECRET: 'client-secret',
       STRIPE_SECRET_KEY: 'stripe-secret',
@@ -70,9 +76,10 @@ process.exit(JSON.stringify(actual) === JSON.stringify(expected) ? 91 : 92);
       STRIPE_PRICE_ID: 'price',
       STRIPE_WEBHOOK_ENDPOINT_ID: 'endpoint',
     },
-  })).rejects.toMatchObject({
-    stderr: expect.stringContaining('explicit project target'),
-  });
+  }).then(() => undefined, (error: { stderr: string }) => error);
+
+  expect(failure?.stderr).toContain('HTTP 400: {"message":"invalid site_url [redacted]"}');
+  expect(failure?.stderr).not.toContain('sensitive-db-value');
 });
 
 
