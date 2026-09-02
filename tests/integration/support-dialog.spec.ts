@@ -108,6 +108,8 @@ test('offers optional support without gating the review, preserving dialog acces
   await page.keyboard.press('Escape');
   await expect(page.getByRole('dialog')).toBeHidden();
   await expect(page.getByRole('button', { name: 'Support Cumpa', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'Support Cumpa', exact: true }).click();
+  await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByText('No PR-style changes in this pinned comparison')).toBeVisible();
 });
 

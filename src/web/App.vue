@@ -979,7 +979,6 @@ function stopSupportStatus(): void {
 function openSupportDialog(): void {
   if (!supportEnabled.value) return;
   supportOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-  supportOnDemand.value = true;
   supportDialogOpen.value = true;
   supportDialogMode.value = supportStatus.value === 'verified' ? 'verified' : 'invitation';
   void nextTick(() => supportDialog.value?.focusInitial());
