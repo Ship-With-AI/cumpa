@@ -13,6 +13,7 @@ import { expect, test } from '@playwright/test';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const artifactScript = fileURLToPath(new URL('../../scripts/verify-production-artifacts.mjs', import.meta.url));
 
 interface PackFile {
   path: string;
@@ -92,4 +93,10 @@ test('packed artifact contains runtime and production Vue assets', () => {
   } finally {
     rmSync(temporaryDirectory, { force: true, recursive: true });
   }
+});
+
+test('published package passes the configured-absent production scanner', () => {
+  const hasProductionBootstrap = existsSync(join(repositoryRoot, 'src/web/index.html'));
+  runPrerequisite(npmCommand, ['run', hasProductionBootstrap ? 'build' : 'build:runtime']);
+  runPrerequisite(process.execPath, [artifactScript]);
 });

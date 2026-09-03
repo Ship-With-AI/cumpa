@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { delimiter, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { promisify } from 'node:util';
@@ -9,6 +9,7 @@ import { expect, test } from '@playwright/test';
 
 const execFileAsync = promisify(execFile);
 const script = new URL('../../scripts/verify-supabase-support.mjs', import.meta.url).pathname;
+const artifactScript = new URL('../../scripts/verify-production-artifacts.mjs', import.meta.url).pathname;
 
 async function reject(args: string[], message: string) {
   await expect(execFileAsync(process.execPath, [script, ...args])).rejects.toMatchObject({
@@ -285,4 +286,55 @@ test('acceptance markers reject browser observations not covered by their digest
     '--deployment', deployment,
     '--expected-mode', 'prelaunch-test',
   ], 'acceptance marker observations digest does not match');
+});
+
+
+test('retirement and package scanners permit only the supplied canonical origin', async ({}, testInfo) => {
+  const origin = 'https://abcdefghijklmnopqrst.supabase.co';
+  const fixture = testInfo.outputPath('artifact-fixture');
+  const output = join(fixture, 'retirement.json');
+  await mkdir(join(fixture, 'dist'), { recursive: true });
+  await writeFile(join(fixture, 'package.json'), JSON.stringify({
+    name: 'scanner-fixture',
+    version: '1.0.0',
+    files: ['dist'],
+    scripts: { build: "node -e \"require('fs').mkdirSync('dist',{recursive:true});require('fs').writeFileSync('dist/launcher.mjs',process.env.LAUNCHER || '')\"" },
+  }));
+  await writeFile(join(fixture, '.gitignore'), 'node_modules\n');
+  await execFileAsync('git', ['init'], { cwd: fixture });
+  await execFileAsync('git', ['add', 'package.json', '.gitignore'], { cwd: fixture });
+
+  const cases: Array<[string, string, string | undefined]> = [
+    ['configured absence', '', undefined],
+    ['canonical configured launcher', `CUMPA_SUPPORT_SERVICE_URL=${origin}\n`, undefined],
+    ['arbitrary host', 'CUMPA_SUPPORT_SERVICE_URL=https://zzzzzzzzzzzzzzzzzzzz.supabase.co\n', 'unexpected Supabase origin'],
+    ['bare ref', 'abcdefghijklmnopqrst\n', 'raw Supabase project ref'],
+    ['duplicate launcher', `CUMPA_SUPPORT_SERVICE_URL=${origin}\nCUMPA_SUPPORT_SERVICE_URL=${origin}\n`, 'exactly one configured launcher assignment'],
+    ['protected value', 'STRIPE_SECRET_KEY=sk_fixture\n', 'protected value'],
+  ];
+  for (const [name, launcher, failure] of cases) {
+    const environment = { ...process.env, LAUNCHER: launcher };
+    const artifactArgs = launcher.startsWith('CUMPA_')
+      ? ['--expected-support-origin', origin, '--require-configured-launcher', 'dist/launcher.mjs']
+      : [];
+    const result = execFileAsync(process.execPath, [artifactScript, ...artifactArgs], { cwd: fixture, env: environment });
+    if (failure) {
+      await expect(result, name).rejects.toMatchObject({ stderr: expect.stringContaining(failure) });
+    } else {
+      await expect(result, name).resolves.toBeDefined();
+    }
+  }
+
+  await expect(execFileAsync(process.execPath, [
+    script,
+    '--retirement-review',
+    '--output',
+    output,
+  ], { cwd: fixture })).resolves.toBeDefined();
+  expect(JSON.parse(await readFile(output, 'utf8'))).toMatchObject({
+    kind: 'retirement-review',
+    configured_absent: true,
+    violations: [],
+  });
+  await rm(fixture, { recursive: true, force: true });
 });
