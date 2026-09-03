@@ -27,7 +27,7 @@ Plans:
 **Goal:** Replace the blocked standalone support backend with Supabase Postgres, Auth, and Edge Functions while preserving optional webhook-authoritative USD $49.99 support and machine-wide prompt suppression, replacing email recovery with installation-bound GitHub OAuth restoration, and completing a verified Supabase-only production cutover.
 **Requirements:** PAY-01, PAY-02, PAY-03, PAY-04, SUP-01, SUP-02, SUP-03, SUP-04, SUP-05, REC-01, REC-02, REC-03 (REC-01/REC-02 mechanisms superseded by Phase 2 D-10)
 **Depends on:** Phase 1
-**Plans:** 12/17 plans executed
+**Plans:** 13/17 plans executed
 
 Plans:
 **Wave 1**
@@ -80,7 +80,7 @@ Plans:
 
 **Wave 13** *(blocked on Wave 12 completion)*
 
-- [ ] 02-13-PLAN.md — Migrate active recovery assertions before deleting stale recovery and service tests
+- [x] 02-13-PLAN.md — Migrate active recovery assertions before deleting stale recovery and service tests
 
 **Wave 14** *(blocked on Wave 13 completion)*
 

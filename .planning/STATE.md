@@ -5,15 +5,16 @@ milestone_name: Agent Review Handoff
 current_phase: 02
 current_phase_name: move-the-implementation-to-supabase
 status: executing
-stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-09-03T14:38:39.441Z"
+stopped_at: Completed 02-13-PLAN.md
+last_updated: "2026-09-03T17:09:16.433Z"
 last_activity: 2026-08-30
 last_activity_desc: Completed 02-07-PLAN.md
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 22
-  completed_plans: 17
+  completed_plans: 18
+  percent: 50
 ---
 
 # Project State
@@ -28,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-08-06)
 ## Current Position
 
 Phase: 02 (move-the-implementation-to-supabase) — EXECUTING
-Plan: 13 of 17
+Plan: 14 of 17
 Status: Ready to execute
 Last activity: 2026-08-30 — Completed 02-07-PLAN.md
 
@@ -76,6 +77,7 @@ Last activity: 2026-08-30 — Completed 02-07-PLAN.md
 | Phase 02 P06 | 10min | 3 tasks | 10 files |
 | Phase 02 P07 | N/A | 3 tasks | 8 files |
 | Phase 02 P11 | N/A | 2 tasks | 7 files |
+| Phase 02 P13 | 142min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -116,6 +118,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Session support metadata solely enables browser support work — Controls, dialog, polling, and prompts follow the advertised capability.
 - [Phase 02]: GitHub Actions is the sole guarded deployment path. — The protected `production` environment owns public `SUPABASE_PROJECT_REF`; the executor validates its canonical 20-character shape before each hosted mutation and derives exactly `https://<ref>.supabase.co`, while Edge Functions use built-in `SUPABASE_URL`. Exact origin plus immutable GitHub run/commit proves cross-record target lineage; any derived fingerprint is supplemental correlation only.
 - [Phase 02]: Completed 02-07 is historical and performed no hosted mutation. — Revised 02-08 must cut source, workflow, focused tests, and operations docs to D-20 before any human setup or first push.
+- [Phase 02]: Canonical-origin evidence contract moved intact from stale recovery suite to payment E2E suite; restore coverage remains active. — Preserves every source assertion before stale-suite retirement.
 
 ### Roadmap Evolution
 
@@ -160,8 +163,8 @@ None yet.
 
 ## Session Continuity
 
-**Last session:** 2026-09-03T14:38:39.434Z
-**Stopped at:** Completed 02-07-PLAN.md
+**Last session:** 2026-09-03T17:08:34.260Z
+**Stopped at:** Completed 02-13-PLAN.md
 **Resume file:** None
 
 No active phase execution session.
