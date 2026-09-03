@@ -69,6 +69,18 @@ Deno.test("valid signed paid exact-product event settles through one atomic auth
   }]));
 });
 
+Deno.test("authority settlement preserves the Supabase client receiver", async () => {
+  const service = {
+    active: true,
+    async rpc(this: { active: boolean }, _name: string, _args: Record<string, unknown>) {
+      if (!this.active) throw new Error("unbound RPC");
+      return { data: true, error: null };
+    },
+  };
+  const response = await handleStripeWebhookRequest(request(), dependencies({ service }));
+  assert(response.status === 200 && JSON.stringify(await response.json()) === '{"received":true}');
+});
+
 Deno.test("raw signature verification happens before JSON interpretation, lookup, or settlement", async () => {
   const deps = dependencies({ stripe: { webhooks: { constructEventAsync: async () => { throw new Error("invalid signature"); } } } });
   const response = await handleStripeWebhookRequest(request('{"id":"evt_server_owned"} '), deps);

@@ -62,7 +62,7 @@ export async function handleStripeWebhookRequest(request: Request, dependencies 
   const checkout = checkoutSessionInvariant(session, dependencies.priceId);
   if (!checkout) return json({ error: "invalid_request" }, 400);
   try {
-    const fulfillment = await fulfillVerifiedCheckout(dependencies.service.rpc, event.id, checkout);
+    const fulfillment = await fulfillVerifiedCheckout((name, args) => dependencies.service.rpc(name, args), event.id, checkout);
     if (fulfillment.status === "settled") return json({ received: true });
     dependencies.log?.(`stripe_webhook_authority_unavailable:${safePostgrestCode(fulfillment.error)}`);
   } catch {
