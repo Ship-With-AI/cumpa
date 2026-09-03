@@ -754,7 +754,17 @@ async function completeStripeSession(inputs, sessionId, expectedAmount) {
   await stripeRequest(inputs, `/v1/payment_pages/${encodeURIComponent(sessionId)}`, { method: 'GET', operation: 'payment page initialization' });
   const paymentMethod = await stripeRequest(inputs, '/v1/payment_methods', {
     operation: 'payment method creation',
-    params: new URLSearchParams({ type: 'card', 'card[token]': 'tok_visa' }),
+    params: new URLSearchParams({
+      type: 'card',
+      'card[token]': 'tok_visa',
+      'billing_details[email]': 'cumpa-acceptance@example.com',
+      'billing_details[name]': 'Cumpa Acceptance',
+      'billing_details[address][line1]': '510 Townsend St',
+      'billing_details[address][postal_code]': '94103',
+      'billing_details[address][city]': 'San Francisco',
+      'billing_details[address][state]': 'CA',
+      'billing_details[address][country]': 'US',
+    }),
   });
   await stripeRequest(inputs, `/v1/payment_pages/${encodeURIComponent(sessionId)}/confirm`, {
     operation: 'payment confirmation',
