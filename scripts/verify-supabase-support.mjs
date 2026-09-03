@@ -361,19 +361,40 @@ const LOCAL_PROTECTED_INPUTS = [
   'CUMPA_DEPLOYMENT_ENVIRONMENT',
   'GITHUB_ACTIONS',
 ];
+const LOCAL_SECURITY_COMMAND_IDS = [
+  'vitest',
+  'playwright',
+  'database-start',
+  'database-reset-1',
+  'database-test-1',
+  'database-migrations-1',
+  'database-lint-1',
+  'database-reset-2',
+  'database-test-2',
+  'database-migrations-2',
+  'database-lint-2',
+  'deno',
+  'build',
+  'package-scan',
+];
 
 function finalDigest(record) {
   return sha256(JSON.stringify({ ...record, artifacts: { ...record.artifacts, evidence_sha256: '' } }));
 }
-
 function assertImmutableFinalRecord(record, kind, name) {
   if (!record || record.version !== EVIDENCE_VERSION || record.kind !== kind || record.status !== 'passed') fail(`final ${name} record is invalid`);
   if (!record.artifacts || !isHash(record.artifacts.evidence_sha256) || finalDigest(record) !== record.artifacts.evidence_sha256) fail(`final ${name} digest binding is invalid`);
   if (name === 'release') {
     assertBaseRecord(record, kind);
     if (record.run.immutable !== true) fail(`final ${name} run is mutable`);
-  } else if (Object.hasOwn(record, 'public_origin')) {
-    fail(`final ${name} evidence must not carry a hosted origin`);
+  } else {
+    if (Object.hasOwn(record, 'public_origin')) fail(`final ${name} evidence must not carry a hosted origin`);
+    if (name === 'local-package-security' && (
+      record.configured_absent !== true
+      || record.database_cycles !== 2
+      || JSON.stringify(record.commands?.map((command) => command.id)) !== JSON.stringify(LOCAL_SECURITY_COMMAND_IDS)
+      || record.commands.some((command) => command.status !== 'passed' || !isHash(command.command_sha256) || !isHash(command.output_sha256))
+    )) fail('final local-package-security conclusions are incomplete');
   }
 }
 
@@ -528,30 +549,38 @@ async function localPackageSecurityReview(output) {
   if (basename(output) !== '02-17-LOCAL-PACKAGE-SECURITY-EVIDENCE.md') fail('local package security output basename is invalid');
   for (const name of LOCAL_PROTECTED_INPUTS) if (process.env[name] !== undefined) fail(`local package security review forbids ${name}`);
   const commands = [
-    ['npx', ['vitest', 'run', '--no-file-parallelism']],
-    ['npx', ['playwright', 'test', '--config=tests', 'tests/e2e/support-payment.spec.ts', 'tests/e2e/support-restore.spec.ts', 'tests/e2e/package-assets.spec.ts']],
-    ['npx', ['supabase@2.114.0', 'db', 'start']],
-    ['npx', ['supabase@2.114.0', 'db', 'reset', '--local', '--no-seed']],
-    ['npx', ['supabase@2.114.0', 'test', 'db']],
-    ['npx', ['supabase@2.114.0', 'migration', 'list', '--local']],
-    ['npx', ['supabase@2.114.0', 'db', 'lint', '--local']],
-    ['npx', ['supabase@2.114.0', 'db', 'reset', '--local', '--no-seed']],
-    ['npx', ['supabase@2.114.0', 'test', 'db']],
-    ['npx', ['supabase@2.114.0', 'migration', 'list', '--local']],
-    ['npx', ['supabase@2.114.0', 'db', 'lint', '--local']],
-    ['deno', ['test', '--allow-env', '--config', 'supabase/functions/deno.json', 'supabase/functions/tests']],
-    ['npm', ['run', 'build']],
-    [process.execPath, [new URL('./verify-production-artifacts.mjs', import.meta.url).pathname]],
+    { id: 'vitest', command: 'npx', args: ['vitest', 'run', '--no-file-parallelism'] },
+    { id: 'playwright', command: 'npx', args: ['playwright', 'test', '--config=tests', 'tests/e2e/support-payment.spec.ts', 'tests/e2e/support-restore.spec.ts', 'tests/e2e/package-assets.spec.ts'] },
+    { id: 'database-start', command: 'npx', args: ['supabase@2.114.0', 'db', 'start'] },
+    { id: 'database-reset-1', command: 'npx', args: ['supabase@2.114.0', 'db', 'reset', '--local', '--no-seed'] },
+    { id: 'database-test-1', command: 'npx', args: ['supabase@2.114.0', 'test', 'db'] },
+    { id: 'database-migrations-1', command: 'npx', args: ['supabase@2.114.0', 'migration', 'list', '--local'] },
+    { id: 'database-lint-1', command: 'npx', args: ['supabase@2.114.0', 'db', 'lint', '--local'] },
+    { id: 'database-reset-2', command: 'npx', args: ['supabase@2.114.0', 'db', 'reset', '--local', '--no-seed'] },
+    { id: 'database-test-2', command: 'npx', args: ['supabase@2.114.0', 'test', 'db'] },
+    { id: 'database-migrations-2', command: 'npx', args: ['supabase@2.114.0', 'migration', 'list', '--local'] },
+    { id: 'database-lint-2', command: 'npx', args: ['supabase@2.114.0', 'db', 'lint', '--local'] },
+    { id: 'deno', command: 'deno', args: ['test', '--allow-env', '--config', 'supabase/functions/deno.json', 'supabase/functions/tests'] },
+    { id: 'build', command: 'npm', args: ['run', 'build'] },
+    { id: 'package-scan', command: process.execPath, args: [new URL('./verify-production-artifacts.mjs', import.meta.url).pathname] },
   ];
   const retirement = join(await mkdtemp(join(tmpdir(), 'cumpa-local-security-')), '02-15-RETIREMENT-EVIDENCE.md');
   try {
-    for (const [command, args] of commands) await commandOutput(command, args, process.env);
+    const results = [];
+    for (const { id, command, args } of commands) {
+      results.push({
+        id,
+        status: 'passed',
+        command_sha256: sha256(`${command}\0${args.join('\0')}`),
+        output_sha256: await commandOutput(command, args, process.env),
+      });
+    }
     await retirementReview(retirement);
     const record = {
       version: EVIDENCE_VERSION,
       kind: 'local-package-security',
       status: 'passed',
-      commands: commands.map(([command, args]) => ({ command, args, status: 'passed', sha256: sha256(`${command}\0${args.join('\0')}`) })),
+      commands: results,
       database_cycles: 2,
       configured_absent: true,
       artifacts: { commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), evidence_sha256: '' },
@@ -565,11 +594,18 @@ async function localPackageSecurityReview(output) {
 
 function commandOutput(command, args, environment) {
   return new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn(command, args, { cwd: process.cwd(), env: environment, stdio: ['ignore', 'ignore', 'pipe'] });
+    const child = spawn(command, args, { cwd: process.cwd(), env: environment, stdio: ['ignore', 'pipe', 'pipe'] });
+    const digest = createHash('sha256');
     let stderr = '';
-    child.stderr.on('data', (chunk) => { stderr += String(chunk); });
+    child.stdout.on('data', (chunk) => digest.update(chunk));
+    child.stderr.on('data', (chunk) => {
+      digest.update(chunk);
+      stderr += String(chunk);
+    });
     child.once('error', () => rejectPromise(new Error(`${command} is unavailable`)));
-    child.once('exit', (code) => code === 0 ? resolvePromise() : rejectPromise(new Error(`${command} failed with exit ${code}: ${stderr}`)));
+    child.once('exit', (code) => code === 0
+      ? resolvePromise(digest.digest('hex'))
+      : rejectPromise(new Error(`${command} failed with exit ${code}: ${stderr}`)));
   });
 }
 
@@ -900,7 +936,7 @@ function evidenceContainsProtectedValue(value, key = '', policy) {
 }
 
 async function writeEvidence(path, record) {
-  if (evidenceContainsProtectedValue(record, '', evidencePolicy(record))) fail('evidence contains protected or raw content');
+  if (evidenceContainsProtectedValue(record, '', evidencePolicy(record))) fail(`evidence contains protected or raw content: ${record.kind ?? 'unknown'}`);
   await writeFile(path, `${JSON.stringify(record, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
 }
 

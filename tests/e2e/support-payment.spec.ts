@@ -369,12 +369,24 @@ test('final review rejects the former five-input contract and binds six immutabl
     join(phase, '02-15-RETIREMENT-EVIDENCE.md'),
     join(phase, '02-16-RELEASE-EVIDENCE.md'),
   ];
+  const commandIds = [
+    'vitest', 'playwright', 'database-start', 'database-reset-1', 'database-test-1',
+    'database-migrations-1', 'database-lint-1', 'database-reset-2', 'database-test-2',
+    'database-migrations-2', 'database-lint-2', 'deno', 'build', 'package-scan',
+  ];
   const local = testInfo.outputPath('02-17-LOCAL-PACKAGE-SECURITY-EVIDENCE.md');
   const localRecord = {
     version: 1,
     kind: 'local-package-security',
     status: 'passed',
     configured_absent: true,
+    database_cycles: 2,
+    commands: commandIds.map((id) => ({
+      id,
+      status: 'passed',
+      command_sha256: 'a'.repeat(64),
+      output_sha256: 'b'.repeat(64),
+    })),
     artifacts: { evidence_sha256: '' },
   };
   localRecord.artifacts.evidence_sha256 = createHash('sha256')
