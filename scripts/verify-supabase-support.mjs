@@ -634,7 +634,7 @@ async function expectDatabaseRejection(operation) {
   fail('hostile database mutation was accepted');
 }
 
-async function stripeRequest(inputs, path, { method = 'POST', params } = {}) {
+async function stripeRequest(inputs, path, { method = 'POST', operation = 'request', params } = {}) {
   if (method !== 'GET') guardTarget(inputs);
   const response = await fetch(`https://api.stripe.com${path}`, {
     method,
@@ -644,7 +644,7 @@ async function stripeRequest(inputs, path, { method = 'POST', params } = {}) {
     },
     body: params?.toString(),
   });
-  if (!response.ok) fail(`Stripe acceptance request failed with HTTP ${response.status}`);
+  if (!response.ok) fail(`Stripe acceptance ${operation} failed with HTTP ${response.status}`);
   return response.json();
 }
 
@@ -704,9 +704,11 @@ async function recordCheckout(inputs, fixture, userId, targetInstallation) {
 
 async function createStripePrice(inputs, amount, currency) {
   const product = await stripeRequest(inputs, '/v1/products', {
+    operation: 'product creation',
     params: new URLSearchParams({ name: `cumpa-acceptance-${randomUUID()}` }),
   });
   const price = await stripeRequest(inputs, '/v1/prices', {
+    operation: 'price creation',
     params: new URLSearchParams({
       product: requireString(product.id, 'Stripe product id'),
       unit_amount: String(amount),
@@ -729,7 +731,7 @@ async function createStripeSession(inputs, priceId, metadata) {
     'line_items[0][quantity]': '1',
   });
   for (const [key, value] of Object.entries(metadata ?? {})) params.set(`metadata[${key}]`, value);
-  const session = await stripeRequest(inputs, '/v1/checkout/sessions', { params });
+  const session = await stripeRequest(inputs, '/v1/checkout/sessions', { operation: 'session creation', params });
   if (!Number.isSafeInteger(session.created)) fail('Stripe Checkout Session timestamp is invalid');
   return {
     id: requireString(session.id, 'Stripe Checkout Session id'),
@@ -738,18 +740,20 @@ async function createStripeSession(inputs, priceId, metadata) {
 }
 
 async function completeStripeSession(inputs, sessionId, expectedAmount) {
-  await stripeRequest(inputs, `/v1/payment_pages/${encodeURIComponent(sessionId)}`, { method: 'GET' });
+  await stripeRequest(inputs, `/v1/payment_pages/${encodeURIComponent(sessionId)}`, { method: 'GET', operation: 'payment page initialization' });
   const paymentMethod = await stripeRequest(inputs, '/v1/payment_methods', {
+    operation: 'payment method creation',
     params: new URLSearchParams({ type: 'card', 'card[token]': 'tok_visa' }),
   });
   await stripeRequest(inputs, `/v1/payment_pages/${encodeURIComponent(sessionId)}/confirm`, {
+    operation: 'payment confirmation',
     params: new URLSearchParams({
       payment_method: requireString(paymentMethod.id, 'Stripe PaymentMethod id'),
       expected_amount: String(expectedAmount),
     }),
   });
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const session = await stripeRequest(inputs, `/v1/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=line_items.data.price`, { method: 'GET' });
+    const session = await stripeRequest(inputs, `/v1/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=line_items.data.price`, { method: 'GET', operation: 'session retrieval' });
     if (session.payment_status === 'paid') return requireString(paymentMethod.id, 'Stripe PaymentMethod id');
     await delay(250);
   }
@@ -758,7 +762,7 @@ async function completeStripeSession(inputs, sessionId, expectedAmount) {
 
 async function checkoutEventForSession(inputs, sessionId, created) {
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const events = await stripeRequest(inputs, `/v1/events?type=checkout.session.completed&created[gte]=${created}&limit=100`, { method: 'GET' });
+    const events = await stripeRequest(inputs, `/v1/events?type=checkout.session.completed&created[gte]=${created}&limit=100`, { method: 'GET', operation: 'event retrieval' });
     const event = Array.isArray(events.data) ? events.data.find((candidate) => candidate?.data?.object?.id === sessionId) : undefined;
     if (event?.id) return requireString(event.id, 'Stripe Event id');
     await delay(250);
@@ -776,7 +780,7 @@ async function createPaidStripeFixture(inputs, { amount, currency, priceId, meta
 async function updateStripeMetadata(inputs, sessionId, metadata) {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(metadata)) params.set(`metadata[${key}]`, value);
-  await stripeRequest(inputs, `/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, { params });
+  await stripeRequest(inputs, `/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, { operation: 'session metadata update', params });
 }
 
 async function postWebhook(inputs, eventId, sessionId, validSignature = true) {
