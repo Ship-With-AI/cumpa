@@ -14,6 +14,7 @@ import { expect, test } from '@playwright/test';
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const artifactScript = fileURLToPath(new URL('../../scripts/verify-production-artifacts.mjs', import.meta.url));
+const buildBinScript = fileURLToPath(new URL('../../scripts/build-bin.mjs', import.meta.url));
 
 interface PackFile {
   path: string;
@@ -24,10 +25,16 @@ interface PackResult {
   files: PackFile[];
 }
 
-function runPrerequisite(command: string, args: string[], cwd = repositoryRoot): string {
+function runPrerequisite(
+  command: string,
+  args: string[],
+  cwd = repositoryRoot,
+  env?: NodeJS.ProcessEnv,
+): string {
   try {
     return execFileSync(command, args, {
       cwd,
+      env,
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -37,6 +44,17 @@ function runPrerequisite(command: string, args: string[], cwd = repositoryRoot):
       `[prerequisite] ${command} ${args.join(' ')} failed before the packaged behavior assertion: ${detail}`,
     );
   }
+}
+
+function buildLauncher(releaseSupportOrigin?: string): string {
+  const env = { ...process.env };
+  if (releaseSupportOrigin === undefined) {
+    delete env.CUMPA_RELEASE_SUPPORT_SERVICE_URL;
+  } else {
+    env.CUMPA_RELEASE_SUPPORT_SERVICE_URL = releaseSupportOrigin;
+  }
+  runPrerequisite(process.execPath, [buildBinScript], repositoryRoot, env);
+  return readFileSync(join(repositoryRoot, 'dist/bin/cumpa.mjs'), 'utf8');
 }
 
 test('packed artifact contains runtime and production Vue assets', () => {
@@ -99,4 +117,30 @@ test('published package passes the configured-absent production scanner', () => 
   const hasProductionBootstrap = existsSync(join(repositoryRoot, 'src/web/index.html'));
   runPrerequisite(npmCommand, ['run', hasProductionBootstrap ? 'build' : 'build:runtime']);
   runPrerequisite(process.execPath, [artifactScript]);
+});
+
+test('local launcher remains support-disabled without a release origin', () => {
+  expect(buildLauncher()).not.toContain('CUMPA_SUPPORT_SERVICE_URL');
+});
+
+test('release launcher defaults only the canonical support origin', () => {
+  const origin = 'https://abcdefghijklmnopqrst.supabase.co';
+
+  expect(buildLauncher(origin)).toContain(
+    `if (process.env.CUMPA_SUPPORT_SERVICE_URL === undefined) process.env.CUMPA_SUPPORT_SERVICE_URL = '${origin}';`,
+  );
+});
+
+test('release build rejects invalid support origins', () => {
+  for (const origin of [
+    'http://abcdefghijklmnopqrst.supabase.co',
+    'https://abcdefghijklmnopqrst.supabase.co/path',
+    'https://ABCdefghijklmnopqrst.supabase.co',
+    'https://abcdefghijklmnopqrst.supabase.co:443',
+    'https://abcdefghijklmnopqrst.supabase.co?query=value',
+    'https://abcdefghijklmnopqrst.supabase.co#fragment',
+    'https://user:password@abcdefghijklmnopqrst.supabase.co',
+  ]) {
+    expect(() => buildLauncher(origin)).toThrow();
+  }
 });
