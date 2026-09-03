@@ -305,20 +305,22 @@ test('retirement and package scanners permit only the supplied canonical origin'
   await execFileAsync('git', ['add', 'package.json', '.gitignore'], { cwd: fixture });
   await execFileAsync('git', ['-c', 'user.name=Scanner', '-c', 'user.email=scanner@example.invalid', 'commit', '-m', 'fixture'], { cwd: fixture });
 
+  const assignment = (configuredOrigin: string) =>
+    `if (process.env.CUMPA_SUPPORT_SERVICE_URL === undefined) process.env.CUMPA_SUPPORT_SERVICE_URL = '${configuredOrigin}';\n`;
   const cases: Array<[string, string, string | undefined]> = [
     ['configured absence', '', undefined],
-    ['canonical configured launcher', `CUMPA_SUPPORT_SERVICE_URL=${origin}\n`, undefined],
-    ['arbitrary host', 'CUMPA_SUPPORT_SERVICE_URL=https://zzzzzzzzzzzzzzzzzzzz.supabase.co\n', 'unexpected Supabase origin'],
+    ['canonical configured launcher', assignment(origin), undefined],
+    ['arbitrary host', assignment('https://zzzzzzzzzzzzzzzzzzzz.supabase.co'), 'unexpected Supabase origin'],
     ['bare ref', 'abcdefghijklmnopqrst\n', 'raw Supabase project ref'],
-    ['duplicate launcher', `CUMPA_SUPPORT_SERVICE_URL=${origin}\nCUMPA_SUPPORT_SERVICE_URL=${origin}\n`, 'exactly one configured launcher assignment'],
+    ['duplicate launcher', `${assignment(origin)}${assignment(origin)}`, 'exactly one configured launcher assignment'],
     ['protected value', `STRIPE_SECRET_KEY=${'sk' + '_fixture'}\n`, 'protected value'],
   ];
   for (const [name, launcher, failure] of cases) {
-    const environment = { ...process.env, LAUNCHER: launcher };
-    const artifactArgs = launcher.startsWith('CUMPA_')
+    await writeFile(join(fixture, 'dist/launcher.mjs'), launcher);
+    const artifactArgs = launcher.includes('CUMPA_SUPPORT_SERVICE_URL')
       ? ['--expected-support-origin', origin, '--require-configured-launcher', 'dist/launcher.mjs']
       : [];
-    const result = execFileAsync(process.execPath, [artifactScript, ...artifactArgs], { cwd: fixture, env: environment });
+    const result = execFileAsync(process.execPath, [artifactScript, ...artifactArgs], { cwd: fixture });
     if (failure) {
       await expect(result, name).rejects.toMatchObject({ stderr: expect.stringContaining(failure) });
     } else {
