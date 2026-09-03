@@ -60,6 +60,12 @@ const RETIRED_INPUTS = [
 function fail(message) {
   throw new Error(message);
 }
+class HostedRequestError extends Error {
+  constructor(status, context, detail = '') {
+    super(`${context} failed with HTTP ${status}${detail ? `: ${detail}` : ''}`);
+    this.status = status;
+  }
+}
 
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
@@ -236,7 +242,7 @@ async function managementRequest(inputs, path, options = {}) {
   const body = await response.text();
   if (!response.ok) {
     const detail = suppressDetail ? '' : redactedHostedError(body, inputs);
-    fail(`hosted request failed with HTTP ${response.status}${detail ? `: ${detail}` : ''}`);
+    throw new HostedRequestError(response.status, 'hosted request', detail);
   }
   return body.length === 0 ? undefined : JSON.parse(body);
 }
@@ -615,20 +621,25 @@ function sqlText(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
-async function databaseQuery(inputs, query, readOnly = false) {
+async function databaseQuery(inputs, query, operation, readOnly = false) {
   if (!readOnly) guardTarget(inputs);
-  return managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/database/query`, {
-    method: 'POST',
-    body: JSON.stringify({ query, read_only: readOnly }),
-    suppressDetail: true,
-  });
+  try {
+    return await managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/database/query`, {
+      method: 'POST',
+      body: JSON.stringify({ query, read_only: readOnly }),
+      suppressDetail: true,
+    });
+  } catch (error) {
+    if (error instanceof HostedRequestError) throw new HostedRequestError(error.status, `hosted database ${operation}`);
+    throw error;
+  }
 }
 
 async function expectDatabaseRejection(operation) {
   try {
     await operation();
   } catch (error) {
-    if (error instanceof Error && /^hosted request failed with HTTP (?:400|422)$/u.test(error.message)) return;
+    if (error instanceof HostedRequestError && (error.status === 400 || error.status === 422)) return;
     throw error;
   }
   fail('hostile database mutation was accepted');
@@ -672,7 +683,7 @@ async function insertAcceptanceUser(inputs) {
   await databaseQuery(inputs, `
     insert into auth.users (id, aud, role, encrypted_password, confirmed_at, created_at, updated_at)
     values (${sqlText(id)}::uuid, 'authenticated', 'authenticated', '', now(), now(), now())
-  `);
+  `, 'user insertion');
   return id;
 }
 
@@ -685,7 +696,7 @@ async function createIntent(inputs, action, targetInstallation, expired = false)
       decode(${sqlText(digest)}, 'hex'),
       now() ${expired ? "- interval '1 second'" : "+ interval '10 minutes'"}
     )::text as id
-  `);
+  `, 'intent creation');
   return { id: requireString(result?.[0]?.id, 'support intent id'), digest };
 }
 
@@ -695,7 +706,7 @@ async function claimIntent(inputs, intent, userId) {
       decode(${sqlText(intent.digest)}, 'hex'),
       ${sqlText(userId)}::uuid
     )
-  `);
+  `, 'intent claim');
 }
 
 async function recordCheckout(inputs, fixture, userId, targetInstallation) {
@@ -710,7 +721,7 @@ async function recordCheckout(inputs, fixture, userId, targetInstallation) {
       ${fixture.amount},
       1
     )
-  `);
+  `, 'checkout recording');
 }
 
 async function createStripePrice(inputs, amount, currency) {
