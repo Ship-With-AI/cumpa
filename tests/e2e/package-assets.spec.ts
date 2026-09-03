@@ -121,6 +121,35 @@ test('published package passes the configured-absent production scanner', () => 
   runPrerequisite(process.execPath, [artifactScript]);
 });
 
+test('clean install launches the packed artifact', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'cumpa-installed-'));
+
+  try {
+    runPrerequisite(npmCommand, ['run', 'build']);
+    const [packed] = JSON.parse(runPrerequisite(npmCommand, [
+      'pack',
+      '--json',
+      '--ignore-scripts',
+      '--pack-destination',
+      directory,
+    ])) as PackResult[];
+    runPrerequisite(npmCommand, [
+      'install',
+      '--ignore-scripts',
+      '--prefix',
+      join(directory, 'installed'),
+      join(directory, packed.filename),
+    ]);
+    const output = runPrerequisite(process.execPath, [
+      join(directory, 'installed/node_modules/cumpa/dist/bin/cumpa.mjs'),
+      '--help',
+    ]);
+    expect(output).toContain('Local-first review of pinned Git comparisons');
+  } finally {
+    rmSync(directory, { force: true, recursive: true });
+  }
+});
+
 test('local launcher remains support-disabled without a release origin', () => {
   expect(buildLauncher()).not.toContain('CUMPA_SUPPORT_SERVICE_URL');
 });

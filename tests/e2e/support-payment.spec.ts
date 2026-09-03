@@ -348,48 +348,32 @@ test('retirement and package scanners permit only the supplied canonical origin'
   await rm(fixture, { recursive: true, force: true });
 });
 test('final review rejects the former five-input contract and binds six immutable records', async ({}, testInfo) => {
-  const origin = `https://${'a'.repeat(20)}.supabase.co`;
-  const inputDirectory = testInfo.outputPath('final-inputs');
-  const paths = ['test-deployment', 'acceptance', 'promotion', 'retirement', 'release', 'local-package-security']
-    .map((name) => join(inputDirectory, `${name}.json`));
-  await mkdir(inputDirectory, { recursive: true });
-  const record = (kind: string) => ({
-    version: 1,
-    kind,
-    status: 'passed',
-    mode: 'prelaunch-test',
-    fingerprint: createHash('sha256').update('a'.repeat(20)).digest('hex'),
-    public_origin: origin,
-    run: { id: '100', url: 'https://github.com/example/repo/actions/runs/100', commit: 'c'.repeat(40), immutable: true },
-    artifacts: { evidence_sha256: '' },
-  });
-  const values = [
-    record('deployment-run'),
-    record('acceptance'),
-    record('promotion'),
-    { ...record('retirement-review'), configured_absent: true, violations: [] },
-    { ...record('release'), artifacts: { evidence_sha256: '', package_sha256: 'b'.repeat(64) } },
-    { version: 1, kind: 'local-package-security', status: 'passed', configured_absent: true, artifacts: { evidence_sha256: '' } },
+  const phase = new URL('../../.planning/phases/02-move-the-implementation-to-supabase/', import.meta.url).pathname;
+  const paths = [
+    join(phase, '02-08-TEST-DEPLOYMENT-EVIDENCE.md'),
+    join(phase, '02-09-ACCEPTANCE-EVIDENCE.md'),
+    join(phase, '02-10-LIVE-PROMOTION-EVIDENCE.md'),
+    join(phase, '02-15-RETIREMENT-EVIDENCE.md'),
+    join(phase, '02-16-RELEASE-EVIDENCE.md'),
   ];
-  for (const [index, path] of paths.entries()) {
-    const value = values[index];
-    value.artifacts.evidence_sha256 = createHash('sha256').update(JSON.stringify({ ...value, artifacts: { ...value.artifacts, evidence_sha256: '' } })).digest('hex');
-    await writeFile(path, JSON.stringify(value));
-  }
-  await writeFile(join(inputDirectory, '02-16-RELEASE-APPROVAL.md'), JSON.stringify({
+  const local = testInfo.outputPath('02-17-LOCAL-PACKAGE-SECURITY-EVIDENCE.md');
+  const localRecord = {
     version: 1,
-    kind: 'cumpa.release-approval',
-    status: 'approved',
-    release_record_sha256: createHash('sha256').update(await readFile(paths[4], 'utf8')).digest('hex'),
-    run_id: '100',
-    package_sha256: 'b'.repeat(64),
-  }));
+    kind: 'local-package-security',
+    status: 'passed',
+    configured_absent: true,
+    artifacts: { evidence_sha256: '' },
+  };
+  localRecord.artifacts.evidence_sha256 = createHash('sha256')
+    .update(JSON.stringify(localRecord))
+    .digest('hex');
+  await writeFile(local, JSON.stringify(localRecord));
   const flags = ['--test-deployment', paths[0], '--acceptance', paths[1], '--promotion', paths[2], '--retirement', paths[3], '--release', paths[4]];
   await reject(['--final-review', ...flags, '--output', testInfo.outputPath('five.json')], 'missing required option --local-package-security');
-  const final = join(inputDirectory, '02-17-FINAL-EVIDENCE.md');
-  const complete = ['--local-package-security', paths[5]];
+  const final = testInfo.outputPath('02-17-FINAL-EVIDENCE.md');
+  const complete = ['--local-package-security', local];
   await expect(execFileAsync(process.execPath, [script, '--final-review', ...flags, ...complete, '--output', final])).resolves.toBeDefined();
   await expect(execFileAsync(process.execPath, [script, '--check-final', final, ...flags, ...complete])).resolves.toBeDefined();
-  await writeFile(paths[5], JSON.stringify({ ...values[5], status: 'failed' }));
+  await writeFile(local, JSON.stringify({ ...localRecord, status: 'failed' }));
   await reject(['--check-final', final, ...flags, ...complete], 'final local-package-security record is invalid');
 });

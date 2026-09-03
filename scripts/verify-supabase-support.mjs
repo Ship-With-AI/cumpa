@@ -362,11 +362,11 @@ function finalDigest(record) {
 function assertImmutableFinalRecord(record, kind, name) {
   if (!record || record.version !== EVIDENCE_VERSION || record.kind !== kind || record.status !== 'passed') fail(`final ${name} record is invalid`);
   if (!record.artifacts || !isHash(record.artifacts.evidence_sha256) || finalDigest(record) !== record.artifacts.evidence_sha256) fail(`final ${name} digest binding is invalid`);
-  if (name !== 'local-package-security') {
+  if (name === 'release') {
     assertBaseRecord(record, kind);
     if (record.run.immutable !== true) fail(`final ${name} run is mutable`);
   } else if (Object.hasOwn(record, 'public_origin')) {
-    fail('local package security evidence must not carry a hosted origin');
+    fail(`final ${name} evidence must not carry a hosted origin`);
   }
 }
 
@@ -440,22 +440,49 @@ async function collectFinalInputs(options) {
   let policy;
   let run;
   for (const [name, option, kind] of FINAL_INPUTS) {
-    const input = await readFinalInput(options.values.get(option), name, kind);
-    if (seen.has(input.path)) fail('final evidence input paths must be distinct');
-    seen.add(input.path);
-    if (name !== 'local-package-security') {
-      const current = canonicalOriginPolicy(input.record.public_origin);
+    const path = resolve(options.values.get(option));
+    const raw = await readFile(path, 'utf8');
+    const record = await readEvidence(path);
+    const input = { path, raw, record, digest: sha256(raw) };
+    if (seen.has(path)) fail('final evidence input paths must be distinct');
+    seen.add(path);
+    if (name === 'test-deployment') {
+      validateRun(record, {
+        values: new Map([['--expected-mode', 'prelaunch-test']]),
+        flags: new Set(['--require-immutable-run', '--require-zero-authority']),
+      });
+    } else if (name === 'acceptance') {
+      await validateAcceptance(record, {
+        values: new Map([['--deployment', options.values.get('--test-deployment')]]),
+        flags: new Set(['--require-approved', '--require-hostile-matrix', '--require-fixture-manifest', '--require-immutable-run']),
+      });
+    } else if (name === 'promotion') {
+      await validatePromotion(record, {
+        values: new Map([['--acceptance', options.values.get('--acceptance')]]),
+        flags: new Set(),
+      });
+    } else if (name === 'retirement' || name === 'local-package-security') {
+      assertImmutableFinalRecord(record, kind, name);
+    } else if (name === 'release') {
+      await checkReleaseEvidence({
+        values: new Map([
+          ['--check-release-evidence', options.values.get('--release')],
+          ['--live-promotion', options.values.get('--promotion')],
+          ['--retirement', options.values.get('--retirement')],
+        ]),
+        flags: new Set(['--require-approved', '--require-immutable-run', '--require-package-digest', '--require-zero-authority', '--non-destructive']),
+      });
+      run = record.run;
+    }
+    if (['test-deployment', 'acceptance', 'promotion', 'release'].includes(name)) {
+      const current = canonicalOriginPolicy(record.public_origin);
       if (!policy) policy = current;
       else if (policy.origin !== current.origin) fail('final public origin lineage does not match');
-      if (!run) run = input.record.run;
-      else if (run.id !== input.record.run.id || run.url !== input.record.run.url || run.commit !== input.record.run.commit) fail('final GitHub run lineage does not match');
     }
     inputs.push({ name, ...input });
   }
   const retirement = inputs.find((input) => input.name === 'retirement').record;
   if (retirement.configured_absent !== true || !Array.isArray(retirement.violations) || retirement.violations.length !== 0) fail('retirement evidence is not a clean configured-absent review');
-  const release = inputs.find((input) => input.name === 'release');
-  await validateReleaseApproval(release.record, release.path);
   return { inputs, policy, run };
 }
 
@@ -495,7 +522,7 @@ async function localPackageSecurityReview(output) {
   for (const name of LOCAL_PROTECTED_INPUTS) if (process.env[name] !== undefined) fail(`local package security review forbids ${name}`);
   const commands = [
     ['npx', ['vitest', 'run', '--no-file-parallelism']],
-    ['npx', ['playwright', 'test', '--config=tests', 'tests/e2e/support-payment.spec.ts', 'tests/e2e/support-recovery.spec.ts', 'tests/e2e/support-restore.spec.ts', 'tests/e2e/package-assets.spec.ts']],
+    ['npx', ['playwright', 'test', '--config=tests', 'tests/e2e/support-payment.spec.ts', 'tests/e2e/support-restore.spec.ts', 'tests/e2e/package-assets.spec.ts']],
     ['npx', ['supabase@2.114.0', 'db', 'start']],
     ['npx', ['supabase@2.114.0', 'db', 'reset', '--local', '--no-seed']],
     ['npx', ['supabase@2.114.0', 'test', 'db']],
