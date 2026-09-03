@@ -786,20 +786,54 @@ async function mergeAcceptanceEvidence(observationsPath, deploymentRunPath, mark
 
 async function validatePromotion(record, options) {
   assertBaseRecord(record, 'promotion');
-  if (options.flags.has('--require-approved') && record.approval?.status !== 'approved') fail('evidence is not separately approved');
-  if (options.flags.has('--require-cleanup-run') && record.cleanup_run?.immutable !== true) fail('promotion cleanup run is not immutable');
-  if (options.flags.has('--require-live-run') && record.live_run?.immutable !== true) fail('promotion live run is not immutable');
-  if (options.flags.has('--require-one-fingerprint') && record.cleanup_run?.fingerprint !== record.live_run?.fingerprint) fail('promotion uses more than one fingerprint');
-  if (options.flags.has('--require-exact-cleanup') && record.cleanup_run?.status !== 'passed') fail('promotion cleanup run is incomplete');
-  if (options.flags.has('--require-zero-authority')) assertManifest(record.authority, true);
-  if (options.flags.has('--require-zero-after-cleanup') && record.cleanup_run?.authority_after !== 'zero') fail('promotion cleanup authority is not zero');
-  if (options.flags.has('--require-live-smoke') && record.live_smoke?.status !== 'passed') fail('promotion live smoke is incomplete');
-  if (options.flags.has('--non-destructive') && record.live_smoke?.non_destructive !== true) fail('promotion is not non-destructive');
-  if (options.flags.has('--require-immutable-runs') && (!record.cleanup_run?.immutable || !record.live_run?.immutable)) fail('promotion runs are not immutable');
-  if (options.values.has('--acceptance')) {
-    const acceptance = await readEvidence(options.values.get('--acceptance'));
-    if (acceptance.fingerprint !== record.fingerprint) fail('promotion acceptance fingerprint does not match');
-  }
+  if (record.status !== 'passed' || record.mode !== 'production-live') fail('promotion is incomplete');
+  if (!options.values.has('--acceptance')) fail('promotion acceptance is required');
+  const acceptance = await readEvidence(options.values.get('--acceptance'));
+  await validateAcceptance(acceptance, {
+    values: new Map([['--deployment', PRELAUNCH_DEPLOYMENT_EVIDENCE]]),
+    flags: new Set(['--require-approved', '--require-hostile-matrix', '--require-fixture-manifest', '--require-immutable-run']),
+  });
+  validateRun(record.cleanup, {
+    values: new Map([['--expected-mode', 'prelaunch-test']]),
+    flags: new Set(['--require-exact-cleanup', '--require-zero-authority', '--require-immutable-run']),
+  }, acceptance);
+  validateRun(record.live, {
+    values: new Map([['--expected-mode', 'production-live']]),
+    flags: new Set(['--require-zero-authority', '--require-immutable-run']),
+  });
+  assertManifest(record.live.authority_before, true);
+  if (
+    record.fingerprint !== acceptance.fingerprint
+    || record.public_origin !== acceptance.public_origin
+    || record.cleanup.fingerprint !== record.fingerprint
+    || record.live.fingerprint !== record.fingerprint
+    || record.cleanup.public_origin !== record.public_origin
+    || record.live.public_origin !== record.public_origin
+    || JSON.stringify(record.run) !== JSON.stringify(record.live.run)
+    || JSON.stringify(record.authority) !== JSON.stringify(record.live.authority)
+  ) fail('promotion project lineage does not match');
+  const cleanupRun = {
+    ...record.cleanup.run,
+    fingerprint: record.cleanup.fingerprint,
+    status: record.cleanup.status,
+    authority_after: 'zero',
+    evidence_sha256: record.cleanup.artifacts.evidence_sha256,
+  };
+  const liveRun = {
+    ...record.live.run,
+    fingerprint: record.live.fingerprint,
+    status: record.live.status,
+    evidence_sha256: record.live.artifacts.evidence_sha256,
+  };
+  if (
+    JSON.stringify(record.cleanup_run) !== JSON.stringify(cleanupRun)
+    || JSON.stringify(record.live_run) !== JSON.stringify(liveRun)
+    || record.artifacts?.cleanup_evidence_sha256 !== cleanupRun.evidence_sha256
+    || record.artifacts?.live_evidence_sha256 !== liveRun.evidence_sha256
+  ) fail('promotion artifact lineage does not match');
+  if (record.live.coherence?.status !== 'passed') fail('promotion live coherence is incomplete');
+  if (record.live.live_smoke?.status !== 'passed' || record.live.live_smoke?.non_destructive !== true) fail('promotion live smoke is incomplete');
+  if (JSON.stringify(record.live_smoke) !== JSON.stringify(record.live.live_smoke)) fail('promotion live smoke lineage does not match');
 }
 
 function sqlText(value) {

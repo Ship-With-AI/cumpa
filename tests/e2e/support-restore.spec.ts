@@ -285,3 +285,25 @@ test('exact cleanup evidence requires the approved manifest, repeated zero, and 
   await save(wrongRun);
   await reject(args, 'evidence cleanup lineage does not match acceptance');
 });
+
+test('promotion evidence binds complete cleanup and live artifacts', async ({}, testInfo) => {
+  const acceptance = new URL('../../.planning/phases/02-move-the-implementation-to-supabase/02-09-ACCEPTANCE-EVIDENCE.md', import.meta.url).pathname;
+  const promotion = new URL('../../.planning/phases/02-move-the-implementation-to-supabase/02-10-LIVE-PROMOTION-EVIDENCE.md', import.meta.url).pathname;
+  const args = [
+    '--check-promotion-evidence', promotion,
+    '--acceptance', acceptance,
+    '--require-cleanup-run',
+    '--require-live-run',
+    '--require-one-fingerprint',
+    '--require-zero-authority',
+    '--non-destructive',
+    '--require-immutable-runs',
+  ];
+  await expect(execFileAsync(process.execPath, [script, ...args])).resolves.toBeDefined();
+
+  const record = JSON.parse((await readFile(promotion, 'utf8')).match(/<!-- cumpa-evidence\n(.+)\n-->/su)?.[1] ?? '');
+  record.cleanup_run.id = '999';
+  const tampered = testInfo.outputPath('promotion.json');
+  await writeFile(tampered, JSON.stringify(record));
+  await reject(args.map((value) => value === promotion ? tampered : value), 'promotion artifact lineage does not match');
+});
