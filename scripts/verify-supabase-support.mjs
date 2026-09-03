@@ -1,9 +1,11 @@
-import { createHash } from 'node:crypto';
-import { readFile, writeFile } from 'node:fs/promises';
+import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
+import { readFile, rename, writeFile } from 'node:fs/promises';
+import { setTimeout as delay } from 'node:timers/promises';
 import { spawn } from 'node:child_process';
 
 const EVIDENCE_VERSION = 1;
 const MANAGEMENT_ORIGIN = 'https://api.supabase.com';
+const PRELAUNCH_DEPLOYMENT_EVIDENCE = '.planning/phases/02-move-the-implementation-to-supabase/02-08-TEST-DEPLOYMENT-EVIDENCE.md';
 const TABLES = [
   ['auth.users', 'id'],
   ['support_private.support_intents', 'id'],
@@ -22,6 +24,15 @@ const HOSTILE_CASES = [
   'reused-intent',
   'sequential-replay',
   'concurrent-replay-settlement',
+];
+const BROWSER_CASES = [
+  'paid-support',
+  'restart-persistence',
+  'restore-paid-one',
+  'restore-paid-two',
+  'restore-unpaid',
+  'checkout-delay',
+  'checkout-cancellation',
 ];
 const MODES = new Set(['prelaunch-test', 'production-live']);
 const PROTECTED_INPUTS = [
@@ -123,6 +134,16 @@ const commandDefinitions = {
     flags: new Set(['--require-hostile-matrix', '--require-fixture-manifest', '--require-immutable-run', '--require-approved']),
     required: ['--deployment'],
   },
+  '--check-acceptance-marker': {
+    values: new Set(['--check-acceptance-marker', '--deployment', '--expected-mode']),
+    flags: new Set(),
+    required: ['--deployment', '--expected-mode'],
+  },
+  '--merge-acceptance-evidence': {
+    values: new Set(['--merge-acceptance-evidence', '--deployment-run', '--marker', '--output']),
+    flags: new Set(),
+    required: ['--deployment-run', '--marker', '--output'],
+  },
   '--check-promotion-evidence': {
     values: new Set(['--check-promotion-evidence', '--acceptance']),
     flags: new Set(['--require-approved', '--require-cleanup-run', '--require-live-run', '--require-one-fingerprint', '--require-exact-cleanup', '--require-zero-authority', '--require-zero-after-cleanup', '--require-live-smoke', '--non-destructive', '--require-immutable-runs']),
@@ -203,17 +224,18 @@ function redactedHostedError(body, inputs) {
 
 
 async function managementRequest(inputs, path, options = {}) {
+  const { suppressDetail = false, ...requestOptions } = options;
   const response = await fetch(`${MANAGEMENT_ORIGIN}${path}`, {
-    ...options,
+    ...requestOptions,
     headers: {
       authorization: `Bearer ${inputs.SUPABASE_ACCESS_TOKEN}`,
       'content-type': 'application/json',
-      ...options.headers,
+      ...requestOptions.headers,
     },
   });
   const body = await response.text();
   if (!response.ok) {
-    const detail = redactedHostedError(body, inputs);
+    const detail = suppressDetail ? '' : redactedHostedError(body, inputs);
     fail(`hosted request failed with HTTP ${response.status}${detail ? `: ${detail}` : ''}`);
   }
   return body.length === 0 ? undefined : JSON.parse(body);
@@ -226,6 +248,13 @@ async function guardedMutation(inputs, operation, mutate, order) {
 }
 
 async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
+  let marker;
+  if (acceptanceMarkerPath) {
+    if (inputs.SUPPORT_PROVIDER_MODE !== 'prelaunch-test') fail('acceptance marker is unavailable in live mode');
+    marker = await readEvidence(acceptanceMarkerPath);
+    await validateAcceptanceMarker(marker, PRELAUNCH_DEPLOYMENT_EVIDENCE, 'prelaunch-test');
+    if (marker.public_origin !== inputs.origin || marker.fingerprint !== sha256(inputs.SUPABASE_PROJECT_REF)) fail('acceptance marker target does not match');
+  }
   const order = [];
   await guardedMutation(inputs, 'schema', () => commandOutput('npx', ['supabase@2.114.0', 'db', 'push', '--project-ref', inputs.SUPABASE_PROJECT_REF], process.env), order);
   await guardedMutation(inputs, 'auth-provider-configuration', () => managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/config/auth`, {
@@ -266,7 +295,14 @@ async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
     authority,
     artifacts: { evidence_sha256: '' },
   };
-  if (inputs.SUPPORT_PROVIDER_MODE === 'prelaunch-test' && acceptanceMarkerPath) record.hostile_matrix = await runHostileExecutor(inputs, acceptanceMarkerPath);
+  if (marker) {
+    record.hostile_matrix = await runHostileExecutor(inputs, marker);
+    record.fixture_manifest = await snapshotAuthority(inputs);
+    record.acceptance_marker = {
+      ...marker.acceptance_marker,
+      marker_sha256: sha256(JSON.stringify(marker)),
+    };
+  }
   record.artifacts.evidence_sha256 = sha256(JSON.stringify({ ...record, artifacts: { evidence_sha256: '' } }));
   await writeEvidence(evidencePath, record);
 }
@@ -347,11 +383,78 @@ async function readEvidence(path) {
   return record;
 }
 
+function evidenceDigest(record) {
+  if (!record?.artifacts || !isHash(record.artifacts.evidence_sha256)) fail('evidence artifact digest is invalid');
+  return sha256(JSON.stringify({ ...record, artifacts: { ...record.artifacts, evidence_sha256: '' } }));
+}
+
+function assertExactKeys(value, expected, message) {
+  if (!value || typeof value !== 'object' || JSON.stringify(Object.keys(value).sort()) !== JSON.stringify([...expected].sort())) fail(message);
+}
+
+function validateObservations(observations) {
+  assertExactKeys(observations, ['browser_matrix', 'completion', 'review_unrestricted'], 'browser observations are malformed');
+  if (!Array.isArray(observations.browser_matrix) || observations.browser_matrix.length !== BROWSER_CASES.length) fail('browser matrix is incomplete');
+  for (const [index, id] of BROWSER_CASES.entries()) {
+    const entry = observations.browser_matrix[index];
+    if (!entry || entry.id !== id || entry.status !== 'passed' || Object.keys(entry).length !== 2) fail('browser matrix is incomplete');
+  }
+  const completion = observations.completion;
+  if (!completion || completion.status !== 200 || completion.content_type !== 'text/plain' || completion.body !== 'Support flow complete. You can return to Cumpa.' || Object.keys(completion).length !== 3) fail('browser completion signature is invalid');
+  if (observations.review_unrestricted !== true) fail('browser review availability is incomplete');
+}
+
+function validateMarkerRecord(record, expectedMode) {
+  assertBaseRecord(record, 'acceptance-marker');
+  assertExactKeys(record, ['version', 'kind', 'mode', 'fingerprint', 'public_origin', 'run', 'routes', 'acceptance_marker', 'observations'], 'acceptance marker fields are invalid');
+  if (record.mode !== expectedMode || record.run.immutable !== true) fail('acceptance marker immutable mode is invalid');
+  assertRoutes(record.routes);
+  assertExactKeys(record.acceptance_marker, ['status', 'deployment_evidence_sha256', 'observations_sha256'], 'acceptance marker binding is invalid');
+  if (record.acceptance_marker.status !== 'interactive-matrix-complete' || !isHash(record.acceptance_marker.deployment_evidence_sha256) || !isHash(record.acceptance_marker.observations_sha256)) fail('acceptance marker binding is invalid');
+  validateObservations(record.observations);
+  if (sha256(JSON.stringify(record.observations)) !== record.acceptance_marker.observations_sha256) fail('acceptance marker observations digest does not match');
+}
+
+async function validateAcceptanceMarker(record, deploymentPath, expectedMode) {
+  validateMarkerRecord(record, expectedMode);
+  const deployment = await readEvidence(deploymentPath);
+  validateRun(deployment, {
+    values: new Map([['--expected-mode', expectedMode]]),
+    flags: new Set(['--require-immutable-run', '--require-zero-authority']),
+  });
+  if (
+    record.fingerprint !== deployment.fingerprint
+    || record.public_origin !== deployment.public_origin
+    || JSON.stringify(record.run) !== JSON.stringify(deployment.run)
+    || JSON.stringify(record.routes) !== JSON.stringify(deployment.routes)
+    || evidenceDigest(deployment) !== deployment.artifacts.evidence_sha256
+    || record.acceptance_marker.deployment_evidence_sha256 !== deployment.artifacts.evidence_sha256
+  ) fail('acceptance marker deployment binding does not match');
+}
+
+async function writeAcceptanceEvidence(path, record) {
+  if (evidenceContainsProtectedValue(record, '', evidencePolicy(record))) fail('evidence contains protected or raw content');
+  const temporary = `${path}.tmp-${process.pid}`;
+  await writeFile(temporary, `# Phase 02 hosted acceptance evidence\n\n<!-- cumpa-evidence\n${JSON.stringify(record, null, 2)}\n-->\n`, { encoding: 'utf8', mode: 0o600 });
+  await rename(temporary, path);
+}
+
 function assertManifest(manifest, requireZero = false) {
   if (!manifest || typeof manifest !== 'object' || Object.keys(manifest).length !== TABLES.length) fail('evidence fixture manifest is incomplete');
+  const handles = new Set();
   for (const [table] of TABLES) {
     const entry = manifest[table];
-    if (!entry || !Number.isSafeInteger(entry.count) || entry.count < 0 || !Array.isArray(entry.handles) || entry.count !== entry.handles.length || entry.handles.some((handle) => !isHash(handle)) || JSON.stringify(entry.handles) !== JSON.stringify([...entry.handles].sort())) fail('evidence fixture manifest is invalid');
+    if (
+      !entry
+      || !Number.isSafeInteger(entry.count)
+      || entry.count < 0
+      || !Array.isArray(entry.handles)
+      || entry.count !== entry.handles.length
+      || new Set(entry.handles).size !== entry.handles.length
+      || entry.handles.some((handle) => !isHash(handle) || handles.has(handle))
+      || JSON.stringify(entry.handles) !== JSON.stringify([...entry.handles].sort())
+    ) fail('evidence fixture manifest is invalid');
+    for (const handle of entry.handles) handles.add(handle);
     if (requireZero && entry.count !== 0) fail('evidence authority is not zero');
   }
 }
@@ -396,23 +499,98 @@ function validateHostileMatrix(matrix) {
   const fixtures = new Set();
   for (const [index, id] of HOSTILE_CASES.entries()) {
     const entry = matrix[index];
-    if (!entry || entry.id !== id || !Array.isArray(entry.fixtures) || !entry.before || !entry.after || entry.expected !== 'rejected-without-authority' || entry.actual !== 'rejected-without-authority' || entry.guard !== true) fail('hostile matrix case is incomplete');
+    if (!entry || entry.id !== id || !Array.isArray(entry.fixtures) || entry.fixtures.length === 0 || entry.guard !== true) fail('hostile matrix case is incomplete');
+    assertManifest(entry.before);
+    assertManifest(entry.after);
     for (const fixture of entry.fixtures) {
       if (!isHash(fixture) || fixtures.has(fixture)) fail('hostile matrix reuses fixture handles');
       fixtures.add(fixture);
+    }
+    if (index < 7) {
+      if (entry.expected !== 'rejected-without-authority' || entry.actual !== entry.expected || JSON.stringify(entry.before) !== JSON.stringify(entry.after)) fail('hostile matrix rejection invariant failed');
+      continue;
+    }
+    const expected = id === 'sequential-replay' ? 'idempotent-replay' : 'single-authority-settlement';
+    if (entry.expected !== expected || entry.actual !== expected || !Array.isArray(entry.responses) || entry.responses.length !== 2) fail('hostile matrix replay invariant failed');
+    if (id === 'sequential-replay' && (JSON.stringify(entry.responses) !== JSON.stringify([200, 200]) || JSON.stringify(entry.first_after) !== JSON.stringify(entry.after))) fail('hostile matrix sequential replay invariant failed');
+    if (id === 'concurrent-replay-settlement' && (!entry.responses.includes(200) || entry.responses.some((status) => status !== 200 && status !== 503))) fail('hostile matrix concurrent replay invariant failed');
+    for (const [table] of TABLES) {
+      const delta = entry.after[table].count - entry.before[table].count;
+      const expectedDelta = ['support_private.supporters', 'support_private.stripe_events', 'support_private.installation_bindings'].includes(table) ? 1 : 0;
+      if (delta !== expectedDelta) fail('hostile matrix settlement authority invariant failed');
     }
   }
 }
 
 async function validateAcceptance(record, options) {
   assertBaseRecord(record, 'acceptance');
-  const deployment = await readEvidence(options.values.get('--deployment'));
-  if (deployment.kind !== 'deployment-run' || deployment.fingerprint !== record.fingerprint || deployment.mode !== 'prelaunch-test') fail('acceptance deployment lineage does not match');
   if (options.flags.has('--require-immutable-run') && record.run.immutable !== true) fail('evidence run is not immutable');
+  const deployment = await readEvidence(options.values.get('--deployment'));
+  validateRun(deployment, {
+    values: new Map([['--expected-mode', 'prelaunch-test']]),
+    flags: new Set(['--require-immutable-run', '--require-zero-authority']),
+  });
+  if (
+    record.status !== 'passed'
+    || deployment.fingerprint !== record.fingerprint
+    || deployment.public_origin !== record.public_origin
+    || JSON.stringify(record.deployment_run) !== JSON.stringify(deployment.run)
+    || record.acceptance_marker?.deployment_evidence_sha256 !== deployment.artifacts?.evidence_sha256
+  ) fail('acceptance deployment lineage does not match');
+  validateObservations(record.observations);
+  if (sha256(JSON.stringify(record.observations)) !== record.acceptance_marker?.observations_sha256) fail('acceptance observations lineage does not match');
   if (options.flags.has('--require-hostile-matrix')) validateHostileMatrix(record.hostile_matrix);
   if (options.flags.has('--require-fixture-manifest')) assertManifest(record.fixture_manifest);
-  if (record.acceptance_marker?.status !== 'interactive-matrix-complete') fail('acceptance marker is incomplete');
+  if (record.acceptance_marker?.status !== 'interactive-matrix-complete' || !isHash(record.acceptance_marker?.marker_sha256)) fail('acceptance marker is incomplete');
   if (options.flags.has('--require-approved') && record.approval?.status !== 'approved') fail('evidence is not separately approved');
+}
+
+async function mergeAcceptanceEvidence(observationsPath, deploymentRunPath, markerPath, outputPath) {
+  const observations = await readEvidence(observationsPath);
+  const marker = await readEvidence(markerPath);
+  const deploymentRun = await readEvidence(deploymentRunPath);
+  validateObservations(observations);
+  validateMarkerRecord(marker, 'prelaunch-test');
+  validateRun(deploymentRun, {
+    values: new Map([['--expected-mode', 'prelaunch-test']]),
+    flags: new Set(['--require-immutable-run']),
+  });
+  validateHostileMatrix(deploymentRun.hostile_matrix);
+  assertManifest(deploymentRun.fixture_manifest);
+  const markerSha256 = sha256(JSON.stringify(marker));
+  if (
+    sha256(JSON.stringify(observations)) !== marker.acceptance_marker.observations_sha256
+    || JSON.stringify(observations) !== JSON.stringify(marker.observations)
+    || deploymentRun.fingerprint !== marker.fingerprint
+    || deploymentRun.public_origin !== marker.public_origin
+    || JSON.stringify(deploymentRun.routes) !== JSON.stringify(marker.routes)
+    || deploymentRun.acceptance_marker?.status !== marker.acceptance_marker.status
+    || deploymentRun.acceptance_marker?.deployment_evidence_sha256 !== marker.acceptance_marker.deployment_evidence_sha256
+    || deploymentRun.acceptance_marker?.observations_sha256 !== marker.acceptance_marker.observations_sha256
+    || deploymentRun.acceptance_marker?.marker_sha256 !== markerSha256
+    || evidenceDigest(deploymentRun) !== deploymentRun.artifacts.evidence_sha256
+  ) fail('acceptance merge lineage does not match');
+  await writeAcceptanceEvidence(outputPath, {
+    version: EVIDENCE_VERSION,
+    kind: 'acceptance',
+    status: 'passed',
+    mode: 'prelaunch-test',
+    fingerprint: marker.fingerprint,
+    public_origin: marker.public_origin,
+    deployment_run: marker.run,
+    run: deploymentRun.run,
+    routes: marker.routes,
+    acceptance_marker: deploymentRun.acceptance_marker,
+    observations,
+    hostile_matrix: deploymentRun.hostile_matrix,
+    fixture_manifest: deploymentRun.fixture_manifest,
+    artifacts: {
+      deployment_evidence_sha256: marker.acceptance_marker.deployment_evidence_sha256,
+      hostile_run_evidence_sha256: deploymentRun.artifacts.evidence_sha256,
+      marker_sha256: markerSha256,
+    },
+    approval: { status: 'pending' },
+  });
 }
 
 async function validatePromotion(record, options) {
@@ -433,16 +611,389 @@ async function validatePromotion(record, options) {
   }
 }
 
-async function runHostileExecutor(inputs, markerPath) {
-  if (inputs.SUPPORT_PROVIDER_MODE !== 'prelaunch-test') fail('hostile executor is unavailable in live mode');
-  const marker = await readEvidence(markerPath);
-  if (marker.kind !== 'acceptance-marker' || marker.version !== EVIDENCE_VERSION || marker.acceptance_marker?.status !== 'interactive-matrix-complete') fail('acceptance marker is invalid');
-  const results = [];
-  for (const id of HOSTILE_CASES) {
-    guardTarget(inputs);
-    const fixture = sha256(`${id}:${inputs.SUPABASE_PROJECT_REF}:${Date.now()}:${results.length}`);
-    results.push({ id, fixtures: [fixture], before: { authority: 'unchanged' }, after: { authority: 'unchanged' }, expected: 'rejected-without-authority', actual: 'rejected-without-authority', guard: true });
+function sqlText(value) {
+  return `'${String(value).replaceAll("'", "''")}'`;
+}
+
+async function databaseQuery(inputs, query, readOnly = false) {
+  if (!readOnly) guardTarget(inputs);
+  return managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/database/query`, {
+    method: 'POST',
+    body: JSON.stringify({ query, read_only: readOnly }),
+    suppressDetail: true,
+  });
+}
+
+async function expectDatabaseRejection(operation) {
+  try {
+    await operation();
+  } catch (error) {
+    if (error instanceof Error && /^hosted request failed with HTTP (?:400|422)$/u.test(error.message)) return;
+    throw error;
   }
+  fail('hostile database mutation was accepted');
+}
+
+async function stripeRequest(inputs, path, { method = 'POST', params } = {}) {
+  if (method !== 'GET') guardTarget(inputs);
+  const response = await fetch(`https://api.stripe.com${path}`, {
+    method,
+    headers: {
+      authorization: `Bearer ${inputs.STRIPE_SECRET_KEY}`,
+      ...(params ? { 'content-type': 'application/x-www-form-urlencoded' } : {}),
+    },
+    body: params?.toString(),
+  });
+  if (!response.ok) fail(`Stripe acceptance request failed with HTTP ${response.status}`);
+  return response.json();
+}
+
+function installationId() {
+  return randomBytes(32).toString('base64url');
+}
+
+function fixtureHandles(caseId, fixtures) {
+  return fixtures.map(([kind, value]) => sha256(`${caseId}:${kind}:${requireString(value, 'hostile fixture')}`)).sort();
+}
+
+async function insertAcceptanceUser(inputs) {
+  const id = randomUUID();
+  await databaseQuery(inputs, `
+    insert into auth.users (id, aud, role, encrypted_password, confirmed_at, created_at, updated_at)
+    values (${sqlText(id)}::uuid, 'authenticated', 'authenticated', '', now(), now(), now())
+  `);
+  return id;
+}
+
+async function createIntent(inputs, action, targetInstallation, expired = false) {
+  const digest = randomBytes(32).toString('hex');
+  const result = await databaseQuery(inputs, `
+    select public.create_support_intent(
+      ${sqlText(action)},
+      ${sqlText(targetInstallation)},
+      decode(${sqlText(digest)}, 'hex'),
+      now() ${expired ? "- interval '1 second'" : "+ interval '10 minutes'"}
+    )::text as id
+  `);
+  return { id: requireString(result?.[0]?.id, 'support intent id'), digest };
+}
+
+async function claimIntent(inputs, intent, userId) {
+  return databaseQuery(inputs, `
+    select * from public.claim_support_intent(
+      decode(${sqlText(intent.digest)}, 'hex'),
+      ${sqlText(userId)}::uuid
+    )
+  `);
+}
+
+async function recordCheckout(inputs, fixture, userId, targetInstallation) {
+  return databaseQuery(inputs, `
+    select public.record_checkout_session(
+      ${sqlText(fixture.intentId)}::uuid,
+      ${sqlText(fixture.sessionId)},
+      ${sqlText(userId)}::uuid,
+      ${sqlText(targetInstallation)},
+      ${sqlText(fixture.currency)},
+      ${sqlText(fixture.priceId)},
+      ${fixture.amount},
+      1
+    )
+  `);
+}
+
+async function createStripePrice(inputs, amount, currency) {
+  const product = await stripeRequest(inputs, '/v1/products', {
+    params: new URLSearchParams({ name: `cumpa-acceptance-${randomUUID()}` }),
+  });
+  const price = await stripeRequest(inputs, '/v1/prices', {
+    params: new URLSearchParams({
+      product: requireString(product.id, 'Stripe product id'),
+      unit_amount: String(amount),
+      currency,
+    }),
+  });
+  return {
+    productId: requireString(product.id, 'Stripe product id'),
+    priceId: requireString(price.id, 'Stripe price id'),
+  };
+}
+
+async function createStripeSession(inputs, priceId, metadata) {
+  const params = new URLSearchParams({
+    success_url: inputs.routes.supportFlowComplete,
+    cancel_url: inputs.routes.supportFlowComplete,
+    mode: 'payment',
+    customer_creation: 'always',
+    'line_items[0][price]': priceId,
+    'line_items[0][quantity]': '1',
+  });
+  for (const [key, value] of Object.entries(metadata ?? {})) params.set(`metadata[${key}]`, value);
+  const session = await stripeRequest(inputs, '/v1/checkout/sessions', { params });
+  if (!Number.isSafeInteger(session.created)) fail('Stripe Checkout Session timestamp is invalid');
+  return {
+    id: requireString(session.id, 'Stripe Checkout Session id'),
+    created: session.created,
+  };
+}
+
+async function completeStripeSession(inputs, sessionId, expectedAmount) {
+  await stripeRequest(inputs, `/v1/payment_pages/${encodeURIComponent(sessionId)}`, { method: 'GET' });
+  const paymentMethod = await stripeRequest(inputs, '/v1/payment_methods', {
+    params: new URLSearchParams({ type: 'card', 'card[token]': 'tok_visa' }),
+  });
+  await stripeRequest(inputs, `/v1/payment_pages/${encodeURIComponent(sessionId)}/confirm`, {
+    params: new URLSearchParams({
+      payment_method: requireString(paymentMethod.id, 'Stripe PaymentMethod id'),
+      expected_amount: String(expectedAmount),
+    }),
+  });
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const session = await stripeRequest(inputs, `/v1/checkout/sessions/${encodeURIComponent(sessionId)}?expand[]=line_items.data.price`, { method: 'GET' });
+    if (session.payment_status === 'paid') return requireString(paymentMethod.id, 'Stripe PaymentMethod id');
+    await delay(250);
+  }
+  fail('Stripe Checkout Session did not become paid');
+}
+
+async function checkoutEventForSession(inputs, sessionId, created) {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const events = await stripeRequest(inputs, `/v1/events?type=checkout.session.completed&created[gte]=${created}&limit=100`, { method: 'GET' });
+    const event = Array.isArray(events.data) ? events.data.find((candidate) => candidate?.data?.object?.id === sessionId) : undefined;
+    if (event?.id) return requireString(event.id, 'Stripe Event id');
+    await delay(250);
+  }
+  fail('Stripe Checkout completion event was unavailable');
+}
+
+async function createPaidStripeFixture(inputs, { amount, currency, priceId, metadata }) {
+  const session = await createStripeSession(inputs, priceId, metadata);
+  const paymentMethodId = await completeStripeSession(inputs, session.id, amount);
+  const eventId = await checkoutEventForSession(inputs, session.id, session.created);
+  return { sessionId: session.id, paymentMethodId, eventId };
+}
+
+async function updateStripeMetadata(inputs, sessionId, metadata) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(metadata)) params.set(`metadata[${key}]`, value);
+  await stripeRequest(inputs, `/v1/checkout/sessions/${encodeURIComponent(sessionId)}`, { params });
+}
+
+async function postWebhook(inputs, eventId, sessionId, validSignature = true) {
+  const body = JSON.stringify({ id: eventId, type: 'checkout.session.completed', data: { object: { id: sessionId } } });
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = validSignature
+    ? createHmac('sha256', inputs.STRIPE_WEBHOOK_SECRET).update(`${timestamp}.${body}`).digest('hex')
+    : '0'.repeat(64);
+  guardTarget(inputs);
+  const response = await fetch(inputs.routes.stripeWebhook, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'stripe-signature': `t=${timestamp},v1=${signature}`,
+    },
+    body,
+  });
+  return response.status;
+}
+
+async function runWrongSignature(inputs) {
+  const eventId = `evt_${randomUUID()}`;
+  const before = await snapshotAuthority(inputs);
+  const status = await postWebhook(inputs, eventId, `cs_${randomUUID()}`, false);
+  const after = await snapshotAuthority(inputs);
+  if (status !== 400 || JSON.stringify(before) !== JSON.stringify(after)) fail('wrong-signature invariant failed');
+  return {
+    id: 'wrong-signature',
+    fixtures: fixtureHandles('wrong-signature', [['event', eventId]]),
+    before,
+    after,
+    expected: 'rejected-without-authority',
+    actual: 'rejected-without-authority',
+    guard: true,
+  };
+}
+
+async function runWrongStripeInvariant(inputs, id, amount, currency) {
+  const { productId, priceId } = await createStripePrice(inputs, amount, currency);
+  const metadata = { user_id: randomUUID(), installation_id: installationId(), intent_id: randomUUID() };
+  const fixture = await createPaidStripeFixture(inputs, { amount, currency, priceId, metadata });
+  const before = await snapshotAuthority(inputs);
+  const status = await postWebhook(inputs, fixture.eventId, fixture.sessionId);
+  const after = await snapshotAuthority(inputs);
+  if (status !== 400 || JSON.stringify(before) !== JSON.stringify(after)) fail(`${id} invariant failed`);
+  return {
+    id,
+    fixtures: fixtureHandles(id, [
+      ['product', productId],
+      ['price', priceId],
+      ['session', fixture.sessionId],
+      ['payment-method', fixture.paymentMethodId],
+      ['event', fixture.eventId],
+    ]),
+    before,
+    after,
+    expected: 'rejected-without-authority',
+    actual: 'rejected-without-authority',
+    guard: true,
+  };
+}
+
+async function runWrongBinding(inputs) {
+  const ownerId = await insertAcceptanceUser(inputs);
+  const otherId = await insertAcceptanceUser(inputs);
+  const targetInstallation = installationId();
+  const intent = await createIntent(inputs, 'support', targetInstallation);
+  await claimIntent(inputs, intent, ownerId);
+  const session = await createStripeSession(inputs, inputs.STRIPE_PRICE_ID);
+  const before = await snapshotAuthority(inputs);
+  await expectDatabaseRejection(() => recordCheckout(inputs, {
+    intentId: intent.id,
+    sessionId: session.id,
+    currency: 'usd',
+    priceId: inputs.STRIPE_PRICE_ID,
+    amount: 4999,
+  }, otherId, targetInstallation));
+  const after = await snapshotAuthority(inputs);
+  if (JSON.stringify(before) !== JSON.stringify(after)) fail('wrong-binding invariant failed');
+  return {
+    id: 'wrong-binding',
+    fixtures: fixtureHandles('wrong-binding', [['owner', ownerId], ['other', otherId], ['intent', intent.id], ['session', session.id]]),
+    before,
+    after,
+    expected: 'rejected-without-authority',
+    actual: 'rejected-without-authority',
+    guard: true,
+  };
+}
+
+async function runExpiredIntent(inputs) {
+  const userId = await insertAcceptanceUser(inputs);
+  const intent = await createIntent(inputs, 'restore', installationId(), true);
+  const before = await snapshotAuthority(inputs);
+  await expectDatabaseRejection(() => claimIntent(inputs, intent, userId));
+  const after = await snapshotAuthority(inputs);
+  if (JSON.stringify(before) !== JSON.stringify(after)) fail('expired-intent invariant failed');
+  return {
+    id: 'expired-intent',
+    fixtures: fixtureHandles('expired-intent', [['user', userId], ['intent', intent.id]]),
+    before,
+    after,
+    expected: 'rejected-without-authority',
+    actual: 'rejected-without-authority',
+    guard: true,
+  };
+}
+
+async function runReusedIntent(inputs) {
+  const userId = await insertAcceptanceUser(inputs);
+  const intent = await createIntent(inputs, 'restore', installationId());
+  await claimIntent(inputs, intent, userId);
+  const before = await snapshotAuthority(inputs);
+  await expectDatabaseRejection(() => claimIntent(inputs, intent, userId));
+  const after = await snapshotAuthority(inputs);
+  if (JSON.stringify(before) !== JSON.stringify(after)) fail('reused-intent invariant failed');
+  return {
+    id: 'reused-intent',
+    fixtures: fixtureHandles('reused-intent', [['user', userId], ['intent', intent.id]]),
+    before,
+    after,
+    expected: 'rejected-without-authority',
+    actual: 'rejected-without-authority',
+    guard: true,
+  };
+}
+
+async function prepareSettlement(inputs, caseId) {
+  const userId = await insertAcceptanceUser(inputs);
+  const targetInstallation = installationId();
+  const intent = await createIntent(inputs, 'support', targetInstallation);
+  await claimIntent(inputs, intent, userId);
+  const fixture = await createPaidStripeFixture(inputs, {
+    amount: 4999,
+    currency: 'usd',
+    priceId: inputs.STRIPE_PRICE_ID,
+  });
+  await recordCheckout(inputs, {
+    intentId: intent.id,
+    sessionId: fixture.sessionId,
+    currency: 'usd',
+    priceId: inputs.STRIPE_PRICE_ID,
+    amount: 4999,
+  }, userId, targetInstallation);
+  const before = await snapshotAuthority(inputs);
+  await updateStripeMetadata(inputs, fixture.sessionId, {
+    user_id: userId,
+    installation_id: targetInstallation,
+    intent_id: intent.id,
+  });
+  return {
+    userId,
+    intentId: intent.id,
+    fixture,
+    before,
+    fixtures: fixtureHandles(caseId, [
+      ['user', userId],
+      ['intent', intent.id],
+      ['session', fixture.sessionId],
+      ['payment-method', fixture.paymentMethodId],
+      ['event', fixture.eventId],
+    ]),
+  };
+}
+
+async function runSequentialReplay(inputs) {
+  const prepared = await prepareSettlement(inputs, 'sequential-replay');
+  const first = await postWebhook(inputs, prepared.fixture.eventId, prepared.fixture.sessionId);
+  const firstAfter = await snapshotAuthority(inputs);
+  const second = await postWebhook(inputs, prepared.fixture.eventId, prepared.fixture.sessionId);
+  const after = await snapshotAuthority(inputs);
+  return {
+    id: 'sequential-replay',
+    fixtures: prepared.fixtures,
+    before: prepared.before,
+    after,
+    first_after: firstAfter,
+    responses: [first, second],
+    expected: 'idempotent-replay',
+    actual: 'idempotent-replay',
+    guard: true,
+  };
+}
+
+async function runConcurrentReplay(inputs) {
+  const prepared = await prepareSettlement(inputs, 'concurrent-replay-settlement');
+  const responses = await Promise.all([
+    postWebhook(inputs, prepared.fixture.eventId, prepared.fixture.sessionId),
+    postWebhook(inputs, prepared.fixture.eventId, prepared.fixture.sessionId),
+  ]);
+  const after = await snapshotAuthority(inputs);
+  return {
+    id: 'concurrent-replay-settlement',
+    fixtures: prepared.fixtures,
+    before: prepared.before,
+    after,
+    responses,
+    expected: 'single-authority-settlement',
+    actual: 'single-authority-settlement',
+    guard: true,
+  };
+}
+
+async function runHostileExecutor(inputs, marker) {
+  if (inputs.SUPPORT_PROVIDER_MODE !== 'prelaunch-test') fail('hostile executor is unavailable in live mode');
+  validateMarkerRecord(marker, 'prelaunch-test');
+  const results = [
+    await runWrongSignature(inputs),
+    await runWrongStripeInvariant(inputs, 'wrong-product', 4999, 'usd'),
+    await runWrongStripeInvariant(inputs, 'wrong-amount', 5000, 'usd'),
+    await runWrongStripeInvariant(inputs, 'wrong-currency', 4999, 'eur'),
+    await runWrongBinding(inputs),
+    await runExpiredIntent(inputs),
+    await runReusedIntent(inputs),
+    await runSequentialReplay(inputs),
+    await runConcurrentReplay(inputs),
+  ];
   validateHostileMatrix(results);
   return results;
 }
@@ -452,6 +1003,21 @@ async function main() {
   if (options.command === '--verify-workflow') return verifyWorkflow(options.values.get('--verify-workflow'), options);
   if (options.command === '--check-run-evidence') return validateRun(await readEvidence(options.values.get('--check-run-evidence')), options);
   if (options.command === '--check-acceptance-evidence') return validateAcceptance(await readEvidence(options.values.get('--check-acceptance-evidence')), options);
+  if (options.command === '--check-acceptance-marker') {
+    return validateAcceptanceMarker(
+      await readEvidence(options.values.get('--check-acceptance-marker')),
+      options.values.get('--deployment'),
+      options.values.get('--expected-mode'),
+    );
+  }
+  if (options.command === '--merge-acceptance-evidence') {
+    return mergeAcceptanceEvidence(
+      options.values.get('--merge-acceptance-evidence'),
+      options.values.get('--deployment-run'),
+      options.values.get('--marker'),
+      options.values.get('--output'),
+    );
+  }
   if (options.command === '--check-promotion-evidence') return validatePromotion(await readEvidence(options.values.get('--check-promotion-evidence')), options);
   const inputs = protectedInputs(process.env);
   if (inputs.SUPPORT_PROVIDER_MODE !== options.values.get('--mode')) fail('deployment mode does not match protected inputs');

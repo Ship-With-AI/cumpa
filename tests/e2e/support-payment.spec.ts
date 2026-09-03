@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { chmod, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { delimiter, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -143,4 +144,51 @@ test('workflow verification rejects toolchain, database-order, and retired-input
     'npx vitest run --no-file-parallelism\n      - run: npx playwright install --with-deps chromium',
   ));
   await reject(['--verify-workflow', testsReordered], 'workflow test gates are out of order');
+});
+
+test('acceptance markers reject browser observations not covered by their digest', async ({}, testInfo) => {
+  const projectRef = 'a'.repeat(20);
+  const publicOrigin = `https://${projectRef}.supabase.co`;
+  const observations = {
+    browser_matrix: [
+      'paid-support',
+      'restart-persistence',
+      'restore-paid-one',
+      'restore-paid-two',
+      'restore-unpaid',
+      'checkout-delay',
+      'checkout-cancellation',
+    ].map((id) => ({ id, status: 'passed' })),
+    completion: { status: 200, content_type: 'text/plain', body: 'Support flow complete. You can return to Cumpa.' },
+    review_unrestricted: true,
+  };
+  const marker = testInfo.outputPath('marker.json');
+  const deployment = testInfo.outputPath('deployment.json');
+  await writeFile(marker, JSON.stringify({
+    version: 1,
+    kind: 'acceptance-marker',
+    mode: 'prelaunch-test',
+    fingerprint: createHash('sha256').update(projectRef).digest('hex'),
+    public_origin: publicOrigin,
+    run: { id: '100', url: 'https://github.com/example/repo/actions/runs/100', commit: 'b'.repeat(40), immutable: true },
+    routes: {
+      'auth-settings': { status: 401, content_type: 'application/json' },
+      'support-api-invalid-input': { status: 400, content_type: 'application/json' },
+      'support-flow-invalid-state': { status: 400, content_type: 'text/plain' },
+      'stripe-webhook-invalid-signature': { status: 400, content_type: 'application/json' },
+    },
+    acceptance_marker: {
+      status: 'interactive-matrix-complete',
+      deployment_evidence_sha256: '1'.repeat(64),
+      observations_sha256: '2'.repeat(64),
+    },
+    observations,
+  }));
+  await writeFile(deployment, '{}');
+
+  await reject([
+    '--check-acceptance-marker', marker,
+    '--deployment', deployment,
+    '--expected-mode', 'prelaunch-test',
+  ], 'acceptance marker observations digest does not match');
 });

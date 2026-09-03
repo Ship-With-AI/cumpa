@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "kind": "acceptance-marker",
+  "mode": "prelaunch-test",
+  "fingerprint": "2043c31eacb2efa76123043fcd652ac45bd19b121db1ddaa537e86b3473bf73d",
+  "public_origin": "https://boruowxemintmdojkibd.supabase.co",
+  "run": {
+    "id": "33631411293",
+    "url": "https://github.com/Ship-With-AI/cumpa/actions/runs/33631411293",
+    "commit": "c0a33d3e1835ff17ba2b951a036589375da81c02",
+    "immutable": true
+  },
+  "routes": {
+    "auth-settings": {
+      "status": 401,
+      "content_type": "application/json"
+    },
+    "support-api-invalid-input": {
+      "status": 400,
+      "content_type": "application/json"
+    },
+    "support-flow-invalid-state": {
+      "status": 400,
+      "content_type": "text/plain"
+    },
+    "stripe-webhook-invalid-signature": {
+      "status": 400,
+      "content_type": "application/json"
+    }
+  },
+  "acceptance_marker": {
+    "status": "interactive-matrix-complete",
+    "deployment_evidence_sha256": "536d848db6e26d0dd53383b158391a6e26d1a1a9ae78b9b67a16bac51974cb3a",
+    "observations_sha256": "0ab102e189ff75049837cc5af978f7fdf78d21d8f12fc20b78b0bddd146ef078"
+  },
+  "observations": {
+    "browser_matrix": [
+      {
+        "id": "paid-support",
+        "status": "passed"
+      },
+      {
+        "id": "restart-persistence",
+        "status": "passed"
+      },
+      {
+        "id": "restore-paid-one",
+        "status": "passed"
+      },
+      {
+        "id": "restore-paid-two",
+        "status": "passed"
+      },
+      {
+        "id": "restore-unpaid",
+        "status": "passed"
+      },
+      {
+        "id": "checkout-delay",
+        "status": "passed"
+      },
+      {
+        "id": "checkout-cancellation",
+        "status": "passed"
+      }
+    ],
+    "completion": {
+      "status": 200,
+      "content_type": "text/plain",
+      "body": "Support flow complete. You can return to Cumpa."
+    },
+    "review_unrestricted": true
+  }
+}
