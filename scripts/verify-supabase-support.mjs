@@ -396,7 +396,12 @@ async function validateReleaseApproval(release, releasePath) {
 async function checkReleaseEvidence(options) {
   const releasePath = options.values.get('--check-release-evidence');
   const release = await readFinalInput(releasePath, 'release', 'release');
-  const promotion = await readFinalInput(options.values.get('--live-promotion'), 'promotion', 'promotion');
+  const promotionPath = options.values.get('--live-promotion');
+  const promotionRaw = await readFile(promotionPath, 'utf8');
+  const promotionRecord = await readEvidence(promotionPath);
+  assertBaseRecord(promotionRecord, 'promotion');
+  if (promotionRecord.status !== 'passed' || promotionRecord.mode !== 'production-live' || promotionRecord.run.immutable !== true) fail('release promotion lineage is invalid');
+  const promotion = { record: promotionRecord, digest: sha256(promotionRaw) };
   const retirementPath = options.values.get('--retirement');
   const retirementRaw = await readFile(retirementPath, 'utf8');
   const retirement = await readEvidence(retirementPath);
@@ -409,10 +414,13 @@ async function checkReleaseEvidence(options) {
   ) fail('release retirement lineage is invalid');
   if (
     release.record.public_origin !== promotion.record.public_origin
-    || JSON.stringify(release.record.run) !== JSON.stringify(promotion.record.run)
+    || release.record.fingerprint !== promotion.record.fingerprint
     || release.record.artifacts?.promotion_evidence_sha256 !== promotion.digest
     || release.record.artifacts?.retirement_evidence_sha256 !== sha256(retirementRaw)
+    || !isHash(release.record.artifacts?.deployment_evidence_sha256)
   ) fail('release evidence lineage is invalid');
+  assertRoutes(release.record.routes);
+  if (JSON.stringify(release.record.route_probes) !== JSON.stringify(release.record.routes)) fail('release route probe lineage is invalid');
   if (options.flags.has('--require-package-digest') && !isHash(release.record.artifacts?.package_sha256)) fail('release package digest is invalid');
   if (options.flags.has('--require-zero-authority')) {
     assertManifest(release.record.authority_before, true);
@@ -420,7 +428,7 @@ async function checkReleaseEvidence(options) {
   }
   if (options.flags.has('--non-destructive')) {
     if (release.record.non_destructive !== true) fail('release smoke is not non-destructive');
-    const flow = release.record.route_probes?.['support-flow-invalid-input'];
+    const flow = release.record.route_probes?.['support-flow-invalid-state'];
     if (flow?.status !== 400 || flow.content_type !== 'text/plain') fail('release support-flow signature is invalid');
   }
   if (options.flags.has('--require-approved')) await validateReleaseApproval(release.record, release.path);
