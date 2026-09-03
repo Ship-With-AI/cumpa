@@ -7,8 +7,8 @@
     "classifier_sha256": "d82f9f5531260a581bbe4d34859f6fe672074887041a779780fe1f0f027dcea6"
   },
   "scope": {
-    "tracked_paths": 571,
-    "scanned_tracked_files": 560,
+    "tracked_paths": 572,
+    "scanned_tracked_files": 561,
     "immutable_description_exclusion": ".planning/**",
     "contract_description_exclusions": [
       "scripts/verify-production-artifacts.mjs",
@@ -26,8 +26,8 @@
     "inventory_sha256": "05288c9cf2daf4518fd67ef246e45f98c13e943b488e34cb79aa1daf1652fd01"
   },
   "artifacts": {
-    "commit": "044a9411aaba6f5bddc01a438e56e1710e3f8339",
-    "evidence_sha256": "9aa05362f489fd235b10357749b62a15f84425f6093b50f2a576aa3dddba8ce9"
+    "commit": "2ef9d630730107c7d5aa5d07b6e3358181809e87",
+    "evidence_sha256": "c0e2949462aee574a4626b42f53f16222623022bab7a1e43bdd362fd976a0e80"
   },
   "violations": []
 }
