@@ -27,7 +27,7 @@ Plans:
 **Goal:** Replace the blocked standalone support backend with Supabase Postgres, Auth, and Edge Functions while preserving optional webhook-authoritative USD $49.99 support and machine-wide prompt suppression, replacing email recovery with installation-bound GitHub OAuth restoration, and completing a verified Supabase-only production cutover.
 **Requirements:** PAY-01, PAY-02, PAY-03, PAY-04, SUP-01, SUP-02, SUP-03, SUP-04, SUP-05, REC-01, REC-02, REC-03 (REC-01/REC-02 mechanisms superseded by Phase 2 D-10)
 **Depends on:** Phase 1
-**Plans:** 11/17 plans executed
+**Plans:** 12/17 plans executed
 
 Plans:
 **Wave 1**
@@ -62,8 +62,8 @@ Plans:
 
 - [x] 02-08-PLAN.md — Cut source/workflow/tests/docs to the canonical default origin, then configure protected callbacks without pushing
 
-
 **Wave 9** *(blocked on Wave 8 completion)*
+
 - [x] 02-09-PLAN.md — Capture the first automatic deployment, run browser acceptance, and merge the real hostile matrix with one exact fixture manifest
 
 **Wave 10** *(blocked on Wave 9 completion)*
@@ -76,7 +76,7 @@ Plans:
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
-- [ ] 02-12-PLAN.md — Remove the remaining seven-file legacy runtime/routes slice
+- [x] 02-12-PLAN.md — Remove the remaining seven-file legacy runtime/routes slice
 
 **Wave 13** *(blocked on Wave 12 completion)*
 
