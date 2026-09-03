@@ -339,3 +339,41 @@ test('retirement and package scanners permit only the supplied canonical origin'
   });
   await rm(fixture, { recursive: true, force: true });
 });
+test('final review rejects the former five-input contract and binds six immutable records', async ({}, testInfo) => {
+  const origin = 'https://abcdefghijklmnopqrst.supabase.co';
+  const paths = ['test-deployment', 'acceptance', 'promotion', 'retirement', 'release', 'local-package-security']
+    .map((name) => join(testInfo.outputPath('final-inputs'), `${name}.json`));
+  await mkdir(join(testInfo.outputPath('final-inputs')), { recursive: true });
+  const record = (kind: string) => ({
+    version: 1,
+    kind,
+    status: 'passed',
+    public_origin: origin,
+    run: { id: '100', url: 'https://github.com/example/repo/actions/runs/100', commit: 'a'.repeat(40), immutable: true },
+    artifacts: { evidence_sha256: '' },
+  });
+  const kinds = ['test-deployment', 'acceptance', 'promotion', 'retirement-review', 'release-approval', 'local-package-security'];
+  for (const [index, path] of paths.entries()) {
+    const value = record(kinds[index]);
+    value.artifacts.evidence_sha256 = createHash('sha256').update(JSON.stringify({ ...value, artifacts: { evidence_sha256: '' } })).digest('hex');
+    await writeFile(path, JSON.stringify(value));
+  }
+  const flags = ['--test-deployment', paths[0], '--acceptance', paths[1], '--promotion', paths[2], '--retirement', paths[3], '--release', paths[4]];
+  await reject(['--final-review', ...flags, '--output', testInfo.outputPath('five.json')], 'missing required option --local-package-security');
+  await expect(execFileAsync(process.execPath, [
+    script,
+    '--final-review',
+    ...flags,
+    '--local-package-security',
+    paths[5],
+    '--output',
+    testInfo.outputPath('final.json'),
+  ])).resolves.toBeDefined();
+  await reject([
+    '--check-final',
+    testInfo.outputPath('final.json'),
+    ...flags,
+    '--local-package-security',
+    paths[5],
+  ], 'release approval binding is invalid');
+});
