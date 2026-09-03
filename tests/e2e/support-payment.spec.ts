@@ -239,6 +239,12 @@ test('workflow verification rejects toolchain, database-order, and retired-input
     'npx vitest run --no-file-parallelism\n      - run: npx playwright install --with-deps chromium',
   ));
   await reject(['--verify-workflow', testsReordered], 'workflow test gates are out of order');
+  const deployWithoutInstall = testInfo.outputPath('deploy-without-install.yml');
+  await writeFile(deployWithoutInstall, source.replace(
+    /(deploy-production:[\s\S]*?)      - run: npm ci\n/u,
+    '$1',
+  ));
+  await reject(['--verify-workflow', deployWithoutInstall, '--require-release-artifact'], 'workflow deploy job is missing dependency installation');
 });
 
 test('acceptance markers reject browser observations not covered by their digest', async ({}, testInfo) => {

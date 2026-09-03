@@ -1659,6 +1659,8 @@ async function verifyWorkflow(path, options) {
     const deploy = workflow.indexOf('name: Deploy guarded Supabase release');
     const build = workflow.indexOf('name: Build configured release package');
     const upload = workflow.indexOf('actions/upload-artifact@v4');
+    const deployInstall = workflow.indexOf('      - run: npm ci', workflow.indexOf('deploy-production:'));
+    if (deployInstall < 0 || deployInstall > build) fail('workflow deploy job is missing dependency installation');
     if (
       deployGuard < 0 || deploy < 0 || build < 0 || upload < 0 || deployGuard > deploy
       || !workflow.includes(guard) || /CUMPA_RELEASE_SUPPORT_SERVICE_URL:\s*\$\{\{/u.test(workflow)
