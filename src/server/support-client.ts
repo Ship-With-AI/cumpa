@@ -38,12 +38,14 @@ export function createHostedSupportClient(options: Readonly<{
   if (service?.protocol !== 'https:') service = undefined;
 
   const fetcher = options.fetch ?? globalThis.fetch;
-  const controller = new AbortController();
+  const lifetimeController = new AbortController();
   const fetchJson = async (path: string, init?: RequestInit): Promise<unknown | undefined> => {
     if (service === undefined) return undefined;
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    const requestController = new AbortController();
+    const timeout = setTimeout(() => requestController.abort(), timeoutMs);
     try {
-      return await responseJson(await fetcher(new URL(path, service).toString(), { ...init, signal: controller.signal }));
+      const signal = AbortSignal.any([lifetimeController.signal, requestController.signal]);
+      return await responseJson(await fetcher(new URL(path, service).toString(), { ...init, signal }));
     } catch {
       return undefined;
     } finally {
@@ -75,7 +77,7 @@ export function createHostedSupportClient(options: Readonly<{
       return result.success ? result.data.status : undefined;
     },
     close() {
-      controller.abort();
+      lifetimeController.abort();
     },
   });
 }

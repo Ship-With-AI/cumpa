@@ -157,6 +157,32 @@ describe('hosted support contracts', () => {
     await expect(pending).resolves.toBeUndefined();
   });
 
+  test('a timed-out hosted request does not poison later polling', async () => {
+    vi.useFakeTimers();
+    try {
+      let calls = 0;
+      const fetch = vi.fn((_input: string | URL | Request, init?: RequestInit) => {
+        calls += 1;
+        if (calls > 1) {
+          return init?.signal?.aborted
+            ? Promise.reject(new Error('poisoned'))
+            : Promise.resolve(new Response(JSON.stringify({ status: 'verified' })));
+        }
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new Error('timed out')), { once: true });
+        });
+      });
+      const client = createHostedSupportClient({ serviceUrl, fetch: fetch as typeof globalThis.fetch });
+
+      const timedOut = client.status(installationId);
+      await vi.advanceTimersByTimeAsync(5_000);
+      await expect(timedOut).resolves.toBeUndefined();
+      await expect(client.status(installationId)).resolves.toBe('verified');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test('starts hosted flow without treating it as support authority', async () => {
     const { store, markVerified } = supportStore();
     const client: HostedSupportClient = {
