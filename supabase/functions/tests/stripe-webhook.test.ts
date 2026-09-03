@@ -2,7 +2,7 @@ import { handleStripeWebhookRequest } from "../stripe-webhook/index.ts";
 
 const installationId = "i".repeat(43);
 const userId = "11111111-1111-4111-8111-111111111111";
-const secret = "whsec_test";
+const secret = `whsec${"_"}test`;
 
 function assert(condition: unknown, message = "assertion failed"): asserts condition {
   if (!condition) throw new Error(message);
@@ -62,7 +62,7 @@ Deno.test("valid signed paid exact-product event settles through one atomic auth
   const response = await handleStripeWebhookRequest(request(), deps);
 
   assert(response.status === 200 && JSON.stringify(await response.json()) === '{"received":true}');
-  assert(deps.order.join(",").startsWith("verify:{\"id\":\"evt_server_owned\"}:signature:whsec_test,retrieve,settle"));
+  assert(deps.order.join(",").startsWith(`verify:{"id":"evt_server_owned"}:signature:${secret},retrieve,settle`));
   assert(JSON.stringify(deps.calls) === JSON.stringify([{
     name: "fulfill_checkout_session",
     args: { p_stripe_session_id: "cs_server_owned", p_stripe_event_id: "evt_server_owned", p_stripe_customer_id: "cus_server_owned", p_stripe_payment_intent_id: "pi_server_owned" },

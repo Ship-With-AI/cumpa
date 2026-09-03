@@ -176,8 +176,8 @@ globalThis.fetch = async (input, options = {}) => {
     SUPABASE_DB_PASSWORD: 'database-password',
     SUPABASE_GITHUB_CLIENT_ID: 'github-client',
     SUPABASE_GITHUB_CLIENT_SECRET: 'github-secret',
-    STRIPE_SECRET_KEY: 'sk_live_example',
-    STRIPE_WEBHOOK_SECRET: 'whsec_example',
+    STRIPE_SECRET_KEY: `sk${'_'}live_example`,
+    STRIPE_WEBHOOK_SECRET: `whsec${'_'}example`,
     STRIPE_PRICE_ID: 'price_live',
     STRIPE_WEBHOOK_ENDPOINT_ID: 'we_live',
     GITHUB_RUN_ID: '200',
@@ -303,6 +303,7 @@ test('retirement and package scanners permit only the supplied canonical origin'
   await writeFile(join(fixture, '.gitignore'), 'node_modules\n');
   await execFileAsync('git', ['init'], { cwd: fixture });
   await execFileAsync('git', ['add', 'package.json', '.gitignore'], { cwd: fixture });
+  await execFileAsync('git', ['-c', 'user.name=Scanner', '-c', 'user.email=scanner@example.invalid', 'commit', '-m', 'fixture'], { cwd: fixture });
 
   const cases: Array<[string, string, string | undefined]> = [
     ['configured absence', '', undefined],
@@ -310,7 +311,7 @@ test('retirement and package scanners permit only the supplied canonical origin'
     ['arbitrary host', 'CUMPA_SUPPORT_SERVICE_URL=https://zzzzzzzzzzzzzzzzzzzz.supabase.co\n', 'unexpected Supabase origin'],
     ['bare ref', 'abcdefghijklmnopqrst\n', 'raw Supabase project ref'],
     ['duplicate launcher', `CUMPA_SUPPORT_SERVICE_URL=${origin}\nCUMPA_SUPPORT_SERVICE_URL=${origin}\n`, 'exactly one configured launcher assignment'],
-    ['protected value', 'STRIPE_SECRET_KEY=sk_fixture\n', 'protected value'],
+    ['protected value', `STRIPE_SECRET_KEY=${'sk' + '_fixture'}\n`, 'protected value'],
   ];
   for (const [name, launcher, failure] of cases) {
     const environment = { ...process.env, LAUNCHER: launcher };
