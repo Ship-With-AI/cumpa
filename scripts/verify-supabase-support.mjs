@@ -644,8 +644,19 @@ async function stripeRequest(inputs, path, { method = 'POST', operation = 'reque
     },
     body: params?.toString(),
   });
-  if (!response.ok) fail(`Stripe acceptance ${operation} failed with HTTP ${response.status}`);
-  return response.json();
+  const body = await response.text();
+  let payload;
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    fail(`Stripe acceptance ${operation} returned invalid JSON`);
+  }
+  if (!response.ok) {
+    const code = typeof payload?.error?.code === 'string' && /^[a-z0-9_]{1,80}$/u.test(payload.error.code) ? payload.error.code : 'unknown';
+    const parameter = typeof payload?.error?.param === 'string' && /^[a-z0-9_[\].]{1,80}$/u.test(payload.error.param) ? payload.error.param : 'unknown';
+    fail(`Stripe acceptance ${operation} failed with HTTP ${response.status}, code ${code}, parameter ${parameter}`);
+  }
+  return payload;
 }
 
 function installationId() {
