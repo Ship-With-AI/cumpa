@@ -471,7 +471,7 @@ async function collectFinalInputs(options) {
     const path = resolve(options.values.get(option));
     const raw = await readFile(path, 'utf8');
     const record = await readEvidence(path);
-    const input = { path, raw, record, digest: sha256(raw) };
+    const input = { path: relative(process.cwd(), path), raw, record, digest: sha256(raw) };
     if (seen.has(path)) fail('final evidence input paths must be distinct');
     seen.add(path);
     if (name === 'test-deployment') {
