@@ -14,6 +14,14 @@ const TABLES = [
   ['support_private.stripe_events', 'stripe_event_id'],
   ['support_private.installation_bindings', 'installation_id'],
 ];
+const CLEANUP_TABLES = [
+  ['support_private.stripe_events', 'stripe_event_id'],
+  ['support_private.installation_bindings', 'installation_id'],
+  ['support_private.supporters', 'user_id'],
+  ['support_private.checkout_sessions', 'id'],
+  ['support_private.support_intents', 'id'],
+  ['auth.users', 'id'],
+];
 const HOSTILE_CASES = [
   'wrong-signature',
   'wrong-product',
@@ -156,7 +164,7 @@ const commandDefinitions = {
     flags: new Set(['--require-approved', '--require-cleanup-run', '--require-live-run', '--require-one-fingerprint', '--require-exact-cleanup', '--require-zero-authority', '--require-zero-after-cleanup', '--require-live-smoke', '--non-destructive', '--require-immutable-runs']),
   },
   '--run-deployment': {
-    values: new Set(['--mode', '--evidence', '--acceptance-marker']),
+    values: new Set(['--mode', '--evidence', '--acceptance-marker', '--acceptance']),
     flags: new Set(['--run-deployment']),
     required: ['--mode', '--evidence'],
   },
@@ -254,14 +262,41 @@ async function guardedMutation(inputs, operation, mutate, order) {
   return mutate();
 }
 
-async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
+async function deploy(inputs, evidencePath, acceptanceMarkerPath, acceptancePath) {
+  if (acceptanceMarkerPath && acceptancePath) fail('deployment accepts only one acceptance input');
+  if (acceptancePath) {
+    if (inputs.SUPPORT_PROVIDER_MODE !== 'prelaunch-test') fail('exact cleanup is unavailable in live mode');
+    return exactCleanup(inputs, evidencePath, acceptancePath);
+  }
+  if (inputs.SUPPORT_PROVIDER_MODE === 'production-live') {
+    if (acceptanceMarkerPath) fail('acceptance marker is unavailable in live mode');
+    return deployLive(inputs, evidencePath);
+  }
+
   let marker;
   if (acceptanceMarkerPath) {
-    if (inputs.SUPPORT_PROVIDER_MODE !== 'prelaunch-test') fail('acceptance marker is unavailable in live mode');
     marker = await readEvidence(acceptanceMarkerPath);
     await validateAcceptanceMarker(marker, PRELAUNCH_DEPLOYMENT_EVIDENCE, 'prelaunch-test');
     if (marker.public_origin !== inputs.origin || marker.fingerprint !== sha256(inputs.SUPABASE_PROJECT_REF)) fail('acceptance marker target does not match');
   }
+  const order = await applyHostedConfiguration(inputs);
+  const authority = await snapshotAuthority(inputs);
+  const routes = await probeRoutes(inputs.routes);
+  const after = await snapshotAuthority(inputs);
+  if (JSON.stringify(authority) !== JSON.stringify(after)) fail('route probes changed authority rows');
+  const record = deploymentRecord(inputs, order, routes, authority);
+  if (marker) {
+    record.hostile_matrix = await runHostileExecutor(inputs, marker);
+    record.fixture_manifest = await snapshotAuthority(inputs);
+    record.acceptance_marker = {
+      ...marker.acceptance_marker,
+      marker_sha256: sha256(JSON.stringify(marker)),
+    };
+  }
+  await writeRunEvidence(evidencePath, record);
+}
+
+async function applyHostedConfiguration(inputs) {
   const order = [];
   await guardedMutation(inputs, 'schema', () => commandOutput('npx', ['supabase@2.114.0', 'db', 'push', '--project-ref', inputs.SUPABASE_PROJECT_REF], process.env), order);
   await guardedMutation(inputs, 'auth-provider-configuration', () => managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/config/auth`, {
@@ -285,11 +320,11 @@ async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
   for (const name of ['support-api', 'support-flow', 'stripe-webhook']) {
     await guardedMutation(inputs, name, () => commandOutput('npx', ['supabase@2.114.0', 'functions', 'deploy', name, '--project-ref', inputs.SUPABASE_PROJECT_REF, '--use-api', '--import-map', 'supabase/functions/deno.json'], process.env), order);
   }
-  const authority = await snapshotAuthority(inputs);
-  const routes = await probeRoutes(inputs.routes);
-  const after = await snapshotAuthority(inputs);
-  if (JSON.stringify(authority) !== JSON.stringify(after)) fail('route probes changed authority rows');
-  const record = {
+  return order;
+}
+
+function deploymentRecord(inputs, order, routes, authority) {
+  return {
     version: EVIDENCE_VERSION,
     kind: 'deployment-run',
     status: 'passed',
@@ -302,16 +337,11 @@ async function deploy(inputs, evidencePath, acceptanceMarkerPath) {
     authority,
     artifacts: { evidence_sha256: '' },
   };
-  if (marker) {
-    record.hostile_matrix = await runHostileExecutor(inputs, marker);
-    record.fixture_manifest = await snapshotAuthority(inputs);
-    record.acceptance_marker = {
-      ...marker.acceptance_marker,
-      marker_sha256: sha256(JSON.stringify(marker)),
-    };
-  }
+}
+
+async function writeRunEvidence(path, record) {
   record.artifacts.evidence_sha256 = sha256(JSON.stringify({ ...record, artifacts: { evidence_sha256: '' } }));
-  await writeEvidence(evidencePath, record);
+  await writeEvidence(path, record);
 }
 
 function immutableRunContext(environment) {
@@ -323,7 +353,7 @@ function immutableRunContext(environment) {
   return { id, url: `${serverUrl}/${repository}/actions/runs/${id}`, commit, immutable: true };
 }
 
-async function snapshotAuthority(inputs) {
+async function authorityRows(inputs) {
   const query = TABLES
     .map(([table, key]) => `select '${table}' as table_name, ${key}::text as id from ${table}`)
     .join('\nunion all\n');
@@ -332,17 +362,137 @@ async function snapshotAuthority(inputs) {
     body: JSON.stringify({ query: `${query}\norder by table_name, id`, read_only: true }),
   });
   if (!Array.isArray(result)) fail('authority snapshot must be a row array');
-  const manifest = Object.fromEntries(TABLES.map(([table]) => [table, { count: 0, handles: [] }]));
+  const rows = Object.fromEntries(TABLES.map(([table]) => [table, []]));
   for (const row of result) {
     const table = requireString(row?.table_name, 'authority table');
-    if (!Object.hasOwn(manifest, table)) fail('authority snapshot returned an unknown table');
-    manifest[table].handles.push(sha256(`${table}:${requireString(row?.id, 'authority handle')}`));
+    if (!Object.hasOwn(rows, table)) fail('authority snapshot returned an unknown table');
+    rows[table].push(requireString(row?.id, 'authority handle'));
   }
-  for (const entry of Object.values(manifest)) {
-    entry.handles.sort();
-    entry.count = entry.handles.length;
-  }
+  return rows;
+}
+
+function manifestForRows(rows) {
+  const manifest = Object.fromEntries(TABLES.map(([table]) => [
+    table,
+    {
+      count: rows[table].length,
+      handles: rows[table].map((id) => sha256(`${table}:${id}`)).sort(),
+    },
+  ]));
+  assertManifest(manifest);
   return manifest;
+}
+
+async function snapshotAuthority(inputs) {
+  return manifestForRows(await authorityRows(inputs));
+}
+
+async function validateCleanupAcceptance(acceptance, inputs) {
+  await validateAcceptance(acceptance, {
+    values: new Map([['--deployment', PRELAUNCH_DEPLOYMENT_EVIDENCE]]),
+    flags: new Set(['--require-approved', '--require-hostile-matrix', '--require-fixture-manifest', '--require-immutable-run']),
+  });
+  if (
+    acceptance.public_origin !== inputs.origin
+    || acceptance.fingerprint !== sha256(inputs.SUPABASE_PROJECT_REF)
+    || !/^\d{4}-\d{2}-\d{2}$/u.test(acceptance.approval?.approved_on)
+    || acceptance.approval?.run_id !== acceptance.run.id
+    || acceptance.approval?.run_evidence_sha256 !== acceptance.artifacts?.hostile_run_evidence_sha256
+    || acceptance.approval?.scope !== 'exact-manifest-cleanup-and-same-project-promotion'
+  ) fail('acceptance approval lineage does not match cleanup target');
+}
+
+function cleanupSql(rows) {
+  const exactChecks = TABLES.map(([table, key]) => {
+    const values = rows[table];
+    const matches = values.length === 0
+      ? '0'
+      : `(select count(*) from ${table} where ${key}::text = any (array[${values.map(sqlText).join(', ')}]::text[]))`;
+    return `if (select count(*) from ${table}) <> ${values.length} or ${matches} <> ${values.length} then raise exception 'fixture manifest mismatch'; end if;`;
+  }).join('\n');
+  const deletes = CLEANUP_TABLES.map(([table, key]) => {
+    const values = rows[table];
+    return values.length === 0
+      ? ''
+      : `delete from ${table} where ${key}::text = any (array[${values.map(sqlText).join(', ')}]::text[]);`;
+  }).filter(Boolean).join('\n');
+  return `do $cumpa$\nbegin\nlock table ${TABLES.map(([table]) => table).join(', ')} in access exclusive mode;\n${exactChecks}\n${deletes}\nend\n$cumpa$;`;
+}
+
+async function exactCleanup(inputs, evidencePath, acceptancePath) {
+  const acceptance = await readEvidence(acceptancePath);
+  await validateCleanupAcceptance(acceptance, inputs);
+  const rows = await authorityRows(inputs);
+  const before = manifestForRows(rows);
+  if (JSON.stringify(before) !== JSON.stringify(acceptance.fixture_manifest)) fail('current authority does not exactly match approved fixture manifest');
+  guardTarget(inputs);
+  await databaseQuery(inputs, cleanupSql(rows), 'exact fixture cleanup');
+  const authority = await snapshotAuthority(inputs);
+  assertManifest(authority, true);
+  const routes = await probeRoutes(inputs.routes);
+  const confirmation = await snapshotAuthority(inputs);
+  assertManifest(confirmation, true);
+  const record = deploymentRecord(inputs, CLEANUP_TABLES.map(([table]) => `delete:${table}`), routes, authority);
+  record.operation = 'exact-cleanup';
+  record.authority_before = before;
+  record.deleted = before;
+  record.authority_confirmation = confirmation;
+  record.acceptance = {
+    run_id: acceptance.run.id,
+    run_evidence_sha256: acceptance.artifacts.hostile_run_evidence_sha256,
+    record_sha256: sha256(JSON.stringify(acceptance)),
+  };
+  await writeRunEvidence(evidencePath, record);
+}
+
+async function verifyLiveCoherence(inputs) {
+  if (!inputs.STRIPE_SECRET_KEY.startsWith('sk_live_') || !inputs.STRIPE_WEBHOOK_SECRET.startsWith('whsec_')) fail('live Stripe inputs are incomplete or mixed');
+  const price = await stripeRequest(inputs, `/v1/prices/${encodeURIComponent(inputs.STRIPE_PRICE_ID)}`, { method: 'GET', operation: 'live price verification' });
+  const endpoint = await stripeRequest(inputs, `/v1/webhook_endpoints/${encodeURIComponent(inputs.STRIPE_WEBHOOK_ENDPOINT_ID)}`, { method: 'GET', operation: 'live webhook verification' });
+  if (
+    price?.object !== 'price'
+    || price.active !== true
+    || price.livemode !== true
+    || price.currency !== 'usd'
+    || price.unit_amount !== 4999
+    || price.type !== 'one_time'
+    || endpoint?.object !== 'webhook_endpoint'
+    || endpoint.status !== 'enabled'
+    || endpoint.livemode !== true
+    || endpoint.url !== inputs.routes.stripeWebhook
+    || JSON.stringify(endpoint.enabled_events) !== JSON.stringify(['checkout.session.completed'])
+  ) fail('live Stripe inputs are incomplete or mixed');
+  return { status: 'passed' };
+}
+
+async function probeLiveStatus(inputs) {
+  const response = await fetch(`${inputs.routes.supportApi}/status?installationId=${encodeURIComponent(installationId())}`);
+  const contentType = response.headers.get('content-type') ?? '';
+  let body;
+  try {
+    body = await response.json();
+  } catch {
+    fail('live status probe returned invalid JSON');
+  }
+  if (response.status !== 200 || !contentType.startsWith('application/json') || JSON.stringify(body) !== JSON.stringify({ status: 'unverified' })) fail('live status probe failed');
+  return { status: 'passed', non_destructive: true };
+}
+
+async function deployLive(inputs, evidencePath) {
+  const before = await snapshotAuthority(inputs);
+  assertManifest(before, true);
+  const coherence = await verifyLiveCoherence(inputs);
+  const order = await applyHostedConfiguration(inputs);
+  const routes = await probeRoutes(inputs.routes);
+  const liveSmoke = await probeLiveStatus(inputs);
+  const authority = await snapshotAuthority(inputs);
+  assertManifest(authority, true);
+  if (JSON.stringify(before) !== JSON.stringify(authority)) fail('live deployment changed authority rows');
+  const record = deploymentRecord(inputs, order, routes, authority);
+  record.authority_before = before;
+  record.coherence = coherence;
+  record.live_smoke = liveSmoke;
+  await writeRunEvidence(evidencePath, record);
 }
 
 async function probeRoutes(routes) {
@@ -500,12 +650,29 @@ function assertRoutes(routes) {
   }
 }
 
-function validateRun(record, options) {
+function validateRun(record, options, acceptance) {
   assertBaseRecord(record, 'deployment-run');
   if (record.mode !== options.values.get('--expected-mode')) fail('evidence mode does not match expected mode');
   if (options.flags.has('--require-immutable-run') && record.run.immutable !== true) fail('evidence run is not immutable');
+  if (evidenceDigest(record) !== record.artifacts.evidence_sha256) fail('evidence artifact digest does not match');
   if (options.flags.has('--require-zero-authority')) assertManifest(record.authority, true);
-  if (record.status !== 'passed' || JSON.stringify(record.order) !== JSON.stringify(['schema', 'auth-provider-configuration', 'edge-function-secrets', 'support-api', 'support-flow', 'stripe-webhook'])) fail('evidence mutation order is invalid');
+  if (options.flags.has('--require-exact-cleanup')) {
+    const order = CLEANUP_TABLES.map(([table]) => `delete:${table}`);
+    if (record.status !== 'passed' || record.operation !== 'exact-cleanup' || JSON.stringify(record.order) !== JSON.stringify(order)) fail('evidence exact cleanup order is invalid');
+    assertManifest(record.authority_before);
+    assertManifest(record.deleted);
+    assertManifest(record.authority_confirmation, true);
+    if (!acceptance || JSON.stringify(record.authority_before) !== JSON.stringify(acceptance.fixture_manifest) || JSON.stringify(record.deleted) !== JSON.stringify(acceptance.fixture_manifest)) fail('evidence cleanup manifest does not match acceptance');
+    if (
+      record.public_origin !== acceptance.public_origin
+      || record.fingerprint !== acceptance.fingerprint
+      || record.acceptance?.run_id !== acceptance.run.id
+      || record.acceptance?.run_evidence_sha256 !== acceptance.artifacts.hostile_run_evidence_sha256
+      || record.acceptance?.record_sha256 !== sha256(JSON.stringify(acceptance))
+    ) fail('evidence cleanup lineage does not match acceptance');
+  } else if (record.status !== 'passed' || JSON.stringify(record.order) !== JSON.stringify(['schema', 'auth-provider-configuration', 'edge-function-secrets', 'support-api', 'support-flow', 'stripe-webhook'])) {
+    fail('evidence mutation order is invalid');
+  }
   if (Object.hasOwn(record, 'domain') || Object.hasOwn(record, 'display_suffix')) fail('evidence retains retired domain state');
   assertRoutes(record.routes);
 }
@@ -1055,7 +1222,18 @@ async function runHostileExecutor(inputs, marker) {
 async function main() {
   const options = parseArguments(process.argv.slice(2));
   if (options.command === '--verify-workflow') return verifyWorkflow(options.values.get('--verify-workflow'), options);
-  if (options.command === '--check-run-evidence') return validateRun(await readEvidence(options.values.get('--check-run-evidence')), options);
+  if (options.command === '--check-run-evidence') {
+    const record = await readEvidence(options.values.get('--check-run-evidence'));
+    let acceptance;
+    if (options.values.has('--acceptance')) {
+      acceptance = await readEvidence(options.values.get('--acceptance'));
+      await validateAcceptance(acceptance, {
+        values: new Map([['--deployment', PRELAUNCH_DEPLOYMENT_EVIDENCE]]),
+        flags: new Set(['--require-approved', '--require-hostile-matrix', '--require-fixture-manifest', '--require-immutable-run']),
+      });
+    }
+    return validateRun(record, options, acceptance);
+  }
   if (options.command === '--check-acceptance-evidence') return validateAcceptance(await readEvidence(options.values.get('--check-acceptance-evidence')), options);
   if (options.command === '--check-acceptance-marker') {
     return validateAcceptanceMarker(
@@ -1075,7 +1253,7 @@ async function main() {
   if (options.command === '--check-promotion-evidence') return validatePromotion(await readEvidence(options.values.get('--check-promotion-evidence')), options);
   const inputs = protectedInputs(process.env);
   if (inputs.SUPPORT_PROVIDER_MODE !== options.values.get('--mode')) fail('deployment mode does not match protected inputs');
-  return deploy(inputs, options.values.get('--evidence'), options.values.get('--acceptance-marker'));
+  return deploy(inputs, options.values.get('--evidence'), options.values.get('--acceptance-marker'), options.values.get('--acceptance'));
 }
 
 async function verifyWorkflow(path, options) {
@@ -1085,7 +1263,7 @@ async function verifyWorkflow(path, options) {
     'repository-gates:', 'deploy-production:', 'needs: repository-gates', 'environment: production',
     'actions/setup-node@v4', 'node-version: 24', 'denoland/setup-deno@v2', 'deno-version: v2.7.14',
     'npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test tests/e2e/support-payment.spec.ts tests/e2e/support-recovery.spec.ts tests/e2e/support-restore.spec.ts', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests',
-    'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local', '--run-deployment',
+    'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local', '--run-deployment', '02-09-ACCEPTANCE-EVIDENCE.md', 'args+=(--acceptance "$acceptance")', 'production-live',
   ];
   for (const value of required) if (!workflow.includes(value)) fail(`workflow is missing required ${value}`);
   const commands = new Set(workflow.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('- run:')).map((line) => line.slice('- run:'.length).trim()));
@@ -1110,6 +1288,7 @@ async function verifyWorkflow(path, options) {
   if (options.values.has('--expected-mode') && !workflow.includes('SUPPORT_PROVIDER_MODE: ${{ vars.SUPPORT_PROVIDER_MODE }}')) fail('workflow does not map the protected deployment mode');
   if (!workflow.includes('SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}')) fail('workflow does not map the protected project ref');
   for (const input of RETIRED_INPUTS) if (workflow.includes(input)) fail('workflow contains forbidden retired input');
+  if (workflow.includes('--acceptance-marker')) fail('workflow retains obsolete hostile acceptance branch');
   if (/\b(?:domains|custom-domain|custom domain|dns|cname|txt)\b/iu.test(workflow)) fail('workflow contains forbidden domain lifecycle');
   if (options.flags.has('--require-release-artifact') && !workflow.includes('actions/upload-artifact@v4')) fail('workflow does not upload redacted evidence');
 }

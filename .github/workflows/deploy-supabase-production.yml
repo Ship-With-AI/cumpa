@@ -57,10 +57,12 @@ jobs:
           node-version: 24
       - name: Deploy guarded Supabase release
         run: |
-          marker=.planning/phases/02-move-the-implementation-to-supabase/02-09-ACCEPTANCE-MARKER.json
+          acceptance=.planning/phases/02-move-the-implementation-to-supabase/02-09-ACCEPTANCE-EVIDENCE.md
           args=(--run-deployment --mode "$SUPPORT_PROVIDER_MODE" --evidence supabase-deployment-evidence.json)
-          if [ "$SUPPORT_PROVIDER_MODE" = prelaunch-test ] && [ -f "$marker" ]; then
-            args+=(--acceptance-marker "$marker")
+          if [ "$SUPPORT_PROVIDER_MODE" = prelaunch-test ] && [ -f "$acceptance" ]; then
+            args+=(--acceptance "$acceptance")
+          elif [ "$SUPPORT_PROVIDER_MODE" != production-live ]; then
+            exit 1
           fi
           node scripts/verify-supabase-support.mjs "${args[@]}"
       - uses: actions/upload-artifact@v4

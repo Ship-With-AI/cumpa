@@ -108,6 +108,69 @@ if (JSON.stringify(actual) !== database && !functionDeployment) {
   expect(failure?.stderr).not.toContain('sensitive-db-value');
 });
 
+test('live deployment rejects nonzero authority and keeps its smoke non-destructive', async ({}, testInfo) => {
+  const projectRef = 'a'.repeat(20);
+  const origin = `https://${projectRef}.supabase.co`;
+  const bin = testInfo.outputPath('live-bin');
+  const npx = join(bin, 'npx');
+  const fetchHook = testInfo.outputPath('live-fetch-hook.mjs');
+  const evidence = testInfo.outputPath('live-deployment.json');
+  await mkdir(bin, { recursive: true });
+  await writeFile(npx, '#!/usr/bin/env node\n');
+  await chmod(npx, 0o755);
+  await writeFile(fetchHook, `
+globalThis.fetch = async (input, options = {}) => {
+  const url = String(input);
+  if (url.includes('/database/query')) {
+    if (process.env.NONZERO === 'true') return new Response(JSON.stringify([{ table_name: 'auth.users', id: '11111111-1111-4111-8111-111111111111' }]));
+    return new Response('[]');
+  }
+  if (url === 'https://api.stripe.com/v1/prices/price_live') return new Response(JSON.stringify({ object: 'price', active: true, livemode: true, currency: 'usd', unit_amount: 4999, type: 'one_time' }));
+  if (url === 'https://api.stripe.com/v1/webhook_endpoints/we_live') return new Response(JSON.stringify({ object: 'webhook_endpoint', status: 'enabled', livemode: true, url: '${origin}/functions/v1/stripe-webhook', enabled_events: ['checkout.session.completed'] }));
+  if (url.includes('/config/auth')) return new Response('{}');
+  if (url.includes('/secrets')) return new Response(null, { status: 201 });
+  if (url.includes('/auth/v1/settings')) return new Response('{}', { status: 401, headers: { 'content-type': 'application/json' } });
+  if (url.includes('/support-api/status?')) return new Response('{"status":"unverified"}', { status: 200, headers: { 'content-type': 'application/json' } });
+  if (url.endsWith('/support-api')) return new Response('{}', { status: 400, headers: { 'content-type': 'application/json' } });
+  if (url.endsWith('/support-flow')) return new Response('', { status: 400, headers: { 'content-type': 'text/plain' } });
+  if (url.endsWith('/stripe-webhook')) return new Response('{}', { status: 400, headers: { 'content-type': 'application/json' } });
+  throw new Error('unexpected hosted request');
+};
+`);
+  const environment = {
+    ...process.env,
+    PATH: `${bin}${delimiter}${process.env.PATH ?? ''}`,
+    NODE_OPTIONS: `--import=${pathToFileURL(fetchHook).href}`,
+    GITHUB_ACTIONS: 'true',
+    CUMPA_DEPLOYMENT_ENVIRONMENT: 'production',
+    SUPPORT_PROVIDER_MODE: 'production-live',
+    SUPABASE_ACCESS_TOKEN: 'token',
+    SUPABASE_PROJECT_REF: projectRef,
+    SUPABASE_DB_PASSWORD: 'database-password',
+    SUPABASE_GITHUB_CLIENT_ID: 'github-client',
+    SUPABASE_GITHUB_CLIENT_SECRET: 'github-secret',
+    STRIPE_SECRET_KEY: 'sk_live_example',
+    STRIPE_WEBHOOK_SECRET: 'whsec_example',
+    STRIPE_PRICE_ID: 'price_live',
+    STRIPE_WEBHOOK_ENDPOINT_ID: 'we_live',
+    GITHUB_RUN_ID: '200',
+    GITHUB_SERVER_URL: 'https://github.com',
+    GITHUB_REPOSITORY: 'example/repo',
+    GITHUB_SHA: 'd'.repeat(40),
+  };
+  const args = ['--run-deployment', '--mode', 'production-live', '--evidence', evidence];
+
+  await expect(execFileAsync(process.execPath, [script, ...args], { env: environment })).resolves.toBeDefined();
+  expect(JSON.parse(await readFile(evidence, 'utf8'))).toMatchObject({
+    mode: 'production-live',
+    coherence: { status: 'passed' },
+    live_smoke: { status: 'passed', non_destructive: true },
+  });
+  await expect(execFileAsync(process.execPath, [script, ...args], {
+    env: { ...environment, NONZERO: 'true' },
+  })).rejects.toMatchObject({ stderr: expect.stringContaining('evidence authority is not zero') });
+});
+
 
 test('workflow verification rejects toolchain, database-order, and retired-input regressions', async ({}, testInfo) => {
   const source = await readFile(new URL('../../.github/workflows/deploy-supabase-production.yml', import.meta.url), 'utf8');
@@ -125,6 +188,9 @@ test('workflow verification rejects toolchain, database-order, and retired-input
     ['stored origin', 'STRIPE_PRICE_ID: ${{ vars.STRIPE_PRICE_ID }}', 'SUPPORT_PUBLIC_ORIGIN: ${{ vars.SUPPORT_PUBLIC_ORIGIN }}', 'workflow contains forbidden retired input'],
     ['configured fingerprint', 'STRIPE_PRICE_ID: ${{ vars.STRIPE_PRICE_ID }}', 'APPROVED_SUPABASE_PROJECT_REF_SHA256: ${{ vars.APPROVED_SUPABASE_PROJECT_REF_SHA256 }}', 'workflow contains forbidden retired input'],
     ['domain command', 'node scripts/verify-supabase-support.mjs "${args[@]}"', 'npx supabase@2.114.0 domains activate --project-ref "$SUPABASE_PROJECT_REF"', 'workflow contains forbidden domain lifecycle'],
+    ['cleanup evidence', '02-09-ACCEPTANCE-EVIDENCE.md', '02-09-ACCEPTANCE-MARKER.json', 'workflow is missing required'],
+    ['cleanup branch', 'args+=(--acceptance "$acceptance")', 'args+=(--acceptance-marker "$acceptance")', 'workflow is missing required'],
+    ['live branch', 'production-live', 'production-staging', 'workflow is missing required'],
   ];
   for (const [name, expected, replacement, message] of cases) {
     const workflow = testInfo.outputPath(`${name}.yml`);

@@ -198,3 +198,90 @@ test('acceptance marker and machine merge bind browser observations to the prote
     '--output', outputPath,
   ], 'evidence fixture manifest is invalid');
 });
+
+test('exact cleanup evidence requires the approved manifest, repeated zero, and immutable lineage', async ({}, testInfo) => {
+  const acceptancePath = new URL('../../.planning/phases/02-move-the-implementation-to-supabase/02-09-ACCEPTANCE-EVIDENCE.md', import.meta.url).pathname;
+  const acceptance = JSON.parse((await readFile(acceptancePath, 'utf8')).match(/<!-- cumpa-evidence\n(.+)\n-->/su)?.[1] ?? '');
+  const empty: Record<string, { count: number; handles: string[] }> = Object.fromEntries(
+    Object.keys(acceptance.fixture_manifest).map((table) => [table, { count: 0, handles: [] }]),
+  );
+  const record = {
+    version: 1,
+    kind: 'deployment-run',
+    status: 'passed',
+    mode: 'prelaunch-test',
+    operation: 'exact-cleanup',
+    fingerprint: acceptance.fingerprint,
+    public_origin: acceptance.public_origin,
+    run: { id: '102', url: 'https://github.com/example/repo/actions/runs/102', commit: 'c'.repeat(40), immutable: true },
+    order: [
+      'delete:support_private.stripe_events',
+      'delete:support_private.installation_bindings',
+      'delete:support_private.supporters',
+      'delete:support_private.checkout_sessions',
+      'delete:support_private.support_intents',
+      'delete:auth.users',
+    ],
+    routes: {
+      'auth-settings': { status: 401, content_type: 'application/json' },
+      'support-api-invalid-input': { status: 400, content_type: 'application/json' },
+      'support-flow-invalid-state': { status: 400, content_type: 'text/plain' },
+      'stripe-webhook-invalid-signature': { status: 400, content_type: 'application/json' },
+    },
+    authority_before: acceptance.fixture_manifest,
+    deleted: acceptance.fixture_manifest,
+    authority: empty,
+    authority_confirmation: empty,
+    acceptance: {
+      run_id: acceptance.run.id,
+      run_evidence_sha256: acceptance.artifacts.hostile_run_evidence_sha256,
+      record_sha256: createHash('sha256').update(JSON.stringify(acceptance)).digest('hex'),
+    },
+    artifacts: { evidence_sha256: '' },
+  };
+  const evidencePath = testInfo.outputPath('cleanup.json');
+  const save = async (value: typeof record) => {
+    value.artifacts.evidence_sha256 = '';
+    value.artifacts.evidence_sha256 = createHash('sha256').update(JSON.stringify(value)).digest('hex');
+    await writeFile(evidencePath, JSON.stringify(value));
+  };
+  const args = [
+    '--check-run-evidence', evidencePath,
+    '--expected-mode', 'prelaunch-test',
+    '--acceptance', acceptancePath,
+    '--require-exact-cleanup',
+    '--require-zero-authority',
+    '--require-immutable-run',
+  ];
+
+  await save(record);
+  await expect(execFileAsync(process.execPath, [script, ...args])).resolves.toBeDefined();
+
+  const extra = structuredClone(record);
+  extra.authority_before['auth.users'].handles.push('f'.repeat(64));
+  extra.authority_before['auth.users'].handles.sort();
+  extra.authority_before['auth.users'].count += 1;
+  await save(extra);
+  await reject(args, 'evidence cleanup manifest does not match acceptance');
+
+  const missing = structuredClone(record);
+  missing.deleted['auth.users'].handles.pop();
+  missing.deleted['auth.users'].count -= 1;
+  await save(missing);
+  await reject(args, 'evidence cleanup manifest does not match acceptance');
+
+  const duplicate = structuredClone(record);
+  duplicate.deleted['auth.users'].handles[1] = duplicate.deleted['auth.users'].handles[0];
+  await save(duplicate);
+  await reject(args, 'evidence fixture manifest is invalid');
+
+  const nonzero = structuredClone(record);
+  nonzero.authority_confirmation['auth.users'] = { count: 1, handles: ['e'.repeat(64)] };
+  await save(nonzero);
+  await reject(args, 'evidence authority is not zero');
+
+  const wrongRun = structuredClone(record);
+  wrongRun.acceptance.run_id = '999';
+  await save(wrongRun);
+  await reject(args, 'evidence cleanup lineage does not match acceptance');
+});
