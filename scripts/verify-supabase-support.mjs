@@ -460,7 +460,8 @@ async function verifyLiveCoherence(inputs) {
     || endpoint.status !== 'enabled'
     || endpoint.livemode !== true
     || endpoint.url !== inputs.routes.stripeWebhook
-    || JSON.stringify(endpoint.enabled_events) !== JSON.stringify(['checkout.session.completed'])
+    || !Array.isArray(endpoint.enabled_events)
+    || JSON.stringify([...endpoint.enabled_events].sort()) !== JSON.stringify(['checkout.session.async_payment_succeeded', 'checkout.session.completed'])
   ) fail('live Stripe inputs are incomplete or mixed');
   return { status: 'passed' };
 }
