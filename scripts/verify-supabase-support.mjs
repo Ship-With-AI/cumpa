@@ -64,6 +64,7 @@ class HostedRequestError extends Error {
   constructor(status, context, detail = '') {
     super(`${context} failed with HTTP ${status}${detail ? `: ${detail}` : ''}`);
     this.status = status;
+    this.detail = detail;
   }
 }
 
@@ -230,7 +231,7 @@ function redactedHostedError(body, inputs) {
 
 
 async function managementRequest(inputs, path, options = {}) {
-  const { suppressDetail = false, ...requestOptions } = options;
+  const { safeErrorDetail, suppressDetail = false, ...requestOptions } = options;
   const response = await fetch(`${MANAGEMENT_ORIGIN}${path}`, {
     ...requestOptions,
     headers: {
@@ -241,7 +242,7 @@ async function managementRequest(inputs, path, options = {}) {
   });
   const body = await response.text();
   if (!response.ok) {
-    const detail = suppressDetail ? '' : redactedHostedError(body, inputs);
+    const detail = safeErrorDetail ? safeErrorDetail(body) : suppressDetail ? '' : redactedHostedError(body, inputs);
     throw new HostedRequestError(response.status, 'hosted request', detail);
   }
   return body.length === 0 ? undefined : JSON.parse(body);
@@ -620,6 +621,14 @@ async function validatePromotion(record, options) {
 function sqlText(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
+function safeDatabaseError(body) {
+  const normalized = body.toLowerCase();
+  const categories = ['generated always', 'null value', 'not-null', 'invalid input syntax', 'duplicate key', 'permission denied', 'does not exist', 'violates']
+    .filter((value) => normalized.includes(value));
+  const columns = ['instance_id', 'confirmed_at', 'email_confirmed_at', 'email', 'confirmation_token', 'email_change', 'email_change_token_new', 'recovery_token', 'aud', 'role']
+    .filter((value) => normalized.includes(value));
+  return `category=${categories.join('+') || 'unknown'};column=${columns.join('+') || 'unknown'}`;
+}
 
 async function databaseQuery(inputs, query, operation, readOnly = false) {
   if (!readOnly) guardTarget(inputs);
@@ -627,10 +636,10 @@ async function databaseQuery(inputs, query, operation, readOnly = false) {
     return await managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/database/query`, {
       method: 'POST',
       body: JSON.stringify({ query, read_only: readOnly }),
-      suppressDetail: true,
+      safeErrorDetail: safeDatabaseError,
     });
   } catch (error) {
-    if (error instanceof HostedRequestError) throw new HostedRequestError(error.status, `hosted database ${operation}`);
+    if (error instanceof HostedRequestError) throw new HostedRequestError(error.status, `hosted database ${operation}`, error.detail);
     throw error;
   }
 }
