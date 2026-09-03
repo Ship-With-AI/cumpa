@@ -20,6 +20,12 @@ function json(value: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(value), { status, headers: { "content-type": "application/json" } });
 }
 
+function safePostgrestCode(error: unknown): string {
+  if (typeof error !== "object" || error === null || !("code" in error)) return "unknown";
+  const code = error.code;
+  return typeof code === "string" && /^[A-Z0-9]{5,8}$/u.test(code) ? code : "unknown";
+}
+
 function defaultDependencies(): StripeWebhookDependencies {
   const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") ?? "", { httpClient: Stripe.createFetchHttpClient() });
   return {
@@ -56,11 +62,12 @@ export async function handleStripeWebhookRequest(request: Request, dependencies 
   const checkout = checkoutSessionInvariant(session, dependencies.priceId);
   if (!checkout) return json({ error: "invalid_request" }, 400);
   try {
-    if (await fulfillVerifiedCheckout(dependencies.service.rpc, event.id, checkout) === "settled") return json({ received: true });
+    const fulfillment = await fulfillVerifiedCheckout(dependencies.service.rpc, event.id, checkout);
+    if (fulfillment.status === "settled") return json({ received: true });
+    dependencies.log?.(`stripe_webhook_authority_unavailable:${safePostgrestCode(fulfillment.error)}`);
   } catch {
-    // The public response remains generic; the stage-only log is safe for operations.
+    dependencies.log?.("stripe_webhook_authority_unavailable:exception");
   }
-  dependencies.log?.("stripe_webhook_authority_unavailable");
   return json({ error: "unavailable" }, 503);
 }
 

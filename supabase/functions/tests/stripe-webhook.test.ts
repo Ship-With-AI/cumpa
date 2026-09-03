@@ -114,14 +114,14 @@ Deno.test("completed and delayed-payment events preserve database replay and con
 Deno.test("transient settlement failures are retryable while invalid input and logs remain redacted", async () => {
   const logs: unknown[] = [];
   const deps = dependencies({
-    service: { rpc: async () => ({ data: null, error: { message: "database unavailable STRIPE_SECRET_KEY=secret" } }) },
+    service: { rpc: async () => ({ data: null, error: { code: "P0001", message: "database unavailable STRIPE_SECRET_KEY=secret" } }) },
     log: (value: unknown) => logs.push(value),
   });
   const response = await handleStripeWebhookRequest(request(), deps);
 
   assert(response.status === 503 && JSON.stringify(await response.json()) === '{"error":"unavailable"}');
   assert(!JSON.stringify(logs).match(/secret|signature|evt_server_owned/i));
-  assert(JSON.stringify(logs) === '["stripe_webhook_authority_unavailable"]');
+  assert(JSON.stringify(logs) === '["stripe_webhook_authority_unavailable:P0001"]');
 });
 
 Deno.test("provider lookup failures are retryable and stage-only", async () => {

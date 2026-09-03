@@ -37,12 +37,16 @@ export function checkoutSessionInvariant(session: unknown, priceId: string): Ver
   };
 }
 
-export async function fulfillVerifiedCheckout(rpc: Rpc, eventId: string, checkout: VerifiedCheckout): Promise<"settled" | "unavailable"> {
+export async function fulfillVerifiedCheckout(
+  rpc: Rpc,
+  eventId: string,
+  checkout: VerifiedCheckout,
+): Promise<{ status: "settled" } | { status: "unavailable"; error: unknown }> {
   const result = await rpc("fulfill_checkout_session", {
     p_stripe_session_id: checkout.sessionId,
     p_stripe_event_id: eventId,
     p_stripe_customer_id: checkout.customerId,
     p_stripe_payment_intent_id: checkout.paymentIntentId,
   });
-  return result.error ? "unavailable" : "settled";
+  return result.error ? { status: "unavailable", error: result.error } : { status: "settled" };
 }
