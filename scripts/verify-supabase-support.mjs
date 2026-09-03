@@ -353,7 +353,14 @@ const FINAL_INPUTS = [
   ['release', '--release', 'release'],
   ['local-package-security', '--local-package-security', 'local-package-security'],
 ];
-const LOCAL_PROTECTED_INPUTS = [...PROTECTED_INPUTS, 'CUMPA_RELEASE_SUPPORT_SERVICE_URL', 'CUMPA_SUPPORT_SERVICE_URL'];
+const LOCAL_PROTECTED_INPUTS = [
+  ...PROTECTED_INPUTS,
+  ...RETIRED_INPUTS,
+  'CUMPA_RELEASE_SUPPORT_SERVICE_URL',
+  'CUMPA_SUPPORT_SERVICE_URL',
+  'CUMPA_DEPLOYMENT_ENVIRONMENT',
+  'GITHUB_ACTIONS',
+];
 
 function finalDigest(record) {
   return sha256(JSON.stringify({ ...record, artifacts: { ...record.artifacts, evidence_sha256: '' } }));

@@ -347,6 +347,19 @@ test('retirement and package scanners permit only the supplied canonical origin'
   });
   await rm(fixture, { recursive: true, force: true });
 });
+test('local security collector rejects hosted and retired configuration before running', async ({}, testInfo) => {
+  await expect(execFileAsync(process.execPath, [
+    script,
+    '--local-package-security-review',
+    '--output',
+    testInfo.outputPath('02-17-LOCAL-PACKAGE-SECURITY-EVIDENCE.md'),
+  ], {
+    env: { ...process.env, SUPPORT_PUBLIC_ORIGIN: 'https://example.invalid' },
+  })).rejects.toMatchObject({
+    stderr: expect.stringContaining('local package security review forbids SUPPORT_PUBLIC_ORIGIN'),
+  });
+});
+
 test('final review rejects the former five-input contract and binds six immutable records', async ({}, testInfo) => {
   const phase = new URL('../../.planning/phases/02-move-the-implementation-to-supabase/', import.meta.url).pathname;
   const paths = [
