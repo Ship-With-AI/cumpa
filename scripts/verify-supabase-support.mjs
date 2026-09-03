@@ -681,8 +681,8 @@ function fixtureHandles(caseId, fixtures) {
 async function insertAcceptanceUser(inputs) {
   const id = randomUUID();
   await databaseQuery(inputs, `
-    insert into auth.users (id, aud, role, encrypted_password, confirmed_at, created_at, updated_at)
-    values (${sqlText(id)}::uuid, 'authenticated', 'authenticated', '', now(), now(), now())
+    insert into auth.users (id, aud, role, email, encrypted_password, confirmed_at, created_at, updated_at)
+    values (${sqlText(id)}::uuid, 'authenticated', 'authenticated', ${sqlText(`${id}@example.test`)}, '', now(), now(), now())
   `, 'user insertion');
   return id;
 }
