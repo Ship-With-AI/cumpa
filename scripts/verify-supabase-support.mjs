@@ -142,6 +142,11 @@ const commandDefinitions = {
     values: new Set(['--verify-workflow', '--require-environment', '--expected-mode']),
     flags: new Set(['--require-release-artifact']),
   },
+  '--check-release-evidence': {
+    values: new Set(['--check-release-evidence', '--live-promotion', '--retirement']),
+    flags: new Set(['--require-approved', '--require-immutable-run', '--require-package-digest', '--require-zero-authority', '--non-destructive']),
+    required: ['--check-release-evidence', '--live-promotion', '--retirement'],
+  },
   '--check-run-evidence': {
     values: new Set(['--check-run-evidence', '--expected-mode', '--acceptance']),
     flags: new Set(['--require-immutable-run', '--require-zero-authority', '--require-exact-cleanup']),
@@ -386,6 +391,39 @@ async function validateReleaseApproval(release, releasePath) {
     || !isHash(packageDigest)
     || approval.package_sha256 !== packageDigest
   ) fail('release approval binding is invalid');
+}
+
+async function checkReleaseEvidence(options) {
+  const releasePath = options.values.get('--check-release-evidence');
+  const release = await readFinalInput(releasePath, 'release', 'release');
+  const promotion = await readFinalInput(options.values.get('--live-promotion'), 'promotion', 'promotion');
+  const retirementPath = options.values.get('--retirement');
+  const retirementRaw = await readFile(retirementPath, 'utf8');
+  const retirement = await readEvidence(retirementPath);
+  if (
+    retirement?.version !== EVIDENCE_VERSION
+    || retirement.kind !== 'retirement-review'
+    || retirement.configured_absent !== true
+    || !Array.isArray(retirement.violations)
+    || retirement.violations.length !== 0
+  ) fail('release retirement lineage is invalid');
+  if (
+    release.record.public_origin !== promotion.record.public_origin
+    || JSON.stringify(release.record.run) !== JSON.stringify(promotion.record.run)
+    || release.record.artifacts?.promotion_evidence_sha256 !== promotion.digest
+    || release.record.artifacts?.retirement_evidence_sha256 !== sha256(retirementRaw)
+  ) fail('release evidence lineage is invalid');
+  if (options.flags.has('--require-package-digest') && !isHash(release.record.artifacts?.package_sha256)) fail('release package digest is invalid');
+  if (options.flags.has('--require-zero-authority')) {
+    assertManifest(release.record.authority_before, true);
+    assertManifest(release.record.authority_after, true);
+  }
+  if (options.flags.has('--non-destructive')) {
+    if (release.record.non_destructive !== true) fail('release smoke is not non-destructive');
+    const flow = release.record.route_probes?.['support-flow-invalid-input'];
+    if (flow?.status !== 400 || flow.content_type !== 'text/plain') fail('release support-flow signature is invalid');
+  }
+  if (options.flags.has('--require-approved')) await validateReleaseApproval(release.record, release.path);
 }
 
 async function collectFinalInputs(options) {
@@ -1546,6 +1584,7 @@ async function main() {
   if (options.command === '--final-review') return finalReview(options, true);
   if (options.command === '--check-final') return finalReview(options, false);
   if (options.command === '--verify-workflow') return verifyWorkflow(options.values.get('--verify-workflow'), options);
+  if (options.command === '--check-release-evidence') return checkReleaseEvidence(options);
   if (options.command === '--check-run-evidence') {
     const record = await readEvidence(options.values.get('--check-run-evidence'));
     let acceptance;
@@ -1614,7 +1653,27 @@ async function verifyWorkflow(path, options) {
   for (const input of RETIRED_INPUTS) if (workflow.includes(input)) fail('workflow contains forbidden retired input');
   if (workflow.includes('--acceptance-marker')) fail('workflow retains obsolete hostile acceptance branch');
   if (/\b(?:domains|custom-domain|custom domain|dns|cname|txt)\b/iu.test(workflow)) fail('workflow contains forbidden domain lifecycle');
-  if (options.flags.has('--require-release-artifact') && !workflow.includes('actions/upload-artifact@v4')) fail('workflow does not upload redacted evidence');
+  if (options.flags.has('--require-release-artifact')) {
+    const guard = '[[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || exit 1';
+    const deployGuard = workflow.indexOf('name: Guard canonical Supabase target');
+    const deploy = workflow.indexOf('name: Deploy guarded Supabase release');
+    const build = workflow.indexOf('name: Build configured release package');
+    const upload = workflow.indexOf('actions/upload-artifact@v4');
+    if (
+      deployGuard < 0 || deploy < 0 || build < 0 || upload < 0 || deployGuard > deploy
+      || !workflow.includes(guard) || /CUMPA_RELEASE_SUPPORT_SERVICE_URL:\s*\$\{\{/u.test(workflow)
+    ) fail('workflow does not guard the release project ref');
+    const release = workflow.slice(build, upload);
+    const scanner = 'node scripts/verify-production-artifacts.mjs --expected-support-origin "$origin" --require-configured-launcher dist/bin/cumpa.mjs';
+    if (
+      !release.includes(`origin="https://${'${SUPABASE_PROJECT_REF}'}.supabase.co"`)
+      || !release.includes('CUMPA_RELEASE_SUPPORT_SERVICE_URL="$origin" npm run build')
+      || !release.includes(scanner)
+      || !release.includes('npm pack --json --ignore-scripts --pack-destination release-package')
+      || release.indexOf(scanner) > release.indexOf('npm pack --json --ignore-scripts --pack-destination release-package')
+      || !workflow.includes('release-package/*.tgz')
+    ) fail('workflow does not build and scan the configured release artifact');
+  }
 }
 
 main().catch((error) => {

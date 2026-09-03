@@ -15,6 +15,8 @@ const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const artifactScript = fileURLToPath(new URL('../../scripts/verify-production-artifacts.mjs', import.meta.url));
 const buildBinScript = fileURLToPath(new URL('../../scripts/build-bin.mjs', import.meta.url));
+const workflowPath = join(repositoryRoot, '.github/workflows/deploy-supabase-production.yml');
+const workflowVerifier = fileURLToPath(new URL('../../scripts/verify-supabase-support.mjs', import.meta.url));
 
 interface PackFile {
   path: string;
@@ -143,4 +145,30 @@ test('release build rejects invalid support origins', () => {
   ]) {
     expect(() => buildLauncher(origin)).toThrow();
   }
+});
+
+test('configured package contains exactly the canonical support origin', () => {
+  const origin = 'https://abcdefghijklmnopqrst.supabase.co';
+  buildLauncher(origin);
+
+  runPrerequisite(process.execPath, [
+    artifactScript,
+    '--expected-support-origin',
+    origin,
+    '--require-configured-launcher',
+    'dist/bin/cumpa.mjs',
+  ]);
+});
+
+test('release workflow derives and verifies its configured package', () => {
+  const workflow = readFileSync(workflowPath, 'utf8');
+
+  expect(workflow).toContain('CUMPA_RELEASE_SUPPORT_SERVICE_URL="$origin" npm run build');
+  expect(workflow).toContain('--expected-support-origin "$origin" --require-configured-launcher dist/bin/cumpa.mjs');
+  runPrerequisite(process.execPath, [
+    workflowVerifier,
+    '--verify-workflow',
+    workflowPath,
+    '--require-release-artifact',
+  ]);
 });

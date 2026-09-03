@@ -55,6 +55,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+      - name: Guard canonical Supabase target
+        run: |
+          [[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || exit 1
       - name: Deploy guarded Supabase release
         run: |
           acceptance=.planning/phases/02-move-the-implementation-to-supabase/02-09-ACCEPTANCE-EVIDENCE.md
@@ -65,9 +68,19 @@ jobs:
             exit 1
           fi
           node scripts/verify-supabase-support.mjs "${args[@]}"
+      - name: Build configured release package
+        run: |
+          [[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || exit 1
+          origin="https://${SUPABASE_PROJECT_REF}.supabase.co"
+          CUMPA_RELEASE_SUPPORT_SERVICE_URL="$origin" npm run build
+          node scripts/verify-production-artifacts.mjs --expected-support-origin "$origin" --require-configured-launcher dist/bin/cumpa.mjs
+          mkdir release-package
+          npm pack --json --ignore-scripts --pack-destination release-package > release-package.json
       - uses: actions/upload-artifact@v4
         with:
-          name: supabase-production-evidence-${{ github.run_id }}
-          path: supabase-deployment-evidence.json
+          name: supabase-production-release-${{ github.run_id }}
+          path: |
+            supabase-deployment-evidence.json
+            release-package/*.tgz
           if-no-files-found: error
           retention-days: 90

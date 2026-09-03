@@ -60,7 +60,6 @@ function scanText(path, content, policy) {
 const options = parseArguments(process.argv.slice(2));
 const directory = mkdtempSync(join(tmpdir(), 'cumpa-artifact-'));
 try {
-  execFileSync('npm', ['run', 'build'], { encoding: 'utf8', stdio: 'pipe' });
   const [dryRun] = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { encoding: 'utf8' }));
   const inventory = dryRun.files.map((file) => file.path);
   const [pack] = JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', directory], { encoding: 'utf8' }));
@@ -73,7 +72,7 @@ try {
     const content = readFileSync(join(directory, 'package', file), 'utf8');
     scanText(`package/${file}`, content, options.policy);
     if (options.policy && file === packagedLauncher) {
-      launcherAssignments += [...content.matchAll(new RegExp(`(?:^|\\n)CUMPA_SUPPORT_SERVICE_URL=${options.policy.origin.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}(?=\\n|$)`, 'gu'))].length;
+      launcherAssignments += [...content.matchAll(new RegExp(`(?:^|\\n)if \\(process\\.env\\.CUMPA_SUPPORT_SERVICE_URL === undefined\\) process\\.env\\.CUMPA_SUPPORT_SERVICE_URL = '${options.policy.origin.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')}';(?=\\n|$)`, 'gu'))].length;
     }
   }
   if (options.policy && launcherAssignments !== 1) fail('configured launcher requires exactly one configured launcher assignment');
