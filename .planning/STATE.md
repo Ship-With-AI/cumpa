@@ -5,15 +5,15 @@ milestone_name: Agent Review Handoff
 current_phase: 02
 current_phase_name: move-the-implementation-to-supabase
 status: executing
-stopped_at: Completed 02-13-PLAN.md
-last_updated: "2026-09-03T18:04:38.721Z"
-last_activity: 2026-08-30
-last_activity_desc: Completed 02-07-PLAN.md
+stopped_at: Completed 02-16-PLAN.md
+last_updated: "2026-09-03"
+last_activity: 2026-09-03
+last_activity_desc: Completed 02-16-PLAN.md
 progress:
   total_phases: 2
   completed_phases: 1
   total_plans: 22
-  completed_plans: 20
+ completed_plans: 21
   percent: 50
 ---
 
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-08-06)
 ## Current Position
 
 Phase: 02 (move-the-implementation-to-supabase) — EXECUTING
-Plan: 16 of 17
+Plan: 17
 Status: Ready to execute
-Last activity: 2026-08-30 — Completed 02-07-PLAN.md
+Last activity: 2026-09-03 — Completed 02-16-PLAN.md
 
 ## Performance Metrics
 
@@ -166,12 +166,12 @@ None yet.
 
 ## Session Continuity
 
-**Last session:** 2026-09-03T18:03:13.930Z
-**Stopped at:** Completed 02-13-PLAN.md
+**Last session:** 2026-09-03
+**Stopped at:** Completed 02-16-PLAN.md
 **Resume file:** None
 
 No active phase execution session.
 
 ## Operator Next Steps
 
-- Execute revised 02-08: correct the canonical default-origin contract before any setup or push.
+- Execute 02-17: bind the six immutable records to canonical-origin final evidence and approve phase closeout.

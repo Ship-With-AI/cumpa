@@ -92,7 +92,7 @@ Plans:
 
 **Wave 16** *(blocked on Wave 15 completion)*
 
-- [ ] 02-16-PLAN.md — Release the canonical default-origin configured package and smoke required surfaces non-destructively
+- [x] 02-16-PLAN.md — Release the canonical default-origin configured package and smoke required surfaces non-destructively
 
 **Wave 17** *(blocked on Wave 16 completion)*
 
