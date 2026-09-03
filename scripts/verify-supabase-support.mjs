@@ -324,16 +324,25 @@ function immutableRunContext(environment) {
 }
 
 async function snapshotAuthority(inputs) {
-  const rows = await Promise.all(TABLES.map(async ([table, key]) => {
-    const result = await managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/database/query`, {
-      method: 'POST',
-      body: JSON.stringify({ query: `select ${key}::text as id from ${table} order by ${key}`, read_only: true }),
-    });
-    if (!Array.isArray(result)) fail('authority snapshot must be a row array');
-    const handles = result.map((row) => sha256(`${table}:${requireString(row?.id, 'authority handle')}`)).sort();
-    return [table, { count: handles.length, handles }];
-  }));
-  return Object.fromEntries(rows);
+  const query = TABLES
+    .map(([table, key]) => `select '${table}' as table_name, ${key}::text as id from ${table}`)
+    .join('\nunion all\n');
+  const result = await managementRequest(inputs, `/v1/projects/${inputs.SUPABASE_PROJECT_REF}/database/query`, {
+    method: 'POST',
+    body: JSON.stringify({ query: `${query}\norder by table_name, id`, read_only: true }),
+  });
+  if (!Array.isArray(result)) fail('authority snapshot must be a row array');
+  const manifest = Object.fromEntries(TABLES.map(([table]) => [table, { count: 0, handles: [] }]));
+  for (const row of result) {
+    const table = requireString(row?.table_name, 'authority table');
+    if (!Object.hasOwn(manifest, table)) fail('authority snapshot returned an unknown table');
+    manifest[table].handles.push(sha256(`${table}:${requireString(row?.id, 'authority handle')}`));
+  }
+  for (const entry of Object.values(manifest)) {
+    entry.handles.sort();
+    entry.count = entry.handles.length;
+  }
+  return manifest;
 }
 
 async function probeRoutes(routes) {
