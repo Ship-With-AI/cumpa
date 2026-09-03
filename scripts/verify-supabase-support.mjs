@@ -446,23 +446,30 @@ async function exactCleanup(inputs, evidencePath, acceptancePath) {
 }
 
 async function verifyLiveCoherence(inputs) {
-  if (!inputs.STRIPE_SECRET_KEY.startsWith('sk_live_') || !inputs.STRIPE_WEBHOOK_SECRET.startsWith('whsec_')) fail('live Stripe inputs are incomplete or mixed');
+  const inputFailures = [
+    !inputs.STRIPE_SECRET_KEY.startsWith('sk_live_') && 'secret-mode',
+    !inputs.STRIPE_WEBHOOK_SECRET.startsWith('whsec_') && 'webhook-secret',
+  ].filter(Boolean);
+  if (inputFailures.length > 0) fail(`live Stripe coherence failed: ${inputFailures.join('+')}`);
   const price = await stripeRequest(inputs, `/v1/prices/${encodeURIComponent(inputs.STRIPE_PRICE_ID)}`, { method: 'GET', operation: 'live price verification' });
   const endpoint = await stripeRequest(inputs, `/v1/webhook_endpoints/${encodeURIComponent(inputs.STRIPE_WEBHOOK_ENDPOINT_ID)}`, { method: 'GET', operation: 'live webhook verification' });
-  if (
-    price?.object !== 'price'
-    || price.active !== true
-    || price.livemode !== true
-    || price.currency !== 'usd'
-    || price.unit_amount !== 4999
-    || price.type !== 'one_time'
-    || endpoint?.object !== 'webhook_endpoint'
-    || endpoint.status !== 'enabled'
-    || endpoint.livemode !== true
-    || endpoint.url !== inputs.routes.stripeWebhook
-    || !Array.isArray(endpoint.enabled_events)
-    || JSON.stringify([...endpoint.enabled_events].sort()) !== JSON.stringify(['checkout.session.async_payment_succeeded', 'checkout.session.completed'])
-  ) fail('live Stripe inputs are incomplete or mixed');
+  const failures = [
+    price?.object !== 'price' && 'price-object',
+    price.active !== true && 'price-active',
+    price.livemode !== true && 'price-mode',
+    price.currency !== 'usd' && 'price-currency',
+    price.unit_amount !== 4999 && 'price-amount',
+    price.type !== 'one_time' && 'price-type',
+    endpoint?.object !== 'webhook_endpoint' && 'endpoint-object',
+    endpoint.status !== 'enabled' && 'endpoint-status',
+    endpoint.livemode !== true && 'endpoint-mode',
+    endpoint.url !== inputs.routes.stripeWebhook && 'endpoint-url',
+    !Array.isArray(endpoint.enabled_events) && 'endpoint-events-shape',
+    Array.isArray(endpoint.enabled_events)
+      && JSON.stringify([...endpoint.enabled_events].sort()) !== JSON.stringify(['checkout.session.async_payment_succeeded', 'checkout.session.completed'])
+      && 'endpoint-events',
+  ].filter(Boolean);
+  if (failures.length > 0) fail(`live Stripe coherence failed: ${failures.join('+')}`);
   return { status: 'passed' };
 }
 

@@ -126,7 +126,7 @@ globalThis.fetch = async (input, options = {}) => {
     return new Response('[]');
   }
   if (url === 'https://api.stripe.com/v1/prices/price_live') return new Response(JSON.stringify({ object: 'price', active: true, livemode: true, currency: 'usd', unit_amount: 4999, type: 'one_time' }));
-  if (url === 'https://api.stripe.com/v1/webhook_endpoints/we_live') return new Response(JSON.stringify({ object: 'webhook_endpoint', status: 'enabled', livemode: true, url: '${origin}/functions/v1/stripe-webhook', enabled_events: ['checkout.session.completed', 'checkout.session.async_payment_succeeded'] }));
+  if (url === 'https://api.stripe.com/v1/webhook_endpoints/we_live') return new Response(JSON.stringify({ object: 'webhook_endpoint', status: 'enabled', livemode: true, url: '${origin}/functions/v1/stripe-webhook', enabled_events: process.env.BAD_ENDPOINT === 'true' ? ['checkout.session.completed'] : ['checkout.session.completed', 'checkout.session.async_payment_succeeded'] }));
   if (url.includes('/config/auth')) return new Response('{}');
   if (url.includes('/secrets')) return new Response(null, { status: 201 });
   if (url.includes('/auth/v1/settings')) return new Response('{}', { status: 401, headers: { 'content-type': 'application/json' } });
@@ -169,6 +169,9 @@ globalThis.fetch = async (input, options = {}) => {
   await expect(execFileAsync(process.execPath, [script, ...args], {
     env: { ...environment, NONZERO: 'true' },
   })).rejects.toMatchObject({ stderr: expect.stringContaining('evidence authority is not zero') });
+  await expect(execFileAsync(process.execPath, [script, ...args], {
+    env: { ...environment, BAD_ENDPOINT: 'true' },
+  })).rejects.toMatchObject({ stderr: expect.stringContaining('live Stripe coherence failed: endpoint-events') });
 });
 
 
