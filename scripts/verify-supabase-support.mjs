@@ -2,7 +2,7 @@ import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative } from 'node:path';
+import { basename, dirname, join, relative, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { execFileSync, spawn } from 'node:child_process';
 
@@ -176,6 +176,21 @@ const commandDefinitions = {
     flags: new Set(['--retirement-review']),
     required: ['--output'],
   },
+  '--local-package-security-review': {
+    values: new Set(['--output']),
+    flags: new Set(['--local-package-security-review']),
+    required: ['--output'],
+  },
+  '--final-review': {
+    values: new Set(['--test-deployment', '--acceptance', '--promotion', '--retirement', '--release', '--local-package-security', '--output']),
+    flags: new Set(['--final-review']),
+    required: ['--test-deployment', '--acceptance', '--promotion', '--retirement', '--release', '--local-package-security', '--output'],
+  },
+  '--check-final': {
+    values: new Set(['--check-final', '--test-deployment', '--acceptance', '--promotion', '--retirement', '--release', '--local-package-security']),
+    flags: new Set(),
+    required: ['--check-final', '--test-deployment', '--acceptance', '--promotion', '--retirement', '--release', '--local-package-security'],
+  },
 };
 
 function parseArguments(argv) {
@@ -322,6 +337,149 @@ async function retirementReview(output) {
     await writeEvidence(output, record);
   } finally {
     await rm(packed.directory, { recursive: true, force: true });
+  }
+}
+
+const FINAL_INPUTS = [
+  ['test-deployment', '--test-deployment', 'deployment-run'],
+  ['acceptance', '--acceptance', 'acceptance'],
+  ['promotion', '--promotion', 'promotion'],
+  ['retirement', '--retirement', 'retirement-review'],
+  ['release', '--release', 'release'],
+  ['local-package-security', '--local-package-security', 'local-package-security'],
+];
+const LOCAL_PROTECTED_INPUTS = [...PROTECTED_INPUTS, 'CUMPA_RELEASE_SUPPORT_SERVICE_URL', 'CUMPA_SUPPORT_SERVICE_URL'];
+
+function finalDigest(record) {
+  return sha256(JSON.stringify({ ...record, artifacts: { ...record.artifacts, evidence_sha256: '' } }));
+}
+
+function assertImmutableFinalRecord(record, kind, name) {
+  if (!record || record.version !== EVIDENCE_VERSION || record.kind !== kind || record.status !== 'passed') fail(`final ${name} record is invalid`);
+  if (!record.artifacts || !isHash(record.artifacts.evidence_sha256) || finalDigest(record) !== record.artifacts.evidence_sha256) fail(`final ${name} digest binding is invalid`);
+  if (name !== 'local-package-security') {
+    assertBaseRecord(record, kind);
+    if (record.run.immutable !== true) fail(`final ${name} run is mutable`);
+  } else if (Object.hasOwn(record, 'public_origin')) {
+    fail('local package security evidence must not carry a hosted origin');
+  }
+}
+
+async function readFinalInput(path, name, kind) {
+  const resolved = resolve(path);
+  const raw = await readFile(resolved, 'utf8');
+  const record = await readEvidence(resolved);
+  assertImmutableFinalRecord(record, kind, name);
+  return { path: resolved, raw, record, digest: sha256(raw) };
+}
+
+async function validateReleaseApproval(release, releasePath) {
+  const approvalPath = join(dirname(releasePath), '02-16-RELEASE-APPROVAL.md');
+  const approval = await readEvidence(approvalPath);
+  const packageDigest = release.artifacts.package_sha256;
+  if (
+    approval?.version !== EVIDENCE_VERSION
+    || approval.kind !== 'cumpa.release-approval'
+    || approval.status !== 'approved'
+    || approval.release_record_sha256 !== sha256(await readFile(releasePath, 'utf8'))
+    || approval.run_id !== release.run.id
+    || !isHash(packageDigest)
+    || approval.package_sha256 !== packageDigest
+  ) fail('release approval binding is invalid');
+}
+
+async function collectFinalInputs(options) {
+  const seen = new Set();
+  const inputs = [];
+  let policy;
+  let run;
+  for (const [name, option, kind] of FINAL_INPUTS) {
+    const input = await readFinalInput(options.values.get(option), name, kind);
+    if (seen.has(input.path)) fail('final evidence input paths must be distinct');
+    seen.add(input.path);
+    if (name !== 'local-package-security') {
+      const current = canonicalOriginPolicy(input.record.public_origin);
+      if (!policy) policy = current;
+      else if (policy.origin !== current.origin) fail('final public origin lineage does not match');
+      if (!run) run = input.record.run;
+      else if (run.id !== input.record.run.id || run.url !== input.record.run.url || run.commit !== input.record.run.commit) fail('final GitHub run lineage does not match');
+    }
+    inputs.push({ name, ...input });
+  }
+  const retirement = inputs.find((input) => input.name === 'retirement').record;
+  if (retirement.configured_absent !== true || !Array.isArray(retirement.violations) || retirement.violations.length !== 0) fail('retirement evidence is not a clean configured-absent review');
+  const release = inputs.find((input) => input.name === 'release');
+  await validateReleaseApproval(release.record, release.path);
+  return { inputs, policy, run };
+}
+
+async function finalReview(options, write) {
+  const collected = await collectFinalInputs(options);
+  if (!write) {
+    const final = await readEvidence(options.values.get('--check-final'));
+    if (final?.version !== EVIDENCE_VERSION || final.kind !== 'final-review' || final.status !== 'passed') fail('final evidence is invalid');
+    if (final.public_origin !== collected.policy.origin || JSON.stringify(final.run) !== JSON.stringify(collected.run)) fail('final evidence lineage does not match');
+    const expected = collected.inputs.map(({ name, path, digest, record }) => ({ name, path, kind: record.kind, version: record.version, sha256: digest }));
+    if (JSON.stringify(final.inputs) !== JSON.stringify(expected)) fail('final evidence input bindings do not match');
+    if (!isHash(final.artifacts?.evidence_sha256) || finalDigest(final) !== final.artifacts.evidence_sha256) fail('final evidence digest binding is invalid');
+    return;
+  }
+  if (basename(options.values.get('--output')) !== '02-17-FINAL-EVIDENCE.md') fail('final evidence output basename is invalid');
+  const record = {
+    version: EVIDENCE_VERSION,
+    kind: 'final-review',
+    status: 'passed',
+    public_origin: collected.policy.origin,
+    run: collected.run,
+    inputs: collected.inputs.map(({ name, path, digest, record: input }) => ({ name, path, kind: input.kind, version: input.version, sha256: digest })),
+    conclusions: {
+      configured_absent_local_package_security: true,
+      configured_absent_retirement: true,
+      immutable_six_input_lineage: true,
+      protected_value_violations: 0,
+    },
+    artifacts: { evidence_sha256: '' },
+  };
+  record.artifacts.evidence_sha256 = finalDigest(record);
+  await writeEvidence(options.values.get('--output'), record);
+}
+
+async function localPackageSecurityReview(output) {
+  if (basename(output) !== '02-17-LOCAL-PACKAGE-SECURITY-EVIDENCE.md') fail('local package security output basename is invalid');
+  for (const name of LOCAL_PROTECTED_INPUTS) if (process.env[name] !== undefined) fail(`local package security review forbids ${name}`);
+  const commands = [
+    ['npx', ['vitest', 'run', '--no-file-parallelism']],
+    ['npx', ['playwright', 'test', '--config=tests', 'tests/e2e/support-payment.spec.ts', 'tests/e2e/support-recovery.spec.ts', 'tests/e2e/support-restore.spec.ts', 'tests/e2e/package-assets.spec.ts']],
+    ['npx', ['supabase@2.114.0', 'db', 'start']],
+    ['npx', ['supabase@2.114.0', 'db', 'reset', '--local', '--no-seed']],
+    ['npx', ['supabase@2.114.0', 'test', 'db']],
+    ['npx', ['supabase@2.114.0', 'migration', 'list', '--local']],
+    ['npx', ['supabase@2.114.0', 'db', 'lint', '--local']],
+    ['npx', ['supabase@2.114.0', 'db', 'reset', '--local', '--no-seed']],
+    ['npx', ['supabase@2.114.0', 'test', 'db']],
+    ['npx', ['supabase@2.114.0', 'migration', 'list', '--local']],
+    ['npx', ['supabase@2.114.0', 'db', 'lint', '--local']],
+    ['deno', ['test', '--allow-env', '--config', 'supabase/functions/deno.json', 'supabase/functions/tests']],
+    ['npm', ['run', 'build']],
+    [process.execPath, [new URL('./verify-production-artifacts.mjs', import.meta.url).pathname]],
+  ];
+  const retirement = join(await mkdtemp(join(tmpdir(), 'cumpa-local-security-')), '02-15-RETIREMENT-EVIDENCE.md');
+  try {
+    for (const [command, args] of commands) await commandOutput(command, args, process.env);
+    await retirementReview(retirement);
+    const record = {
+      version: EVIDENCE_VERSION,
+      kind: 'local-package-security',
+      status: 'passed',
+      commands: commands.map(([command, args]) => ({ command, args, status: 'passed', sha256: sha256(`${command}\0${args.join('\0')}`) })),
+      database_cycles: 2,
+      configured_absent: true,
+      artifacts: { commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), evidence_sha256: '' },
+    };
+    record.artifacts.evidence_sha256 = finalDigest(record);
+    await writeEvidence(output, record);
+  } finally {
+    await rm(dirname(retirement), { recursive: true, force: true });
   }
 }
 
@@ -1384,6 +1542,9 @@ async function runHostileExecutor(inputs, marker) {
 async function main() {
   const options = parseArguments(process.argv.slice(2));
   if (options.command === '--retirement-review') return retirementReview(options.values.get('--output'));
+  if (options.command === '--local-package-security-review') return localPackageSecurityReview(options.values.get('--output'));
+  if (options.command === '--final-review') return finalReview(options, true);
+  if (options.command === '--check-final') return finalReview(options, false);
   if (options.command === '--verify-workflow') return verifyWorkflow(options.values.get('--verify-workflow'), options);
   if (options.command === '--check-run-evidence') {
     const record = await readEvidence(options.values.get('--check-run-evidence'));
