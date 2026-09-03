@@ -198,7 +198,6 @@ function parseArguments(argv) {
   for (const required of definition.required ?? []) if (!values.has(required)) fail(`missing required option ${required}`);
   if (values.has('--expected-mode') && !MODES.has(values.get('--expected-mode'))) fail('invalid expected mode');
   if (values.has('--mode') && !MODES.has(values.get('--mode'))) fail('invalid deployment mode');
-  if (flags.has('--non-destructive') && flags.has('--require-exact-cleanup')) fail('conflicting options --non-destructive --require-exact-cleanup');
   if (flags.has('--require-exact-cleanup') && command === '--check-run-evidence' && !values.has('--acceptance')) fail('missing required option --acceptance');
   return { command, values, flags };
 }

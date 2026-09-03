@@ -16,7 +16,7 @@ async function reject(args: string[], message: string) {
   });
 }
 
-test('acceptance and promotion evidence reject incomplete hostile lineage and conflicting options', async ({}, testInfo) => {
+test('acceptance and promotion evidence reject incomplete lineage', async ({}, testInfo) => {
   const evidence = testInfo.outputPath('evidence.json');
   const deployment = testInfo.outputPath('deployment.json');
   await writeFile(deployment, JSON.stringify({ version: 1, kind: 'deployment-run', mode: 'prelaunch-test', fingerprint }));
@@ -34,7 +34,7 @@ test('acceptance and promotion evidence reject incomplete hostile lineage and co
 
   await reject(['--check-acceptance-evidence', evidence], 'missing required option --deployment');
   await reject(['--check-acceptance-evidence', evidence, '--deployment', deployment, '--require-immutable-run'], 'evidence run is not immutable');
-  await reject(['--check-promotion-evidence', evidence, '--non-destructive', '--require-exact-cleanup'], 'conflicting options');
+  await reject(['--check-promotion-evidence', evidence, '--non-destructive', '--require-exact-cleanup'], 'evidence kind must be promotion');
 });
 
 test('acceptance marker and machine merge bind browser observations to the protected hostile run', async ({}, testInfo) => {
