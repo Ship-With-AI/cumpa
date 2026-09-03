@@ -27,7 +27,7 @@ Plans:
 **Goal:** Replace the blocked standalone support backend with Supabase Postgres, Auth, and Edge Functions while preserving optional webhook-authoritative USD $49.99 support and machine-wide prompt suppression, replacing email recovery with installation-bound GitHub OAuth restoration, and completing a verified Supabase-only production cutover.
 **Requirements:** PAY-01, PAY-02, PAY-03, PAY-04, SUP-01, SUP-02, SUP-03, SUP-04, SUP-05, REC-01, REC-02, REC-03 (REC-01/REC-02 mechanisms superseded by Phase 2 D-10)
 **Depends on:** Phase 1
-**Plans:** 7/17 plans executed
+**Plans:** 11/17 plans executed
 
 Plans:
 **Wave 1**
@@ -60,19 +60,19 @@ Plans:
 
 **Wave 8** *(blocked on Wave 7 completion)*
 
-- [ ] 02-08-PLAN.md — Cut source/workflow/tests/docs to the canonical default origin, then configure protected callbacks without pushing
+- [x] 02-08-PLAN.md — Cut source/workflow/tests/docs to the canonical default origin, then configure protected callbacks without pushing
+
 
 **Wave 9** *(blocked on Wave 8 completion)*
-
-- [ ] 02-09-PLAN.md — Capture the first automatic deployment, run browser acceptance, and merge the real hostile matrix with one exact fixture manifest
+- [x] 02-09-PLAN.md — Capture the first automatic deployment, run browser acceptance, and merge the real hostile matrix with one exact fixture manifest
 
 **Wave 10** *(blocked on Wave 9 completion)*
 
-- [ ] 02-10-PLAN.md — Clean exact fixtures and promote the same canonical-origin project through an automatic live run
+- [x] 02-10-PLAN.md — Clean exact fixtures and promote the same canonical-origin project through an automatic live run
 
 **Wave 11** *(blocked on Wave 10 completion)*
 
-- [ ] 02-11-PLAN.md — Gate and remove the seven-file Render/schema/provider retirement slice
+- [x] 02-11-PLAN.md — Gate and remove the seven-file Render/schema/provider retirement slice
 
 **Wave 12** *(blocked on Wave 11 completion)*
 
