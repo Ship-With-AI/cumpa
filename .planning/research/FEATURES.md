@@ -1,333 +1,244 @@
 # Feature Research
 
-**Domain:** Coding-agent-to-human local code review handoff
-**Researched:** 2026-08-04
-**Confidence:** HIGH for required product behavior; MEDIUM for the exact-patch grounding mechanism until it is proven against real Git edge cases
+**Domain:** Public distribution of an existing Node.js CLI and coding-agent skill
+**Researched:** 2026-09-04
+**Confidence:** HIGH for npm, GitHub Actions, Claude Code, and live-registry contracts; MEDIUM for ShipWithAI acceptance details beyond its public repository conventions
 
-## Milestone Scope
+## Scope
 
-This research covers only **Cumpa v1.3 Agent Review Handoff**. A coding agent sends one versioned JSON request to `cumpa` on standard input, Cumpa validates and pins the requested repository change, the developer reviews it in the existing browser workspace, and the same waiting process returns canonical JSON only after an explicit human finish action.
+This research covers only **Cumpa v1.5 Public Distribution**: publishing the shipped Cumpa CLI for global and `npx` use, releasing it from approved GitHub releases through npm trusted publishing with provenance and no long-lived npm publishing token, and listing the existing thin Cumpa skill in the established ShipWithAI marketplace. It does not revisit Cumpa's review behavior.
 
-The attached flow has exactly two source modes:
+## Release Viability Gate
 
-1. **Range:** one ordered base revision and one ordered head revision, using Cumpa's existing pinned merge-base-to-head review semantics, optionally restricted by native Git pathspecs.
-2. **Patch:** one exact patch describing changes already present in the current repository/worktree. Cumpa must prove both the repository-backed preimage and equality with the current result before opening the review; it must not accept a detached or prospective patch merely because it could apply somewhere.
+The requested bare npm identity is not presently available. On the research date, the public registry reports `cumpa@2.0.1` as an unrelated “Minimal function composition implementation,” maintained by `gianlucaguarini`, with source at `GianlucaGuarini/cumpa` and no CLI `bin`. Consequently, today's `npx cumpa` cannot launch this project.
 
-Existing interactive launch remains behaviorally unchanged. Arbitrary non-contiguous commit composition, detached patches, headless review, remote hosting, multiple reviewers, and an agent-controlled HTTP API remain out of scope.
+Cumpa cannot satisfy the named commands by changing only its local `package.json`. Before implementation planning, maintainers must either:
 
-## Recommended Request Contract
+1. obtain an explicit ownership transfer of the existing `cumpa` package and approve the user/supply-chain consequences of repurposing an unrelated package identity; or
+2. change the milestone's package name and installation commands.
 
-Use one strict, discriminated, versioned object rather than independent nullable `range` and `patch` fields:
+A scoped or renamed package can still expose a global binary named `cumpa`, but it cannot make the exact commands `npm install -g cumpa` and `npx cumpa` resolve to this project. That is a product requirement change, not an implementation fallback. If ownership is transferred, the registry history remains and the new version must be greater than `2.0.1`; replacing an unrelated library with a CLI is a breaking identity change and should not be presented as Cumpa `1.0.0`.
 
-```json
-{
-  "kind": "cumpa/review-request",
-  "schemaVersion": 1,
-  "source": {
-    "kind": "range",
-    "base": "main",
-    "head": "feature/agent-handoff",
-    "pathspecs": ["src", ":(exclude)src/generated"]
-  }
-}
-```
+The source origin is `Ship-With-AI/cumpa`, but that GitHub URL is not anonymously reachable on the research date. npm automatic provenance for a public package is unsupported when its source repository is private. Public-repository readiness and an explicit license decision are therefore a second go/no-go gate.
 
-```json
-{
-  "kind": "cumpa/review-request",
-  "schemaVersion": 1,
-  "source": {
-    "kind": "patch",
-    "patch": "diff --git a/src/example.ts b/src/example.ts\n..."
-  }
-}
-```
+## Current Integration Points
 
-Behavioral requirements for the contract:
-
-- The root and both union members are strict: unknown fields, unknown `kind` values, unsupported versions, and trailing JSON values fail explicitly.
-- `source.kind` makes the modes mutually exclusive by construction. There is no precedence rule and no mode guessing.
-- Range revisions and pathspecs are non-empty strings with bounded count and byte size. Pathspec order and spelling are retained as submitted and passed to Git as data after `--`; shell expansion is never part of the contract.
-- Patch input is a bounded UTF-8 string in v1. Invalid UTF-8, an empty/no-change patch, unsafe paths, and unsupported patch forms fail before browser launch. Alternate encodings and multiple patch parts are not silently inferred.
-- The process accepts exactly one request and consumes it to EOF. It is not a stream of jobs and does not remain available for a second request.
+- `package.json` already declares Node `>=24`, ESM, `bin.cumpa = dist/bin/cumpa.mjs`, a `files` allowlist for `dist/` and `.kimi-code/skills/cumpa/`, and a `prepack` build. It is not publishable while `private: true`, uses placeholder version `0.0.0`, and lacks license, repository, homepage, bugs, keywords, and author/organization metadata.
+- `scripts/build-bin.mjs` already generates an executable `dist/bin/cumpa.mjs` with `#!/usr/bin/env node` and mode `0755`; public distribution should preserve and verify this existing contract rather than introduce another launcher.
+- `.kimi-code/skills/cumpa/SKILL.md` is already a thin integration: it requires `cumpa` and Git on `PATH`, submits the shipped request protocol, waits for the browser review, validates canonical JSON, and does not duplicate or mutate review behavior.
+- `README.md` still describes manual skill copying and says “If Cumpa is published in the future.” Public release must replace that provisional path with exact install, run, upgrade, uninstall, prerequisite, marketplace, and troubleshooting instructions.
+- The existing CLI does not expose a standard `--version` option. Public users, release verification, and the skill need a reliable way to identify the installed package version.
+- `.github/workflows/<publish-workflow>.yml` and the ShipWithAI catalog entry do not yet provide the two public release channels.
 
 ## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-| Feature | Why Expected | Complexity | Requirement-ready behavior |
-|---------|--------------|------------|----------------------------|
-| TTY-safe mode selection | Existing users expect `cumpa` to keep opening the current interactive picker, while agents need a pipeable entry point. | MEDIUM | If `stdin` is a TTY, run the existing interactive picker, confirmation, browser, export, and shutdown flow unchanged. If `stdin` is not a TTY, read one attached request and never invoke Inquirer. Empty non-TTY input is an error, not a reason to prompt or hang. Redirecting `stdout` alone does not switch modes. |
-| Bounded single-request ingestion | Agents need deterministic behavior and malformed producers must not exhaust memory or leave the CLI waiting forever. | MEDIUM | Read one bounded UTF-8 JSON document to EOF. Reject empty input, oversized input, invalid UTF-8, malformed JSON, trailing non-whitespace, and multiple JSON documents before starting the browser. |
-| Strict request versioning | Agents need failures rather than accidental reinterpretation when producer and consumer versions differ. | LOW | Require exact root `kind` and `schemaVersion`. Accept only supported versions; report the received and supported version. Reject unknown fields rather than ignoring misspellings. |
-| Exclusive source modes | Reviewing the wrong change is worse than refusing a request. | LOW | Represent range and patch as a discriminated union. Exactly one source mode is valid; neither mode, both modes, or fields from the other mode produce a schema-path error. No precedence or fallback exists. |
-| Ordered contiguous range semantics | A coding agent expects its base/head request to mean one reproducible review scope, not an inferred set of commits. | HIGH | Resolve the submitted base and head once to full commit OIDs, validate them using the existing comparison gates, and preserve Cumpa's ordered merge-base-to-head semantics. Do not accept commit arrays, unions, exclusions, or multiple independent ranges. A moved selector after pinning cannot change the open session. |
-| Native Git pathspec filtering | Path-limited review is useful only if it behaves exactly like Git. | HIGH | Pass each requested pathspec unchanged as a separate argument after `--` to the native Git operations that build the entire review inventory. Preserve Git magic and exclusion semantics; do not shell-expand, normalize into globs, or apply a second browser-only filter. Bind the exact ordered pathspec list into the result. A valid filter with zero matches opens a truthful zero-change review. |
-| Exact already-applied patch grounding | A local patch review must prove the browser shows the agent's actual repository change, not merely a plausible textual diff. | HIGH | Before launch, prove every preimage is repository-backed and every postimage path, byte sequence, file mode, addition, deletion, and rename matches the current repository/worktree result. A reverse applicability check can be one gate but is not sufficient alone. Validation is read-only: never apply, reverse, reset, stage, or rewrite user files/index. Reject partial matches, omitted current changes within the submitted patch scope, unsafe paths, missing base objects, and prospective/detached patches. |
-| Pinned patch snapshot | The developer may review for minutes while the worktree continues to change. | HIGH | Once the exact patch is validated, materialize or otherwise pin immutable base/result Git object identities for the existing inventory, diff, anchor, draft, and export machinery. The displayed bytes must not follow later worktree changes. |
-| Actionable validation feedback | A coding agent must be able to correct a rejected request without inspecting a stack trace. | MEDIUM | Write one concise diagnostic to `stderr` with a stable high-level code, failing JSON path or Git scope, human explanation, and corrective action. Distinguish malformed request, unsupported version, invalid revisions, invalid pathspec, patch-not-grounded, launch failure, cancellation, and result-delivery failure. Exit nonzero and write nothing to `stdout`. Do not echo untrusted patch contents or security tokens. |
-| Existing human review workspace | The handoff is valuable because a human receives the proven review UI, not a reduced agent-only renderer. | MEDIUM | After validation, open the same loopback-only authenticated browser workspace with the same file tree, Monaco diff, inline comments, summary, draft persistence, anchor verification, unsupported-file states, keyboard/accessibility behavior, and drift reporting. Agent mode bypasses source selection and launch confirmation only; it does not fork the review UX. |
-| Attached waiting lifecycle | The requesting agent expects the invoking process to represent the review's lifetime. | HIGH | Keep the CLI and loopback server alive after browser launch. Send the fallback URL and progress only to `stderr`. Do not detach, daemonize, return early, or require the agent to poll a file. There is no arbitrary review timeout. |
-| Browser disconnect resilience | Closing a tab is ambiguous and must not silently submit or destroy work. | MEDIUM | Reloading, navigating away, losing the browser connection, or closing the tab neither finishes nor cancels. The server keeps the draft and attached process alive; the authenticated fallback URL can reopen the same session while the CLI remains attached. Browser-open failure also leaves a usable URL on `stderr`. |
-| Explicit Finish review action | Human intent, not transport state, must decide when feedback is final. | HIGH | Show `Finish review` only for attached sessions. On activation, settle all pending summary/comment mutations, capture one accepted draft revision, revalidate the reviewed scope/drift, and ask for any required acknowledgement. If validation fails, keep the session open with actionable UI feedback. Only an accepted finish transitions the session terminally. |
-| Race-free terminal transition | Double clicks, retries, cancellation, or a late mutation must not create two answers or mismatch visible feedback. | HIGH | Finish and cancel share one atomic session state machine. The first accepted terminal transition wins. Repeated finish requests return the same accepted result; late mutations cannot enter it; no second result is emitted. Disable terminal actions while settlement is in progress and show the final state in the browser. |
-| Canonical request-bound result | The agent must know feedback belongs to exactly the change it submitted. | HIGH | Write one versioned canonical result that includes the existing validated review content plus submitted-request identity and exact reviewed scope: resolved range OIDs and ordered pathspecs, or patch digest and pinned base/result identities. Reuse the current canonical serializer, anchor records, accepted revision, counts, and drift evidence. Do not return an unscoped `cumpa/export` v1 document when filters or patch identity would be lost. |
-| Clean standard streams | A consumer should be able to parse `stdout` without filtering banners or URLs. | MEDIUM | On successful Finish, write exactly one canonical JSON document to `stdout` with no prefix, progress, ANSI control sequences, fallback URL, or trailing non-canonical newline. Put all diagnostics on `stderr`. Flush the full result before successful shutdown; a broken pipe or partial write is a delivery failure, not success. |
-| Meaningful success, failure, and cancellation statuses | Agents use process status to decide whether feedback exists. | LOW | Exit `0` only after the full canonical result is delivered. Request, validation, launch, session, and delivery failures exit nonzero with no stdout result. Preserve the existing signal conventions: `SIGINT` exits `130`, `SIGTERM` exits `143`. |
-| Explicit cancellation | A human or agent needs a safe way to abandon a review without fabricating empty approval. | MEDIUM | Attached UI provides a separate `Cancel review`/`Abandon review` action with confirmation; terminal `Ctrl+C`/termination also cancels. Cancellation closes the listener, aborts active Git work, retains the repository-local draft, emits no result to `stdout`, explains cancellation on `stderr`, and exits nonzero (or the signal status). It is never represented as a successful empty review. |
-| Empty-feedback completion | “No issues found” is a legitimate human outcome. | LOW | Finish may succeed with no comments and no summary. The canonical result still binds the exact reviewed scope and records zero counts; absence of feedback is distinguishable from cancellation by result presence and exit `0`. |
-| Interactive CLI compatibility | v1.3 must add a new path without changing the validated human path. | MEDIUM | TTY launch retains current prompts, Back/recovery behavior, browser messages, export files/Markdown, and Ctrl+C lifecycle. Attached-only Finish/Cancel controls and stdout discipline do not alter the interactive session contract. |
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| Bare `cumpa` package ownership | The required commands must resolve to this product, not an unrelated registry package. | HIGH | **External launch blocker.** The name is currently owned by another maintainer at version `2.0.1`. Complete an explicit transfer and identity decision before workflow work, or revise the milestone. npm documents owner-assisted transfer; package names are first-come, first-served. |
+| Public source and explicit release license | Users need legal terms and npm provenance needs a public source repository for a public package. | MEDIUM | Make `Ship-With-AI/cumpa` public only after a public-readiness review. Maintainers must choose the license; do not assume MIT. Put the matching SPDX identifier, or `SEE LICENSE IN <filename>`, in npm and plugin metadata and ship the named top-level license file. |
+| Real public package identity | npm publication requires a valid name/version and public access rather than a private workspace placeholder. | MEDIUM | Remove `private: true`; replace `0.0.0` with the approved release version; lock public registry/access through `publishConfig`. If the occupied package is transferred, the release version must follow its existing `2.0.1` history. |
+| Complete npm discoverability metadata | Registry users expect to identify the product, source, docs, support route, owner, runtime, and license before installing. | LOW | Add accurate description, keywords, repository, homepage, bugs, license, and author/organization metadata. `repository.url` must point exactly, including case, to the public publishing repository for provenance. |
+| Working global executable | `npm install -g cumpa` must place a runnable `cumpa` command on `PATH`. | LOW | Reuse `bin.cumpa` and the generated Node shebang/executable mode. Verify from a clean temporary global prefix rather than relying on the checkout or an existing global install. |
+| Working `npx cumpa` path | Users expect a one-off run without a permanent global install. | LOW | A single matching `bin` lets npm infer the executable. Verify plain `npx cumpa` after `latest` points to this CLI. Document `npx cumpa@latest` for explicit registry-latest use and `npx --yes cumpa@<exact-version>` for automation; plain `npx` may prompt and may prefer a matching local dependency. |
+| Version introspection | Users and the agent skill must be able to diagnose stale or incompatible global installations. | LOW | Add conventional `cumpa --version` backed by the released package version, then use it in install verification and prerequisite troubleshooting. Do not create a separate version source. |
+| Complete deterministic tarball | A command that installs but lacks server, browser, native, or skill assets is still a broken release. | MEDIUM | Keep a narrow `files` allowlist and inspect the actual tarball. Include every runtime asset beneath `dist/` and the intentionally shipped canonical skill; npm always includes package metadata, README, license, and `bin` targets under its packaging rules. |
+| Actionable runtime prerequisites | npm cannot install Node or Git for the user, and the skill shells out to both the Cumpa CLI and Git. | LOW | State Node.js `>=24` and the product's enforced Git `>=2.43` requirement on the npm page, README, and marketplace listing. Keep runtime failure actionable. A marketplace install alone does not satisfy the CLI prerequisite. |
+| Public quick start and lifecycle documentation | Installation is incomplete if users cannot run, upgrade, remove, or distinguish global from transient use. | MEDIUM | Replace provisional README copy with `npm install -g cumpa`, `cumpa`, `npx cumpa`, `npm install -g cumpa@latest`, and `npm uninstall -g cumpa`; explain the Git-repository working-directory requirement, browser launch, Node/Git prerequisites, npm prompt behavior, and troubleshooting. |
+| Approved immutable release identity | Maintainers must know which reviewed source/version becomes an immutable npm version. | MEDIUM | Publish only from the selected approved GitHub release/tag path. Fail when Git tag, `package.json` version, and intended npm version disagree; never infer or mutate the version during publish. Re-publishing an existing npm version is impossible. |
+| GitHub Actions trusted publishing | The release must authenticate without a stored npm publishing token. | MEDIUM | Configure the npm package's trusted publisher for exact organization `Ship-With-AI`, repository `cumpa`, workflow filename, optional matching GitHub environment, and allowed action. Use a GitHub-hosted runner, Node 24, npm CLI `>=11.5.1`, `actions/setup-node` with the npm registry, and permissions `contents: read` plus `id-token: write`; do not provide `NPM_TOKEN`/`NODE_AUTH_TOKEN` as a publishing credential. |
+| Provenance and token restriction | Users need evidence connecting package bytes to the public workflow, while maintainers should not retain a bypassing long-lived automation secret. | MEDIUM | GitHub Actions trusted publishing automatically emits provenance for a public package from a public repository; no `--provenance` flag is needed. After the OIDC path is proven, set npm publishing access to require 2FA and disallow traditional tokens, and revoke obsolete automation tokens. |
+| Candidate tarball inspection | Source-tree tests do not prove what npm will receive. | MEDIUM | Run `npm pack --dry-run --json` for the file manifest and create/install the candidate `.tgz` for an executable smoke check before publication. Verify forbidden development/private files are absent and required runtime/skill assets are present. |
+| Released npm artifact verification | The milestone promises real public installation paths, not only a successful publish job. | HIGH | Fetch the exact registry version, inspect its tarball/metadata, run `npm audit signatures`, install it globally in isolation, exercise the executable from a temporary Git repository, and separately run the exact-version `npx` path. Confirm loopback/browser behavior from installed bytes. |
+| Marketplace-compatible Cumpa plugin entry | ShipWithAI distributes Claude Code plugins, not arbitrary repository files. | MEDIUM | Publish the canonical skill through a valid plugin root/source and add a `shipwithai-cumpa` entry, following the catalog's established naming convention, to `ShipWithAI/shipwithai-plugins/.claude-plugin/marketplace.json`. Reuse one authoritative `SKILL.md`; do not fork its request/result protocol. External GitHub or `git-subdir` sources are supported, subject to ShipWithAI acceptance. |
+| Marketplace prerequisite disclosure | Installing the skill does not install the unrelated system CLI it invokes. | LOW | The catalog description, plugin README/details, and skill must lead with Node `>=24`, Git `>=2.43`, and global `cumpa` CLI installation. The skill should check the command/version and stop with the exact install guidance rather than silently invoking npm. |
+| Exact marketplace install/use/update guidance | Users need commands matching Claude Code's actual marketplace and namespace model. | LOW | New ShipWithAI users first run `/plugin marketplace add ShipWithAI/shipwithai-plugins`; registered users install with `/plugin install shipwithai-cumpa@shipwithai` (or `claude plugin install shipwithai-cumpa@shipwithai --scope user`). State the actual namespaced skill invocation; a `shipwithai-cumpa` plugin containing the existing `cumpa` skill implies `/shipwithai-cumpa:cumpa`. Mention `/reload-plugins` when prompted and `/plugin marketplace update shipwithai` for an explicit catalog refresh. |
+| Skill/plugin version discipline | Users otherwise remain on stale instructions even when the CLI protocol changes. | MEDIUM | Claude Code uses the explicit plugin version as its update cache key; `plugin.json` wins over catalog `version`. Bump the plugin version whenever skill content changes and keep ShipWithAI metadata aligned. State the compatible Cumpa CLI minimum/released version. |
+| Released marketplace installation verification | A valid local skill does not prove the public catalog source, cache, namespace, or prerequisite path. | HIGH | Add/update the real ShipWithAI marketplace, install `shipwithai-cumpa@shipwithai` at a clean scope, reload if requested, verify the installed component inventory, invoke the namespaced skill in a temporary Git repository, and complete one review through the exact released npm CLI. |
 
 ### Differentiators (Competitive Advantage)
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Synchronous agent-to-human-to-agent rendezvous | Unlike clipboard or file handoffs, the agent can invoke once, wait, and resume with structured feedback from the same process. | HIGH | The process lifetime is the rendezvous; no polling, pane injection, remote PR, or agent-controlled web API is required. |
-| Scope-bound canonical feedback | Every comment and summary can be traced to the exact filtered range or already-applied patch the human saw. | HIGH | Add the minimum versioned result wrapper/evolution around existing canonical export content so request digest, source mode, and reviewed scope cannot be dropped. |
-| One trusted review UX for committed and worktree-backed change | Humans get the mature Cumpa workspace regardless of whether the agent submits commits or an exact current patch. | HIGH | Both modes converge on pinned Git objects and the existing comparison/draft/anchor pipeline after different validation gates. |
-| Stronger patch identity than “applies cleanly” | A patch that can reverse-apply may still be ambiguous or incomplete; exact result equality protects the human-agent contract. | HIGH | Require repository preimage identity plus full postimage bytes/modes/path equality. Record a digest in the result. |
-| Human-controlled terminal boundary | Finish and Cancel are explicit, durable decisions rather than consequences of closing a window. | MEDIUM | Mirrors mature pending-review/submit/abandon workflows while remaining local and single-user. |
-| Zero-noise machine channel | Direct canonical bytes on stdout make the CLI naturally composable by any coding agent. | MEDIUM | Existing interactive messages may remain human-oriented because only the attached path reserves stdout. |
-| Safe local-only bridge | The agent gets a reliable blocking interface without remote publishing or broad HTTP authority. | MEDIUM | The browser remains loopback-only and capability-authenticated; the agent controls only the initial stdin request and receives only terminal stdout. |
+| Provenance-backed release transparency | Users can connect public package bytes to an authorized workflow in the public source repository without trusting a reusable secret. | LOW | Incremental cost is small after the public-repository and OIDC gates; preserve automatic provenance and expose verification guidance. |
+| Cross-channel released-artifact acceptance | Cumpa proves that the npm CLI and marketplace-installed skill work together as users receive them, catching packaging, catalog, cache, namespace, and protocol drift. | HIGH | Gate completion on exact registry and ShipWithAI artifacts, not repository-local paths. This directly serves the milestone's strongest trust claim. |
+| One thin skill authority across channels | npm consumers, repository users, and marketplace users receive the same agent protocol instead of divergent integrations. | MEDIUM | Keep one canonical `SKILL.md` or a mechanically identical packaged source. The marketplace layer contributes only manifest/catalog metadata and prerequisite/install guidance. |
+| Honest local-first listing | Marketplace users can see that Cumpa opens a loopback browser, reviews pinned local Git state, does not mutate reviewed code, and returns canonical agent feedback. | LOW | Reuse shipped product facts in catalog/README copy; do not add new review behavior to make the listing sound broader. |
+| Explicit install and upgrade semantics | Users know the difference between a persistent global CLI, transient `npx`, and an independently versioned agent plugin. | LOW | Document global upgrade, explicit `@latest`/exact-version npx use, and plugin refresh/reload without promising a hidden updater. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Guess mode from whichever fields parse | Appears forgiving to request producers. | Both-present requests gain hidden precedence and misspellings can review the wrong source. | Strict discriminated `source.kind` union; reject ambiguity. |
-| Ignore unknown fields or future versions | Seems forward-compatible. | A producer may believe a filter or identity field was honored when Cumpa discarded it. | Reject unsupported versions and unknown fields with the exact schema path. |
-| Accept multiple requests on one stdin stream | Looks like batching for agents. | Requires multiplexing browser sessions, correlating results, and defining partial cancellation. | One process, one request, one human review, one terminal result. |
-| Unbounded request or patch input | Avoids choosing limits. | Enables accidental hangs and memory exhaustion before validation. | Publish finite byte/count limits and fail before browser launch. |
-| Treat two endpoints as arbitrary commit composition | Gives maximum Git flexibility. | Non-contiguous sets have unclear diff, merge-base, comment anchor, and result identity semantics. | One ordered base/head pair; agents create an appropriate branch/commit range first. |
-| Reimplement pathspecs as application globs | Seems simpler than threading native Git arguments. | Diverges from Git magic, exclusions, case behavior, and repository attributes. | Preserve each pathspec and pass it after `--` to native Git. |
-| Accept a detached or prospective patch | Lets agents review proposed text without updating a repository. | There is no trusted preimage/postimage, blob identity, durable anchor authority, or drift check. | Require an already-applied patch whose base is present and result exactly matches the current repository/worktree. |
-| Use only `git apply --check --reverse` as patch proof | It is a convenient one-command check. | Applicability is not equality: context fuzz, partial scope, modes, renames, or unrelated current bytes can remain ambiguous. | Combine native-Git applicability with exact preimage object and postimage path/byte/mode comparison. |
-| Mutate the repository to validate a patch | Applying/reversing in place seems like the easiest proof. | Risks data loss, index changes, filters/hooks, race conditions, and altered user work. | Validate read-only and materialize temporary/pinned Git objects outside user-visible refs and worktree state. |
-| Finish when the tab closes or connection drops | Avoids adding a button. | Browser closure is accidental/ambiguous and can lose pending edits or submit incomplete feedback. | Explicit Finish; explicit Cancel; disconnect leaves the session waiting. |
-| Emit URL, progress, or errors on stdout | Retains current launch printing with less refactoring. | Corrupts the only machine-readable result channel. | Attached diagnostics to stderr; canonical result only on stdout. |
-| Return existing export v1 without submitted scope | Reuses bytes with no schema work. | Range pathspecs and patch identity disappear, so an agent cannot prove which change was reviewed. | Minimal versioned result wrapper or export evolution that embeds scope and reuses current review content. |
-| Successful empty result on cancellation | Gives every exit a JSON document. | The agent cannot distinguish “human found no issues” from “review abandoned.” | Cancellation emits no stdout and exits nonzero; empty finished review emits canonical JSON and exits `0`. |
-| End the process immediately after opening the browser | Matches the current interactive launch's fire-and-wait implementation shape poorly. | The agent has no completion rendezvous and must poll files or guess. | Keep the attached process alive until Finish, Cancel, signal, or fatal failure. |
-| Arbitrary review timeout | Prevents forgotten processes. | Human review duration is unpredictable; timeout can destroy an almost-finished review. | Wait indefinitely by default; explicit Cancel or terminal signals end the session. |
-| Add an agent-controlled HTTP API | Appears more flexible than stdin/stdout. | Expands security, lifecycle, discovery, authentication, and automation scope; conflicts with human-controlled review. | One bounded stdin request and one terminal stdout result; browser API remains human-session capability only. |
-| Add headless review mode | Useful for automation benchmarks. | Removes the human from a milestone whose purpose is human judgment and creates a second product path. | Require the existing browser workspace. |
-| Change interactive launch based on stdout redirection | Seems like automation detection. | Humans commonly pipe or capture output while still using a TTY for input. | Branch only on stdin TTY/request presence; keep interactive behavior otherwise. |
-| Delete the draft on Finish or Cancel | Seems tidy. | Removes recovery/audit evidence and risks data loss after delivery failure. | Retain the versioned repository-local draft under existing policy. |
-
-## Expected Behavior and Edge Cases
-
-| Given | When | Required user-visible or agent-visible outcome |
-|-------|------|-----------------------------------------------|
-| `stdin` is a TTY | Developer runs `cumpa` normally | Existing ordered picker and confirmation run unchanged; attached request parsing and Finish/Cancel controls are absent. |
-| `stdin` is piped but empty | Process reaches EOF | No prompt or browser opens. `stderr` identifies empty request, exit is nonzero, and `stdout` is empty. |
-| Input is malformed JSON, invalid UTF-8, oversized, or contains a second value | Request ingestion completes | Reject before any Git or browser work, point to the input fault without echoing content, and leave stdout empty. |
-| Request has an unknown root/source field or unsupported version | Schema validation runs | Reject with code, JSON path, received version/field, and supported version; never best-effort parse. |
-| Request contains both range and patch fields, neither, or fields from the other branch | Union validation runs | Reject as an exclusive-mode violation; do not pick a winner. |
-| Range revisions are valid symbolic names | Request is accepted | Resolve each once to a full commit OID and pin it. Later ref movement cannot change displayed content or result identity. |
-| Base/head are invalid, unavailable, unrelated, or produce an unsupported merge-base case | Range validation runs | Reuse the existing typed comparison explanation on stderr and exit nonzero; agent mode does not open interactive recovery prompts. |
-| A pathspec starts with `-` or uses `:(exclude)`/other Git magic | Inventory is built | It remains data after `--` and follows native Git semantics; it cannot become a Cumpa or shell option. |
-| Valid pathspecs match nothing, or base equals head | Browser opens | Show the existing truthful zero-change state. Human may Finish an empty review; result retains the filtered scope. |
-| Patch describes changes not yet present | Patch validation runs | Reject as prospective/detached even if forward apply would succeed. Explain that patch mode requires already-applied repository changes. |
-| Patch reverse-applies but a touched current file/mode differs, base blob is missing, or only part of the current result matches | Exact grounding runs | Reject before launch. Reverse applicability alone does not satisfy exact equality. |
-| Patch contains an absolute path, `..` escape, or unsupported unsafe form | Patch validation runs | Reject without touching repository state or revealing sensitive path contents. |
-| Patch exactly matches already-applied tracked/new/deleted/renamed paths in the current repository | Validation completes | Pin immutable base/result identities and open the same review workspace over that exact snapshot. |
-| Worktree changes after patch validation | Human continues reviewing | Open diff remains pinned. Finish rechecks current grounding/drift; mismatch blocks Finish until acknowledged only where policy safely permits, or requires cancel/relaunch when exact patch identity no longer holds. It never silently emits feedback for a changed patch. |
-| Automatic browser open fails | Server is ready | Print authenticated fallback URL and recovery text to stderr, keep waiting, and allow manual open. Stdout remains empty. |
-| Browser reloads or tab closes | Review is unfinished | Draft and server remain available; no result, cancel, or successful exit occurs. |
-| Summary/comment mutation is still pending | Human selects Finish | Finish waits for or explicitly resolves the mutation. It cannot snapshot an earlier revision while showing later text as accepted. |
-| Drift/anchor validation requires attention | Human selects Finish | Keep the session open and show the exact blocking state/acknowledgement. CLI continues waiting with no stdout result. |
-| Review contains no summary and no comments | Human selects Finish | Emit a valid request-bound canonical result with zero counts and exit `0`. This means “review completed with no feedback,” not cancellation. |
-| Human double-clicks Finish or the browser retries after a lost response | Finish settles | One accepted draft/result is reused; stdout receives one document only. |
-| Human selects Cancel review | Confirmation is accepted | Close the attached session, retain draft, emit no stdout, explain cancellation on stderr, and exit nonzero. |
-| Agent/operator sends `SIGINT` or `SIGTERM` while waiting | Shutdown begins | Abort active Git/session work, close listener, emit no partial result, and exit `130`/`143` using the existing lifecycle behavior. |
-| Cancel races with Finish | A terminal transition is accepted | First accepted transition wins atomically. A successful accepted Finish delivers one result; accepted Cancel delivers none. |
-| Stdout consumer closes before/during result write | Finish attempts delivery | Treat as delivery failure, stop session safely, keep draft, and do not claim successful completion. |
-| Canonical result is delivered | Process exits | Result is one parseable canonical JSON document with request/scope identity and existing review content; diagnostics remain entirely on stderr. |
+| Publish to bare `cumpa` without securing ownership | Keeps the desired product name and commands. | The registry already routes that identity to another maintainer's package; local manifest changes cannot override it. | Resolve an explicit transfer and identity-migration decision first, or formally rename the package and update the milestone. |
+| Silently substitute a scoped/renamed npm package | Unblocks engineering without external coordination. | It does not satisfy `npm install -g cumpa` or `npx cumpa`, and hides a product decision inside implementation. | Stop at the name gate and obtain explicit requirement approval. |
+| Repurpose the existing package as version `1.0.0` | Gives the CLI a clean semantic starting point. | npm already contains versions through `2.0.1`; versions are immutable and the history belongs to another product. | If transfer is approved, choose a valid greater breaking version and communicate the identity change; otherwise use an approved new name. |
+| Custom bootstrap installer or `curl | sh` | Could install the CLI and skill together. | Adds a second distribution/security/update path and bypasses native npm and Claude marketplace controls. | Use npm for the CLI and ShipWithAI for the skill, with explicit prerequisites. |
+| npm lifecycle script that copies/registers the skill | Makes global install appear to configure every agent automatically. | Mutates user configuration during install, is agent-specific, and is difficult to undo or secure. | Keep package contents passive; users opt into `/plugin install shipwithai-cumpa@shipwithai`. |
+| Skill auto-installs the global CLI | Makes missing prerequisites disappear. | Lets an instruction file modify global software, introduces prompts/network/version ambiguity, and conceals trust consent. | Detect the missing command and show the exact global install/version guidance. |
+| Long-lived `NPM_TOKEN` secret | Familiar release setup. | Creates a reusable exfiltration/rotation risk and violates the milestone. | npm trusted publishing with a workflow-bound OIDC identity. |
+| Manual laptop or mutable branch publication | Seems quicker for the first release. | Breaks approved-source reproducibility, provenance, and auditability. | Publish the approved immutable release through the authorized GitHub-hosted workflow. |
+| Claim provenance while repository remains private | Avoids public-source preparation. | npm explicitly does not generate automatic provenance for a public package from a private repository. | Make the source repository public before the provenance release, after a public-readiness review. |
+| Duplicate review logic in the marketplace wrapper | Makes the plugin look self-contained. | The instructions will drift from the CLI's strict request/result and safety authority. | Keep the existing skill thin and delegate all behavior to the installed CLI. |
+| New Cumpa-specific marketplace | Gives complete catalog control. | Users asked for the established ShipWithAI discovery/install path; another catalog adds a registration and maintenance burden. | Contribute one entry to `ShipWithAI/shipwithai-plugins`. |
+| Promise plain `npx cumpa` is always newest | Makes upgrades sound effortless. | npm may use a matching local dependency, and unversioned resolution is not an explicit reproducibility/latest guarantee. | Use `@latest` when newest is intended and exact versions for automation/verification. |
+| Bundle Node, Git, or an update daemon | Reduces visible prerequisites. | Greatly expands platform, security, installer, and lifecycle scope for capabilities users already obtain from standard tools. | Declare supported Node/Git versions and use npm/Claude update mechanisms. |
+| Add hosted, forge, collaboration, or new review features | Makes the public launch appear larger. | Reopens shipped product scope and delays distribution validation. | Publish and verify the existing CLI and skill only. |
 
 ## Feature Dependencies
 
 ```text
-[stdin TTY/request routing]
-    ├──TTY──────────────> [unchanged interactive CLI]
-    └──piped────────────> [bounded UTF-8 JSON ingestion]
-                              └──requires──> [strict versioned discriminated request]
+[Ownership/identity for bare npm `cumpa`]
+    └──requires──> [explicit transfer + package-history decision]
+                       └──enables──> [publishable release version]
 
-[range source]
-    ├──requires──> [repository discovery]
-    ├──requires──> [one-time revision resolution]
-    ├──requires──> [native Git pathspec scope]
-    └──converges──> [pinned comparison model]
+[Public source readiness + chosen license]
+    ├──enables──> [public repository Ship-With-AI/cumpa]
+    ├──enables──> [accurate npm/plugin metadata]
+    └──required-by──> [automatic npm provenance]
 
-[patch source]
-    ├──requires──> [repository discovery]
-    ├──requires──> [read-only preimage object validation]
-    ├──requires──> [exact current postimage equality]
-    ├──requires──> [patch digest and immutable materialization]
-    └──converges──> [pinned comparison model]
+[publishable manifest + built runtime + canonical skill]
+    └──requires──> [candidate tarball inspection/install]
+                       └──enables──> [approved release artifact]
 
-[pinned comparison model]
-    └──enables──> [existing browser workspace and draft]
-                      ├──requires──> [attached session state machine]
-                      ├──Finish────> [settled accepted draft + final drift/scope validation]
-                      │                  └──requires──> [request-bound canonical result]
-                      │                                      └──requires──> [stdout-only delivery]
-                      └──Cancel────> [no result + nonzero exit]
+[owned npm package settings]
+    + [exact public repository metadata]
+    + [authorized GitHub-hosted workflow/environment]
+    + [npm >=11.5.1 + id-token: write]
+        └──enables──> [OIDC trusted publish without long-lived token]
+                          └──automatically-adds──> [provenance]
+                          └──enables──> [exact public global/npx verification]
 
-[browser close] ──must-not-imply──> [Finish or Cancel]
-[detached/prospective patch] ──conflicts──> [repository-grounded patch mode]
-[unscoped export v1] ──conflicts──> [request-bound result]
-[agent HTTP/headless mode] ──conflicts──> [human-controlled local handoff]
+[canonical Cumpa SKILL.md]
+    + [marketplace-compatible plugin source/version]
+    + [public CLI prerequisite and usage docs]
+        └──enables──> [ShipWithAI catalog entry]
+                          └──enables──> [marketplace install + namespaced invocation]
+
+[exact released npm CLI]
+    + [exact marketplace-installed skill]
+        └──required-by──> [end-to-end public distribution acceptance]
+
+[custom installer/lifecycle copying] ──conflicts──> [native opt-in npm + ShipWithAI paths]
+[private repository] ──conflicts──> [automatic public-package provenance]
+[unversioned plugin edits] ──conflicts──> [reliable skill updates]
 ```
 
 ### Dependency Notes
 
-- **Transport routing comes first.** The current CLI owns an interactive stdin and prints launch information during server startup. Attached mode must select its path before Inquirer reads piped JSON and must give stdout a different policy without changing TTY behavior.
-- **Validation must finish before browser launch.** A browser opened for an invalid or ungrounded request creates false confidence and complicates cancellation. Schema, repository, range/pathspec, and patch equality gates are startup dependencies.
-- **Both source modes must converge on the existing pinned model.** Duplicating inventory, Monaco, draft, anchor, and export logic for patches would create two review products. Patch materialization is high complexity specifically because it must satisfy existing immutable Git-object assumptions.
-- **Pathspec is part of identity, not presentation.** It must constrain inventory before file IDs, counts, drafts, and comments exist, and it must appear in the terminal result. A browser-only filter cannot satisfy the contract.
-- **Reverse applicability is necessary evidence, not sufficient proof.** Exact patch mode also needs base object availability and postimage path/content/mode equality with the current worktree. This mechanism deserves a focused real-Git spike before roadmap implementation.
-- **Finish depends on accepted-state settlement.** Existing comment/summary mutations are asynchronous and revisioned. The terminal result must be built from one accepted server draft after all pending UI buffers are settled, not from browser memory or the revision visible when the button was first clicked.
-- **Finish also depends on final scope validation.** Range refs may drift and patch-backed worktree bytes may change. The attached result must retain pinned reviewed identities and disclose or block unsafe drift according to the existing explicit policy.
-- **Result delivery is part of completion.** The session is not successfully finished until canonical bytes have been fully written. Server shutdown must follow delivery, while cancellation/failure must never leak a partial or placeholder success document.
-- **A minimal result wrapper avoids breaking the existing export.** Prefer a new versioned `cumpa/review-result` containing request digest/scope plus the validated existing `cumpa/export` review document. This retains the existing serializer and consumer-rich anchor model without pretending export v1 contains pathspec/patch identity.
-- **Cancellation shares lifecycle infrastructure but adds product state.** Existing `SIGINT`/`SIGTERM` shutdown already aborts Git and closes Fastify. Browser Cancel and Finish need an atomic attached-session outcome above that controller.
+- **Package identity is Phase 0.** The bare name conflict is external and cannot be solved by coding. Do not build a release workflow around an npm package the organization cannot configure.
+- **Transfer does not erase history.** Ownership would make trusted-publisher settings available but would not reset versions, consumers, or meaning. The identity-migration decision precedes release versioning and public copy.
+- **Public repository readiness precedes provenance.** npm requires a public repository and public package for automatic provenance. Repository metadata must match `Ship-With-AI/cumpa` exactly and case-sensitively.
+- **License choice precedes both listings.** npm and ShipWithAI metadata should describe the same legal terms; research cannot choose those terms for the maintainer.
+- **Candidate verification precedes publishing.** The packed file list and installed tarball are the nearest prepublication representation of user bytes. A source-tree build is insufficient evidence.
+- **Trusted publisher configuration precedes the publish job.** npm binds trust to the exact GitHub organization, repository, workflow filename, optional environment, and allowed action. The workflow must match that identity and actual `npm publish` versus `npm stage publish` choice.
+- **OIDC proof precedes token lockdown.** Prove one trusted path, then disallow/revoke traditional tokens so emergency rollback does not accidentally remove the only working publisher.
+- **Public CLI precedes marketplace acceptance.** The existing skill intentionally invokes `cumpa` on `PATH`; listing it first would deliver an unusable integration. The marketplace must declare the exact compatible CLI installation.
+- **Marketplace packaging must preserve one authority.** Prefer a source/layout that exposes the existing `SKILL.md` as the plugin component. If ShipWithAI requires a wrapper or vendored directory, keep protocol instructions single-sourced and verify parity.
+- **Claude plugin namespacing is user-visible.** Marketplace installation does not preserve a standalone `/cumpa` invocation automatically. Following ShipWithAI's plugin naming convention, `shipwithai-cumpa` containing the existing `cumpa` skill yields `/shipwithai-cumpa:cumpa`; any accepted naming change must be reflected in listing and smoke verification.
+- **Package and plugin versions are independent.** npm semver identifies executable bytes; Claude plugin version identifies skill bytes. Document compatibility and update each authority when its artifact changes.
+- **Real public acceptance comes last.** Only after both artifacts are publicly resolvable can verification catch stale `latest`, missing tarball assets, catalog refresh, plugin cache, namespacing, or protocol mismatch.
 
 ## MVP Definition
 
-### Launch With (v1.3)
+### Launch With (v1.5)
 
-- [ ] TTY stdin follows the existing interactive CLI unchanged; piped stdin follows the attached request path without prompting.
-- [ ] One bounded strict `cumpa/review-request` v1 discriminated union accepts exactly range or patch mode.
-- [ ] Range mode resolves ordered base/head revisions once, uses existing merge-base-to-head semantics, and applies optional native Git pathspecs to the full review scope.
-- [ ] Patch mode accepts only an already-applied, repository-grounded exact patch, validates preimage plus current postimage equality read-only, and pins immutable reviewed content.
-- [ ] All request/repository validation failures are actionable on stderr, exit nonzero, and leave stdout empty.
-- [ ] Valid requests open the existing authenticated loopback browser workspace and keep the CLI attached.
-- [ ] Browser close/reload does not finish or cancel; failed auto-open provides the URL on stderr.
-- [ ] Attached UI exposes explicit, race-safe Finish review and Cancel review actions.
-- [ ] Finish settles pending draft mutations, performs final scope/drift validation, and accepts exactly one draft revision.
-- [ ] Successful Finish emits exactly one canonical, versioned, request-bound review result on stdout and exits `0` only after full delivery.
-- [ ] Browser Cancel, `SIGINT`, `SIGTERM`, fatal server failure, and delivery failure emit no result and preserve the draft.
-- [ ] A completed review with zero comments/summary remains a successful, explicitly finished result.
+- [ ] Resolve the bare `cumpa` npm ownership/identity gate, or explicitly revise the milestone name and commands before implementation.
+- [ ] Complete public-repository readiness and choose one license represented consistently in repository, npm, and plugin metadata.
+- [ ] Make `package.json` publicly publishable with a valid release version, public registry/access, exact repository/support metadata, a working `bin`, `--version`, Node/Git prerequisites, and complete allowlisted artifacts.
+- [ ] Replace provisional README instructions with exact global, npx, upgrade, uninstall, prerequisite, troubleshooting, marketplace registration/install, namespaced use, refresh, and reload guidance.
+- [ ] Inspect and install the candidate npm tarball before release; prove required runtime/browser/skill assets are included and private/development material is absent.
+- [ ] Publish only the approved immutable GitHub release through the exact npm trusted publisher on a GitHub-hosted runner with OIDC, automatic provenance, and no long-lived npm publishing credential.
+- [ ] Verify the exact public npm version through registry metadata/tarball, signature/provenance audit, isolated global install, and exact-version npx launch from a real Git repository.
+- [ ] Publish the existing thin skill as a versioned `shipwithai-cumpa` entry in the established ShipWithAI marketplace, declaring the separately installed public CLI and supported Node/Git versions.
+- [ ] Install from the real ShipWithAI catalog at a clean scope, verify the namespaced skill is active, and complete one end-to-end review against the exact released npm CLI.
+- [ ] After the OIDC path succeeds, disallow traditional publishing tokens and revoke any obsolete npm automation credential.
 
 ### Add After Validation (v1.x)
 
-- [ ] Optional agent-supplied display title or instructions — add only if real handoffs show the human cannot understand review purpose from repository/scope alone; keep it non-authoritative and size-bounded.
-- [ ] Explicit `--request`/`--interactive` override — add only if stdin TTY detection proves insufficient in a real host environment. The default must remain backward-compatible.
-- [ ] Resume token for a restarted attached process — add only if interrupted long reviews are common and the token can preserve request/result identity without adding a daemon. Existing draft persistence already prevents feedback loss.
+- [ ] Stage-only npm publishing with separate 2FA promotion — add if maintainers want npm's maximum-security approval layer in addition to the approved GitHub release; configurations created after 2026-09-03 allow staging by default, while direct `npm publish` must be explicitly allowed.
+- [ ] Broader OS/shell installation matrix — add when public usage identifies supported environments beyond those exercised by the initial release gate; do not claim unverified portability.
+- [ ] ShipWithAI relevance/suggestion metadata — add only if the marketplace's managed recommendation features are used; it is not needed for direct install.
+- [ ] Richer npm/marketplace discovery assets — add screenshots, demonstrations, or category refinements when listing analytics or user feedback shows discovery, rather than installation correctness, is the constraint.
 
 ### Future Consideration (v2+)
 
-- [ ] Multiple queued requests in one process — requires multiplexed browser sessions, correlation, and partial cancellation; not justified for the one-agent/one-human handoff.
-- [ ] Non-contiguous commit composition — requires a new comparison and anchor model.
-- [ ] Detached/prospective patch review — requires a trusted virtual repository/snapshot model distinct from current repository grounding.
-- [ ] Headless or agent-controlled HTTP review — conflicts with this milestone's human-controlled local boundary.
-- [ ] Remote/multi-reviewer collaboration — belongs to a hosted product, not the loopback single-developer CLI.
+- [ ] Additional package-manager or standalone binary channels — defer until npm adoption demonstrates demand; each adds signing, update, and platform obligations.
+- [ ] Additional agent marketplaces — defer until a named ecosystem justifies another packaged adapter; keep the Cumpa protocol authority single-sourced.
+- [ ] Automated CLI update notifications — defer until stale-version support burden is measured; npm's explicit global update and `npx @latest` paths already work.
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| TTY-compatible stdin routing | HIGH | MEDIUM | P1 |
-| Strict versioned exclusive request schema | HIGH | LOW | P1 |
-| Bounded ingestion and actionable validation | HIGH | MEDIUM | P1 |
-| Ordered range plus native pathspec scope | HIGH | HIGH | P1 |
-| Exact already-applied patch grounding | HIGH | HIGH | P1 |
-| Immutable patch snapshot convergence | HIGH | HIGH | P1 |
-| Existing browser workspace reuse | HIGH | MEDIUM | P1 |
-| Attached wait and disconnect resilience | HIGH | HIGH | P1 |
-| Explicit race-safe Finish | HIGH | HIGH | P1 |
-| Explicit Cancel plus signal cancellation | HIGH | MEDIUM | P1 |
-| Request-bound canonical stdout result | HIGH | HIGH | P1 |
-| Zero-feedback successful completion | MEDIUM | LOW | P1 |
-| Optional request title/instructions | MEDIUM | LOW | P2 |
-| Restartable attached-session token | MEDIUM | HIGH | P2 only after evidence |
-| Multi-request stream | LOW | HIGH | P3 / OUT OF SCOPE |
-| Detached patch, headless mode, or agent HTTP API | NEGATIVE for milestone | HIGH | DO NOT BUILD |
+| Resolve bare npm name ownership/identity | HIGH | HIGH | P1 |
+| Public source readiness and explicit license | HIGH | MEDIUM | P1 |
+| Publishable manifest, metadata, bin, and version command | HIGH | MEDIUM | P1 |
+| Complete deterministic candidate tarball | HIGH | MEDIUM | P1 |
+| Global install and `npx` execution | HIGH | LOW | P1 |
+| Public lifecycle/prerequisite documentation | HIGH | MEDIUM | P1 |
+| Approved OIDC trusted release | HIGH | MEDIUM | P1 |
+| Automatic provenance and token restriction | HIGH | MEDIUM | P1 |
+| Exact public npm artifact verification | HIGH | HIGH | P1 |
+| Versioned ShipWithAI entry using canonical skill | HIGH | MEDIUM | P1 |
+| Marketplace CLI prerequisite and namespaced usage | HIGH | LOW | P1 |
+| Real marketplace-installed end-to-end verification | HIGH | HIGH | P1 |
+| Stage-only npm promotion | MEDIUM | MEDIUM | P2 |
+| Broader installation platform matrix | MEDIUM | HIGH | P2 after demand |
+| Marketplace relevance/richer discovery metadata | LOW | LOW | P2 after evidence |
+| New distribution channels or update daemon | LOW | HIGH | P3 |
 
 **Priority key:**
-- **P1:** Required for v1.3 acceptance.
-- **P2:** Add only after the complete handoff is validated and observed use proves need.
-- **P3:** Separate future product scope.
+- P1: Must have for v1.5 public launch
+- P2: Add only after public-path validation or evidence of need
+- P3: Future consideration; not part of this milestone
 
-## Competitor Feature Analysis
+## Competitor / Ecosystem Feature Analysis
 
-| Feature | GitHub pull-request review | PRless | diffmux | Cumpa v1.3 approach |
-|---------|----------------------------|--------|---------|-----------------------|
-| Human completion | Pending comments become visible through explicit **Submit review**; pending review has separate **Abandon review**. | Human explicitly selects **Export for AI**. | Human explicitly selects **Send to agent**. | Explicit **Finish review** returns the result; separate **Cancel review** abandons. Tab closure does neither. |
-| Local-first review | Requires a hosted pull request. | Local browser over working tree, staged, or branch diff. | Local browser over `git diff`, commonly inside cmux. | Existing loopback-only Cumpa workspace over a strictly grounded/pinned request. |
-| Agent delivery | Remote review data must be fetched through forge tooling/API. | Clipboard plus `.prless/review.md`; agent is invoked or prompted separately. | Pastes a prompt into a launching cmux pane; README warns the agent must be idle. | Same invoking process blocks and emits one canonical request-bound JSON result to stdout. |
-| Exact scope binding | PR/commit identities provide hosted scope. | Export is a readable agent prompt tied to local comments; no attached process result contract is documented. | Sends `file:line` prompt references from the current diff. | Result includes resolved range/pathspec scope or exact patch digest and pinned identities plus durable anchors. |
-| Cancellation/disconnect | Pending review can be abandoned explicitly; browser closure does not submit it. | Server lifecycle/export are separate user actions. | Send is an explicit action; process/pane delivery has timing constraints. | Explicit Cancel and terminal signals produce no success result; closing/reloading browser keeps the attached review alive. |
-| Remote/API dependency | GitHub account and hosted repository. | None for review/handoff. | cmux-specific pane integration. | No forge, API key, agent HTTP authority, clipboard, or terminal-pane injection. |
-
-The ecosystem evidence supports two strong expectations: review feedback remains draft until an explicit human action, and local agent tools currently rely on clipboard/files or terminal injection. Cumpa's defensible differentiation is not another diff viewer; it is an exact request-to-canonical-result rendezvous built on the already shipped review workspace.
-
-## Complexity and Existing Dependencies
-
-| Area | Complexity driver | Existing dependency to reuse |
-|------|-------------------|------------------------------|
-| CLI routing and streams | Current `run()` always starts Commander/Inquirer and launch status can reach stdout. Attached mode must consume stdin before prompts and reserve stdout without altering TTY behavior. | `src/cli/run.ts`, Commander, existing error output seams |
-| Request contract | Strict versioning, bounded strings/arrays, and exclusive modes cross a new agent trust boundary. | Shared Zod contract pattern in `src/contracts/*` |
-| Range validation | Endpoint pinning and merge-base errors exist, but pathspec scope must flow through inventory and result identity. | `createPinnedComparison`, native Git runner, comparison schemas |
-| Patch grounding | Must prove already-applied exact bytes/modes/paths against repository base without mutating worktree/index, then create immutable identities. | Git runner safety, repository discovery, raw diff/object readers; requires focused spike |
-| Patch content limitations | Existing UI keeps binary/oversized/unsupported files visible but non-reviewable; patch mode must preserve this classification rather than silently dropping entries. | Inventory/availability contracts and object reader |
-| Attached session state | Current server waits for signals but has no browser-driven terminal outcome carrying a result. | Fastify session app, capability routes, shutdown controller |
-| Finish settlement | Summary buffers and comment mutations are revisioned/asynchronous; finalization must wait for accepted state and resist retries/races. | Draft store CAS, accepted server responses, export snapshot builder |
-| Final drift/scope gate | Range selectors and patch worktree can change while the human reviews. | Selector drift, anchor verification, explicit acknowledgement model |
-| Result schema | Existing export v1 is canonical and rich but omits submitted pathspec/patch scope. | `ReviewExportV1Schema`, canonical serializer/parser, export builder |
-| Delivery | Exact stdout bytes must be isolated from diagnostics and fully flushed before shutdown. | Node process streams; current output dependency seams need attached-specific policy |
-| Cancellation | Signals already abort and close once; browser Cancel must join the same terminal state without racing Finish. | `createShutdownController`, active Git AbortController, repository-local draft retention |
-| Browser continuity | Existing capability URL supports one local browser session; attached mode must survive a tab lifecycle without treating it as intent. | Loopback binding, session token, existing session/draft APIs |
-
-## Requirement Seeds
-
-The following statements are intentionally phrased for direct conversion into milestone requirements:
-
-1. **When standard input is interactive, Cumpa shall execute the shipped interactive launch behavior without attempting to parse a review request.**
-2. **When standard input is piped, Cumpa shall accept exactly one bounded UTF-8 `cumpa/review-request` document and shall not prompt.**
-3. **The request shall contain exactly one discriminated source: an ordered base/head range with optional native Git pathspecs, or an exact already-applied repository patch.**
-4. **Cumpa shall reject unsupported versions, unknown fields, ambiguous modes, invalid revisions/pathspecs, and ungrounded patches before opening a browser, with actionable stderr and no stdout.**
-5. **Range mode shall pin resolved commit identities once and shall bind the exact ordered pathspec scope into the terminal result.**
-6. **Patch mode shall prove repository-backed preimages and exact equality between patch postimages and current worktree paths/content/modes without mutating repository state, then pin the reviewed snapshot.**
-7. **A valid attached request shall open the existing authenticated loopback browser review workspace and keep the invoking process waiting.**
-8. **Closing or reloading the browser shall neither finish nor cancel an attached review.**
-9. **Only an accepted Finish review action shall finalize feedback; it shall settle pending mutations, accept one draft revision, and perform final scope/drift validation.**
-10. **Successful Finish shall write exactly one canonical versioned result, bound to the submitted request and reviewed scope, to stdout and exit `0` only after full delivery.**
-11. **Browser Cancel, terminal signals, validation failure, server failure, or stdout delivery failure shall produce no canonical result and shall retain the repository-local draft.**
-12. **A finished review with no comments and no summary shall still return a successful zero-feedback result, distinct from cancellation.**
+| Feature | Manual repository/skill copy | Native npm + generic Claude marketplace | Cumpa v1.5 approach |
+|---------|------------------------------|-----------------------------------------|---------------------|
+| CLI installation | Clone/build or copy from a checkout; no stable public identity. | npm provides global linking and transient execution from registry packages. | Publish one allowlisted Node 24 package with global `cumpa`, `npx`, explicit upgrades, and exact-version verification—only after resolving the occupied name. |
+| Skill installation | User copies `SKILL.md` into an agent-specific directory and repeats that work for updates. | Registered marketplace users install a versioned plugin by catalog name and choose scope. | Add `shipwithai-cumpa@shipwithai`; first-time users add ShipWithAI once, then use its normal one-command install and Claude namespace behavior. |
+| External prerequisite | Often buried in copied instructions and fails later on `PATH`. | Claude plugins can depend on system executables but do not inherently provision unrelated global CLIs. | Put Node, Git, public Cumpa CLI, version, and exact install guidance in catalog details, README, and the skill's preflight failure. |
+| Updates | Copy again and guess whether instructions match the executable. | npm uses semver/dist-tags; Claude caches plugins and detects explicit version changes or source hashes. | Version CLI and skill independently, state compatibility, document global/`@latest` updates plus marketplace refresh/reload, and verify them together. |
+| Release trust | Trust the checkout/source and local build. | npm trusted publishing can bind public artifacts to CI with provenance; marketplaces disclose plugin source/components. | Combine workflow-bound OIDC provenance with an established public catalog and no install-time mutation. |
+| Acceptance evidence | Local source may work while copied/published contents fail. | Each ecosystem offers pack/install/validation primitives, but cross-channel behavior is project-owned. | Exercise candidate tarball, exact registry artifact, real ShipWithAI install/cache/namespace, and one completed CLI-backed review. |
+| Behavior authority | Copied instructions can easily fork product logic. | Plugins may bundle extensive behavior or just delegate to tools. | Keep the existing skill thin: Cumpa's shipped CLI remains the sole request, review, and canonical-result authority. |
 
 ## Sources
 
-### Authoritative local sources
+### npm and Registry (HIGH confidence)
 
-- **[L1]** `.planning/PROJECT.md` — v1.3 goal, five active requirements, existing validated browser/export behavior, constraints, and exclusions.
-- **[L2]** `src/cli/run.ts` — current Commander/Inquirer entry, loopback browser launch, output seams, one-time comparison launch, and interactive recovery behavior that must remain unchanged.
-- **[L3]** `src/server/lifecycle.ts` — existing idempotent Git abort/listener shutdown and signal statuses `130`/`143`.
-- **[L4]** `src/contracts/draft.ts` and `src/export/review-export.ts` — strict versioned export schema, accepted revision, durable anchors, drift/count fields, canonical ordering, exact-byte parser, and serializer reusable by the attached result.
-- **[L5]** `src/server/capabilities.ts` and `src/server/export-store.ts` — accepted server draft snapshot, final anchor/drift validation, and current canonical JSON/Markdown publication boundary.
+- [Live `cumpa` registry document](https://registry.npmjs.org/cumpa/latest) — observed latest `2.0.1`, unrelated function-composition description/repository/maintainer, and no CLI `bin` on 2026-09-04.
+- [npm `package.json` documentation](https://docs.npmjs.com/cli/v11/configuring-npm/package-json) — package identity, metadata, license, `files`, `bin`, repository, engines, and publication behavior.
+- [npm exec / `npx`](https://docs.npmjs.com/cli/v11/commands/npm-exec) — executable inference, local/remote resolution, install prompt, cache, `--yes`, and explicit package specs.
+- [npm pack](https://docs.npmjs.com/cli/v11/commands/npm-pack) — dry-run JSON file inspection and packing/fetching package specs.
+- [Transfer a package between npm users](https://docs.npmjs.com/transferring-a-package-from-a-user-account-to-another-user-account) — owner-assisted maintainer transfer.
+- [npm package/username policy](https://docs.npmjs.com/policies/disputes) — first-come, first-served registry names.
+- [Trusted publishing for npm packages](https://docs.npmjs.com/trusted-publishers) and its [current source](https://raw.githubusercontent.com/npm/documentation/main/content/packages-and-modules/securing-your-code/trusted-publishers.mdx) — supported runners, minimum npm/Node, exact publisher identity, allowed actions, workflow permissions, token restriction, and automatic provenance.
+- [Generating provenance statements](https://docs.npmjs.com/generating-provenance-statements) — public repository/package and repository metadata constraints.
+- [Verifying registry signatures](https://docs.npmjs.com/verifying-registry-signatures) — `npm audit signatures` verification.
 
-### Current primary documentation and ecosystem evidence
+### Claude Code and ShipWithAI (HIGH platform confidence; MEDIUM marketplace acceptance confidence)
 
-- **[S1]** [Git `diff` documentation](https://git-scm.com/docs/git-diff) — ordered two-endpoint diff forms, `--` pathspec boundary, merge-base forms, and path-limited comparison; page current through Git 2.55.0 (2026-06-29).
-- **[S2]** [Git `apply` documentation](https://git-scm.com/docs/git-apply) — stdin patch input, read-only `--check`, `--reverse`, index/worktree distinctions, unsafe path behavior, and embedded blob identity used for three-way/fake-ancestor operations; page current through Git 2.55.0.
-- **[S3]** [Model Context Protocol stdio transport](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports#stdio) — machine messages only on stdout, diagnostics permitted on stderr, explicit cancellation rather than interpreting disconnect as cancel, and protocol-version rejection behavior.
-- **[S4]** [Command Line Interface Guidelines](https://clig.dev/) — primary output on stdout, messaging on stderr, zero/nonzero status, prompts only for TTY stdin, bounded/clear Ctrl+C behavior, and machine-readable JSON conventions.
-- **[S5]** [GitHub: Reviewing proposed changes in a pull request](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/reviewing-proposed-changes-in-a-pull-request) — pending line comments, explicit Submit review, and separate Abandon review behavior.
-- **[S6]** [PRless](https://github.com/muhammadZihad/prless) — local browser review with explicit Export for AI through clipboard and `.prless/review.md`, demonstrating the current manual handoff baseline.
-- **[S7]** [diffmux](https://github.com/Nicomalacho/diffmux) — local browser review with explicit Send to agent through cmux pane injection, including the documented idle-agent delivery constraint.
+- [ShipWithAI plugin marketplace repository](https://github.com/ShipWithAI/shipwithai-plugins) — established marketplace identity and install convention.
+- [ShipWithAI marketplace registry](https://raw.githubusercontent.com/ShipWithAI/shipwithai-plugins/main/.claude-plugin/marketplace.json) — live `shipwithai` catalog and local/external plugin source patterns.
+- [ShipWithAI repository conventions](https://raw.githubusercontent.com/ShipWithAI/shipwithai-plugins/main/CLAUDE.md) — plugin/skill layout, metadata, documentation, and evaluation expectations; acceptance remains subject to its maintainers.
+- [Create and distribute a Claude Code plugin marketplace](https://code.claude.com/docs/en/plugin-marketplaces) — marketplace schema, plugin sources, cache isolation, install command, component metadata, and version behavior.
+- [Discover and install Claude Code plugins](https://code.claude.com/docs/en/discover-plugins) — add/install stages, scope confirmation, named-catalog refresh, reload, update, and uninstall behavior.
+- [Create Claude Code plugins](https://code.claude.com/docs/en/plugins) — plugin layout, skill namespacing, single-skill plugin support, and local validation.
+- [Claude Code plugins reference](https://code.claude.com/docs/en/plugins-reference) — manifest precedence, plugin validation, version cache keys, and update semantics.
 
-## Confidence Assessment
+### Repository Evidence (HIGH confidence)
 
-| Area | Confidence | Reason |
-|------|------------|--------|
-| Milestone boundaries and required user outcomes | HIGH | The assignment contract and current PROJECT agree on transport, two exclusive modes, browser review, explicit Finish, stdout result, compatibility, and exclusions. |
-| Interactive compatibility | HIGH | Current CLI source directly shows the TTY-owned interactive flow and output/lifecycle seams that must remain unchanged. |
-| Finish/cancel semantics | HIGH | GitHub's current documented pending/submit/abandon model, MCP disconnect guidance, CLI signal conventions, and Cumpa's existing draft lifecycle converge on explicit terminal actions. |
-| Canonical result behavior | HIGH | Cumpa already has strict canonical export content and exact-byte serialization; the missing request/scope binding is clear and bounded. |
-| Range/pathspec behavior | HIGH | Existing pinned comparison behavior and current official Git diff/pathspec semantics are authoritative. |
-| Exact-patch validation mechanism | MEDIUM | The required outcome is unambiguous and Git exposes relevant read-only/object primitives, but reverse applicability alone is insufficient. Real-Git cases for new/deleted/renamed files, modes, binary data, index/worktree mixtures, and concurrent drift should be proven in a focused spike before planning the implementation sequence. |
-| Competitor landscape | MEDIUM | Current public documentation demonstrates explicit export/send patterns, but PRless and diffmux are small projects and do not define an industry-standard attached protocol. |
+- `package.json` — current placeholder/private manifest, `bin`, `files`, Node engine, and `prepack` integration.
+- `scripts/build-bin.mjs` — current generated shebang and executable mode.
+- `src/cli/run.ts` and `src/git/repository.ts` — current public command shape and enforced Git minimum.
+- `.kimi-code/skills/cumpa/SKILL.md` — existing canonical thin coding-agent integration and CLI/Git prerequisite.
+- `README.md` — current manual/provisional installation guidance.
+- `git remote get-url origin` and anonymous access to `https://github.com/Ship-With-AI/cumpa` — exact source identity and current non-public reachability.
 
 ---
-*Feature research for: Cumpa v1.3 Agent Review Handoff*
-*Researched: 2026-08-04*
+*Feature research for: Cumpa v1.5 Public Distribution*
+*Researched: 2026-09-04*

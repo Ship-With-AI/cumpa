@@ -1,696 +1,574 @@
 # Architecture Research
 
-**Domain:** Agent-to-human review handoff in the existing local-first Cumpa CLI
-**Researched:** 2026-08-04
-**Confidence:** HIGH for existing integration boundaries and native-Git mechanisms; MEDIUM-HIGH for the exact-patch overlay sequence until exercised against Cumpa's complete patch fixture set
+**Domain:** Public distribution of the existing Cumpa Node.js CLI and coding-agent skill
+**Researched:** 2026-09-04
+**Confidence:** MEDIUM
 
-## Recommendation
+## Executive Summary
 
-Add one alternate **ingress and completion path** around the existing review pipeline. Do not build a second reviewer, patch renderer, server, export format, or agent HTTP API.
+Cumpa v1.5 should add a distribution control plane around the existing package, not a second package or application architecture. The repository already has the correct npm CLI shape: `package.json` names `cumpa`, maps the `cumpa` binary to the generated `dist/bin/cumpa.mjs`, requires Node.js 24, allowlists `dist/` and the existing skill, and builds the browser assets into the same package. Keep that shape.
 
-A non-TTY invocation reads one strict, versioned request from stdin and normalizes either supported input mode into the same `PinnedComparison` already consumed by `createSessionApp()`. From that boundary onward, the current changed-file inventory, blob reader, Monaco UI, durable anchors, draft mutations, export builder, canonical serializer, Markdown renderer, loopback security, and browser launch remain authoritative.
+The recommended release unit is one npm tarball that serves three consumers:
 
-The only attached-session UI difference is an explicit **Finish review** action. It invokes the existing export operation. After the successful HTTP response has flushed, a one-shot in-process completion channel wakes the waiting CLI. The CLI reads and validates the already-published canonical `review.json`, writes those exact bytes to stdout, writes every diagnostic to stderr, and shuts down Fastify.
+1. `npm install -g cumpa` links its existing `bin.cumpa` launcher onto `PATH`;
+2. `npx cumpa`/`npm exec` downloads the same package and invokes that launcher;
+3. the ShipWithAI marketplace installs the same exact npm version as a Claude Code plugin and discovers the existing `.kimi-code/skills/cumpa/SKILL.md` through a small plugin manifest.
 
-Preserve interactive compatibility structurally:
+A protected, immutable GitHub release triggers one fixed GitHub Actions workflow. The workflow builds once, packs once, validates and smoke-tests that exact `.tgz`, then passes that same path to `npm publish`. npm authenticates the GitHub-hosted runner through OIDC, so the workflow contains no `NODE_AUTH_TOKEN` or long-lived npm credential. A post-publication job downloads the exact registry version, compares registry integrity with the approved tarball, verifies its provenance/signatures, and exercises public global and npx installation. Only then should an exact-version entry be submitted to ShipWithAI.
 
-- `stdin.isTTY === true` follows the current discovery → picker → confirmation → launch flow unchanged.
-- piped stdin follows the new handoff path and never invokes Inquirer.
-- both input modes finish Git preparation before `createSessionApp()` and produce immutable OIDs.
-- the existing authenticated `/api/export` remains the browser boundary; no route is exposed for agent control.
-- absent attached-session options preserve current API payloads, persistence paths, export directories, terminal output, and shutdown behavior.
+Two external conditions block publication today and must be Phase 0 gates rather than hidden implementation assumptions:
+
+- **The bare npm name is occupied.** As verified on 2026-09-04, `cumpa@2.0.1` is an unrelated function-composition package owned by `gianlucaguarini`. `npm install -g cumpa` and `npx cumpa` cannot deliver this repository until Ship With AI receives an explicit ownership transfer/addition from the current owner. A scoped or renamed fallback changes the stated product contract and requires product approval.
+- **The source repository is private.** The authenticated GitHub record for `Ship-With-AI/cumpa` reports `PRIVATE`. npm trusted publishing can authenticate a private-repository workflow, but npm's automatic provenance requires both a public package and a public source repository. The repository must therefore become public before the provenance-bearing release.
 
 ## Standard Architecture
 
 ### System Overview
 
 ```text
-                         one Cumpa process
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ CLI ingress                                                                  │
-│                                                                              │
-│  TTY stdin                              piped stdin                          │
-│     │                                      │                                │
-│     ▼                                      ▼                                │
-│ existing runCli()                    NEW handoff request reader              │
-│ discovery → picker → confirm         bounded UTF-8 → JSON → Zod             │
-│     │                                      │                                │
-│     │                                NEW handoff Git adapter                 │
-│     │                                ├── revisions + pathspecs               │
-│     │                                └── exact applied patch                 │
-│     │                                      │                                │
-│     └──────────────────┬───────────────────┘                                │
-│                        ▼                                                    │
-│             existing PinnedComparison boundary                              │
-│                        │                                                    │
-├────────────────────────┼────────────────────────────────────────────────────┤
-│ Existing review runtime                                                      │
-│                        ▼                                                    │
-│ createSessionApp() → Fastify 127.0.0.1:0 → bearer-token browser URL          │
-│                        │                                                    │
-│       capability registry + repository-local draft store                    │
-│                        │                                                    │
-│             Vue 3 + Monaco review workspace                                  │
-│                        │                                                    │
-│        comments / summary / anchor verification / drift                      │
-│                        │                                                    │
-├────────────────────────┼────────────────────────────────────────────────────┤
-│ Completion                                                                   │
-│                        ▼                                                    │
-│ existing export service → canonical JSON + Markdown → atomic publication     │
-│                        │                                                    │
-│ interactive: receipt in UI          attached: response flushes               │
-│                                                │                             │
-│                                                ▼                             │
-│                                      one-shot completion channel             │
-│                                                │                             │
-│                                      validate canonical file bytes           │
-│                                                │                             │
-│                                      stdout bytes; diagnostics stderr        │
-│                                                │                             │
-│                                      close server + dispose overlay + exit   │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Human approval plane                                                        │
+│                                                                             │
+│ protected default branch → draft GitHub release → publish immutable release │
+│                                                     │                       │
+│                                      protected npm-production environment    │
+└─────────────────────────────────────────────────────┼───────────────────────┘
+                                                      │ release.published
+                                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ One GitHub-hosted release job                                                │
+│                                                                             │
+│ checkout tagged SHA → validate identity/version → npm ci → existing build   │
+│                                                        │                    │
+│                                                        ▼                    │
+│                                              one cumpa-X.Y.Z.tgz             │
+│                                                        │                    │
+│                inspect inventory + install/smoke exact tarball              │
+│                                                        │                    │
+│                          GitHub OIDC ────────────────► npm publish ./file.tgz│
+└────────────────────────────────────────────────────────┬────────────────────┘
+                                                         │ immutable name/version
+                                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ npm public registry                                                         │
+│                                                                             │
+│ cumpa@X.Y.Z + dist.integrity + registry signature + provenance attestation  │
+└──────────────┬──────────────────────────┬───────────────────────────┬────────┘
+               │                          │                           │
+               ▼                          ▼                           ▼
+       npm install -g cumpa         npx cumpa             ShipWithAI catalog
+               │                          │                 npm source X.Y.Z
+               └──────────────┬───────────┘                           │
+                              ▼                                       ▼
+                    dist/bin/cumpa.mjs                    Claude plugin cache
+                              │                                       │
+                              ▼                                       ▼
+                existing CLI/server/browser              existing Cumpa skill
+                review architecture unchanged            delegates to PATH CLI
 ```
 
-The normalization seam is the central decision. The browser never receives raw revisions, raw pathspecs, or patch text, and it never applies a patch.
+The public distribution boundary ends at the existing launcher. Once `dist/bin/cumpa.mjs` imports `dist/cli/run.js`, the shipped Node CLI, Git adapter, Fastify loopback server, Vue/Monaco browser application, persistence, review contract, and exports behave exactly as they do now.
 
 ### Component Responsibilities
 
-| Component | Status | v1.3 responsibility | Communicates with |
-|-----------|--------|---------------------|-------------------|
-| `src/cli/run.ts` | **Modify narrowly** | Dispatch TTY input to current `runCli()` unchanged and non-TTY input to the handoff runner; retain the interactive picker/recovery loop | current CLI modules, new handoff runner, launch runtime |
-| `src/contracts/handoff.ts` | **New** | Strict versioned stdin request schema; discriminated union guaranteeing exactly one mode; bounded revision/pathspec/patch fields; inferred types | CLI handoff reader, Git handoff adapter |
-| `src/cli/handoff.ts` | **New** | Bounded stdin read, fatal UTF-8/JSON/Zod handling, stderr diagnostics, attached-session wait, canonical stdout write with EPIPE/backpressure handling, failure exits | handoff contract, Git adapter, launch runtime, completion channel |
-| `src/git/handoff.ts` | **New** | Resolve both modes, compute a domain-separated review key, own any patch overlay, and return a normal `PinnedComparison` plus attached runtime resources | repository discovery, `GitRunner`, comparison builder, inventory, object reader |
-| `src/git/comparison.ts` | **Modify by extraction** | Expose one lower-level builder from already-resolved base/head/diff-base snapshots so interactive and handoff paths share object verification, inventory, freezing, and schema parsing | interactive source resolution, handoff adapter, inventory |
-| `src/git/inventory.ts` | **Modify** | Accept optional pathspec strings and append them after the existing `--` in both raw and numstat Git calls; keep parsing and `.cumpa` exclusion unchanged | `GitRunner`, object reader, availability classifier |
-| `src/git/runner.ts` | **Modify narrowly** | Support a controlled per-runner Git environment overlay for temporary index/object directories and deterministic `commit-tree`; retain argument arrays, safe config, aborts, timeouts, and caps | all Git adapters |
-| `src/domain/comparison-key.ts` | **Modify** | Preserve current two-OID key bytes for interactive sessions; add a domain-separated handoff key over normalized mode, resolved OIDs, ordered pathspecs, and/or patch digest | handoff adapter, draft/export namespaces |
-| `src/server/attached-review.ts` | **New** | One-shot completion primitive with `finish(receipt)`, `cancel(reason)`, and a promise; reject duplicate completion and unblock on signals/errors | launch runtime, routes, CLI handoff runner |
-| `src/server/app.ts` | **Modify** | Accept optional attached metadata, scoped review key, completion port, and patch-overlay `ObjectReader`; pass them into current stores/capabilities/routes | launch runtime, capability registry, draft store |
-| `src/server/capabilities.ts` | **Modify** | Use the supplied review key for attached draft/export identity and exported `comparisonKey`; use the supplied overlay reader for patch blobs; otherwise retain current defaults | draft/export stores, routes, object reader |
-| `src/server/routes.ts` | **Modify narrowly** | For a successful existing `/api/export` in an attached session, complete only after the raw response `finish`/Fastify response hook; do nothing for interactive or unsuccessful responses | capability registry, optional completion port |
-| `src/server/draft-loader.ts`, `src/server/draft-store.ts` | **Modify narrowly** | Accept an optional caller-selected storage key while continuing to store and validate the existing draft comparison tuple with atomic replacement | app/capabilities, `.cumpa/drafts` |
-| `src/server/export-store.ts` | **Modify narrowly** | Accept an optional safe stable directory name. Preserve `<base>..<head>` for interactive exports; use the full review key for attached exports | capability registry, `.cumpa/exports` |
-| `src/contracts/api.ts` | **Modify compatibly** | Add an optional attached marker to `SessionResponseSchema`; allow the scoped export receipt path form without weakening repository-relative path validation | routes, browser client |
-| `src/web/api/client.ts` | **Reuse with type update** | Continue invoking the authenticated existing export endpoint and parsing shared schemas | Vue app, Fastify |
-| `src/web/App.vue`, `src/web/components/ExportSection.vue` | **Modify conditionally** | When attached, label the explicit successful action **Finish review** and state that success closes the session; retain current Export behavior/copy otherwise | session API, current review/export state |
-| `src/export/review-export.ts`, `src/export/render-review-markdown.ts` | **Unchanged authority** | Build/canonicalize the existing `cumpa/export` v1 document and derive Markdown; stdout uses these exact canonical bytes | capability registry, export store, CLI result writer |
-| `src/web/monaco/*`, draft/comment/anchor models | **Unchanged** | Review normalized immutable blobs exactly as today | existing session APIs |
-| `src/cli/picker.ts`, `src/cli/confirm.ts`, `src/git/candidates.ts` | **Unchanged** | Interactive-only selection; never entered for piped requests | current `runCli()` only |
-
-### Modified Versus New Scope
-
-**New production modules stop at four:** shared handoff contract, CLI handoff runner, Git handoff adapter, and one-shot completion primitive. All other changes extend an existing authority.
-
-Do **not** add:
-
-- a unified-diff AST/parser or JavaScript diff engine;
-- a second Fastify app or detached patch server;
-- agent polling, WebSockets, callback listeners, or a control endpoint;
-- a second review-result schema or serializer;
-- an in-memory-only draft store;
-- a process manager, queue, daemon, database, or persistent session registry;
-- a TypeScript pathspec matcher;
-- a CLI subcommand unless the contract later replaces TTY detection with explicit opt-in.
+| Component | Status | v1.5 responsibility |
+|---|---|---|
+| npm ownership for `cumpa` | **External prerequisite** | Transfer/add Ship With AI as an authorized owner before any workflow activation; preserve an explicit record of the transfer. Do not attempt to publish over an unrelated package. |
+| `Ship-With-AI/cumpa` visibility | **External prerequisite** | Become public before publication so npm can issue automatic provenance for the public package. |
+| `package.json` and root lockfile metadata | **Modify** | Remove `private`, replace `0.0.0` with the approved unused registry version, retain `type`, `engines`, `bin`, and existing runtime dependencies, add exact public repository/homepage/bugs/license metadata, set explicit public publication policy, and include `.claude-plugin/` in `files`. |
+| Public license | **New policy/file if not already chosen** | Select a license, add the corresponding root license file, and make `package.json.license` agree. This is a maintainer/legal decision, not a release-script default. |
+| `scripts/build-bin.mjs` | **Reuse unchanged** | Continue producing executable `dist/bin/cumpa.mjs` and embedding only the approved `CUMPA_RELEASE_SUPPORT_SERVICE_URL` when the release build supplies it. |
+| `scripts/build-native-addon.mjs` and native capability loader | **Reuse with explicit runner choice** | Preserve the current Darwin arm64 addon on a GitHub-hosted arm64 macOS release runner. Other platforms already catch an absent/incompatible addon and expose `reExportUnsupported`; do not create platform package fan-out in this milestone. |
+| `scripts/verify-production-artifacts.mjs` | **Modify** | Accept a concrete `.tgz` path and inspect it. Stop creating a second tarball internally. Keep current inventory/protected-value/support-origin checks and add public metadata plus plugin/skill assertions. |
+| `tests/e2e/package-assets.spec.ts` | **Modify narrowly** | Reuse the concrete tarball path where possible; retain clean-install launcher coverage and assert the plugin manifest and existing skill are present. Add npx-style tarball execution only if the existing clean-install check does not cover it. |
+| `README.md` | **Modify** | Replace private-checkout-only installation as the primary path with `npm install -g cumpa` and `npx cumpa`; state Node 24 and Git prerequisites; document the ShipWithAI install command and that its skill delegates to the separately available CLI. |
+| `.kimi-code/skills/cumpa/SKILL.md` | **Reuse; modify only if prerequisite failure is unclear** | Remain the sole skill protocol. It must continue delegating review to `cumpa`, not duplicate review behavior. A missing-CLI diagnostic may point to the public install command. |
+| `.claude-plugin/plugin.json` | **New** | Declare plugin name/version/description and `"skills": "./.kimi-code/skills"`, allowing Claude Code to discover the existing skill in the npm package. |
+| `.github/workflows/publish-npm.yml` | **New** | Implement the single release-to-registry path with `release.published`, protected environment, OIDC permissions, fixed GitHub-hosted runner, build-once/pack-once verification, exact-tarball publish, and post-publish checks. Its filename becomes part of npm's trusted-publisher identity and must remain stable. |
+| `.github/workflows/deploy-supabase-production.yml` | **Unchanged; never reuse for npm** | It is an Ubuntu, secret-rich support-service deployment boundary. Combining npm publication with it would expose unnecessary secrets and omit the Darwin arm64 addon. Keep npm in the new least-privilege OIDC-only workflow. |
+| GitHub `npm-production` environment | **External configuration** | Require reviewers, prevent self-review, and restrict deployment refs to the release-tag policy. |
+| npm trusted-publisher settings | **External configuration** | Bind `Ship-With-AI`, `cumpa`, exact workflow filename, and exact environment name; allow direct `npm publish`; after success disallow traditional tokens. |
+| GitHub immutable releases | **External configuration** | Lock the published release tag/assets and create GitHub's release attestation. |
+| ShipWithAI catalog entry | **External upstream change** | Add `cumpa` to `ShipWithAI/shipwithai-plugins/.claude-plugin/marketplace.json` with an npm source pinned to the registry-verified version. |
 
 ## Recommended Project Structure
 
+Only distribution files are shown; the existing `src/` review architecture remains unchanged.
+
 ```text
-src/
-├── cli/
-│   ├── run.ts                    # MODIFY: TTY versus piped dispatch
-│   ├── handoff.ts                # NEW: stdin → launch → wait → stdout
-│   ├── picker.ts                 # UNCHANGED interactive selection
-│   └── confirm.ts                # UNCHANGED interactive confirmation
-├── contracts/
-│   ├── handoff.ts                # NEW: strict versioned request union
-│   ├── comparison.ts             # REUSE PinnedComparison
-│   ├── api.ts                    # MODIFY: attached marker/receipt path
-│   └── draft.ts                  # REUSE draft/export schemas
-├── git/
-│   ├── handoff.ts                # NEW: revision/patch normalization + overlay
-│   ├── comparison.ts             # MODIFY: resolved-snapshot builder
-│   ├── inventory.ts              # MODIFY: optional native pathspecs
-│   ├── runner.ts                 # MODIFY: controlled Git env overlay
-│   ├── repository.ts             # REUSE repository authority
-│   └── objects.ts                # REUSE blob authority; configurable runner
-├── domain/
-│   └── comparison-key.ts         # MODIFY: scoped handoff identity
-├── server/
-│   ├── attached-review.ts        # NEW: one-shot completion
-│   ├── app.ts                    # MODIFY: optional attached context
-│   ├── routes.ts                 # MODIFY: complete after response flush
-│   ├── capabilities.ts           # MODIFY: review key + object reader
-│   ├── draft-loader.ts           # MODIFY: caller storage key
-│   ├── draft-store.ts            # MODIFY: caller storage key
-│   └── export-store.ts           # MODIFY: caller stable directory
-├── export/
-│   ├── review-export.ts          # UNCHANGED canonical JSON authority
-│   └── render-review-markdown.ts # UNCHANGED Markdown authority
-└── web/
-    ├── App.vue                   # MODIFY: attached action semantics
-    ├── api/client.ts             # REUSE existing export call
-    └── components/ExportSection.vue # MODIFY: Export/Finish label
+.
+├── package.json                         # MODIFY: public package/plugin metadata
+├── package-lock.json                    # MODIFY: root name/version metadata stays aligned
+├── README.md                            # MODIFY: public CLI + marketplace installation
+├── LICENSE                              # NEW when maintainers choose the public license
+├── .claude-plugin/
+│   └── plugin.json                      # NEW: points to existing skill directory
+├── .kimi-code/
+│   └── skills/
+│       └── cumpa/
+│           └── SKILL.md                 # EXISTING authority; no copied skill
+├── .github/
+│   └── workflows/
+│       └── publish-npm.yml              # NEW: only npm release workflow
+├── scripts/
+│   ├── build-bin.mjs                    # EXISTING launcher/support-origin build
+│   ├── build-native-addon.mjs           # EXISTING optional Darwin arm64 capability
+│   └── verify-production-artifacts.mjs  # MODIFY: verify caller-supplied .tgz
+└── tests/
+    └── e2e/
+        └── package-assets.spec.ts        # MODIFY narrowly: package/plugin install contract
+
+External upstream repository:
+ShipWithAI/shipwithai-plugins/
+└── .claude-plugin/
+    └── marketplace.json                 # ADD exact npm source entry after publish
 ```
 
 ### Structure Rationale
 
-- **Transport belongs in `cli/handoff.ts`.** Stdin, stdout, process cancellation, and exit status are not Git or UI concerns.
-- **Trust-boundary schemas belong in `contracts/handoff.ts`.** A strict discriminated union makes “exactly one mode” structural.
-- **Both modes belong in one Git adapter.** They differ only before snapshot pinning. Once base, head, diff base, pathspecs, and an object reader exist, they use the current pipeline.
-- **Completion stays separate from export.** Export remains reusable; an optional observer turns successful browser delivery into process completion.
-- **Scope stays out of draft contents.** An out-of-band storage key leaves the versioned draft schema intact while preventing filtered/unfiltered comments from colliding.
-- **Stdout reuses published bytes.** Reading and validating `review.json` avoids a second serializer or divergence from canonical file exports.
+- **One package owns every distributable byte.** `package.json.files` remains the allowlist for the launcher, runtime, browser assets, plugin manifest, and canonical skill.
+- **The existing skill stays canonical.** A manifest path is enough; copying it into a conventional `skills/` tree would create two sources that can drift.
+- **Release policy lives at the repository edge.** The workflow and external GitHub/npm settings do not leak registry concepts into CLI, server, or browser modules.
+- **The existing verifier remains the package-policy authority.** Passing it a path is less code and stronger evidence than adding a second release-only scanner.
+- **The marketplace owns discovery, not product code.** Its catalog entry identifies an already published npm artifact; it does not carry another Cumpa build.
 
 ## Architectural Patterns
 
-### Pattern 1: Normalize at the Edge, Reuse the Pinned Core
+### Pattern 1: Single Package, Single Tarball
 
-**What:** Convert either request mode into an existing `PinnedComparison` before Fastify starts.
+**What:** Build the existing root package once and produce one `.tgz`. All supported install routes resolve to that artifact.
 
-```typescript
-interface HandoffLaunch {
-  readonly comparison: PinnedComparison;
-  readonly reviewKey: string;
-  readonly objectReader?: ObjectReader;
-  dispose(): Promise<void>;
+```text
+package.json + lockfile + source + existing build
+                         │
+                         ▼
+                  cumpa-X.Y.Z.tgz
+             ┌───────────┼───────────┐
+             ▼           ▼           ▼
+          global        npx      plugin cache
+```
+
+**When to use:** Every v1.5 release.
+
+**Trade-offs:** The npm plugin installation also downloads Cumpa's runtime dependencies even though the skill invokes a separately installed CLI. That duplication is acceptable because it avoids a second package and guarantees the marketplace skill bytes are versioned with the CLI. Split packages only if measured installation cost becomes a product problem.
+
+### Pattern 2: Build Once, Inspect Once, Publish That File
+
+**What:** Explicitly build, then pack with lifecycle scripts disabled, validate the returned tarball path, install that file in clean locations, and publish the same relative path.
+
+```text
+npm ci
+CUMPA_RELEASE_SUPPORT_SERVICE_URL=<approved-origin> npm run build
+npm pack --json --ignore-scripts --pack-destination <release-dir>
+node scripts/verify-production-artifacts.mjs <release-dir>/cumpa-X.Y.Z.tgz
+npm publish ./<release-dir>/cumpa-X.Y.Z.tgz --access public --tag latest
+```
+
+The exact CLI spelling may be wrapped in package scripts, but the artifact identity must remain visible and singular.
+
+**Why:** The current verifier performs `npm pack --dry-run` and then a separate `npm pack`, while a bare `npm publish` would pack yet again. Those inventories are useful but do not prove that the inspected bytes are the uploaded bytes. npm officially accepts a relative gzipped tarball as the `npm publish` package spec.
+
+**Trade-offs:** `--ignore-scripts` means CI must call the build explicitly. This is desirable in release automation because build order and the support-origin input become reviewable rather than implicit in `prepack`. Keep `prepack` for normal local packaging convenience.
+
+### Pattern 3: Human Approval Followed by Ephemeral OIDC Authority
+
+**What:** A maintainer publishes a reviewed draft GitHub release, and an environment reviewer authorizes only the npm publish job. GitHub then issues a short-lived OIDC identity accepted by npm for one configured repository/workflow/environment.
+
+```yaml
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    environment: npm-production
+    runs-on: macos-15
+```
+
+The complete workflow must additionally validate the event/tag/version and set `registry-url: https://registry.npmjs.org`; this excerpt shows the trust boundary, not a copy-paste workflow.
+
+**When to use:** Every public npm release.
+
+**Trade-offs:** The release publication and protected environment are two GitHub approval surfaces. This is intentional for a write-once public registry operation. npm stage-only publishing can add a third, npm-side 2FA approval, but it is optional hardening rather than the required v1.5 flow.
+
+### Pattern 4: Registry-First Marketplace Promotion
+
+**What:** Publish and verify `cumpa@X.Y.Z` before changing the ShipWithAI catalog. The catalog entry pins that exact version.
+
+```json
+{
+  "name": "cumpa",
+  "version": "X.Y.Z",
+  "source": {
+    "source": "npm",
+    "package": "cumpa",
+    "version": "X.Y.Z"
+  }
 }
-
-const subject = await createHandoffComparison(request, { cwd, signal });
-const completion = createAttachedReviewCompletion();
-const session = await launchPinnedComparison(subject.comparison, {
-  attachedReview: {
-    reviewKey: subject.reviewKey,
-    completion,
-    objectReader: subject.objectReader,
-  },
-  output: diagnosticToStderr,
-});
 ```
 
-**When to use:** Every piped request. No raw handoff data crosses into Vue/Monaco.
+The package's plugin manifest must use the same version and route skills to `./.kimi-code/skills`.
 
-**Trade-offs:** Patch preparation performs more native-Git plumbing up front, but every correctness-sensitive feature after it is reused.
+**Trade-offs:** Marketplace availability lags npm publication by an upstream PR and review. That is preferable to a catalog entry which points to missing or unverified bytes. Do not automate cross-repository catalog updates in v1.5.
 
-### Pattern 2: Separate Presentation Mode from Comparison Data
+## Release Data Flow
 
-**What:** Carry attached behavior in `CreateSessionAppOptions`, not in branch/worktree source identities or a parallel comparison contract.
+### Phase 0 Preconditions
 
-```typescript
-createSessionApp(comparison, {
-  sessionToken,
-  attachedReview: { reviewKey, completion, objectReader },
-});
-```
+1. Obtain an explicit transfer of, or owner access to, the existing unscoped `cumpa` npm package from its current unrelated owner. If this cannot be obtained, stop: a scoped or renamed package cannot meet the stated commands without an approved milestone change.
+2. Decide how to handle the unrelated historical `cumpa` versions. The new version must be unused and deliberately versioned; a new higher major is the least misleading continuation after `2.0.1`. Deprecating old unrelated versions should be an authenticated one-time maintainer operation, not a tokenized CI step.
+3. Make `https://github.com/Ship-With-AI/cumpa` public and confirm the exact URL is acceptable as the package's provenance source.
+4. Select the public license.
+5. Reserve the stable workflow filename and environment name before configuring npm's trusted publisher; npm treats those fields as identity, not cosmetic metadata.
 
-The `PinnedComparison` answers what is reviewed. Optional app context answers only:
-
-1. which persistence/export namespace to use;
-2. whether the browser action says Export or Finish review;
-3. which object overlay supplies patch blobs; and
-4. who to notify after successful response delivery.
-
-**Trade-offs:** A small optional branch reaches app/routes/UI. It avoids inventing an `agent` selector identity and polluting drift behavior.
-
-### Pattern 3: Domain-Separated Scoped Review Identity
-
-**What:** Derive a full 64-hex review key from canonical normalized facts. Preserve `comparisonKey(baseOid, headOid)` byte-for-byte for interactive sessions.
+### Approved Release to Public Consumers
 
 ```text
-interactive key = existing v1 domain + base OID + head OID
-
-revision handoff key = handoff-v1 domain
-                     + resolved base OID
-                     + resolved head OID
-                     + ordered native pathspec strings
-
-patch handoff key    = handoff-v1 domain
-                     + current HEAD OID
-                     + SHA-256(exact patch bytes)
-                     + synthetic head OID
+1. Merge release-ready source, lockfile, package metadata, plugin metadata,
+   skill, documentation, verifier, and workflow to the protected default branch.
+        │
+2. Create a GitHub draft release for vX.Y.Z at that reviewed commit.
+        │
+3. Review tag target, notes, package/plugin versions, and stable/prerelease state;
+   publish the immutable release.
+        │ release.published: ref=refs/tags/vX.Y.Z, sha=tagged commit
+4. Enter protected npm-production environment; required reviewer approves.
+        │
+5. Checkout the event SHA on fixed GitHub-hosted arm64 macOS runner.
+        │
+6. Fail closed unless:
+   - tag is exactly v${package.version};
+   - package name is exactly cumpa and private is absent/false;
+   - version is not 0.0.0 and is not already registered;
+   - release is stable unless prereleases are explicitly enabled;
+   - tagged commit is allowed by release/default-branch policy;
+   - repository URL exactly identifies Ship-With-AI/cumpa;
+   - package, plugin, and intended marketplace versions agree;
+   - publication access/tag policy is explicit.
+        │
+7. setup-node Node 24 + npm >=11.5.1, registry URL npmjs, cache disabled;
+   npm ci; build once with approved release support origin.
+        │
+8. npm pack once with --ignore-scripts into an empty release directory.
+        │
+9. Verify and smoke that exact .tgz.
+        │
+10. npm publish ./cumpa-X.Y.Z.tgz --access public --tag latest.
+    npm CLI exchanges GitHub OIDC for a short-lived credential and emits
+    provenance automatically; no NODE_AUTH_TOKEN exists.
+        │
+11. Fetch exact registry metadata/tarball, prove integrity equivalence,
+    install exact version in clean global and npx paths, and verify
+    registry signatures/provenance.
+        │
+12. Confirm unversioned npm install/npx resolve the intended latest version.
+        │
+13. Submit ShipWithAI catalog entry pinned to X.Y.Z.
+        │
+14. From clean Claude Code state, install cumpa@shipwithai, confirm skill
+    discovery, actionable missing-CLI behavior, and delegation when CLI exists.
 ```
 
-Use the existing length-framed hashing pattern, never delimiter concatenation. The full key names attached draft/export directories and populates `ReviewExportV1.comparison.comparisonKey`.
+### Failure and Recovery
 
-**Trade-offs:** A no-pathspec revision handoff intentionally does not inherit an interactive draft for the same commits. An identical request resumes deterministically.
+- **Before `npm publish`:** fail the job; no registry state changed. Correct source/metadata, create a new reviewed release as appropriate, and rerun only through the approved path.
+- **After `npm publish`:** never overwrite or reuse the version. npm permanently reserves a published name/version, and an immutable GitHub release tag cannot move. Deprecate the bad version if necessary and release a new patch version through the full flow.
+- **After npm verification but before marketplace merge:** correct the catalog PR without changing npm.
+- **After marketplace publication:** publish a corrected npm/plugin version first, verify it, then bump the catalog entry. Never point the catalog at mutable `latest`.
 
-### Pattern 4: Exact Applied Patch in an Isolated Git Overlay
+## Artifact Verification Contract
 
-**What:** Treat patch mode as an exact patch already present in the current repository, not a future/detached patch. Validate both sides and materialize immutable objects in a temporary Git overlay.
+| Stage | Required evidence | What it proves | What it does not prove |
+|---|---|---|---|
+| Tagged source | `vX.Y.Z`, package version, plugin version, exact repository URL, release SHA/default-branch policy | The reviewed release identifies one source revision and package identity | Generated files are correct |
+| Exact local `.tgz` inventory | `dist/bin/cumpa.mjs`, runtime JS, browser HTML/assets, `.claude-plugin/plugin.json`, `.kimi-code/skills/cumpa/SKILL.md`, README/license/package metadata; no TypeScript/Vue source, support-service source, env files, secrets, or unrelated files | npm allowlist and build outputs are correct | Installed command runs |
+| Exact local `.tgz` policy scan | executable launcher mode/shebang; canonical support origin exactly once; plugin path/version valid; Node engine/bin mapping intact | Artifact contains the configured launcher and discoverable skill | Registry received these bytes |
+| Exact local `.tgz` installation | isolated prefix global-style install and npm-exec/npx-style execution of `cumpa --help` or another noninteractive surface | npm links/resolves the packaged binary without repository files | Public registry resolution works |
+| Publish command | `npm publish ./path/to/the-verified.tgz --access public --tag latest` | Uploaded input is the artifact that passed local checks | Registry metadata/provenance is externally visible yet |
+| Registry integrity | exact `cumpa@X.Y.Z` metadata; downloaded tarball SHA-512 equals `dist.integrity` and the approved local tarball; `dist-tags.latest` points to X.Y.Z | Registry serves the approved bytes under the intended immutable name/version and default tag | The code is behaviorally correct |
+| Public install | clean-cache `npm install -g cumpa@X.Y.Z`; clean-cache literal `npx cumpa@X.Y.Z --help`; then unversioned `npm install -g cumpa`/`npx cumpa` resolution | Both advertised public install paths work against the registry | Agent skill is discoverable |
+| Provenance/signatures | clean project installs exact version and `npm audit signatures` reports verified registry signatures and provenance attestations | Registry/Sigstore can connect the public artifact to the trusted workflow/source | Review correctness or absence of malicious source |
+| Marketplace install | clean Claude state installs `cumpa@shipwithai`; plugin list and skill invocation show the expected version | ShipWithAI catalog, npm plugin source, manifest, and skill path integrate | Shell-global CLI prerequisite exists |
+| Skill delegation | absent CLI gives install guidance; installed CLI launches the existing handoff path | Marketplace skill and public CLI compose correctly | New review behavior; none should be introduced |
 
-```text
-strict patch bytes
-    │
-    ├─ git apply --reverse --check --binary -
-    │      against current worktree: postimage exists now
-    │
-    ├─ resolve current HEAD^{commit} as base OID
-    ├─ resolve real repository object directory
-    │
-    ├─ create temporary directory containing:
-    │      GIT_INDEX_FILE=<temp>/index
-    │      GIT_OBJECT_DIRECTORY=<temp>/objects
-    │      GIT_ALTERNATE_OBJECT_DIRECTORIES=<real objects>
-    │
-    ├─ git read-tree <base OID>
-    ├─ git apply --cached --check --binary -
-    │      against temp index: preimage belongs to current HEAD
-    ├─ git apply --cached --binary -
-    ├─ git write-tree
-    └─ git commit-tree <tree> -p <base OID>
-           fixed Cumpa author/committer metadata
-           message contains exact patch digest
-           no ref update
-                 │
-                 ▼
-       deterministic synthetic head commit in temp objects
-```
+The registry comparison and provenance check are complementary. `npm audit signatures` should not be described as comparing the root tarball with a local file; `dist.integrity` plus the downloaded tarball performs that comparison. Conversely, matching bytes alone does not prove which workflow produced them; provenance supplies the origin link.
 
-All overlay Git calls—including inventory and later blob reads—use the same configured runner. The real object database is a read-only alternate; new blob/tree/commit objects go to the temporary primary directory. The overlay lives until Finish, failure, or signal shutdown, then `dispose()` removes it in `finally`.
+## Trust and Security Boundaries
 
-Keep `--3way`, `--reject`, and `--unsafe-paths` off: they weaken exactness, permit partial results, or widen the path boundary. Never change the real index, worktree, `HEAD`, refs, or object database.
+| Boundary | Authority crossing | Required control |
+|---|---|---|
+| Current npm owner → Ship With AI | Ownership of the already occupied bare package name | Explicit transfer/owner addition; no impersonation, squatting workaround, or silent fallback name |
+| Maintainer → protected default branch | Source and release configuration become eligible | Normal code review/branch protection; release commit must be approved and reachable under the chosen policy |
+| Maintainer → GitHub release/tag | A source commit is nominated for irreversible publication | Draft review; exact version/tag check; stable-release guard; immutable releases enabled |
+| GitHub environment reviewer → publish job | Human authorizes registry write | `npm-production` required reviewers, prevent self-review, release-tag deployment restrictions |
+| Workflow identity → npm registry | Short-lived publish authority | Trusted publisher bound to exact org/repo/workflow/environment; GitHub-hosted runner; `id-token: write`; no npm token |
+| Third-party GitHub actions → release runner | Action code can read source and influence artifact | Minimal actions, pin immutable action commit SHAs, minimal job permissions, no package-manager cache in release builds |
+| Tagged source/lockfile → `dist/` | Build tools and dependencies generate executable/browser bytes | `npm ci`, fixed Node/npm/runner baseline, committed lockfile, approved support-origin input |
+| Build directory → `.tgz` | npm allowlist selects public bytes | Empty output directory, one pack operation, concrete tarball-path verifier, secret/protected-value scan |
+| Verified `.tgz` → npm name/version | Bytes become public and immutable | Publish explicit relative tarball path with explicit public access and `latest` tag |
+| npm registry → global/npx consumer | Registry selects and serves executable code | Exact-version/integrity/provenance verification; then verify default `latest` resolution |
+| npm package → Claude plugin cache | Claude Code installs package as plugin source | Exact catalog version; packaged plugin manifest; no assumption that plugin-local npm bin is shell-global |
+| Marketplace skill → local executable | Markdown instructions invoke a process from user `PATH` | Explicit Node 24/Git/CLI prerequisites; preserve existing skill gate and strict canonical handoff |
+| Local executable → review runtime | Public install enters application code | Existing prerequisite checks and `127.0.0.1` loopback/token boundaries remain unchanged |
 
-The checks intentionally allow unrelated changes outside the patch because the patch itself defines the exact review scope. They reject a detached/future patch, a patch based on another `HEAD`, and a patch whose postimage is not currently present.
+The configured support service origin is public build configuration, not a secret, but it changes launcher behavior and must be supplied before packing and asserted in the exact artifact. npm credentials, GitHub OIDC tokens, and unrelated repository secrets must never be embedded or printed.
 
-**Trade-offs:** A patch session must carry its overlay `ObjectReader` through server capabilities and keep temporary files alive. That is smaller and safer than teaching Monaco/export about patches or leaving unreachable objects in the repository. The final export remains useful after cleanup because it contains durable line context and blob OIDs; an identical request recreates deterministic objects.
+## Package and Marketplace Contracts
 
-### Pattern 5: Native Pathspecs at the Inventory Boundary
+### Public npm Manifest
 
-**What:** Validate pathspecs as bounded strings with no NUL, preserve order/syntax, and append them after `--` to both inventory commands.
+Required manifest invariants:
 
-```typescript
-const args = [
-  'diff', '--raw', /* existing flags */,
-  baseOid, headOid, '--', ...pathspecs,
-];
-```
+- `name` remains exactly `cumpa` only after ownership is secured;
+- `version` is a real, unused registry version and matches the GitHub tag and plugin version;
+- `private` is removed or false;
+- `type: "module"`, `engines.node: ">=24"`, and `bin.cumpa: "dist/bin/cumpa.mjs"` remain;
+- `files` retains `dist/` and `.kimi-code/skills/cumpa/` and adds `.claude-plugin/`;
+- `repository.url` exactly matches the public publishing repository because npm provenance validates it;
+- `homepage`, `bugs`, `description`, `license`, and useful keywords identify the public product;
+- public access and stable dist-tag are explicit through `publishConfig` and/or immutable workflow arguments;
+- runtime dependencies stay in `dependencies`; build/test tooling stays in `devDependencies`.
 
-**When to use:** Revision mode only.
+Do not add a wrapper executable, postinstall downloader, platform package family, or separate `@ship-with-ai/cumpa` package while the required public identity is bare `cumpa`.
 
-**Trade-offs:** Git magic such as `:(top)`, inclusions, and exclusions remains available exactly as contracted. Both raw metadata and numstat must receive the identical array or `joinDiffStats()` loses its one-to-one invariant.
+### Plugin Manifest
 
-### Pattern 6: Export Is the Completion Commit Point
+A minimal package-local manifest is sufficient:
 
-**What:** Finish review performs the existing export. Only `kind: "exported"` completes, and only after the response flushes.
-
-```typescript
-const response = await capabilities.exportReview(input);
-if (response.kind === 'exported' && attachedCompletion !== undefined) {
-  reply.raw.once('finish', () => attachedCompletion.finish(response));
+```json
+{
+  "name": "cumpa",
+  "version": "X.Y.Z",
+  "description": "Launches Cumpa's local review flow and consumes its canonical feedback.",
+  "skills": "./.kimi-code/skills"
 }
-return reply.code(201).send(response);
 ```
 
-Drift acknowledgement, revision conflict, read-only draft, recovery-required, and publication failures remain in the browser flow and do not wake the CLI.
+An explicit manifest version gives this published npm-source plugin a stable Claude Code update/cache key. Because `plugin.json` takes precedence over the marketplace entry, enforce equality with the package and catalog versions during artifact verification rather than generating another manifest system.
 
-**Trade-offs:** The browser may render success only briefly before shutdown. Waiting for response completion prevents a false browser network error after a successful stdout result.
+### ShipWithAI Catalog
 
-### Pattern 7: Stdout as a Single-Document Channel
+The external entry should use the established marketplace name `shipwithai`, an exact npm version, truthful prerequisites, the public repository/homepage, and the catalog's existing author/category/tag conventions. The npm source is supported by Claude Code and avoids copying the skill into ShipWithAI's repository.
 
-**What:** Reserve stdout from process start through exit. Route the URL, fallback instructions, security diagnostics, Git failures, cancellation, and shutdown errors to stderr. On completion:
-
-1. resolve the repository-relative JSON path from the validated receipt;
-2. read without escaping the repository root or following an unsafe receipt path;
-3. verify receipt SHA-256 and byte count;
-4. call `parseCanonicalReviewExport(bytes)`;
-5. write those exact bytes to stdout, honoring backpressure and handling EPIPE;
-6. emit no banner, wrapper, or trailing diagnostic.
-
-Interactive `console.log` behavior remains unchanged because its path never reserves stdout.
-
-## Data Flow
-
-### Mode 1: Explicit Contiguous Revisions With Optional Pathspecs
+Marketplace registration is a one-time user operation:
 
 ```text
-agent writes one versioned JSON request
-    ↓
-bounded stdin → fatal UTF-8 → JSON → HandoffRequestSchema(mode=revisions)
-    ↓
-Git handoff adapter
-    ├── discoverGitRepository(cwd)
-    ├── rev-parse --verify <base>^{commit}
-    ├── rev-parse --verify <head>^{commit}
-    ├── reject equal endpoints
-    ├── merge-base --is-ancestor <baseOid> <headOid>
-    │      exact contiguous range; no commit-list composition
-    ├── verify both objects
-    ├── diff base = resolved base OID
-    └── createChangedFileInventory(baseOid, headOid, pathspecs)
-          ├── git diff --raw ... -- <pathspecs>
-          ├── git diff --numstat ... -- <pathspecs>
-          └── current parsers/availability classification
-                 ↓
-PinnedComparison
-    base.oid = explicit resolved base
-    head.oid = explicit resolved head
-    mergeBaseOid = base.oid
-    source identities absent (immutable revisions do not drift)
-                 ↓
-scoped review key → existing browser runtime
+/plugin marketplace add ShipWithAI/shipwithai-plugins
 ```
 
-Do not call the interactive `createPinnedComparison()` policy unchanged. It intentionally cumpas the selected branch's merge base to head. The handoff contract names an exact base-to-head ancestry interval. Share a lower-level resolved-snapshot builder, not the picker-specific merge-base decision.
-
-### Mode 2: Exact Patch Already Applied in the Repository
+Once registered, skill installation is one step:
 
 ```text
-agent request(mode=patch, exact patch string)
-    ↓
-strict validation + repository discovery + current HEAD pin
-    ↓
-reverse-check patch against current worktree
-    ↓
-create temp index/object overlay with real object DB as alternate
-    ↓
-forward-check/apply against index seeded from HEAD
-    ↓
-write-tree → deterministic ref-less commit-tree in overlay
-    ↓
-base OID = current HEAD
-head OID = synthetic patch commit
-merge base OID = base OID
-pathspecs = none; patch is the scope
-    ↓
-existing inventory and overlay object reader
-    ↓
-PinnedComparison + patch review key + disposable overlay
-    ↓
-existing browser runtime
+/plugin install cumpa@shipwithai
 ```
 
-Patch text is discarded after snapshot creation except for its digest. File content is subsequently read by blob OID; Monaco never renders patch hunks directly.
+That step installs the plugin into Claude Code's cache. It does **not** establish a shell-global `cumpa`; the listing, README, and any missing-prerequisite diagnostic must say that Node 24, Git, and the public CLI are required. Verify the actual namespaced skill invocation exposed by Claude Code rather than promising an untested alias.
 
-### Shared Review and Persistence
+## Required Work Versus Optional Hardening
 
-```text
-PinnedComparison + optional attached context
-    ↓
-createSessionApp()
-    ├── createDraftStore(repositoryRoot, comparison tuple, storageKey)
-    ├── createCapabilityRegistry(comparison, reviewKey, objectReader)
-    ├── registerSessionSecurity()
-    └── registerSessionRoutes()
-          ↓
-Fastify 127.0.0.1:0 + fragment token
-          ↓
-Vue SessionResponse
-    ├── attached marker absent → current Export UI
-    └── attached marker true   → explicit Finish review UI
-          ↓
-current draft mutations / blob APIs / Monaco / durable anchors
-```
+### Required for v1.5
 
-The scoped key prevents collisions among:
+1. Secure legitimate ownership of the existing `cumpa` npm package name.
+2. Make the source repository public and choose a public license.
+3. Convert the existing manifest from private/placeholder metadata to the real public package while preserving its existing launcher/build layout.
+4. Add the plugin manifest pointing to the existing skill and package it in the same tarball.
+5. Refactor the existing artifact verifier to accept the exact tarball path.
+6. Add one stable GitHub release workflow using a GitHub-hosted runner, Node 24, npm `>=11.5.1`, protected environment approval, OIDC, and no npm token.
+7. Enable immutable GitHub releases and configure the matching npm trusted publisher/environment.
+8. Build once, pack once, inspect and smoke the exact tarball, and publish that file explicitly.
+9. Verify registry bytes, default tag, provenance/signatures, global install, and npx from clean locations.
+10. Publish the exact verified version through the ShipWithAI marketplace and verify skill discovery/delegation.
+11. Update public documentation and prerequisite diagnostics without changing review semantics.
 
-- a full interactive review;
-- revision handoff over the same endpoints with pathspec set A;
-- revision handoff over the same endpoints with pathspec set B;
-- an exact patch rooted at the same base.
+### Optional Enhancements
 
-### Finish-to-Stdout Result
+- **npm staged publishing:** Configure the trusted publisher as stage-only and replace direct publication with `npm stage publish`, followed by interactive maintainer approval with 2FA. npm describes this as maximum hardening, but it adds a third approval system and is not necessary when reviewed GitHub releases plus a protected environment are the accepted v1.5 gate.
+- **Cross-platform release matrix:** Before publication, fan the exact tarball through additional GitHub-hosted OS jobs and return a checksum-attested artifact to the publish job. Add this when Cumpa explicitly promises more platforms; do not create per-platform packages merely for `--help` coverage.
+- **Automated marketplace update PR:** Add only when release frequency makes the small manual exact-version update error-prone. Never let such automation merge before npm verification.
+- **Additional release assets:** The npm tarball need not also be a GitHub release asset. Adding it safely would require preparing the asset while the release is still a draft; do not add a second workflow solely for duplication.
 
-```text
-Human clicks Finish review
-    ↓
-existing POST /api/export with expected revision
-    ├── reload accepted draft
-    ├── reject conflicts/read-only state
-    ├── observe/acknowledge selector drift where applicable
-    ├── verify durable anchors through current/overlay ObjectReader
-    ├── build ReviewExportV1
-    ├── canonicalize JSON once
-    ├── render Markdown from canonical JSON
-    └── atomically publish under handoff review key
-          ↓
-201 exported receipt flushes to browser
-          ↓
-one-shot completion resolves
-          ↓
-waiting CLI
-    ├── read published review.json
-    ├── verify receipt hash/length
-    ├── parseCanonicalReviewExport(bytes)
-    ├── close Fastify
-    ├── dispose patch overlay if present
-    └── write exact canonical bytes to stdout
-          ↓
-agent receives one `cumpa/export` v1 document
-```
+## Dependency-Aware Implementation Order
 
-### Cancellation and Failure
+| Phase | Depends on | Deliverable and exit condition |
+|---|---|---|
+| **0. Distribution identity and policy** | None | npm owner access for bare `cumpa`; public `Ship-With-AI/cumpa`; selected license; approved first Cumpa registry version; stable workflow/environment names. Stop if any required identity cannot be obtained. |
+| **1. One-package public contract** | Phase 0 decisions | Public `package.json`/lockfile metadata, `.claude-plugin/plugin.json`, unchanged canonical skill path, README install/prerequisite copy. A local pack inventory contains one CLI+browser+skill artifact. |
+| **2. Exact-artifact verification** | Phase 1 | Existing verifier accepts a `.tgz`; build-once/pack-once path checks inventory, support origin, plugin metadata, executable, isolated global install, and npx-style execution without repacking. |
+| **3. Approved trusted publication** | Phases 0-2 | Immutable releases, protected `npm-production` environment, exact npm trusted-publisher binding, and `publish-npm.yml` with release/tag guards, fixed GitHub-hosted runner, OIDC, exact-tarball publish, no npm secret. Dry-run/local checks pass before activation. |
+| **4. First public registry release** | Phase 3 | Reviewed immutable release publishes the chosen version; registry tarball/integrity/provenance/signatures verified; clean exact and unversioned global/npx flows resolve Cumpa. Record immutable evidence before promotion. |
+| **5. ShipWithAI promotion** | Phase 4 | Upstream catalog entry points to the verified exact npm version; clean marketplace installation discovers the existing skill and delegates to the separately installed CLI. |
 
-```text
-invalid request / Git validation failure / browser launch failure
-    → stderr diagnostic → nonzero exit → no stdout
+The ordering is strict at two points: trusted-publisher activation needs legitimate npm package ownership, and the marketplace must not reference a version until npm serves and verifies it.
 
-SIGINT/SIGTERM while waiting
-    → abort work → cancel completion → close Fastify → dispose overlay
-    → nonzero/signal exit → no stdout
+## Scaling Considerations
 
-export conflict / acknowledgement / publication failure
-    → remain in browser; CLI keeps waiting; user may Finish again
+Public distribution scales by releases, platforms, and install surfaces rather than server users.
 
-stdout EPIPE
-    → stop writing, close server, dispose overlay, nonzero exit
-```
+| Growth point | Architecture response |
+|---|---|
+| Occasional stable releases, current platform scope | One protected workflow, one arm64 macOS-built tarball, one `latest` channel, manual exact-version ShipWithAI PR. |
+| More frequent releases | Keep one workflow; add concurrency/idempotency guards and automate evidence capture. Do not introduce a release service or package monorepo. |
+| Supported prerelease channel | Add an explicit prerelease branch/tag policy, npm dist-tag such as `next`, separate release guard, and a catalog policy. Do not let a prerelease event overwrite `latest` accidentally. |
+| Explicit Linux/Windows/macOS support commitment | Run the exact tarball through a prepublication OS matrix. The current Darwin arm64 addon is optional at runtime; if a native capability later becomes required on every platform, then evaluate npm optional platform packages or portable implementation as a separate architecture decision. |
+| Multiple agent marketplaces | Keep the package and canonical skill unchanged; add thin marketplace metadata pointing to exact package versions. Do not fork the skill per marketplace. |
 
-No error JSON is written to stdout. Success is one canonical document; failure is exit status plus stderr.
+### First Bottlenecks
 
-## State Management
-
-```text
-immutable request
-    ↓ parse + normalize
-immutable PinnedComparison + reviewKey + optional overlay lifetime
-    ↓
-repository-local ReviewDraftV1 (existing revision state machine)
-    ↕ authenticated Fastify mutations
-Vue review state / unsaved composer buffers (existing)
-    ↓ Finish review
-accepted immutable draft snapshot
-    ↓
-canonical immutable ReviewExportV1 bytes
-    ↓
-one-shot process completion
-```
-
-There is no new long-lived session registry. The completion channel is process-local with one producer and one consumer. Durable state remains repository-local JSON/Markdown; the patch overlay is disposable read-only review material.
+1. **External coordination, not build throughput:** npm ownership transfer and ShipWithAI PR review dominate lead time. Solve with release checklists and clear ownership, not automation services.
+2. **Version synchronization:** package, plugin, GitHub tag, npm dist-tag, and marketplace entry can drift. One verifier comparing declared versions is sufficient; do not add a versioning framework.
+3. **Platform evidence:** a macOS-built package can be installed elsewhere because the native addon is optional, but broader support claims require actual clean installs on those systems.
 
 ## Anti-Patterns
 
-### Anti-Pattern 1: Parallel Patch Review Model
+### Repacking at Publish Time
 
-**What people do:** Parse unified diff in TypeScript and feed hunks directly to Monaco.
+**What people do:** Inspect `npm pack --dry-run`, run another pack in tests, then execute bare `npm publish` from the working tree.
 
-**Why wrong:** Rename/copy metadata, modes, binary handling, exact paths, blob IDs, anchors, and export verification diverge from Cumpa's Git-backed model.
+**Why it is wrong:** Each lifecycle/build/pack invocation is another opportunity for inputs or bytes to differ. The evidence no longer identifies the uploaded file.
 
-**Do instead:** Validate/materialize with native Git, then reuse `PinnedComparison`, inventory, and blob readers.
+**Do this instead:** Pack once, pass that concrete path to every verifier/smoke, and publish the same `.tgz` path.
 
-### Anti-Pattern 2: Mutating Real Git State
+### Parallel CLI and Skill Packages
 
-**What people do:** `git apply`, `git add`, checkout a branch, update a ref, or write synthetic objects into the repository object database.
+**What people do:** Publish one package for the CLI and another package or copied repository subtree for the skill.
 
-**Why wrong:** Launch mutates the coding agent's repository, races concurrent edits, and leaves garbage or lossy cancellation.
+**Why it is wrong:** Versions, docs, and handoff protocol can drift, while users cannot know which pair is compatible.
 
-**Do instead:** Temporary index plus temporary primary object directory, with the real object directory as a read-only alternate; dispose it at session end.
+**Do this instead:** Put one plugin manifest beside the already packaged existing skill and expose the root npm package as the marketplace source.
 
-### Anti-Pattern 3: Filtering After Inventory
+### Treating Marketplace Installation as CLI Installation
 
-**What people do:** Build a full diff and filter `ChangedFile[]` in JavaScript.
+**What people do:** Assume Claude Code's npm-source plugin cache makes `cumpa` globally available on the user's `PATH`.
 
-**Why wrong:** It does not implement native pathspec semantics, can split rename/copy records, wastes work, and makes scope identity ambiguous.
+**Why it is wrong:** Plugin installation and shell-global npm installation are separate mechanisms. The existing skill invokes a system command.
 
-**Do instead:** Pass the identical ordered pathspec array after `--` to both Git diff commands and hash it into the review key.
+**Do this instead:** State and test the CLI prerequisite. Keep `/plugin install cumpa@shipwithai` one-step for the skill after marketplace registration.
 
-### Anti-Pattern 4: Base/Head-Only Persistence for Filtered Sessions
+### Token-Based Publishing “Just for the First Release”
 
-**What people do:** Reuse draft/export paths regardless of pathspec scope.
+**What people do:** Add `NPM_TOKEN` to GitHub secrets as a bootstrap shortcut.
 
-**Why wrong:** Comments from filtered-out files reappear as orphaned anchors; summaries and exports leak between scopes.
+**Why it is wrong:** It violates the no-long-lived-token goal and creates rotation/exfiltration work. In this case the package already exists, so proper ownership transfer should permit trusted-publisher configuration before the first Ship With AI release.
 
-**Do instead:** Keep current paths for interactive flow and use the full review key for attached drafts, exports, receipts, and exported `comparisonKey`.
+**Do this instead:** Resolve ownership and configure OIDC first. If npm reveals an unhandled bootstrap constraint, stop and resolve it as a one-time authenticated maintainer operation without committing an automation token.
 
-### Anti-Pattern 5: Completing Before Response Delivery
+### Publishing from a Private Repository and Claiming Provenance
 
-**What people do:** Resolve the CLI promise as soon as export files exist.
+**What people do:** Observe that trusted OIDC authentication succeeded and assume provenance was emitted.
 
-**Why wrong:** CLI shutdown can race the HTTP response, so the browser reports failure while stdout succeeds.
+**Why it is wrong:** npm explicitly requires a public repository and public package for automatic provenance.
 
-**Do instead:** Complete only after a successful response flush/onResponse boundary.
+**Do this instead:** Make the repository public before the release and fail post-publication verification when the attestation is absent.
 
-### Anti-Pattern 6: Any stdout Decoration or Token Leakage
+### Treating Provenance as a Functional Test
 
-**What people do:** Print browser URL/token, progress, warnings, or a status record before JSON.
+**What people do:** Use the provenance badge as evidence that the package runs or that the correct assets were included.
 
-**Why wrong:** The agent no longer receives one parseable canonical document, and the bearer token leaks into captured output.
+**Why it is wrong:** Provenance links bytes to source/build identity; it does not validate Cumpa behavior or package inventory.
 
-**Do instead:** All attached URL/fallback/diagnostics go to stderr; stdout contains only validated canonical bytes.
+**Do this instead:** Combine provenance with exact-tarball inspection, integrity comparison, and real install/execute checks.
 
-### Anti-Pattern 7: Browser Close as Finish
+### Publishing the Marketplace Entry First
 
-**What people do:** Treat tab close, disconnect, idle timeout, or shutdown as acceptance.
+**What people do:** Merge the catalog entry while npm publication is pending.
 
-**Why wrong:** None proves the human accepted a specific draft revision, anchor verification result, or published export.
+**Why it is wrong:** Users receive a one-step installation command that resolves to a missing or unrelated package/version.
 
-**Do instead:** Only explicit Finish review plus successful publication/response delivery completes.
+**Do this instead:** Registry publication and verification are hard dependencies of marketplace promotion.
 
-### Anti-Pattern 8: Agent-Controlled HTTP API
+### Solving Native Packaging Prematurely
 
-**What people do:** Print an endpoint/token for the agent to poll, mutate review state, or request completion.
+**What people do:** Create several platform packages or install-time compilation merely because one optional Darwin arm64 addon exists.
 
-**Why wrong:** It expands the trust boundary and bypasses the human action.
+**Why it is wrong:** The current loader already degrades safely to `reExportUnsupported`, and platform fan-out creates release coordination unrelated to public CLI discovery.
 
-**Do instead:** stdin is the agent request channel, stdout is the result channel, and loopback HTTP remains browser-internal.
+**Do this instead:** Build the single release artifact on fixed GitHub-hosted arm64 macOS to preserve the existing addon, document current support, and add platform packaging only when a required cross-platform native feature justifies it.
 
 ## Integration Points
 
-### External Boundaries
+### External Services
+The identities are intentionally different and must not be normalized: the source/trusted-publisher repository owner is `Ship-With-AI`, while the marketplace organization is `ShipWithAI`.
 
-| Boundary | Pattern | Required invariants |
-|----------|---------|---------------------|
-| Coding agent → Cumpa | One bounded versioned UTF-8 JSON document on stdin | Strict Zod union; exactly one mode; no prompts or streaming protocol |
-| Cumpa → Git | Existing `GitRunner`, argument arrays, stdin bytes, optional controlled overlay | No shell; `--` before pathspecs; safe config retained; patch work abortable/bounded |
-| Cumpa → browser | Existing loopback Fastify and fragment token | `127.0.0.1`, ephemeral port, Host/Origin/Bearer checks; no LAN/agent API |
-| Cumpa → repository | Existing `.cumpa` atomic persistence | Scoped key; no real index/worktree/ref/object mutation for patch preparation |
-| Cumpa → agent | Exact canonical `ReviewExportV1` bytes on stdout | No token/diagnostic/wrapper; validate receipt/file first; failure leaves stdout empty |
+
+| Service | Integration pattern | Notes |
+|---|---|---|
+| npm registry | Trusted publisher plus explicit `.tgz` `npm publish` | Bare name currently has unrelated owner/history. Configure direct publish, exact workflow/environment, public access and stable tag after transfer. |
+| GitHub Releases | Draft review followed by `release.published` | Event identifies tag ref/commit; immutable releases lock tag/assets and create a GitHub release attestation. |
+| GitHub Environments | `environment: npm-production` on publish job | Required reviewers, prevent self-review, and deployment-tag restriction are the final human gate before registry write. |
+| GitHub OIDC | `id-token: write` on GitHub-hosted runner | npm CLI `>=11.5.1`; setup-node registry URL; no `NODE_AUTH_TOKEN`; automatic npm provenance only after repository is public. |
+| ShipWithAI marketplace | External catalog entry with exact npm source version | Repository is `ShipWithAI/shipwithai-plugins`; marketplace name is `shipwithai`; upstream acceptance remains external. |
+| Claude Code plugin manager | npm source plus `.claude-plugin/plugin.json` | Installs plugin in cache and discovers custom skill path; does not promise global binary installation. |
+| Public support service | Existing build-time canonical origin | Preserve current build/scan contract; it is not a release credential. |
 
 ### Internal Boundaries
 
 | Boundary | Communication | Notes |
-|----------|---------------|-------|
-| `run.ts` ↔ `cli/handoff.ts` | Direct TTY dispatch | Current `runCli()` is not rewritten |
-| CLI ↔ handoff contract | Zod parse | Owns bounds and exclusive-mode validation |
-| CLI ↔ Git handoff | Typed request/result | Returns pinned comparison, review key, reader/lifetime—not render hunks |
-| Git handoff ↔ comparison | Resolved-snapshot builder | One verification/inventory/freezing authority |
-| comparison ↔ inventory | OIDs + optional pathspecs + runner/reader | Interactive passes no pathspec/overlay |
-| launch ↔ app | Optional attached context | Absence yields current app behavior |
-| app/capabilities ↔ stores | Caller storage key | Existing document schemas remain unchanged |
-| capabilities ↔ object reader | Existing reader interface | Patch reader is overlay-configured and lives through export verification |
-| routes ↔ completion | One-shot callback after response flush | No public completion endpoint/polling |
-| Vue ↔ Fastify | Existing authenticated client | Session marker changes label/action intent only |
-| export ↔ CLI stdout | Receipt → canonical file bytes | Existing serializer is the single authority |
+|---|---|---|
+| release workflow → existing build | npm scripts plus one public support-origin environment value | No review-runtime code change. |
+| existing build → exact tarball | `npm pack --json --ignore-scripts` | JSON output supplies the sole artifact filename. |
+| exact tarball → existing verifier | explicit path argument | Verifier must not call `npm pack`. |
+| package manifest → npm global/npx | existing `bin.cumpa` mapping | Generated launcher must remain executable and included. |
+| package manifest → Claude plugin | `files` allowlist includes manifest and existing skill | Custom `skills` path avoids duplication. |
+| skill → CLI | `cumpa` process on `PATH` and existing JSON handoff protocol | Keep CLI prerequisite explicit; canonical feedback contract unchanged. |
+| launcher → CLI/server/browser | existing import and loopback launch path | Distribution does not add remote service exposure or change review behavior. |
 
-## Scaling and Resource Considerations
+## Confidence Assessment
 
-This is a per-repository, per-human, short-lived local process. Input size and concurrent local processes—not user count—are relevant.
+| Area | Confidence | Notes |
+|---|---|---|
+| Existing repository/package integration | HIGH | Direct inspection of current manifest, build scripts, verifier, native capability fallback, tests, README, and skill. |
+| npm global/npx/package/tarball behavior | MEDIUM | Current npm CLI and official npm documentation were checked through Context7 and direct official pages; exact workflow still needs implementation proof. |
+| npm trusted publishing/provenance | MEDIUM | Current official npm documentation checked on 2026-09-04; product blockers and first transfer/configuration must be exercised on the real package. |
+| GitHub release/environment/immutability | MEDIUM | Current official GitHub documentation supports the design; repository settings and plan-specific environment protections must be verified in the real repository. |
+| npm identity/visibility blockers | HIGH | Live npm registry metadata/`npm view` and authenticated `gh repo view` were checked on 2026-09-04. Resolution depends on external owners/settings. |
+| Claude Code npm plugin contract | MEDIUM | Current official Claude Code docs support npm sources, exact versions, plugin manifests, and custom skills paths; installed invocation must be verified in clean Claude Code. |
+| ShipWithAI acceptance | MEDIUM | Current public catalog/README confirm marketplace name and contribution flow, but upstream maintainers control acceptance and currently show no npm-source example. |
 
-| Concern | Normal review | Large repository/patch | Multiple processes |
-|---------|---------------|------------------------|--------------------|
-| stdin memory | One bounded request | Reject above explicit byte cap before JSON parse; no streaming parser yet | Independent process memory |
-| Git output | Existing caps/machine protocols | Raise only measured per-call limits; keep global defaults | Immutable real objects; isolated temp overlays |
-| file content | Existing lazy blob reads | Existing oversized/non-text availability | Capabilities remain per process |
-| patch overlay | None for revision/interactive | Temp objects/index live for session only | Unique temp directories; `finally` cleanup |
-| drafts | Atomic replacement/revision checks | Same schema/rules | Scoped keys prevent cross-scope collision |
-| exports | Atomic pair publication | Same canonical bytes/Markdown | Full review key prevents scope collision |
-| completion | One promise | Constant memory | One primitive per CLI; no registry |
-
-### Scaling Priorities
-
-1. **First limit: request/patch bytes.** Bound stdin and retain Git timeout/output controls. Do not add chunked JSON before a real accepted patch exceeds the limit.
-2. **Second limit: inventory size.** Keep lazy blob reads and current non-reviewable classifications; native pathspecs reduce work early.
-3. **Not a target: service scale.** Do not split the CLI/server/UI or add a daemon.
-
-## Dependency-Ordered Implementation Phases
-
-The minimal safe build order is five slices. Each preserves the interactive path.
-
-### Phase 1: Request Contract and Scoped Identity
-
-**Build:** strict versioned handoff union; bounded fields; exact fingerprint/review key; optional attached session marker; scoped receipt path validation.
-
-**Why first:** Every later layer needs one trusted request type and collision-free namespace. Deferring identity causes draft/export migration later.
-
-**Compatibility boundary:** No runtime dispatch changes; all current interactive keys and payloads remain valid.
-
-### Phase 2: Both Git Modes to `PinnedComparison`
-
-**Build:** extract resolved-snapshot builder; add identical native pathspecs to raw/numstat; implement revision ancestry semantics; add controlled runner overlay; implement reverse/forward patch checks, temp index/object cleanup, deterministic synthetic commit, overlay inventory/reader.
-
-**Why second:** Both modes must converge on a fully reviewable immutable comparison before server/UI work.
-
-**Compatibility boundary:** Interactive selection still resolves sources and merge base exactly as today, then calls the shared builder with no pathspecs/overlay.
-
-### Phase 3: Scoped Persistence and Export Reuse
-
-**Build:** optional draft storage key; optional export stable name; capability propagation of review key/object reader; existing exported `comparisonKey` set to review key; canonical JSON/Markdown unchanged.
-
-**Why third:** Attached UI must not open before its comments/result can persist without colliding with other scopes.
-
-**Compatibility boundary:** Missing options retain current draft filenames, `<base>..<head>` export directories, receipts, and export bytes.
-
-### Phase 4: Attached Lifecycle and Stdout Delivery
-
-**Build:** one-shot completion; optional launch/app/routes context; success completion after response flush; signal/failure cancellation; receipt/path/hash/canonical validation; EPIPE/backpressure-aware stdout; overlay disposal in every terminal path; all attached diagnostics on stderr.
-
-**Why fourth:** Completion depends on stable publication and receipt paths from Phase 3.
-
-**Compatibility boundary:** Without attached context, export routes and server shutdown remain unchanged.
-
-### Phase 5: Ingress Dispatch and Conditional Finish UI
-
-**Build:** TTY/non-TTY dispatch; bounded stdin orchestration; Vue attached marker; explicit Finish review label/help using the existing export call; successful finish closes the attached session.
-
-**Why last:** This user-visible cutover should connect only complete contracts: request → pinned comparison → scoped draft → published export → stdout.
-
-**Compatibility boundary:** TTY launch still enters discovery, ordered picker, confirmation, browser launch, interactive Export, and signal shutdown exactly as before.
-
-### Ordering Summary
-
-```text
-request schema + review key
-          ↓
-mode normalization to PinnedComparison + optional overlay
-          ↓
-scope-safe draft/export publication
-          ↓
-one-shot completion + canonical stdout + cleanup
-          ↓
-TTY dispatch + Finish review UI
-```
-
-Do not start with the button or stdin detection. Without the first three layers, a superficially working handoff can corrupt draft scope, emit noncanonical results, or render patch data through a second model.
-
-## Compatibility Checklist
-
-- TTY launch still discovers candidates, prompts Base then Head, confirms, and opens the browser as today.
-- interactive selections still cumpa merge base to head; only revision handoff uses exact base-to-head ancestry.
-- interactive terminal URL/fallback output remains unchanged.
-- Fastify still binds only `127.0.0.1:0` with current security.
-- browser requests still use shared Zod API contracts and bearer token.
-- changed files, modes, rename/copy metadata, availability, blob reads, Monaco mapping, comments, summaries, and anchors remain on current implementations.
-- current drafts remain readable at current comparison-key paths.
-- interactive exports remain `.cumpa/exports/<base>..<head>/review.{json,md}`.
-- interactive Export does not stop the server.
-- attached Finish does not complete on conflicts, acknowledgements, failed publication, tab close, or disconnect.
-- patch object overlays remain alive through anchor verification/export and are disposed on every exit.
-- successful attached stdout is exactly one canonical `cumpa/export` v1 document; every diagnostic and token-bearing URL is stderr-only.
-- no agent HTTP API, headless path, arbitrary commit composition, or detached patch launch is added.
+Overall confidence is MEDIUM because the architecture uses documented native mechanisms and existing repository seams, but successful delivery depends on an external npm ownership transfer, public-repository conversion, real OIDC/provenance publication, and upstream marketplace acceptance that research cannot perform.
 
 ## Sources
 
-### Existing Cumpa implementation (primary integration evidence)
+### Official npm
 
-- `src/cli/run.ts` — Commander action, interactive loop, launch, loopback bind, browser output, shutdown.
-- `src/git/comparison.ts` — revision resolution, merge-base policy, object verification, inventory creation, `PinnedComparison` boundary.
-- `src/git/inventory.ts` — paired native raw/numstat commands, `--` boundary, rename/copy policy, exact paths, availability.
-- `src/git/runner.ts` — sole native-Git subprocess boundary, stdin, safe environment, aborts, timeouts, caps.
-- `src/domain/comparison-key.ts` — domain-separated length-framed base/head persistence identity.
-- `src/server/app.ts`, `src/server/routes.ts`, `src/server/capabilities.ts` — app construction, authenticated routes, object capabilities, draft/export acceptance and receipts.
-- `src/server/draft-loader.ts`, `src/server/draft-store.ts`, `src/server/export-store.ts` — repository-local keying and atomic persistence/publication.
-- `src/contracts/comparison.ts`, `src/contracts/api.ts`, `src/contracts/draft.ts` — shared pinned comparison, session, draft, export, receipt schemas.
-- `src/export/review-export.ts`, `src/export/render-review-markdown.ts` — `ReviewExportV1`, canonical JSON validation/serialization, hashing, Markdown projection.
-- `src/web/App.vue`, `src/web/api/client.ts`, `src/web/components/ExportSection.vue` — browser bootstrap, authenticated export, revision/drift states, action UI.
+- [Trusted publishing for npm packages](https://docs.npmjs.com/trusted-publishers/) — OIDC prerequisites, GitHub-hosted runners, workflow/environment binding, no-token operation, automatic provenance, allowed actions, stage-only option, and token restrictions. [MEDIUM]
+- [Generating provenance statements](https://docs.npmjs.com/generating-provenance-statements/) — public repository/public package requirements and `npm audit signatures` attestation verification. [MEDIUM]
+- [`npm publish`](https://docs.npmjs.com/cli/v11/commands/npm-publish) — explicit gzipped-tarball package spec, immutable name/version, integrity publication, public access and tags. [MEDIUM]
+- [`package.json` `bin`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#bin) and [`npx`/`npm exec`](https://docs.npmjs.com/cli/v11/commands/npx) — global executable links and temporary package execution. [MEDIUM]
+- [Verifying registry signatures](https://docs.npmjs.com/verifying-registry-signatures/) — installed-package signature verification. [MEDIUM]
+- [Package name guidelines](https://docs.npmjs.com/package-name-guidelines) — unique, first-party public package identity expectations. [MEDIUM]
+- [Live `cumpa` registry metadata](https://registry.npmjs.org/cumpa/latest) — unrelated `cumpa@2.0.1`, maintainer/repository, tarball and integrity metadata. Verified with `npm view cumpa` on 2026-09-04. [HIGH]
 
-### Native Git documentation
+### Official GitHub
 
-- [git-apply](https://git-scm.com/docs/git-apply) — `--check`, `--cached`, `--reverse`, `--binary`, stdin patches.
-- [git-write-tree](https://git-scm.com/docs/git-write-tree) — writes a tree from an index without updating worktree/ref.
-- [git-commit-tree](https://git-scm.com/docs/git-commit-tree) — creates a commit from a tree/parent and emits its OID without a ref update.
-- [git environment variables](https://git-scm.com/docs/git#Documentation/git.txt-codeGITOBJECTDIRECTORYcode) — alternate index/object database selection used by the disposable patch overlay.
-- [Git glossary: pathspec](https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec) — native pathspec syntax and magic remain Git's authority.
+- [Events that trigger workflows: `release`](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#release) — `published` activity and tag SHA/ref behavior. [MEDIUM]
+- [Deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments) — required reviewers, prevent-self-review, and deployment branch/tag rules. [MEDIUM]
+- [Immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases) — locked tags/assets, release attestations, and draft-then-publish flow. [MEDIUM]
+- [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) — fixed macOS arm64 labels; trusted publishing independently requires GitHub-hosted execution. [MEDIUM]
+- Authenticated `gh repo view Ship-With-AI/cumpa` on 2026-09-04 — repository visibility was `PRIVATE`; this operational fact has no public page while private. [HIGH]
+
+### Claude Code and ShipWithAI
+
+- [Plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) — npm package sources, exact versions, marketplace registration and installation. [MEDIUM]
+- [Plugins reference](https://code.claude.com/docs/en/plugins-reference) — `.claude-plugin/plugin.json`, custom skill paths, cache/update version precedence, and plugin installation behavior. [MEDIUM]
+- [ShipWithAI marketplace catalog](https://github.com/ShipWithAI/shipwithai-plugins/blob/main/.claude-plugin/marketplace.json) — marketplace identity and current entry conventions. [MEDIUM]
+- [ShipWithAI marketplace README](https://github.com/ShipWithAI/shipwithai-plugins) — registration/install commands and contribution expectation to keep versions honest and test on real projects. [MEDIUM]
+
+### Repository Integration Evidence
+
+- `package.json`
+- `scripts/build-bin.mjs`
+- `scripts/build-native-addon.mjs`
+- `scripts/verify-production-artifacts.mjs`
+- `src/server/native-exchange-capability.ts`
+- `tests/e2e/package-assets.spec.ts`
+- `.kimi-code/skills/cumpa/SKILL.md`
+- `README.md`
+- `.planning/PROJECT.md`
 
 ---
-*Architecture research for: Cumpa v1.3 Agent Review Handoff*
-*Researched: 2026-08-04*
+*Architecture research for: Cumpa v1.5 Public Distribution*
+*Researched: 2026-09-04*

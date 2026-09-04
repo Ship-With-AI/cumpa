@@ -1,165 +1,169 @@
 # Project Research Summary
 
 **Project:** Cumpa
-**Domain:** Local-first agent-to-human code-review handoff
-**Researched:** 2026-08-04
-**Confidence:** MEDIUM-HIGH
+**Domain:** Public distribution of an existing Node.js CLI and coding-agent skill
+**Researched:** 2026-09-04
+**Confidence:** MEDIUM
 
 ## Executive Summary
 
-Cumpa v1.3 should add an attached agent handoff ingress and completion path, not a second review product. A coding agent submits exactly one bounded, versioned JSON request on stdin; Cumpa validates it before opening the existing loopback-authenticated Vue/Monaco workspace; the human explicitly finishes or cancels; and the invoking process emits one canonical, request-bound JSON result on stdout. Interactive TTY behavior, Git semantics, draft persistence, anchors, export, Markdown, and browser security remain authoritative.
+Cumpa v1.5 is a distribution control-plane milestone, not a review-product rewrite. The existing Node 24 ESM CLI, generated `dist/bin/cumpa.mjs`, browser assets, optional Darwin arm64 native capability, and thin agent skill should remain the product. The recommended release unit is one inspected npm tarball: it serves global installation, `npx`, and the runtime that the marketplace-installed skill delegates to.
 
-The recommended implementation adds no dependency or runtime upgrade. Reuse Node 24 streams and process lifecycle, Zod 4 strict discriminated schemas, native Git through the existing safe runner, Fastify 5 response hooks, and the existing canonical export serializer. Range requests resolve and pin ordered base/head commits and pass native pathspecs through Git. Patch requests are accepted only when an exact already-applied patch can be proven against the repository and materialized in an isolated temporary Git index/object overlay. The primary risks are false patch grounding, scope/draft identity collisions, stdout contamination, and races between autosave, Finish, cancellation, drift, and shutdown; each requires explicit gates and an adversarial integration phase.
+The primary launch blocker is external: the unscoped npm name `cumpa` is occupied by an unrelated package at `2.0.1`. Exact `npm install -g cumpa` and `npx cumpa` cannot work until an explicit ownership transfer and identity-migration decision is made; a scoped or renamed package is not an implementation fallback because it changes the promised commands. Other prerequisites are public repository visibility, an approved license and root license file, publishable metadata, and a release version greater than the occupied lineage. Trusted publishing should use a dedicated GitHub-hosted arm64 workflow with exact OIDC binding, no long-lived npm token, and automatic provenance. Marketplace publication follows successful registry verification and must preserve one authoritative skill protocol.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The stack research recommends **no v1.3 dependency additions or upgrades**. Keep Node.js >=24, Git >=2.43, Commander/Inquirer, Fastify 5, Vue 3/Vite/Monaco, Zod 4, and the existing TypeScript/Vitest/Playwright toolchain. Use native `process.stdin` async iteration with a finite byte ceiling, fatal UTF-8 decoding, one `JSON.parse`, and strict Zod validation. Keep Git as the semantic authority: resolve revisions with `rev-parse --verify --end-of-options`, enforce ancestry, pass pathspecs after `--`, and use a temporary index/object overlay for exact patch materialization. Reuse the current canonical export bytes directly; stdout is data only and diagnostics stay on stderr.
+The four research reports agree that native npm and GitHub capabilities are sufficient; no release framework or runtime dependency is needed. Preserve Node.js `24.x` and `engines.node >=24`, npm CLI 11 (pin `11.19.1`; trusted publishing requires at least `11.5.1`), Commander/Inquirer/Fastify/Vue/Vite/Monaco/Zod and the existing build. Use npm trusted publishing (GitHub OIDC), automatic provenance, `npm pack --ignore-scripts`, and a dedicated `publish-npm.yml` on GitHub-hosted `macos-15`. Keep the package `type: module`, `bin.cumpa`, narrow `files` allowlist, and publishable `npm-shrinkwrap.json`; do not add a release framework, custom installer, postinstall compiler, or `--provenance` flag.
 
-**Core technologies:**
-- **Node.js 24 + standard streams:** bounded one-document ingestion, lifecycle, temp storage, and exact stdout delivery without a new protocol library.
-- **Native Git via the existing `GitRunner`:** authoritative revision, pathspec, patch, object, mode, rename, and inventory semantics with shell-free argument arrays.
-- **Zod 4:** strict, versioned, discriminated request validation and derived TypeScript types at the trust boundary.
-- **Fastify 5 + Vue 3/Monaco:** reuse the authenticated loopback review session; add only attached Finish/Cancel presentation and completion signaling.
-- **Existing canonical export service:** generate, validate, publish, and emit one immutable byte sequence; do not add a serializer.
+Confirmed platform requirements:
+
+- `package.json` must remove `private`, replace `0.0.0`, set public access/registry, exact `repository.url` for `https://github.com/Ship-With-AI/cumpa.git`, homepage/bugs metadata, accurate description/keywords, and a maintainer-approved SPDX license matching a root `LICENSE` file.
+- The release event must check out the immutable tagged SHA, require stable releases unless a prerelease policy is explicitly added, verify `v${package.json.version}`, build once with the protected support origin, inspect and smoke-test one `.tgz`, and publish that same file with `npm publish --ignore-scripts --access public`.
+- Trusted-publisher authority is exact and case-sensitive: npm organization/user `Ship-With-AI`, repository `cumpa`, workflow filename `publish-npm.yml`, and the chosen GitHub environment (recommended `npm`/`npm-production`). The workflow needs `contents: read` and `id-token: write`, must run on GitHub-hosted infrastructure, and must not define `NPM_TOKEN` or `NODE_AUTH_TOKEN`.
+- Automatic provenance requires both the npm package and source repository to be public and repository metadata to match exactly. Verify registry integrity, `dist.attestations`, and `npm audit signatures` after publication.
+- The existing native addon is built only on Darwin arm64. A `macos-15` arm64 release preserves that capability; the `.node` binary is not portable to Linux, Windows, or another CPU. Do not silently claim a universal native matrix or add consumer-side compilation. Other platforms must receive the explicit unsupported capability behavior already in the application.
 
 ### Expected Features
 
-The milestone boundaries remain the four researched phases: **Request Protocol Range Grounding**, **Patch Grounding Review Model**, **Attached Lifecycle Canonical Completion**, and **Adversarial Integration Gate**.
-
 **Must (table stakes):**
-- TTY-compatible routing that leaves the current interactive picker and lifecycle unchanged; non-TTY accepts one request and never prompts.
-- Bounded UTF-8 ingestion, strict schema/version/unknown-field rejection, exclusive range-or-patch modes, and actionable stderr failures before browser launch.
-- Ordered base/head resolution to pinned full commit IDs, native Git pathspec semantics, truthful zero-match/zero-change reviews, and request-bound scope identity.
-- Exact already-applied patch grounding (preimages, postimages, paths, bytes, modes, renames/binary metadata) without mutating the worktree, real index, refs, or object store; immutable snapshot pinning.
-- Existing authenticated browser review with attached wait, disconnect/reload resilience, explicit race-safe Finish and separate Cancel, pending mutation settlement, final drift checks, and canonical stdout-only success.
-- Correct statuses: successful empty feedback is distinct from cancellation; signals and delivery failures produce no result and retain drafts.
+
+- Resolve ownership of bare `cumpa` and communicate the breaking identity/version consequence — otherwise the required commands install the unrelated package.
+- Make source public with an approved license; complete npm metadata, `--version`, executable/bin mapping, deterministic tarball, Node/Git prerequisite disclosure, and lifecycle documentation for global install, `npx`, upgrade, uninstall, and troubleshooting.
+- Publish approved immutable GitHub releases through OIDC trusted publishing with automatic provenance and no long-lived token; verify exact registry bytes, signatures, and provenance in clean consumer environments.
+- Publish the existing skill through a valid versioned ShipWithAI plugin/catalog entry, disclose that the CLI is separately installed, and verify the real marketplace-installed skill delegates to the released CLI.
 
 **Should have (competitive):**
-- Synchronous one-process agent → human → agent rendezvous without polling, hosted services, clipboard, or agent-controlled HTTP.
-- Scope-bound canonical feedback carrying resolved range/pathspec provenance or patch digest and pinned identities while reusing existing anchors and review content.
-- Stronger-than-applicability patch identity and a mature human UX for both source modes.
+
+- One thin skill authority across repository, package, and marketplace rather than divergent protocol copies.
+- Cross-channel released-artifact acceptance (exact npm package plus marketplace plugin), provenance-backed release transparency, honest local-first capability/prerequisite language, and explicit version/update/refresh semantics.
 
 **Defer (v2+):**
-- Multiple requests per process, non-contiguous commit composition, detached/prospective patches, headless review, remote or multi-reviewer collaboration, and agent-controlled HTTP APIs.
-- Optional titles/instructions or explicit mode flags only after real usage validates the need; they are not prerequisites for v1.3.
+
+- Additional package-manager or standalone-binary channels, additional agent marketplaces, custom bootstrap installers, automatic CLI update daemons, hosted/collaborative review features, and broader platform packaging. Stage-only npm promotion is optional v1.x hardening, not a prerequisite for direct trusted publishing.
 
 ### Architecture Approach
 
-Add one narrow ingress/completion path around the existing `PinnedComparison` pipeline. The CLI handoff adapter owns stdin, stdout, cancellation, and exit status; a shared strict contract owns request validation; one Git adapter normalizes range or grounded patch inputs into immutable comparison data; and a one-shot attached-session primitive owns terminal transitions. `createSessionApp()` continues to serve the same Fastify loopback session, stores, capabilities, browser, anchors, drafts, and export. Attached metadata (scope key, optional object reader, completion port) is presentation/session context, not a new comparison identity model. Existing interactive behavior remains the default path.
+Keep existing application boundaries unchanged and add a release boundary around them: protected branch/draft release → immutable tag → one GitHub Actions job → one `.tgz` → npm registry → install consumers. The verifier becomes tarball-oriented and must not create a second implicit build. The marketplace owns discovery and plugin packaging; it must point at an already published exact npm artifact and must not carry a second Cumpa runtime or invent review behavior. The checked-in `.kimi-code/skills/cumpa/SKILL.md` remains the protocol authority, but the accepted marketplace source model must be selected and parity-checked.
 
 **Major components:**
-1. **CLI routing and handoff contract:** choose TTY versus piped ownership before Inquirer; decode, validate, report, and deliver exact bytes.
-2. **Git handoff adapter:** pin revisions/pathspecs or create and retain a temporary index/object overlay; feed the existing inventory/object reader and comparison model.
-3. **Attached session and server/UI:** preserve loopback token/origin security, expose explicit Finish/Cancel, settle drafts, and resolve completion only after the response is flushed.
-4. **Scoped persistence/export identity:** domain-separate attached request keys from interactive base/head keys; include mode-specific provenance without changing existing draft schemas unnecessarily.
-5. **Existing review/export pipeline:** remain the authority for frozen file inventory, Monaco rendering, anchors, canonical JSON, Markdown, and atomic publication.
+
+1. **Package identity and metadata** — npm name/version ownership, public repository/license, manifest, bin, shrinkwrap, and docs.
+2. **Reproducible artifact pipeline** — configured build, native-runner policy, allowlisted tarball, scanner, isolated install/smoke checks.
+3. **Trusted release workflow** — release/tag/version gates, protected environment, exact OIDC publisher, provenance, immutable-version recovery.
+4. **ShipWithAI plugin/catalog** — versioned marketplace manifest and canonical skill with explicit CLI compatibility and namespaced invocation.
+5. **Public installation gate** — exact registry global/npx execution, browser review flow, signature/provenance checks, clean marketplace installation and end-to-end delegation.
 
 ### Critical Pitfalls
 
-1. **Changing interactive mode or corrupting stream ownership** — decide TTY/piped mode before Inquirer; validate all attached input before prompts/server work; reserve stdout for data and stderr for every diagnostic.
-2. **Mistaking patch applicability for exact repository grounding** — do not use the real index/worktree, `--3way`, rejects, unsafe paths, or whitespace reinterpretation; prove exact metadata/content equality and retain the isolated overlay through Finish.
-3. **Reinterpreting Git scope or allowing scope collisions** — resolve and pin OIDs once, pass each pathspec unchanged after `--`, freeze inventory at launch, and use domain-separated keys containing mode and exact scope/digest.
-4. **Conflating browser disconnect, Export, Finish, and Cancel** — only an authenticated explicit Finish is terminal; reload/close remains recoverable; Cancel is explicit and never a successful empty result.
-5. **Racing finalization and delivery** — serialize active → finalizing → finished/cancelled/failed transitions, settle pending revisions and drift gates, publish one immutable canonical buffer, flush the response and stdout before shutdown.
+1. **Occupied npm identity** — stop before automation; obtain explicit owner transfer and decide how to communicate repurposing unrelated `2.0.1` history, or obtain approval to change the product commands.
+2. **Private/placeholder metadata** — fail closed on `private`, `0.0.0`, missing license/repository, or mismatched `Ship-With-AI`/`ShipWithAI` spelling; validate manifest again on the release tag.
+3. **Publishing a different build than inspected** — build once, pack once with scripts disabled, verify and publish the same tarball; never let directory `npm publish` rerun `prepack`.
+4. **Native-addon portability and hidden support configuration** — release on arm64 macOS with the approved support origin, scan for secrets/origins, and test declared platform behavior explicitly.
+5. **OIDC, immutable-version, and marketplace drift** — bind the exact workflow/environment, handle reruns as new versions rather than unpublish/retry, and keep catalog/plugin/skill versions and source references synchronized.
 
 ## Implications for Roadmap
 
-Build in the confirmed research order; do not merge the four boundaries into one risky implementation phase.
+The following order preserves blockers and separates confirmed platform requirements from decisions still requiring maintainer approval.
 
-### Phase 1: Request Protocol Range Grounding
+### Phase 1: Package Identity, Public Source, and Contract Approval
+**Rationale:** Bare-name ownership, legal terms, repository visibility, and version lineage gate every later action.
+**Delivers:** Explicit transfer/identity decision; public-readiness review; approved license and `LICENSE`; package name/version policy (recommended first Cumpa version is an unused version greater than `2.0.1`, potentially `3.0.0`, never milestone-derived `1.5.0`); accurate npm/README/plugin contract.
+**Addresses:** Bare package, source visibility/license, metadata, `--version`, prerequisites, lifecycle documentation.
+**Avoids:** Occupied namespace, misleading republish, private provenance failure, `Ship-With-AI` vs `ShipWithAI` authority confusion.
+**Approval still required:** Current npm owner transfer; whether repurposing the occupied identity is acceptable; exact first registry version; public license and author/organization terms.
 
-**Rationale:** Everything else depends on safe input ownership and a pinned, scoped comparison. Establishing this first prevents prompts, revision ambiguity, pathspec reinterpretation, and stdout contamination from infecting later work.
+### Phase 2: Reproducible Public Artifact
+**Rationale:** A registry release is only trustworthy if the exact bytes users install are complete and inspected before authentication/publication.
+**Delivers:** Public manifest and shrinkwrap, configured support-origin build, arm64 native-addon policy, tarball inventory scanner, isolated global/npx install checks, and no source/secrets/consumer compiler requirement.
+**Uses:** Existing Node/npm/build scripts, `npm pack --ignore-scripts`, existing launcher and artifact verifier.
+**Implements:** Single-package/single-tarball architecture.
+**Avoids:** Implicit `prepack` rebuild, missing browser assets, omitted native capability, leaked support credentials, accidental files.
 
-**Delivers:** TTY/non-TTY dispatch; bounded strict request schema; actionable pre-launch errors; pinned ordered range revisions; native pathspec propagation through all inventory calls; attached scoped identity; clean stream and exit-status policy.
+### Phase 3: Trusted Release Automation and Registry Verification
+**Rationale:** OIDC settings and workflow gates should be established only after identity and artifact contracts are settled.
+**Delivers:** Dedicated `publish-npm.yml`, exact tagged-release/version checks, protected GitHub environment, GitHub-hosted `macos-15`, OIDC direct publish, automatic provenance, immutable-version/rerun recovery, and post-publication integrity/signature verification.
+**Uses:** npm trusted publishing with `id-token: write`; no npm token; default `latest` only for stable releases.
+**Avoids:** Wrong workflow authority, self-hosted unsupported publisher, prerelease replacing `latest`, publishing uninspected bytes, and unrepeatable version overwrite attempts.
 
-**Addresses:** TTY routing, bounded ingestion, strict exclusive modes, range mode, pathspec table stakes, and request-bound provenance.
+### Phase 4: ShipWithAI Plugin Publication
+**Rationale:** The skill depends on a separately installed public CLI; marketplace promotion must follow a verified registry artifact and cannot repair a broken CLI.
+**Delivers:** Accepted versioned plugin/catalog entry, canonical skill parity, compatibility declaration (Node 24+, Git 2.43+, `cumpa` on PATH), namespaced install/use/update guidance, and source/version synchronization.
+**Implements:** Marketplace-as-discovery architecture; no second runtime package or install-time mutation.
+**Avoids:** Treating `.kimi-code/skills` inside npm as marketplace publication, stale Claude cache, mutable source drift, silent CLI auto-install.
+**Unresolved contradiction requiring planning/maintainer validation:** STACK/one report describes adding `Ship-With-AI/skills/skills/cumpa/SKILL.md` through the existing Vercel Skills CLI catalog, while FEATURES/ARCHITECTURE/PITFALLS describe `ShipWithAI/shipwithai-plugins` with a `shipwithai-cumpa` plugin and Claude namespaced invocation. Do not choose silently; validate the accepted upstream marketplace source and install contract first, then implement one authoritative model.
 
-**Avoids:** Pitfalls 1–3 and 7. Keep the existing interactive path behaviorally unchanged.
+### Phase 5: Public Installation and Cross-Channel Acceptance
+**Rationale:** Local tests cannot prove registry resolution, npm packaging, Claude caching, or cross-channel protocol compatibility.
+**Delivers:** Clean-prefix `npm install -g cumpa@X.Y.Z`, exact-version and stable `npx` execution, real Git repository/browser smoke, `npm audit signatures`, provenance inspection, clean marketplace install, and one end-to-end review/delegation flow.
+**Addresses:** Cross-channel acceptance and all active v1.5 requirements.
+**Avoids:** Checkout-only confidence, stale marketplace cache, missing external CLI, and package/skill version drift.
 
-**Research flag:** **Plan-phase research recommended** for repository-specific CLI seams, pathspec environment controls, and exact backward-compatibility checks; standard Node/Zod patterns otherwise need no new library research.
+### Phase Ordering Rationale
 
-### Phase 2: Patch Grounding Review Model
+- External identity, license, and visibility decisions precede metadata, provenance, and any irreversible registry operation.
+- Artifact production is isolated from trusted publication so one tarball is inspected, installed, and then published without an implicit rebuild.
+- Marketplace promotion is registry-first and exact-version pinned; it is deliberately a separate upstream change and may lag npm review.
+- The final gate exercises the bytes and plugin consumers actually receive, not repository-local files.
 
-**Rationale:** Patch mode is the highest correctness and implementation risk and must produce the same immutable data model before lifecycle work can trust it.
+### Research Flags
 
-**Delivers:** Git-generated patch dialect acceptance; read-only exact preimage/postimage and metadata checks; temporary index/object overlay with cleanup ownership; frozen inventory/blob reader; patch digest and provenance; scoped draft/export identity; binary, rename, mode, symlink, and unsupported-file classification preservation.
+Phases likely needing deeper research during planning:
+- **Phase 1:** npm owner-transfer procedure, legal license approval, occupied-name migration communication, and first-version policy are unresolved decisions.
+- **Phase 4:** ShipWithAI marketplace/plugin source model and acceptance governance are inconsistent across reports and lack a formal public submission SLA.
+- **Phase 5:** Real Claude marketplace cache/namespace behavior and cross-platform native capability require live external-artifact validation.
 
-**Uses:** Native Git, controlled `GitRunner` environments, temporary filesystem APIs, existing inventory/object readers, anchors, and export contracts.
-
-**Implements:** Git handoff adapter and immutable `PinnedComparison` convergence.
-
-**Avoids:** Pitfalls 4–6 and false confidence from forward `git apply --check` alone.
-
-**Research flag:** **Mandatory focused implementation spike/research-phase.** Exercise Git 2.43 behavior with Cumpa fixtures for binary, rename/copy, mode/symlink, quoting, zero-context, attributes, concurrent worktree changes, and object-overlay lifetime before committing the final mechanism.
-
-### Phase 3: Attached Lifecycle Canonical Completion
-
-**Rationale:** Once both inputs yield a frozen review, make the process rendezvous deterministic and preserve the established browser/export authority.
-
-**Delivers:** Attached session state machine; explicit Finish and Cancel UI; reload/disconnect resilience; pending draft mutation settlement; final scope/drift/anchor checks; route-level post-response completion; exact canonical stdout delivery; signal, EPIPE, server-close, and cleanup handling.
-
-**Uses:** Fastify `onResponse`/`close`, existing authenticated routes and draft CAS, canonical export bytes, Vue API client, and loopback security.
-
-**Implements:** One-shot completion primitive and attached presentation context without an agent HTTP API or second serializer.
-
-**Avoids:** Pitfalls 7–10 and accidental completion on ordinary Export or tab close.
-
-**Research flag:** **Plan-phase research recommended** for current draft revision/anchor semantics and response/write ordering. Fastify and Node lifecycle APIs are well documented; validate against the actual app rather than upgrading dependencies.
-
-### Phase 4: Adversarial Integration Gate
-
-**Rationale:** The handoff contract crosses process streams, Git, filesystem snapshots, browser state, persistence, and shutdown; only end-to-end scenarios can prove the boundaries compose.
-
-**Delivers:** Scenarios for malformed/oversized/ambiguous requests, invalid revisions/pathspecs, exact patch variants, binary/rename/mode changes, scope and repository drift, reload/browser-open failure, double Finish, Finish/Cancel races, signals, stdout backpressure/EPIPE, cancellation, and zero-feedback success.
-
-**Addresses:** All v1.3 table stakes and confirmed milestone acceptance criteria.
-
-**Avoids:** Regression of interactive mode, false patch reviews, leaked capabilities, duplicate results, partial canonical output, and stale drafts.
-
-**Research flag:** **No broad new research required** once the patch spike and lifecycle design are settled; this phase is executable validation with real Git fixtures and browser/process integration.
-
-**Research flags summary:** Phase 2 is the highest-uncertainty research gate; Phases 1 and 3 need targeted repository validation; Phase 4 should test, not expand, the design. Recommendations above are not unresolved requirements: open validation work is explicitly limited to proving exact Git overlay behavior, supported patch dialect/edge cases, and final race/drift semantics.
+Phases standard patterns (skip research-phase):
+- **Phase 2:** npm manifest/files/bin/pack and Node build patterns are official and already represented by existing scripts.
+- **Phase 3:** GitHub release events, OIDC permissions, npm trusted publishing, and provenance have authoritative npm/GitHub contracts once exact values are configured.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | MEDIUM | Official Node, Git, Fastify, Zod documentation and installed versions support the no-dependency recommendation; isolated Git overlay behavior still needs proof at the project's Git 2.43 floor. |
-| Features | HIGH for required behavior; MEDIUM for patch mechanism | Product boundaries and table stakes are clear; exact patch grounding and result wrapper details require implementation evidence. |
-| Architecture | HIGH for reuse boundaries; MEDIUM-HIGH for patch overlay | Existing session/export/Git boundaries are well established; overlay lifetime and all patch fixtures remain to be exercised. |
-| Pitfalls | HIGH | Failure modes are cross-checked against project constraints, existing lifecycle, and native Git semantics; adversarial integration must still demonstrate prevention. |
+| Stack | MEDIUM | Official npm/GitHub/Agent Skills contracts verified; namespace transfer, license, and first version remain owner decisions. |
+| Features | HIGH | npm and GitHub requirements are live/officially verified; marketplace acceptance details are MEDIUM. |
+| Architecture | MEDIUM | Existing package boundaries and single-tarball flow are clear; marketplace source model remains contradictory. |
+| Pitfalls | HIGH | npm, Node, GitHub, and Claude packaging failure modes are well evidenced; ShipWithAI governance is MEDIUM. |
 
-**Overall confidence:** MEDIUM-HIGH
+**Overall confidence:** MEDIUM
 
-### Gaps Address
+### Gaps to Address
 
-- **Exact patch overlay at Git >=2.43:** validate temporary index/object/alternate-object behavior, cleanup, and blob reads with real fixtures before Phase 2 implementation is considered complete.
-- **Accepted patch dialect:** document and test full-index/binary, rename/copy, mode, symlink, quoting, and unsupported combined/partial forms; do not silently broaden parsing.
-- **Finish ordering and drift policy:** establish the accepted draft revision, pending-save settlement, repository drift response, and cancellation commit point against current draft/anchor APIs during Phase 3 planning.
-- **Result contract evolution:** decide the minimal versioned request-bound wrapper/provenance union while preserving canonical export compatibility and exact-byte guarantees.
-- **Pathspec/environment edge behavior:** verify supported native pathspec subset, `.cumpa/` exclusion, inherited Git environment neutralization, and deterministic zero-match behavior.
+- **Bare npm transfer:** Confirm written transfer/access with current owner and document consumer/dist-tag migration before implementation.
+- **Legal terms:** Maintainer must choose an SPDX license and add the matching root file; research cannot select legal terms.
+- **First registry version:** Approve an unused SemVer greater than `2.0.1`; do not use `1.5.0` by analogy with the milestone.
+- **Marketplace authority:** Resolve whether publication targets `Ship-With-AI/skills` via Vercel Skills CLI or `ShipWithAI/shipwithai-plugins` via Claude marketplace, including source, manifest, namespace, and version authority.
+- **Native platform promise:** Decide declared supported OS/CPU behavior; arm64 macOS is the only build with the current addon, while other platforms must explicitly expose unsupported capability.
+- **Trusted-publishing environment:** Confirm the exact protected environment name and whether direct publish or optional stage-only promotion is desired; npm authority remains the `Ship-With-AI` GitHub owner/repository/workflow tuple, not the similarly named marketplace organization.
 
 ## Sources
 
 ### Primary (HIGH confidence)
 
-- Git `rev-parse`, `merge-base`, `diff`, `apply`, `read-tree`, `write-tree`, and environment-variable documentation — revision pinning, ancestry, pathspecs, patch validation, temporary index/object overlay semantics.
-- Fastify 5 hooks and server `close` documentation — response-flush completion and graceful shutdown.
-- Zod 4 objects and discriminated-union documentation — strict request boundary and schema-derived types.
-- Node.js 24 releases and stream/process documentation — supported runtime APIs, bounded stdin, fatal decoding, stdout backpressure, and exit behavior.
-- Cumpa repository evidence (`package.json`, Git runner/inventory, comparison, server/session, draft, export, and UI modules) — existing authority and compatibility boundaries.
+- [npm live `cumpa` registry document](https://registry.npmjs.org/cumpa/latest) — occupied unscoped name, unrelated maintainer/package, latest `2.0.1`, no CLI bin.
+- [npm package.json documentation](https://docs.npmjs.com/cli/v11/configuring-npm/package-json) — identity, metadata, license, files, bin, repository, engines, publication behavior.
+- [npm exec / npx](https://docs.npmjs.com/cli/v11/commands/npm-exec) — executable inference, cache, prompts, `--yes`, explicit versions.
+- [npm trusted publishers](https://docs.npmjs.com/trusted-publishers) and [provenance](https://docs.npmjs.com/generating-provenance-statements) — OIDC identity, supported runners, public-source requirement, automatic attestations.
+- [npm package transfer policy](https://docs.npmjs.com/transferring-a-package-from-a-user-account-to-another-user-account) and [name disputes](https://docs.npmjs.com/policies/disputes) — owner-assisted transfer and first-come namespace behavior.
+- [npm signature verification](https://docs.npmjs.com/verifying-registry-signatures) — `npm audit signatures`.
+- [GitHub Actions release/OIDC documentation](https://docs.github.com/en/actions) — release event, immutable tag checkout, permissions, environments.
+- [Agent Skills specification](https://agentskills.io/specification) — `SKILL.md`, naming, compatibility metadata.
+- [Vercel Skills CLI](https://github.com/vercel-labs/skills) and [Ship-With-AI skills repository](https://github.com/Ship-With-AI/skills) — existing catalog layout and install convention.
 
 ### Secondary (MEDIUM confidence)
 
-- `diffmux` and `PRless` local review precedents — ecosystem expectations for local review annotations and agent delivery; useful comparison, not normative for Cumpa's contract.
-- npm registry metadata for Fastify, Vue, Zod, Commander, and TypeScript — current-version checks; no upgrade is justified by this milestone.
+- `.planning/research/STACK.md` — exact npm/ShipWithAI stack recommendations, workflow invariants, version and runner guidance.
+- `.planning/research/FEATURES.md` — table stakes, differentiators, anti-features, dependency ordering, and marketplace contract alternatives.
+- `.planning/research/ARCHITECTURE.md` — single-tarball architecture, artifact data flow, registry-first promotion, and external boundaries.
+- `.planning/research/PITFALLS.md` — release, native-addon, OIDC, immutable-version, and marketplace drift failure modes.
+- [Claude Code plugin documentation](https://docs.anthropic.com/en/docs/claude-code/plugins) — marketplace installation, cache, namespacing, and version behavior.
 
 ### Tertiary (LOW confidence)
 
-- None relied upon for a recommendation. The remaining uncertainty is implementation validation, not an unsupported external claim.
+- ShipWithAI submission/acceptance governance — no formal external policy or service-level contract was found; validate live with maintainers before Phase 4.
 
 ---
-*Research completed: 2026-08-04*
-*Ready for roadmap: yes*
+*Research completed: 2026-09-04*
+*Ready roadmap: yes*

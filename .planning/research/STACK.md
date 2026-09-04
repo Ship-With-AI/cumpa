@@ -1,262 +1,344 @@
 # Stack Research
 
-**Domain:** Agent-to-human review handoff for Cumpa's local-first Node.js CLI
-**Milestone:** v1.3 Agent Review Handoff
-**Researched:** 2026-08-04
-**Confidence:** MEDIUM — recommendations are grounded in the installed repository, current primary Node/Git/Fastify/Zod documentation, and registry metadata. The isolated Git object-overlay composition still needs implementation proof at Cumpa's Git 2.43.0 floor.
+**Domain:** Public distribution for an existing Node.js CLI and coding-agent skill
+**Researched:** 2026-09-04
+**Confidence:** MEDIUM — platform contracts were verified against current official npm, GitHub, Agent Skills, Claude Code, and live registry/marketplace sources. Confidence is not HIGH because the bare npm namespace transfer, public license, and first Cumpa package version remain owner decisions.
 
 ## Executive Recommendation
 
-**Add no dependency and perform no v1.3-driven upgrade.** The confirmed handoff is an integration of capabilities Cumpa already ships or requires:
+Do not change Cumpa's shipped application stack. Public distribution needs native npm and GitHub capabilities, not another release framework or runtime dependency:
 
-- Node.js 24 can consume one EOF-delimited, size-bounded stdin document and write exact bytes to stdout while diagnostics remain on stderr.
-- Installed `zod@4.4.3` can enforce a strict, versioned request with exactly one discriminated mode.
-- Installed Git can safely resolve explicit commits, enforce base-to-head ancestry, honor native pathspecs, parse and validate unified patches, and create a patched tree through an isolated temporary index/object overlay.
-- Existing Fastify 5 can expose a token-protected **Finish review** browser route and signal completion only in a route-level `onResponse` hook, after the response has been sent.
-- Existing review-export code already owns the output schema and canonical JSON bytes; stdout should reuse those bytes directly.
+1. Acquire the existing unscoped `cumpa` npm package from its current owner. The required commands `npm install --global cumpa` and `npx cumpa` are impossible until that happens.
+2. Make `Ship-With-AI/cumpa` public after a repository-history and secret review. npm provenance for a public package requires a public source repository.
+3. Convert the existing package metadata from private development metadata to a public CLI contract, preserving Node 24, ESM, `bin.cumpa`, and the compiled `dist/` payload.
+4. Add a dedicated GitHub release workflow using npm trusted publishing. Build, scan, pack, and publish in one GitHub-hosted `macos-15` job with OIDC and no npm token.
+5. Publish the existing skill in `Ship-With-AI/skills/skills/cumpa/SKILL.md`. Use the marketplace's existing plugin and Vercel Skills CLI path rather than creating a Cumpa-specific installer or marketplace.
 
-Do not introduce a JSON framing library, Git library, unified-diff parser, WebSocket/IPC layer, temporary worktree, or second export serializer. Existing interactive launch, repository-local drafts, browser UI, Markdown export, and loopback security remain in place.
+### Release-blocking prerequisites
 
-## Stack Decision Summary
-
-| Concern | Existing/runtime-native choice | v1.3 recommendation | Dependency change |
-|---------|--------------------------------|---------------------|-------------------|
-| Agent request framing | Node `process.stdin`, `Buffer`, fatal `TextDecoder`, `JSON.parse` | Read exactly one bounded JSON value through EOF when stdin is piped; reject empty, oversized, malformed, non-UTF-8, or schema-invalid input before bind/browser-open | None |
-| Request contract | `zod@4.4.3` | Add shared strict schemas for `schemaVersion: 1` and a discriminated `revisions`/`patch` mode union | None |
-| Explicit revisions | Installed Git through existing `GitRunner` | Resolve each untrusted revision to one full commit OID and require base to be an ancestor of head | None |
-| Path filtering | Git pathspec arguments | Forward requested native pathspec strings verbatim after `--` to every inventory diff command | None |
-| Unified patch parsing | `git apply` | Let Git parse and validate the supplied patch against a disposable index seeded from current committed `HEAD` | None |
-| Patch materialization | Git alternate index/object environment plus Node temp-directory APIs | Produce a temporary patched tree without changing the worktree, real index, refs, or repository object store | None |
-| Browser completion | Existing `fastify@5.10.0` routes/hooks | Add an authenticated human-UI Finish route; resolve attached completion from route-level `onResponse`, then close Fastify | None |
-| Review result | Existing `ReviewExportV1Schema`, `buildReviewExportV1`, `canonicalizeReviewExport` | Reuse the same validated document and exact canonical bytes on stdout | None |
-| Diagnostics | `process.stderr` and existing injected output seams | Send URL, browser fallback, warnings, and failures only to stderr in attached mode | None |
+| Blocker | Verified current state | Required resolution |
+|---------|------------------------|---------------------|
+| Bare npm name | `npm view cumpa` returns an unrelated function-composition package at `2.0.1`, maintained by `gianlucaguarini`; published versions are `1.0.0`, `1.0.1`, `2.0.0`, and `2.0.1`. | Negotiate an npm ownership transfer before implementation assumes the name. npm documents transfer through `npm owner add` followed by removal of the old owner. A scoped fallback does **not** meet the named global-install/npx contract. |
+| Public provenance source | Authenticated GitHub metadata reports `Ship-With-AI/cumpa` as `PRIVATE`. | Make the repository public before the npm release. Audit history and repository configuration first; automatic npm provenance requires both package and source repository to be public. |
+| Public license | The Cumpa repository has no root license file and `package.json` has no `license`. | Maintainers must choose an SPDX license and add the matching root license file and package metadata. Do not infer legal permission from the MIT license used by the separate ShipWithAI skills repository. |
+| Package version | Local `package.json` is `0.0.0`; the occupied registry lineage already reached `2.0.1`. | Choose an unused SemVer after transfer. If the namespace is intentionally repurposed, `3.0.0` is the technically clean first Cumpa version because it is the next major after the unrelated public API. Do not equate the product milestone label “v1.5” with npm `1.5.0`. |
 
 ## Recommended Stack
 
 ### Core Technologies
 
-| Technology | Version | Status | v1.3 purpose | Why recommended |
-|------------|---------|--------|--------------|-----------------|
-| Node.js | Project `>=24`; installed `24.15.0`; current Node 24 LTS release `24.19.0` | Existing; keep | stdin/stdout/stderr, bounded buffers, child-process lifecycle, temp paths, cleanup, browser-process lifetime | Node 24 already provides async-readable iteration, byte-oriented writes, `AbortSignal`, `node:fs/promises`, `node:os`, and `node:child_process`. There is no missing runtime primitive. |
-| Git CLI | Project floor `>=2.43.0`; installed `2.50.1 (Apple Git-155)`; current official docs `2.55.0` | Existing prerequisite; keep | Revision authority, ancestry, pathspecs, unified-patch parser/validator, temporary index, tree/blob materialization, inventory | Git must remain the semantic authority. The documented commands used here exist at the project floor; current 2.55 docs identify no required replacement library. |
-| TypeScript | Installed and current npm `latest` `7.0.2` | Existing; keep | Typed agent request, attached-session completion, and Git-overlay contracts | The handoff adds contracts and orchestration inside the current language boundary, not a new execution environment. |
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| Node.js | `24.x` LTS; package engine `>=24` | Existing CLI/server/runtime and release build | This is already Cumpa's supported runtime. It also exceeds trusted publishing's Node `>=22.14.0` floor and Skills CLI's Node `>=22.20.0` floor. Changing it would expand scope without helping distribution. |
+| npm registry + npm CLI | npm `11.19.1` in release CI; trusted-publishing minimum `11.5.1` | Public package, global install, `npx`, packing, versioning, and signature audit | npm already provides the `bin` shim, public package registry, immutable versions, dist-tags, pack inspection, publishable lockfile, and OIDC publishing path. Pinning the current npm 11 release in CI avoids relying on whichever npm minor happens to ship with Node 24. |
+| npm trusted publishing | Current GitHub Actions OIDC contract | Authenticate `npm publish` without a stored npm token | npm binds a package to an exact GitHub owner/repository/workflow/environment and exchanges GitHub's short-lived identity token at publish time. It directly satisfies the no-long-lived-token requirement. |
+| npm automatic provenance | Built into trusted publishing | Attach verifiable build provenance to the public tarball | For a public package built from a public repository on GitHub-hosted Actions, trusted publishing generates provenance automatically. No Sigstore dependency, signing script, or `--provenance` flag is needed. |
+| GitHub Actions | `actions/checkout@v6`, `actions/setup-node@v6`, GitHub-hosted `macos-15` | Release-triggered build, artifact checks, pack, and publish | These are the current versions in npm's trusted-publishing example. `macos-15` is a current GitHub-hosted arm64 runner and preserves Cumpa's existing Darwin-arm64 native addon; the existing Ubuntu production workflow would omit it. |
+| GitHub Releases | `release.published` event | Maintainer-controlled, tagged publication boundary | The event checks out the tagged release commit. A stable-only guard prevents a GitHub prerelease from accidentally replacing npm's `latest` tag. |
+| ShipWithAI skills marketplace | Existing `Ship-With-AI/skills` repository and plugin | Public skill discovery and installation | The repository already exposes `skills/<name>/SKILL.md`, an Agent Skills-compatible catalog, and one bundled Claude plugin. Cumpa is one more skill, not a new marketplace. |
+| Vercel Skills CLI | `skills@1.5.23` verified current | One-command cross-agent skill install | The established ShipWithAI README already uses this installer. `--skill`, `--global`, `--agent`, and `--yes` cover interactive documentation and deterministic smoke verification without changing Cumpa. |
+| Agent Skills specification | Current specification | Portable `SKILL.md` metadata contract | Cumpa's existing `name: cumpa` and matching directory already satisfy the required convention. The standard `compatibility` field is the correct place to expose Node, Git, and CLI prerequisites. |
 
-### Supporting Libraries and Native APIs
+### Supporting Libraries
 
-| Library or API | Version | Status | Purpose | When to use |
-|----------------|---------|--------|---------|-------------|
-| Zod `z.strictObject`, `z.discriminatedUnion` | Installed/current `4.4.3` | Existing; reuse | Reject unknown fields and enforce exactly one request mode | Parse the decoded stdin value once at the trust boundary. Derive TypeScript types from the schema. Do not separately maintain interfaces. |
-| Commander | Installed/current `15.0.0` | Existing; keep | Existing CLI command lifecycle | Retain the current interactive command. Dispatch piped stdin to the attached flow without adding a second CLI framework. |
-| Fastify route-level `onResponse` and `close()` | Installed `5.10.0`; current `5.11.2` | Existing; reuse, no v1.3 upgrade | Signal Finish only after the browser receives its response; drain and close the loopback server | Add the Finish action to the existing authenticated session API. Do not expose an agent-oriented HTTP endpoint. |
-| Vue | Installed `3.5.39`; current `3.5.40` | Existing; reuse, no v1.3 upgrade | Render the explicit human **Finish review** control | A normal component event and existing API client are sufficient. No state-management or UI package is needed. |
-| `process.stdin` / Readable async iterator | Node 24 built-in | Existing; reuse | Consume all chunks until EOF | Use only for attached input. Count bytes as chunks arrive and stop at an explicit request ceiling before concatenation/decoding. |
-| `TextDecoder('utf-8', { fatal: true })` + `JSON.parse` | Node 24 built-ins | Existing; reuse | Strict UTF-8 and one-document JSON decode | Decode once after EOF and after the byte bound passes. `JSON.parse` naturally rejects concatenated JSON documents and trailing non-whitespace. |
-| `process.stdout.write` | Node 24 built-in | Existing; reuse | Emit exact canonical review bytes | Write the `Uint8Array` returned by `canonicalizeReviewExport`; await the write callback. Do not call `console.log`, append a newline, or call `process.exit()`. |
-| `process.stderr.write` / `console.error` | Node 24 built-ins | Existing; reuse | Human-readable diagnostics | Route URL, browser-open fallback, security denials, validation errors, shutdown failures, and progress here only. |
-| Existing `GitRunner` | Internal (`src/git/runner.ts`) | Existing; extend narrowly | Safe argument-array Git invocation, bounded output, timeout, cancellation, stdin bytes | Reuse for every Git operation. Add only the minimum per-session environment overlay needed by patch mode; preserve safe config, `shell: false`, limits, and abort behavior. |
-| `node:fs/promises.mkdtemp`, `mkdir`, `rm`; `node:os.tmpdir`; `node:path` | Node 24 built-ins | Existing; reuse | Lifetime-bound temporary index/object storage | Create patch-session storage outside the repository before `git apply`; remove it after Fastify closes or any failure/signal occurs. |
-| Existing export functions | Internal (`src/export/review-export.ts`) | Existing; reuse | Validate and canonicalize the finished review | Share document generation between file publication and attached stdout instead of reading a published file back or adding another serializer. |
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| None | — | Public distribution | Do not add a runtime or development library for package publication, provenance, release versioning, or skill installation. npm, GitHub Actions, and the existing marketplace already provide the required behavior. |
 
 ### Development Tools
 
-No new development tool is warranted for v1.3. The existing TypeScript/Vite build remains sufficient. This research does not recommend a protocol generator, code generator, patch fixture package, process supervisor, or alternate test framework.
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| `npm pack --dry-run --json --ignore-scripts` | Inspect the exact public file inventory | Keep using this inside `scripts/verify-production-artifacts.mjs`. The `files` allowlist plus pack inspection is the authoritative payload boundary. |
+| `npm pack --json --ignore-scripts` | Produce the release tarball without rerunning `prepack` | Cumpa's `prepack` runs a build. Packing with scripts disabled after the explicitly configured release build prevents an unconfigured second build from replacing `dist/bin/cumpa.mjs`. |
+| `npm publish <tarball> --ignore-scripts --access public` | Publish the already packed artifact through OIDC | Publish the tarball generated in the same job, not the working directory. Do not set `NODE_AUTH_TOKEN` or `NPM_TOKEN`. Trusted publishing supplies short-lived credentials. |
+| `npm shrinkwrap` | Create the publishable dependency lock for this globally installed CLI | npm explicitly recommends `npm-shrinkwrap.json` for command-line tools intended as global installs. Run it after setting the release package name/version; use it in place of, not beside, `package-lock.json`. |
+| `npm version` | Update SemVer metadata and create the release tag | For this single-package repository, native versioning is sufficient. Its default commit/tag behavior is useful once the occupied-name decision is settled. |
+| `npm audit signatures` | Verify registry signatures and provenance attestations | Run against a clean installed-project lockfile after publication with a current npm CLI. Also inspect `npm view cumpa@<version> dist.attestations`. |
+| `npx skills@1.5.23 add` | Install and smoke-test the marketplace skill | Pin the release-time smoke command for repeatability; user-facing documentation may use unpinned `npx skills add` to follow the marketplace's established convention. |
 
-## Integration Patterns
+## Required Package Changes
 
-### 1. JSON stdin framing: one document, delimited by EOF
+### `package.json`
 
-Use the simplest framing that matches the contract:
+| Current integration point | Required change | Why |
+|---------------------------|-----------------|-----|
+| `name: "cumpa"` | Keep only after transfer is complete. | The exact bare name is what makes both required commands work. Publishing a scoped package silently changes the contract. |
+| `version: "0.0.0"` | Set the agreed unused release SemVer and require tag `v<package.version>`. | npm permanently reserves every published `name@version`, even after unpublish. Version/tag equality prevents publishing the wrong commit. |
+| `private: true` | Remove. | npm refuses publication of private packages. |
+| `type: "module"` | Keep unchanged. | Matches the shipped Node 24 ESM application. |
+| `engines.node: ">=24"` | Keep unchanged and document it prominently. | Matches the tested runtime. npm's engine field is advisory unless users enable strict engine enforcement, so the CLI should retain its clear unsupported-runtime failure behavior. |
+| `bin.cumpa: "dist/bin/cumpa.mjs"` | Keep unchanged. | A single bin whose name matches the package lets npm create a global PATH shim and lets `npx cumpa` infer the executable. `scripts/build-bin.mjs` already writes the required `#!/usr/bin/env node` shebang and executable mode. |
+| `files` | Reduce to `dist/` for the public package. | README, license, `package.json`, and bin targets are automatically included. The skill should be installed from the established marketplace; shipping `.kimi-code/skills/cumpa/` inside the npm tarball creates a redundant, non-discoverable copy. |
+| Missing repository metadata | Add the exact public source object: `{ "type": "git", "url": "git+https://github.com/Ship-With-AI/cumpa.git" }`. | npm provenance matches this value case-sensitively to the public source repository. |
+| Missing project links | Add `homepage: "https://github.com/Ship-With-AI/cumpa#readme"` and `bugs.url: "https://github.com/Ship-With-AI/cumpa/issues"`. | Provides trustworthy registry navigation and issue reporting. |
+| Missing license | Add the maintainer-approved SPDX identifier and matching root license file. | Public source visibility is not a license. npm packages should state the actual reuse terms. |
+| Description/keywords | Replace development-era copy with public CLI language and a small set of useful keywords such as `git`, `code-review`, `local-first`, and `cli`. | Registry users must be able to distinguish Cumpa from the package's former function-composition identity. This is discovery metadata, not search-engine machinery. |
+| Missing `publishConfig` | Add `{ "access": "public", "registry": "https://registry.npmjs.org/" }`. | Locks the package to the intended public registry/access even if a maintainer's local npm configuration differs. |
+| `prepack: "npm run build"` | Keep for ordinary local packing, but do not invoke it in the release publish path. | The release must build with `CUMPA_RELEASE_SUPPORT_SERVICE_URL`; an implicit second prepack build without that value can erase the configured launcher. |
+| `package-lock.json` | Convert to `npm-shrinkwrap.json` after the final package name/version is set. | A normal package lock is not published; shrinkwrap is npm's native publishable lock for global CLIs and makes installed transitive dependencies match the release. |
 
-1. Preserve the current interactive path when launched from an interactive terminal.
-2. For piped stdin, consume `process.stdin` with `for await ... of` until EOF.
-3. Track cumulative bytes before retaining/concatenating further chunks; reject over the product's explicit request ceiling.
-4. Decode once with fatal UTF-8 handling, then call `JSON.parse` once.
-5. Validate the parsed `unknown` with an installed Zod strict discriminated union.
-6. Reject before server bind or browser launch if framing or validation fails.
+Do not add `main` or `exports`: Cumpa is a CLI, not a supported importable library. Do not add `preferGlobal`, a postinstall script, or an agent-directory installer.
 
-This is **one JSON text, not NDJSON and not a length-prefixed stream**. The CLI never needs to parse another request during the same process, so a streaming JSON parser would add state and ambiguity without reducing a bounded one-document requirement.
+### Existing build and artifact integration
 
-Recommended schema shape:
+| File | Required treatment |
+|------|--------------------|
+| `scripts/build-bin.mjs` | Reuse unchanged. The workflow must supply the canonical public support origin through `CUMPA_RELEASE_SUPPORT_SERVICE_URL` only during the explicit release build. |
+| `scripts/build-native-addon.mjs` | Reuse unchanged and build on GitHub-hosted arm64 macOS. It intentionally emits `dist/native/directory_exchange.node` only for `darwin/arm64`; publishing from Ubuntu would omit an existing capability from every installed package. |
+| `scripts/verify-production-artifacts.mjs` | Reuse as the pre-pack inventory/content gate with the existing `--expected-support-origin` and `--require-configured-launcher dist/bin/cumpa.mjs` arguments. Do not mutate files between this scan and the final `npm pack --ignore-scripts`. |
+| `.github/workflows/deploy-supabase-production.yml` | Leave responsible for main-branch Supabase deployment. Do not couple registry publication to this Ubuntu workflow or give it npm identity. |
+| `README.md` | Replace local-development installation as the primary path with prerequisites, `npm install --global cumpa`, `npx cumpa`, upgrade/uninstall guidance, public repository/license links, and the one-command skill install. Retain source-build instructions as contributor documentation. |
+| `.kimi-code/skills/cumpa/SKILL.md` | Keep as Cumpa's reviewed source copy, update installation/prerequisite language, and publish the same behavior in the ShipWithAI marketplace. Exclude it from the npm payload. |
 
-- fixed request identity/version fields (`kind`, `schemaVersion: 1`);
-- literal discriminator `mode: 'revisions' | 'patch'`;
-- a strict revisions branch containing explicit `base`, `head`, and optional `pathspecs`;
-- a strict patch branch containing the exact patch text and no revision/pathspec fields;
-- strict nested objects and non-empty strings; reject NUL because neither argv nor repository paths can contain it.
+## Trusted Publishing Contract
 
-`z.strictObject` matters: ordinary `z.object` strips unknown fields, which could silently accept both-mode or misspelled fields. `z.discriminatedUnion` makes mutual exclusivity structural rather than a hand-written post-parse check.
+Create one dedicated `.github/workflows/publish-npm.yml`.
 
-### 2. Contiguous explicit revisions and native pathspecs
+### npm package settings
 
-Keep native Git as authority and reuse the current repository discovery/object-format checks:
+After the package transfer, configure one GitHub Actions trusted publisher with exact, case-sensitive values:
 
-1. Resolve each untrusted revision with the semantic equivalent of `git rev-parse --verify --end-of-options <revision>^{commit}`. The commit peel rejects non-commit objects; `--end-of-options` prevents a revision beginning with `-` from becoming an option.
-2. Pin both results to full object IDs once. Never use the moving revision text again for inventory or export identity.
-3. Require `git merge-base --is-ancestor <baseOid> <headOid>` to exit 0. Exit 1 means the explicit pair is not one contiguous ancestry range and must be rejected; other nonzero statuses are Git failures.
-4. Since the accepted base is an ancestor, use the pinned base itself as the comparison base rather than recomputing unrelated branch-selection merge-base behavior.
-5. Append optional native pathspec strings after a literal `--` to **both** existing `git diff --raw -z` and `git diff --numstat -z` inventory calls. Forward them unchanged so Git pathspec magic, exclusions, and case behavior remain native semantics.
+| npm field | Value |
+|-----------|-------|
+| Organization or user | `Ship-With-AI` |
+| Repository | `cumpa` |
+| Workflow filename | `publish-npm.yml` — filename only, not `.github/workflows/publish-npm.yml` |
+| GitHub environment | `npm` if the recommended protected environment is used |
+| Allowed operation | Direct `npm publish` |
 
-Do not pre-expand globs, normalize separators, reinterpret pathspec magic, or filter the completed inventory only in JavaScript. Filtering at both Git protocol calls keeps raw metadata and numstat joins consistent and avoids reading excluded blobs.
+Create a protected `npm` GitHub environment containing only the public release configuration needed by the build, including `SUPABASE_PROJECT_REF` as a variable. Bind the trusted publisher to that exact environment. This avoids exposing the broader `production` deployment environment to a registry job.
 
-### 3. Unified patch parsing, validation, and materialization
+Once the first OIDC publication succeeds, set npm package publishing access to **Require two-factor authentication and disallow tokens**, as npm recommends. Do not create or retain an automation token for this workflow. Human package transfer and settings changes may use an interactive npm session/OTP; that is not a CI credential.
 
-Do not parse unified diff syntax in TypeScript. Use a disposable Git index and isolated object directory so Git validates against current committed `HEAD` while user state remains untouched:
+### Workflow shape
 
-1. Pin current `HEAD` to a full commit OID and locate the repository's actual object directory through Git.
-2. Create one session temp directory with an index path and object directory.
-3. Scope patch-session Git calls with:
-   - `GIT_INDEX_FILE=<temp>/index`;
-   - `GIT_OBJECT_DIRECTORY=<temp>/objects`;
-   - `GIT_ALTERNATE_OBJECT_DIRECTORIES=<repository objects>`.
-4. Seed the alternate index with `git read-tree <headOid>`.
-5. Feed the exact UTF-8 patch bytes on stdin to `git apply --cached --check -`. This asks Git to parse and test applicability against the seeded index without touching the worktree.
-6. On success, feed the same bytes to `git apply --cached -` with no permissive transformation flags, then call `git write-tree` to obtain the patched tree OID.
-7. Run the existing raw/numstat inventory and object-reader paths between pinned `HEAD` and the patched tree while retaining the object overlay for the attached session.
-8. Close the server, abort active Git, and remove the temp directory on Finish, signal, validation failure, browser-launch failure, or stdout failure.
+```yaml
+name: Publish npm package
 
-`GIT_OBJECT_DIRECTORY` receives new patch blobs and the tree; `GIT_ALTERNATE_OBJECT_DIRECTORIES` permits reads from the repository object database but documents that new objects are not written to alternates. This avoids changes to the real index, worktree, refs, or repository object store. A synthetic commit is unnecessary because `git diff` accepts tree-ish objects.
+on:
+  release:
+    types: [published]
 
-Use fixed `git apply` arguments. Do **not** enable `--3way`, `--reject`, `--ignore-whitespace`, `--recount`, `--unsafe-paths`, or `--whitespace=fix`: those can merge, partially apply, reinterpret, or rewrite the requested patch instead of reviewing the exact input. Git's default unsafe-path rejection should remain enabled.
+permissions:
+  contents: read
+  id-token: write
 
-The existing `parseRawDiff` is still useful *after* Git materializes the patched tree. It parses Git's NUL-delimited `--raw` machine output; it is not a unified-patch parser and should not be expanded into one.
+jobs:
+  publish:
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: macos-15
+    environment: npm
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      # Pin/verify npm 11.19.1, npm ci, validate tag/version,
+      # derive the canonical support origin, build once, scan,
+      # pack with --ignore-scripts, then publish that .tgz with
+      # --ignore-scripts and --access public.
+```
 
-### 4. Attached CLI completion
+Required workflow invariants:
 
-Reuse the current loopback server, session token, origin/host checks, and browser UI:
+1. The GitHub release is not a prerelease. `release: published` fires for both stable releases and published prereleases.
+2. `github.event.release.tag_name` equals `v${package.json.version}` before any irreversible action.
+3. The checkout is the release tag commit, not mutable `main`.
+4. npm is at least `11.5.1`; pin `11.19.1` for this Node 24 release workflow.
+5. The job runs on a GitHub-hosted runner. npm trusted publishing does not support self-hosted runners.
+6. The runner is arm64 macOS (`macos-15` currently), so the existing native addon is included.
+7. `CUMPA_RELEASE_SUPPORT_SERVICE_URL` is derived from the protected public project-ref variable, is present only for the explicit build, and passes the existing artifact scanner.
+8. The working tree is not rebuilt or mutated between artifact scan and `npm pack --ignore-scripts`.
+9. `npm publish` receives the generated `.tgz`, uses `--ignore-scripts --access public`, and has no `NODE_AUTH_TOKEN`/`NPM_TOKEN`.
+10. Publication remains on the default `latest` dist-tag only for stable releases.
 
-1. Agent mode creates one one-shot completion promise before server launch.
-2. Add a token-protected browser route for **Finish review** under the existing session API.
-3. The handler validates the current accepted draft and builds the same `ReviewExportV1` document used by canonical export. Validation/conflict responses keep the browser session open.
-4. A route-level Fastify `onResponse` resolves the one-shot promise only for a successful Finish response. Fastify documents `onResponse` as running after the response is sent.
-5. The attached CLI awaits that promise, then awaits `app.close()` so in-flight requests drain.
-6. Interactive launch keeps its current Ctrl+C-owned lifetime and does not wait for or emit an agent result.
+Automatic provenance is part of this workflow, not another step. Do **not** add `--provenance`; npm's current trusted-publishing path generates it automatically for a public package from a public repository. `package.json.repository` must exactly match the public GitHub repository.
 
-No WebSocket, SSE, polling timer, child IPC, lockfile watcher, or agent-controlled HTTP API is needed. The only new route represents an explicit human UI action inside the already authenticated browser session.
+## Release and Version Mechanics
 
-### 5. stdout/stderr discipline
+Use the shortest native release process:
 
-Treat stdout as a protocol channel in attached mode:
+1. Confirm the transferred package has the ShipWithAI maintainer/trusted publisher and the chosen license is committed.
+2. Set the next unused SemVer with `npm version <version>` so package metadata, publishable lockfile, commit, and `v<version>` tag remain aligned.
+3. Push the tag and publish a stable GitHub Release from it.
+4. Let `publish-npm.yml` build and publish once.
+5. Verify the registry artifact, provenance, global command, npx command, and marketplace skill from clean temporary locations.
 
-- **stdout:** exactly one canonical `ReviewExportV1` byte sequence from `canonicalizeReviewExport`, and nothing else. Do not append `\n`; the current canonical parser cumpas exact byte length and representation.
-- **stderr:** URL, fallback instructions, warnings, validation details, Git failures, security diagnostics, and shutdown errors.
-- Await the `process.stdout.write(bytes, callback)` completion before allowing natural process exit.
-- Set `process.exitCode` for failures; do not call `process.exit()`, which Node documents can truncate pending stdout.
-- Keep existing interactive output behavior unchanged by injecting a stderr diagnostic writer only into the attached launch path.
+The first Cumpa version cannot be selected from the internal milestone label. If the current owner approves repurposing the unscoped package, `3.0.0` is recommended over `1.5.0`: it is unused, follows the unrelated package's public `2.0.1`, and clearly marks an incompatible product/API change. Record that decision in release notes so existing registry users are not surprised.
 
-Do not serialize with `JSON.stringify` at the CLI boundary. The repository already has a canonical serializer with stable UTF-16 key ordering, I-JSON checks, Zod validation, and exact-byte parsing.
+No release manager is justified for one package. Add Changesets, release-please, or semantic-release only if Cumpa later becomes a multi-package repository or maintainers explicitly choose automated changelog/version policy.
+
+## ShipWithAI Marketplace Integration
+
+The target repository already has the required catalog structure:
+
+- `.claude-plugin/marketplace.json` contains one `ship-with-ai` plugin with source `./`.
+- `.claude-plugin/plugin.json` points `skills` to `./skills/` and is currently version `0.2.0`.
+- Skills live at `skills/<name>/SKILL.md`.
+- Its README already documents `npx skills add Ship-With-AI/skills --skill <name>`.
+
+Required marketplace changes are therefore small:
+
+1. Add `Ship-With-AI/skills/skills/cumpa/SKILL.md` using the existing Cumpa skill content.
+2. Preserve `name: cumpa`; the directory and name already comply with the Agent Skills lowercase/hyphen/max-64 contract.
+3. Add a quoted `compatibility` value under the specification's 500-character limit, for example: `Requires Node.js 24+, Git 2.43+, and the public cumpa CLI in PATH (install with npm install --global cumpa).`
+4. Update the skill's setup step to link to Cumpa's public npm/README instructions while retaining its existing review-request/export contract. The skill must fail clearly when `cumpa` is absent; it should not install software silently.
+5. Add Cumpa to the marketplace README's skill list with the exact one-command install and a link to the public repository.
+6. Bump `.claude-plugin/plugin.json` from `0.2.0` to `0.3.0` so Claude marketplace users receive the newly bundled skill.
+
+Do not add another entry to `marketplace.json`: its existing plugin already exposes every directory under `skills/`. Do not publish the skill as a second npm package or add an installer to Cumpa.
 
 ## Installation
 
-No install, removal, or version change is required for v1.3.
+### Public user paths
 
-```text
-package.json: unchanged
-package-lock.json: unchanged
+```bash
+# Persistent CLI command
+npm install --global cumpa
+cumpa
+
+# Ephemeral npm execution; npm may prompt before first cache install
+npx cumpa
+
+# One-command global agent-skill installation through the established marketplace
+npx skills add Ship-With-AI/skills --skill cumpa -g
 ```
 
-Fastify `5.11.2` and Vue `3.5.40` are newer than the pinned `5.10.0` and `3.5.39`, respectively, on the research date, but neither adds a capability needed by this handoff. Handle routine upgrades separately rather than coupling them to the protocol change. Installed Zod `4.4.3`, Commander `15.0.0`, and TypeScript `7.0.2` already match npm `latest`.
+A scoped fallback would instead require `npm install --global @ship-with-ai/cumpa` and `npx @ship-with-ai/cumpa`; it must not be presented as satisfying the requested bare commands.
+
+### Post-release verification against public artifacts
+
+```bash
+# Exact package version, isolated global prefix
+npm install --global cumpa@<version> --prefix <temporary-prefix>
+<temporary-prefix>/bin/cumpa --help
+
+# Exact registry version without relying on a prior local build
+npx --yes cumpa@<version> --help
+
+# Confirm the stable dist-tag also resolves to Cumpa
+npx --yes cumpa --help
+
+# Inspect provenance metadata
+npm view cumpa@<version> dist.attestations --json
+
+# Deterministic marketplace install into an isolated home/agent target
+npx skills@1.5.23 add Ship-With-AI/skills --skill cumpa -g -a <agent> -y
+```
+
+Also create a temporary project, install `cumpa@<version>`, and run `npm audit signatures` with the current npm CLI. The final smoke must use the registry version and public marketplace repository; testing the workspace or local tarball alone does not prove distribution.
 
 ## Alternatives Considered
 
-| Recommended | Alternative | When the alternative would be appropriate | Why not for v1.3 |
-|-------------|-------------|-------------------------------------------|------------------|
-| EOF-delimited bounded JSON + `JSON.parse` | NDJSON, length-prefix framing, `stream-json` | Multiple requests or unbounded documents over one long-lived channel | Contract has exactly one request and one response per process. Extra framing creates another protocol. |
-| Installed Zod strict union | JSON Schema validator, TypeBox, hand-written guards | A project without a shared runtime-schema authority | Cumpa already uses Zod across trust boundaries and exports. |
-| Existing `GitRunner` + Git CLI | `simple-git`, `isomorphic-git`, `nodegit`/libgit2 | A product that cannot rely on installed Git or intentionally accepts different Git semantics | Cumpa requires installed Git and already owns safe subprocess, cancellation, and byte-limit behavior. |
-| `git apply` | `parse-diff`, `gitdiff-parser`, `unidiff`, custom parser | A detached patch viewer that intentionally does not validate against a repository | Patch grammar, quoted paths, modes, renames, binary markers, object formats, and applicability belong to Git. Detached patches are out of scope. |
-| Temp index + temp object overlay | Temporary worktree/clone, stash, real-index mutation | A workflow that explicitly needs a checkout users can edit | Review is read-only. Worktrees/clones are slower and introduce cleanup/ref/worktree metadata; stashing or real-index use risks user state. |
-| Tree OID from `write-tree` | `commit-tree` synthetic commit | A later feature that explicitly needs commit graph identity for a generated revision | Existing inventory reads tree-ish objects; writing an unnecessary commit adds identity and lifecycle questions. |
-| Fastify `onResponse` one-shot completion | WebSocket, SSE, polling, file watcher | Continuous bidirectional updates or many completion events | Finish is one browser action and one terminal result. Existing HTTP response lifecycle is sufficient. |
-| Existing canonical serializer | `fast-json-stable-stringify`, `json-stable-stringify`, ordinary `JSON.stringify` | A project without an established canonical byte contract | Cumpa already validates and canonicalizes its review export; a second serializer risks byte drift. |
-| Awaited `process.stdout.write` | `console.log`, stdout logger, forced `process.exit` | Human-only output with no machine contract | Attached stdout must contain only exact canonical JSON and must not be truncated. |
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| Transfer the bare `cumpa` package | Publish `@ship-with-ai/cumpa` | Use only if transfer fails **and** product explicitly changes the required install/npx commands. It cannot satisfy `npm install -g cumpa` or `npx cumpa`. |
+| Direct trusted `npm publish` on stable GitHub Release | npm staged publishing | Use if maintainers want a separate npm-side approval after GitHub Release publication. It improves separation of duties but adds an approval stage and changes the one-release action flow. |
+| Dedicated `publish-npm.yml` | Extend `deploy-supabase-production.yml` | Couple them only if every npm release must be inseparable from every main-branch production deployment. Today their triggers, runners, permissions, and failure domains differ. |
+| `macos-15` build/publish job | Ubuntu publish job | Use Ubuntu only after native addon production is redesigned into separately built platform packages or prebuilt optional dependencies. Current Ubuntu builds omit the Darwin-arm64 addon. |
+| Native `npm version` and GitHub Release | Changesets / semantic-release / release-please | Use a release framework when multiple packages or automated version/changelog policy create repeated coordination cost. One package does not justify it. |
+| Existing ShipWithAI plugin plus `skills/cumpa` | New Cumpa-only plugin/catalog | Create a separate plugin only if Claude users must install Cumpa independently of the existing bundled ShipWithAI plugin and the product accepts a second marketplace surface. |
+| Vercel Skills CLI one-command install | Claude-native marketplace registration plus plugin install | Keep the Claude-native path as secondary documentation. It requires marketplace registration and installs the bundled plugin, so it is not the requested one-step individual-skill path. |
+| Publishable `npm-shrinkwrap.json` | Publish with only `package-lock.json` | Omit shrinkwrap only if Cumpa intentionally accepts transitive dependency drift for global installs. npm does not publish normal package locks. |
 
-## What NOT to Add or Change
+## What NOT to Use
 
-| Avoid | Specific problem | Use instead |
-|-------|------------------|-------------|
-| JSON streaming/framing dependency | One bounded EOF-delimited document does not need incremental grammar state | Readable async iteration + byte ceiling + fatal decode + `JSON.parse` |
-| New schema package | Duplicates Zod and creates competing TypeScript types | `z.strictObject` + `z.discriminatedUnion` |
-| Git JavaScript implementation/wrapper | Adds a second semantics/error model without removing Git subprocesses | Existing `GitRunner` and fixed native Git argv |
-| JavaScript unified-diff parser | Easy to diverge on extended headers, paths, modes, binary patches, and applicability | `git apply --cached --check` |
-| Real index/worktree patch application | Can overwrite or conflict with developer state | Temporary `GIT_INDEX_FILE` and isolated object directory |
-| Temporary Git worktree or clone | More filesystem I/O, metadata, cleanup, and ref behavior than a read-only review needs | Temporary index/object overlay |
-| Synthetic refs or commits | Leaves repository-visible or unreachable object state and invents history | Diff pinned commit/tree against temporary patched tree |
-| JS glob/minimatch package | Reinterprets native pathspec semantics and can disagree with Git | Pass pathspec arguments after `--` to Git |
-| WebSocket/Socket.IO/SSE | Long-lived transport for a one-shot human completion event | Existing authenticated POST + route-level `onResponse` |
-| Agent-facing HTTP control API | Violates confirmed boundary and expands attack/lifecycle surface | stdin request, human browser UI, stdout result |
-| New logger | Risks stdout contamination or duplicate formatting | Existing injected output functions; stderr in attached mode |
-| Fastify/Vue upgrade inside v1.3 | Unrelated lockfile and regression surface | Keep pinned versions; routine maintenance separately |
-| Headless browser/review path | Explicitly out of scope and bypasses the human handoff | Existing Vue/Monaco browser session |
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or a classic/granular automation token in Actions | Violates the milestone's no-long-lived-token requirement and adds a rotation/exfiltration secret. | npm trusted publishing with `id-token: write`. |
+| Self-hosted release runner | Unsupported by npm trusted publishing and weakens hosted provenance guarantees. | GitHub-hosted `macos-15`. |
+| `npm publish` from the working directory after a configured build | Invokes `prepack`, which can rebuild without the protected support origin and change the artifact. | Explicit configured build, scan, `npm pack --ignore-scripts`, then publish the `.tgz` with scripts disabled. |
+| `npm publish --provenance` or Sigstore packages | Redundant with current trusted publishing; extra flags/dependencies create a second convention. | Automatic provenance from npm trusted publishing. |
+| Standalone legacy `npx` package | Deprecated since npm 7 and unnecessary. | The `npx` shipped with npm 11. |
+| Package postinstall/native compilation | Users may lack compilers, it makes install nondeterministic, and current Cumpa already has a release-built optional addon. | Build the addon in the hosted arm64 macOS release job and ship it in `dist/`. |
+| Agent-directory mutation from the Cumpa CLI | Couples the product to many agent-specific filesystem layouts and duplicates marketplace tooling. | `npx skills add Ship-With-AI/skills --skill cumpa -g`. |
+| A second skill copy inside the npm `files` allowlist | It is not automatically discovered there and will drift from the marketplace copy. | Marketplace repository as the public installation surface; Cumpa repository copy as reviewed source. |
+| Publishing before license and repository-visibility decisions | A public GitHub repository without a license grants no general reuse rights; private source cannot receive public npm provenance. | Resolve license, audit history, make source public, then publish. |
+| Reusing npm `1.5.0` merely because the milestone is v1.5 | Product milestone and registry SemVer are different, and the registry name already has unrelated 2.x history. | An explicitly approved unused registry version; recommend `3.0.0` after transfer. |
 
-## Stack Patterns by Request Variant
+## Stack Patterns by Variant
 
-**Interactive terminal launch:**
-- Use the current Commander/Inquirer selection and current session lifetime unchanged.
-- Emit no canonical review document merely because the browser closes or the process receives EOF.
+**If the bare package transfer succeeds:**
+- Keep package/bin name `cumpa`.
+- Publish the next approved unused version through the OIDC workflow.
+- Verify both `npm install --global cumpa` and `npx cumpa` against `latest`.
 
-**Attached revisions request:**
-- Strictly parse the versioned branch, resolve full commit OIDs, require `base` ancestor of `head`, pass native pathspecs after `--`, and use existing comparison/inventory/export code.
-- Reject non-contiguous compositions rather than accepting commit lists, revsets, or cherry-pick synthesis.
+**If the transfer fails:**
+- Stop the bare-name publication track and escalate a product-contract decision.
+- A scoped package is technically viable but changes both promised install commands; do not silently substitute it.
 
-**Attached patch request:**
-- Pin current committed `HEAD`, validate/materialize the exact patch in an isolated temporary Git index/object overlay, and keep that overlay alive only for the browser session.
-- Accept no pathspec field; the exact patch itself defines the reviewed file set.
+**If stable releases only are in scope:**
+- Keep the `release.published` trigger plus `prerelease == false` guard.
+- Publish to `latest` and avoid prerelease dist-tag policy entirely.
 
-**Successful Finish:**
-- Respond to the authenticated browser first, close Fastify, write exactly one canonical JSON document to stdout, await the write, clean temporary resources, and exit naturally with status 0.
+**If prerelease publication is later required:**
+- Map it explicitly to a non-`latest` dist-tag such as `next` and include prerelease SemVer/tag verification.
+- Do not let a GitHub prerelease update `latest` accidentally.
 
-**Invalid request, Git validation failure, signal, or failed Finish validation:**
-- Write diagnostics only to stderr and set a nonzero exit status when terminal.
-- Never emit partial JSON or a placeholder result to stdout.
+**If npm-side approval becomes mandatory:**
+- Change the trusted publisher permission to stage-only and use `npm stage publish` plus npm approval.
+- Keep OIDC; do not reintroduce a token.
 
 ## Version Compatibility
 
-| Package/API | Compatible with | v1.3 guidance |
-|-------------|-----------------|---------------|
-| Node `>=24` | Commander `15.0.0`, Fastify `5.10.0`, Zod `4.4.3`, TypeScript `7.0.2` | Keep project engine floor. Node 24 contains all standard APIs recommended here. |
-| Git `>=2.43.0` | `rev-parse --verify --end-of-options`, `merge-base --is-ancestor`, `apply --cached --check`, alternate index/object environment, `read-tree`, `write-tree` | Keep the existing floor and positive capability philosophy. Add capability probes only for exact commands/environment behavior the production implementation relies on; do not raise the version solely because current docs are 2.55.0. |
-| Zod `4.4.3` | TypeScript `7.0.2` | Use idiomatic `z.strictObject`; do not use stripping object schemas for the stdin trust boundary. |
-| Fastify `5.10.0` | Route-level `onResponse`, Promise-returning `close()` | Installed version documents both required lifecycle APIs. No update is required. |
-| Vue `3.5.39` | Existing Vite/UI stack | A Finish button and existing API client need no additional UI package or minor upgrade. |
-| Existing `canonicalizeReviewExport` | Existing `ReviewExportV1Schema` | Write its bytes directly. Appending whitespace or using a different serializer breaks Cumpa's exact canonical-byte contract. |
-| Existing `GitRunner` | Patch overlay environment | Extend the runner with a narrow, trusted internal environment input rather than accepting request-controlled environment variables. Preserve `shell: false`, timeout, limits, disabled hooks/fsmonitor/external diff, and `AbortSignal`. |
+| Component | Compatible With | Notes |
+|-----------|-----------------|-------|
+| Cumpa package `engines.node >=24` | Node.js `24.x` LTS | Preserve the existing runtime floor. Node 24 also satisfies all distribution-tool minimums below. |
+| npm trusted publishing | npm CLI `>=11.5.1`, Node `>=22.14.0` | Pin npm `11.19.1` in the Node 24 release job rather than trusting a bundled minor. |
+| GitHub trusted publisher | GitHub-hosted runner only | Self-hosted Actions runners are unsupported. Workflow filename, owner/repository casing, and optional environment name must match npm settings exactly. |
+| Cumpa native addon build | `darwin/arm64`; GitHub `macos-15` runner | The current script emits no addon on Linux, Windows, or Intel macOS. JavaScript fallback remains available there. |
+| Automatic npm provenance | Public npm package + public GitHub repository + exact repository metadata | No provenance is generated while `Ship-With-AI/cumpa` remains private. |
+| `npx cumpa` | npm 11 single matching `bin` inference | First uncached execution may prompt; use `--yes` in automation. |
+| `skills@1.5.23` | Node `>=22.20.0` | Cumpa's Node 24 prerequisite is sufficient. |
+| Cumpa skill | Agent Skills `SKILL.md` contract | Directory `cumpa` must match `name: cumpa`; `compatibility` is optional, max 500 characters. |
+| Claude bundled marketplace plugin | Existing plugin version `0.2.0` → recommended `0.3.0` | Claude marketplace updates require a version bump when a plugin version is declared. No new plugin entry is necessary. |
+| Cumpa runtime | Git `>=2.43` | npm cannot enforce external executable versions; document it in README and skill compatibility. |
+
+## Roadmap Implications
+
+Order matters:
+
+1. **Namespace/license/public-readiness gate:** negotiate npm transfer, approve package version and license, audit repository history, and make the repository public.
+2. **Package contract:** update metadata, public README, `files`, and publishable shrinkwrap while preserving the existing build/bin behavior.
+3. **Release automation:** configure the protected environment and npm trusted publisher, then add the separate OIDC workflow and stable release/tag guards.
+4. **Marketplace publication:** land `skills/cumpa/SKILL.md`, compatibility metadata, README listing, and plugin version bump in `Ship-With-AI/skills`.
+5. **Public-artifact verification:** release once and verify registry metadata/provenance, isolated global install, exact/unqualified npx execution, and deterministic skill installation.
+
+The first gate is not parallelizable with publication: until ownership transfer and repository visibility are resolved, the promised bare npm commands and automatic provenance cannot exist.
 
 ## Sources
 
-### Primary documentation and current version sources
+### npm — primary/official
 
-- [Node.js releases](https://nodejs.org/en/about/previous-releases) — Node `24.19.0` is the latest Node 24 LTS release on 2026-08-04; Node 24 remains a supported LTS line.
-- [Node.js 24 process documentation](https://nodejs.org/docs/latest-v24.x/api/process.html#processstdin) — `process.stdin`, `stdout`, `stderr`, `exitCode`, and the warning that `process.exit()` can truncate pending stdout.
-- [Node.js 24 stream documentation](https://nodejs.org/docs/latest-v24.x/api/stream.html#readablesymbolasynciterator) — async iteration fully consumes a Readable; `writable.write` callback/backpressure semantics.
-- [Git `rev-parse`](https://git-scm.com/docs/git-rev-parse) — `--verify`, commit peeling, and `--end-of-options` for untrusted revision names.
-- [Git `merge-base`](https://git-scm.com/docs/git-merge-base) — `--is-ancestor` exit semantics for an explicit ancestry range.
-- [Git `diff`](https://git-scm.com/docs/git-diff) — two-tree/tree-ish comparison and native pathspec arguments after `--`; current docs last updated for Git 2.55.0.
-- [Git `apply`](https://git-scm.com/docs/git-apply) — patch input on stdin, `--check`, `--cached`, unsafe-path behavior, and flags that alter application; page includes compatibility history through project floor 2.43.0 and is current at 2.55.0.
-- [Git environment variables](https://git-scm.com/docs/git#Documentation/git.txt-GITINDEXFILE) — `GIT_INDEX_FILE`, `GIT_OBJECT_DIRECTORY`, and `GIT_ALTERNATE_OBJECT_DIRECTORIES`, including the guarantee that new objects are not written to alternates.
-- [Git `read-tree`](https://git-scm.com/docs/git-read-tree) and [Git `write-tree`](https://git-scm.com/docs/git-write-tree) — seed an index from a tree and materialize an index as a tree object.
-- [Fastify 5.10 hooks](https://fastify.dev/docs/v5.10.x/Reference/Hooks/#onresponse) — `onResponse` runs after a response is sent and can be route-local.
-- [Fastify server `close`](https://fastify.dev/docs/v5.10.x/Reference/Server/#close) — Promise-returning graceful listener closure.
-- [Zod 4 objects](https://zod.dev/api#objects) and [Zod 4 migration guide](https://zod.dev/v4/changelog) — `z.strictObject` rejects unknown keys and is the Zod 4 DTO form; discriminated unions provide literal-mode selection.
-- npm registry metadata: [Fastify](https://registry.npmjs.org/fastify/latest), [Vue](https://registry.npmjs.org/vue/latest), [Zod](https://registry.npmjs.org/zod/latest), [Commander](https://registry.npmjs.org/commander/latest), [TypeScript](https://registry.npmjs.org/typescript/latest) — current `latest` versions on the research date.
+- [Trusted publishers](https://docs.npmjs.com/trusted-publishers) — npm/Node minimums; hosted-runner requirement; exact GitHub binding; OIDC permissions; automatic provenance; post-migration token policy.
+- [Generating provenance statements](https://docs.npmjs.com/generating-provenance-statements) — public package/repository requirement; exact repository metadata; verification guidance.
+- [package.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-json) — `name`, SemVer, `bin`, `files`, `repository`, `engines`, license, and `publishConfig` behavior.
+- [npm publish](https://docs.npmjs.com/cli/v11/commands/npm-publish) — immutable `name@version`, public access, `latest`, and pack inspection.
+- [npm version](https://docs.npmjs.com/cli/v11/commands/npm-version) — package/lock updates and default version commit/tag behavior.
+- [npx](https://docs.npmjs.com/cli/v11/commands/npx) — cache installation, prompt behavior, and single-bin inference.
+- [npm-shrinkwrap.json](https://docs.npmjs.com/cli/v11/configuring-npm/npm-shrinkwrap-json) — publishable lockfile explicitly recommended for globally installed command-line tools.
+- [Lifecycle scripts](https://docs.npmjs.com/cli/v11/using-npm/scripts#life-cycle-operation-order) — `prepack` execution during pack/publish and why the configured artifact must avoid an implicit rebuild.
+- [Transferring a package](https://docs.npmjs.com/transferring-a-package-from-a-user-account-to-another-user-account) — supported ownership-transfer process.
+- [Live `cumpa` registry metadata](https://registry.npmjs.org/cumpa/latest) — unrelated current package `2.0.1`; corroborated with `npm view cumpa ... --json` on the research date.
+- [Live `skills` registry metadata](https://registry.npmjs.org/skills/latest) — `skills@1.5.23`, Node `>=22.20.0`.
 
-### Repository evidence
+### GitHub and Node.js — primary/official
 
-- [`package.json`](../../package.json) — exact installed dependency versions and Node `>=24` engine.
-- [`src/git/runner.ts`](../../src/git/runner.ts) — existing bounded, cancellable, no-shell Git process boundary with stdin bytes and separated stdout/stderr.
-- [`src/git/comparison.ts`](../../src/git/comparison.ts) — existing full-OID pinning, commit verification, merge-base handling, and comparison descriptor boundary.
-- [`src/git/inventory.ts`](../../src/git/inventory.ts) — existing paired raw/numstat Git inventory calls and object-reader integration.
-- [`src/git/raw-diff.ts`](../../src/git/raw-diff.ts) — byte-safe parser for Git's NUL-delimited raw protocol, not unified patch syntax.
-- [`src/cli/run.ts`](../../src/cli/run.ts) — existing Commander entry, loopback Fastify launch, browser open, injectable output, and signal shutdown lifecycle.
-- [`src/server/app.ts`](../../src/server/app.ts), [`src/server/routes.ts`](../../src/server/routes.ts), and [`src/server/security.ts`](../../src/server/security.ts) — current authenticated loopback session boundary to extend with human Finish.
-- [`src/export/review-export.ts`](../../src/export/review-export.ts) — existing Zod-backed canonical export builder/parser and exact canonical-byte serializer.
+- [Events that trigger workflows: release](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#release) — `published` behavior, tag ref, and prerelease inclusion.
+- [GitHub-hosted runners reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) — current public-repository runner labels and `macos-15` arm64 architecture.
+- [Node.js releases](https://nodejs.org/en/about/previous-releases) — supported LTS release policy and Node 24 line.
+- [Ship-With-AI/cumpa](https://github.com/Ship-With-AI/cumpa) — authenticated repository query reported `PRIVATE` on the research date.
 
-### Context7 lookups
+### Skills marketplace — primary/official project sources
 
-- `/websites/nodejs_latest-v24_x_api` — process standard streams, async-readable iteration, writable callbacks, and process-exit truncation.
-- `/git/htmldocs` — revision verification/ancestry, patch validation, temporary index, and object-overlay environment.
-- `/fastify/fastify` — `onResponse` and graceful `close()` lifecycle.
-- `/colinhacks/zod` — Zod 4 strict objects and discriminated unions.
+- [ShipWithAI skills marketplace](https://github.com/Ship-With-AI/skills) — current repository structure, marketplace/plugin manifests, README install convention, and MIT repository license.
+- [Vercel Skills CLI](https://github.com/vercel-labs/skills) — `add`, `--skill`, `--global`, `--agent`, and `--yes` contract.
+- [Agent Skills specification](https://agentskills.io/specification) — required frontmatter, directory/name matching, naming limits, and compatibility metadata.
+- [Claude Code plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) — marketplace/plugin manifest contract and version-bump behavior.
 
 ---
-*Stack research for: Cumpa v1.3 Agent Review Handoff*
-*Researched: 2026-08-04*
+*Stack research for: Cumpa v1.5 Public Distribution*
+*Researched: 2026-09-04*
