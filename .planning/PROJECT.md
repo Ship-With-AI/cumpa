@@ -14,9 +14,16 @@ A developer can accurately review repository-grounded changes chosen by a develo
 
 Cumpa now offers an optional one-time USD $49.99 support flow in configured release packages without gating review behavior. The local app hands Support or Restore actions to a canonical Supabase-hosted GitHub OAuth flow; only a signature-verified Stripe webhook can establish paid status. Verified status persists installation-wide and a paid GitHub account can restore suppression on unlimited installations. Ordinary unconfigured local builds contain no hosted capability, provider credential, or support route.
 
-## Next Milestone Goals
+## Current Milestone: v1.5 Public Distribution
 
-To be defined when the next milestone is initiated.
+**Goal:** Make Cumpa and its coding-agent integration publicly installable through npm and ShipWithAI.
+
+**Target features:**
+- Publish `cumpa` as a public npm package supporting both `npm install -g cumpa` and `npx cumpa`.
+- Publish approved GitHub releases to npm through trusted publishing with provenance and no long-lived npm token.
+- Publish the existing Cumpa coding-agent skill to ShipWithAI for one-step skill installation.
+- Declare the public CLI prerequisite and link exact installation and usage guidance from the marketplace listing.
+- Verify the packed npm artifact and marketplace-installed skill through their real public installation flows.
 
 
 <details>
@@ -116,7 +123,10 @@ Validated in v1.4 Voluntary Support:
 
 ### Active
 
-None — define the next milestone's requirements when it is initiated.
+- [ ] Users can install and run the public `cumpa` npm package globally or through `npx`.
+- [ ] Maintainers can publish approved releases through npm trusted publishing with provenance.
+- [ ] Coding-agent users can install the Cumpa skill from ShipWithAI and follow its declared CLI prerequisite.
+- [ ] Public package and marketplace installation paths are verified against the released artifacts.
 
 ### Out of Scope
 
@@ -217,4 +227,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-09-04 after v1.4 Voluntary Support shipped*
+*Last updated: 2026-09-04 after starting v1.5 Public Distribution*
