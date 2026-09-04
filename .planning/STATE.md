@@ -1,43 +1,43 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.3
-milestone_name: Agent Review Handoff
-current_phase: 02
-current_phase_name: move-the-implementation-to-supabase
-status: complete
-stopped_at: Phase 02 passed verification (17/17 plans; 81/81 must-haves; 12/12 requirements)
-last_updated: "2026-09-04"
+milestone: v1.4
+milestone_name: Voluntary Support
+current_phase: null
+status: Awaiting next milestone
+stopped_at: Phase 02 verification passed
+last_updated: "2026-09-04T09:44:09.483Z"
 last_activity: 2026-09-04
-last_activity_desc: Phase 02 passed verification (17/17 plans; 81/81 must-haves; 12/12 requirements)
+last_activity_desc: Milestone v1.4 completed and archived
 progress:
- total_phases: 2
- completed_phases: 2
- total_plans: 22
- completed_plans: 22
- percent: 100
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 22
+  completed_plans: 22
+  percent: 100
+current_phase_name: null
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-06)
+See: .planning/PROJECT.md (updated 2026-09-04)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 02 move-the-implementation-to-supabase complete
+**Current focus:** Planning the next milestone
 
 ## Current Position
 
-Phase: 02 (move-the-implementation-to-supabase) COMPLETE
-Plan: 17/17
-Status: Passed verification — 81/81 must-haves; 12/12 requirements
-Last activity: 2026-09-04 — Phase 02 verification passed
+Phase: Milestone v1.4 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-09-04 — Milestone v1.4 completed and archived
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 67
+- Total plans completed: 96
 - Average duration: 23 min
 - Total execution time: 4.7 hours
 
@@ -49,6 +49,8 @@ Last activity: 2026-09-04 — Phase 02 verification passed
 | v1.1 GitHub Dark Diff | 4 | 16 | Complete |
 | v1.2 Fast Source Discovery | 3 | 4 | Complete |
 
+| v1.3 Agent Review Handoff | 4 | 14 | Complete |
+| v1.4 Voluntary Support | 2 | 22 | Complete |
 *Updated after each plan completion.*
 | Phase 09 P01 | 6min | 2 tasks | 4 files |
 | Phase 09 P02 | 20min | 2 tasks | 4 files |
@@ -163,15 +165,17 @@ None yet.
 | Cleanup | Remove unused `EmptyState.vue` | Deferred | v1.1 close |
 | Coverage | Keep uncommon worktree recovery states at focused real-Git/CLI integration seams unless production-path risk changes | Deferred | v1.2 close |
 | Performance | Re-run absolute picker budgets when the supported Node 24 runner or host characteristics change | Deferred | v1.2 close |
+| Cleanup | Remove the stale deleted `tests/e2e/support-recovery.spec.ts` workflow filter and verifier contract | Deferred | v1.4 close |
+| Cleanup | Remove unused local `GET /api/support/status` and `SessionClient.getSupportStatus()` surfaces | Deferred | v1.4 close |
 
 ## Session Continuity
 
 **Last session:** 2026-09-04
-**Stopped at:** Phase 02 verification passed
+**Stopped at:** Milestone v1.4 archived
 **Resume file:** None
 
 No active phase execution session.
 
 ## Operator Next Steps
 
-Phase 02 is complete.
+- Start the next milestone with $gsd-new-milestone

@@ -10,14 +10,29 @@ A developer can accurately review repository-grounded changes chosen by a develo
 
 ## Current State
 
-**Shipped:** v1.3 Agent Review Handoff on 2026-08-06.
+**Shipped:** v1.4 Voluntary Support on 2026-09-04.
 
-Cumpa now accepts one strict, bounded versioned stdin request for either a pinned Git revision range or an already-applied patch. The existing authenticated browser workspace supports an explicit Finish review action; the waiting CLI then receives exactly one validated canonical JSON result on stdout. Range and patch reviews retain immutable, drift-detectable provenance without changing the interactive TTY workflow.
+Cumpa now offers an optional one-time USD $49.99 support flow in configured release packages without gating review behavior. The local app hands Support or Restore actions to a canonical Supabase-hosted GitHub OAuth flow; only a signature-verified Stripe webhook can establish paid status. Verified status persists installation-wide and a paid GitHub account can restore suppression on unlimited installations. Ordinary unconfigured local builds contain no hosted capability, provider credential, or support route.
 
 ## Next Milestone Goals
 
 To be defined when the next milestone is initiated.
 
+
+<details>
+<summary>v1.4 Voluntary Support (shipped)</summary>
+
+**Goal:** Add voluntary payment and privacy-safe recovery without changing access to any review feature.
+
+**Delivered features:**
+- Added one optional Stripe-hosted USD $49.99 support payment.
+- Kept payment feature-neutral: dismissing or declining support leaves every review capability available.
+- Used private Supabase tables and service-role RPCs behind GitHub OAuth and three Edge Functions.
+- Made raw-body signature-verified Stripe webhook fulfillment the only paid-status authority.
+- Persisted monotonic verified status locally and restored it to unlimited installations through one-use installation-bound OAuth intents.
+- Shipped support only in the canonical configured release package; ordinary local builds remain support-free.
+
+</details>
 <details>
 <summary>v1.3 Agent Review Handoff (shipped)</summary>
 
@@ -84,6 +99,21 @@ Validated in Phase 12: Request Protocol & Range Grounding accepts one strict, bo
 
 Validated in Phase 13: Exact Patch Grounding accepts a strict exact already-applied patch, proves repository-object preimages and target postimages, preserves a frozen snapshot with explicit drift, and emits canonical V3 patch export provenance without modifying Git state.
 
+Validated in v1.4 Voluntary Support:
+
+- [x] One optional one-time USD $49.99 Stripe-hosted support payment.
+- [x] Payment changes no feature except support-dialog visibility.
+- [x] Only signature-verified server webhook fulfillment proves payment.
+- [x] The local app contains no Stripe or webhook secret and accepts only the configured canonical Supabase origin.
+- [x] The configured production package shows the support dialog until verification.
+- [x] The dialog describes optional support and links to fixed Stripe Checkout.
+- [x] Unpaid users can dismiss the dialog and retain unrestricted application use.
+- [x] Successful verification produces a thank-you state and automatic close.
+- [x] Verified status suppresses future prompts installation-wide.
+- [x] Additional installations restore paid status through GitHub OAuth.
+- [x] Recovery uses a privacy-safe, one-use, installation-bound OAuth intent and returns no OAuth material locally.
+- [x] One paid account can restore unlimited installations.
+
 ### Active
 
 None — define the next milestone's requirements when it is initiated.
@@ -99,23 +129,19 @@ None — define the next milestone's requirements when it is initiated.
 
 ## Context
 
-Cumpa has shipped three milestones: the complete local browser-review-to-agent loop, a GitHub-dark accessible review workspace, and scalable local source discovery. The CLI now opens source selection from the attached current branch and registered worktrees without waiting for a complete local-branch scan; non-empty input performs fresh, literal, case-insensitive local-head search through native Git.
+Cumpa has shipped five milestones: the complete local browser-review-to-agent loop, a GitHub-dark accessible review workspace, scalable local source discovery, strict agent review handoff, and optional voluntary support.
 
-Each comparison remains ordered and frozen to full commit IDs. The displayed change is the merge base of those commits cumpad with the selected head; selected worktrees resolve to committed `HEAD` values and dirty bytes never enter the review.
+Each comparison remains ordered and frozen to full commit IDs. The displayed change is the merge base of those commits compared with the selected head; selected worktrees resolve to committed `HEAD` values and dirty bytes never enter the review.
 
-The browser workspace provides an exact changed-file tree, real Monaco side-by-side text diffs, expandable context, keyboard navigation, durable line comments, review summary and comment lifecycle, conflict recovery, selector-drift reporting, and explicit unsupported, stale, and orphaned states.
+The browser workspace provides an exact changed-file tree, Monaco side-by-side text diffs, expandable context, keyboard navigation, durable line comments, review summary and comment lifecycle, conflict recovery, selector-drift reporting, and explicit unsupported, stale, and orphaned states.
 
-Exports are versioned and machine-validated. Canonical JSON owns comparison identities, accepted summary and comments, timestamps, blob identities, and context anchors; Markdown is derived from that same validated model. Publication is an atomic pair beneath `.cumpa/exports/`, with hashes and a bounded receipt.
+Exports are versioned and machine-validated. Canonical JSON owns comparison identities, accepted summary and comments, timestamps, blob identities, and context anchors; Markdown is derived from that validated model. Publication is an atomic pair beneath `.cumpa/exports/`, with hashes and a bounded receipt.
 
-v1.2 completed 5/5 requirements, 12/12 cross-phase integrations, and 5/5 end-to-end flows. Its compiled production gate proved exactly 10,000 packed local heads with zero loose heads, one discarded warmup, five serial measurements, readiness median 221.532417 ms against a 400 ms budget, and search median 38.266167 ms against a 500 ms budget.
+Coding agents can submit strict range or exact-patch review requests and receive one validated canonical result after the developer finishes the normal browser review. Interactive TTY review remains unchanged.
 
-Phase 12 completed the first v1.3 vertical slice: an agent can launch a strict native-Git range review without an interactive prompt, while interactive reviews retain their existing merge-base behavior. The browser discloses the frozen range scope and preserves it in the range draft and export provenance.
+v1.4 shipped 12/12 requirements across two phases, 22 plans, and 30 tasks. Its audit verified 8/8 cross-phase connections and 8/8 end-to-end flows. The active hosted implementation is a Supabase private schema plus three Edge Functions; GitHub OAuth binds support or restoration intent, while signature-verified Stripe webhook fulfillment alone establishes paid status.
 
-v1.3 shipped 17/17 requirements across four phases and 14 plans. A coding agent can submit a strict range or exact-patch review, while the developer completes the existing browser workspace and receives one validated canonical result. The milestone integration audit found 10/10 links and 10/10 end-to-end flows passing.
-
-The user accepted the milestone audit's non-blocking debt: range recovery diagnostics, narrow UI contract warnings, patch-status polling rejection handling, missing Phase 13 security evidence, and segmented exact-patch/stale-anchor integration proof. No critical gap, unsatisfied requirement, broken flow, or open security flaw was found.
-
-Retained debt is bounded: one authenticated orphan metadata route/client method, Phase 3 UI polish, accepted Phase 4 filesystem/power-loss durability limits, focused rather than compiled black-box coverage for uncommon worktree recovery states, and host-sensitive absolute performance evidence. No shipped requirement or user flow remains blocked.
+Accepted v1.4 debt is bounded to a stale deleted-suite filename in the deployment verifier contract and one unused local support-status endpoint/client wrapper. Neither affects the verified release flow.
 ## Constraints
 
 - **Runtime**: Node.js 24 LTS with TypeScript end to end — one language across CLI, server, shared contracts, and UI, using the current supported LTS baseline.
@@ -127,6 +153,7 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 - **Persistence**: Versioned JSON files in a gitignored repository-local `.cumpa/` directory — no database or browser-only source of truth.
 - **Content**: Text files only in v1 — binary, generated, oversized, or unsupported files remain visible as non-reviewable entries.
 - **Testing**: Vitest for Git, diff, persistence, and export contracts; Playwright for the browser review flow.
+- **Support**: Voluntary support never gates review features; hosted payment authority is optional, credential-free from the local app, and enabled only in the canonical configured release package.
 
 ## Key Decisions
 
@@ -167,6 +194,11 @@ Retained debt is bounded: one authenticated orphan metadata route/client method,
 | Keep exact-patch snapshots private and server-owned | Prevent live-source fallback or shared mutable state from changing reviewed content | Good — frozen V3 provenance, readable drift handling, and snapshot-loss failure stay explicit |
 | Make attached Finish server-authoritative and one-shot | Only an accepted revision may trigger canonical delivery; browser lifecycle events must not imply success | Good — authenticated Finish validates scope and anchors before exactly one stdout result |
 | Give every attached launch an isolated mutable storage scope | Equivalent agent requests must not share drafts or export receipts | Good — deterministic provenance remains shared only where intended while drafts, queues, and exports cannot collide |
+| Keep voluntary support feature-neutral | Payment must never become a license or access gate | Good — dismissing the prompt preserves unrestricted review and only verified status changes prompt visibility |
+| Use Supabase private schema, service-role RPCs, and Edge Functions for hosted support | Replace the blocked standalone Render/PostgreSQL/Resend service with one managed authority boundary | Good — the standalone runtime and email recovery path were removed after live promotion |
+| Let only a signature-verified Stripe webhook establish payment | Browser redirects and OAuth completion cannot prove settlement | Good — exact product, amount, currency, mode, and replay invariants precede idempotent fulfillment |
+| Restore support through one-use installation-bound GitHub OAuth intents | Avoid retaining or returning email, OAuth tokens, or profile material in the local app | Good — paid accounts restore unlimited installations while unpaid restoration remains non-enumerating |
+| Embed one canonical Supabase origin only in configured release packages | Keep ordinary local builds free of hosted capability and prevent arbitrary support origins | Good — package scans and immutable release evidence bind the approved origin and package digest |
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -185,4 +217,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-08-06 after v1.3 Agent Review Handoff shipped*
+*Last updated: 2026-09-04 after v1.4 Voluntary Support shipped*

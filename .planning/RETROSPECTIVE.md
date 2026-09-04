@@ -146,6 +146,50 @@
 
 ---
 
+## Milestone: v1.4 — Voluntary Support
+
+**Shipped:** 2026-09-04
+**Phases:** 2 | **Plans:** 22 | **Executed tasks:** 30
+
+### What Was Built
+
+- Optional one-time USD $49.99 Stripe-hosted support that never gates review features.
+- A Supabase private-schema and Edge Function authority for GitHub OAuth, Checkout creation, signature-verified webhook fulfillment, and installation restoration.
+- Monotonic machine-wide prompt suppression, unlimited paid-account installation restoration, and a canonical configured release package that leaves ordinary local builds support-free.
+- Immutable production evidence spanning prelaunch acceptance, exact cleanup, same-project live promotion, legacy retirement, release package approval, and final six-record lineage.
+
+### What Worked
+
+- Provider credentials and hosted dependencies remained outside the local application and published runtime.
+- The final implementation reused the existing loopback capability boundary and browser dialog instead of creating a second review or licensing system.
+- Live promotion evidence gated deletion of the superseded Render, PostgreSQL, Resend, and standalone Node service.
+
+### What Was Inefficient
+
+- Phase 01 built a standalone hosted backend that provider constraints later forced Phase 02 to replace and remove.
+- Phase 01 lacked a standalone verification report; the milestone audit had to prove that Phase 02 superseded it and reverified all 12 requirements.
+- One deleted Playwright suite name and one unused local status API survived the clean cutover as accepted debt.
+
+### Patterns Established
+
+- Optional hosted functionality is represented by capability absence, not disabled implementations or fallback origins.
+- Browser and OAuth completion never establish payment; only signature-verified webhook settlement can promote verified state.
+- Destructive provider cleanup follows immutable zero-state evidence and same-project promotion, not assumptions about deployment state.
+
+### Key Lessons
+
+1. Provider feasibility must be proven before building the first hosted implementation; replacement after integration is avoidable rework.
+2. Superseded phases still need an explicit verification disposition so milestone audits do not infer release gaps from missing artifacts.
+3. Release-lineage evidence should bind immutable run IDs, canonical origin, and package digest before obsolete authority paths are deleted.
+
+### Cost Observations
+
+- Model mix: Not measured.
+- Sessions: Not measured in planning artifacts.
+- Notable: 99 files changed (+14,648 / -87) across 23 calendar days from the first implementation commit to final evidence.
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -156,6 +200,7 @@
 | v1.1 | 4 | 16 | Established one semantic UI/Monaco contract, browser-composite accessibility evidence, and final product/design contracts |
 | v1.2 | 3 | 4 | Established eager source discovery, bounded search, and a compiled 10,000-ref performance gate |
 | v1.3 | 4 | 14 | Established strict agent handoff, immutable range/patch grounding, explicit Finish, and invocation isolation |
+| v1.4 | 2 | 22 | Established optional capability absence, Supabase webhook authority, immutable live-promotion evidence, and provider-runtime retirement |
 
 ### Cumulative Quality
 
@@ -165,6 +210,7 @@
 | v1.1 | Not recorded | Not recorded | Not recorded | Focused release gates passed | 18/18 | 12/12 | 7/7 |
 | v1.2 | Focused release gates passed | 5/5 | 12/12 | 5/5 |
 | v1.3 | Focused Git/API/CLI/package gates passed | 17/17 | 10/10 | 10/10 |
+| v1.4 | Focused Vitest, Deno, and database gates passed | Not applicable | 10/10 local support API | Local and hosted support flows passed | 12/12 | 8/8 | 8/8 |
 
 ### Top Lessons (Verified Across Milestones)
 
@@ -173,3 +219,5 @@
 3. One canonical authority per state or visual role reduces both correctness risk and review complexity.
 
 4. Attached agent workflows must prove both immutable provenance and per-invocation mutable-state isolation at the generated-package boundary.
+5. Optional hosted functionality should disappear completely when unconfigured rather than expose dormant routes or arbitrary-origin seams.
+6. A superseded phase needs explicit audit disposition even when a later phase removes its runtime and verifies every requirement.

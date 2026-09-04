@@ -1,5 +1,45 @@
 # Milestones
 
+## v1.4 Voluntary Support (Shipped: 2026-09-04)
+
+**Delivered:** Optional one-time support and paid-account restoration through a canonical Supabase-hosted flow without gating or changing any review feature.
+
+**Phases completed:** 2 phases, 22 plans, 30 tasks
+**Timeline:** 2026-08-12 → 2026-09-04
+**Git range:** `1541473` → `59b53e9` — 99 files changed, +14,648 / -87
+
+**Key accomplishments:**
+
+- Added an optional Stripe-hosted USD $49.99 support action while keeping unpaid and dismissed sessions fully usable.
+- Built a private Supabase authority with service-role RPCs, GitHub OAuth, server-owned Checkout creation, and signature-verified idempotent webhook fulfillment.
+- Added monotonic machine-wide verified-state persistence and privacy-safe restoration to unlimited installations through one-use installation-bound OAuth intents.
+- Kept ordinary local builds support-free; only the approved release package embeds the exact canonical Supabase origin.
+- Proved prelaunch acceptance, exact cleanup, same-project live promotion, legacy retirement, and final release lineage through immutable evidence.
+- Removed the superseded Render, standalone PostgreSQL, Resend, Node fulfillment, email-recovery, and legacy route surfaces.
+
+### Final Evidence
+
+- Requirements: 12/12
+- Phase 02 verification: 81/81 must-haves
+- Cross-phase integrations: 8/8
+- End-to-end flows: 8/8
+- Plans and summaries: 22/22
+- Milestone audit: no critical gaps; status `tech_debt`
+
+### Retained Technical Debt
+
+- Remove the stale deleted `tests/e2e/support-recovery.spec.ts` workflow filter and verifier contract.
+- Remove unused local `GET /api/support/status` and `SessionClient.getSupportStatus()` surfaces.
+
+### Archives
+
+- Roadmap: `.planning/milestones/v1.4-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.4-REQUIREMENTS.md`
+- Milestone audit: `.planning/milestones/v1.4-MILESTONE-AUDIT.md`
+- Phase history: `.planning/milestones/v1.4-phases/`
+
+---
+
 ## v1.3 Agent Review Handoff (Shipped: 2026-08-06)
 
 **Delivered:** A coding agent can submit a grounded range or exact-patch review, await explicit browser completion, and receive one canonical JSON result.
