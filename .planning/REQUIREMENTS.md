@@ -65,35 +65,35 @@ None.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PKG-01 | — | Pending |
-| PKG-02 | — | Pending |
-| PKG-03 | — | Pending |
-| PKG-04 | — | Pending |
-| PKG-05 | — | Pending |
-| LIC-01 | — | Pending |
-| LIC-02 | — | Pending |
-| LIC-03 | — | Pending |
-| ART-01 | — | Pending |
-| ART-02 | — | Pending |
-| ART-03 | — | Pending |
-| ART-04 | — | Pending |
-| REL-01 | — | Pending |
-| REL-02 | — | Pending |
-| REL-03 | — | Pending |
-| REL-04 | — | Pending |
-| REL-05 | — | Pending |
-| REL-06 | — | Pending |
-| SKL-01 | — | Pending |
-| SKL-02 | — | Pending |
-| SKL-03 | — | Pending |
-| SKL-04 | — | Pending |
-| SKL-05 | — | Pending |
+| PKG-01 | Phase 7 | Pending |
+| PKG-02 | Phase 7 | Pending |
+| PKG-03 | Phase 4 | Pending |
+| PKG-04 | Phase 4 | Pending |
+| PKG-05 | Phase 4 | Pending |
+| LIC-01 | Phase 3 | Pending |
+| LIC-02 | Phase 3 | Pending |
+| LIC-03 | Phase 6 | Pending |
+| ART-01 | Phase 4 | Pending |
+| ART-02 | Phase 4 | Pending |
+| ART-03 | Phase 4 | Pending |
+| ART-04 | Phase 4 | Pending |
+| REL-01 | Phase 5 | Pending |
+| REL-02 | Phase 5 | Pending |
+| REL-03 | Phase 5 | Pending |
+| REL-04 | Phase 5 | Pending |
+| REL-05 | Phase 5 | Pending |
+| REL-06 | Phase 7 | Pending |
+| SKL-01 | Phase 6 | Pending |
+| SKL-02 | Phase 6 | Pending |
+| SKL-03 | Phase 6 | Pending |
+| SKL-04 | Phase 6 | Pending |
+| SKL-05 | Phase 7 | Pending |
 
 **Coverage:**
 - v1.5 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23
+- Mapped to phases: 23
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-04*
-*Last updated: 2026-09-04 after initial v1.5 definition*
+*Last updated: 2026-09-04 after v1.5 roadmap creation*

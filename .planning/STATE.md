@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Public Distribution
 status: planning
-last_updated: "2026-09-04T11:13:01.312Z"
+last_updated: "2026-09-04T13:11:17Z"
 last_activity: 2026-09-04
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-04)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Planning the next milestone
+**Current focus:** Phase 3 — Approved Distribution Boundary
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 3 of 7 (Approved Distribution Boundary)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-04 — Milestone v1.5 started
+Status: Ready to plan
+Last activity: 2026-09-04 — v1.5 roadmap created with 23/23 requirements mapped
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -121,10 +123,19 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Configured absence remains default until Plan 02-16 — Retirement must not embed or scan a real configured launcher before protected release work.
 - [Phase 02]: Final review binds six immutable records and separate release approval — Six named evidence paths prevent omission or substitution while approval remains independently auditable.
 
+- [v1.5]: Publish the scoped public application package as `@shipwithai/cumpa@1.5.0`; do not acquire or publish the unrelated bare `cumpa` package.
+- [v1.5]: Keep the application source repository and history private; trusted npm publication uses GitHub OIDC and explicitly disables or omits provenance.
+- [v1.5]: Use lawyer-approved proprietary unmodified-use terms for the npm application while publishing only the thin marketplace skill under ShipWithAI's existing MIT license.
+
 ### Roadmap Evolution
 
 - Phase 1 added: Add voluntary Stripe support payment and email recovery
 - Phase 2 added: Move the implementation to Supabase
+- Phase 3 added: Approve the proprietary private-source distribution boundary
+- Phase 4 added: Construct one inspected installable release candidate
+- Phase 5 added: Publish the exact candidate through tokenless OIDC without provenance
+- Phase 6 added: Publish the thin MIT-licensed ShipWithAI skill
+- Phase 7 added: Verify the real npm and marketplace paths end to end
 
 ### Pending Todos
 
@@ -167,11 +178,11 @@ None yet.
 ## Session Continuity
 
 **Last session:** 2026-09-04
-**Stopped at:** Milestone v1.4 archived
+**Stopped at:** v1.5 roadmap created; Phase 3 ready for planning
 **Resume file:** None
 
 No active phase execution session.
 
 ## Operator Next Steps
 
-- Start the next milestone with $gsd-new-milestone
+- Plan Phase 3 with $gsd-plan-phase 3
