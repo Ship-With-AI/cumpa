@@ -1,574 +1,443 @@
 # Architecture Research
 
-**Domain:** Public distribution of the existing Cumpa Node.js CLI and coding-agent skill
+**Domain:** Public-source, licensing, and release architecture for Cumpa v1.5
 **Researched:** 2026-09-04
-**Confidence:** MEDIUM
+**Confidence:** HIGH for GitHub, npm, SPDX, and current repository mechanics; MEDIUM for the one-time npm namespace bootstrap because npm does not document a pending-package trusted-publisher flow
+
+## Evidence Convention
+
+- **Verified fact** — observed in the current repository or stated by a current primary source.
+- **Recommendation** — the architecture proposed for Cumpa v1.5.
+- **Implementation gate** — a condition that must be proved before the next irreversible step.
+
+This research concerns only public source, licensing, npm/GitHub release integrity, and the separately distributed ShipWithAI skill. It does not change Cumpa's CLI, review protocol, persistence, local server, browser application, or voluntary-support behavior.
 
 ## Executive Summary
 
-Cumpa v1.5 should add a distribution control plane around the existing package, not a second package or application architecture. The repository already has the correct npm CLI shape: `package.json` names `cumpa`, maps the `cumpa` binary to the generated `dist/bin/cumpa.mjs`, requires Node.js 24, allowlists `dist/` and the existing skill, and builds the browser assets into the same package. Keep that shape.
+Cumpa v1.5 should put a small distribution control plane around the existing application rather than create another runtime architecture. The public `Ship-With-AI/cumpa` repository should become the Corresponding Source authority. One protected source commit and `v1.5.0` tag should identify the GPL application release. A GitHub-hosted workflow should run the existing build, create exactly one npm tarball, inspect and smoke-test that exact file, submit that file to npm with OIDC trusted publishing, and attach the same file to a draft GitHub Release before the release becomes immutable.
 
-The recommended release unit is one npm tarball that serves three consumers:
+The thin skill is a separate work under MIT. Its source can remain beside Cumpa for coordinated review only if the subtree has an explicit MIT license and is excluded from the GPL npm tarball. The installable copy belongs in `Ship-With-AI/skills/skills/cumpa/`. The marketplace transports instructions; the installed `cumpa` executable remains the sole review authority.
 
-1. `npm install -g cumpa` links its existing `bin.cumpa` launcher onto `PATH`;
-2. `npx cumpa`/`npm exec` downloads the same package and invokes that launcher;
-3. the ShipWithAI marketplace installs the same exact npm version as a Claude Code plugin and discovers the existing `.kimi-code/skills/cumpa/SKILL.md` through a small plugin manifest.
+Two irreversible transitions must be sequenced explicitly:
 
-A protected, immutable GitHub release triggers one fixed GitHub Actions workflow. The workflow builds once, packs once, validates and smoke-tests that exact `.tgz`, then passes that same path to `npm publish`. npm authenticates the GitHub-hosted runner through OIDC, so the workflow contains no `NODE_AUTH_TOKEN` or long-lived npm credential. A post-publication job downloads the exact registry version, compares registry integrity with the approved tarball, verifies its provenance/signatures, and exercises public global and npx installation. Only then should an exact-version entry be submitted to ShipWithAI.
+1. Making the existing repository public exposes its complete Git history and GitHub Actions history/logs. Audit and revoke exposed credentials before changing visibility, then restore repository rulesets that GitHub disables during the transition.
+2. `@shipwithai/cumpa` currently returns HTTP 404 from the npm registry. npm requires a package to exist before trusted-publisher or staged-publishing configuration. Reserve it with a source-accurate prerelease, then configure OIDC and publish stable `1.5.0` without a long-lived token. Do not consume `1.5.0` for bootstrap.
 
-Two external conditions block publication today and must be Phase 0 gates rather than hidden implementation assumptions:
+## Current State
 
-- **The bare npm name is occupied.** As verified on 2026-09-04, `cumpa@2.0.1` is an unrelated function-composition package owned by `gianlucaguarini`. `npm install -g cumpa` and `npx cumpa` cannot deliver this repository until Ship With AI receives an explicit ownership transfer/addition from the current owner. A scoped or renamed fallback changes the stated product contract and requires product approval.
-- **The source repository is private.** The authenticated GitHub record for `Ship-With-AI/cumpa` reports `PRIVATE`. npm trusted publishing can authenticate a private-repository workflow, but npm's automatic provenance requires both a public package and a public source repository. The repository must therefore become public before the provenance-bearing release.
+### Verified Repository Facts
 
-## Standard Architecture
+| Area | Current state | Consequence for v1.5 |
+|---|---|---|
+| GitHub identity | `origin` is `git@github.com:Ship-With-AI/cumpa.git`; the repository is currently private. | Change visibility in place. Do not copy into a new public repository and thereby split identity/history. |
+| npm identity | `package.json` is `cumpa@0.0.0` with `"private": true`. | It cannot publish as requested until changed to `@shipwithai/cumpa@1.5.0` and made public. |
+| npm metadata | No `license`, `repository`, `homepage`, `bugs`, or public `publishConfig` fields are present. | Registry, source, and legal identities would be incomplete or inconsistent. |
+| executable | `bin.cumpa` points to `dist/bin/cumpa.mjs`. | Preserve this existing public CLI entry point. |
+| packlist | `files` currently permits `dist/` and `.kimi-code/skills/cumpa/`. | The MIT skill is currently mixed into the prospective GPL package and should be separated. |
+| build | `prepack` runs the existing runtime and web builds. `scripts/build-bin.mjs` creates the executable launcher and can embed only the canonical release support-service URL. | Reuse the build; supply the approved release URL once in the release job. |
+| native artifact | `scripts/build-native-addon.mjs` emits `dist/native/directory_exchange.node` only on Darwin arm64 and removes it otherwise. | The release runner platform is part of package assembly and must be chosen intentionally; do not accidentally change existing capability behavior. |
+| artifact verification | `scripts/verify-production-artifacts.mjs` already uses `npm pack --dry-run --json --ignore-scripts` as inventory input, creates a real tarball, scans package text for protected values/obsolete hosted-runtime content, and can verify the launcher. | Refactor this boundary to accept and verify the one release `.tgz`, rather than having the verifier and publisher make separate tarballs. |
+| automation | The repository has a Supabase deployment workflow but no npm release workflow. | Add a dedicated, fixed-filename release workflow; do not add publishing to the existing deployment workflow. |
+| skill | `.kimi-code/skills/cumpa/SKILL.md` is thin and delegates review authority to the installed CLI. | Preserve the delegation model; only licensing, prerequisite, source, and installation guidance change. |
+| root license | No root `LICENSE` or `COPYING` file was found. | Public release is blocked until the GPL text and project notice are present. |
+
+### Verified External Facts
+
+- The npm registry returned HTTP 404 for `https://registry.npmjs.org/%40shipwithai%2Fcumpa` on the research date. The target package does not yet exist.
+- npm trusted publishing requires npm CLI 11.5.1 or later and Node 22.14.0 or later. It binds a GitHub organization/user, repository, exact workflow filename, and optionally an exact GitHub Environment. The workflow needs `contents: read` and `id-token: write`; GitHub-hosted runners are supported and self-hosted runners are not.
+- npm automatically generates provenance for trusted publication when both the source repository and package are public. Its provenance guidance requires `package.json.repository` to match the public repository case-sensitively.
+- npm staged publishing requires npm 11.15.0 or later, requires the package to exist, accepts a package tarball, supports OIDC trust tokens, and defers the live transition to a maintainer's 2FA approval. npm recommends allowing only `npm stage publish` on a trust relationship and disallowing token publication for strongest proof-of-presence.
+- A published npm name/version cannot be reused, even after unpublish. The registry records SHA-1 and SHA-512 integrity data for the uploaded tarball.
+- GitHub recommends constructing an immutable release as a draft, attaching all assets, then publishing it. Publication locks the associated tag and assets and generates a release attestation over the tag, commit SHA, and assets.
+- Changing a GitHub repository from private to public exposes GitHub Actions history and logs, allows public forks, and disables existing push rulesets. Those rulesets must be restored after the transition.
+- GPL-3.0 section 1 includes source plus the scripts needed to generate, install, run, and modify object code in Corresponding Source. Sections 4 and 6 require license/notices and a way to obtain that source with object-code distribution. GPL section 5 permits an aggregate with separate independent works, but does not remove either work's notice obligations.
+- SPDX identifies the required application expression as `GPL-3.0-or-later` and the skill expression as `MIT`.
+- `Ship-With-AI/skills` currently documents `npx skills add Ship-With-AI/skills --skill <name>` as its recommended cross-agent installation shape, with skills at `skills/<name>/SKILL.md`. Its current public root listing has no detected license file, so the v1.5 MIT boundary must be added explicitly rather than inferred.
+
+## Recommended Architecture
 
 ### System Overview
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Human approval plane                                                        │
-│                                                                             │
-│ protected default branch → draft GitHub release → publish immutable release │
-│                                                     │                       │
-│                                      protected npm-production environment    │
-└─────────────────────────────────────────────────────┼───────────────────────┘
-                                                      │ release.published
-                                                      ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ One GitHub-hosted release job                                                │
-│                                                                             │
-│ checkout tagged SHA → validate identity/version → npm ci → existing build   │
-│                                                        │                    │
-│                                                        ▼                    │
-│                                              one cumpa-X.Y.Z.tgz             │
-│                                                        │                    │
-│                inspect inventory + install/smoke exact tarball              │
-│                                                        │                    │
-│                          GitHub OIDC ────────────────► npm publish ./file.tgz│
-└────────────────────────────────────────────────────────┬────────────────────┘
-                                                         │ immutable name/version
-                                                         ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ npm public registry                                                         │
-│                                                                             │
-│ cumpa@X.Y.Z + dist.integrity + registry signature + provenance attestation  │
-└──────────────┬──────────────────────────┬───────────────────────────┬────────┘
-               │                          │                           │
-               ▼                          ▼                           ▼
-       npm install -g cumpa         npx cumpa             ShipWithAI catalog
-               │                          │                 npm source X.Y.Z
-               └──────────────┬───────────┘                           │
-                              ▼                                       ▼
-                    dist/bin/cumpa.mjs                    Claude plugin cache
-                              │                                       │
-                              ▼                                       ▼
-                existing CLI/server/browser              existing Cumpa skill
-                review architecture unchanged            delegates to PATH CLI
+Existing private Ship-With-AI/cumpa repository and full history
+                              │
+                              │ rights + dependency + full-history +
+                              │ historical Actions/log exposure gates
+                              ▼
+Public Ship-With-AI/cumpa source authority
+  root GPL-3.0-or-later             nested MIT skill source boundary
+  source/build/lock/readme           .kimi-code/skills/cumpa/
+  package metadata                  excluded from npm package
+              │                                  │
+              │ reviewed release commit          │ reviewed promotion copy
+              ▼                                  │ after CLI is public
+      protected v1.5.0 tag                        │
+              │                                  │
+              ▼                                  │
+GitHub-hosted publish workflow                    │
+  exact configured filename/environment          │
+  npm ci -> existing build -> npm pack once       │
+  inspect/install/smoke the exact .tgz            │
+              │                                  │
+              ├────────► draft GitHub Release     │
+              │          exact .tgz + checksum    │
+              │                                  │
+              └── OIDC ─► npm stage publish      │
+                           exact .tgz             │
+                           provenance             │
+                                │                 │
+                       maintainer 2FA approval    │
+                                │                 │
+                                ▼                 │
+                    @shipwithai/cumpa@1.5.0      │
+                    integrity + provenance        │
+                                │                 │
+                    registry/install verification│
+                                │                 │
+                                ▼                 │
+                    publish GitHub draft release │
+                    immutable tag/assets         │
+                                │                 │
+                                └─────────────────┘
+                                                  ▼
+                              Ship-With-AI/skills public MIT authority
+                              skills/cumpa/SKILL.md + explicit MIT notice
+                                                  │
+                              npx skills add ... --skill cumpa
+                                                  │
+                                                  ▼
+                              installed instruction-only skill
+                                                  │ invokes prerequisite
+                                                  ▼
+                              installed `cumpa` CLI remains review authority
 ```
 
-The public distribution boundary ends at the existing launcher. Once `dist/bin/cumpa.mjs` imports `dist/cli/run.js`, the shipped Node CLI, Git adapter, Fastify loopback server, Vue/Monaco browser application, persistence, review contract, and exports behave exactly as they do now.
+`npm stage publish` is the recommended stable-release path because it preserves OIDC authentication for the submitted artifact and adds a human 2FA approval before the immutable registry transition. Direct `npm publish` through the same trusted publisher remains a supported, simpler alternative if maintainers decide the protected GitHub Environment is the only approval gate required. Pick one before creating the npm trust relationship because its allowed actions are security policy, not an incidental CLI option.
 
-### Component Responsibilities
+### Authority Map
 
-| Component | Status | v1.5 responsibility |
+| Authority | Responsibility | Must agree with |
 |---|---|---|
-| npm ownership for `cumpa` | **External prerequisite** | Transfer/add Ship With AI as an authorized owner before any workflow activation; preserve an explicit record of the transfer. Do not attempt to publish over an unrelated package. |
-| `Ship-With-AI/cumpa` visibility | **External prerequisite** | Become public before publication so npm can issue automatic provenance for the public package. |
-| `package.json` and root lockfile metadata | **Modify** | Remove `private`, replace `0.0.0` with the approved unused registry version, retain `type`, `engines`, `bin`, and existing runtime dependencies, add exact public repository/homepage/bugs/license metadata, set explicit public publication policy, and include `.claude-plugin/` in `files`. |
-| Public license | **New policy/file if not already chosen** | Select a license, add the corresponding root license file, and make `package.json.license` agree. This is a maintainer/legal decision, not a release-script default. |
-| `scripts/build-bin.mjs` | **Reuse unchanged** | Continue producing executable `dist/bin/cumpa.mjs` and embedding only the approved `CUMPA_RELEASE_SUPPORT_SERVICE_URL` when the release build supplies it. |
-| `scripts/build-native-addon.mjs` and native capability loader | **Reuse with explicit runner choice** | Preserve the current Darwin arm64 addon on a GitHub-hosted arm64 macOS release runner. Other platforms already catch an absent/incompatible addon and expose `reExportUnsupported`; do not create platform package fan-out in this milestone. |
-| `scripts/verify-production-artifacts.mjs` | **Modify** | Accept a concrete `.tgz` path and inspect it. Stop creating a second tarball internally. Keep current inventory/protected-value/support-origin checks and add public metadata plus plugin/skill assertions. |
-| `tests/e2e/package-assets.spec.ts` | **Modify narrowly** | Reuse the concrete tarball path where possible; retain clean-install launcher coverage and assert the plugin manifest and existing skill are present. Add npx-style tarball execution only if the existing clean-install check does not cover it. |
-| `README.md` | **Modify** | Replace private-checkout-only installation as the primary path with `npm install -g cumpa` and `npx cumpa`; state Node 24 and Git prerequisites; document the ShipWithAI install command and that its skill delegates to the separately available CLI. |
-| `.kimi-code/skills/cumpa/SKILL.md` | **Reuse; modify only if prerequisite failure is unclear** | Remain the sole skill protocol. It must continue delegating review to `cumpa`, not duplicate review behavior. A missing-CLI diagnostic may point to the public install command. |
-| `.claude-plugin/plugin.json` | **New** | Declare plugin name/version/description and `"skills": "./.kimi-code/skills"`, allowing Claude Code to discover the existing skill in the npm package. |
-| `.github/workflows/publish-npm.yml` | **New** | Implement the single release-to-registry path with `release.published`, protected environment, OIDC permissions, fixed GitHub-hosted runner, build-once/pack-once verification, exact-tarball publish, and post-publish checks. Its filename becomes part of npm's trusted-publisher identity and must remain stable. |
-| `.github/workflows/deploy-supabase-production.yml` | **Unchanged; never reuse for npm** | It is an Ubuntu, secret-rich support-service deployment boundary. Combining npm publication with it would expose unnecessary secrets and omit the Darwin arm64 addon. Keep npm in the new least-privilege OIDC-only workflow. |
-| GitHub `npm-production` environment | **External configuration** | Require reviewers, prevent self-review, and restrict deployment refs to the release-tag policy. |
-| npm trusted-publisher settings | **External configuration** | Bind `Ship-With-AI`, `cumpa`, exact workflow filename, and exact environment name; allow direct `npm publish`; after success disallow traditional tokens. |
-| GitHub immutable releases | **External configuration** | Lock the published release tag/assets and create GitHub's release attestation. |
-| ShipWithAI catalog entry | **External upstream change** | Add `cumpa` to `ShipWithAI/shipwithai-plugins/.claude-plugin/marketplace.json` with an npm source pinned to the registry-verified version. |
+| Public `Ship-With-AI/cumpa` repository | GPL application Corresponding Source, build/install scripts, lockfile, notices, development history, MIT exception source if retained | package repository URL, provenance source, release tag |
+| Root `LICENSE` plus licensing notice | Full GPL v3 text and explicit `GPL-3.0-or-later` grant for first-party application code | `package.json.license`, README, npm metadata |
+| Nested skill `LICENSE` | Full MIT text and copyright notice for the independent thin skill | marketplace copy and marketplace licensing notice |
+| Dependency/notice inventory | Third-party copyrights, licenses, and any notices required by bundled output | exact npm tarball contents |
+| `package.json` | Package name/version, executable, Node engine, public access, SPDX expression, public source/homepage/issues URLs | tag, tarball, npm registry metadata |
+| Existing build scripts | Generate Cumpa's launcher, runtime, UI, and existing optional native capability | release workflow inputs and current runtime tests |
+| `npm pack --json` result | Exact filename and file inventory for the publishable unit | verifier, npm upload, GitHub release asset |
+| Protected `v1.5.0` tag | Version-to-source-commit identity | package version, GitHub release, provenance |
+| Fixed GitHub Actions workflow | Reproducible orchestration and OIDC subject | npm trusted-publisher repository/workflow/environment tuple |
+| npm trusted-publisher settings | Which GitHub identity may stage/publish | fixed workflow and protected environment |
+| npm registry | Immutable package version, distribution integrity, registry signature/provenance | verified local tarball and source tag |
+| Immutable GitHub Release | Human-facing release record and attestation over tag/commit/assets | npm package version and exact attached tarball |
+| `Ship-With-AI/skills` repository | Installable MIT skill distribution and discovery | reviewed canonical skill content and public CLI prerequisite |
+| Skills CLI | Fetches/installs skill files into supported agent locations | marketplace repository layout |
+| Installed `cumpa` executable | All review, result, and voluntary-support behavior | existing validated application contract; not the skill |
 
-## Recommended Project Structure
+## Boundary Changes
 
-Only distribution files are shown; the existing `src/` review architecture remains unchanged.
+### New Boundaries
 
-```text
-.
-├── package.json                         # MODIFY: public package/plugin metadata
-├── package-lock.json                    # MODIFY: root name/version metadata stays aligned
-├── README.md                            # MODIFY: public CLI + marketplace installation
-├── LICENSE                              # NEW when maintainers choose the public license
-├── .claude-plugin/
-│   └── plugin.json                      # NEW: points to existing skill directory
-├── .kimi-code/
-│   └── skills/
-│       └── cumpa/
-│           └── SKILL.md                 # EXISTING authority; no copied skill
-├── .github/
-│   └── workflows/
-│       └── publish-npm.yml              # NEW: only npm release workflow
-├── scripts/
-│   ├── build-bin.mjs                    # EXISTING launcher/support-origin build
-│   ├── build-native-addon.mjs           # EXISTING optional Darwin arm64 capability
-│   └── verify-production-artifacts.mjs  # MODIFY: verify caller-supplied .tgz
-└── tests/
-    └── e2e/
-        └── package-assets.spec.ts        # MODIFY narrowly: package/plugin install contract
+#### 1. Root GPL Source Boundary
 
-External upstream repository:
-ShipWithAI/shipwithai-plugins/
-└── .claude-plugin/
-    └── marketplace.json                 # ADD exact npm source entry after publish
-```
+**Recommendation:** Add the complete GPL v3 license text at repository root and a concise licensing section that says first-party Cumpa application code is `GPL-3.0-or-later`. State explicitly that the named skill subtree is an MIT exception. Do not rely only on GitHub's license detector or `package.json.license`.
 
-### Structure Rationale
+The public tag must contain the preferred source form, `package-lock.json`, build scripts, package assembly logic, and installation instructions. That immutable source tag is the Corresponding Source location for the compiled npm tarball. The package README and `repository` metadata should give clear directions to it.
 
-- **One package owns every distributable byte.** `package.json.files` remains the allowlist for the launcher, runtime, browser assets, plugin manifest, and canonical skill.
-- **The existing skill stays canonical.** A manifest path is enough; copying it into a conventional `skills/` tree would create two sources that can drift.
-- **Release policy lives at the repository edge.** The workflow and external GitHub/npm settings do not leak registry concepts into CLI, server, or browser modules.
-- **The existing verifier remains the package-policy authority.** Passing it a path is less code and stronger evidence than adding a second release-only scanner.
-- **The marketplace owns discovery, not product code.** Its catalog entry identifies an already published npm artifact; it does not carry another Cumpa build.
+**Implementation gate:** Confirm that the organization can grant the license for every first-party file and contribution reachable from the history it will publish. Git author names alone do not establish licensing authority. Preserve third-party licenses and notices; the GPL declaration cannot overwrite them.
 
-## Architectural Patterns
+#### 2. Explicit MIT Skill Boundary
 
-### Pattern 1: Single Package, Single Tarball
+**Recommendation:** Keep the reviewed thin skill source at `.kimi-code/skills/cumpa/` for this cutover only if that directory carries its own MIT `LICENSE` and the root notice explicitly excludes it from the GPL grant. Exclude the subtree from the npm `files` allowlist. Promote the reviewed file into `Ship-With-AI/skills/skills/cumpa/` after `1.5.0` is publicly installable.
 
-**What:** Build the existing root package once and produce one `.tgz`. All supported install routes resolve to that artifact.
+The Cumpa-repository copy is the reviewed upstream source; the marketplace copy is the installable distribution. The promotion PR should record the Cumpa tag/commit and compare content before merge. Do not add a runtime dependency, submodule, generated package, or cross-repository publishing credential merely to copy one small instruction file.
 
-```text
-package.json + lockfile + source + existing build
-                         │
-                         ▼
-                  cumpa-X.Y.Z.tgz
-             ┌───────────┼───────────┐
-             ▼           ▼           ▼
-          global        npx      plugin cache
-```
+Longer term, if maintainers want only one editable copy, move canonical ownership to the marketplace and remove the Cumpa-repository copy in a deliberate later cutover. For v1.5, an explicit source/distribution relationship is less risky than silently maintaining two peers.
 
-**When to use:** Every v1.5 release.
+#### 3. Protected Release Workflow and npm Trust Relationship
 
-**Trade-offs:** The npm plugin installation also downloads Cumpa's runtime dependencies even though the skill invokes a separately installed CLI. That duplication is acceptable because it avoids a second package and guarantees the marketplace skill bytes are versioned with the CLI. Split packages only if measured installation cost becomes a product problem.
-
-### Pattern 2: Build Once, Inspect Once, Publish That File
-
-**What:** Explicitly build, then pack with lifecycle scripts disabled, validate the returned tarball path, install that file in clean locations, and publish the same relative path.
-
-```text
-npm ci
-CUMPA_RELEASE_SUPPORT_SERVICE_URL=<approved-origin> npm run build
-npm pack --json --ignore-scripts --pack-destination <release-dir>
-node scripts/verify-production-artifacts.mjs <release-dir>/cumpa-X.Y.Z.tgz
-npm publish ./<release-dir>/cumpa-X.Y.Z.tgz --access public --tag latest
-```
-
-The exact CLI spelling may be wrapped in package scripts, but the artifact identity must remain visible and singular.
-
-**Why:** The current verifier performs `npm pack --dry-run` and then a separate `npm pack`, while a bare `npm publish` would pack yet again. Those inventories are useful but do not prove that the inspected bytes are the uploaded bytes. npm officially accepts a relative gzipped tarball as the `npm publish` package spec.
-
-**Trade-offs:** `--ignore-scripts` means CI must call the build explicitly. This is desirable in release automation because build order and the support-origin input become reviewable rather than implicit in `prepack`. Keep `prepack` for normal local packaging convenience.
-
-### Pattern 3: Human Approval Followed by Ephemeral OIDC Authority
-
-**What:** A maintainer publishes a reviewed draft GitHub release, and an environment reviewer authorizes only the npm publish job. GitHub then issues a short-lived OIDC identity accepted by npm for one configured repository/workflow/environment.
+**Recommendation:** Add one dedicated release workflow with a stable filename. Configure a protected GitHub Environment and bind that exact organization, repository, workflow filename, and environment in npm. Use a GitHub-hosted runner, no dependency cache, and only the permissions needed by each job. The npm stage/publish job needs:
 
 ```yaml
-on:
-  release:
-    types: [published]
-
 permissions:
   contents: read
   id-token: write
-
-jobs:
-  publish:
-    environment: npm-production
-    runs-on: macos-15
 ```
 
-The complete workflow must additionally validate the event/tag/version and set `registry-url: https://registry.npmjs.org`; this excerpt shows the trust boundary, not a copy-paste workflow.
+A separate release-finalization job may require narrowly scoped `contents: write`; do not give the OIDC publication step unrelated write permissions. Do not configure `NODE_AUTH_TOKEN` in the trusted workflow.
 
-**When to use:** Every public npm release.
+#### 4. Immutable GitHub Release Record
 
-**Trade-offs:** The release publication and protected environment are two GitHub approval surfaces. This is intentional for a write-once public registry operation. npm stage-only publishing can add a third, npm-side 2FA approval, but it is optional hardening rather than the required v1.5 flow.
+**Recommendation:** Enable immutable releases before the stable release. Prepare `v1.5.0` as a draft, attach the already verified npm tarball and its checksum, then publish only after npm has accepted and public verification has matched the registry artifact. This follows GitHub's documented draft-first pattern and avoids publishing an immutable empty or incomplete release.
 
-### Pattern 4: Registry-First Marketplace Promotion
+#### 5. Public Install Verification Boundary
 
-**What:** Publish and verify `cumpa@X.Y.Z` before changing the ShipWithAI catalog. The catalog entry pins that exact version.
+**Recommendation:** Run a post-publication job that starts from the public registry and marketplace, not the checkout artifact. It should verify exact version metadata and provenance, install the exact package globally into an isolated prefix, execute the exact package through `npx`, and then install the Cumpa skill from `Ship-With-AI/skills` in an isolated agent home. This is release evidence, not a redesign of application tests.
 
-```json
-{
-  "name": "cumpa",
-  "version": "X.Y.Z",
-  "source": {
-    "source": "npm",
-    "package": "cumpa",
-    "version": "X.Y.Z"
-  }
-}
-```
+### Modified Existing Boundaries
 
-The package's plugin manifest must use the same version and route skills to `./.kimi-code/skills`.
-
-**Trade-offs:** Marketplace availability lags npm publication by an upstream PR and review. That is preferable to a catalog entry which points to missing or unverified bytes. Do not automate cross-repository catalog updates in v1.5.
-
-## Release Data Flow
-
-### Phase 0 Preconditions
-
-1. Obtain an explicit transfer of, or owner access to, the existing unscoped `cumpa` npm package from its current unrelated owner. If this cannot be obtained, stop: a scoped or renamed package cannot meet the stated commands without an approved milestone change.
-2. Decide how to handle the unrelated historical `cumpa` versions. The new version must be unused and deliberately versioned; a new higher major is the least misleading continuation after `2.0.1`. Deprecating old unrelated versions should be an authenticated one-time maintainer operation, not a tokenized CI step.
-3. Make `https://github.com/Ship-With-AI/cumpa` public and confirm the exact URL is acceptable as the package's provenance source.
-4. Select the public license.
-5. Reserve the stable workflow filename and environment name before configuring npm's trusted publisher; npm treats those fields as identity, not cosmetic metadata.
-
-### Approved Release to Public Consumers
-
-```text
-1. Merge release-ready source, lockfile, package metadata, plugin metadata,
-   skill, documentation, verifier, and workflow to the protected default branch.
-        │
-2. Create a GitHub draft release for vX.Y.Z at that reviewed commit.
-        │
-3. Review tag target, notes, package/plugin versions, and stable/prerelease state;
-   publish the immutable release.
-        │ release.published: ref=refs/tags/vX.Y.Z, sha=tagged commit
-4. Enter protected npm-production environment; required reviewer approves.
-        │
-5. Checkout the event SHA on fixed GitHub-hosted arm64 macOS runner.
-        │
-6. Fail closed unless:
-   - tag is exactly v${package.version};
-   - package name is exactly cumpa and private is absent/false;
-   - version is not 0.0.0 and is not already registered;
-   - release is stable unless prereleases are explicitly enabled;
-   - tagged commit is allowed by release/default-branch policy;
-   - repository URL exactly identifies Ship-With-AI/cumpa;
-   - package, plugin, and intended marketplace versions agree;
-   - publication access/tag policy is explicit.
-        │
-7. setup-node Node 24 + npm >=11.5.1, registry URL npmjs, cache disabled;
-   npm ci; build once with approved release support origin.
-        │
-8. npm pack once with --ignore-scripts into an empty release directory.
-        │
-9. Verify and smoke that exact .tgz.
-        │
-10. npm publish ./cumpa-X.Y.Z.tgz --access public --tag latest.
-    npm CLI exchanges GitHub OIDC for a short-lived credential and emits
-    provenance automatically; no NODE_AUTH_TOKEN exists.
-        │
-11. Fetch exact registry metadata/tarball, prove integrity equivalence,
-    install exact version in clean global and npx paths, and verify
-    registry signatures/provenance.
-        │
-12. Confirm unversioned npm install/npx resolve the intended latest version.
-        │
-13. Submit ShipWithAI catalog entry pinned to X.Y.Z.
-        │
-14. From clean Claude Code state, install cumpa@shipwithai, confirm skill
-    discovery, actionable missing-CLI behavior, and delegation when CLI exists.
-```
-
-### Failure and Recovery
-
-- **Before `npm publish`:** fail the job; no registry state changed. Correct source/metadata, create a new reviewed release as appropriate, and rerun only through the approved path.
-- **After `npm publish`:** never overwrite or reuse the version. npm permanently reserves a published name/version, and an immutable GitHub release tag cannot move. Deprecate the bad version if necessary and release a new patch version through the full flow.
-- **After npm verification but before marketplace merge:** correct the catalog PR without changing npm.
-- **After marketplace publication:** publish a corrected npm/plugin version first, verify it, then bump the catalog entry. Never point the catalog at mutable `latest`.
-
-## Artifact Verification Contract
-
-| Stage | Required evidence | What it proves | What it does not prove |
-|---|---|---|---|
-| Tagged source | `vX.Y.Z`, package version, plugin version, exact repository URL, release SHA/default-branch policy | The reviewed release identifies one source revision and package identity | Generated files are correct |
-| Exact local `.tgz` inventory | `dist/bin/cumpa.mjs`, runtime JS, browser HTML/assets, `.claude-plugin/plugin.json`, `.kimi-code/skills/cumpa/SKILL.md`, README/license/package metadata; no TypeScript/Vue source, support-service source, env files, secrets, or unrelated files | npm allowlist and build outputs are correct | Installed command runs |
-| Exact local `.tgz` policy scan | executable launcher mode/shebang; canonical support origin exactly once; plugin path/version valid; Node engine/bin mapping intact | Artifact contains the configured launcher and discoverable skill | Registry received these bytes |
-| Exact local `.tgz` installation | isolated prefix global-style install and npm-exec/npx-style execution of `cumpa --help` or another noninteractive surface | npm links/resolves the packaged binary without repository files | Public registry resolution works |
-| Publish command | `npm publish ./path/to/the-verified.tgz --access public --tag latest` | Uploaded input is the artifact that passed local checks | Registry metadata/provenance is externally visible yet |
-| Registry integrity | exact `cumpa@X.Y.Z` metadata; downloaded tarball SHA-512 equals `dist.integrity` and the approved local tarball; `dist-tags.latest` points to X.Y.Z | Registry serves the approved bytes under the intended immutable name/version and default tag | The code is behaviorally correct |
-| Public install | clean-cache `npm install -g cumpa@X.Y.Z`; clean-cache literal `npx cumpa@X.Y.Z --help`; then unversioned `npm install -g cumpa`/`npx cumpa` resolution | Both advertised public install paths work against the registry | Agent skill is discoverable |
-| Provenance/signatures | clean project installs exact version and `npm audit signatures` reports verified registry signatures and provenance attestations | Registry/Sigstore can connect the public artifact to the trusted workflow/source | Review correctness or absence of malicious source |
-| Marketplace install | clean Claude state installs `cumpa@shipwithai`; plugin list and skill invocation show the expected version | ShipWithAI catalog, npm plugin source, manifest, and skill path integrate | Shell-global CLI prerequisite exists |
-| Skill delegation | absent CLI gives install guidance; installed CLI launches the existing handoff path | Marketplace skill and public CLI compose correctly | New review behavior; none should be introduced |
-
-The registry comparison and provenance check are complementary. `npm audit signatures` should not be described as comparing the root tarball with a local file; `dist.integrity` plus the downloaded tarball performs that comparison. Conversely, matching bytes alone does not prove which workflow produced them; provenance supplies the origin link.
-
-## Trust and Security Boundaries
-
-| Boundary | Authority crossing | Required control |
+| Existing boundary | Modification | What remains unchanged |
 |---|---|---|
-| Current npm owner → Ship With AI | Ownership of the already occupied bare package name | Explicit transfer/owner addition; no impersonation, squatting workaround, or silent fallback name |
-| Maintainer → protected default branch | Source and release configuration become eligible | Normal code review/branch protection; release commit must be approved and reachable under the chosen policy |
-| Maintainer → GitHub release/tag | A source commit is nominated for irreversible publication | Draft review; exact version/tag check; stable-release guard; immutable releases enabled |
-| GitHub environment reviewer → publish job | Human authorizes registry write | `npm-production` required reviewers, prevent self-review, release-tag deployment restrictions |
-| Workflow identity → npm registry | Short-lived publish authority | Trusted publisher bound to exact org/repo/workflow/environment; GitHub-hosted runner; `id-token: write`; no npm token |
-| Third-party GitHub actions → release runner | Action code can read source and influence artifact | Minimal actions, pin immutable action commit SHAs, minimal job permissions, no package-manager cache in release builds |
-| Tagged source/lockfile → `dist/` | Build tools and dependencies generate executable/browser bytes | `npm ci`, fixed Node/npm/runner baseline, committed lockfile, approved support-origin input |
-| Build directory → `.tgz` | npm allowlist selects public bytes | Empty output directory, one pack operation, concrete tarball-path verifier, secret/protected-value scan |
-| Verified `.tgz` → npm name/version | Bytes become public and immutable | Publish explicit relative tarball path with explicit public access and `latest` tag |
-| npm registry → global/npx consumer | Registry selects and serves executable code | Exact-version/integrity/provenance verification; then verify default `latest` resolution |
-| npm package → Claude plugin cache | Claude Code installs package as plugin source | Exact catalog version; packaged plugin manifest; no assumption that plugin-local npm bin is shell-global |
-| Marketplace skill → local executable | Markdown instructions invoke a process from user `PATH` | Explicit Node 24/Git/CLI prerequisites; preserve existing skill gate and strict canonical handoff |
-| Local executable → review runtime | Public install enters application code | Existing prerequisite checks and `127.0.0.1` loopback/token boundaries remain unchanged |
+| GitHub repository visibility | Convert the existing repository in place from private to public after the exposure audit; restore push/tag rulesets immediately. | Repository identity and full history. |
+| `package.json` | Set `name: "@shipwithai/cumpa"`, `version: "1.5.0"`, remove/disable `private`, add `license: "GPL-3.0-or-later"`, case-correct public source/homepage/bugs metadata, and public publish configuration. Remove the skill directory from `files`. | Node `>=24`, `bin.cumpa`, existing runtime dependencies and scripts unless packaging requires a narrow adjustment. |
+| `package-lock.json` | Keep root package name/version aligned with the manifest. | Resolved dependency graph. |
+| `scripts/build-bin.mjs` | Supply the already approved production support-service URL in the release environment. | Launcher generation and voluntary-support behavior. |
+| `scripts/build-native-addon.mjs` | Pin and document the GitHub-hosted release runner platform that produces the intended current artifact. Verify fallback behavior from the same tarball on another supported platform. | Existing Darwin-arm64-only emission and runtime fallback; no platform package split. |
+| `scripts/verify-production-artifacts.mjs` | Accept an explicit tarball path; inspect its inventory, metadata, licensing files/notices, protected values, executable, and support origin. | Existing scanner policy and launcher checks. |
+| README | Make public npm and `npx` flows primary; link exact public source/license/issues; explain the separately installed skill and prerequisite. | Product usage and existing behavior. |
+| Existing skill | Add explicit public CLI prerequisite/install guidance and source/version relationship; retain thin delegation. | Review protocol and canonical result handling. |
 
-The configured support service origin is public build configuration, not a secret, but it changes launcher behavior and must be supplied before packing and asserted in the exact artifact. npm credentials, GitHub OIDC tokens, and unrelated repository secrets must never be embedded or printed.
+## Artifact and Data Flow
 
-## Package and Marketplace Contracts
+### Source-to-Registry Flow
 
-### Public npm Manifest
+1. A reviewed release commit contains GPL/MIT boundaries, exact public metadata, application source, lockfile, and release automation.
+2. A protected `v1.5.0` tag points to that exact commit. The workflow fails closed unless the tag equals `v${package.version}` and the package identity is exactly `@shipwithai/cumpa`.
+3. A fixed GitHub-hosted runner checks out the tag SHA, uses Node 24 and a pinned npm CLI satisfying trusted/staged-publishing minimums, disables dependency caching, runs `npm ci`, and invokes the existing build exactly once.
+4. `npm pack --json --ignore-scripts --pack-destination <empty-release-dir>` creates one tarball without rerunning `prepack`. The workflow consumes the filename returned by npm instead of predicting a scoped-package filename.
+5. The artifact verifier examines that exact tarball. A clean temporary install exercises its `cumpa` binary before any network publication.
+6. The workflow creates a draft GitHub Release at the protected tag and uploads that exact tarball plus a checksum. The draft remains recoverable and mutable.
+7. The trusted workflow submits the exact tarball with `npm stage publish ./<returned-file> --access public --tag latest`. OIDC identifies the public GitHub repository, workflow, environment, and commit; no npm token is supplied.
+8. A maintainer inspects the staged record/download and approves it with 2FA. If direct trusted publish is chosen instead, step 7 uses `npm publish` and this approval is the protected GitHub Environment gate.
+9. A registry verification job fetches `@shipwithai/cumpa@1.5.0`, checks name/version/license/repository and `dist.integrity`, compares the downloaded registry tarball with the locally approved file, and verifies registry signatures/provenance.
+10. The workflow publishes the already complete draft GitHub Release. Repository immutability locks the tag/assets and creates GitHub's release attestation.
+11. A no-secrets public-install job exercises the published global and `npx` paths from clean temporary state.
 
-Required manifest invariants:
-
-- `name` remains exactly `cumpa` only after ownership is secured;
-- `version` is a real, unused registry version and matches the GitHub tag and plugin version;
-- `private` is removed or false;
-- `type: "module"`, `engines.node: ">=24"`, and `bin.cumpa: "dist/bin/cumpa.mjs"` remain;
-- `files` retains `dist/` and `.kimi-code/skills/cumpa/` and adds `.claude-plugin/`;
-- `repository.url` exactly matches the public publishing repository because npm provenance validates it;
-- `homepage`, `bugs`, `description`, `license`, and useful keywords identify the public product;
-- public access and stable dist-tag are explicit through `publishConfig` and/or immutable workflow arguments;
-- runtime dependencies stay in `dependencies`; build/test tooling stays in `devDependencies`.
-
-Do not add a wrapper executable, postinstall downloader, platform package family, or separate `@ship-with-ai/cumpa` package while the required public identity is bare `cumpa`.
-
-### Plugin Manifest
-
-A minimal package-local manifest is sufficient:
-
-```json
-{
-  "name": "cumpa",
-  "version": "X.Y.Z",
-  "description": "Launches Cumpa's local review flow and consumes its canonical feedback.",
-  "skills": "./.kimi-code/skills"
-}
-```
-
-An explicit manifest version gives this published npm-source plugin a stable Claude Code update/cache key. Because `plugin.json` takes precedence over the marketplace entry, enforce equality with the package and catalog versions during artifact verification rather than generating another manifest system.
-
-### ShipWithAI Catalog
-
-The external entry should use the established marketplace name `shipwithai`, an exact npm version, truthful prerequisites, the public repository/homepage, and the catalog's existing author/category/tag conventions. The npm source is supported by Claude Code and avoids copying the skill into ShipWithAI's repository.
-
-Marketplace registration is a one-time user operation:
+### Public Consumer Flows
 
 ```text
-/plugin marketplace add ShipWithAI/shipwithai-plugins
+npm install --global @shipwithai/cumpa@1.5.0
+  -> npm verifies registry integrity
+  -> package bin mapping installs `cumpa`
+  -> existing CLI/server/browser flow
+
+npx --yes @shipwithai/cumpa@1.5.0
+  -> npm resolves the exact public package
+  -> executes the same packaged `cumpa` bin
+
+npx skills add Ship-With-AI/skills --skill cumpa
+  -> Skills CLI fetches public marketplace repo
+  -> installs MIT SKILL.md for selected agent(s)
+  -> skill checks for separately installed `cumpa`
+  -> delegates review to existing CLI
 ```
 
-Once registered, skill installation is one step:
+The skill must not download code, embed a second launcher, invoke a mutable `latest` package automatically, or reproduce Cumpa's review rules. Its missing-prerequisite path should display the exact supported npm install command and public source URL.
 
-```text
-/plugin install cumpa@shipwithai
-```
+## Dependency-Ordered Release Sequence
 
-That step installs the plugin into Claude Code's cache. It does **not** establish a shell-global `cumpa`; the listing, README, and any missing-prerequisite diagnostic must say that Node 24, Git, and the public CLI are required. Verify the actual namespaced skill invocation exposed by Claude Code rather than promising an untested alias.
+### 0. Resolve Legal and Exposure Preconditions
 
-## Required Work Versus Optional Hardening
+1. Establish copyright/licensing authority for the complete current application and retained history.
+2. Inventory third-party code and generated bundles; preserve required notices and confirm GPL compatibility.
+3. Audit all reachable Git history plus historical Actions logs/artifacts for credentials, personal data, private URLs, or other material that cannot become public.
+4. Revoke or rotate every discovered credential first. If unrotatable sensitive data must be removed, stop: publishing an unchanged complete history and removing that data are incompatible requirements that need owner resolution.
+5. Add the root GPL and nested MIT notices without rewriting history merely to insert license files into old commits. State that the current grant covers the repository history the organization has authority to license, with the named MIT exception.
 
-### Required for v1.5
+### 1. Establish the Deterministic Package Contract
 
-1. Secure legitimate ownership of the existing `cumpa` npm package name.
-2. Make the source repository public and choose a public license.
-3. Convert the existing manifest from private/placeholder metadata to the real public package while preserving its existing launcher/build layout.
-4. Add the plugin manifest pointing to the existing skill and package it in the same tarball.
-5. Refactor the existing artifact verifier to accept the exact tarball path.
-6. Add one stable GitHub release workflow using a GitHub-hosted runner, Node 24, npm `>=11.5.1`, protected environment approval, OIDC, and no npm token.
-7. Enable immutable GitHub releases and configure the matching npm trusted publisher/environment.
-8. Build once, pack once, inspect and smoke the exact tarball, and publish that file explicitly.
-9. Verify registry bytes, default tag, provenance/signatures, global install, and npx from clean locations.
-10. Publish the exact verified version through the ShipWithAI marketplace and verify skill discovery/delegation.
-11. Update public documentation and prerequisite diagnostics without changing review semantics.
+1. Update manifest/lockfile identity and public metadata.
+2. Exclude the skill from the npm package allowlist; retain only application runtime output plus npm-always-included README/license/package metadata and any required notice file.
+3. Make the verifier consume one concrete tarball.
+4. Prove the release build on the intended GitHub-hosted runner and the package's current cross-platform fallback behavior.
+5. Add the fixed release workflow and version/tag guards while the repository is still private.
 
-### Optional Enhancements
+### 2. Make Source Public and Restore Governance
 
-- **npm staged publishing:** Configure the trusted publisher as stage-only and replace direct publication with `npm stage publish`, followed by interactive maintainer approval with 2FA. npm describes this as maximum hardening, but it adds a third approval system and is not necessary when reviewed GitHub releases plus a protected environment are the accepted v1.5 gate.
-- **Cross-platform release matrix:** Before publication, fan the exact tarball through additional GitHub-hosted OS jobs and return a checksum-attested artifact to the publish job. Add this when Cumpa explicitly promises more platforms; do not create per-platform packages merely for `--help` coverage.
-- **Automated marketplace update PR:** Add only when release frequency makes the small manual exact-version update error-prone. Never let such automation merge before npm verification.
-- **Additional release assets:** The npm tarball need not also be a GitHub release asset. Adding it safely would require preparing the asset while the release is still a draft; do not add a second workflow solely for duplication.
+1. Perform the in-place private-to-public visibility change.
+2. Verify the public repository, full history, source links, README, root license, and MIT exception render as intended.
+3. Re-enable or recreate default-branch, push, and release-tag rulesets that the visibility change disabled.
+4. Enable immutable releases and the protected npm release Environment.
+5. Only after the public repository exists, proceed to npm provenance/trust configuration.
 
-## Dependency-Aware Implementation Order
+### 3. Bootstrap the New npm Package, Then Remove Bootstrap Credentials
 
-| Phase | Depends on | Deliverable and exit condition |
-|---|---|---|
-| **0. Distribution identity and policy** | None | npm owner access for bare `cumpa`; public `Ship-With-AI/cumpa`; selected license; approved first Cumpa registry version; stable workflow/environment names. Stop if any required identity cannot be obtained. |
-| **1. One-package public contract** | Phase 0 decisions | Public `package.json`/lockfile metadata, `.claude-plugin/plugin.json`, unchanged canonical skill path, README install/prerequisite copy. A local pack inventory contains one CLI+browser+skill artifact. |
-| **2. Exact-artifact verification** | Phase 1 | Existing verifier accepts a `.tgz`; build-once/pack-once path checks inventory, support origin, plugin metadata, executable, isolated global install, and npx-style execution without repacking. |
-| **3. Approved trusted publication** | Phases 0-2 | Immutable releases, protected `npm-production` environment, exact npm trusted-publisher binding, and `publish-npm.yml` with release/tag guards, fixed GitHub-hosted runner, OIDC, exact-tarball publish, no npm secret. Dry-run/local checks pass before activation. |
-| **4. First public registry release** | Phase 3 | Reviewed immutable release publishes the chosen version; registry tarball/integrity/provenance/signatures verified; clean exact and unversioned global/npx flows resolve Cumpa. Record immutable evidence before promotion. |
-| **5. ShipWithAI promotion** | Phase 4 | Upstream catalog entry points to the verified exact npm version; clean marketplace installation discovers the existing skill and delegates to the separately installed CLI. |
+**Implementation gate:** `@shipwithai/cumpa` does not exist, while npm trusted and staged publishing settings require an existing package. npm's official documentation does not provide a pending-package trust relationship.
 
-The ordering is strict at two points: trusted-publisher activation needs legitimate npm package ownership, and the marketplace must not reference a version until npm serves and verifies it.
+Recommended one-time resolution:
 
-## Scaling Considerations
+1. From a public, GPL-complete prerelease commit/tag such as `v1.5.0-rc.0`, build and verify a source-accurate prerelease tarball through the same package contract.
+2. Publish it publicly under a non-`latest` prerelease tag using the shortest-lived, narrowly scoped npm credential the owners can create, with 2FA/provenance where npm supports them. Do not publish stable `1.5.0` in this step and do not claim this seed used trusted publishing.
+3. Configure the trusted publisher against the stable workflow's exact public repository, workflow filename, and environment. Prefer allowing stage publication only.
+4. Set package access to require 2FA and disallow token publication, remove the bootstrap repository secret/workflow if any, and revoke the credential immediately.
+5. Exercise an OIDC prerelease/stage if needed to prove the trust tuple before stable `1.5.0`.
 
-Public distribution scales by releases, platforms, and install surfaces rather than server users.
+This exception is temporary namespace bootstrapping, not a permanent alternate release path.
 
-| Growth point | Architecture response |
-|---|---|
-| Occasional stable releases, current platform scope | One protected workflow, one arm64 macOS-built tarball, one `latest` channel, manual exact-version ShipWithAI PR. |
-| More frequent releases | Keep one workflow; add concurrency/idempotency guards and automate evidence capture. Do not introduce a release service or package monorepo. |
-| Supported prerelease channel | Add an explicit prerelease branch/tag policy, npm dist-tag such as `next`, separate release guard, and a catalog policy. Do not let a prerelease event overwrite `latest` accidentally. |
-| Explicit Linux/Windows/macOS support commitment | Run the exact tarball through a prepublication OS matrix. The current Darwin arm64 addon is optional at runtime; if a native capability later becomes required on every platform, then evaluate npm optional platform packages or portable implementation as a separate architecture decision. |
-| Multiple agent marketplaces | Keep the package and canonical skill unchanged; add thin marketplace metadata pointing to exact package versions. Do not fork the skill per marketplace. |
+### 4. Publish Canonical `1.5.0`
 
-### First Bottlenecks
+1. Create/protect `v1.5.0` at the reviewed release commit.
+2. Build, pack, inspect, install, and smoke-test one tarball.
+3. Create the draft GitHub Release and attach that exact tarball/checksum.
+4. Stage it through npm trusted publishing; review and approve with 2FA.
+5. Fetch and verify the public registry package, integrity, source metadata, and provenance.
+6. Publish the GitHub draft, making the tag and assets immutable.
+7. Verify the immutable release and attached tarball with `gh release verify` and `gh release verify-asset`.
+8. Exercise both public CLI installation paths from clean state.
 
-1. **External coordination, not build throughput:** npm ownership transfer and ShipWithAI PR review dominate lead time. Solve with release checklists and clear ownership, not automation services.
-2. **Version synchronization:** package, plugin, GitHub tag, npm dist-tag, and marketplace entry can drift. One verifier comparing declared versions is sufficient; do not add a versioning framework.
-3. **Platform evidence:** a macOS-built package can be installed elsewhere because the native addon is optional, but broader support claims require actual clean installs on those systems.
+### 5. Promote the MIT Skill
 
-## Anti-Patterns
-
-### Repacking at Publish Time
-
-**What people do:** Inspect `npm pack --dry-run`, run another pack in tests, then execute bare `npm publish` from the working tree.
-
-**Why it is wrong:** Each lifecycle/build/pack invocation is another opportunity for inputs or bytes to differ. The evidence no longer identifies the uploaded file.
-
-**Do this instead:** Pack once, pass that concrete path to every verifier/smoke, and publish the same `.tgz` path.
-
-### Parallel CLI and Skill Packages
-
-**What people do:** Publish one package for the CLI and another package or copied repository subtree for the skill.
-
-**Why it is wrong:** Versions, docs, and handoff protocol can drift, while users cannot know which pair is compatible.
-
-**Do this instead:** Put one plugin manifest beside the already packaged existing skill and expose the root npm package as the marketplace source.
-
-### Treating Marketplace Installation as CLI Installation
-
-**What people do:** Assume Claude Code's npm-source plugin cache makes `cumpa` globally available on the user's `PATH`.
-
-**Why it is wrong:** Plugin installation and shell-global npm installation are separate mechanisms. The existing skill invokes a system command.
-
-**Do this instead:** State and test the CLI prerequisite. Keep `/plugin install cumpa@shipwithai` one-step for the skill after marketplace registration.
-
-### Token-Based Publishing “Just for the First Release”
-
-**What people do:** Add `NPM_TOKEN` to GitHub secrets as a bootstrap shortcut.
-
-**Why it is wrong:** It violates the no-long-lived-token goal and creates rotation/exfiltration work. In this case the package already exists, so proper ownership transfer should permit trusted-publisher configuration before the first Ship With AI release.
-
-**Do this instead:** Resolve ownership and configure OIDC first. If npm reveals an unhandled bootstrap constraint, stop and resolve it as a one-time authenticated maintainer operation without committing an automation token.
-
-### Publishing from a Private Repository and Claiming Provenance
-
-**What people do:** Observe that trusted OIDC authentication succeeded and assume provenance was emitted.
-
-**Why it is wrong:** npm explicitly requires a public repository and public package for automatic provenance.
-
-**Do this instead:** Make the repository public before the release and fail post-publication verification when the attestation is absent.
-
-### Treating Provenance as a Functional Test
-
-**What people do:** Use the provenance badge as evidence that the package runs or that the correct assets were included.
-
-**Why it is wrong:** Provenance links bytes to source/build identity; it does not validate Cumpa behavior or package inventory.
-
-**Do this instead:** Combine provenance with exact-tarball inspection, integrity comparison, and real install/execute checks.
-
-### Publishing the Marketplace Entry First
-
-**What people do:** Merge the catalog entry while npm publication is pending.
-
-**Why it is wrong:** Users receive a one-step installation command that resolves to a missing or unrelated package/version.
-
-**Do this instead:** Registry publication and verification are hard dependencies of marketplace promotion.
-
-### Solving Native Packaging Prematurely
-
-**What people do:** Create several platform packages or install-time compilation merely because one optional Darwin arm64 addon exists.
-
-**Why it is wrong:** The current loader already degrades safely to `reExportUnsupported`, and platform fan-out creates release coordination unrelated to public CLI discovery.
-
-**Do this instead:** Build the single release artifact on fixed GitHub-hosted arm64 macOS to preserve the existing addon, document current support, and add platform packaging only when a required cross-platform native feature justifies it.
+1. Copy the reviewed thin skill into `Ship-With-AI/skills/skills/cumpa/`, carrying explicit MIT licensing and the upstream Cumpa tag/commit in the promotion record.
+2. Add it to marketplace discovery/documentation as required by that repository's current conventions.
+3. Merge only after the exact CLI prerequisite is publicly installable.
+4. Exercise `npx skills add Ship-With-AI/skills --skill cumpa` in an isolated agent home, then invoke the skill with the separately installed CLI and confirm the canonical Cumpa result path is used.
 
 ## Integration Points
 
-### External Services
-The identities are intentionally different and must not be normalized: the source/trusted-publisher repository owner is `Ship-With-AI`, while the marketplace organization is `ShipWithAI`.
+### npm Trusted Publisher
 
+**Producer:** protected GitHub Actions workflow running on a GitHub-hosted runner.
 
-| Service | Integration pattern | Notes |
-|---|---|---|
-| npm registry | Trusted publisher plus explicit `.tgz` `npm publish` | Bare name currently has unrelated owner/history. Configure direct publish, exact workflow/environment, public access and stable tag after transfer. |
-| GitHub Releases | Draft review followed by `release.published` | Event identifies tag ref/commit; immutable releases lock tag/assets and create a GitHub release attestation. |
-| GitHub Environments | `environment: npm-production` on publish job | Required reviewers, prevent self-review, and deployment-tag restriction are the final human gate before registry write. |
-| GitHub OIDC | `id-token: write` on GitHub-hosted runner | npm CLI `>=11.5.1`; setup-node registry URL; no `NODE_AUTH_TOKEN`; automatic npm provenance only after repository is public. |
-| ShipWithAI marketplace | External catalog entry with exact npm source version | Repository is `ShipWithAI/shipwithai-plugins`; marketplace name is `shipwithai`; upstream acceptance remains external. |
-| Claude Code plugin manager | npm source plus `.claude-plugin/plugin.json` | Installs plugin in cache and discovers custom skill path; does not promise global binary installation. |
-| Public support service | Existing build-time canonical origin | Preserve current build/scan contract; it is not a release credential. |
+**Consumer:** npm trust configuration for `@shipwithai/cumpa`.
 
-### Internal Boundaries
+**Contract:** exact GitHub owner, repository, workflow filename, optional environment, allowed action, public source repository, npm/Node minimums, and `id-token: write` all agree. Changing the workflow filename or environment requires deleting and recreating the npm trust relationship; it is not an internal refactor.
 
-| Boundary | Communication | Notes |
-|---|---|---|
-| release workflow → existing build | npm scripts plus one public support-origin environment value | No review-runtime code change. |
-| existing build → exact tarball | `npm pack --json --ignore-scripts` | JSON output supplies the sole artifact filename. |
-| exact tarball → existing verifier | explicit path argument | Verifier must not call `npm pack`. |
-| package manifest → npm global/npx | existing `bin.cumpa` mapping | Generated launcher must remain executable and included. |
-| package manifest → Claude plugin | `files` allowlist includes manifest and existing skill | Custom `skills` path avoids duplication. |
-| skill → CLI | `cumpa` process on `PATH` and existing JSON handoff protocol | Keep CLI prerequisite explicit; canonical feedback contract unchanged. |
-| launcher → CLI/server/browser | existing import and loopback launch path | Distribution does not add remote service exposure or change review behavior. |
+### GitHub Release
 
-## Confidence Assessment
+**Producer:** the same release orchestration that produced the tarball.
 
-| Area | Confidence | Notes |
-|---|---|---|
-| Existing repository/package integration | HIGH | Direct inspection of current manifest, build scripts, verifier, native capability fallback, tests, README, and skill. |
-| npm global/npx/package/tarball behavior | MEDIUM | Current npm CLI and official npm documentation were checked through Context7 and direct official pages; exact workflow still needs implementation proof. |
-| npm trusted publishing/provenance | MEDIUM | Current official npm documentation checked on 2026-09-04; product blockers and first transfer/configuration must be exercised on the real package. |
-| GitHub release/environment/immutability | MEDIUM | Current official GitHub documentation supports the design; repository settings and plan-specific environment protections must be verified in the real repository. |
-| npm identity/visibility blockers | HIGH | Live npm registry metadata/`npm view` and authenticated `gh repo view` were checked on 2026-09-04. Resolution depends on external owners/settings. |
-| Claude Code npm plugin contract | MEDIUM | Current official Claude Code docs support npm sources, exact versions, plugin manifests, and custom skills paths; installed invocation must be verified in clean Claude Code. |
-| ShipWithAI acceptance | MEDIUM | Current public catalog/README confirm marketplace name and contribution flow, but upstream maintainers control acceptance and currently show no npm-source example. |
+**Consumer:** GitHub immutable-release storage/attestation and public users.
 
-Overall confidence is MEDIUM because the architecture uses documented native mechanisms and existing repository seams, but successful delivery depends on an external npm ownership transfer, public-repository conversion, real OIDC/provenance publication, and upstream marketplace acceptance that research cannot perform.
+**Contract:** release tag equals package version, release commit equals provenance source commit, and attached tarball equals the npm registry tarball. Release notes may remain editable; assets and tag may not.
 
-## Sources
+### npm Package to Public Source
 
-### Official npm
+**Producer:** packaged `package.json` and README.
 
-- [Trusted publishing for npm packages](https://docs.npmjs.com/trusted-publishers/) — OIDC prerequisites, GitHub-hosted runners, workflow/environment binding, no-token operation, automatic provenance, allowed actions, stage-only option, and token restrictions. [MEDIUM]
-- [Generating provenance statements](https://docs.npmjs.com/generating-provenance-statements/) — public repository/public package requirements and `npm audit signatures` attestation verification. [MEDIUM]
-- [`npm publish`](https://docs.npmjs.com/cli/v11/commands/npm-publish) — explicit gzipped-tarball package spec, immutable name/version, integrity publication, public access and tags. [MEDIUM]
-- [`package.json` `bin`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json#bin) and [`npx`/`npm exec`](https://docs.npmjs.com/cli/v11/commands/npx) — global executable links and temporary package execution. [MEDIUM]
-- [Verifying registry signatures](https://docs.npmjs.com/verifying-registry-signatures/) — installed-package signature verification. [MEDIUM]
-- [Package name guidelines](https://docs.npmjs.com/package-name-guidelines) — unique, first-party public package identity expectations. [MEDIUM]
-- [Live `cumpa` registry metadata](https://registry.npmjs.org/cumpa/latest) — unrelated `cumpa@2.0.1`, maintainer/repository, tarball and integrity metadata. Verified with `npm view cumpa` on 2026-09-04. [HIGH]
+**Consumer:** npm provenance service and GPL recipients.
 
-### Official GitHub
+**Contract:** case-correct `Ship-With-AI/cumpa` repository URL, exact version/tag directions, root GPL text, required notices, and corresponding build scripts remain available at the immutable source tag.
 
-- [Events that trigger workflows: `release`](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#release) — `published` activity and tag SHA/ref behavior. [MEDIUM]
-- [Deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments) — required reviewers, prevent-self-review, and deployment branch/tag rules. [MEDIUM]
-- [Immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases) — locked tags/assets, release attestations, and draft-then-publish flow. [MEDIUM]
-- [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) — fixed macOS arm64 labels; trusted publishing independently requires GitHub-hosted execution. [MEDIUM]
-- Authenticated `gh repo view Ship-With-AI/cumpa` on 2026-09-04 — repository visibility was `PRIVATE`; this operational fact has no public page while private. [HIGH]
+### Cumpa to ShipWithAI Marketplace
 
-### Claude Code and ShipWithAI
+**Producer:** reviewed MIT skill source associated with the public CLI release.
 
-- [Plugin marketplaces](https://code.claude.com/docs/en/plugin-marketplaces) — npm package sources, exact versions, marketplace registration and installation. [MEDIUM]
-- [Plugins reference](https://code.claude.com/docs/en/plugins-reference) — `.claude-plugin/plugin.json`, custom skill paths, cache/update version precedence, and plugin installation behavior. [MEDIUM]
-- [ShipWithAI marketplace catalog](https://github.com/ShipWithAI/shipwithai-plugins/blob/main/.claude-plugin/marketplace.json) — marketplace identity and current entry conventions. [MEDIUM]
-- [ShipWithAI marketplace README](https://github.com/ShipWithAI/shipwithai-plugins) — registration/install commands and contribution expectation to keep versions honest and test on real projects. [MEDIUM]
+**Consumer:** `Ship-With-AI/skills/skills/cumpa/` and the Skills CLI.
 
-### Repository Integration Evidence
+**Contract:** one thin `SKILL.md`, explicit MIT notice, public `@shipwithai/cumpa@1.5.0` prerequisite, source/support links, and no copied review implementation. The marketplace version may lag the application release; it must never lead it.
 
-- `package.json`
-- `scripts/build-bin.mjs`
-- `scripts/build-native-addon.mjs`
-- `scripts/verify-production-artifacts.mjs`
-- `src/server/native-exchange-capability.ts`
-- `tests/e2e/package-assets.spec.ts`
-- `.kimi-code/skills/cumpa/SKILL.md`
-- `README.md`
-- `.planning/PROJECT.md`
+## Verification Evidence
+
+| Boundary | Required evidence | Proves | Does not prove |
+|---|---|---|---|
+| Public source | Public clone can reach existing history; root GPL and nested MIT notices visible; tag resolves to intended commit | Source/history and license materials are available | Organization owns every right; that needs the rights gate |
+| Local release tarball | npm-reported inventory, SHA-512/SHA-256, expected executable/assets/license/README/notices, no skill subtree/secrets/obsolete URLs | Exact candidate package composition | Registry received it |
+| Local clean install | Isolated install of tarball and execution of `cumpa` surface | Packaged bin and runtime are coherent | Public registry resolution |
+| npm trusted stage/publish | OIDC run associated with configured workflow/environment and no npm token | Authentication path for artifact submission | Public bytes match until registry fetch |
+| npm registry | Exact metadata and downloaded tarball digest/integrity match candidate | Public package is expected immutable artifact | Source origin without provenance |
+| npm provenance/signatures | Current npm CLI `npm audit signatures` succeeds for exact installed version and package page links expected source | Registry attestation links package to public workflow/source | Application behavior or code safety |
+| GitHub immutable release | `gh release verify v1.5.0` succeeds | Release/tag/asset attestation exists and is immutable | Registry equality |
+| GitHub asset | `gh release verify-asset v1.5.0 <local-tarball>` succeeds | Local tarball equals release asset | npm equality unless digest also compared |
+| Public global install | Clean `npm install --global @shipwithai/cumpa@1.5.0` and actual CLI invocation succeed | Supported global public path | `npx` path |
+| Public npx | Clean `npx --yes @shipwithai/cumpa@1.5.0` invocation succeeds | Supported ephemeral public path | Marketplace path |
+| Marketplace install | Isolated Skills CLI install finds `cumpa`, installs MIT skill, missing-CLI guidance is correct, installed CLI receives invocation | Public marketplace and prerequisite compose | New review behavior; none is intended |
+
+## Failure Handling Across Immutable Systems
+
+GitHub and npm do not offer an atomic cross-service transaction. The draft-first sequence limits the partial states:
+
+- **Before npm acceptance:** reject the npm stage and replace/delete the GitHub draft; neither public immutable authority has accepted `1.5.0`.
+- **npm accepts but GitHub draft publication fails:** keep the protected tag and attached draft, compare its tarball with the public registry, and retry only release finalization. Never rebuild or republish `1.5.0`.
+- **A retry finds `1.5.0` already present:** treat that as success only after downloading it and proving its integrity equals the approved tarball. Otherwise stop and investigate.
+- **A bad npm version is public:** deprecate it if appropriate and issue a new version. npm will never permit reuse of the name/version.
+- **An immutable GitHub release is wrong:** do not try to move its tag or replace assets. Correct with a new application version/release.
+- **Marketplace instructions are wrong after merge:** correct the skill, but if they require a changed CLI contract, publish and verify a new CLI version first.
+
+## Anti-Patterns
+
+### Making the Repository Public Before the Exposure Gate
+
+Historical Git objects, Actions history, and logs become public together. Rotating credentials after visibility changes is too late. Rewriting history casually also changes commit IDs, invalidates signatures/PR context, and contradicts the complete-history goal.
+
+### Treating `package.json.license` as the License
+
+The SPDX field is metadata, not the license grant or required notice. Ship the full root GPL text, explicit `-or-later` project notice, third-party notices, and nested MIT text.
+
+### Mixing the MIT Skill into the GPL npm Tarball
+
+GPL can coexist with a separate independent MIT work, but the current mixed packlist creates needless ambiguity about package licensing and distribution authority. The CLI tarball should contain the application; the marketplace should contain the skill.
+
+### Packing More Than Once
+
+`npm pack`, an artifact verifier that packs internally, and bare `npm publish` can create three candidates. Build once, pack once, inspect one explicit file, and pass that file to npm and GitHub.
+
+### Publishing the GitHub Release Before Assets Are Complete
+
+With immutable releases enabled, later asset replacement is intentionally blocked. Use a draft, attach everything, complete npm verification, then publish.
+
+### Publishing From Pull Requests, Arbitrary Branches, or a Mutable Tag
+
+OIDC proves workflow identity, not release intent. Require a protected semantic-version tag, tag/package equality, protected Environment approval, and a fixed workflow file.
+
+### Renaming the Workflow After Trust Configuration
+
+The filename is part of npm's trusted-publisher identity. A “cleanup” rename breaks release authentication and requires a new trust relationship.
+
+### Leaving a Fallback npm Token
+
+A dormant token defeats the reason for OIDC. After bootstrap and trust verification, disallow token publication and revoke/delete the bootstrap credential and secret.
+
+### Publishing the Marketplace Skill First
+
+The skill depends on a public executable it does not contain. Marketplace publication before the registry path is verified produces an installable broken integration.
+
+### Rebuilding an Accepted Version
+
+Neither npm `1.5.0` nor an immutable GitHub release can be repaired in place. Preserve the accepted bytes and ship a new version.
+
+## Recommended Phase Ordering
+
+| Phase | Scope | Depends on | Completion signal |
+|---|---|---|---|
+| 1. Licensing and public-readiness | Rights inventory, GPL root, MIT exception, dependency notices, history/Actions exposure audit | none | Owner approves all material for public release |
+| 2. Deterministic package contract | Scoped manifest, package/source metadata, skill exclusion, single-tarball verifier, release workflow | phase 1 legal boundary | One locally verified release tarball can be traced to one commit |
+| 3. Public source governance | In-place visibility change, public source/license verification, restored rulesets, immutable releases/environment | phases 1-2 | Public repository is safe and protected |
+| 4. npm namespace and trust | Source-accurate prerelease seed, trusted publisher binding, OIDC proof, token revocation/disallowance | phase 3; npm package must exist before trust | Stable workflow can authenticate without a token |
+| 5. Canonical `1.5.0` | Protected tag, one tarball, trusted stage/publish, registry/provenance checks, immutable GitHub release, real global/npx installs | phase 4 | Public npm and GitHub artifacts match and both install paths run |
+| 6. MIT marketplace promotion | Reviewed skill copy, explicit MIT licensing, public CLI prerequisite, real Skills CLI install/invocation | phase 5 | Fresh agent install delegates to public Cumpa CLI |
+
+This order keeps every irreversible public action behind evidence from the preceding reversible phase.
+
+## Open Decisions and Gates
+
+1. **Who owns all copyright needed for the GPL grant?** Resolve before public visibility; this research is architectural, not legal advice.
+2. **Does the history contain material that cannot become public after credential rotation?** If yes, the owner must resolve the conflict between unchanged complete history and safe publication before proceeding.
+3. **Which GitHub-hosted runner produces the intended existing native artifact?** Pin it based on the already validated runtime contract; do not let runner availability silently alter package contents.
+4. **Stage-only or direct trusted publishing for stable releases?** Recommendation: stage-only plus maintainer 2FA. Direct OIDC publication is acceptable if the protected GitHub Environment is deliberately chosen as the sole human gate.
+5. **How will the brand-new npm package be seeded?** npm documents no trusted-publisher-before-package flow. Use a non-stable, source-accurate bootstrap release and immediately remove the temporary credential; re-check npm capabilities at implementation time.
+6. **Where will the long-term editable skill source live?** Recommendation for v1.5: Cumpa repository is reviewed upstream, ShipWithAI marketplace is distribution. Revisit only if drift appears; do not build synchronization infrastructure preemptively.
+
+## Primary Sources
+
+### npm
+
+- [Trusted publishing for npm packages](https://docs.npmjs.com/trusted-publishers/) — supported providers/runners, required workflow permissions, exact trust identity, minimum Node/npm, automatic provenance, cache guidance, and post-migration token policy.
+- [Staged publishing](https://docs.npmjs.com/staged-publishing/) — staged review and 2FA approval with trusted publishers.
+- [`npm stage` CLI](https://docs.npmjs.com/cli/v11/commands/npm-stage/) — existing-package prerequisite, tarball package spec, trust-token support, allowed-action policy, version uniqueness, and npm's stage-only recommendation.
+- [Generating provenance statements](https://docs.npmjs.com/generating-provenance-statements/) — public source/package requirements, case-sensitive repository match, and `npm audit signatures` verification.
+- [`npm publish`](https://docs.npmjs.com/cli/v11/commands/npm-publish/) — tarball input, public scoped access, packlist behavior, integrity fields, and immutable name/version rule.
+- [`package.json`](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/) — SPDX `license`, repository metadata, `files`, always-included README/license/package metadata, `bin`, and publish configuration.
+- [Creating and viewing access tokens](https://docs.npmjs.com/creating-and-viewing-access-tokens) — granular package/scope permissions, minimum one-day expiration, and organization permissions not granting package publication rights.
+- [Current registry lookup for `@shipwithai/cumpa`](https://registry.npmjs.org/%40shipwithai%2Fcumpa) — returned 404 on 2026-09-04.
+- [npm documentation issue #1926](https://github.com/npm/documentation/issues/1926) — current open report documenting the first-publication OIDC/bootstrap gap. This is supporting evidence for an undocumented edge, not normative npm policy.
+
+### GitHub
+
+- [Setting repository visibility](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) — public Actions history/log exposure, public forks, and disabled push rulesets after private-to-public conversion.
+- [Removing sensitive data from a repository](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository) — revoke credentials first and the consequences/recontamination risks of rewriting history.
+- [Immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases) — locked tag/assets, release attestation, and draft-attach-publish best practice.
+- [Verifying release integrity](https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/verify-release-integrity) — `gh release verify` and `gh release verify-asset`.
+
+### Licensing
+
+- [SPDX GPL-3.0-or-later](https://spdx.org/licenses/GPL-3.0-or-later.html) — canonical identifier and GPL v3 text, including Corresponding Source and conveyance requirements.
+- [SPDX MIT](https://spdx.org/licenses/MIT.html) — canonical MIT identifier and required copyright/license text.
+
+### Skill Distribution
+
+- [Ship-With-AI/skills README](https://github.com/Ship-With-AI/skills/blob/main/README.md) — current marketplace layout and one-command cross-agent installation.
+- [vercel-labs/skills README](https://github.com/vercel-labs/skills/blob/main/README.md) — upstream Skills CLI source formats, `--skill`, agent targets, and installation scopes.
 
 ---
-*Architecture research for: Cumpa v1.5 Public Distribution*
-*Researched: 2026-09-04*
+
+*Architecture research for Cumpa v1.5 Public Distribution; application/runtime behavior intentionally out of scope.*
