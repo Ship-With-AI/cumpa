@@ -1,99 +1,81 @@
 # Requirements: Cumpa
 
-**Defined:** 2026-09-04
+**Defined:** 2026-09-05
 **Milestone:** v1.5 Public Distribution
 **Core Value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
 
 ## v1.5 Requirements
 
-### Package Access
+### Public Source and Licensing
 
-- [ ] **PKG-01**: User can install public `@shipwithai/cumpa@1.5.0` globally and run the `cumpa` command.
-- [ ] **PKG-02**: User can run `npx @shipwithai/cumpa@1.5.0` without a global installation.
-- [ ] **PKG-03**: User can run `cumpa --version` and see the exact installed package version.
-- [ ] **PKG-04**: User can find accurate Node.js 24+, Git, installation, update, uninstall, and troubleshooting guidance in public package documentation.
-- [ ] **PKG-05**: Registry metadata accurately identifies Cumpa, ShipWithAI, its public documentation and support locations, executable, runtime requirements, and proprietary license.
+- [ ] **SRC-01**: The existing `Ship-With-AI/cumpa` repository and its complete intended history are publicly accessible in place.
+- [ ] **SRC-02**: Public visibility remains blocked until all intended refs, history, Actions logs and artifacts, releases, attachments, and LFS objects pass a credential, secret, and private-data review, with exposed credentials revoked or rotated first.
+- [ ] **LIC-01**: Cumpa application source and npm releases consistently declare `GPL-3.0-or-later` and include the complete GPLv3 license text.
+- [ ] **LIC-02**: Each compiled npm release links to exact Corresponding Source containing the lockfile, build and install scripts, license material, and required third-party notices.
+- [ ] **LIC-03**: Maintainers verify authority to license first-party contributions and resolve incompatible or unknown third-party and generated material before publication.
 
-### Source and Licensing
+### Public CLI Package
 
-- [ ] **LIC-01**: Cumpa's source repository and history remain private while the compiled npm package is publicly installable.
-- [ ] **LIC-02**: The npm package contains lawyer-approved proprietary terms granting installation and unmodified use while prohibiting modification, derivative works, redistribution, sublicensing, and resale.
-- [ ] **LIC-03**: The public MIT-licensed marketplace skill contains only thin delegation instructions and no Cumpa application source or duplicate review implementation.
-
-### Release Artifact
-
-- [ ] **ART-01**: One configured build produces one inspected `.tgz` containing every CLI, browser, runtime, and required skill asset.
-- [ ] **ART-02**: The published tarball excludes credentials, repository history, planning and development material, unrequired source files, and unauthorized hosted-service configuration.
-- [ ] **ART-03**: Installation requires no consumer compiler or install-time native build; unsupported native targets retain the existing explicit JavaScript fallback behavior.
-- [ ] **ART-04**: The release artifact contains only the approved canonical public support-service origin and no hosted-service secret.
+- [ ] **PKG-01**: Users can globally install public `@shipwithai/cumpa@1.5.0` and run `cumpa`.
+- [ ] **PKG-02**: Users can run `npx @shipwithai/cumpa@1.5.0` without a global installation.
+- [ ] **PKG-03**: Users can run `cumpa --version` and see exactly `1.5.0`.
+- [ ] **PKG-04**: Public documentation covers Node.js 24+, Git, installation, update, uninstall, troubleshooting, support, and security reporting.
+- [ ] **PKG-05**: npm metadata accurately identifies Cumpa, ShipWithAI, GPL-3.0-or-later, its public source repository, documentation and support locations, executable, and runtime requirements.
+- [ ] **PKG-06**: The npm package contains the complete runnable application and GPL and third-party notices but excludes the independently MIT-licensed marketplace skill.
 
 ### Trusted Publication
 
-- [ ] **REL-01**: An approved immutable `v1.5.0` GitHub release, package version, commit, and tarball identify the same release.
-- [ ] **REL-02**: GitHub Actions publishes through npm trusted publishing with short-lived OIDC credentials and no `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or equivalent long-lived publishing credential.
-- [ ] **REL-03**: Private-source publication explicitly disables automatic provenance and makes no provenance claim.
-- [ ] **REL-04**: The release workflow publishes the exact previously built, scanned, packed, and installed tarball without rebuilding during `npm publish`.
-- [ ] **REL-05**: Release reruns detect an already-published identical immutable version; bad releases recover through deprecation, a corrected higher version, and deliberate dist-tag repair rather than overwrite.
-- [ ] **REL-06**: Maintainers can verify the released registry integrity, metadata, executable, global installation, and scoped `npx` invocation from clean environments.
+- [ ] **REL-01**: Maintainers establish the previously unused `@shipwithai/cumpa` package through a harmless non-`latest` bootstrap release and immediately revoke the temporary publishing credential.
+- [ ] **REL-02**: GitHub Actions publishes `1.5.0` from the public repository through npm trusted publishing with provenance and without `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or another long-lived credential.
 
 ### ShipWithAI Marketplace
 
 - [ ] **SKL-01**: Coding-agent users can install `shipwithai-cumpa@shipwithai` through the existing ShipWithAI marketplace.
-- [ ] **SKL-02**: The marketplace listing clearly states that the proprietary `@shipwithai/cumpa` CLI is a separate prerequisite and provides its exact install command plus Node and Git requirements.
-- [ ] **SKL-03**: The installed skill remains behaviorally identical to the canonical thin Cumpa skill and delegates all review authority to the released CLI.
-- [ ] **SKL-04**: Skill metadata declares compatible CLI versions and gives users explicit marketplace refresh, plugin update, and CLI update guidance.
-- [ ] **SKL-05**: A clean marketplace installation can launch the released CLI, complete one real browser review, and consume its validated canonical result.
+- [ ] **SKL-02**: The marketplace listing states that the GPL `@shipwithai/cumpa` CLI is a separate prerequisite and provides its exact install command plus Node.js and Git requirements.
+- [ ] **SKL-03**: The installed MIT-licensed skill remains behaviorally identical to the canonical thin Cumpa skill and delegates all review authority to the released CLI.
+- [ ] **SKL-04**: Skill metadata declares compatible CLI versions and documents marketplace refresh, plugin update, and CLI update paths.
+
+### Clean Public Acceptance
+
+- [ ] **ACC-01**: A clean environment can globally install `@shipwithai/cumpa@1.5.0` and run the resulting `cumpa` command.
+- [ ] **ACC-02**: A clean empty-cache environment can invoke exact-version `npx @shipwithai/cumpa@1.5.0` without a global installation.
+- [ ] **ACC-03**: A clean marketplace installation can launch the released CLI, complete one browser review, and consume its validated canonical result.
 
 ## Deferred Requirements
 
-None.
+### Community
+
+- **GOV-01**: Public contributors receive contribution, conduct, governance, and issue-template guidance beyond essential installation, support, and security documentation.
+
+### Release Hardening
+
+- **ART-01**: One build produces one inspected tarball whose exact bytes are reused across GitHub and npm release records.
+- **ART-02**: Installation explicitly guarantees no consumer compiler or install-time native build while retaining the JavaScript fallback on unsupported native targets.
+- **REL-03**: A protected tag, reviewed commit, tarball checksum, GitHub release asset, npm integrity, and provenance identify the same immutable release bytes.
+- **REL-04**: Release reruns verify identical publication state, and bad releases recover through deprecation, corrected higher versions, and deliberate dist-tag repair.
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
 | Bare npm package `cumpa` | It remains owned by an unrelated project; the approved package identity is `@shipwithai/cumpa`. |
-| Public Cumpa source repository or Git history | The application remains private-source. |
-| Open-source application or npm-package license | The approved application model is proprietary use of unmodified releases. |
-| npm provenance | npm does not support provenance for packages published from private repositories; v1.5 retains OIDC trusted publishing without claiming provenance. |
-| Marketplace-driven CLI installation | The public skill declares the separately installed proprietary CLI prerequisite rather than mutating global software. |
+| Private application source, clean-room mirror, or squashed public history | v1.5 publishes the current repository and complete intended history in place. |
+| Proprietary application licensing | Cumpa application source and npm releases use GPL-3.0-or-later. |
+| Marketplace-driven CLI installation | The MIT skill declares the separately installed GPL CLI prerequisite rather than mutating global software. |
 | Other registries, package managers, installers, or standalone binaries | v1.5 proves the npm and ShipWithAI paths only. |
-| New native platform builds or consumer-side native compilation | Existing prebuilt capability and explicit JavaScript fallback remain authoritative. |
+| Additional agent marketplaces or automatic update behavior | Defer until real demand exists. |
 | Review, protocol, or hosted-support behavior changes | This milestone distributes the shipped product without redesigning it. |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PKG-01 | Phase 7 | Pending |
-| PKG-02 | Phase 7 | Pending |
-| PKG-03 | Phase 4 | Pending |
-| PKG-04 | Phase 4 | Pending |
-| PKG-05 | Phase 4 | Pending |
-| LIC-01 | Phase 3 | Pending |
-| LIC-02 | Phase 3 | Pending |
-| LIC-03 | Phase 6 | Pending |
-| ART-01 | Phase 4 | Pending |
-| ART-02 | Phase 4 | Pending |
-| ART-03 | Phase 4 | Pending |
-| ART-04 | Phase 4 | Pending |
-| REL-01 | Phase 5 | Pending |
-| REL-02 | Phase 5 | Pending |
-| REL-03 | Phase 5 | Pending |
-| REL-04 | Phase 5 | Pending |
-| REL-05 | Phase 5 | Pending |
-| REL-06 | Phase 7 | Pending |
-| SKL-01 | Phase 6 | Pending |
-| SKL-02 | Phase 6 | Pending |
-| SKL-03 | Phase 6 | Pending |
-| SKL-04 | Phase 6 | Pending |
-| SKL-05 | Phase 7 | Pending |
 
 **Coverage:**
-- v1.5 requirements: 23 total
-- Mapped to phases: 23
-- Unmapped: 0
+- v1.5 requirements: 20 total
+- Mapped to phases: 0
+- Unmapped: 20
 
 ---
-*Requirements defined: 2026-09-04*
-*Last updated: 2026-09-04 after v1.5 roadmap creation*
+*Requirements defined: 2026-09-05*
+*Last updated: 2026-09-05 after GPL-3.0-or-later scope approval*
