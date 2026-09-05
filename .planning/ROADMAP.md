@@ -7,73 +7,73 @@
 - **[v1.2 Fast Source Discovery](./milestones/v1.2-ROADMAP.md)** — Phases 09–11, 4 plans, 5/5 requirements, shipped 2026-07-30.
 - **[v1.3 Agent Review Handoff](./milestones/v1.3-ROADMAP.md)** — Phases 12–15, 14 plans, 42 tasks, 17/17 requirements, shipped 2026-08-06.
 - **[v1.4 Voluntary Support](./milestones/v1.4-ROADMAP.md)** — Phases 01–02, 22 plans, 30 tasks, 12/12 requirements, shipped 2026-09-04.
-- **v1.5 Public Distribution** — Phases 03–07, 23 requirements, planned.
+- **v1.5 Public Distribution** — Phases 03–07, 20 requirements, planned.
 
 ## Overview
 
-Public distribution proceeds through five dependency-ordered outcomes: approve the private-source proprietary application boundary, construct one installable release candidate, publish those exact bytes through tokenless trusted publishing with provenance disabled, publish only the thin MIT-licensed marketplace skill, then verify both real public installation paths end to end. The approved package is `@shipwithai/cumpa@1.5.0`; acquiring the unrelated bare `cumpa` package and publishing the application source are outside this roadmap.
+Public distribution proceeds through five hard, dependency-ordered outcomes. Cumpa first clears complete-history disclosure, licensing authority, and GPL readiness while the repository remains private. It then makes that history public and prepares the package, npm namespace, and trusted-publisher prerequisites before publishing `@shipwithai/cumpa@1.5.0`. The independently MIT-licensed ShipWithAI skill follows as a separate distribution surface, and clean global, npx, and marketplace browser-review acceptance closes the milestone. This milestone distributes the shipped review and voluntary-support behavior without redesigning either.
 
 ## Phases
 
-- [ ] **Phase 3: Approved Distribution Boundary** - Establish the legal and private-source boundary required before constructing public artifacts.
-- [ ] **Phase 4: Installable Release Candidate** - Produce one inspected proprietary npm tarball with complete runtime assets, metadata, documentation, and safe contents.
-- [ ] **Phase 5: Immutable npm Release** - Publish the exact approved tarball as `@shipwithai/cumpa@1.5.0` through OIDC without long-lived credentials or provenance.
-- [ ] **Phase 6: Public Agent Skill** - Publish the canonical thin Cumpa skill through ShipWithAI under the existing MIT license.
-- [ ] **Phase 7: End-to-End Public Acceptance** - Prove clean users can install and use the released CLI directly and through the marketplace skill.
+- [ ] **Phase 3: Public Disclosure and GPL Readiness** - Clear disclosure, rights, and GPL gates before repository visibility changes.
+- [ ] **Phase 4: Public Source and Publication Prerequisites** - Expose the complete approved history and prepare the package, npm namespace, and trusted-publisher path.
+- [ ] **Phase 5: Stable GPL npm Publication** - Publish the stable public package through GitHub OIDC with accurate provenance and Corresponding Source.
+- [ ] **Phase 6: Independent MIT Marketplace Skill** - Publish the separate thin skill with an explicit GPL CLI prerequisite.
+- [ ] **Phase 7: Clean Public Acceptance** - Prove global, npx, and marketplace browser-review flows from released public artifacts.
 
 ## Phase Details
 
-### Phase 3: Approved Distribution Boundary
-**Goal**: Public distribution is legally approved without exposing Cumpa's private application source or repository history.
+### Phase 3: Public Disclosure and GPL Readiness
+**Goal**: Maintainers can approve Cumpa for public GPL distribution without exposing unresolved credentials, private data, or material they lack authority to license.
 **Depends on**: Phase 2 (v1.4 complete)
-**Requirements**: LIC-01, LIC-02
+**Requirements**: SRC-02, LIC-01, LIC-03
 **Success Criteria** (what must be TRUE):
-  1. Maintainers can verify that the exact proprietary terms have lawyer approval and permit installation and unmodified use while prohibiting modification, derivative works, redistribution, sublicensing, and resale.
-  2. The compiled application can be prepared for public npm distribution while its source repository and history remain private.
+  1. Maintainers can inspect a disclosure review covering every intended ref and history plus Actions logs and artifacts, releases, attachments, and LFS objects; repository visibility remains blocked while any exposure is unresolved.
+  2. Every credential exposed by the review is revoked or rotated before visibility changes, and unresolved secrets or private data stop publication.
+  3. Maintainers can trace authority for first-party contributions and see incompatible or unknown third-party and generated material resolved before publication.
+  4. Application source and package licensing inputs consistently declare `GPL-3.0-or-later` and include the complete GPLv3 license text before the repository becomes public.
 **Plans**: TBD
 
-### Phase 4: Installable Release Candidate
-**Goal**: Maintainers have one inspected `@shipwithai/cumpa@1.5.0` tarball that installs and runs as the complete approved application.
+### Phase 4: Public Source and Publication Prerequisites
+**Goal**: Users can inspect Cumpa's complete approved history while maintainers have a correctly bounded `1.5.0` package candidate and an npm trusted-publication path ready before the stable release.
 **Depends on**: Phase 3
-**Requirements**: PKG-03, PKG-04, PKG-05, ART-01, ART-02, ART-03, ART-04
+**Requirements**: SRC-01, PKG-03, PKG-04, PKG-06, REL-01
 **Success Criteria** (what must be TRUE):
-  1. Installing the single configured-build tarball exposes `cumpa`, reports version `1.5.0`, and includes every required CLI, browser, runtime, and skill asset.
-  2. Package documentation gives accurate Node.js 24+, Git, install, update, uninstall, and troubleshooting guidance, while registry metadata identifies Cumpa, ShipWithAI, support locations, executable, runtime, and proprietary license.
-  3. Inspection shows the tarball contains no credentials, repository history, planning or development material, unrequired source, unauthorized hosted-service configuration, or hosted-service secret; it contains only the approved canonical public support origin.
-  4. A consumer can install and run the tarball without a compiler or install-time native build, and unsupported native targets retain the existing explicit JavaScript fallback behavior.
+  1. Users can access the existing `Ship-With-AI/cumpa` repository and its complete intended history publicly in place.
+  2. Maintainers can inspect a package candidate that reports exactly `1.5.0`, contains the complete runnable application and required GPL third-party notices, and excludes the independently MIT-licensed marketplace skill.
+  3. Public documentation gives exact Node.js 24+, Git, installation, update, uninstall, troubleshooting, support, and security-reporting guidance.
+  4. Maintainers can see the harmless non-`latest` npm bootstrap release, confirm its temporary publishing credential was revoked immediately, and configure the repository, workflow, and environment trusted-publisher binding before `1.5.0` is published.
 **Plans**: TBD
 
-### Phase 5: Immutable npm Release
-**Goal**: The exact inspected candidate is published as an immutable approved npm release through short-lived GitHub OIDC credentials.
+### Phase 5: Stable GPL npm Publication
+**Goal**: Users can obtain an accurately identified GPL `@shipwithai/cumpa@1.5.0` release published from public source through npm trusted publishing.
 **Depends on**: Phase 4
-**Requirements**: REL-01, REL-02, REL-03, REL-04, REL-05
+**Requirements**: LIC-02, PKG-05, REL-02
 **Success Criteria** (what must be TRUE):
-  1. Maintainers can identify one immutable `v1.5.0` GitHub release, package version, commit, and tarball as the same approved release.
-  2. GitHub Actions publishes the previously built, scanned, packed, and installed tarball without rebuilding and without any long-lived npm publishing credential.
-  3. Publication from the private source repository explicitly disables or omits npm provenance and makes no provenance claim.
-  4. Re-running the release recognizes an already-published identical immutable version, while a bad release is recoverable only through deprecation, a corrected higher version, or deliberate dist-tag repair.
+  1. GitHub Actions publishes public `@shipwithai/cumpa@1.5.0` through npm trusted publishing with provenance and without `NPM_TOKEN`, `NODE_AUTH_TOKEN`, or another long-lived publishing credential.
+  2. npm metadata accurately identifies Cumpa, ShipWithAI, `GPL-3.0-or-later`, the public source repository, documentation and support locations, the `cumpa` executable, and runtime requirements.
+  3. The compiled release points recipients to its exact Corresponding Source, lockfile, build and install scripts, license material, and required third-party notices.
 **Plans**: TBD
 
-### Phase 6: Public Agent Skill
-**Goal**: Coding-agent users can install the canonical thin Cumpa integration from ShipWithAI without publishing or duplicating the proprietary application.
+### Phase 6: Independent MIT Marketplace Skill
+**Goal**: Coding-agent users can install a public, independently MIT-licensed Cumpa skill that delegates review authority to the separately installed GPL CLI.
 **Depends on**: Phase 5
-**Requirements**: LIC-03, SKL-01, SKL-02, SKL-03, SKL-04
+**Requirements**: SKL-01, SKL-02, SKL-03, SKL-04
 **Success Criteria** (what must be TRUE):
   1. Coding-agent users can install `shipwithai-cumpa@shipwithai` through the existing ShipWithAI marketplace.
-  2. The listing identifies the proprietary `@shipwithai/cumpa` CLI as a separate prerequisite and gives its exact install command plus Node.js and Git requirements.
-  3. The installed skill remains behaviorally identical to the canonical thin skill, delegates all review authority to the released CLI, and contains no Cumpa application source or duplicate review implementation.
-  4. The public skill remains under ShipWithAI's existing MIT license and tells users which CLI versions are compatible and how to refresh the marketplace, update the plugin, and update the CLI.
+  2. The marketplace listing identifies `@shipwithai/cumpa` as a separate GPL CLI prerequisite and gives its exact install command plus Node.js and Git requirements.
+  3. The installed skill is behaviorally identical to the canonical thin Cumpa skill and delegates all review authority to the released CLI rather than duplicating application behavior.
+  4. Skill metadata states its independent MIT license, compatible CLI versions, and the marketplace refresh, plugin update, and CLI update paths.
 **Plans**: TBD
 
-### Phase 7: End-to-End Public Acceptance
-**Goal**: Real public registry and marketplace paths demonstrably deliver a working Cumpa review from installation through validated canonical feedback.
+### Phase 7: Clean Public Acceptance
+**Goal**: Clean users can reach the shipped browser-review workflow and validated canonical feedback through every approved public installation path.
 **Depends on**: Phase 6
-**Requirements**: PKG-01, PKG-02, REL-06, SKL-05
+**Requirements**: PKG-01, PKG-02, ACC-01, ACC-02, ACC-03
 **Success Criteria** (what must be TRUE):
-  1. A clean user can globally install public `@shipwithai/cumpa@1.5.0` and run the resulting `cumpa` command.
-  2. A clean user can run `npx @shipwithai/cumpa@1.5.0` without a global installation.
-  3. Maintainers can verify registry integrity, metadata, executable behavior, global installation, and scoped `npx` invocation against the released bytes in clean environments.
-  4. A clean marketplace installation can launch the released CLI, complete one real browser review, and consume its validated canonical result.
+  1. In a clean environment, a user can globally install `@shipwithai/cumpa@1.5.0`, run the resulting `cumpa` command, and observe version `1.5.0`.
+  2. In a clean empty-cache environment with no global installation, a user can invoke `npx @shipwithai/cumpa@1.5.0` successfully.
+  3. From a clean marketplace installation, a coding-agent user can launch the released CLI, complete one browser review, and consume its validated canonical result.
 **Plans**: TBD
 
 ## Progress
@@ -82,8 +82,8 @@ Public distribution proceeds through five dependency-ordered outcomes: approve t
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 3. Approved Distribution Boundary | 0/TBD | Not started | - |
-| 4. Installable Release Candidate | 0/TBD | Not started | - |
-| 5. Immutable npm Release | 0/TBD | Not started | - |
-| 6. Public Agent Skill | 0/TBD | Not started | - |
-| 7. End-to-End Public Acceptance | 0/TBD | Not started | - |
+| 3. Public Disclosure and GPL Readiness | 0/TBD | Not started | - |
+| 4. Public Source and Publication Prerequisites | 0/TBD | Not started | - |
+| 5. Stable GPL npm Publication | 0/TBD | Not started | - |
+| 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
+| 7. Clean Public Acceptance | 0/TBD | Not started | - |

@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Public Distribution
 status: planning
-last_updated: "2026-09-04T15:04:04.232Z"
-last_activity: 2026-09-04
+last_updated: "2026-09-05T00:00:00.000Z"
+last_activity: 2026-09-05
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,19 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-04)
+See: .planning/PROJECT.md (updated 2026-09-05)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 3 — Approved Distribution Boundary
+**Current focus:** Phase 3 — Public Disclosure and GPL Readiness
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 3 of 7 (Public Disclosure and GPL Readiness)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-04 — Milestone v1.5 started
+Status: Ready to plan
+Last activity: 2026-09-05 — v1.5 GPL roadmap created
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -121,19 +123,20 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 02]: Configured absence remains default until Plan 02-16 — Retirement must not embed or scan a real configured launcher before protected release work.
 - [Phase 02]: Final review binds six immutable records and separate release approval — Six named evidence paths prevent omission or substitution while approval remains independently auditable.
 
-- [v1.5]: Publish the scoped public application package as `@shipwithai/cumpa@1.5.0`; do not acquire or publish the unrelated bare `cumpa` package.
-- [v1.5]: Keep the application source repository and history private; trusted npm publication uses GitHub OIDC and explicitly disables or omits provenance.
-- [v1.5]: Use lawyer-approved proprietary unmodified-use terms for the npm application while publishing only the thin marketplace skill under ShipWithAI's existing MIT license.
+- [v1.5]: Publish the complete current repository history in place and license Cumpa application source and npm releases under `GPL-3.0-or-later`.
+- [v1.5]: Bootstrap `@shipwithai/cumpa` with a harmless non-`latest` release, revoke the temporary credential, then publish `1.5.0` through GitHub OIDC trusted publishing with provenance and no long-lived npm token.
+- [v1.5]: Keep the public MIT marketplace skill independent and thin; it declares the separately installed GPL CLI prerequisite and delegates all review authority to that CLI.
+- [v1.5]: Defer one-build/one-tarball byte identity, a no-consumer-build guarantee, immutable rerun/recovery controls, and the community governance kit.
 
 ### Roadmap Evolution
 
 - Phase 1 added: Add voluntary Stripe support payment and email recovery
 - Phase 2 added: Move the implementation to Supabase
-- Phase 3 added: Approve the proprietary private-source distribution boundary
-- Phase 4 added: Construct one inspected installable release candidate
-- Phase 5 added: Publish the exact candidate through tokenless OIDC without provenance
-- Phase 6 added: Publish the thin MIT-licensed ShipWithAI skill
-- Phase 7 added: Verify the real npm and marketplace paths end to end
+- Phase 3 added: Clear disclosure, licensing-authority, and GPL readiness gates before visibility
+- Phase 4 added: Publish the complete source history and prepare package, npm, and trusted-publisher prerequisites
+- Phase 5 added: Publish the stable GPL npm release through trusted publishing
+- Phase 6 added: Publish the independent MIT-licensed ShipWithAI skill
+- Phase 7 added: Verify clean global, npx, and marketplace browser-review paths
 
 ### Pending Todos
 

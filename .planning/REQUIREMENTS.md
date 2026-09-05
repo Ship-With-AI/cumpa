@@ -70,12 +70,32 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
+| SRC-01 | Phase 4 | Pending |
+| SRC-02 | Phase 3 | Pending |
+| LIC-01 | Phase 3 | Pending |
+| LIC-02 | Phase 5 | Pending |
+| LIC-03 | Phase 3 | Pending |
+| PKG-01 | Phase 7 | Pending |
+| PKG-02 | Phase 7 | Pending |
+| PKG-03 | Phase 4 | Pending |
+| PKG-04 | Phase 4 | Pending |
+| PKG-05 | Phase 5 | Pending |
+| PKG-06 | Phase 4 | Pending |
+| REL-01 | Phase 4 | Pending |
+| REL-02 | Phase 5 | Pending |
+| SKL-01 | Phase 6 | Pending |
+| SKL-02 | Phase 6 | Pending |
+| SKL-03 | Phase 6 | Pending |
+| SKL-04 | Phase 6 | Pending |
+| ACC-01 | Phase 7 | Pending |
+| ACC-02 | Phase 7 | Pending |
+| ACC-03 | Phase 7 | Pending |
 
 **Coverage:**
 - v1.5 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20
+- Mapped to phases: 20
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-05*
-*Last updated: 2026-09-05 after GPL-3.0-or-later scope approval*
+*Last updated: 2026-09-05 after v1.5 roadmap mapping*
