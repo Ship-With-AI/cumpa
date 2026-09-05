@@ -119,14 +119,18 @@ This is research-time evidence, not the final approval snapshot. The collector m
 |----------|----------|------------|--------------|
 | GPL and scoped-license inputs | `LICENSE`, `package.json`, `package-lock.json`, `.kimi-code/skills/cumpa/LICENSE`, `README.md` | Yes | Public, canonical license declarations only. |
 | Third-party notice source | `THIRD_PARTY_NOTICES.md` | Yes | Reviewed notices/source references for material actually conveyed; no scanner output or private data. |
-| Rights review summary | `.planning/phases/03-public-disclosure-and-gpl-readiness/03-RIGHTS-REVIEW.md` | Yes, before the final private push | Public-safe inventory/dispositions and approval references; exact sensitive details stay local. |
-| Collector/verifier | `scripts/verify-public-disclosure.mjs` | Yes | Read-only by default; external destructive operations are prohibited. |
-| Download workspace | OS temporary directory created with `mkdtemp` | No | Raw logs/artifacts/attachments, mode-restricted, never printed, deleted after review/evidence generation. |
-| Redacted machine evidence | `.cumpa/publication/disclosure-evidence.json` | No | IDs, counts, statuses, paths/rule IDs, and SHA-256 bindings; never raw credential values or deterministic hashes of secret values. |
-| Maintainer attestation | `.cumpa/publication/maintainer-attestation.json` | No | Exact evidence digest, intended refs, privacy/rights dispositions, credential remediation references, reviewer, and approval time. |
-| Final gate | `.cumpa/publication/publication-gate.json` | No | Exact evidence/attestation digests, frozen state, violation count, and `approved_for_public_visibility`. |
+| Rights review summary | `.planning/phases/03-public-disclosure-and-gpl-readiness/03-RIGHTS-REVIEW.md` | Yes, before synchronization | Public-safe inventory/dispositions and approval references; exact sensitive details stay local. |
+| Collector/verifier | `scripts/verify-public-disclosure.mjs` | Yes | Provisions/verifies pinned local tools and otherwise reads/derives records; remote destructive operations are prohibited. |
+| Download workspace | Owner-only OS temporary directory created with `mkdtemp` | No | Raw logs/artifacts/attachments/LFS payloads, never printed, deleted after review/evidence generation. |
+| Toolchain provenance | `.cumpa/publication/toolchain-provenance.json` | No | Official release/checksum origins, versions, platform, exact invocation paths, checksum-manifest and binary digests; no tokens. |
+| Redacted machine evidence | `.cumpa/publication/disclosure-evidence.json` | No | Exact tool binding; IDs/counts/statuses/digests; per-object LFS payload reviews; redacted findings; never raw credentials or their deterministic hashes. |
+| Consequential-action authorization | `.cumpa/publication/consequential-action-authorization.json` | No | One exact non-ref provider/hosted/support action, evidence/right/tool digests, target/command, consequences, reviewer/time, expiry, proof, and required recollection. |
+| Consequential-action ledger | `.cumpa/publication/consequential-action-ledger.json` | No | Strict append-only hash chain preserving each authorization's canonical bytes/digest, verified non-secret result/proof, following evidence digest, and previous-entry digest. |
+| Pre-push authorization | `.cumpa/publication/pre-push-authorization.json` | No | Every push: exact evidence/right/tool/action-ledger digests, findings/proof, reviewer/time, main old/new OIDs, ordinary or rewritten-main command/local adoption, and workflow/environment/target/consequences. |
+| Post-push attestation | `.cumpa/publication/maintainer-attestation.json` | No | Effective pre-push authorization and its transition-time ledger digest, exact final ledger plus validated append-only suffix, final fresh evidence, actual local/remote transition, settled attempts, complete clean surfaces, reviewer/dispositions. |
+| Final gate | `.cumpa/publication/publication-gate.json` | No | Exact evidence/authorization/attestation/current-surface/input digests, derived status, and violations. |
 
-The local final bundle avoids a self-invalidating audit loop: committing or pushing the report would change Git history and the current workflow would create another Actions surface. [VERIFIED: `.github/workflows/deploy-supabase-production.yml:3-5`] The committed verifier and public-safe rights/license inputs remain reviewable, while Phase 4 consumes a fresh local gate after its last private push. [RECOMMENDED]
+The local bundle avoids a self-invalidating audit loop. With `commit_docs: true`, Plan 04 synchronizes only after the committed Plan 03 summary exists; after the approved push it waits, recollects, attests, and performs live current-surface checks. Committing `03-04-SUMMARY.md` then invalidates the point-in-time gate, so Phase 4 repeats the full private sequence before visibility. [VERIFIED: `.github/workflows/deploy-supabase-production.yml:3-5`, `.planning/config.json`]
 
 ### Evidence record minimum fields
 
@@ -147,12 +151,12 @@ The local final bundle avoids a self-invalidating audit loop: committing or push
     "reachable_objects_sha256": "<64 hex>",
     "before_after_equal": true
   },
-  "tools": [],
+  "tools": { "provenance_sha256": "<64 hex>", "versions": ["gitleaks 8.30.1", "git-lfs 3.8.0"] },
   "surfaces": [],
+  "lfs_payload_reviews": [],
   "findings": [],
   "violations": [],
   "artifacts": { "evidence_sha256": "<self digest with this field blanked>" }
-}
 ```
 
 This follows the repository's existing version/status/violations/input-digest/self-digest convention. [VERIFIED: `scripts/verify-supabase-support.mjs:315-341,381-407,531-545`]
@@ -164,18 +168,24 @@ Each surface record should include: surface kind, authoritative endpoint/command
 The verifier should compute approval rather than trust an editable boolean:
 
 ```text
-approved_for_public_visibility =
+publication_gate_status = pass only if
   repository_is_still_private
+  AND strict_consequential_action_ledger_preserves_every_authorization_result_and_following_evidence
+  AND exact_pre_push_authorized_main_transition_completed_and_adopted_locally
+  AND authorized_production_consequence_completed_and_recollected
   AND snapshot_before_equals_snapshot_after
   AND every_required_surface_is_complete
+  AND every_historic_lfs_payload_has_complete_secret_and_private_data_review
   AND every_finding_status_in(resolved, accepted-public)
   AND every_exposed_credential_has_prior_revoked_or_rotated_evidence
-  AND rights_attestation_matches_exact_evidence_digest
-  AND gpl_and_scoped_license_inputs_are_exact
+  AND pre_push_authorization_matches_exact_evidence_rights_tools_refspec_oids_and_consequences
+  AND post_push_attestation_matches_exact_authorization_and_fresh_evidence
+  AND rights_and_gpl_scoped_license_notice_inputs_are_exact
+  AND live_require_current_reenumeration_matches_evidence
   AND violations.length == 0
 ```
 
-Missing fields, unknown statuses, count mismatches, API/download errors, scan errors, skipped oversized/binary content, stale digests, unavailable LFS objects, or a changed ref/run/artifact set must yield `approved_for_public_visibility: false`. [RECOMMENDED]
+Missing fields, unknown statuses, count mismatches, API/download errors, scan errors, skipped/unsupported/oversized/binary-unreviewable payloads, stale digests, unavailable LFS objects, unapproved deployment effects, or any changed ref/run/attempt/artifact/release/collaboration/wiki/attachment/credential-metadata set must yield `blocked`. [RECOMMENDED]
 
 ### Status vocabulary
 
@@ -214,12 +224,15 @@ flowchart TD
     L -- no --> K
     K --> O{Unknown authority or private data?}
     O -- yes --> P[Visibility remains blocked]
-    O -- no --> Q[Maintainer attestation bound to evidence digest]
-    Q --> R[Recheck refs and GitHub surface IDs]
-    R --> S{Snapshot unchanged and zero violations?}
+    O -- no --> Q[Exact pre-push authorization: findings, refspec OIDs, deployment consequences]
+    Q --> V[Verifier-valid private main synchronization]
+    V --> W[Wait all attempts, recollect every surface]
+    W --> X[Separate post-push attestation bound to fresh evidence]
+    X --> R[Require-current re-enumeration of every surface class]
+    R --> S{Current snapshot unchanged and zero violations?}
     S -- no --> D
-    S -- yes --> T[Local publication gate: approved]
-    T --> U[Phase 4 reruns gate immediately before visibility change]
+    S -- yes --> T[Local publication gate: pass]
+    T --> U[Phase 4 repeats full private cycle after 03-04 summary before visibility]
 ```
 
 ### Recommended Project Structure
@@ -234,15 +247,20 @@ package-lock.json                            # root metadata consistency
 scripts/verify-public-disclosure.mjs         # read-only collector/check/gate CLI
 .planning/phases/03-public-disclosure-and-gpl-readiness/
 └── 03-RIGHTS-REVIEW.md                      # public-safe disposition ledger
-.cumpa/publication/                          # ignored, redacted generated evidence
+.cumpa/tools/                               # ignored owner-only pinned binaries
+.cumpa/publication/                         # ignored, redacted generated records
+├── toolchain-provenance.json
 ├── disclosure-evidence.json
+├── consequential-action-authorization.json
+├── consequential-action-ledger.json
+├── pre-push-authorization.json
 ├── maintainer-attestation.json
 └── publication-gate.json
 ```
 
-### Pattern 1: Freeze → collect → attest → recheck → gate
+### Pattern 1: Freeze → decide → authorize → synchronize → recollect → attest → re-enumerate → gate
 
-**What:** Freeze all identifiers before downloads, collect/scan, obtain human decisions tied to the evidence digest, then enumerate refs and GitHub IDs again before approval. [RECOMMENDED]
+**What:** Freeze all identifiers, collect and scan every payload, obtain exact human dispositions, create/check the strict pre-push authorization, perform only its named private synchronization and deployment consequence, wait and recollect, derive a separate fresh-evidence attestation, then re-enumerate every authoritative surface immediately before the gate. [RECOMMENDED]
 
 **When to use:** At Phase 3 completion and again after Phase 4's final private push. [RECOMMENDED]
 
@@ -299,7 +317,7 @@ scripts/verify-public-disclosure.mjs         # read-only collector/check/gate CL
 | Repository-local notice inventory | New license/SBOM npm dependency | Adds supply-chain and package-legitimacy scope; current lockfile and installed package notice files can be inventoried with Node and human review. [RECOMMENDED] |
 | Targeted remediation | Rewrite all history by default | History rewrite has documented destructive side effects and is unnecessary for findings explicitly accepted for public disclosure. [CITED: https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository] |
 
-**Installation:** No npm packages are recommended. Before execution, supply the official pinned Gitleaks 8.30.1 and Git LFS 3.8.0 binaries, verify their reported versions, and record their release/checksum provenance. [VERIFIED: official upstream releases]
+**Installation/provisioning decision:** No npm packages or privileged/system installation are permitted. Before the first live collection, obtain the exact Gitleaks 8.30.1 and Git LFS 3.8.0 release assets for the executor OS/architecture from the publisher-owned `gitleaks/gitleaks` and `git-lfs/git-lfs` GitHub releases into ignored, owner-only `.cumpa/tools/` paths. Verify the reported version, HTTPS final origin, upstream checksum-manifest entry, manifest SHA-256, and binary SHA-256 before use; a missing official checksum/provenance record, redirect to an unapproved origin, mismatch, unsupported platform, or different version blocks. Persist only non-secret URLs, versions, platform/architecture, invocation paths, and digests in `.cumpa/publication/toolchain-provenance.json`; the collector must receive and use those exact paths rather than ambient `PATH`. [RECOMMENDED]
 
 ## Package Legitimacy Audit
 
@@ -602,6 +620,35 @@ node scripts/verify-public-disclosure.mjs check \
 **Missing dependencies with fallback:**
 - Organization secret-list access can be replaced by an organization-owner attestation when no unresolved scan finding depends on an unknown organization secret. Do not request broader OAuth scope automatically. [RECOMMENDED]
 
+
+## Binding Operational Contracts
+
+### Historic LFS payload review
+
+`git lfs ls-files --all --json`, `git-lfs fetch --all origin`, and `git-lfs fsck` establish pointer/object coverage and integrity but do not review payload bytes. The collector must map every historic intended-ref pointer by ref/path/blob and declared OID/size to the exact fetched object, verify the object digest against the LFS OID, and scan each payload from an owner-only temporary directory with both Gitleaks and the project-private-data policy. Evidence records one redacted per-object outcome and a non-text inventory; it never records payload bytes, secret values, or secret hashes. Missing, corrupt, unfetched, unsupported, skipped, oversized, or otherwise unreviewable payloads block. A binary payload blocks unless a supported scanner completed both required policies over its bytes; inventory alone or `fsck` can never pass SRC-02.
+
+### Finding-specific consequential-action authorization
+
+Before any provider rotation/revocation, hosted deletion, or support purge that does not update a Git ref, the verifier must create and check ignored `.cumpa/publication/consequential-action-authorization.json` from a canonical blocking decision. The strict record authorizes exactly one action and binds current evidence/right/tool digests, reviewer/time, finding IDs, provider identity, exact target and command/API/UI operation, all deletion/hosted/cache consequences, expiry, required proof, and mandatory recollection. After the action, full recollection invalidates the artifact and returns execution to the state machine. If it has no CLI/API path or requires unavoidable interactive identity confirmation, execution uses a canonical blocking `checkpoint:human-action` and verifies only the non-secret result. This artifact never authorizes a ref update; every ordinary or rewritten-main push uses the stricter pre-push authorization.
+Plan 04 initializes a canonical empty ledger once with `--init-action-ledger --output .cumpa/publication/consequential-action-ledger.json`; initialization rejects overwriting a nonempty ledger. Before overwriting or expiring the one-action authorization, the executor supplies owner-only temporary result JSON and runs `--record-action-result --authorization .cumpa/publication/consequential-action-authorization.json --result <owner-only-temporary-result-json> --evidence .cumpa/publication/disclosure-evidence.json --ledger .cumpa/publication/consequential-action-ledger.json`, deletes result input in `finally`, then checks internal history with `--check-action-ledger .cumpa/publication/consequential-action-ledger.json`. Result input is strict and non-secret: authorization digest, exact action kind/target, `succeeded|failed|cancelled` outcome, provider/request/result ID, UTC completion time, and proof references/digests. Record time requires the supplied following evidence to be current and corroborate the outcome; recording rejects unknown/raw-secret fields, action/target mismatch, absent proof, or unverifiable outcome. Later evidence is allowed to change without invalidating history: the check mode verifies the immutable chain, while pre-push authorization binds the current transition-time ledger and attestation binds both that digest and the exact final ledger, accepting only a valid append-only suffix. Any later Git/ref mutation requires a new pre-push transition. The zero-action case remains a concrete bindable empty ledger.
+
+### Exact pre-push authorization
+
+The verifier must create and check ignored `.cumpa/publication/pre-push-authorization.json` before every push. Its strict versioned record binds exact pre-push evidence/right/tool digests; the ordered digests/results of all earlier consequential-action authorizations; named reviewer and UTC decision time; every finding disposition and rotate-before-cleanup proof; repository identity; one exact `refs/heads/main` old/new OID transition; push kind (`ordinary-final` or `rewritten-main-cleanup`); exact command; and every workflow, protected environment, deployment target/effect, and resulting hosted-surface consequence. `ordinary-final` is non-force. `rewritten-main-cleanup` is allowed only after every non-ref remediation is settled/recollected and must bind the deterministic rewrite specification, reviewed resulting tree, exact canonical local-main adoption commands, and only `--force-with-lease=refs/heads/main:<old-oid>`—never bare force, wildcard, mirror, tag, or another ref. The artifact is generated from owner-only temporary decision input, uses strict keys and a self-digest, is owner-only and ignored, expires, and rejects any current-state/input/command/consequence mismatch. Conversation-only approval never suffices.
+
+The intended publication ref set is exactly `refs/heads/main`. Local-only branches, notes, stashes, remote pull refs, tags, and other refs remain inventory/review surfaces but are not push-authorized. Any proposal to add an intended ref requires complete recollection and a new exact authorization; wildcard, tag, mirror, force, and implicit refspecs are forbidden.
+
+A `refs/heads/main` push triggers `.github/workflows/deploy-supabase-production.yml`, including repository gates followed by the protected `production` environment and its exact Supabase target derived from current non-secret `SUPABASE_PROJECT_REF` metadata. The authorization must display and name that target, workflow digest, environment, deployment effects, and resulting Actions/log/artifact/hosted-service disclosure surfaces. If the target or consequence cannot be enumerated exactly, main is not authorized.
+
+### Synchronization and post-push evidence
+
+With `commit_docs: true`, `03-03-SUMMARY.md` and planning metadata are committed after Plan 03 ends, so Plan 03 performs no push. Plan 04 collects that committed state, then resolves provider/hosted/support actions one at a time under one-action authorization. Each result uses strict temporary input, is corroborated by following evidence at append time, and enters the append-only ledger before authorization-path reuse; provider revocation/rotation precedes cleanup. The effective main transition obtains pre-push authorization bound to then-current evidence and ledger. Rewritten-main imports the verified candidate, adopts its authorized OID as canonical local main, and pushes the same OID with exact force-with-lease; ordinary uses exact non-force. Either is final—no second push. After settlement/recollection, later non-ref actions may extend the ledger, but later Git/ref mutation requires a new pre-push transition. Attestation binds the transition-time ledger digest from effective authorization, exact final ledger, validated append-only suffix, and final fresh evidence. Missing/reordered entries, unverifiable results, or unexplained deltas block.
+
+`03-04-SUMMARY.md` and its planning metadata are committed after the Phase 3 gate and necessarily invalidate its point-in-time intended-ref snapshot. Phase 4 must repeat the complete private collect → exact authorization → synchronize → wait → recollect → post-push attest → finalize sequence including that commit immediately before visibility changes.
+
+### Current-surface finalization
+
+Both `--finalize --require-current` and `--check-final --require-current` must freshly re-enumerate and compare authoritative IDs, counts, statuses, and digests for local refs; remote heads, tags, and pull refs; reachable objects; historic LFS pointers/objects/review outcomes; repository identity/settings/visibility; every workflow run and attempt plus logs/artifacts; releases/assets; issues and pull requests; issue comments, reviews, review comments, and commit comments; Discussions/comments/replies; wiki; discovered attachments; repository/environment/organization credential and variable metadata; and all license/notice/rights inputs. Stored digests alone are insufficient. Any addition, deletion, mutation, running attempt, permission loss, or count/status mismatch forces full recollection and a new authorization/attestation before a gate can pass.
 ## Security Domain
 
 Security enforcement is enabled at ASVS level 1. [VERIFIED: `.planning/config.json`]
@@ -637,32 +684,22 @@ Security enforcement is enabled at ASVS level 1. [VERIFIED: `.planning/config.js
 
 No legal ownership, compatibility, privacy acceptability, or remediation sufficiency is assumed; those remain explicit attestation fields. [RECOMMENDED]
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Which exact refs are intended for publication?**
-   - What we know: Remote currently exposes only `main`; local `main` is ahead and no tags exist. [VERIFIED: Git inspection]
-   - What's unclear: Whether any local-only refs/notes are intended, and when all Phase 3/4 commits will be privately pushed.
-   - Recommendation: Maintainer signs the sorted intended-ref manifest; Phase 4 reruns the gate after its final private push.
+   - **Resolution:** Exactly `refs/heads/main`. All other local and remote ref classes are inventoried and reviewed but are not intended push targets. Adding any intended ref requires full recollection and a new authorization naming its exact old/new OIDs; wildcard, implicit, tag, mirror, and force refspecs are forbidden.
 
-2. **Are the existing personal/internal/operational identifiers acceptable public disclosures?**
-   - What we know: Personal Gmail author metadata, home paths, TrustLayer refs/OIDs, and hosted production evidence are present. [VERIFIED: repository/history inspection]
-   - What's unclear: Consent/confidentiality for each class.
-   - Recommendation: Default each class to `blocked`; accept exact scopes explicitly or perform coordinated history remediation and full rescan.
+2. **Are existing personal/internal/operational identifiers acceptable public disclosures?**
+   - **Resolution:** They are `blocked` by default. A named reviewer may mark only an exact finding/location/value-class scope `accepted-public` with rationale and evidence in the digest-bound authorization; no class-wide, domain-wide, or blanket disposition is valid. Otherwise the finding must be removed under separately authorized cleanup and every affected surface recollected.
 
 3. **Who owns or can license all first-party contributions?**
-   - What we know: One Git author identity covers all reachable commits. [VERIFIED: `git shortlog`]
-   - What's unclear: Employer/client/school ownership, supplied/copied material, and AI/generated provenance are not proven by Git metadata.
-   - Recommendation: Require maintainer/qualified legal attestation with evidence references before `approved`.
+   - **Resolution:** Phase 3 cannot infer authority. A named maintainer or qualified legal reviewer must record employer/client/school, assignment/policy/permission, supplied/paired/squashed contribution, copied/adapted, generated, and AI-assisted authority decisions with evidence references in `03-RIGHTS-REVIEW.md`. Any unanswered row or unsupported authority blocks licensing and publication.
 
-4. **Which upstream notice/source obligations apply to the actual package bytes?**
-   - What we know: Lockfile metadata is complete, but Monaco bundles workers/assets and supplies a substantial third-party notice file; MPL and compound expressions exist. [VERIFIED: lockfile/build/node_modules inspection]
-   - What's unclear: Exact production bundle membership and final notice/source directions until the Phase 4 package candidate is built.
-   - Recommendation: Phase 3 resolves current source/bundle inventory and creates the notice source; Phase 4 reruns byte-level package mapping before visibility/package approval.
+4. **Which conveyed-byte obligations are decided in Phase 3 versus Phase 4?**
+   - **Resolution:** Phase 3 reviews every currently conveyed repository, built/browser, runtime, dry-run package, vendored, generated, asset/font, license, and retained-notice byte class and cannot pass with an unresolved current material. Phase 4 separately builds the final `1.5.0` package candidate and repeats exact byte-level license, notice, source-direction, and skill-exclusion review for that new artifact; it may not defer a known Phase 3 material.
 
-5. **Does an unresolved credential require remote history/data deletion after rotation?**
-   - What we know: GitHub says rotation comes first and history rewriting has major side effects. [CITED: GitHub remediation docs]
-   - What's unclear: No real credential finding has yet been produced because Gitleaks and the required downloads have not run.
-   - Recommendation: Make deletion/rewrite a finding-specific maintainer checkpoint, never the default.
+5. **Does an exposed credential require remote history/data cleanup after rotation?**
+   - **Resolution:** Provider-native revocation or rotation is mandatory first for every real credential, with non-secret provider/credential ID, UTC time, verifier, and evidence. Non-ref cleanup uses one strict consequential-action authorization for the exact deletion/purge target, command, consequences, and full recollection. A rewritten existing main uses the strict pre-push authorization instead: it binds deterministic rewrite specification, reviewed tree, exact old/new OIDs, canonical local-main adoption, `--force-with-lease=refs/heads/main:<old-oid>`, production consequences, and following recollection; that transition itself may become the attested final sync, with no second ordinary push. Retention is allowed only under an exact-location `accepted-public` decision. Cleanup is never automatic or allowed before provider remediation; unsupported or active credentials block.
 
 ## Sources
 

@@ -32,7 +32,13 @@ Public distribution proceeds through five hard, dependency-ordered outcomes. Cum
   2. Every credential exposed by the review is revoked or rotated before visibility changes, and unresolved secrets or private data stop publication.
   3. Maintainers can trace authority for first-party contributions and see incompatible or unknown third-party and generated material resolved before publication.
   4. Application source and package licensing inputs consistently declare `GPL-3.0-or-later` and include the complete GPLv3 license text before the repository becomes public.
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Establish reviewed GPL application, scoped MIT skill, notices, and rights authority inputs.
+- [ ] 03-02-PLAN.md — Implement the tested read-only disclosure collector and derived publication gate.
+- [ ] 03-03-PLAN.md — Provision pinned scanners, audit every private surface including historic LFS payloads, and decide exact remediation.
+- [ ] 03-04-PLAN.md — Recollect after the Plan 03 summary, authorize/ledger each non-ref remediation, then authorize one effective ordinary or rewritten-main transition and bind its settled private state to attestation/gate.
 
 ### Phase 4: Public Source and Publication Prerequisites
 **Goal**: Users can inspect Cumpa's complete approved history while maintainers have a correctly bounded `1.5.0` package candidate and an npm trusted-publication path ready before the stable release.
