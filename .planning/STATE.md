@@ -1,12 +1,12 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.5
-milestone_name: Public Distribution
+milestone_name: Private Distribution
 status: planning
-last_updated: "2026-09-05T00:00:00.000Z"
-last_activity: 2026-09-05
+last_updated: "2026-09-06T09:31:03.895Z"
+last_activity: 2026-09-06
 progress:
-  total_phases: 5
+  total_phases: 0
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -24,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-09-05)
 
 ## Current Position
 
-Phase: 3 of 7 (Public Disclosure and GPL Readiness)
+Phase: Not started (defining requirements)
 Plan: —
-Status: Ready to plan
-Last activity: 2026-09-05 — v1.5 GPL roadmap created
-
-Progress: [░░░░░░░░░░] 0%
+Status: Defining requirements
+Last activity: 2026-09-06 — Milestone v1.5 started
 
 ## Performance Metrics
 

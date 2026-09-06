@@ -14,17 +14,17 @@ A developer can accurately review repository-grounded changes chosen by a develo
 
 Cumpa now offers an optional one-time USD $49.99 support flow in configured release packages without gating review behavior. The local app hands Support or Restore actions to a canonical Supabase-hosted GitHub OAuth flow; only a signature-verified Stripe webhook can establish paid status. Verified status persists installation-wide and a paid GitHub account can restore suppression on unlimited installations. Ordinary unconfigured local builds contain no hosted capability, provider credential, or support route.
 
-## Current Milestone: v1.5 Public Distribution
+## Current Milestone: v1.5 Private Distribution
 
-**Goal:** Publish Cumpa's complete source and coding-agent integration under open-source licenses, with verified installation through npm and ShipWithAI.
+**Goal:** Let users install and run Cumpa from public npm and install its public ShipWithAI skill while the Cumpa repository and source history remain private.
 
 **Target features:**
-- Make the current Cumpa repository and complete history public under GPL-3.0-or-later.
-- Publish `@shipwithai/cumpa@1.5.0` from that public source through npm trusted publishing with no long-lived npm token.
-- Ship the npm package under GPL-3.0-or-later with accurate source, license, release, and provenance metadata.
-- Publish the existing thin Cumpa coding-agent skill publicly under ShipWithAI's MIT-licensed marketplace for one-step skill installation.
-- Declare the separately installed public CLI prerequisite and link exact installation and usage guidance from the marketplace listing.
-- Verify the packed npm artifact and marketplace-installed skill through their real public installation flows.
+- Publish proprietary `@shipwithai/cumpa@1.5.0` for global installation and exact-version `npx` execution.
+- Package required compiled runtime and browser assets while excluding TypeScript source, source maps, tests, planning files, and Git history.
+- Publish from the private repository through npm trusted publishing with provenance and no long-lived npm token.
+- Publish the existing thin Cumpa coding-agent skill publicly under the ShipWithAI marketplace with an independent MIT license.
+- Declare the separately installed public CLI prerequisite and keep all review authority in the CLI.
+- Verify clean global, npx, and marketplace-installed browser-review flows against released artifacts.
 
 
 <details>
@@ -124,12 +124,12 @@ Validated in v1.4 Voluntary Support:
 
 ### Active
 
-- [ ] Users can access Cumpa's complete current repository and history under GPL-3.0-or-later.
-- [ ] Users can install `@shipwithai/cumpa@1.5.0` globally to obtain the `cumpa` command or run it through `npx @shipwithai/cumpa@1.5.0`.
-- [ ] Maintainers can publish approved releases from the public repository through npm trusted publishing without a long-lived token.
-- [ ] Published source, package contents, registry metadata, and release records accurately state GPL-3.0-or-later licensing and source provenance.
-- [ ] Coding-agent users can install the public MIT-licensed Cumpa skill from ShipWithAI and follow its declared CLI prerequisite.
-- [ ] Public package and marketplace installation paths are verified against the released artifacts.
+- [ ] Users can install proprietary `@shipwithai/cumpa@1.5.0` globally to obtain the `cumpa` command or run it through `npx @shipwithai/cumpa@1.5.0`.
+- [ ] Maintainers can publish approved releases from the private repository through npm trusted publishing with provenance and no long-lived token.
+- [ ] Public npm packages contain only required compiled runtime and browser assets plus accurate proprietary license and package metadata.
+- [ ] Cumpa's repository, TypeScript source, source maps, tests, planning files, and Git history remain private and absent from published artifacts.
+- [ ] Coding-agent users can install the existing public MIT-licensed Cumpa skill through ShipWithAI and follow its declared CLI prerequisite.
+- [ ] Clean global, npx, and marketplace installation paths complete the existing browser-review workflow against released artifacts.
 
 ### Out of Scope
 
@@ -139,6 +139,9 @@ Validated in v1.4 Voluntary Support:
 - Applying requested changes from inside the application — a separate coding agent consumes the export.
 - Image, notebook, document, or binary diff rendering — v1 reviews text; unsupported files are identified but not rendered inline.
 - Full GitHub review mechanics such as replies, suggestion patches, approvals, and pending-review submission — v1 provides line comments, resolution, and an overall summary.
+- Publishing Cumpa's repository or Git history — the application repository remains private.
+- Open-sourcing or source-releasing the Cumpa application package — only the independently distributed marketplace skill is MIT-licensed.
+- Shipping TypeScript source, source maps, tests, planning files, or repository history in npm artifacts — consumers receive the compiled proprietary distribution only.
 
 ## Context
 
@@ -167,8 +170,8 @@ Accepted v1.4 debt is bounded to a stale deleted-suite filename in the deploymen
 - **Content**: Text files only in v1 — binary, generated, oversized, or unsupported files remain visible as non-reviewable entries.
 - **Testing**: Vitest for Git, diff, persistence, and export contracts; Playwright for the browser review flow.
 - **Support**: Voluntary support never gates review features; hosted payment authority is optional, credential-free from the local app, and enabled only in the canonical configured release package.
-- **Distribution**: The complete current repository and history become public; `@shipwithai/cumpa@1.5.0` is public on npm and exposes the `cumpa` executable. Trusted publishing uses GitHub OIDC without a long-lived token.
-- **Licensing**: Cumpa application source and npm releases use GPL-3.0-or-later; the thin marketplace skill remains independently MIT-licensed.
+- **Distribution**: The repository and history remain private; proprietary `@shipwithai/cumpa@1.5.0` is public on npm and exposes the `cumpa` executable. Trusted publishing uses GitHub OIDC without a long-lived token.
+- **Licensing**: The Cumpa npm package uses explicit proprietary terms; the thin public marketplace skill remains independently MIT-licensed.
 
 ## Key Decisions
 
@@ -214,8 +217,8 @@ Accepted v1.4 debt is bounded to a stale deleted-suite filename in the deploymen
 | Let only a signature-verified Stripe webhook establish payment | Browser redirects and OAuth completion cannot prove settlement | Good — exact product, amount, currency, mode, and replay invariants precede idempotent fulfillment |
 | Restore support through one-use installation-bound GitHub OAuth intents | Avoid retaining or returning email, OAuth tokens, or profile material in the local app | Good — paid accounts restore unlimited installations while unpaid restoration remains non-enumerating |
 | Embed one canonical Supabase origin only in configured release packages | Keep ordinary local builds free of hosted capability and prevent arbitrary support origins | Good — package scans and immutable release evidence bind the approved origin and package digest |
-| Publish Cumpa's current repository and full history under GPL-3.0-or-later | Make the complete implementation auditable and modifiable under one explicit copyleft license | Pending — public source, npm contents, registry metadata, and release records must identify the same licensed version |
-| Keep the marketplace skill public under MIT | Preserve ShipWithAI's thin permissive installation and delegation layer while the application itself uses GPL-3.0-or-later | Pending — marketplace skill delegates review authority to the separately installed GPL CLI |
+| Keep Cumpa's repository and development source private while publishing compiled npm artifacts | Let users install Cumpa without disclosing repository history or granting open-source rights to the application | Pending — packed artifacts must exclude source, source maps, tests, planning files, and Git history |
+| Keep marketplace skill public under MIT | Preserve ShipWithAI's thin permissive installation and delegation layer while the separately installed Cumpa CLI remains proprietary | Pending — marketplace skill delegates all review authority to a compatible released CLI |
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -234,4 +237,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-09-05 after revising v1.5 Public Distribution for GPL-3.0-or-later*
+*Last updated: 2026-09-06 after replacing v1.5 with Private Distribution*
