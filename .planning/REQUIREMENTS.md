@@ -59,34 +59,34 @@
 
 ## Traceability
 
-Roadmap mapping is populated after roadmap approval.
+Each active requirement maps to exactly one roadmap phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PKG-01 | — | Pending |
-| PKG-02 | — | Pending |
-| PKG-03 | — | Pending |
-| PKG-04 | — | Pending |
-| PKG-05 | — | Pending |
-| PKG-06 | — | Pending |
-| PKG-07 | — | Pending |
-| REL-01 | — | Pending |
-| REL-02 | — | Pending |
-| REL-03 | — | Pending |
-| REL-04 | — | Pending |
-| REL-05 | — | Pending |
-| SKL-01 | — | Pending |
-| SKL-02 | — | Pending |
-| SKL-03 | — | Pending |
-| ACC-01 | — | Pending |
-| ACC-02 | — | Pending |
-| ACC-03 | — | Pending |
-| ACC-04 | — | Pending |
+| PKG-01 | Phase 5 | Pending |
+| PKG-02 | Phase 5 | Pending |
+| PKG-03 | Phase 4 | Pending |
+| PKG-04 | Phase 4 | Pending |
+| PKG-05 | Phase 4 | Pending |
+| PKG-06 | Phase 3 | Pending |
+| PKG-07 | Phase 3 | Pending |
+| REL-01 | Phase 5 | Pending |
+| REL-02 | Phase 5 | Pending |
+| REL-03 | Phase 4 | Pending |
+| REL-04 | Phase 3 | Pending |
+| REL-05 | Phase 3 | Pending |
+| SKL-01 | Phase 6 | Pending |
+| SKL-02 | Phase 6 | Pending |
+| SKL-03 | Phase 6 | Pending |
+| ACC-01 | Phase 7 | Pending |
+| ACC-02 | Phase 7 | Pending |
+| ACC-03 | Phase 7 | Pending |
+| ACC-04 | Phase 7 | Pending |
 
 **Coverage:**
 - v1.5 requirements: 19 total
-- Mapped to phases: 0
-- Unmapped: 19
+- Mapped to phases: 19
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-09-06*

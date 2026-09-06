@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Private Distribution
-status: planning
-last_updated: "2026-09-06T09:31:03.895Z"
+status: ready_to_plan
+last_updated: "2026-09-06"
 last_activity: 2026-09-06
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,22 +17,23 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-05)
+See: .planning/PROJECT.md (updated 2026-09-06)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 3 — Public Disclosure and GPL Readiness
+**Current focus:** Phase 3 — Distribution Contract & Legal Boundary
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 3 of 7 (Distribution Contract & Legal Boundary)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-09-06 — Milestone v1.5 started
+Status: Ready to plan
+Last activity: 2026-09-06 — Created the v1.5 Private Distribution roadmap with 19/19 active requirements mapped.
+
+Progress: [----------] 0%
 
 ## Performance Metrics
 
 **Velocity:**
-
 - Total plans completed: 96
 - Average duration: 23 min
 - Total execution time: 4.7 hours
@@ -44,39 +45,11 @@ Last activity: 2026-09-06 — Milestone v1.5 started
 | v1.0 MVP | 5 including Phase 04.1 | 40 | Complete |
 | v1.1 GitHub Dark Diff | 4 | 16 | Complete |
 | v1.2 Fast Source Discovery | 3 | 4 | Complete |
-
 | v1.3 Agent Review Handoff | 4 | 14 | Complete |
 | v1.4 Voluntary Support | 2 | 22 | Complete |
-*Updated after each plan completion.*
-| Phase 09 P01 | 6min | 2 tasks | 4 files |
-| Phase 09 P02 | 20min | 2 tasks | 4 files |
-| Phase 10 P01 | 12min | 2 tasks | 4 files |
-**Per-Plan Metrics:**
+| v1.5 Private Distribution | 5 | TBD | Ready to plan |
 
-| Plan | Duration | Tasks | Files |
-|------|----------|-------|-------|
-| Phase 12 P01 | 10min | 3 tasks | 3 files |
-| Phase 12 P02 | 6 min | 3 tasks | 9 files |
-| Phase 12 P03 | 10 min | 3 tasks | 5 files |
-| Phase 12 P04 | 6 min | 3 tasks | 8 files |
-| Phase 12 P05 | 20min | 3 tasks | 9 files |
-| Phase 12 P06 | 30min | 3 tasks | 5 files |
-| Phase 13 P01 | 18min | 3 tasks | 7 files |
-| Phase 13 P02 | 141min | 3 tasks | 10 files |
-| Phase 13 P03 | 18min | 3 tasks | 7 files |
-| Phase 13 P04 | 17min | 3 tasks | 6 files |
-| Phase 14 P01 | 14min | 3 tasks | 8 files |
-| Phase 14 P02 | N/A | 3 tasks | 9 files |
-| Phase 14 P03 | N/A | 3 tasks | 5 files |
-| Phase 02 P02 | 23min | 2 tasks | 6 files |
-| Phase 02 P03 | 26min | 3 tasks | 10 files |
-| Phase 02 P04 | 13min | 2 tasks | 5 files |
-| Phase 02 P05 | 20min | 2 tasks | 4 files |
-| Phase 02 P06 | 10min | 3 tasks | 10 files |
-| Phase 02 P07 | N/A | 3 tasks | 8 files |
-| Phase 02 P11 | N/A | 2 tasks | 7 files |
-| Phase 02 P13 | 142min | 2 tasks | 8 files |
-| Phase 02 P15 | 35m | 2 tasks | 7 files |
+*Updated after each plan completion.*
 
 ## Accumulated Context
 
@@ -84,57 +57,11 @@ Last activity: 2026-09-06 — Milestone v1.5 started
 
 Decisions are logged in PROJECT.md Key Decisions.
 
-- Existing picker identity, ordering, worktree truthfulness, selection, recovery, and failure behavior are non-regression constraints, not new v1.2 requirements.
-- Phase 09 exposes the attached current branch and registered worktrees before remaining local-branch enumeration.
-- Phase 10 performs case-insensitive literal local-branch search only after non-empty input, with Git as the sole source authority.
-- Phase 11 gates milestone completion on production-path measurements; spike-only timing evidence is insufficient.
-- v1.2 adds no repository mutation, persistent branch index, background full enumeration, remote refs, fuzzy ranking, or speculative debounce.
-- [Phase 09]: Eager discovery derives only the attached current branch from its worktree record. — Avoids a complete local-ref scan before source selection.
-- [Phase 09]: Startup ref protocol validation uses --count=1. — Preserves capability validation without unbounded refs/heads enumeration.
-- [Phase 09]: Picker selection authority is a prompt-lifetime exact-ID registry shared by Base and Head. — Lazy branch candidates install only after non-aborted completion.
-- [Phase 09]: Descriptor recovery uses fresh discovery authority for searched branches. — A stale failed candidate is never seeded; missing exact IDs leave picker focus unset.
-- [Phase 10]: Batch unique matched OIDs through native Git log with exact complete abbreviation key sets. — Keeps Git abbreviation authority while limiting each successful non-empty search to one filtered listing and one optional batch.
-- [Phase 12]: Phase 12 request v1 uses one strict Zod schema and inferred public type.
-- [Phase 12]: Phase 12 agent input is bounded before one fatal UTF-8 decode and JSON parse.
-- [Phase 12]: Use explicit revision ranges with pinned object IDs; preserve the existing interactive merge-base policy. — A range review must remain reproducible while the interactive review behavior is intentionally unchanged.
-- [Phase 12]: V1 exports retain pair directories while frozen ranges use V2 review-key directories. — Preserves interactive artifacts and prevents range output collisions.
-- [Phase 12]: V2 export provenance must exactly match accepted draft range scope and frozen comparison. — Prevents stale or browser-authored range scope from being exported.
-- [Phase 12]: Range UI renders only session-authoritative range data and existing server files.
-- [Phase 12]: Range scope reuses the existing identity disclosure and modal accessibility behavior.
-- [Phase 13]: Exact patch input is a strict exclusive request mode grounded through repository blob preimages and byte-equal targets. — Prevents untrusted patch authority and repository drift from changing reviewed source bytes.
-- [Phase 13]: Exact patch sessions own an atomic private snapshot and exact server-derived draft key; content never falls back to live readers. — Drift is latched explicitly while frozen review feedback remains available.
-- [Phase 13]: Exact patch launch passes GroundedExactPatch directly to createExactPatchSessionApp. — V3 exports retain frozen server provenance without range or live-source fallback.
-
-- [Phase 14]: Attached browser lifecycle state is server-authoritative; the UI submits only an accepted revision to Finish and never canonical bytes.
-- [Phase 14]: Finishing/completed attached reviews lock mutations while retaining readable review content and navigation.
-- [Phase 02]: Authority data remains in a private RLS schema; only service_role executes the six transactional RPCs. — Prevents browser roles from directly reading or mutating payment and installation authority.
-- [Phase 02]: Intent plaintext, identity/profile data, OAuth tokens, email, and recovery-token fields are structurally excluded. — The authority schema retains only operational identifiers and Supabase user IDs.
-- [Phase 02]: Root supabase@2.114.0 is development/CI tooling only, using the exact approved pin. — Keeps hosted dependencies outside the published Cumpa runtime.
-- [Phase 02]: Hosted functions keep Cumpa anonymous: only a flow URL and boolean installation status cross the local boundary. — OAuth credentials and Stripe authority remain on Supabase; fulfillment is webhook-only through a service-role RPC.
-- [Phase 02]: Support actions never establish local authority; only verified hosted refresh may promote persisted status. — Keeps hosted redirects and action responses outside the machine-wide authority boundary.
-- [Phase 02]: Browser Support and Restore actions share one strict startSupportAction contract. — Removes Checkout/email recovery browser compatibility seams while preserving verified-only local authority.
-- [Phase 02]: Only explicit HTTPS support configuration constructs hosted dependencies — Absent or invalid values produce no capability.
-- [Phase 02]: Session support metadata solely enables browser support work — Controls, dialog, polling, and prompts follow the advertised capability.
-- [Phase 02]: GitHub Actions is the sole guarded deployment path. — The protected `production` environment owns public `SUPABASE_PROJECT_REF`; the executor validates its canonical 20-character shape before each hosted mutation and derives exactly `https://<ref>.supabase.co`, while Edge Functions use built-in `SUPABASE_URL`. Exact origin plus immutable GitHub run/commit proves cross-record target lineage; any derived fingerprint is supplemental correlation only.
-- [Phase 02]: Completed 02-07 is historical and performed no hosted mutation. — Revised 02-08 must cut source, workflow, focused tests, and operations docs to D-20 before any human setup or first push.
-- [Phase 02]: Canonical-origin evidence contract moved intact from stale recovery suite to payment E2E suite; restore coverage remains active. — Preserves every source assertion before stale-suite retirement.
-- [Phase 02]: Configured absence remains default until Plan 02-16 — Retirement must not embed or scan a real configured launcher before protected release work.
-- [Phase 02]: Final review binds six immutable records and separate release approval — Six named evidence paths prevent omission or substitution while approval remains independently auditable.
-
-- [v1.5]: Publish the complete current repository history in place and license Cumpa application source and npm releases under `GPL-3.0-or-later`.
-- [v1.5]: Bootstrap `@shipwithai/cumpa` with a harmless non-`latest` release, revoke the temporary credential, then publish `1.5.0` through GitHub OIDC trusted publishing with provenance and no long-lived npm token.
-- [v1.5]: Keep the public MIT marketplace skill independent and thin; it declares the separately installed GPL CLI prerequisite and delegates all review authority to that CLI.
-- [v1.5]: Defer one-build/one-tarball byte identity, a no-consumer-build guarantee, immutable rerun/recovery controls, and the community governance kit.
-
-### Roadmap Evolution
-
-- Phase 1 added: Add voluntary Stripe support payment and email recovery
-- Phase 2 added: Move the implementation to Supabase
-- Phase 3 added: Clear disclosure, licensing-authority, and GPL readiness gates before visibility
-- Phase 4 added: Publish the complete source history and prepare package, npm, and trusted-publisher prerequisites
-- Phase 5 added: Publish the stable GPL npm release through trusted publishing
-- Phase 6 added: Publish the independent MIT-licensed ShipWithAI skill
-- Phase 7 added: Verify clean global, npx, and marketplace browser-review paths
+- [v1.5]: Keep Cumpa's repository, development source, and history private; publish only the proprietary compiled runtime and required browser assets.
+- [v1.5]: Use npm trusted publishing from the private GitHub repository without long-lived credentials; npm provenance is unavailable and must not be claimed.
+- [v1.5]: Verify one exact runtime-only tarball before registry mutation, then bootstrap with one usable non-`latest` release before stable OIDC publication.
+- [v1.5]: Publish the public MIT skill only after its separately installed CLI prerequisite exists; the CLI retains all review authority.
+- [v1.5]: Preserve existing review, export, and voluntary-support behavior across every released installation path.
 
 ### Pending Todos
 
@@ -142,46 +69,21 @@ None yet.
 
 ### Blockers/Concerns
 
-- No open milestone blocker.
-
-### Quick Tasks Completed
-
-| # | Description | Date | Commit | Status | Directory |
-|---|-------------|------|--------|--------|-----------|
-| 260731-hdw | Standardize CLI-managed directory and live product naming | 2026-07-31 | b6fef23 |  | [260731-hdw-the-directory-created-by-the-cli-should-](./quick/260731-hdw-the-directory-created-by-the-cli-should-/) |
-| 260731-ll9 | Maximize diff space with collapsible Files sidebar | 2026-07-31 | 62ebd25 |  | [260731-ll9-maximize-diff-space](./quick/260731-ll9-maximize-diff-space/) |
-| 260803-fx5 | Add generated artifacts to gitignore | 2026-08-03 | e1a87be |  | [260803-fx5-add-generated-artifacts-to-gitignore](./quick/260803-fx5-add-generated-artifacts-to-gitignore/) |
-| 260807-c3t | Document agent range and exact-patch review workflows in README | 2026-08-07 | 7c16851 |  | [260807-c3t-document-agent-range-and-exact-patch-rev](./quick/260807-c3t-document-agent-range-and-exact-patch-rev/) |
-| 260807-d9e | Rename full project to Cumpa | 2026-08-07 | 7ae6687 |  | [260807-d9e-rename-the-full-project-as-cumpa-remove-](./quick/260807-d9e-rename-the-full-project-as-cumpa-remove-/) |
-| 260808-lo1 | Ship Cumpa coding-agent skill project make installable published releases | 2026-08-08 | 47ffec9 |  | [260808-lo1-ship-the-cumpa-coding-agent-skill-with-t](./quick/260808-lo1-ship-the-cumpa-coding-agent-skill-with-t/) |
-| 260811-h3x | Keep sidebar highlight synchronized with viewed file | 2026-08-11 | fca1d8a | passed | [260811-h3x-the-sidebar-highlighted-file-should-alwa](./quick/260811-h3x-the-sidebar-highlighted-file-should-alwa/) |
-| 260812-dqa | Improve current app visibility and style without features | 2026-08-12 | d98277a | complete | [260812-dqa-improve-current-app-visibility-and-style](./quick/260812-dqa-improve-current-app-visibility-and-style/) |
+- Phase 3 must settle approved proprietary terms, required third-party notices, private repository identity, and truthful public links before package preparation.
+- Re-check current npm trusted-publisher and private-source provenance policy immediately before release; do not convert OIDC authentication into a provenance claim.
+- Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Inputs | Commits, tags, direct comparison, and dirty working-tree modes | v2 | Initialization |
-| Review | Ranges, file comments, suggestions, replies, viewed state, filters, unified layout, and additional themes | v2 | Initialization |
-| Delivery | Clipboard, direct agent delivery, rich formats, extensions, and forge integration | v2 | Initialization |
-| Cleanup | Retire or intentionally consume the authenticated orphan file-metadata route/client method | Deferred | v1.0 close |
-| Verification | Phase 08 `08-VERIFICATION.md` manual verification disposition | human_needed acknowledged after 3/3 UAT passed | v1.1 close 2026-07-29 |
-| Verification | Instantiate unsupported/unavailable rows in responsive fixture coverage if this path changes | Deferred | v1.1 close |
-| Design | Align 7px icon-button padding with the documented spacing scale when control geometry changes | Deferred | v1.1 close |
-| Cleanup | Remove unused `EmptyState.vue` | Deferred | v1.1 close |
-| Coverage | Keep uncommon worktree recovery states at focused real-Git/CLI integration seams unless production-path risk changes | Deferred | v1.2 close |
-| Performance | Re-run absolute picker budgets when the supported Node 24 runner or host characteristics change | Deferred | v1.2 close |
-| Cleanup | Remove the stale deleted `tests/e2e/support-recovery.spec.ts` workflow filter and verifier contract | Deferred | v1.4 close |
-| Cleanup | Remove unused local `GET /api/support/status` and `SessionClient.getSupportStatus()` surfaces | Deferred | v1.4 close |
+| Cleanup | Retire or intentionally consume authenticated orphan file-metadata route/client method | Deferred | v1.0 close |
+| Verification | Instantiate unsupported/unavailable rows in responsive fixture coverage if that path changes | Deferred | v1.1 close |
+| Design | Align 7px icon-button padding with documented spacing when control geometry changes | Deferred | v1.1 close |
+| Distribution | Enable npm provenance only if npm documents private-source support without exposing Cumpa's repository or history | Future | v1.5 definition |
 
 ## Session Continuity
 
-**Last session:** 2026-09-04
-**Stopped at:** v1.5 roadmap created; Phase 3 ready for planning
-**Resume file:** None
-
-No active phase execution session.
-
-## Operator Next Steps
-
-- Plan Phase 3 with $gsd-plan-phase 3
+Last session: 2026-09-06
+Stopped at: Roadmap created; Phase 3 is ready for planning.
+Resume file: None
