@@ -1,151 +1,138 @@
 # Stack Research
 
-**Domain:** GPL source publication and trusted distribution for an existing Node.js CLI
-**Researched:** 2026-09-04
-**Confidence:** MEDIUM — current npm, GitHub, SPDX, GNU, Vite, Node, and Monaco primary sources were cross-checked against this repository. The remaining unknowns are maintainer-controlled legal authority, npm organization access, and the one-time first-package bootstrap.
+**Domain:** Proprietary public npm CLI distribution from a private repository, plus independent public agent-skill publication
+**Researched:** 2026-09-06
+**Confidence:** MEDIUM — current npm, GitHub, Node.js, Claude Code, and Ship With AI primary sources were cross-checked against the repository. The main constraint is explicit and current: npm trusted publishing works from a private GitHub repository, but npm provenance does not.
 
 ## Scope
 
-This document covers only Cumpa v1.5 public-source, licensing, packaging, and release tooling. It does not reconsider the validated Node 24, TypeScript, Fastify, Vue, Monaco, Git, persistence, review, export, or voluntary-support design.
-
-Labels used below:
-
-- **Verified fact** — stated by a cited primary source or directly observed in the current repository/registry.
-- **Recommendation** — the minimum project-specific change inferred from those facts.
+This research covers only Cumpa v1.5 distribution, release metadata, packed-artifact boundaries, trusted publishing, and publication of the existing thin skill. It does not reconsider the validated Node 24, TypeScript, Fastify, Vue, Monaco, Git, review, persistence, export, or voluntary-support design.
 
 ## Executive Recommendation
 
-Keep the application stack. Add no release framework and no licensing dependency. Use:
+Keep the application stack and add no release library. Use the native mechanisms already present:
 
-1. the existing `Ship-With-AI/cumpa` GitHub repository, changed from private to public so its complete existing history remains in place;
-2. a root GPL-3.0-or-later license plus an explicit nested MIT boundary for the thin skill;
-3. npm's native package metadata, packlist, shrinkwrap, tarball publishing, OIDC trusted publishing, and automatic provenance;
-4. one dedicated GitHub-hosted release workflow using current official actions and the preinstalled `gh` CLI;
-5. Vite 8's built-in `build.license` output plus Monaco's existing `ThirdPartyNotices.txt`; and
-6. the existing artifact scanner, extended rather than replaced, to make one inspected `.tgz` the npm artifact and GitHub release asset.
+1. publish `@shipwithai/cumpa@1.5.0` as a **publicly downloadable, proprietary** scoped npm package;
+2. keep `Ship-With-AI/cumpa` private and publish only an allowlisted tarball containing the compiled `dist/` tree, public usage/license documents, and required third-party notices;
+3. publish through npm OIDC trusted publishing on a GitHub-hosted runner, with no npm token in GitHub Actions;
+4. extend the existing production-artifact verifier to inspect the exact `.tgz` later passed to `npm publish`, including explicit source/source-map denials;
+5. publish the existing `.kimi-code/skills/cumpa/SKILL.md` into the public `Ship-With-AI/skills` repository under MIT, while declaring the separately installed CLI as a prerequisite; and
+6. preserve voluntary support by using the existing configured release build and scanner rather than adding any payment or hosted-service dependency.
 
-## Verified Current Baseline
+### Hard platform constraint: private repository and npm provenance are incompatible
 
-| Area | Verified fact | Consequence |
-|------|---------------|-------------|
-| Source repository | `.git/config` points at `git@github.com:Ship-With-AI/cumpa.git`. Git history currently reports one commit-author identity. | Change this repository's visibility; do not create a new public snapshot, squash, or rewrite history merely to publish it. Maintainers must still confirm copyright authority before relicensing. |
-| npm target | `https://registry.npmjs.org/@shipwithai%2Fcumpa` returns `404` on the research date. | `@shipwithai/cumpa` is not yet an existing npm package, so documented trusted-publisher setup cannot be the first-ever registry operation. See **First-publication bootstrap**. |
-| Package manifest | `package.json` is `name: "cumpa"`, `version: "0.0.0"`, `private: true`, has no `license`, repository, bugs, homepage, or `publishConfig`, and exposes `bin.cumpa` from `dist/bin/cumpa.mjs`. | Convert metadata to `@shipwithai/cumpa@1.5.0`, remove `private`, add the public-source/license fields, and preserve the existing bin/runtime contract. |
-| Packed files | The current allowlist is `dist/` plus `.kimi-code/skills/cumpa/`. npm always includes `package.json`, README, LICENSE, and bin targets even with an allowlist. | Publish only `dist/` as application payload; keep the MIT skill as a separately licensed marketplace artifact, not a second copy inside the GPL npm package. |
-| Release build | `prepack` runs the full build. The production workflow instead builds with the configured Supabase origin, scans it, then uses `npm pack --ignore-scripts`. | Preserve the explicit build → scan → pack ordering. Publish the resulting tarball, not the working directory, so `prepack` cannot produce a different unconfigured build. |
-| Existing release workflow | `.github/workflows/deploy-supabase-production.yml` deploys on `main`, uses Ubuntu, and has no npm OIDC permission. | Leave Supabase deployment separate. Add a release workflow with a narrower trigger and npm identity. |
-| Browser assets | Vite bundles Vue and Monaco into `dist/web`. No standalone font, image, icon, Wasm, or checked-in native binary asset exists. | Generate notices for code actually bundled into the browser; do not invent an asset pipeline. |
-| Monaco notices | `monaco-editor@0.55.1` declares MIT and ships both `LICENSE` and a separate 448-line `ThirdPartyNotices.txt`. | Vite's package-license generation does not replace Monaco's own nested third-party notice; copy that file verbatim into the browser distribution. |
-| Native addon | `src/native/directory-exchange.cc` is repository-authored Node-API C++; `scripts/build-native-addon.mjs` emits `dist/native/directory_exchange.node` only on Darwin arm64 and otherwise removes it. Loading failure is already treated as unsupported. | Use a GitHub-hosted arm64 macOS release runner if retaining that optimized asset in the package. Do not add consumer-side compilation or prebuild dependencies. |
+The milestone can use **npm trusted publishing from the private GitHub repository**. It cannot also receive **npm provenance** while that repository remains private.
+
+npm's current trusted-publisher documentation says automatic provenance requires all three of: OIDC trusted publishing, a public package, and a **public repository**. It explicitly says provenance is unsupported for private repositories even when the package is public. npm provenance publicly links to source and build instructions and records the attestation in a public transparency log, so `--provenance` cannot override this restriction.
+
+Therefore the supported v1.5 stack is:
+
+- private GitHub repository;
+- public proprietary npm package;
+- OIDC trusted publishing without a long-lived token; and
+- registry tarball integrity/signatures, but **no npm provenance attestation**.
+
+If npm provenance is non-negotiable, the milestone must relax the private-publisher-repository constraint and publish from a public repository. A public distribution-only repository would add a second release authority and its provenance would attest that public workflow, not expose or verify the private TypeScript source; it is not recommended for the stated goal. Do not claim that a GitHub artifact attestation, a hand-written checksum, or Sigstore metadata is npm provenance.
 
 ## Recommended Stack
 
 ### Core Technologies
 
-| Technology | Version / capability | Purpose | Why Recommended |
-|------------|----------------------|---------|-----------------|
-| Node.js | `24.20.0` current Node 24 LTS release; package engine stays `>=24` | Existing build/runtime and release runner | Node 24.20.0 bundles npm 11.19.0, above both trusted-publish and trust-management minimums. No runtime change is required. |
-| npm registry and CLI | npm `11.19.0` from Node 24.20.0; trusted publishing requires `>=11.5.1`; `npm trust` requires `>=11.15.0` | Scoped public package, bin installation, packing, shrinkwrap, publishing, and registry metadata | These native capabilities cover the whole package lifecycle without another release dependency. |
-| npm trusted publishing | GitHub Actions OIDC | Publish `@shipwithai/cumpa@1.5.0` without a stored npm token | npm binds the package to an exact GitHub owner/repository/workflow/environment and exchanges the workflow OIDC token for a short-lived publish credential. |
-| npm automatic provenance | Enabled automatically for trusted publication of a public package from a public GitHub repository | Registry build/source attestation | No `--provenance`, Sigstore client, or GitHub attestation action is needed for npm provenance. |
-| GitHub Actions | `actions/checkout@v6`, `actions/setup-node@v6`, GitHub-hosted `macos-15` | Build, scan, pack, publish, and create the GitHub release | These are the action majors in npm's current trusted-publishing example. `macos-15` is a standard public-repository arm64 runner and preserves Cumpa's existing Darwin-arm64 addon. |
-| GitHub Releases | Tag-based release, immutable releases enabled | Human-visible v1.5.0 record and exact `.tgz` asset | Immutable releases lock the tag and assets and automatically create a GitHub release attestation. |
-| Vite | Existing `8.1.4`; `build.license` | Generate bundled-browser dependency license text | Vite 8 can emit Markdown or JSON containing all bundled dependencies and their license text. It removes the need for a license-checker package. |
-| SPDX | `GPL-3.0-or-later` | Unambiguous application license identifier | This is the SPDX identifier for GPLv3 or any later version; `GPL-3.0-only` would contradict the milestone. |
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| `@shipwithai/cumpa` | `1.5.0` | Public scoped npm CLI package | The existing single `bin.cumpa` entry supports both a global `cumpa` command and exact-version `npx @shipwithai/cumpa@1.5.0` execution. Public visibility makes the tarball downloadable; proprietary terms govern permission, not technical visibility. |
+| Node.js | `24.20.0` for release; package engine remains `>=24` | Existing runtime and release build | `24.20.0` is the current Node 24 LTS distribution and bundles npm `11.19.0`. It preserves Cumpa's validated runtime and exceeds npm's OIDC minimums. |
+| npm CLI | `11.19.0` bundled with Node `24.20.0` | Pack, public scoped publish, trusted-publisher management, global install, and npx execution | npm trusted publishing requires npm `>=11.5.1`; `npm trust` requires `>=11.15.0`. The bundled version satisfies both, so no release dependency or npm upgrade step is needed. |
+| npm trusted publishing | Current GitHub Actions OIDC support | Short-lived publish authentication | Binds npm to the exact GitHub owner/repository, workflow filename, optional environment, and allowed action. Requires `id-token: write` and a GitHub-hosted runner; stores no `NPM_TOKEN` or `NODE_AUTH_TOKEN`. |
+| npm native pack/publish | npm `11.19.0` | Create one auditable `.tgz` and publish those exact bytes | `npm pack --json --ignore-scripts` honors the `files` allowlist and reports the artifact. `npm publish ./<artifact>.tgz --access public --ignore-scripts` accepts the already packed tarball instead of rebuilding the working tree. |
+| GitHub Actions | `actions/checkout@v6`, `actions/setup-node@v6` | Private-repository release automation | These are the current action majors in npm's trusted-publishing example. `setup-node` should select Node `24.20.0`, the npm registry, and `package-manager-cache: false`. |
+| GitHub-hosted macOS runner | `macos-15` | Build the existing release artifact and retain the optional Darwin-arm64 native addon | GitHub documents `macos-15` as a standard arm64 hosted runner for private repositories. It satisfies npm's hosted-runner restriction and preserves the current `build-native-addon.mjs` behavior without adding consumer-side compilation. |
+| Ship With AI skills repository | Public `Ship-With-AI/skills`; plugin `0.2.0` → `0.3.0` | Public MIT distribution of the thin Cumpa skill | The repository already supports cross-agent single-skill installation and a Claude Code marketplace plugin whose manifest points at `./skills/`. Because the manifest pins an explicit version, Claude Code requires a version bump for installed users to receive the new skill; adding a skill is a SemVer minor feature. |
+| Claude Code plugin skill discovery | Current plugin format | Native marketplace loading | `skills/<name>/SKILL.md` is auto-discovered. No plugin runtime, hook, MCP server, or npm wrapper is needed. |
 
 ### Supporting Libraries
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| None | — | Distribution and licensing | npm, Vite, Node, GitHub Actions, and `gh` already provide every required capability. |
+| None | — | Distribution and publication | npm, Node.js, GitHub Actions, the existing build scripts, and the existing Ship With AI marketplace already provide every required mechanism. |
 
-### Development and Platform Tools
+### Existing Project Tools to Reuse
 
-| Tool | Purpose | Minimum project-specific use |
-|------|---------|------------------------------|
-| `npm shrinkwrap` | Produce publishable `npm-shrinkwrap.json` for the globally installed CLI | Generate after final package name/version are set. npm explicitly recommends shrinkwrap for command-line applications installed globally; do not publish both it and a divergent lockfile. |
-| `npm pack --json --ignore-scripts` | Produce and report the exact publishable tarball | Run only after the configured build and artifact scan. Retain its filename/integrity in workflow state and do not rebuild afterward. |
-| `npm publish ./<file>.tgz --access public` | Publish the already inspected bytes | Use through OIDC with no `NPM_TOKEN` or `NODE_AUTH_TOKEN`. Trusted publishing supplies provenance automatically. |
-| `npm trust github` or npm package settings | Bind package to the release workflow | Exact binding: GitHub owner `Ship-With-AI`, repository `cumpa`, workflow filename only (recommended `publish-npm.yml`), protected environment `npm`, and permission for direct `npm publish`. |
-| Existing `scripts/verify-production-artifacts.mjs` | Enforce package inventory, configured launcher, and absence of protected values | Extend this scanner for package name/version/license/source/notices and forbidden paths. Do not introduce a parallel publication validator. |
-| Vite `build.license` | Emit `dist/web/third-party-licenses.md` | Configure a stable filename under `dist/` so the existing package allowlist includes it automatically. |
-| Node `fs.copyFile` in the existing build path | Copy Monaco's `ThirdPartyNotices.txt` verbatim | Add the smallest build step needed to place a stable notice file under `dist/web/`; verify it against locked `monaco-editor@0.55.1`. |
-| `gh release create --verify-tag` | Create a release from an already-pushed `v1.5.0` tag and attach the exact `.tgz` | GitHub CLI creates a draft, uploads assets, then publishes; with immutable releases enabled, the tag and asset lock at publication. No release action is needed. |
-| GitHub environment `npm` | Approval and tag/deployment protection | Bind the job and npm trusted-publisher record to this exact environment. Store only non-secret release configuration such as the canonical support project reference; do not expose the broader Supabase deployment environment. |
-| `npm install --global` and `npx --yes` | Real post-publication installation smoke paths | Run from a clean job with exact `@shipwithai/cumpa@1.5.0`; exercise the installed `cumpa --help` or other bounded non-browser command. |
+| Existing tool | Current version / path | Distribution integration |
+|---------------|------------------------|--------------------------|
+| TypeScript | `7.0.2`; `tsconfig.json` | Continue emitting Node runtime JavaScript to `dist/`. Source maps and declarations are currently not enabled. The tarball verifier, rather than a second compiler configuration, should enforce that `.ts`, `.tsx`, `.d.ts`, and `.map` files are absent. |
+| Vite | `8.1.4`; `vite.config.ts` | Continue emitting browser assets to `dist/web/`. Vite's `build.sourcemap` default is false; enforce absence of external or inline source maps at the packed-artifact boundary. |
+| CLI build script | `scripts/build-bin.mjs` | Continue generating executable `dist/bin/cumpa.mjs` with the configured canonical support origin only for release builds. The npm `bin` map already targets this file. |
+| Native addon build | `scripts/build-native-addon.mjs` | Continue producing `dist/native/directory_exchange.node` only on Darwin arm64. Build on hosted `macos-15`; do not add `node-gyp`, install scripts, or platform-package machinery for this optional optimization. |
+| Production artifact verifier | `scripts/verify-production-artifacts.mjs` | Extend this verifier to accept and inspect the exact release `.tgz`. Reuse its secret/origin checks, and add package metadata, inventory, source-map, source, test, planning, and skill-boundary assertions. Do not create a parallel release scanner. |
+| Third-party notices | `THIRD_PARTY_NOTICES.md` | Include this existing Monaco-derived notice file explicitly in the npm allowlist because browser code is bundled into `dist/web/`. It is separate from Cumpa's proprietary license. |
+| Cumpa skill | `.kimi-code/skills/cumpa/SKILL.md` | Publish the same thin workflow into `Ship-With-AI/skills/skills/cumpa/`; do not fork its review protocol or add a second implementation. |
 
-## Minimum Repository and Package Changes
+## Required Package Metadata
 
-### 1. License boundary
+The current manifest is development-only (`name: "cumpa"`, `version: "0.0.0"`, `private: true`) and includes the skill in `files`. Replace only the publication-facing metadata while retaining the established dependencies, scripts, ESM mode, engine, and bin target.
 
-**Verified facts**
+| `package.json` field | Required v1.5 treatment | Reason |
+|----------------------|-------------------------|--------|
+| `name` | `@shipwithai/cumpa` | Exact public registry identity. |
+| `version` | `1.5.0` | Exact release requested; the release tag must identify the same commit and version. |
+| `private` | Remove | npm refuses to publish a manifest with `private: true`; repository privacy is controlled by GitHub, not this package flag. |
+| `license` | `SEE LICENSE IN LICENSE` | npm's documented representation for custom terms without an SPDX identifier. A public proprietary CLI should ship explicit permitted-use terms rather than imply open-source rights. |
+| `repository` | `{ "type": "git", "url": "git+https://github.com/Ship-With-AI/cumpa.git" }` | npm trusted publishing requires `repository.url` to match the GitHub repository exactly. This publicly reveals the repository coordinate but does not make its content or history public. |
+| `publishConfig` | `{ "access": "public", "registry": "https://registry.npmjs.org/" }` | Makes scoped-public intent and registry explicit. Scoped packages otherwise have historically defaulted to restricted visibility in common publication flows. |
+| `files` | `["dist/", "THIRD_PARTY_NOTICES.md"]` | Include generated runtime/browser assets and required notices only. Remove `.kimi-code/skills/cumpa/`; the MIT skill has its own public distribution and license boundary. |
+| `bin.cumpa` | Keep `dist/bin/cumpa.mjs` | Global npm installation links the command; npm exec/npx infers the only bin entry for the scoped package. |
+| `engines.node` | Keep `>=24` | Existing supported runtime; also above npm trusted-publishing's Node minimum. |
+| `description` | Public user-facing CLI description | npm search/package pages must describe the installed product, not the private development repository. |
+| `homepage` / `bugs` | Use only public support/product URLs, otherwise omit | Do not point ordinary users at inaccessible private GitHub pages. The `repository` field remains present solely because npm requires the exact publisher binding. |
+| `funding` | Do not add for v1.5 | Cumpa already owns its optional support flow. An npm funding URL is unnecessary and could create a second support authority. |
 
-- A public GitHub repository is visible source, not permission to copy or modify it.
-- SPDX identifies the requested license as `GPL-3.0-or-later`.
-- GPL section 6 permits object code to be distributed while Corresponding Source is offered from a network server, including a different server, if equivalent access and clear directions are provided next to the object distribution.
-- The MIT license requires its copyright and permission notice to remain with copies or substantial portions.
+Add a top-level `LICENSE` containing the actual proprietary terms and an owner/copyright notice. npm always includes `package.json`, README, LICENSE, and bin targets even when `files` is an allowlist. The public package README must document installation, Node/Git prerequisites, proprietary licensing, the inspectable compiled-artifact boundary, and the separately installed marketplace skill without linking users to private operational material.
 
-**Recommendations**
+Do not add `main`, `exports`, or `types`: Cumpa exposes a command, not a supported JavaScript import API. Do not add `preferGlobal`, install-time compilation, postinstall code, or a second package wrapper.
 
-1. Add root `LICENSE` containing the unmodified GPLv3 text and use `license: "GPL-3.0-or-later"` in `package.json`.
-2. Add a concise root README license/source section stating that the Cumpa application and complete published repository history are offered under GPL-3.0-or-later, identifying the maintainer-confirmed copyright holder, and pointing package version `1.5.0` to public tag `v1.5.0` as Corresponding Source.
-3. Put a complete MIT license and copyright notice inside the thin skill directory/listing. State the exception in the root README so the nested skill is not accidentally presented as GPL.
-4. Exclude `.kimi-code/skills/cumpa/` from the npm `files` array. The npm package then has one clear GPL license, while the public marketplace copy retains MIT.
-5. Do not rewrite every historical commit to add license files. Publish the current licensing declaration from the existing repository and preserve the complete graph. Rewrite only if a pre-publication secret/rights problem makes publication unsafe, and record that this conflicts with a literal unchanged-history goal.
-6. Confirm rights before release. A single Git author identity is useful evidence, not a legal proof of ownership or permission for copied/vendor material.
+## Packed-Artifact Boundary
 
-### 2. `package.json`
+### What remains private
 
-Apply this public package contract while retaining current dependencies, scripts, ESM type, Node engine, and bin target:
+- the private GitHub repository and its Git history;
+- `src/` and all TypeScript/declaration source;
+- source maps, including embedded `sourcesContent`;
+- tests, fixtures, Playwright artifacts, and performance harnesses;
+- `.planning/`, project research, phase artifacts, and internal operational documents;
+- GitHub Actions secrets and private workflow history; and
+- the repository-local skill copy, because the skill is published separately from the npm artifact.
 
-| Field | Required value/treatment | Reason |
-|-------|--------------------------|--------|
-| `name` | `@shipwithai/cumpa` | Exact requested registry scope/name. |
-| `version` | `1.5.0` | Exact requested release; require Git tag `v1.5.0`. |
-| `private` | Remove | `private: true` blocks publication. |
-| `license` | `GPL-3.0-or-later` | Exact SPDX expression requested. |
-| `repository` | `{ "type": "git", "url": "git+https://github.com/Ship-With-AI/cumpa.git" }` | npm trusted publishing requires `repository.url` to match the GitHub repository exactly. |
-| `homepage` | `https://github.com/Ship-With-AI/cumpa#readme` | Registry source/documentation navigation. |
-| `bugs.url` | `https://github.com/Ship-With-AI/cumpa/issues` | Public issue route. |
-| `publishConfig` | `{ "access": "public", "registry": "https://registry.npmjs.org/" }` | Makes scoped public intent and registry explicit regardless of local npm config. |
-| `files` | `["dist/"]` | Generated runtime only; npm adds package.json, README, LICENSE, and bin automatically. Third-party notices live under `dist/`. |
-| `bin.cumpa` | Keep `dist/bin/cumpa.mjs` | npm creates the global `cumpa` shim and infers the single executable for `npx @shipwithai/cumpa`. |
-| `engines.node` | Keep `>=24` | Existing supported runtime and above OIDC tooling floors. |
-| `description` | Replace development copy with accurate public CLI wording | Registry users should see the actual product contract. |
+### What is necessarily public
 
-Do not add `main`, `exports`, or `types`: Cumpa exposes a CLI, not a supported import API. Do not add `preferGlobal`, a postinstall hook, or install-time native compilation.
+- the npm package metadata and README/license documents;
+- every file in the downloadable npm tarball;
+- compiled Node JavaScript and the generated executable launcher;
+- bundled/minified browser JavaScript, CSS, HTML, Monaco assets, and any shipped native `.node` binary;
+- third-party notices; and
+- the public MIT skill source in `Ship-With-AI/skills`.
 
-### 3. Browser and native notices
+Compiled or minified JavaScript is inspectable and can be reverse engineered. Proprietary licensing limits legal permission; it does not create technical secrecy. Do not describe the npm package as closed to inspection, encrypted, or source-secret beyond excluding private development materials and history.
 
-**Recommendations**
+### Enforcement pattern
 
-- Set Vite 8.1.4 `build.license` to a stable Markdown output under `dist/web/`.
-- Copy locked Monaco 0.55.1's `ThirdPartyNotices.txt` to `dist/web/monaco-third-party-notices.txt`; do not translate, summarize, or regenerate its contents.
-- Extend the existing artifact scanner to require both files in the packed inventory and to fail if the locked Monaco notice source is absent.
-- Keep the root GPL `LICENSE` separate from third-party notices. The generated/browser notices describe incorporated dependencies; they do not change Cumpa's GPL license.
-- Build the release on GitHub-hosted `macos-15` if the current Darwin-arm64 `.node` optimization is intended in public packages. The C++ file contains project source and only includes standard/POSIX/Node-API headers; no additional vendored native license payload was found.
-- Do not add `node-gyp`, `prebuild`, `prebuildify`, or platform-package machinery. The existing addon is optional and its missing/incompatible load already falls back safely. Add multi-platform native packaging only if native exchange becomes a required public contract.
+Use one allowlist and one authoritative artifact inspection:
 
-### 4. Public repository and release
+1. run the existing configured production build once, including `CUMPA_RELEASE_SUPPORT_SERVICE_URL` through the current validated release path;
+2. pack once with npm lifecycle scripts disabled;
+3. pass that exact `.tgz` to the extended `verify-production-artifacts.mjs`;
+4. require the expected package name, version, `bin`, engine, proprietary license pointer, public access configuration, notice file, and compiled runtime/browser inventory;
+5. reject `src/`, `.git/`, `.planning/`, `.github/`, `.claude/`, `.kimi-code/`, `tests/`, `test-results/`, TypeScript/config source, `*.map`, declaration files, and inline `sourceMappingURL`/`sourcesContent` markers;
+6. retain the existing protected-value and canonical support-origin scans; and
+7. publish the same verified `.tgz` without rebuilding it.
 
-**Verified facts**
+The npm `files` allowlist is the first boundary, not the proof. npm always includes some root files, and any future generated file beneath `dist/` would match the allowlist. Conversely, `.git` is always ignored by npm, but repository privacy—not packlist behavior—is what protects remote history.
 
-- GitHub warns that making a private repository public exposes code, Actions history, and Actions logs to everyone and disables existing push rulesets during the visibility change.
-- A GitHub Release is based on a Git tag and can carry arbitrary release assets.
-- Immutable releases lock their tag and assets after publication and automatically generate a release attestation.
+Do not add `.npmignore` next to the `files` allowlist. Two overlapping inclusion systems are harder to audit and do not replace inspection of the actual tarball.
 
-**Recommendations**
+## Trusted-Publishing Integration
 
-1. Review the complete Git history and existing Actions logs/artifacts before changing visibility. Remove unsafe workflow artifacts/logs and rotate any exposed credentials before, not after, the flip.
-2. Change the visibility of `Ship-With-AI/cumpa` itself. Do not create a new public repository or push only the current tree; either would fail the complete-history requirement.
-3. Re-establish public-repository rulesets/tag protection after the visibility change because GitHub documents that push rulesets are disabled by the transition.
-4. Enable immutable releases before publishing v1.5.0.
-5. Push a `v1.5.0` tag that identifies the same commit used by the npm workflow. Require `gh release create v1.5.0 <exact-tarball> --verify-tag` so GitHub CLI cannot silently tag mutable default-branch state.
-6. Attach the exact `.tgz` passed to `npm publish`, not a second pack. GitHub's autogenerated source archives remain useful but are not a substitute for the npm artifact.
-
-### 5. Trusted-publishing workflow
-
-Create `.github/workflows/publish-npm.yml`; do not add npm identity to the Supabase deployment workflow.
+Create one release-only workflow, separate from `.github/workflows/deploy-supabase-production.yml`.
 
 Minimum workflow contract:
 
@@ -155,7 +142,7 @@ on:
     tags: ['v1.5.0']
 
 permissions:
-  contents: write
+  contents: read
   id-token: write
 
 jobs:
@@ -164,171 +151,178 @@ jobs:
     environment: npm
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: 24.20.0
           registry-url: https://registry.npmjs.org
           package-manager-cache: false
-      # npm ci; assert tag/package version; configured build; existing scanner;
-      # npm pack once; npm publish that .tgz; clean public install smoke;
-      # gh release create --verify-tag with that same .tgz.
+      # npm ci
+      # existing configured release build
+      # pack once, scan that tarball, publish that tarball
 ```
 
-The complete implementation must preserve these invariants:
+Required invariants:
 
-- The tag is exactly `v${package.json.version}` and the version is `1.5.0` before irreversible publication.
-- The package repository URL, GitHub owner/repository, workflow filename, and environment match npm's trusted-publisher record exactly; these values are case-sensitive.
-- The runner is GitHub-hosted. npm does not currently support self-hosted runners for trusted publishing.
-- The job receives `id-token: write`; it receives no `NPM_TOKEN` or `NODE_AUTH_TOKEN`.
-- The canonical support origin is non-secret release configuration and is supplied to the same existing configured build/scanner path. Ordinary source builds remain unconfigured as already designed.
-- The build happens once. The scanned `.tgz` is the bytes passed to `npm publish` and attached to GitHub Release.
-- Do not pass `--provenance`. npm trusted publishing automatically emits provenance for a public package from a public repository.
-- `contents: write` exists only because this minimal single job creates the GitHub Release. If release creation is later separated, reduce the publish job back to `contents: read`.
+- Configure npm trust for exact owner/repository `Ship-With-AI/cumpa`, workflow filename (filename only), environment `npm`, and `--allow-publish`.
+- Keep the runner GitHub-hosted; npm trusted publishing does not support self-hosted runners.
+- Provide `id-token: write`; provide no npm authentication secret.
+- Keep `contents: read` unless the workflow later gains a separately justified GitHub release step.
+- Assert the tag equals `v${package.json.version}` before the irreversible publish.
+- Use the existing configured support build. The Supabase origin is non-secret release configuration; payment, OAuth, and webhook credentials remain absent from the local package.
+- Pack and inspect once. Publish the inspected `.tgz`, not the working directory.
+- Do not set `publishConfig.provenance`, `NPM_CONFIG_PROVENANCE`, or `--provenance` while the repository is private. Trusted publishing will authenticate, but npm will not generate provenance.
 
-## First-Publication Bootstrap
+### First-publication bootstrap
 
-**Verified constraint:** `@shipwithai/cumpa` currently does not exist. npm's current `npm trust` documentation requires that the package already exist and that the caller have package write access. The website flow likewise starts from an existing package's settings. Therefore the documented platform cannot configure OIDC trust before the first-ever package version exists.
+`@shipwithai/cumpa` returned registry `404` on the research date. npm `11.19.1` documents that `npm trust` requires the package to already exist, package write access, account-level 2FA, and npm `>=11.15.0`. Therefore the first trust relationship cannot be configured before any version exists.
 
-**Minimum recommendation:**
+Use the smallest honest bootstrap:
 
-1. After the repository is public and the GPL/package contents are correct, publish the actual Cumpa package once as an earlier non-`latest` bootstrap version (the existing `0.0.0` is available) using an authorized maintainer's interactive npm session, 2FA, `--access public`, and a `bootstrap` dist-tag.
-2. Immediately configure the GitHub trusted publisher for `publish-npm.yml` and the `npm` environment using npm 11.19.0 or the npm website.
-3. Log out/revoke the interactive session; never copy its credential into GitHub.
-4. Publish `1.5.0` through GitHub OIDC. After the OIDC release succeeds, set npm publishing access to “Require two-factor authentication and disallow tokens,” as npm recommends.
+1. an authorized npm maintainer publishes a safe `0.0.0` artifact interactively with 2FA, public access, and a non-default `bootstrap` dist-tag;
+2. configure the trusted publisher with npm `11.19.0+` or npmjs.com for `Ship-With-AI/cumpa`, the release workflow, the `npm` environment, and direct publish permission;
+3. end the interactive session and keep its credential out of GitHub; and
+4. publish `1.5.0` through GitHub OIDC.
 
-This preserves the acceptance criterion that `@shipwithai/cumpa@1.5.0` is published through trusted publishing without a long-lived npm automation token. Do not disguise a manual 1.5.0 publish as trusted publication. If npm adds a documented package-reservation/bootstrap path before implementation, prefer it and omit the bootstrap version.
+This keeps `1.5.0` tokenless and trusted-published. It does not create provenance while the source repository is private. Do not manually publish `1.5.0` and call it trusted publishing.
 
-## Public Installation Verification
+## Public Skill Publication
 
-Use a post-publication job with no checkout and fresh temporary locations so local workspace bins and caches cannot satisfy the checks:
+The existing public `Ship-With-AI/skills` repository is the correct platform. It already supports:
+
+- cross-agent cherry-pick installation with `npx skills add Ship-With-AI/skills --skill <name>`; and
+- Claude Code marketplace installation through `claude plugin marketplace add Ship-With-AI/skills`, followed by installation of the `ship-with-ai` plugin collection.
+
+Publish Cumpa by adding:
+
+```text
+skills/cumpa/
+├── SKILL.md
+└── LICENSE
+```
+
+Use the current `.kimi-code/skills/cumpa/SKILL.md` as the behavior source. Add the full MIT notice adjacent to it, keep the plugin manifest's MIT license, add Cumpa to the public README/catalog descriptions, and bump `.claude-plugin/plugin.json` from `0.2.0` to `0.3.0`. Claude Code uses the explicit plugin version as an update cache key; changing skill contents without bumping it can leave installed users on the old plugin.
+
+The skill must state before its workflow that users install the CLI separately:
 
 ```bash
-npm install --global @shipwithai/cumpa@1.5.0 --prefix <temporary-prefix>
-<temporary-prefix>/bin/cumpa --help
-
-npm_config_cache=<fresh-cache> npx --yes @shipwithai/cumpa@1.5.0 --help
+npm install --global @shipwithai/cumpa@1.5.0
 ```
 
-Also verify, using native clients rather than a new test tool:
+The skill then calls `cumpa` and delegates all selection grounding, browser review, completion, and result authority to that executable. It may check that the command is available and report the installation prerequisite. It must not:
 
-- registry metadata resolves name `@shipwithai/cumpa`, version `1.5.0`, license `GPL-3.0-or-later`, exact repository URL, public access, tarball integrity, and provenance/attestations;
-- the downloaded tarball contains the same inventory/hash as the workflow-packed and GitHub-release asset;
-- README and root LICENSE are present, both browser notice files are present, and the MIT skill is absent from the npm tarball; and
-- the separately installed marketplace skill contains its MIT license and declares the exact `npm install --global @shipwithai/cumpa@1.5.0` prerequisite.
+- embed compiled Cumpa code or TypeScript source;
+- install the package automatically through hooks or scripts;
+- use the Claude plugin `dependencies` field for an external executable (that field is for plugin dependencies);
+- recreate review logic, schemas, Git mutation, diff interpretation, or result synthesis; or
+- claim that MIT applies to the separately installed proprietary CLI.
 
-Do not treat a local `npm pack`, workspace execution, or marketplace source checkout as proof of the real public install paths.
+The npm package likewise must not include the skill. This keeps two clean public artifacts: a proprietary executable distribution on npm and a human-readable MIT delegation layer in the marketplace.
 
-## Installation
+## Consumer Installation Interfaces
 
-No package installation is recommended for the distribution stack.
+No distribution dependency is installed into this repository.
 
 ```bash
-# No new dependencies.
-# Use the npm CLI bundled with pinned Node 24.20.0,
-# Vite 8.1.4 already in devDependencies, and GitHub's preinstalled gh CLI.
+# Proprietary CLI, persistent command
+npm install --global @shipwithai/cumpa@1.5.0
+
+# Proprietary CLI, exact one-off execution
+npx --yes @shipwithai/cumpa@1.5.0
+
+# Public MIT skill, cross-agent single-skill path
+npx skills add Ship-With-AI/skills --skill cumpa
+
+# Public MIT skill, Claude Code marketplace path
+claude plugin marketplace add Ship-With-AI/skills
 ```
+
+The marketplace skill's documented prerequisite is the first command. The npx flow is a separate supported CLI launch surface, not an implementation detail the skill should silently substitute.
 
 ## Alternatives Considered
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Native npm/GitHub release workflow | Changesets, semantic-release, release-please | Add only when multiple packages or repeated automated changelog/version policy create real coordination cost. One fixed v1.5 release does not. |
-| Direct OIDC `npm publish` | npm staged publishing | Use if maintainers explicitly require an additional npm-side human approval. It adds a stage/approve lifecycle; stage approval is interactive and not performed by OIDC. |
-| Vite `build.license` + Monaco notice copy | `license-checker`, ORT, ScanCode, custom dependency crawler | Use heavyweight compliance tooling only after dependency volume, multiple ecosystems, or policy reporting outgrows Vite's actual-bundle inventory. |
-| Existing repository visibility change | New public mirror or source snapshot | Use a mirror only if the requirement changes from complete authoritative history. It does not satisfy the current goal. |
-| Public tag source link for GPL Corresponding Source | Include the whole TypeScript repository in the npm tarball | Include source in npm only if offline source delivery becomes a requirement. GPL permits clear equivalent network access, and the public tagged repository is the preferred modification form. |
-| GitHub-hosted `macos-15` | Ubuntu release runner | Use Ubuntu only if the Darwin-arm64 addon is intentionally omitted from the public package or is moved to a separately built optional platform package. |
-| One protected `npm` environment | Reuse `production` | Reuse only if maintainers explicitly accept giving the registry job access to the deployment environment. The release needs no Supabase secrets. |
+| Native npm/GitHub Actions workflow | Changesets, semantic-release, release-please | Add only if repeated multi-package versioning or changelog automation becomes a demonstrated burden. One package and one fixed release do not justify them. |
+| `files` allowlist plus exact-tarball inspection | `.npmignore` denylist | Use a denylist only if most of the repository is intentionally public package content. Cumpa needs the opposite: a small compiled allowlist. |
+| Publish one inspected `.tgz` | Publish the repository directory | Directory publication is acceptable only when lifecycle rebuilds cannot change the artifact. Cumpa's configured release launcher makes pack-once publication safer. |
+| Private repository + trusted publishing without provenance | Public publisher repository + npm provenance | Use only if maintainers explicitly prioritize npm provenance over the private-repository publication constraint and accept a second public release authority. |
+| Custom `LICENSE` + `SEE LICENSE IN LICENSE` | `UNLICENSED` | Use `UNLICENSED` only if recipients receive no right to use the package. Cumpa needs explicit proprietary use terms for an intentionally distributed CLI. |
+| Existing `Ship-With-AI/skills` marketplace | New skill repository or npm-bundled skill | Use a separate repository only if Ship With AI changes its catalog model. The existing repo already provides single-skill and Claude marketplace paths. |
+| Hosted `macos-15` release build | Consumer compilation or platform packages | Add platform packaging only if the optional native addon becomes a required cross-platform contract. |
+| Existing artifact verifier | New license/scanning framework | Add heavyweight compliance tooling only if dependency or policy scale exceeds the existing single-package scanner. |
 
 ## What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| Long-lived `NPM_TOKEN` / `NODE_AUTH_TOKEN` in Actions | Violates the milestone and adds credential rotation/exfiltration risk. | OIDC trusted publishing with `id-token: write`. |
-| `npm publish --provenance` or `actions/attest-build-provenance` for the npm package | Redundant with npm's automatic trusted-publisher provenance. | Let npm emit registry provenance automatically. GitHub immutable release attestation covers the GitHub Release separately. |
-| Self-hosted release runner | Unsupported by npm trusted publishing. | Standard GitHub-hosted runner. |
-| Publishing the working directory | Runs lifecycle scripts and can rebuild different bytes after the configured scan. | Pack once with scripts disabled, then publish that `.tgz`. |
-| `.npmignore` beside the existing `files` allowlist | Two inclusion conventions are easier to drift and audit incorrectly. | Keep one explicit `files: ["dist/"]` boundary plus npm's mandatory files. |
-| General-purpose license-checker dependency | Vite already knows the actual browser bundle; lockfile-wide reports over-report dev/build-only packages and still miss Monaco's nested notice. | Vite `build.license`, explicit Monaco notice copy, and the existing package scanner. |
-| REUSE/SPDX header tooling as a release blocker | Per-file header normalization would create broad churn without improving the clear root/nested license boundary required for v1.5. | Root GPL license, root source statement, nested MIT license, and generated bundled notices. Add REUSE later only if contributor volume requires machine-enforced file-level declarations. |
-| npm SBOM as a substitute for notices | An SBOM inventories components; it does not itself preserve required license/notice text or decide compatibility. | Generated license text and retained upstream notices. Generate an SBOM later if consumers request it. |
-| `node-gyp`, install scripts, or prebuilt-platform packages | Adds nondeterministic consumer compilation and platform-release machinery for an optional capability. | Existing release-built Darwin-arm64 addon and safe fallback. |
-| Bundling the MIT skill inside the npm tarball | Creates a duplicate install surface and mixed-license ambiguity under a GPL package manifest. | Publish the skill through ShipWithAI with its own MIT license; link the separate CLI prerequisite. |
-| New public repository, shallow mirror, squash, or history rewrite | Loses the complete-history requirement and weakens tag/provenance continuity. | Change visibility of `Ship-With-AI/cumpa` after audit. |
-| Extra community/process files as release prerequisites | CONTRIBUTING, governance, CLA, CODEOWNERS, and release bots are not needed to grant the requested rights or install the package. | Add only when actual contributor/project-governance needs appear. |
+| Long-lived `NPM_TOKEN` or `NODE_AUTH_TOKEN` in Actions | Violates the milestone and adds rotation/exfiltration risk. | npm OIDC trusted publishing with `id-token: write`. |
+| `--provenance` from the private repository | npm explicitly does not support provenance for private source repositories. | Publish through OIDC without provenance, or change the repository-visibility requirement. |
+| Self-hosted release runner | Unsupported by npm trusted publishing. | GitHub-hosted `macos-15`. |
+| Obfuscation, encryption, or minification as secrecy | Public npm tarballs and included JavaScript remain downloadable and inspectable. | Exclude development source/maps/history and state the proprietary boundary accurately. |
+| Source maps or declaration/source files | They disclose source structure/content beyond the intended compiled distribution. | Current no-map builds plus packed-artifact denials. |
+| `.npmignore` beside `files` | Creates a second drifting inclusion convention. | One positive `files` allowlist and exact-tarball scanner. |
+| Publishing from the working directory | Can run lifecycle scripts and produce bytes different from the inspected package. | Pack once with scripts disabled, scan, publish that `.tgz`. |
+| `npm-shrinkwrap.json` solely for this milestone | Adds a second lock artifact and exposes more development dependency metadata; direct runtime dependencies are already exact-pinned. | Keep the existing lockfile private and package runtime dependencies exact. Revisit only if transitive install drift becomes a released-product problem. |
+| Release framework or license-scanner dependency | Existing platform and scripts already cover the required workflow. | npm CLI, GitHub Actions, and the existing verifier. |
+| Bundling `.kimi-code/skills/cumpa/` in npm | Mixes the MIT delegation layer into the proprietary package and creates duplicate installation authority. | Publish the skill only through `Ship-With-AI/skills`. |
+| Plugin hooks, MCP servers, or auto-install scripts | The skill is a thin instruction layer and the CLI must be separately installed. | `SKILL.md` prerequisite plus direct `cumpa` delegation. |
+| Runtime/UI dependency upgrades | Outside the milestone and risks invalidating established behavior. | Keep the current application dependency graph. |
 
 ## Stack Patterns by Variant
 
-**If the native addon must remain in v1.5:**
-- Publish from GitHub-hosted `macos-15` arm64.
-- Include the resulting `.node` under the existing `dist/native/` path.
-- Keep the current graceful fallback for all incompatible systems.
+**When the GitHub repository remains private (recommended and required by current scope):**
+- Use OIDC trusted publishing.
+- Omit all provenance flags/configuration.
+- Report npm provenance as unavailable, not as a completed release property.
 
-**If the project intentionally omits the optional native addon:**
-- Use `ubuntu-latest` and record the omission as an explicit package decision.
-- Do not add consumer compilation merely to recreate it.
+**If npm later documents private-repository provenance support:**
+- Re-check the current trusted-publisher and provenance prerequisites at implementation time.
+- Let trusted publishing generate provenance automatically; do not add a separate signing client.
 
-**If npm enables first-package trusted-publisher reservation before execution:**
-- Reserve/configure `@shipwithai/cumpa` using the documented owner flow.
-- Skip the interactive `0.0.0` bootstrap and publish only `1.5.0` through OIDC.
+**For the first-ever npm version:**
+- Bootstrap package ownership with an interactive 2FA publication under a non-default tag.
+- Configure trust only after the package exists.
+- Publish `1.5.0` through the bound workflow.
 
-**If npm-side approval is required:**
-- Configure stage-only trust and use `npm stage publish`.
-- Approve interactively with 2FA; OIDC cannot run stage view/approve/reject.
+**For marketplace users:**
+- Install the public MIT skill from `Ship-With-AI/skills`.
+- Install `@shipwithai/cumpa@1.5.0` separately.
+- Keep all review authority in the CLI.
 
 ## Version Compatibility
 
 | Component | Compatible With | Notes |
 |-----------|-----------------|-------|
-| Cumpa `@shipwithai/cumpa@1.5.0` | Node `>=24` | Preserve existing engine floor. |
-| Node `24.20.0` | npm `11.19.0` bundled | Verified in Node's release index; satisfies npm trusted publishing `>=11.5.1` and `npm trust` `>=11.15.0`. |
-| npm trusted publishing | GitHub-hosted Actions, exact workflow/repository/environment binding | Self-hosted runners unsupported; `npm whoami` does not test OIDC because exchange occurs only during publish/stage publish. |
-| Automatic npm provenance | Public npm package + public GitHub repository | No provenance for a private source repository. |
-| `actions/checkout@v6` / `actions/setup-node@v6` | Current npm trusted-publishing example | Use in the new release workflow; upgrading unrelated workflows is optional. |
-| Vite `8.1.4` | `build.license` Markdown/JSON output | Existing dependency; no plugin required. |
-| Monaco `0.55.1` | MIT package license + bundled `ThirdPartyNotices.txt` | Preserve both package-level and nested third-party notices in browser distribution. |
-| Native addon | Darwin arm64 Node-API build | Existing code safely reports unsupported if absent or unloadable. |
-| GitHub immutable releases | Git tag + uploaded assets | Tag/assets lock only after release publication; title/notes remain editable. |
-| npm scoped executable | `bin: { "cumpa": "dist/bin/cumpa.mjs" }` | Global install exposes `cumpa`; `npx @shipwithai/cumpa@1.5.0` can select the package's single bin. |
+| `@shipwithai/cumpa@1.5.0` | Node `>=24` | Preserve the existing engine floor and single `cumpa` bin. |
+| Node `24.20.0` | npm `11.19.0` bundled | Current Node 24 LTS distribution on the research date. |
+| npm trusted publishing | npm `>=11.5.1`, Node `>=22.14.0`, GitHub-hosted Actions | Cumpa's release versions exceed both minimums. |
+| `npm trust github` | npm `>=11.15.0`, existing package, package write access, account 2FA | Explains the one-time bootstrap for the currently nonexistent package. |
+| npm automatic provenance | OIDC + public npm package + public repository | **Not compatible with Cumpa's private repository.** |
+| `actions/checkout@v6` / `actions/setup-node@v6` | Current npm trusted-publishing example | Use only in the new release workflow; unrelated workflow upgrades are unnecessary. |
+| GitHub `macos-15` | Private-repository standard hosted arm64 runner | Preserves the existing Darwin-arm64 optional native addon and satisfies npm's hosted-runner rule. |
+| npm exec / npx `11.19.x` | `@shipwithai/cumpa@1.5.0` with one bin entry | Exact package spec selects the requested version; single bin permits executable inference. |
+| Ship With AI plugin `0.3.0` | `skills/cumpa/SKILL.md` | Minor bump is required because current `0.2.0` is an explicit update cache key. |
+| Public Cumpa skill | CLI `@shipwithai/cumpa@1.5.0` | Skill MIT license and CLI proprietary license remain separate. |
 
 ## Sources
 
-Primary sources (all accessed 2026-09-04):
+Primary sources accessed 2026-09-06:
 
-- [npm trusted publishers](https://docs.npmjs.com/trusted-publishers) — OIDC requirements, exact bindings, hosted-runner limitation, token restrictions, and automatic provenance.
-- [npm trust](https://docs.npmjs.com/cli/v11/commands/npm-trust) — npm `>=11.15.0`, 2FA/write access, existing-package prerequisite, and GitHub provider flags.
-- [npm package.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-json) — SPDX license, repository/homepage/bugs/bin/files/engines/publishConfig fields and mandatory packed files.
-- [npm publish](https://docs.npmjs.com/cli/v11/commands/npm-publish) — tarball publishing, immutable name/version pairs, packlist parity, public access, and integrity.
-- [npm-shrinkwrap.json](https://docs.npmjs.com/cli/v11/configuring-npm/npm-shrinkwrap-json) — publishable lock and recommendation for globally installed command-line tools.
-- [Node distribution index](https://nodejs.org/dist/index.json) and [latest Node 24 artifacts](https://nodejs.org/dist/latest-v24.x/) — Node 24.20.0 LTS and bundled npm 11.19.0.
-- [Vite build options: `build.license`](https://vite.dev/config/build-options.html#build-license) — native bundled-dependency license generation and output formats.
-- [SPDX GPL-3.0-or-later](https://spdx.org/licenses/GPL-3.0-or-later.html) — exact identifier, full license text, and standard application notice.
-- [GNU GPL v3 text](https://www.gnu.org/licenses/gpl-3.0-standalone.html) — notice preservation, Corresponding Source, network distribution, and separate aggregate works.
-- [GitHub repository visibility](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) — public exposure of source/Actions history/logs and visibility-change consequences.
-- [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases) — tag-based releases, source archives, and uploaded assets.
-- [GitHub immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases) — tag/asset locking and automatic release attestation.
-- [GitHub environments](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments) — approval, branch/tag restrictions, secrets, and variables.
-- [GitHub-hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) — current public-repository `macos-15` arm64 capability.
-- [`gh release create`](https://cli.github.com/manual/gh_release_create) — `--verify-tag`, asset upload, draft-before-publication behavior, and immutable-release interaction.
-- [Monaco Editor 0.55.1 registry metadata](https://registry.npmjs.org/monaco-editor/0.55.1) — MIT identifier and exact locked version; the installed package's `ThirdPartyNotices.txt` was also inspected directly.
-
-Repository evidence:
-
-- `package.json`
-- `.git/config`
-- `.github/workflows/deploy-supabase-production.yml`
-- `scripts/build-bin.mjs`
-- `scripts/build-native-addon.mjs`
-- `scripts/verify-production-artifacts.mjs`
-- `src/native/directory-exchange.cc`
-- `src/server/native-exchange-capability.ts`
-- `vite.config.ts`
-- `.kimi-code/skills/cumpa/SKILL.md`
-- `node_modules/monaco-editor/LICENSE`
-- `node_modules/monaco-editor/ThirdPartyNotices.txt`
+- [npm trusted publishers](https://docs.npmjs.com/trusted-publishers/) — OIDC and Node/npm minimums, supported hosted runners, exact GitHub binding, `id-token: write`, automatic provenance conditions, private-repository exclusion, and current `actions/*@v6` example.
+- [npm trust](https://docs.npmjs.com/cli/v11/commands/npm-trust/) — npm `>=11.15.0`, existing-package requirement, write access, 2FA, GitHub flags, and allowed publish actions.
+- [npm package.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/) — `files` allowlist, always-included/ignored files, `bin`, `private`, repository metadata, and `SEE LICENSE IN <filename>` / `UNLICENSED` license forms.
+- [npm publish](https://docs.npmjs.com/cli/v11/commands/npm-publish/) — tarball package specs, immutable name/version combinations, public access, packlist behavior, and artifact integrity.
+- [Creating and publishing scoped public packages](https://docs.npmjs.com/creating-and-publishing-scoped-public-packages/) — scoped-public access and organization prerequisites.
+- [About public packages](https://docs.npmjs.com/about-public-packages/) — public packages are downloadable by anyone.
+- [npm exec / npx](https://docs.npmjs.com/cli/v11/commands/npm-exec/) — exact package/version syntax, cache installation, prompting, and single-bin inference.
+- [npm provenance](https://docs.npmjs.com/generating-provenance-statements/) — public source/build linkage and public transparency-log semantics.
+- [GitHub changelog: private source repositories no longer supported for npm provenance](https://github.blog/changelog/2023-07-25-publishing-with-npm-provenance-from-private-source-repositories-is-no-longer-supported/) — corroborates the private-repository restriction.
+- [Node.js `latest-v24.x` distribution index](https://nodejs.org/dist/latest-v24.x/) and [release index](https://nodejs.org/dist/index.json) — current Node `24.20.0` and bundled npm `11.19.0`.
+- [GitHub-hosted runners reference](https://docs.github.com/en/actions/reference/runners/github-hosted-runners) — `macos-15` is a standard arm64 hosted runner available to private repositories.
+- [Claude Code plugins reference](https://code.claude.com/docs/en/plugins-reference) — `skills/<name>/SKILL.md` discovery, MIT metadata, component paths, explicit version update behavior, and SemVer guidance.
+- [Ship-With-AI/skills README](https://github.com/Ship-With-AI/skills/blob/main/README.md), [plugin manifest](https://github.com/Ship-With-AI/skills/blob/main/.claude-plugin/plugin.json), and [marketplace catalog](https://github.com/Ship-With-AI/skills/blob/main/.claude-plugin/marketplace.json) — current public installation paths, repository layout, plugin version `0.2.0`, MIT metadata, and `./skills/` discovery.
+- Repository observations: `package.json`, `tsconfig.json`, `vite.config.ts`, `scripts/build-bin.mjs`, `scripts/build-native-addon.mjs`, `scripts/verify-production-artifacts.mjs`, `THIRD_PARTY_NOTICES.md`, and `.kimi-code/skills/cumpa/SKILL.md`.
 
 ---
-*Stack research for: Cumpa v1.5 Public Distribution*
-*Researched: 2026-09-04*
+*Stack research for: Cumpa v1.5 Private Distribution*
+*Researched: 2026-09-06*
