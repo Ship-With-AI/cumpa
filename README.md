@@ -2,9 +2,9 @@
 
 Cumpa gives committed local Git comparisons a pull-request-style review workspace without publishing a branch or worktree. Choose local branches or registered worktrees, leave durable feedback, and export it for an agent or teammate to use.
 
-This is a **local source setup** for the private `cumpa@0.0.0` package. It is not a published npm package.
+The prepared package identity is **`@shipwithai/cumpa@1.5.0`**; the command is **`cumpa`**. `cumpa` is the ASCII terminal spelling of Neapolitan `cumpà`, used colloquially for a friend, mate, or comrade.
 
-Cumpa is the project and product; `cumpa` is its private npm package; `cumpa` is the command. `cumpa` is the ASCII terminal spelling of Neapolitan `cumpà`, used colloquially for a friend, mate, or comrade.
+**Availability gate:** Phase 3 preparation does not establish npm registry availability. Phase 5 must verify the real release before this version is presented as published. Package metadata and the command examples below are not proof that a release is installable. Likewise, the selected [source repository](https://github.com/Ship-With-AI/cumpa) and [Issues tracker](https://github.com/Ship-With-AI/cumpa/issues) require the separate repository-publication review and anonymous-access verification; these links alone make no public-access claim.
 
 ## Prerequisites
 
@@ -15,35 +15,25 @@ You need:
 - Git 2.43.0 or later
 - A non-bare Git worktree containing at least one commit for the repository you want to review
 
-## Install and build from this checkout
+## Install a verified release
 
-Run these commands in the Cumpa source checkout:
-
-```sh
-npm ci
-npm run build
-npm link
-```
-
-`npm run build` creates the `dist/bin/cumpa.mjs` executable, and `npm link` makes this locally built `cumpa` command available from your shell.
-
-## Install the `/cumpa` coding-agent skill
-
-From this source checkout, copy the project-owned skill into the coding agent's skill directory:
+After the exact release has been published and verified, install it globally:
 
 ```sh
-mkdir -p "$HOME/.agents/skills/cumpa"
-cp .kimi-code/skills/cumpa/SKILL.md "$HOME/.agents/skills/cumpa/SKILL.md"
+npm install --global @shipwithai/cumpa@1.5.0
 ```
 
-If Cumpa is published in the future, after `npm install --global cumpa`, copy the installed package artifact instead:
+Alternatively, run that exact version from the repository you want to review:
 
 ```sh
-mkdir -p "$HOME/.agents/skills/cumpa"
-cp "$(npm root --global)/cumpa/.kimi-code/skills/cumpa/SKILL.md" "$HOME/.agents/skills/cumpa/SKILL.md"
+npx --yes @shipwithai/cumpa@1.5.0
 ```
 
-Reload or restart the coding-agent session so it discovers `/cumpa`. For another compatible agent, substitute that agent's configured skill directory. npm does not register the skill automatically.
+Using a published release requires no Cumpa source checkout or local build. Both commands above remain conditional on the availability gate.
+
+## Coding-agent skill
+
+The agent-handoff commands below work without installing a skill. The marketplace skill is a later, separately distributed, independently MIT-licensed integration that requires a separately installed Cumpa CLI. Its MIT grant does not license the Cumpa application, and this guide does not claim marketplace availability or a bundled skill installation.
 
 ## Start a review
 
@@ -222,3 +212,17 @@ For exact-patch reviews, the frozen source snapshot is private to the session. I
 Cumpa reviews regular UTF-8 text files only. Each inspected blob side must be at most 1,048,576 bytes (1 MiB).
 
 Binary, non-UTF-8, oversized, symlink, submodule, and unsupported mode/type entries stay visible but are not reviewable. Missing-object cases (missing objects) are separately unavailable rather than unsupported file kinds. Cumpa does not separately detect arbitrary generated source files. Its own `.cumpa/` internal output is always excluded from the review inventory.
+
+## License and independent notices
+
+Cumpa source and compiled/object releases are **proprietary source-available**, not open source. [LICENSE](LICENSE) is the controlling application license: it permits free personal/commercial use, internal copies and modifications, and perpetual compliant use of an acquired version. General public redistribution is restricted, with the stated statutory, prior-license, independent third-party and applicable GitHub-platform exceptions preserved. Public readability does not grant a broader application license.
+
+Required independent grants and attributions remain in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Neither the application license nor the skill's separate MIT grant replaces third-party terms. Read the full license and notices rather than treating this summary as an additional grant.
+
+## Voluntary support
+
+Support is optional and feature-neutral: review and export do not require payment. Supporting Cumpa does not purchase extra review capabilities or a service, maintenance, update or support commitment.
+
+## Problems and questions
+
+Report problems and ask questions in [Cumpa Issues](https://github.com/Ship-With-AI/cumpa/issues), subject to the public-access gate above.
