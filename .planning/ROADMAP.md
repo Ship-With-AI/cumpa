@@ -36,12 +36,12 @@ Proprietary distribution proceeds through five dependency-ordered outcomes. Cump
   3. The existing `Ship-With-AI/cumpa` repository and reviewed history are public only after both licensors approve the exact license and rights/sensitive-material review is resolved; no credentials or confidential operational material are exposed, and destructive remediation or history rewriting requires separate approval.
   4. The documented release policy preserves eligible automatic npm provenance, defines the public-source/attestation evidence Phase 5 must verify, and forbids unsupported claims; OIDC authentication alone is not attestation proof.
 
-**Plans**: 0/3 plans executed
+**Plans**: 1/3 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — Rights, notices, and dual-licensor exact-text approval
+- [x] 03-01-PLAN.md — Rights, notices, and dual-licensor exact-text approval
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -111,7 +111,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 3. Distribution Contract & Legal Boundary | 0/3 | Planned    |  |
+| 3. Distribution Contract & Legal Boundary | 1/3 | In Progress|  |
 | 4. Exact Runtime Tarball | 0/TBD | Not started | - |
 | 5. Bootstrap & Trusted Stable Publication | 0/TBD | Not started | - |
 | 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
