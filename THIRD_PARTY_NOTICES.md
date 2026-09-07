@@ -1,3 +1,9 @@
+# Third-party notices
+
+This file preserves independently applicable third-party grants. It is not a license for Cumpa.
+
+The Microsoft-prefaced notice beginning below is the verbatim upstream `ThirdPartyNotices.txt` supplied with Monaco Editor 0.55.1. Its wording applies to Monaco Editor's upstream material; it is not a Cumpa application license and does not grant or restrict Cumpa rights.
+
 THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
 Do Not Translate or Localize
 
@@ -449,11 +455,115 @@ END OF vscode-swift NOTICES AND INFORMATION
 
 ---
 
-## Review provenance
+## Monaco Editor 0.55.1
 
-- **Conveyed material:** Monaco Editor 0.55.1 browser assets, workers, and `codicon` font in the Cumpa dry-run package.
-- **Canonical notice source:** `node_modules/monaco-editor/ThirdPartyNotices.txt` from `https://github.com/microsoft/monaco-editor`.
-- **Upstream notice SHA-256:** `790537262fc78a764e121e6b92b959bcd3f5c310b47d9d9b9e92e17fe0af5336`
-- **Disposition:** `blocked` pending the attributable row-by-row authority, compatibility, and notice-sufficiency decision recorded in `03-RIGHTS-REVIEW.md`.
+The preceding `THIRD-PARTY SOFTWARE NOTICES AND INFORMATION` text is retained verbatim from `node_modules/monaco-editor/ThirdPartyNotices.txt` (SHA-256 `790537262fc78a764e121e6b92b959bcd3f5c310b47d9d9b9e92e17fe0af5336`). It covers Monaco Editor's upstream third-party material. Monaco Editor itself is separately licensed as follows:
 
-The preceding notice text is retained verbatim from the identified upstream file. This provenance block adds no conclusion about compatibility or license authority.
+The MIT License (MIT)
+
+Copyright (c) 2016 - present Microsoft Corporation
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+## Vue 3.5.39
+
+The MIT License (MIT)
+
+Copyright (c) 2018-present, Yuxi (Evan) You
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+## Markdown-It 14.3.0
+
+Copyright (c) 2015 Vitaly Puzrin.
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+
+## Additional currently source-reachable material
+
+### DOMPurify 3.2.7
+
+Copyright 2025 Dr.-Ing. Mario Heiderich, Cure53
+
+`node_modules/dompurify/LICENSE` permits redistribution under either Apache License 2.0 or Mozilla Public License 2.0. This distribution elects Apache License 2.0 for DOMPurify; the complete Apache License 2.0 text is retained in the upstream Monaco notice above. Monaco's `domSanitize.js` imports its included DOMPurify source.
+
+### entities 4.5.0 and 7.0.1
+
+Markdown-It resolves its nested entities 4.5.0; the root lock also contains entities 7.0.1. Their license files are byte-identical, so the shared BSD-2-Clause notice is reproduced once below.
+
+Copyright (c) Felix Böhm
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+### MIT attributions
+
+The full MIT grant in the Markdown-It section immediately above applies to the following independently attributed material. This grouping avoids duplicating that grant's text; it does not merge or replace the named upstream grants.
+
+- **Zod 4.4.3** — Copyright (c) 2025 Colin McDonnell.
+- **linkify-it 5.0.2** — Copyright (c) 2014 Vitaly Puzrin, Alex Kocharin.
+- **mdurl 2.0.0** — Copyright (c) 2015 Vitaly Puzrin, Alex Kocharin. Its `.parse()` also incorporates Node.js URL material: Copyright Joyent, Inc. and other Node contributors. All rights reserved. The Node.js permission and disclaimer text is retained in the upstream Monaco notice above.
+- **punycode.js 2.3.1** — Copyright Mathias Bynens <https://mathiasbynens.be/>.
+- **uc.micro 2.1.0** — Copyright Mathias Bynens <https://mathiasbynens.be/>.
+
+## Scope of this snapshot
+
+These evidence-backed notices correspond to source imports and generated, untracked working-tree `dist/web` output, not an audited final npm artifact. Phase 4 must determine the actual final bundle and package inventory, retain every applicable direct and transitive notice, and include this file where required.
