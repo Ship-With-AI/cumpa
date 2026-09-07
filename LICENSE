@@ -1,0 +1,94 @@
+Cumpa Proprietary Source-Available License
+
+Copyright (c) 2026 Alessandro Magionami & Manuel Salvatore Martone
+
+1. Scope
+
+Alessandro Magionami and Manuel Salvatore Martone (the "Licensors") provide
+this license for the rights they control in Cumpa application source code,
+including published application history, compiled software, and associated
+application documentation supplied under this license (the "Software").
+
+The Software is proprietary and source-available. This is not an open-source
+license. Publicly readable source and publicly downloadable or inspectable
+compiled files do not, by themselves, grant permissions beyond this license
+and the independent rights preserved in section 4.
+
+2. Permission to use, copy, and modify
+
+Subject to compliance with this license, the Licensors grant you a
+non-exclusive, royalty-free license for each version of the Software you
+obtain under these terms to:
+
+- Use and run the Software for personal or commercial purposes.
+- Make copies for your own use, installation, and backups, and for internal
+  use, installation, and backups within your organization.
+- Inspect and modify the source code or compiled Software for your personal
+  use or your organization's internal use.
+
+These permissions do not require payment and do not depend on voluntary
+support status. All review and export capabilities may be used without
+payment.
+
+The grant for an acquired version is perpetual while you comply with its
+terms. Later releases, changes to the terms for later versions, or an end to
+distribution do not withdraw that version's compliant-use grant. This license
+does not promise access to future versions, updates, or maintenance.
+
+3. Copying conditions and redistribution limits
+
+Retain the applicable copyright notices, this license, and required
+third-party notices with copies or substantial portions of the Software.
+
+Except as permitted in section 2 or by the independent rights preserved in
+section 4, you may not publish, distribute, sublicense, sell, or otherwise
+provide copies of the Software to others outside your organization. This
+restriction applies to source and compiled copies, unchanged mirrors, and
+modified versions. It does not restrict the commercial use permitted in
+section 2.
+
+No general public redistribution right is granted by this license. Rights
+not expressly granted are reserved to their respective holders.
+
+4. Independent rights and third-party materials
+
+Third-party components and materials remain subject to their own applicable
+licenses and notices, including those identified in THIRD_PARTY_NOTICES.md
+or accompanying the relevant material. The independently distributed Cumpa
+marketplace skill is governed by its separate MIT license, not this
+application license. Nothing here relicenses third-party material, withdraws
+an earlier independent grant, or imposes these redistribution restrictions
+on rights you independently receive under another applicable license.
+
+Nothing in this license limits rights that applicable law does not permit
+the Licensors to restrict.
+
+Nothing in this license limits or withdraws permissions separately granted
+under the GitHub terms applicable to public hosting of the Software. Those
+platform grants include public viewing and in-platform forking and may
+include broader hosting, processing, public-access, and GitHub or affiliate
+AI-training-related permissions. This license does not promise a prohibition
+on uses authorized by those applicable platform terms, and it does not grant
+additional rights to third parties beyond the permissions otherwise stated
+or independently applicable.
+
+5. Voluntary support and service commitments
+
+Any voluntary support payment is optional. It is not required for this
+license and does not purchase additional review or export rights. This
+license makes no promise of support services, availability, updates,
+maintenance, or any service level.
+
+6. Warranty and liability
+
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE IS PROVIDED "AS IS"
+AND "AS AVAILABLE", WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, WHETHER
+EXPRESS, IMPLIED, OR STATUTORY, INCLUDING WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+TO THE EXTENT PERMITTED BY APPLICABLE LAW, THE LICENSORS SHALL NOT BE LIABLE
+FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM OR RELATING TO THE
+SOFTWARE OR ITS USE, WHETHER IN CONTRACT, TORT, OR OTHERWISE.
+
+Nothing in this license excludes or limits any right, remedy, warranty, or
+liability that cannot lawfully be excluded or limited.
