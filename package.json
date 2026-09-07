@@ -1,8 +1,16 @@
 {
-  "name": "cumpa",
-  "version": "0.0.0",
+  "name": "@shipwithai/cumpa",
+  "version": "1.5.0",
   "private": true,
   "description": "Local-first review of pinned Git comparisons",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ship-With-AI/cumpa.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ship-With-AI/cumpa/issues"
+  },
   "type": "module",
   "engines": {
     "node": ">=24"
