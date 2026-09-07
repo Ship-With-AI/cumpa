@@ -5,10 +5,10 @@ milestone_name: Proprietary Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: Completed 03-02; executing read-only 03-03 publication inventory
-last_updated: "2026-09-07T18:22:28.217Z"
+stopped_at: "03-03 Task 1: awaiting operational-ID policy/remediation decision and Projects read access; legal and metadata plans complete"
+last_updated: "2026-09-07T20:38:24.124Z"
 last_activity: 2026-09-07
-last_activity_desc: Completed guarded package metadata and truthful documentation; starting read-only final source and GitHub exposure inventory.
+last_activity_desc: Recorded complete reachable GitHub exposure evidence; 41 log and two legacy-package findings, recurrence prevention, and Projects access require human input. No remote mutations.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 complete; executing 03-03 Task 1
+Plan: 2 of 3 complete; 03-03 Task 1 blocked on exposure disposition and Projects access
 Status: Ready to execute
-Last activity: 2026-09-07 — Completed guarded package metadata and truthful documentation; starting read-only final source and GitHub exposure inventory.
+Last activity: 2026-09-07 — Recorded complete reachable GitHub exposure evidence; 41 log and two legacy-package findings, recurrence prevention, and Projects access require human input. No remote mutations.
 
 Progress: [███████░░░] 67%
 
@@ -55,6 +55,12 @@ Progress: [███████░░░] 67%
 | v1.5 Proprietary Distribution | 5 | TBD | Ready to plan |
 
 *Updated after each plan completion.*
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 03 P01 | not separately timed | 3 tasks | 4 files |
+| Phase 03 P02 | 12min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -74,9 +80,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 3 must obtain exact-license approval from both licensors, resolve rights and sensitive-content/history review, safely publish the existing repository, and verify the public Issues link before package preparation. Repository visibility is still private; reconciliation is documentation only.
 - Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
+- 03-03 publication blocked: 41 retained run logs expose policy-protected operational IDs; two runtime archives lack required notices; current workflow recreates both exposures. Await explicit policy/remediation choice; no remote mutation authorized.
+- 03-03 linked Projects inventory requires read:project; authenticated browser fallback unavailable. Repository-scoped short-lived mutation authority and both preparation/publication authorizations remain pending.
 
 ### Roadmap Evolution
 
@@ -98,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T18:22:28.213Z
-Stopped at: Completed 03-02; executing read-only 03-03 publication inventory
-Resume file: None
+Last session: 2026-09-07T20:38:24.120Z
+Stopped at: 03-03 Task 1: awaiting operational-ID policy/remediation decision and Projects read access; legal and metadata plans complete
+Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
