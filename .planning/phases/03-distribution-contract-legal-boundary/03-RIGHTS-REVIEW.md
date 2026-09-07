@@ -2,7 +2,7 @@
 
 **Record kind:** `cumpa.rights-review/v1`
 **Collected:** 2026-09-07
-**Status:** Initial local evidence collected; rights and publication approval blocked on R-01 through R-03 below.
+**Status:** Initial local findings R-01/R-02/R-03 resolved by the operator's explicit 2026-09-07 statements below; both exact-license approvals and final publication gates remain pending.
 **Not a clearance:** This record is an evidence inventory, not ownership certification, a legal opinion, final artifact acceptance, or permission to publish. No final license approval has been obtained.
 
 ## Audited boundary
@@ -50,7 +50,7 @@ No assignment/ownership agreement was found among the inspected repository autho
 
 | ID | Subject | Disposition | Evidence/action required |
 |---|---|---|---|
-| R-01 | Authority over reviewed first-party and generated Cumpa material, including any employer/client/non-Git or AI-assisted contribution obligations | **unresolved-blocking** | Attributable maintainer statement/evidence establishing that the named licensors control the rights needed for the reviewed Cumpa source/history, identifying any additional holders, assignments or permissions. Do not substitute Git authorship, an SPDX string or this inventory for that statement. Both licensors must still approve the exact LICENSE separately. |
+| R-01 | Authority over reviewed first-party and generated Cumpa material, including any employer/client/non-Git or AI-assisted contribution obligations | **resolved by attributable owner statement** | In response to `rights_authority`, the current operator selected “Named licensors control the rights”: Alessandro Magionami and Manuel Salvatore Martone have the necessary rights/permissions for the reviewed first-party material, including required employer/client/contributor permissions, with no undisclosed competing holder. Identified independent third-party materials remain excluded. This is a reported authority basis, not legal certification or Manuel's approval of the LICENSE. |
 
 ## Dependency and conveyed-material accounting
 
@@ -89,8 +89,10 @@ Current `THIRD_PARTY_NOTICES.md` SHA-256: `847c9cb7c9e3585ed7ae518208ac934c5658f
 |---|---|---|
 | SENSITIVE-02 | Credential-shaped, credential-URL, assignment, encoded and entropy candidates examined in context | **not-applicable to confirmed live-credential exposure in this scope**: observed values were synthetic fixtures, local test inputs, symbolic policy references or false positives. No confirmed live credential, private key or JWT was detected. This is not a guarantee against unrecognized secrets. |
 | SENSITIVE-03 | One deployed Supabase routing value appears only as complete canonical URLs | **resolved for the routing-value category only** under the existing operations policy; zero bare occurrences of that deployed reference were found. No general operational-data disclosure approval is implied. |
-| R-02 / SENSITIVE-01 | Own non-noreply Git identity email and developer-specific home paths; retained public npm-maintainer metadata quotations | **unresolved-blocking for public history** until an attributable exact-scope privacy disposition. No raw email or home-path value is repeated here. |
-| R-03 | Retained non-Cumpa/TrustLayer-CWT debugging context and historical references | **unresolved-blocking for public history** until the owner confirms permitted disclosure of the reviewed locations or separately authorizes remediation. This is not a confirmed credential finding. |
+| R-02 / SENSITIVE-01 | Own non-noreply Git identity email and developer-specific home paths; retained public npm-maintainer metadata quotations | **accepted-public for the reviewed scope**: in response to `personal_metadata`, the operator selected “Retain reviewed metadata”, accepting the identified Git email/home-path history and sourced public npm-maintainer metadata. This is not a global allowlist for new private data. No raw value is repeated here. |
+| R-03 | Retained non-Cumpa/TrustLayer-CWT debugging context and historical references | **accepted-public for the reviewed locations**: in response to `non_cumpa_context`, the operator selected “Authorized to retain”, confirming authority to disclose the exact reviewed repository/branch/OID context at the current and historical locations below. This neither authorizes new unrelated disclosures nor changes repository visibility. |
+
+**Disposition source:** The operator's actual answers to the three named questions in this execution session on 2026-09-07. All three were explicit selections after the findings, locations and scope were presented. No deletion or history rewriting was selected or performed. These dispositions do not replace either licensor's exact-text approval or the separate Plan 03-03 private-preparation/final-publication authorizations.
 
 R-02 scope: one distinct non-noreply address in the author/committer metadata of the 856 primary-plus-supplemental examined commits (1,712 occurrences). One developer-specific home-path value appears 266 times in 105 current files and 881 times in 230 primary historical blobs. Source examples include `.planning/debug/empty-branch-comparison.md:69` and historical blob `1f671da1c75293bd4fe6720ea2091b91e8d2300c`. Public npm-maintainer metadata was identified in `.planning/milestones/v1.4-phases/02-move-the-implementation-to-supabase/02-01-SUMMARY.md:93-105`; no customer email dataset was identified. The privacy disposition must distinguish necessary public-package attribution from private identifying/context data.
 
@@ -125,10 +127,10 @@ The following are retained blockers for the relevant later publication surface, 
 - Phase 4: map every final browser worker/font/other emitted material and any remaining copied dependency to actual grants/notices; verify the final native binary, architecture and toolchain provenance. Current generated dist and lock metadata are not the immutable final artifact.
 - Phase 5: exact tarball, registry availability, OIDC and actual provenance/attestation evidence.
 
-These future gates do not require an impossible final tarball before its prerequisite legal phase. They cannot be waived or relabeled as completed by this inventory. Current R-01/R-02/R-03 dispositions and both exact-text approvals remain actual Phase 3 blockers.
+These future gates do not require an impossible final tarball before its prerequisite legal phase. They cannot be waived or relabeled as completed by this inventory. R-01/R-02/R-03 now have the explicit dispositions above; both exact-text approvals and the later publication-surface gates remain actual blockers.
 
 ## Review limitations and authorization state
 
 The exposure audit covered every enumerated local/ref/reflog blob and message using bounded lexical/contextual checks, not a legal or line-by-line human confidentiality certification. Unreachable objects outside those scopes and live GitHub/provider surfaces were not examined. No candidate secret values or raw temporary payload files were created; audit processes completed. No provider access, revocation, history rewriting, deletion, push, visibility change, package install/build/publication or approval action was performed.
 
-R-01 through R-03 require attributable owner/reviewer input. Do not create 03-LICENSE-APPROVAL.md or start Plan 03-02 while these items or either licensor approval remain unresolved. Drafting LICENSE is permitted as preparation, not adoption or clearance. Final Plan 03-03 must refresh findings and renew affected approvals after later changes. This record has no self-hash; downstream approval records bind its final exact bytes after dispositions are supplied.
+The operator supplied explicit R-01/R-02/R-03 dispositions for the reviewed scope. Do not create 03-LICENSE-APPROVAL.md or start Plan 03-02 until both named licensors have separately approved the exact full LICENSE and its GitHub D.4/D.5/D.8 disclosure. Drafting is not adoption. Final Plan 03-03 must refresh findings and renew affected approvals after later changes; these initial dispositions are not final visibility authorization. This record has no self-hash; downstream approval records bind its exact final bytes.
