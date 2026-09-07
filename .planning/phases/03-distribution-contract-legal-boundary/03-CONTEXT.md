@@ -1,14 +1,14 @@
 # Phase 3: Distribution Contract & Legal Boundary - Context
 
 **Gathered:** 2026-09-07
-**Status:** Decisions captured; reconcile the milestone source-publication contract before finalizing plans
+**Status:** Ready for planning; active milestone source/publication requirements reconciled on 2026-09-07
 
 <domain>
 ## Phase Boundary
 
 Establish approved proprietary license terms, accurate package metadata and public documentation, third-party notice obligations, and a safe source-publication boundary for `@shipwithai/cumpa@1.5.0`.
 
-**Explicit user-directed scope change:** During this discussion, the user replaced the private-source requirement with publication of the existing `Ship-With-AI/cumpa` repository and its reviewed Git history. Cumpa remains proprietary and source-available, not open source. This contradicts the current v1.5 Private Distribution roadmap and requirements; do not silently plan against their old privacy or no-provenance assumptions. Reconcile the milestone documents through the appropriate GSD workflow before finalizing plans. This context records the requested revision; it does not itself change those documents or repository visibility.
+**Explicit user-directed scope change:** During this discussion, the user replaced the private-source requirement with publication of the existing `Ship-With-AI/cumpa` repository and its reviewed Git history. Cumpa remains proprietary and source-available, not open source. The user then requested immediate milestone reconciliation; GSD quick task `260907-gdm` updated the active project, requirements, roadmap, and continuity state to v1.5 Proprietary Distribution. The earlier private-source/no-provenance policy is superseded. This documentation reconciliation does not change repository visibility or satisfy the legal and publication gates.
 
 Runtime-only npm packaging, immutable artifact preparation, bootstrap/stable publication, marketplace distribution, and released-artifact acceptance remain the later phases' responsibilities. Existing review, export, agent handoff, and voluntary-support behavior is unchanged.
 
@@ -64,9 +64,9 @@ Runtime-only npm packaging, immutable artifact preparation, bootstrap/stable pub
 
 ### Active scope and explicit revision
 - `.planning/phases/03-distribution-contract-legal-boundary/03-CONTEXT.md` — This discussion's decisions, including the explicit source-publication reversal and GitHub platform-rights exception.
-- `.planning/PROJECT.md` — Product constraints and milestone intent; private-source statements require reconciliation. Existing references to provenance are inconsistent with the current private-source requirements and must be replaced by one coherent public-source release position.
-- `.planning/REQUIREMENTS.md` — PKG-06, PKG-07, REL-04, REL-05 and linked exclusions need the D-20 reconciliation; runtime-only packaging and other unaffected requirements remain binding.
-- `.planning/ROADMAP.md` — Current Phase 3 boundary and Phases 4–7 dependencies; private-source and no-provenance wording is superseded by the user's requested revision, not silently treated as current intent.
+- `.planning/PROJECT.md` — Product constraints and reconciled proprietary source-available milestone intent.
+- `.planning/REQUIREMENTS.md` — Reconciled PKG-06, PKG-07, REL-02, REL-04, REL-05 and linked exclusions; 19 active IDs and phase assignments are preserved.
+- `.planning/ROADMAP.md` — Reconciled Phase 3 boundary and unchanged Phases 4–7 dependency order; package exclusions, eligible provenance, and source-publication gates now agree with this context.
 
 ### Existing package, documentation, and protection surfaces
 - `package.json` — Current private `cumpa@0.0.0`, generated executable, Node baseline, package allowlist, and dependency versions; intended release metadata has not yet been applied.
@@ -128,7 +128,7 @@ No external legal draft, design specification, or counsel opinion was supplied.
 <deferred>
 ## Deferred and Gated Work
 
-- **Required milestone-scope reconciliation:** Apply the explicit source-publication revision to the active project, requirements, and roadmap through GSD before finalizing plans. It is not an optional future idea and must not be lost; this discussion only captures the requested change.
+- **Milestone-scope reconciliation completed:** At the user's request, GSD quick task `260907-gdm` applied the explicit source-publication revision to the active project, requirements, roadmap, and continuity state. D-20's reconciliation prerequisite is satisfied; legal approval, rights review, and actual repository publication remain pending execution.
 - **Gated execution:** Exact legal drafting/approval, rights and sensitive-history review, repository-visibility mutation, and any separately approved history remediation have not been performed.
 - **Later phases:** Runtime tarball production, registry bootstrap/stable publication, marketplace release, and clean released-artifact acceptance remain in Phases 4–7. No new review features were added.
 

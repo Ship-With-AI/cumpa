@@ -12,16 +12,16 @@
 - [ ] **PKG-03**: Users running `cumpa --version` see exactly `1.5.0` and receive the existing Node.js 24+ and Git prerequisite guidance.
 - [ ] **PKG-04**: Users receive every compiled Node and browser asset required to complete the existing review workflow from the installed package.
 - [ ] **PKG-05**: Public package contents exclude TypeScript source, source maps or embedded source content, tests, fixtures, planning files, workflows, credentials, local review state, marketplace-skill files, and Git repository data or history.
-- [ ] **PKG-06**: Package metadata and public documentation identify the application as proprietary, include approved proprietary license terms and required third-party notices, and accurately state that included compiled assets remain publicly downloadable and inspectable.
-- [ ] **PKG-07**: Cumpa's GitHub repository, development source, and history remain private throughout packaging and publication.
+- [ ] **PKG-06**: Package metadata and public documentation identify Cumpa source and compiled releases as proprietary and source-available, include the exact terms approved by both Alessandro Magionami and Manuel Salvatore Martone and required third-party notices, and explain the permitted use/copy/modification rights and redistribution limits while preserving GitHub-required platform, statutory, and third-party rights.
+- [ ] **PKG-07**: The existing `Ship-With-AI/cumpa` repository, source, and reviewed Git history become public only after both licensors approve the exact license and rights/sensitive-material review is resolved; credentials and confidential operational material are not exposed, and destructive remediation or history rewriting requires separate approval.
 
 ### Trusted Publication
 
 - [ ] **REL-01**: Maintainers can create the npm package through one usable, proprietary, non-`latest` bootstrap release using short-lived interactive authorization, then revoke that authorization before stable publication.
-- [ ] **REL-02**: Maintainers can publish `@shipwithai/cumpa@1.5.0` from the exact private GitHub repository and fixed release workflow through npm trusted publishing without an npm automation token or another long-lived publication credential.
+- [ ] **REL-02**: Maintainers can publish `@shipwithai/cumpa@1.5.0` from the exact approved public `Ship-With-AI/cumpa` repository and fixed release workflow through npm trusted publishing without an npm automation token or another long-lived publication credential.
 - [ ] **REL-03**: Maintainers inspect, install, and publish the same immutable `.tgz` bytes so publication cannot rebuild or substitute an unreviewed archive.
-- [ ] **REL-04**: Public npm metadata accurately identifies the scoped package, version, executable, Node requirement, proprietary license file, private repository identity required by trusted publishing, and only real public-facing links.
-- [ ] **REL-05**: Release records explicitly state that npm provenance is unavailable for private-source repositories and make no provenance or public-source claim.
+- [ ] **REL-04**: Public npm metadata accurately identifies the scoped package, version, executable, Node requirement, proprietary license file, and exact `Ship-With-AI/cumpa` repository identity; the self-contained user README links to its verified public Issues page and omits a separate homepage or invented contact channel.
+- [ ] **REL-05**: Maintainers have a documented public-source provenance policy that preserves eligible automatic npm provenance, defines the release evidence needed to verify actual attestations, and permits only evidence-backed public-source and provenance claims. The publication phase records the actual result rather than treating OIDC authentication as attestation proof.
 
 ### Public Marketplace Skill
 
@@ -31,7 +31,7 @@
 
 ### Released-Artifact Acceptance
 
-- [ ] **ACC-01**: A clean environment can install `@shipwithai/cumpa@1.5.0` globally and complete the existing browser-review workflow without using the private checkout, a workspace link, or a local tarball.
+- [ ] **ACC-01**: A clean environment can install `@shipwithai/cumpa@1.5.0` globally and complete the existing browser-review workflow without using a source checkout, a workspace link, or a local tarball.
 - [ ] **ACC-02**: A clean environment with an empty npm cache can run `npx --yes @shipwithai/cumpa@1.5.0` and complete the existing browser-review workflow without a prior or local installation.
 - [ ] **ACC-03**: A clean agent profile can install the public marketplace skill, invoke the separately installed `@shipwithai/cumpa@1.5.0` CLI, finish a browser review, and receive its validated canonical result.
 - [ ] **ACC-04**: All released installation paths preserve unrestricted review and export behavior regardless of voluntary-support payment state.
@@ -40,7 +40,7 @@
 
 ### Distribution Assurance
 
-- **DIST-01**: npm provenance is enabled if and only if npm documents support for public packages built from private source repositories without exposing Cumpa's repository or history.
+- **DIST-01**: Superseded by REL-05 after the approved public-source decision; provenance is no longer deferred behind a private-source-only eligibility trigger.
 - **DIST-02**: Users receive independently versioned update and uninstall guidance for both the npm CLI and marketplace plugin.
 - **DIST-03**: Release evidence binds a protected source tag, reviewed package digest, npm integrity, and marketplace version in one immutable release record.
 
@@ -48,10 +48,10 @@
 
 | Feature | Reason |
 |---------|--------|
-| Public Cumpa repository, history, or source mirror | Violates the defining private-source constraint. |
-| Open-source license for the Cumpa application package | The public npm package is proprietary; only the thin marketplace skill is MIT-licensed. |
-| npm provenance while the source repository is private | npm currently does not support provenance for private-source repositories; trusted OIDC publication remains supported. |
-| TypeScript source, source maps, tests, fixtures, planning files, workflows, or Git data in npm artifacts | Consumers need the compiled runtime, not private development material. |
+| Unreviewed repository/history publication or destructive remediation without approval | Public source is authorized only after both licensors' approval and rights/sensitive-material review; deleting at HEAD does not remove historical exposure. |
+| Open-source license for the Cumpa application | Source and compiled releases remain proprietary; only the thin marketplace skill is MIT-licensed. |
+| Unsupported or unverified provenance claims | Preserve eligible automatic provenance, but claim only the attestation and source facts established by actual release evidence. |
+| TypeScript source, source maps, tests, fixtures, planning files, workflows, or Git data in npm artifacts | Public source availability does not change the compiled-runtime-only npm contract. |
 | Obfuscation, DRM, activation, or license-server enforcement | Public compiled assets remain inspectable; access gating was not requested and would change the product. |
 | Bundling or automatically installing the CLI through the skill | CLI and skill have separate licenses, authorities, and installation lifecycles. |
 | New review behavior or protocol redesign | Existing review and agent handoff behavior is already validated; this milestone distributes it unchanged. |
@@ -90,4 +90,4 @@ Each active requirement maps to exactly one roadmap phase.
 
 ---
 *Requirements defined: 2026-09-06*
-*Last updated: 2026-09-06 after replacing v1.5 Public Distribution with Private Distribution*
+*Last updated: 2026-09-07 after reconciling v1.5 with the approved proprietary source-available distribution contract; 19 active requirement IDs and phase assignments preserved*

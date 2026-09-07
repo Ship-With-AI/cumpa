@@ -1,26 +1,27 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.5
-milestone_name: Private Distribution
+milestone_name: Proprietary Distribution
 current_phase: 3
 current_phase_name: Distribution Contract & Legal Boundary
 status: ready_to_plan
-stopped_at: Phase 3 context gathered; public-source proprietary decision supersedes private-source policy; reconcile milestone scope before finalizing plans
-last_updated: "2026-09-07T09:42:49.362Z"
-last_activity: 2026-09-06
-last_activity_desc: Created the v1.5 Private Distribution roadmap with 19/19 active requirements mapped.
+stopped_at: Phase 3 context and milestone reconciliation complete; ready for planning; legal approval and repository publication remain gated
+last_updated: "2026-09-07T09:57:34.744Z"
+last_activity: 2026-09-07
+last_activity_desc: Reconciled v1.5 Proprietary Distribution with approved public source/history gates; 19/19 requirements remain mapped.
 progress:
-  total_phases: 1
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-06)
+See: .planning/PROJECT.md (updated 2026-09-07)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
 **Current focus:** Phase 3 — Distribution Contract & Legal Boundary
@@ -30,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-06)
 Phase: 3 of 7 (Distribution Contract & Legal Boundary)
 Plan: —
 Status: Ready to plan
-Last activity: 2026-09-06 — Created the v1.5 Private Distribution roadmap with 19/19 active requirements mapped.
+Last activity: 2026-09-07 — Reconciled v1.5 Proprietary Distribution with approved public source/history gates; 19/19 requirements remain mapped.
 
 Progress: [----------] 0%
 
@@ -51,7 +52,7 @@ Progress: [----------] 0%
 | v1.2 Fast Source Discovery | 3 | 4 | Complete |
 | v1.3 Agent Review Handoff | 4 | 14 | Complete |
 | v1.4 Voluntary Support | 2 | 22 | Complete |
-| v1.5 Private Distribution | 5 | TBD | Ready to plan |
+| v1.5 Proprietary Distribution | 5 | TBD | Ready to plan |
 
 *Updated after each plan completion.*
 
@@ -61,8 +62,8 @@ Progress: [----------] 0%
 
 Decisions are logged in PROJECT.md Key Decisions.
 
-- [v1.5]: Keep Cumpa's repository, development source, and history private; publish only the proprietary compiled runtime and required browser assets.
-- [v1.5]: Use npm trusted publishing from the private GitHub repository without long-lived credentials; npm provenance is unavailable and must not be claimed.
+- [v1.5]: Publish the existing Ship-With-AI/cumpa repository and reviewed history under proprietary source-available terms only after rights/sensitive-history review and exact-license approval by both Alessandro Magionami and Manuel Salvatore Martone. Preserve required GitHub platform and third-party rights; npm remains runtime-only.
+- [v1.5]: Use OIDC trusted publishing from the approved public repository without long-lived credentials; preserve eligible automatic provenance and make only verified release/attestation claims.
 - [v1.5]: Verify one exact runtime-only tarball before registry mutation, then bootstrap with one usable non-`latest` release before stable OIDC publication.
 - [v1.5]: Publish the public MIT skill only after its separately installed CLI prerequisite exists; the CLI retains all review authority.
 - [v1.5]: Preserve existing review, export, and voluntary-support behavior across every released installation path.
@@ -73,9 +74,13 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 3 must settle approved proprietary terms, required third-party notices, private repository identity, and truthful public links before package preparation.
-- Re-check current npm trusted-publisher and private-source provenance policy immediately before release; do not convert OIDC authentication into a provenance claim.
+- Phase 3 must obtain exact-license approval from both licensors, resolve rights and sensitive-content/history review, safely publish the existing repository, and verify the public Issues link before package preparation. Repository visibility is still private; reconciliation is documentation only.
+- Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
+
+### Roadmap Evolution
+
+- Phase 3 edited: Reconciled v1.5 Proprietary Distribution with approved public source and reviewed history; preserved all phase numbers, dependencies, and 19 requirement assignments
 
 ## Deferred Items
 
@@ -84,10 +89,9 @@ None yet.
 | Cleanup | Retire or intentionally consume authenticated orphan file-metadata route/client method | Deferred | v1.0 close |
 | Verification | Instantiate unsupported/unavailable rows in responsive fixture coverage if that path changes | Deferred | v1.1 close |
 | Design | Align 7px icon-button padding with documented spacing when control geometry changes | Deferred | v1.1 close |
-| Distribution | Enable npm provenance only if npm documents private-source support without exposing Cumpa's repository or history | Future | v1.5 definition |
 
 ## Session Continuity
 
-Last session: 2026-09-07T09:42:49.357Z
-Stopped at: Phase 3 context gathered; public-source proprietary decision supersedes private-source policy; reconcile milestone scope before finalizing plans
+Last session: 2026-09-07T09:57:34.740Z
+Stopped at: Phase 3 context and milestone reconciliation complete; ready for planning; legal approval and repository publication remain gated
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-CONTEXT.md
