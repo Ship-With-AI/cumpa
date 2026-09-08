@@ -148,7 +148,7 @@ const commandDefinitions = {
     required: ['--check-release-evidence', '--live-promotion', '--retirement'],
   },
   '--check-run-evidence': {
-    values: new Set(['--check-run-evidence', '--expected-mode', '--acceptance']),
+    values: new Set(['--check-run-evidence', '--expected-mode', '--acceptance', '--deployment']),
     flags: new Set(['--require-immutable-run', '--require-zero-authority', '--require-exact-cleanup']),
     required: ['--expected-mode'],
   },
@@ -168,8 +168,9 @@ const commandDefinitions = {
     required: ['--deployment-run', '--marker', '--output'],
   },
   '--check-promotion-evidence': {
-    values: new Set(['--check-promotion-evidence', '--acceptance']),
+    values: new Set(['--check-promotion-evidence', '--acceptance', '--deployment']),
     flags: new Set(['--require-approved', '--require-cleanup-run', '--require-live-run', '--require-one-fingerprint', '--require-exact-cleanup', '--require-zero-authority', '--require-zero-after-cleanup', '--require-live-smoke', '--non-destructive', '--require-immutable-runs']),
+    required: ['--deployment'],
   },
   '--run-deployment': {
     values: new Set(['--mode', '--evidence', '--acceptance-marker', '--acceptance']),
@@ -486,7 +487,10 @@ async function collectFinalInputs(options) {
       });
     } else if (name === 'promotion') {
       await validatePromotion(record, {
-        values: new Map([['--acceptance', options.values.get('--acceptance')]]),
+        values: new Map([
+          ['--acceptance', options.values.get('--acceptance')],
+          ['--deployment', options.values.get('--test-deployment')],
+        ]),
         flags: new Set(),
       });
     } else if (name === 'retirement' || name === 'local-package-security') {
@@ -1186,7 +1190,7 @@ async function validatePromotion(record, options) {
   if (!options.values.has('--acceptance')) fail('promotion acceptance is required');
   const acceptance = await readEvidence(options.values.get('--acceptance'));
   await validateAcceptance(acceptance, {
-    values: new Map([['--deployment', PRELAUNCH_DEPLOYMENT_EVIDENCE]]),
+    values: new Map([['--deployment', options.values.get('--deployment')]]),
     flags: new Set(['--require-approved', '--require-hostile-matrix', '--require-fixture-manifest', '--require-immutable-run']),
   });
   validateRun(record.cleanup, {
@@ -1667,9 +1671,10 @@ async function main() {
     const record = await readEvidence(options.values.get('--check-run-evidence'));
     let acceptance;
     if (options.values.has('--acceptance')) {
+      if (!options.values.has('--deployment')) fail('missing required option --deployment');
       acceptance = await readEvidence(options.values.get('--acceptance'));
       await validateAcceptance(acceptance, {
-        values: new Map([['--deployment', PRELAUNCH_DEPLOYMENT_EVIDENCE]]),
+        values: new Map([['--deployment', options.values.get('--deployment')]]),
         flags: new Set(['--require-approved', '--require-hostile-matrix', '--require-fixture-manifest', '--require-immutable-run']),
       });
     }

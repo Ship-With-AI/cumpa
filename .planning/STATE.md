@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "03-03 Task 3: renewed exact authorization and scoped credential ready; running no-drift preflight before bounded private push"
-last_updated: "2026-09-08T10:33:17Z"
+stopped_at: "03-03 local evidence-validation repair passes 13 tests and detached CLI smoke; capture repaired source candidate and obtain new private-push authorization"
+last_updated: "2026-09-08T10:46:38Z"
 last_activity: 2026-09-08
-last_activity_desc: Recorded Alessandro's renewed authorization for corrected review 3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c; beginning exact no-drift preflight for the private source fast-forward.
+last_activity_desc: Repaired synthetic verifier test fixtures and explicit deployment-input propagation; 13/13 Playwright contract tests and four detached CLI commands pass. Original private push remains remote; repaired source has not been authorized or pushed.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 executed; 03-03 Tasks 1–2 complete, Task 3 in progress
-Status: Scoped authentication and renewed exact authorization ready; running private-preparation preflight. Public visibility remains unauthorized.
-Last activity: 2026-09-08 — Renewed corrected-digest authorization recorded. Only the frozen source commit and existing CI/Supabase effects are authorized; no later local evidence commit may be pushed.
+Plan: 2 of 3 executed; original private preparation reviewed; local CI repair verified, awaiting repaired-source review and authorization
+Status: Remote remains private at the first approved source. Local fixture/verifier repair passes; another source update requires separate exact authorization. Public visibility remains unauthorized.
+Last activity: 2026-09-08 — The three failing contracts now pass within a 13/13 focused suite. Final/check-final, promotion and exact-cleanup CLI validation also passed in a temporary directory without .planning. No second push or deployment occurred.
 
 Progress: [███████░░░] 67%
 
@@ -83,7 +83,7 @@ None yet.
 - Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives remain backed up privately. Owner now directs retaining remote artifacts 9907668126 and 9928300866 despite PUB-02; record unremediated owner-accepted notice risk, not verified third-party permission/compliance. Do not delete them or change retention settings.
-- 03-03 corrected private-preparation review 3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c now has renewed exact authorization. Source remains ece7fcfc7a993e751a999145b2c74ee233402a1f, expected old main remains 7c9b22801378de313a7f2b9be7261eb17c4bb613, and only the private fast-forward plus existing CI/Supabase effects are permitted. Scoped token works; operator confirms repository-only selection, one-day expiry and Contents-write/Workflows-write. Complete no-drift preflight before the one-ref push, then inspect resulting remote exposure. No new credential setup or deletion authority is needed.
+- 03-03 original private preparation succeeded at ece7fcfc7a993e751a999145b2c74ee233402a1f; run 34216472139 failed on planning-dependent verifier tests and skipped production deployment. Complete post-sync exposure was reviewed with no new finding. Local repair now uses synthetic records and explicit deployment-input propagation; all 13 contract tests and detached CLI smoke pass. Capture/review the repaired source and obtain a new exact private-push authorization; do not retry the old run or push later evidence commits automatically.
 - MIT LICENSE SHA-256 remains c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d; both recorded assents and bound notices/rights review match. Projects/rulesets/classic protections are explicitly zero. No private protection change is proposed. After authorized preparation, recapture actual exposure and obtain the distinct final-publication authorization and supported post-public protection disposition.
 
 ### Roadmap Evolution
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T10:33:17Z
-Stopped at: 03-03 Task 3 running authorized private-preparation preflight. Renewed exact approval for review 3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c and scoped authentication are recorded. Preserve both legacy artifacts/backups and frozen source target ece7fcfc7a993e751a999145b2c74ee233402a1f; public visibility remains a separate unauthorized action.
+Last session: 2026-09-08T10:46:38Z
+Stopped at: Original private push and actual post-sync exposure review complete. Remote remains private at ece7fcfc7a993e751a999145b2c74ee233402a1f. Local verifier/test-fixture repair is verified: 13/13 contract tests plus four detached CLI commands pass without planning receipts. Capture/review a repaired source target and obtain a new bounded private-push authorization. Existing scoped credential is available subject to expiry/revalidation; no new token setup or artifact deletion is requested. Final visibility remains separately unauthorized.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md

@@ -1,9 +1,9 @@
-# Private Publication Review — PRIVATE PREPARATION CHECKPOINT
+# Private Publication Review — PRIVATE PUSH APPLIED; POST-SYNC REVIEW
 
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
-**PRIVATE PREPARATION AUTHORIZATION:** Received directly from Alessandro for corrected review `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c`; scoped authentication is ready. Exact no-drift preflight remains required before the authorized private push.
+**PRIVATE PREPARATION AUTHORIZATION:** Corrected review `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c` was authorized directly by Alessandro and applied as the exact one-ref private fast-forward after matching preflight.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
 
 ### Renewed private-preparation authorization
@@ -14,9 +14,44 @@
 - **Authorized bounds:** Only the proposal JSON below: private main from `7c9b22801378de313a7f2b9be7261eb17c4bb613` to `ece7fcfc7a993e751a999145b2c74ee233402a1f`, with matching ancestry/expected-old lease, and its existing CI/Supabase deployment effects. No later evidence commit, additional ref, artifact deletion, retention/protection change, npm operation or public visibility is authorized.
 - **Authentication:** Operator-confirmed repository-only, one-day-expiry Contents-write/Workflows-write credential in the new Keychain item; successful scoped identity read recorded below. Neither token bytes nor clone-authentication values are evidence inputs.
 
-This redacted exposure review is not the final publishable snapshot. PUB-01 is resolved by exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is closed. The owner now directs retention of the two legacy archives despite their recorded notice finding. This supersedes the prior removal authorization and cancels its credential handoff. No push, remote deletion, retention/protection/configuration mutation, registry operation or visibility conversion has occurred. The final publication review must disclose the retained, unremediated notice finding rather than claim notice compliance.
+This record is not final publication authorization. The exact authorized private source fast-forward has now occurred, triggering the existing workflow. No remote deletion, retention/protection/configuration mutation, npm operation or visibility conversion occurred. PUB-01's exact identifier disposition and the owner's retention of the two exact legacy archives remain in force. Their notice finding remains unremediated owner-accepted risk, not verified notice compliance. New CI/deployment exposure must be reviewed before the separate final-publication checkpoint.
 
-## Active private-preparation review — 2026-09-08T09:32:13Z
+### Authorized private preparation — observed result
+
+- **Push interval:** 2026-09-08T10:37:51Z through 2026-09-08T10:37:53Z.
+- **Preflight:** All 45 corrected collection bindings matched exposure SHA-256 `428b276b8ecff316a45dd13449bc34b2ce5b9346a2c6d16456f74de048d03504`; all 67 archives matched their exact reviewed bytes. MIT/notice/rights/assent bindings and terminal producer states matched. Temporary audit data was cleaned up.
+- **Last guards:** Scoped authenticated read matched immutable repository ID/node/name and private visibility; native advertised refs contained only the approved old main. `git merge-base --is-ancestor` succeeded for that same approved old OID and source target immediately before the push.
+- **Mutation:** Exactly `ece7fcfc7a993e751a999145b2c74ee233402a1f:refs/heads/main` to the explicit HTTPS repository, guarded by `--force-with-lease=refs/heads/main:7c9b22801378de313a7f2b9be7261eb17c4bb613`. Only the scoped `gh auth git-credential` helper was enabled for this push; ambient helpers were cleared through command-local configuration, redirects and terminal prompting disabled. Stored origin and global authentication were not changed. No force rewrite, other ref, deletion or retry occurred.
+- **Observed result:** Git exit 0, porcelain fast-forward `7c9b228..ece7fcf`. Native remote main now equals the approved target and no other ref is advertised. Authenticated repository ID remains `1327753770` and visibility remains **private**.
+- **Source-content proof:** Remote commit `ece7fcfc7a993e751a999145b2c74ee233402a1f` has tree `e1c28807085a0eae773ee49dd62dd887a41a7914`, exactly the reviewed local source tree. The remote LICENSE was independently read at this OID and contains the approved MIT text. Metadata, notices, README and all other frozen file bindings are therefore attached to the same verified tree, not a later local commit.
+- **Authorized producer:** Push-triggered workflow `348310628`, run **34216472139**, head exactly the approved source target, completed with conclusion **failure**. Installation/build and Vitest passed (**54 test files passed, 1 skipped; 419 tests passed, 3 skipped**). The selected Playwright suites had **10 passed / 3 failed**. The production deployment job was **skipped**; no Supabase deployment or new artifact upload occurred.
+- **Resulting exposure reviewed:** All producers are terminal and new logs/API content were inspected as recorded below. Final-publication authorization is still absent. The CI fixture defect is being repaired locally before proposing an additional reviewed private push; this does not authorize a retry or new source update.
+
+### Terminal post-sync exposure and CI diagnosis
+
+- **Captured:** 2026-09-08T10:46:38Z. Actual remote main remains `ece7fcfc7a993e751a999145b2c74ee233402a1f`; repository `1327753770` remains private. No other advertised ref, protection change, artifact deletion or retention change occurred.
+- **Coverage:** 49 terminal runs, 98 jobs, 98 check runs, 131 annotations, 68 inspected archives, 19 unexpired artifacts and 41 terminal deployment-status collections. No new deployment collection or Actions artifact was created. All prior 67 archive bindings are unchanged.
+- **New archive:** Run `34216472139`, 45,049 bytes, SHA-256 `6f7c327fb86b83908b4e07256d4997a49b195fec8a0c73d6a30e30cc482b47d1`. All 14 members were read in memory under a protected temporary-directory lifecycle; 186,093 expanded bytes. Sorted `[member_name,byte_size,sha256]` canonical projection SHA-256 `d823ff10e765a6b3c12c6f591a8a15b49bb5dc6bfb7b9c2980e9746fafcbbabe`. No extraction/execution, tested credential-pattern finding or known protected-value match; temporary directory removed.
+- **Actual exposure digest:** `c178b45f3e69089b7999889cb2820d5a9af503a5c5a2301d39ceb6aad6b92f6c`. Reconstruct its complete collection vector from the corrected preparation vector above by replacing only the seven entries below. The changes are the new terminal run/jobs/checks/annotations/log archive, the approved main OID, and repository license/push/update metadata. Every other collection is unchanged.
+- **Protection digest:** Still exactly `96b362425508a1340047171187a2c2559c56dc193328d9dd7cfa87d92d5cbe90`; no new high-severity exposure finding beyond the exact retained owner-accepted PUB-02 notice risk. This does not resolve the CI test defect or constitute final publication authorization.
+
+```json
+{
+  "annotations": "60eb5e0dabfa796497a3ec995be45ccdc39efeabd2b9a00ded69831ae38968aa",
+  "archive_bytes": "d1d17bb505f45bddba26d2f97c1f469178cd0b5b55f40c96dddbbdd1dca0e8fa",
+  "base/runs": "c874c161406ee78c86762ff9198a26a352fbf613f296597e1cc190c46ba8e214",
+  "checks": "a025189e017d7da334d6fd63849dab10d79fbba807d36a75544875485ac8e09a",
+  "jobs": "ace438dc5f8fb3381a211ab32267595f8fd389af073538c2654c1e8f00d723b9",
+  "surface/branches": "6b1a553e9b59298821f291ba7a4df098f47253d4c3cc8076e5d84e81ca614659",
+  "surface/repository": "824a1628a7e2f17c6e73a2687d2c4379eebd5c6421f3f99a6e88cecafd231779"
+}
+```
+
+**CI diagnosis and local repair:** The three failures read receipts from the absent `.planning/phases/02-move-the-implementation-to-supabase/` directory. Synthetic test fixtures exposed a second dependency in the maintainer verifier itself: cleanup/promotion validation still substituted a hardcoded deployment receipt, even when final review had an explicit `--test-deployment` input. The repaired suites generate deterministic records under `testInfo.outputPath`; cleanup/promotion checks take explicit `--deployment`, and final review forwards its existing deployment input through the validation chain. Missing inputs and all manifest, repeated-zero-authority, immutable-lineage, digest and tamper checks remain enforced. Active operations documentation explains the detached-input contract. No application/UI/API, deployment behavior, workflow permission, package dependency or live service changed.
+
+**Verification:** `npx playwright test tests/e2e/support-payment.spec.ts tests/e2e/support-restore.spec.ts` passed **13/13** in 8.1 seconds, including the three previously failing contracts and their negative cases. LSP reports no errors in either test file or the verifier; two pre-existing unused-symbol hints remain in the script. A separate real-CLI smoke copied synthetic receipts into a temporary directory with **no `.planning` directory** and successfully ran `--final-review`, `--check-final`, `--check-promotion-evidence` and exact-cleanup `--check-run-evidence`. Its temporary directory was removed. The initial smoke used a generic output basename, which the verifier correctly rejected; correcting the smoke to use its required final-evidence basename passed without changing validation. This repair is local only; capture/review a new exact source commit and obtain separate authorization before any additional private push.
+
+## Original approved private-preparation review — 2026-09-08T09:32:13Z
 
 This section supersedes earlier candidate/snapshot and blocker descriptions below, which remain historical evidence. **Task 1 is complete; scoped authentication and renewed exact-digest private-preparation authorization are ready. Task 3 may execute only after the immediate no-drift preflight passes.** Source/ref/archive/protection bindings and requested effects are unchanged. Final-publication authorization has not been granted. The cancelled artifact-deletion credential is not requested, retrieved or reused.
 

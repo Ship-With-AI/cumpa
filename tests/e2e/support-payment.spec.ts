@@ -361,20 +361,290 @@ test('local security collector rejects hosted and retired configuration before r
 });
 
 test('final review rejects the former five-input contract and binds six immutable records', async ({}, testInfo) => {
-  const phase = new URL('../../.planning/phases/02-move-the-implementation-to-supabase/', import.meta.url).pathname;
-  const paths = [
-    join(phase, '02-08-TEST-DEPLOYMENT-EVIDENCE.md'),
-    join(phase, '02-09-ACCEPTANCE-EVIDENCE.md'),
-    join(phase, '02-10-LIVE-PROMOTION-EVIDENCE.md'),
-    join(phase, '02-15-RETIREMENT-EVIDENCE.md'),
-    join(phase, '02-16-RELEASE-EVIDENCE.md'),
+  const hash = (value: string) => createHash('sha256').update(value).digest('hex');
+  const writeRecord = async (path: string, record: object) => {
+    const serialized = JSON.stringify(record);
+    await writeFile(path, serialized);
+    return { serialized, sha256: hash(serialized) };
+  };
+  const bindDigest = (record: { artifacts: { evidence_sha256: string } }) => {
+    record.artifacts.evidence_sha256 = '';
+    record.artifacts.evidence_sha256 = hash(JSON.stringify(record));
+  };
+  const projectRef = 'abcdefghijklmnopqrst';
+  const fingerprint = hash(projectRef);
+  const origin = `https://${projectRef}.supabase.co`;
+  const tables = [
+    'auth.users',
+    'support_private.support_intents',
+    'support_private.supporters',
+    'support_private.checkout_sessions',
+    'support_private.stripe_events',
+    'support_private.installation_bindings',
   ];
+  const manifest = (populated: string[] = []) => Object.fromEntries(tables.map((table) => [
+    table,
+    { count: populated.includes(table) ? 1 : 0, handles: populated.includes(table) ? [hash(table)] : [] },
+  ]));
+  const routes = {
+    'auth-settings': { status: 401, content_type: 'application/json' },
+    'support-api-invalid-input': { status: 400, content_type: 'application/json' },
+    'support-flow-invalid-state': { status: 400, content_type: 'text/plain' },
+    'stripe-webhook-invalid-signature': { status: 400, content_type: 'application/json' },
+  };
+  const deploymentPath = testInfo.outputPath('test-deployment.json');
+  const observationsPath = testInfo.outputPath('observations.json');
+  const markerPath = testInfo.outputPath('acceptance-marker.json');
+  const hostileRunPath = testInfo.outputPath('hostile-run.json');
+  const acceptancePath = testInfo.outputPath('acceptance.json');
+  const cleanupPath = testInfo.outputPath('cleanup.json');
+  const livePath = testInfo.outputPath('live.json');
+  const promotionPath = testInfo.outputPath('promotion.json');
+  const retirementPath = testInfo.outputPath('retirement.json');
+  const packagePath = testInfo.outputPath('package.json');
+  const releasePath = testInfo.outputPath('release.json');
+  const local = testInfo.outputPath('02-17-LOCAL-PACKAGE-SECURITY-EVIDENCE.md');
+  const deployment = {
+    version: 1,
+    kind: 'deployment-run',
+    status: 'passed',
+    mode: 'prelaunch-test',
+    fingerprint,
+    public_origin: origin,
+    run: { id: '100', url: 'https://github.com/example/repository/actions/runs/100', commit: 'a'.repeat(40), immutable: true },
+    order: ['schema', 'auth-provider-configuration', 'edge-function-secrets', 'support-api', 'support-flow', 'stripe-webhook'],
+    routes,
+    authority: manifest(),
+    artifacts: { evidence_sha256: '' },
+  };
+  bindDigest(deployment);
+  const deploymentPayload = await writeRecord(deploymentPath, deployment);
+  const observations = {
+    browser_matrix: [
+      'paid-support',
+      'restart-persistence',
+      'restore-paid-one',
+      'restore-paid-two',
+      'restore-unpaid',
+      'checkout-delay',
+      'checkout-cancellation',
+    ].map((id) => ({ id, status: 'passed' })),
+    completion: { status: 200, content_type: 'text/plain', body: 'Support flow complete. You can return to Cumpa.' },
+    review_unrestricted: true,
+  };
+  const observationsPayload = await writeRecord(observationsPath, observations);
+  const marker = {
+    version: 1,
+    kind: 'acceptance-marker',
+    mode: 'prelaunch-test',
+    fingerprint,
+    public_origin: origin,
+    run: deployment.run,
+    routes,
+    acceptance_marker: {
+      status: 'interactive-matrix-complete',
+      deployment_evidence_sha256: deployment.artifacts.evidence_sha256,
+      observations_sha256: observationsPayload.sha256,
+    },
+    observations,
+  };
+  const markerPayload = await writeRecord(markerPath, marker);
+  const rejected = manifest();
+  const settled = manifest([
+    'support_private.supporters',
+    'support_private.stripe_events',
+    'support_private.installation_bindings',
+  ]);
+  const hostileMatrix: Array<Record<string, unknown>> = [
+    'wrong-signature',
+    'wrong-product',
+    'wrong-amount',
+    'wrong-currency',
+    'wrong-binding',
+    'expired-intent',
+    'reused-intent',
+  ].map((id, index) => ({
+    id,
+    fixtures: [(index + 1).toString(16).padStart(64, '0')],
+    before: rejected,
+    after: rejected,
+    expected: 'rejected-without-authority',
+    actual: 'rejected-without-authority',
+    guard: true,
+  }));
+  hostileMatrix.push({
+    id: 'sequential-replay',
+    fixtures: ['8'.padStart(64, '0')],
+    before: rejected,
+    after: settled,
+    expected: 'idempotent-replay',
+    actual: 'idempotent-replay',
+    guard: true,
+    responses: [200, 200],
+    first_after: settled,
+  });
+  hostileMatrix.push({
+    id: 'concurrent-replay-settlement',
+    fixtures: ['9'.padStart(64, '0')],
+    before: rejected,
+    after: settled,
+    expected: 'single-authority-settlement',
+    actual: 'single-authority-settlement',
+    guard: true,
+    responses: [200, 503],
+  });
+  const hostileRun = {
+    ...deployment,
+    run: { id: '101', url: 'https://github.com/example/repository/actions/runs/101', commit: 'b'.repeat(40), immutable: true },
+    hostile_matrix: hostileMatrix,
+    fixture_manifest: settled,
+    acceptance_marker: { ...marker.acceptance_marker, marker_sha256: markerPayload.sha256 },
+    artifacts: { evidence_sha256: '' },
+  };
+  bindDigest(hostileRun);
+  await writeRecord(hostileRunPath, hostileRun);
+  const acceptance = {
+    version: 1,
+    kind: 'acceptance',
+    status: 'passed',
+    mode: 'prelaunch-test',
+    fingerprint,
+    public_origin: origin,
+    deployment_run: deployment.run,
+    run: hostileRun.run,
+    routes,
+    acceptance_marker: hostileRun.acceptance_marker,
+    observations,
+    hostile_matrix: hostileMatrix,
+    fixture_manifest: settled,
+    artifacts: {
+      deployment_evidence_sha256: deployment.artifacts.evidence_sha256,
+      hostile_run_evidence_sha256: hostileRun.artifacts.evidence_sha256,
+      marker_sha256: markerPayload.sha256,
+    },
+    approval: { status: 'approved' },
+  };
+  const acceptancePayload = await writeRecord(acceptancePath, acceptance);
+  const cleanup = {
+    version: 1,
+    kind: 'deployment-run',
+    status: 'passed',
+    mode: 'prelaunch-test',
+    operation: 'exact-cleanup',
+    fingerprint,
+    public_origin: origin,
+    run: { id: '102', url: 'https://github.com/example/repository/actions/runs/102', commit: 'c'.repeat(40), immutable: true },
+    order: [
+      'delete:support_private.stripe_events',
+      'delete:support_private.installation_bindings',
+      'delete:support_private.supporters',
+      'delete:support_private.checkout_sessions',
+      'delete:support_private.support_intents',
+      'delete:auth.users',
+    ],
+    routes,
+    authority_before: settled,
+    deleted: settled,
+    authority: manifest(),
+    authority_confirmation: manifest(),
+    acceptance: {
+      run_id: acceptance.run.id,
+      run_evidence_sha256: acceptance.artifacts.hostile_run_evidence_sha256,
+      record_sha256: acceptancePayload.sha256,
+    },
+    artifacts: { evidence_sha256: '' },
+  };
+  bindDigest(cleanup);
+  await writeRecord(cleanupPath, cleanup);
+  const live = {
+    ...deployment,
+    mode: 'production-live',
+    run: { id: '103', url: 'https://github.com/example/repository/actions/runs/103', commit: 'd'.repeat(40), immutable: true },
+    coherence: { status: 'passed' },
+    live_smoke: { status: 'passed', non_destructive: true },
+    artifacts: { evidence_sha256: '' },
+    authority_before: manifest(),
+  };
+  bindDigest(live);
+  await writeRecord(livePath, live);
+  const promotion = {
+    version: 1,
+    kind: 'promotion',
+    status: 'passed',
+    mode: 'production-live',
+    fingerprint,
+    public_origin: origin,
+    run: live.run,
+    authority: live.authority,
+    cleanup,
+    live,
+    cleanup_run: {
+      ...cleanup.run,
+      fingerprint: cleanup.fingerprint,
+      status: cleanup.status,
+      authority_after: 'zero',
+      evidence_sha256: cleanup.artifacts.evidence_sha256,
+    },
+    live_run: {
+      ...live.run,
+      fingerprint: live.fingerprint,
+      status: live.status,
+      evidence_sha256: live.artifacts.evidence_sha256,
+    },
+    live_smoke: live.live_smoke,
+    artifacts: {
+      cleanup_evidence_sha256: cleanup.artifacts.evidence_sha256,
+      live_evidence_sha256: live.artifacts.evidence_sha256,
+    },
+  };
+  const promotionPayload = await writeRecord(promotionPath, promotion);
+  const retirement = {
+    version: 1,
+    kind: 'retirement-review',
+    status: 'passed',
+    configured_absent: true,
+    violations: [],
+    artifacts: { evidence_sha256: '' },
+  };
+  bindDigest(retirement);
+  const retirementPayload = await writeRecord(retirementPath, retirement);
+  const packagePayload = await writeRecord(packagePath, { name: 'synthetic-package', version: '1.0.0' });
+  const release = {
+    version: 1,
+    kind: 'release',
+    status: 'passed',
+    mode: 'production-live',
+    fingerprint,
+    public_origin: origin,
+    run: live.run,
+    routes,
+    route_probes: routes,
+    authority_before: manifest(),
+    authority_after: manifest(),
+    non_destructive: true,
+    artifacts: {
+      promotion_evidence_sha256: promotionPayload.sha256,
+      retirement_evidence_sha256: retirementPayload.sha256,
+      deployment_evidence_sha256: deploymentPayload.sha256,
+      package_sha256: packagePayload.sha256,
+      evidence_sha256: '',
+    },
+  };
+  bindDigest(release);
+  const releasePayload = await writeRecord(releasePath, release);
+  await writeRecord(testInfo.outputPath('02-16-RELEASE-APPROVAL.md'), {
+    version: 1,
+    kind: 'cumpa.release-approval',
+    status: 'approved',
+    release_record_sha256: releasePayload.sha256,
+    run_id: release.run.id,
+    package_sha256: packagePayload.sha256,
+  });
   const commandIds = [
     'vitest', 'playwright', 'database-start', 'database-reset-1', 'database-test-1',
     'database-migrations-1', 'database-lint-1', 'database-reset-2', 'database-test-2',
     'database-migrations-2', 'database-lint-2', 'deno', 'build', 'package-scan',
   ];
-  const local = testInfo.outputPath('02-17-LOCAL-PACKAGE-SECURITY-EVIDENCE.md');
   const localRecord = {
     version: 1,
     kind: 'local-package-security',
@@ -384,21 +654,30 @@ test('final review rejects the former five-input contract and binds six immutabl
     commands: commandIds.map((id) => ({
       id,
       status: 'passed',
-      command_sha256: 'a'.repeat(64),
-      output_sha256: 'b'.repeat(64),
+      command_sha256: hash(`command:${id}`),
+      output_sha256: hash(`output:${id}`),
     })),
     artifacts: { evidence_sha256: '' },
   };
-  localRecord.artifacts.evidence_sha256 = createHash('sha256')
-    .update(JSON.stringify(localRecord))
-    .digest('hex');
-  await writeFile(local, JSON.stringify(localRecord));
-  const flags = ['--test-deployment', paths[0], '--acceptance', paths[1], '--promotion', paths[2], '--retirement', paths[3], '--release', paths[4]];
+  bindDigest(localRecord);
+  await writeRecord(local, localRecord);
+  const flags = [
+    '--test-deployment', deploymentPath,
+    '--acceptance', acceptancePath,
+    '--promotion', promotionPath,
+    '--retirement', retirementPath,
+    '--release', releasePath,
+  ];
   await reject(['--final-review', ...flags, '--output', testInfo.outputPath('five.json')], 'missing required option --local-package-security');
   const final = testInfo.outputPath('02-17-FINAL-EVIDENCE.md');
   const complete = ['--local-package-security', local];
   await expect(execFileAsync(process.execPath, [script, '--final-review', ...flags, ...complete, '--output', final])).resolves.toBeDefined();
   await expect(execFileAsync(process.execPath, [script, '--check-final', final, ...flags, ...complete])).resolves.toBeDefined();
-  await writeFile(local, JSON.stringify({ ...localRecord, status: 'failed' }));
+  await writeRecord(local, { ...localRecord, status: 'failed' });
   await reject(['--check-final', final, ...flags, ...complete], 'final local-package-security record is invalid');
+  await writeRecord(local, {
+    ...localRecord,
+    artifacts: { evidence_sha256: '0'.repeat(64) },
+  });
+  await reject(['--check-final', final, ...flags, ...complete], 'final local-package-security digest binding is invalid');
 });

@@ -55,3 +55,5 @@ node scripts/verify-supabase-support.mjs --final-review \
 ```
 
 `--check-final` takes the final evidence path plus the same six named inputs and only recomputes bindings. The release input must have a separate immutable `cumpa.release-approval` record bound to its unchanged bytes, GitHub run ID, and package digest.
+
+Detached evidence validation uses explicit deployment inputs, not a receipt discovered in a particular planning directory. Supply `--deployment PATH` with `--check-promotion-evidence`, and with `--check-run-evidence` whenever `--acceptance PATH` is supplied. `--final-review` and `--check-final` use their existing `--test-deployment PATH` for the complete acceptance/promotion chain. Missing inputs and mismatched lineage still fail closed.
