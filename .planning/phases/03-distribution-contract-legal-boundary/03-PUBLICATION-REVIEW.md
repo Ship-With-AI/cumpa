@@ -3,14 +3,14 @@
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
-**PRIVATE PREPARATION AUTHORIZATION:** Not granted.
+**PRIVATE PREPARATION AUTHORIZATION:** Received from Alessandro for exact review `262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`; execution blocked on usable scoped authentication and preflight.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
 
 This redacted exposure review is not the final publishable snapshot. PUB-01 is resolved by exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is closed. The owner now directs retention of the two legacy archives despite their recorded notice finding. This supersedes the prior removal authorization and cancels its credential handoff. No push, remote deletion, retention/protection/configuration mutation, registry operation or visibility conversion has occurred. The final publication review must disclose the retained, unremediated notice finding rather than claim notice compliance.
 
 ## Active private-preparation review — 2026-09-08T09:32:13Z
 
-This section supersedes earlier candidate/snapshot and blocker descriptions below, which remain historical evidence. **Task 1 is complete; Task 2 is blocked on attributable private-preparation authorization and a new, operator-confirmed repository-selected short-lived push credential.** No private-preparation or final-publication authorization has been granted. The cancelled artifact-deletion credential is not requested, retrieved or reused.
+This section supersedes earlier candidate/snapshot and blocker descriptions below, which remain historical evidence. **Task 1 is complete; the exact private-preparation authorization has been received, but Task 2 remains blocked on a usable, operator-confirmed repository-selected short-lived push credential.** Final-publication authorization has not been granted. The cancelled artifact-deletion credential is not requested, retrieved or reused.
 
 ### Frozen source and native Git proof
 
@@ -463,7 +463,17 @@ After reviewing these bindings and confirming scoped authentication, the operato
 
 `PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`
 
-No such statement has been received. Immediately before any authorized push, recheck exact repository identity/private state, current old ref, affected exposure/protection bindings and current MIT assent; drift requires refreshed review. The one-ref update must pass the same-old-OID ancestry check and exact lease. Phase 3 remains **2/3 plans complete**; 03-03 SUMMARY and phase completion are not justified.
+The exact statement below has been received. Immediately before any authorized push, recheck exact repository identity/private state, current old ref, affected exposure/protection bindings and current MIT assent; drift requires refreshed review. The one-ref update must pass the same-old-OID ancestry check and exact lease. Phase 3 remains **2/3 plans complete**; 03-03 SUMMARY and phase completion are not justified.
+
+### Received preparation authorization — credential still blocked
+
+- **Authorizer:** Alessandro Magionami, direct user message.
+- **Captured:** 2026-09-08T10:11:46Z.
+- **Verbatim statement:** `PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`.
+- **Scope:** The exact proposal above, including only the guarded private main fast-forward and existing CI/Supabase deployment effects. No public visibility, npm operation, artifact deletion, retention/protection change or later evidence-commit push is authorized.
+- **Observed authentication blocker:** The new Keychain item with service `cumpa-private-preparation-1327753770`, account `github-token`, exists in the login keychain. Password-only lookup succeeded but returned only a newline; a second captured diagnostic explicitly confirmed an empty password. No nonempty credential was available or sent to GitHub. No secret bytes were printed or recorded.
+- **Still required:** Populate that new item with the intended fine-grained token, then confirm its repository-only selection, short expiry and Contents-write/Workflows-write permissions. Do not retrieve or reuse the cancelled artifact-deletion item. Approval need not be repeated unless the exact reviewed proposal or relevant remote bindings change.
+- **Mutation attempts:** 0. The credential blocker was reached before remote-preparation execution; no claim of a fresh no-drift preflight is made at this checkpoint.
 
 ## Historical MIT supersession — renewed assent recorded
 
