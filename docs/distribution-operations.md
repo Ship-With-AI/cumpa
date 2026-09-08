@@ -20,9 +20,13 @@ After the authorized conversion, verify repository identity, actual public state
 
 ## Phase 4 — one reviewed immutable runtime artifact
 
-Keep `private: true` and the existing `files` allowlist unchanged until Phase 4 performs the runtime-only artifact cutover. That phase owns guard removal, exact archive contents, included LICENSE and required third-party notices, emitted bundle/worker/font material, native binary/toolchain provenance, and rejection of unintended source or development material.
+The Phase 4 manifest is publishable and includes only `dist/`, `README.md`, `LICENSE`, and `THIRD_PARTY_NOTICES.md` alongside npm's mandatory package metadata. The marketplace skill is excluded. Metadata eligibility is not artifact acceptance or permission to publish.
 
 Build and review one immutable tarball. Record its exact digest and contents; bind the approved license/notices and source inputs to that actual artifact. A prepack inventory, old build, source-tree notice file or planning assertion is not final package acceptance. Preserve the approved tarball for Phase 5 rather than rebuilding a replacement with the same version label.
+
+Create bytes explicitly with `npm run pack:runtime-artifact -- --purpose development-check --custody-dir <new-absolute-directory> --evidence <new-absolute-json-path>`. The parent directories must exist. Each invocation performs one build and one scripts-disabled pack; it never overwrites evidence or deletes an emitted archive after failure. The ordinary `prepack` hook is developer convenience, not release authority.
+
+Use `candidate` for final local acceptance and `deployment-check` for disposable deployment checks; both require clean tracked source/index and the canonical `CUMPA_RELEASE_SUPPORT_SERVICE_URL` in the protected environment. `development-check` allows stable uncommitted changes and configured absence, but cannot become an approved release. Never pass the origin in argv. Evidence retains only its configured flag/fingerprint, basename, independent SHA-256/SHA-1/SHA-512 identities, source/build/legal/native facts, and inventories—not custody paths or origin cleartext.
 
 ## Phase 5 — registry publication and actual provenance
 
@@ -43,7 +47,7 @@ If no attestation is emitted or any verification mismatches, record that actual 
 
 This licensing change does not expand the maintainer release plan to include a source-inclusive tarball, application protocol change, AI/API/schema/UI work, new release framework or approval engine. Do not add activation, DRM, a license server or payment gating. Voluntary support remains feature-neutral and buys no service commitment.
 
-The marketplace skill is a separately distributed MIT-licensed integration requiring a separately installed MIT-licensed CLI. Matching licenses do not merge their installation lifecycles or authorize bundling the skill in the final runtime-only package; the retained pre-Phase-4 allowlist remains temporary.
+The marketplace skill is a separately distributed MIT-licensed integration requiring a separately installed MIT-licensed CLI. Matching licenses do not merge their installation lifecycles or authorize bundling the skill in the runtime-only package.
 
 ## Supabase deployment artifacts during preparation
 
