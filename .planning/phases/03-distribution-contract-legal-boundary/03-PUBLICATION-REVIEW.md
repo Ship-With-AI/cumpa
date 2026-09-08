@@ -3,14 +3,22 @@
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
-**PRIVATE PREPARATION AUTHORIZATION:** Earlier exact review `262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b` was authorized but never executed. Corrected review `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c` awaits renewed authorization; scoped authentication is ready.
+**PRIVATE PREPARATION AUTHORIZATION:** Received directly from Alessandro for corrected review `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c`; scoped authentication is ready. Exact no-drift preflight remains required before the authorized private push.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
+
+### Renewed private-preparation authorization
+
+- **Authorizer:** Alessandro Magionami, direct user message.
+- **Captured:** 2026-09-08T10:33:17Z.
+- **Verbatim statement:** `PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review 3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c`.
+- **Authorized bounds:** Only the proposal JSON below: private main from `7c9b22801378de313a7f2b9be7261eb17c4bb613` to `ece7fcfc7a993e751a999145b2c74ee233402a1f`, with matching ancestry/expected-old lease, and its existing CI/Supabase deployment effects. No later evidence commit, additional ref, artifact deletion, retention/protection change, npm operation or public visibility is authorized.
+- **Authentication:** Operator-confirmed repository-only, one-day-expiry Contents-write/Workflows-write credential in the new Keychain item; successful scoped identity read recorded below. Neither token bytes nor clone-authentication values are evidence inputs.
 
 This redacted exposure review is not the final publishable snapshot. PUB-01 is resolved by exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is closed. The owner now directs retention of the two legacy archives despite their recorded notice finding. This supersedes the prior removal authorization and cancels its credential handoff. No push, remote deletion, retention/protection/configuration mutation, registry operation or visibility conversion has occurred. The final publication review must disclose the retained, unremediated notice finding rather than claim notice compliance.
 
 ## Active private-preparation review — 2026-09-08T09:32:13Z
 
-This section supersedes earlier candidate/snapshot and blocker descriptions below, which remain historical evidence. **Task 1 is complete and scoped authentication is ready. Preflight exposed one projection bug: a rotating GitHub transport credential was included in the exposure digest. The corrected review requires renewed exact-digest authorization before Task 3 may execute.** Source/ref/archive/protection bindings and requested effects are unchanged. Final-publication authorization has not been granted. The cancelled artifact-deletion credential is not requested, retrieved or reused.
+This section supersedes earlier candidate/snapshot and blocker descriptions below, which remain historical evidence. **Task 1 is complete; scoped authentication and renewed exact-digest private-preparation authorization are ready. Task 3 may execute only after the immediate no-drift preflight passes.** Source/ref/archive/protection bindings and requested effects are unchanged. Final-publication authorization has not been granted. The cancelled artifact-deletion credential is not requested, retrieved or reused.
 
 ### Frozen source and native Git proof
 
@@ -463,7 +471,7 @@ Scoped authentication is ready. After reviewing the projection correction below,
 
 `PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review 3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c`
 
-The earlier exact statement is preserved below, but no authorization for this corrected digest has been received. Immediately before any authorized push, recheck exact repository identity/private state, current old ref, affected exposure/protection bindings and current MIT assent; drift requires refreshed review. The one-ref update must pass the same-old-OID ancestry check and exact lease. Phase 3 remains **2/3 plans complete**; 03-03 SUMMARY and phase completion are not justified.
+Renewed authorization for this corrected digest is recorded above. Immediately before the authorized push, recheck exact repository identity/private state, current old ref, affected exposure/protection bindings and current MIT assent; drift requires refreshed review. The one-ref update must pass the same-old-OID ancestry check and exact lease. Phase 3 remains **2/3 plans complete** until private preparation, the separate final-publication gate and public verification finish.
 
 ### Scoped authentication ready; projection correction verified
 
@@ -473,7 +481,7 @@ The earlier exact statement is preserved below, but no authorization for this co
 - **Correction captured:** 2026-09-08T10:21:06Z. Omit exactly `temp_clone_token` in addition to the documented counters. Reprojecting both the original capture and the current full preflight produced exactly the same corrected collection-digest vector. Source, old-main OID, archive bindings, rights/assents, protections, credential requirements and all proposed effects remain unchanged.
 - **Executable checks:** The real captured-data replay passes after correction. Changing only `temp_clone_token` leaves the projected value unchanged; changing repository ID, private visibility or the forking setting still changes it. This is a one-off audit-projection correction, not an application behavior change.
 - **Historical bindings:** Earlier exposure SHA-256 `79c8b6dc374ae8b62f66d85d3c7b74db91023d9bf0d6110d7bafabead106a74c`, repository-collection SHA-256 `796c31a0667ec67ca2ff7fbe7c37b8c94fdd00f5f0e51bf583c421e85b99c8c5`, and authorized proposal SHA-256 `262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b` are superseded only by this projection correction. The proposal JSON differs only in `exposure_sha256`. Replacing that field with the historical exposure digest reconstructs the earlier authorized proposal.
-- **Current gate:** Renewed authorization for `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c` is required. The working scoped token remains available; no new token permissions or private-preparation effects are requested. Mutation attempts remain **0**.
+- **Current gate:** Renewed authorization for `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c` is now recorded above. No new token permissions or private-preparation effects are requested. The earlier preflight attempts made **0** mutations; the new authorized execution still requires immediate no-drift checks.
 
 ### Earlier preparation authorization and resolved credential blocker
 
