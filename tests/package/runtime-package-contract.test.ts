@@ -7,6 +7,12 @@ import { pathToFileURL } from 'node:url';
 import { describe, expect, test } from 'vitest';
 
 import { readPackageVersionFromManifest } from '../../src/cli/run.js';
+import {
+  approvedDependencies,
+  assertApprovedDependencies,
+  assertSupportedNodeVersion,
+  verifyPrerequisites,
+} from '../../scripts/verify-prerequisites.mjs';
 
 const projectRoot = resolve(import.meta.dirname, '../..');
 const packageManifestPath = join(projectRoot, 'package.json');
@@ -144,4 +150,39 @@ describe('runtime package contract', () => {
     }
   });
 
+  test('dependencies approve exactly every declared direct release', async () => {
+    const manifest = await readManifest();
+    const declared = {
+      ...(manifest.dependencies as Record<string, string>),
+      ...(manifest.devDependencies as Record<string, string>),
+    };
+
+    expect(approvedDependencies).toEqual(new Map(Object.entries(declared).sort(([left], [right]) => left.localeCompare(right))));
+    expect(assertApprovedDependencies(manifest as { dependencies: Record<string, string>; devDependencies: Record<string, string> })).toBe(18);
+  });
+
+  test('dependencies reject direct additions, removals, and version drift by package name', async () => {
+    const manifest = await readManifest();
+    const direct = {
+      ...(manifest.dependencies as Record<string, string>),
+      ...(manifest.devDependencies as Record<string, string>),
+    };
+    const withoutMarkdown = { ...direct };
+    delete withoutMarkdown['markdown-it'];
+
+    expect(() => assertApprovedDependencies({ dependencies: { ...direct, unexpected: '1.0.0' } })).toThrow('unexpected');
+    expect(() => assertApprovedDependencies({ dependencies: withoutMarkdown })).toThrow('markdown-it');
+    expect(() => assertApprovedDependencies({ dependencies: { ...direct, zod: '4.4.4' } })).toThrow('zod');
+  });
+
+  test('keeps the Node and Git prerequisite guidance while the real checkout passes', async () => {
+    expect(() => assertSupportedNodeVersion('23.0.0')).toThrow('Node.js 24 or newer is required; found v23.0.0');
+    await expect(verifyPrerequisites({
+      packageJson: await readManifest() as { dependencies: Record<string, string>; devDependencies: Record<string, string> },
+      executeFile: () => {
+        throw new Error('missing git');
+      },
+    })).rejects.toThrow('Git is required but was not found. Install Git, then run Cumpa again.');
+    await expect(verifyPrerequisites()).resolves.toBe(18);
+  });
 });
