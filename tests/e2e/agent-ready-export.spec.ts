@@ -1,54 +1,58 @@
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import type { ChildProcess } from 'node:child_process';
 import { EventEmitter } from 'node:events';
 import {
   chmodSync,
   closeSync,
-  copyFileSync,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   openSync,
   readdirSync,
   readFileSync,
-  rmSync,
-  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 import type { Browser, Page, TestInfo } from '@playwright/test';
 
-import { ReviewExportV1Schema } from '../../src/contracts/draft.js';
+import { ReviewExportV1Schema, ReviewExportV3Schema } from '../../src/contracts/draft.js';
+import { createGroundedExactPatch } from '../../src/git/exact-patch.js';
 import { parseCanonicalReviewExport } from '../../src/export/review-export.js';
 import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js';
 import { ExportReviewResultSchema } from '../../src/contracts/api.js';
 import { createDirtyGitFixture, type DirtyGitFixture } from '../helpers/git-fixture.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
 import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.js';
+import {
+  installRuntimeArtifact,
+  readRuntimeArtifact,
+  rehashRuntimeArtifact,
+  writeRuntimeScenario,
+  type InstalledRuntimeArtifact,
+  type RuntimeArtifact,
+} from '../helpers/runtime-artifact.js';
 
-const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-agent-ready-pack-'));
-const extractedPackageRoot = join(packedRoot, 'package');
-const executablePath = join(extractedPackageRoot, 'dist/bin/cumpa.mjs');
-const fakeBinRoot = join(packedRoot, 'fake-bin');
-const scenarioEvidencePath = process.env.CUMPA_AGENT_READY_EVIDENCE_REPORT;
-const scenarioEvidenceRunId = process.env.CUMPA_AGENT_READY_EVIDENCE_RUN_ID;
+let runtimeArtifact: RuntimeArtifact;
+let installed: InstalledRuntimeArtifact;
+let fakeBinRoot: string;
 
 test.setTimeout(120_000);
 
 const observedNativeReExport = hasObservedNativeReExport(process.platform, process.arch);
 
 type StablePairSha256 = Readonly<{ readonly json: string; readonly markdown: string }>;
+const completedScenarios = new Set<string>();
+const requiredScenarios = [
+  'relaunch',
+  'unsaved-composer',
+  'range-finish',
+  'equivalent-ranges',
+  'exact-patch',
+  'support',
+] as const;
 
-interface PackResult {
-  readonly filename: string;
-}
 
 interface RunningCli {
   readonly child: ChildProcess;
@@ -65,6 +69,7 @@ interface RunningAttachedCli {
   readonly stderrDescriptor: number;
   readonly stdoutDescriptor: number;
 }
+
 
 interface PersistedDraft {
   readonly revision: number;
@@ -85,32 +90,19 @@ interface PersistedDraft {
   }[];
 }
 
-function runPrerequisite(command: string, arguments_: readonly string[]): string {
-  try {
-    return execFileSync(command, [...arguments_], {
-      cwd: repositoryRoot,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-  } catch (error) {
-    throw new Error(`[prerequisite] ${command} ${arguments_.join(' ')} failed: ${String(error)}`);
-  }
-}
 
 function startGeneratedCli(
   fixture: DirtyGitFixture,
   selections: Readonly<{ readonly base: string; readonly head: string }>,
 ): RunningCli {
-  const outputPath = join(packedRoot, `terminal-${crypto.randomUUID()}.log`);
-  const markerPath = join(packedRoot, `browser-open-${crypto.randomUUID()}.log`);
+  const outputPath = join(installed.root, `terminal-${crypto.randomUUID()}.log`);
+  const markerPath = join(installed.root, `browser-open-${crypto.randomUUID()}.log`);
   const outputDescriptor = openSync(outputPath, 'w');
-  const environment = { ...process.env };
-  delete environment.CMUX_WORKSPACE_ID;
-  const child = spawn(process.execPath, [executablePath], {
+  const child = spawn(process.execPath, ['--import', installed.fetchGuardPath, installed.nodeEntrypointPath], {
     cwd: fixture.nestedCwd,
     env: {
-      ...environment,
-      PATH: `${fakeBinRoot}:${environment.PATH ?? ''}`,
+      ...installed.env,
+      PATH: `${fakeBinRoot}:${installed.env.PATH ?? ''}`,
       CUMPA_BROWSER_OPEN_MARKER: markerPath,
       BROWSER: join(fakeBinRoot, 'open'),
       CUMPA_LAUNCH_OPTIONS: JSON.stringify({
@@ -134,25 +126,23 @@ function startAttachedCli(
     revisions: { base: selections.base, head: selections.head },
   },
 ): RunningAttachedCli {
-  const markerPath = join(packedRoot, `attached-browser-open-${crypto.randomUUID()}.log`);
-  const stderrPath = join(packedRoot, `attached-stderr-${crypto.randomUUID()}.log`);
-  const stdoutPath = join(packedRoot, `attached-stdout-${crypto.randomUUID()}.json`);
+  const markerPath = join(installed.root, `attached-browser-open-${crypto.randomUUID()}.log`);
+  const stderrPath = join(installed.root, `attached-stderr-${crypto.randomUUID()}.log`);
+  const stdoutPath = join(installed.root, `attached-stdout-${crypto.randomUUID()}.json`);
   const stderrDescriptor = openSync(stderrPath, 'w');
   const stdoutDescriptor = openSync(stdoutPath, 'w');
-  const environment = { ...process.env };
-  delete environment.CMUX_WORKSPACE_ID;
-  delete environment.CUMPA_LAUNCH_OPTIONS;
-  const child = spawn(process.execPath, [executablePath], {
+  // Test-only transport denial loads before the npm-generated bin without NODE_OPTIONS.
+  const child = spawn(process.execPath, ['--import', installed.fetchGuardPath, installed.nodeEntrypointPath], {
     cwd: fixture.nestedCwd,
     env: {
-      ...environment,
-      PATH: `${fakeBinRoot}:${environment.PATH ?? ''}`,
+      ...installed.env,
+      PATH: `${fakeBinRoot}:${installed.env.PATH ?? ''}`,
       CUMPA_BROWSER_OPEN_MARKER: markerPath,
       BROWSER: join(fakeBinRoot, 'open'),
     },
     stdio: ['pipe', stdoutDescriptor, stderrDescriptor],
   });
-  child.stdin.end(JSON.stringify(request));
+  child.stdin!.end(JSON.stringify(request));
   return {
     child,
     markerPath,
@@ -181,7 +171,7 @@ async function waitForAttachedLoopbackUrl(running: RunningAttachedCli): Promise<
 
 async function waitForAttachedExit(running: RunningAttachedCli): Promise<number | null> {
   const events = running.child as unknown as EventEmitter;
-  if (running.child.exitCode !== null) return running.child.exitCode;
+  if (running.child.exitCode !== null || running.child.signalCode !== null) return running.child.exitCode;
   const { promise, reject, resolve } = Promise.withResolvers<number | null>();
   events.once('error', reject);
   events.once('exit', resolve);
@@ -210,18 +200,21 @@ async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
 }
 
 async function stopGeneratedCli(running: RunningCli): Promise<void> {
-  if (running.child.exitCode === null && running.child.signalCode === null) running.child.kill('SIGINT');
-  const events = running.child as unknown as EventEmitter;
-  const { promise, resolve: resolveExit, reject } = Promise.withResolvers<void>();
-  events.once('error', reject);
-  events.once('exit', resolveExit);
-  await promise;
+  if (running.child.exitCode === null && running.child.signalCode === null) {
+    const { promise, resolve: resolveExit, reject } = Promise.withResolvers<void>();
+    running.child.once('error', reject);
+    running.child.once('exit', resolveExit);
+    running.child.kill('SIGINT');
+    await promise;
+  }
   closeSync(running.outputDescriptor);
 }
 
 async function openSession(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+  const notNow = page.getByRole('button', { name: 'Not now', exact: true });
+  if (await notNow.isVisible()) await notNow.click();
 }
 
 async function ensureReviewOpen(page: Page): Promise<void> {
@@ -230,20 +223,20 @@ async function ensureReviewOpen(page: Page): Promise<void> {
   await expect(review).toHaveAttribute('aria-expanded', 'true');
 }
 
-async function addHeadComment(page: Page, body: string): Promise<void> {
+async function addHeadComment(page: Page, body: string, lineNumber = 10, selectedText = 'export const stableContext10 = 10;'): Promise<void> {
   const review = page.getByRole('button', { name: 'Review', exact: true });
   if (await review.getAttribute('aria-expanded') === 'true') await review.click();
   await expect(review).toHaveAttribute('aria-expanded', 'false');
-  await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
+  await page.getByRole('treeitem', { name: /changed\.ts/ }).click({ timeout: 10_000 });
   const surface = page.locator('.monaco-diff-editor .editor.modified .monaco-scrollable-element.editor-scrollable').first();
   await surface.click({ position: { x: 16, y: 16 } });
   await page.keyboard.press('Meta+g');
-  await page.keyboard.insertText('10');
+  await page.keyboard.insertText(String(lineNumber));
   await page.keyboard.press('Enter');
-  const line = page.locator('.monaco-diff-editor .editor.modified .view-line').filter({ hasText: 'export const stableContext10 = 10;' });
+  const line = page.locator('.monaco-diff-editor .editor.modified .view-line').filter({ hasText: selectedText });
   await expect(line).toBeVisible();
   await line.click();
-  await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
+  await page.getByRole('button', { name: new RegExp(`^Add comment to (?:head|postimage) line ${lineNumber}$`, 'u') }).click({ timeout: 10_000 });
   await page.locator('.monaco-anchor-zone--composer textarea').fill(body);
   const accepted = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
   await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
@@ -260,6 +253,7 @@ async function saveSummary(page: Page, summary: string): Promise<void> {
   expect((await accepted).status()).toBe(200);
 }
 
+
 function readOnlyDraft(fixture: DirtyGitFixture): Readonly<{ readonly bytes: Buffer; readonly draft: PersistedDraft }> {
   const drafts = readdirSync(join(fixture.root, '.cumpa', 'drafts')).filter((entry) => entry.endsWith('.json'));
   expect(drafts).toHaveLength(1);
@@ -275,11 +269,9 @@ function assertChromium(browser: Browser, testInfo: TestInfo): void {
 }
 
 test.beforeAll(() => {
-  runPrerequisite(npmCommand, ['run', 'build']);
-  runPrerequisite(npmCommand, ['run', 'verify:production-artifacts']);
-  const [packed] = JSON.parse(runPrerequisite(npmCommand, ['pack', '--json', '--ignore-scripts', '--pack-destination', packedRoot])) as readonly PackResult[];
-  execFileSync('tar', ['-xzf', join(packedRoot, packed!.filename), '-C', packedRoot]);
-  symlinkSync(join(repositoryRoot, 'node_modules'), join(extractedPackageRoot, 'node_modules'), 'dir');
+  runtimeArtifact = readRuntimeArtifact();
+  installed = installRuntimeArtifact(runtimeArtifact);
+  fakeBinRoot = join(installed.root, 'fake-bin');
   mkdirSync(fakeBinRoot, { recursive: true });
   const opener = join(fakeBinRoot, 'open');
   writeFileSync(opener, [
@@ -289,39 +281,63 @@ test.beforeAll(() => {
     'process.exitCode = 0;',
     '',
   ].join('\n'));
-  copyFileSync(opener, join(packedRoot, 'open'));
   chmodSync(opener, 0o755);
 });
 
-test.afterAll(() => rmSync(packedRoot, { recursive: true, force: true }));
+test.afterAll(() => {
+  if (installed === undefined) return;
+  let cleaned = false;
+  try {
+    if (process.env.CUMPA_AGENT_READY_EVIDENCE_REPORT !== undefined) {
+      expect([...completedScenarios].sort()).toEqual([...requiredScenarios].sort());
+    }
+    rehashRuntimeArtifact(runtimeArtifact);
+    installed.cleanup();
+    cleaned = true;
+    const archive = rehashRuntimeArtifact(runtimeArtifact);
+    writeRuntimeScenario('review', {
+      archive,
+      package: runtimeArtifact.package,
+      install: installed.proof,
+      target: { platform: process.platform, arch: process.arch },
+      cleanup: { complete: true },
+      review: {
+        relaunch: true,
+        canonicalV2: true,
+        isolatedDrafts: true,
+        reExport: observedNativeReExport ? 'exported' : 'reExportUnsupported',
+      },
+      support: { unavailable: true, dismissed: true, unrestricted: true },
+      exactPatch: { canonicalV3: true, grounded: true },
+      native: { observedReExport: observedNativeReExport, fallback: 'reExportUnsupported' },
+      sourceControl: { unchanged: true },
+      checks: { finish: true },
+    });
+  } finally {
+    if (!cleaned) installed.cleanup();
+  }
+});
 
-test('packaged-resume-after-relaunch preserves accepted review state, completes target-aware second export, and recovers exact bytes', async ({ browser, page }, testInfo) => {
+test('installed resume after relaunch preserves accepted review state, completes target-aware second export, and recovers exact bytes', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
-  const before = await captureSourceControlSnapshot(fixture.root);
-  const original = Object.freeze({ base: fixture.baseRef, head: fixture.headRef });
-  const different = Object.freeze({ base: fixture.baseRef, head: fixture.alternateHeadRef! });
-  const summary = 'Accepted summary survives a fully new packaged process.';
-  const body = 'Verified anchor survives a fully new packaged process.';
-  let launchedGeneratedProcesses = 1;
-  let terminatedGeneratedProcesses = 0;
-  let closedBrowserPages = 0;
-  let running = startGeneratedCli(fixture, original);
-  let firstExportReceiptPaths: readonly string[] = [];
-  let reExportReceiptPaths: readonly string[] = [];
-  let firstStablePairSha256: StablePairSha256 | undefined;
-  let reExportStablePairSha256: StablePairSha256 | undefined;
-  let reExportKind: 'exported' | 'reExportUnsupported' | undefined;
-
+  try {
+    const before = await captureSourceControlSnapshot(fixture.root);
+    const original = Object.freeze({ base: fixture.baseRef, head: fixture.headRef });
+    const different = Object.freeze({ base: fixture.baseRef, head: fixture.alternateHeadRef! });
+    const summary = 'Accepted summary survives a fully new installed process.';
+    const body = 'Verified anchor survives a fully new installed process.';
+    let running = startGeneratedCli(fixture, original);
+    let firstStablePairSha256: StablePairSha256 | undefined;
+    let reExportStablePairSha256: StablePairSha256 | undefined;
+    let reExportKind: 'exported' | 'reExportUnsupported' | undefined;
   try {
     await openSession(page, await waitForLoopbackUrl(running));
     await addHeadComment(page, body);
     await saveSummary(page, summary);
   } finally {
     await page.close();
-    closedBrowserPages += 1;
     await stopGeneratedCli(running);
-    terminatedGeneratedProcesses += 1;
   }
 
   const accepted = readOnlyDraft(fixture);
@@ -331,7 +347,6 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
 
   const resumedPage = await browser.newPage();
   running = startGeneratedCli(fixture, original);
-  launchedGeneratedProcesses += 1;
   try {
     await openSession(resumedPage, await waitForLoopbackUrl(running));
     await ensureReviewOpen(resumedPage);
@@ -347,7 +362,6 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
     if (firstExportResult.kind !== 'exported') {
       throw new Error(`Expected first export receipt, received ${firstExportResult.kind}.`);
     }
-    firstExportReceiptPaths = firstExportResult.files.map((file) => file.path);
     await expect(resumedPage.getByRole('heading', { name: 'Review export complete' })).toBeVisible();
 
     const stablePairDirectory = join(
@@ -376,11 +390,10 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
         throw new Error(`Expected native re-export receipt on darwin-arm64, received ${reExportResult.kind}.`);
       }
       reExportKind = reExportResult.kind;
-      reExportReceiptPaths = reExportResult.files.map((file) => file.path);
     } else {
       expect(reExportResponse.status()).toBe(409);
       expect(reExportResult).toEqual({ kind: 'reExportUnsupported' });
-      reExportKind = reExportResult.kind;
+      reExportKind = 'reExportUnsupported';
     }
 
     const [secondJson, secondMarkdown] = [
@@ -404,14 +417,11 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
     expect(Buffer.from(renderReviewMarkdown(secondJson), 'utf8')).toEqual(secondMarkdown);
   } finally {
     await resumedPage.close();
-    closedBrowserPages += 1;
     await stopGeneratedCli(running);
-    terminatedGeneratedProcesses += 1;
   }
 
   const differentPage = await browser.newPage();
   running = startGeneratedCli(fixture, different);
-  launchedGeneratedProcesses += 1;
   try {
     await openSession(differentPage, await waitForLoopbackUrl(running));
     await ensureReviewOpen(differentPage);
@@ -419,9 +429,7 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
     await expect(differentPage.locator('.comments-rail__comment', { hasText: body })).toHaveCount(0);
   } finally {
     await differentPage.close();
-    closedBrowserPages += 1;
     await stopGeneratedCli(running);
-    terminatedGeneratedProcesses += 1;
   }
 
   const baseOid = fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim();
@@ -446,66 +454,12 @@ test('packaged-resume-after-relaunch preserves accepted review state, completes 
   await expect(assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root))).resolves.toBeUndefined();
 
   if (firstStablePairSha256 === undefined || reExportStablePairSha256 === undefined || reExportKind === undefined) {
-    throw new Error('[behavioral] packaged re-export outcome was not observed.');
+    throw new Error('[behavioral] installed re-export outcome was not observed.');
   }
-  const reExportEvidence = reExportKind === 'exported'
-    ? {
-        kind: reExportKind,
-        receiptPaths: reExportReceiptPaths,
-        stablePairSha256: reExportStablePairSha256,
-      }
-    : {
-        kind: reExportKind,
-        stablePairSha256: reExportStablePairSha256,
-      };
-
-  if (scenarioEvidencePath !== undefined) {
-    if (scenarioEvidenceRunId === undefined) throw new Error('[behavioral] generated-package evidence report requires a run ID');
-    writeFileSync(scenarioEvidencePath, `${JSON.stringify({
-      schemaVersion: 1,
-      runId: scenarioEvidenceRunId,
-      scenario: {
-        id: 'packaged-resume-after-relaunch',
-        title: testInfo.title,
-        testFile: 'tests/e2e/agent-ready-export.spec.ts',
-      },
-      packageArtifact: {
-        path: 'dist/bin/cumpa.mjs',
-        sourceSha256: createHash('sha256').update(readFileSync(join(repositoryRoot, 'dist', 'bin', 'cumpa.mjs'))).digest('hex'),
-        packedSha256: createHash('sha256').update(readFileSync(executablePath)).digest('hex'),
-      },
-      execution: {
-        target: {
-          platform: process.platform,
-          arch: process.arch,
-          observedNativeReExport,
-        },
-        selectorKind: fixture.selectorKind,
-        originalOrderedFullOidPair: { baseOid, headOid },
-        acceptedState: {
-          revision: accepted.draft.revision,
-          summarySha256: createHash('sha256').update(summary).digest('hex'),
-          draftSha256: createHash('sha256').update(accepted.bytes).digest('hex'),
-          comment: accepted.draft.comments[0],
-        },
-        closedBrowserPages,
-        launchedGeneratedProcesses,
-        terminatedGeneratedProcesses,
-        differentOrderedPair: { baseOid, headOid: alternateHeadOid },
-        export: {
-          receiptPaths: ['review.json', 'review.md'],
-          firstReceiptPaths: firstExportReceiptPaths,
-          firstStablePairSha256,
-          reExport: reExportEvidence,
-          acceptedDraftRevision: document.acceptedDraftRevision,
-          jsonSha256,
-          markdownSha256,
-        },
-      },
-    })}\n`, 'utf8');
+  completedScenarios.add('relaunch');
+  } finally {
+    await fixture.cleanup();
   }
-
-  await fixture.cleanup();
 });
 
 test('attached review blocks Finish while an inline composer has unsaved text', async ({ browser, page }, testInfo) => {
@@ -535,7 +489,10 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
     const completion = page.getByRole('region', { name: 'Finish attached review' });
     const finish = completion.getByRole('button', { name: 'Finish review', exact: true });
     await expect(finish).toBeDisabled();
-    await finish.evaluate((button) => button.click());
+  await finish.evaluate((button) => {
+    if (!(button instanceof HTMLButtonElement)) throw new Error('Expected the Finish button');
+    button.click();
+  });
     expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
 
     const reviewDraft = completion.getByRole('button', { name: /Review draft in .*changed\.ts/ });
@@ -551,6 +508,7 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
     await restoredComposer.fill('');
     await ensureReviewOpen(page);
     await expect(finish).toBeEnabled();
+    completedScenarios.add('unsaved-composer');
   } finally {
     if (running.child.exitCode === null && running.child.signalCode === null) running.child.kill('SIGINT');
     await waitForAttachedExit(running);
@@ -592,6 +550,7 @@ test('attached range review stays silent until Finish then emits one canonical V
     });
     expect(readFileSync(running.stderrPath, 'utf8')).toContain(url);
     expect(existsSync(join(fixture.root, '.cumpa', 'drafts'))).toBe(false);
+    completedScenarios.add('range-finish');
     closeAttachedCliFiles(running);
     closed = true;
   } finally {
@@ -604,7 +563,7 @@ test('attached range review stays silent until Finish then emits one canonical V
   }
 });
 
-test('equivalent packaged attached ranges retain canonical provenance while owning isolated drafts and delivery', async ({ browser, page }, testInfo) => {
+test('equivalent installed attached ranges retain canonical provenance while owning isolated drafts and delivery', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
   const selections = { base: fixture.baseRef, head: fixture.headRef };
@@ -648,7 +607,9 @@ test('equivalent packaged attached ranges retain canonical provenance while owni
     const secondExport = parseCanonicalReviewExport(secondBytes);
     expect(firstExport).toMatchObject({ schemaVersion: 2, summary: { markdown: 'First equivalent attached review.' } });
     expect(secondExport).toMatchObject({ schemaVersion: 2, summary: { markdown: 'Second equivalent attached review.' } });
+    if (firstExport.schemaVersion !== 2 || secondExport.schemaVersion !== 2) throw new Error('Attached ranges must emit canonical V2');
     expect(firstExport.range?.reviewKey).toBe(secondExport.range?.reviewKey);
+    completedScenarios.add('equivalent-ranges');
   } finally {
     for (const running of [first, second]) {
       if (running.child.exitCode === null && running.child.signalCode === null) {
@@ -658,6 +619,154 @@ test('equivalent packaged attached ranges retain canonical provenance while owni
       closeAttachedCliFiles(running);
     }
     await secondPage.close();
+    await fixture.cleanup();
+  }
+});
+
+test('installed exact-patch review grounds the submitted patch and emits canonical V3 only after Finish', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
+  try {
+  const before = await captureSourceControlSnapshot(fixture.root);
+  const patch = fixture.git(['diff', '--no-ext-diff', '--no-textconv', '--binary', '--full-index', fixture.baseRef, fixture.headRef]).toString('utf8');
+  const grounded = await createGroundedExactPatch({
+    cwd: fixture.nestedCwd,
+    patchContent: patch,
+    target: { kind: 'repository' },
+  });
+  const request = {
+    kind: 'cumpa.review-request',
+    schemaVersion: 1,
+    mode: 'patch',
+    patch: { content: patch, target: { kind: 'repository' } },
+  };
+  const running = startAttachedCli(fixture, { base: fixture.baseRef, head: fixture.headRef }, request);
+  let closed = false;
+
+  try {
+    const url = await waitForAttachedLoopbackUrl(running);
+    expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
+    await openSession(page, url);
+    await addHeadComment(page, 'Grounded exact-patch feedback.', 9, 'export const changed = "head value";');
+    const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
+    await page.getByRole('button', { name: 'Finish review', exact: true }).click();
+    const finishResponse = await finished;
+    expect(finishResponse.status(), await finishResponse.text()).toBe(201);
+    expect(await waitForAttachedExit(running)).toBe(0);
+
+    const bytes = readFileSync(running.stdoutPath);
+    expect(bytes).not.toHaveLength(0);
+    expect(bytes.at(-1)).not.toBe(0x0a);
+    const exported = ReviewExportV3Schema.parse(parseCanonicalReviewExport(bytes));
+    const changed = grounded.changedFiles.find((file) => file.newPath?.display === 'src/changed.ts');
+    if (changed === undefined) throw new Error('[behavioral] grounded fixture changed file was not found.');
+    const preimage = grounded.contents.get(changed.id)?.preimage;
+    if (preimage === undefined) throw new Error('[behavioral] grounded fixture preimage was not found.');
+    const baseOid = fixture.git(['rev-parse', fixture.baseRef]).toString('ascii').trim();
+    const headOid = fixture.git(['rev-parse', fixture.headRef]).toString('ascii').trim();
+    const expectedOldBlobOid = fixture.git(['rev-parse', `${baseOid}:src/changed.ts`]).toString('ascii').trim();
+    const expectedNewBlobOid = fixture.git(['rev-parse', `${headOid}:src/changed.ts`]).toString('ascii').trim();
+
+    expect(preimage).toEqual(fixture.git(['show', `${baseOid}:src/changed.ts`]));
+    expect(changed.oldBlobOid).toBe(expectedOldBlobOid);
+    expect(changed.newBlobOid).toBe(expectedNewBlobOid);
+    expect(Buffer.from(request.patch.content, 'utf8')).toEqual(
+      fixture.git(['diff', '--no-ext-diff', '--no-textconv', '--binary', '--full-index', fixture.baseRef, fixture.headRef]),
+    );
+    expect(exported.patch).toMatchObject({
+      digest: grounded.scope.digest,
+      validationTarget: grounded.scope.validationTarget,
+      snapshot: { status: 'unchanged', files: grounded.changedFiles },
+    });
+    const reviewKey = createHash('sha256').update('cumpa-exact-patch-review-key-v1');
+    for (const value of [grounded.scope.digest, grounded.scope.validationTarget.kind, grounded.repositoryRoot]) {
+      const bytes = Buffer.from(value, 'utf8');
+      const length = Buffer.allocUnsafe(8);
+      length.writeBigUInt64BE(BigInt(bytes.byteLength));
+      reviewKey.update(length).update(bytes);
+    }
+    expect(exported.patch.reviewKey).toBe(reviewKey.digest('hex'));
+    const exportedComment = exported.files
+      .flatMap((file) => file.comments)
+      .find((comment) => comment.body === 'Grounded exact-patch feedback.');
+    expect(exportedComment).toMatchObject({
+      anchor: {
+        side: 'head',
+        line: 9,
+        blobOid: expectedNewBlobOid,
+        selectedText: 'export const changed = "head value";',
+      },
+    });
+    expect(readFileSync(running.stderrPath, 'utf8')).toContain(url);
+    await expect(assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root))).resolves.toBeUndefined();
+    completedScenarios.add('exact-patch');
+    closeAttachedCliFiles(running);
+    closed = true;
+  } finally {
+    if (running.child.exitCode === null && running.child.signalCode === null) {
+      running.child.kill('SIGINT');
+      await waitForAttachedExit(running);
+    }
+    if (!closed) closeAttachedCliFiles(running);
+  }
+  } finally {
+    await fixture.cleanup();
+  }
+});
+
+test('installed configured support remains unavailable without outbound access and does not restrict Finish', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
+  const before = await captureSourceControlSnapshot(fixture.root);
+  const running = startAttachedCli(fixture, { base: fixture.baseRef, head: fixture.headRef });
+  let closed = false;
+
+  await page.context().route('**/*', async (route) => {
+    const requestUrl = new URL(route.request().url());
+    if (requestUrl.hostname === '127.0.0.1' || requestUrl.hostname === 'localhost') {
+      await route.continue();
+      return;
+    }
+    await route.abort('blockedbyclient');
+  });
+
+  try {
+    await openSession(page, await waitForAttachedLoopbackUrl(running));
+    const support = page.getByRole('button', { name: 'Support Cumpa', exact: true });
+    await expect(support).toBeVisible();
+    await support.click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: 'Support Cumpa' })).toBeVisible();
+    const blockedBeforeSupport = existsSync(installed.blockedFetchesPath)
+      ? readFileSync(installed.blockedFetchesPath, 'utf8').split('\n').filter((line) => line === 'blocked').length
+      : 0;
+    await dialog.getByRole('button', { name: 'Support Cumpa — $49.99' }).click();
+    await expect.poll(() => existsSync(installed.blockedFetchesPath)
+      ? readFileSync(installed.blockedFetchesPath, 'utf8').split('\n').filter((line) => line === 'blocked').length
+      : 0).toBeGreaterThan(blockedBeforeSupport);
+    await expect(dialog).not.toContainText('Waiting for confirmation… You can close this and keep reviewing.');
+    await expect(dialog.getByRole('button', { name: 'Support Cumpa — $49.99' })).toBeEnabled();
+    await dialog.getByRole('button', { name: 'Not now' }).click();
+    await expect(dialog).toBeHidden();
+
+    await ensureReviewOpen(page);
+    const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
+    await page.getByRole('button', { name: 'Finish review', exact: true }).click();
+    expect((await finished).status()).toBe(201);
+    expect(await waitForAttachedExit(running)).toBe(0);
+    expect(parseCanonicalReviewExport(readFileSync(running.stdoutPath))).toMatchObject({ schemaVersion: 2 });
+    await expect(assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root))).resolves.toBeUndefined();
+    completedScenarios.add('support');
+    closeAttachedCliFiles(running);
+    closed = true;
+  } finally {
+    await page.context().unroute('**/*');
+    
+    if (running.child.exitCode === null && running.child.signalCode === null) {
+      running.child.kill('SIGINT');
+      await waitForAttachedExit(running);
+    }
+    if (!closed) closeAttachedCliFiles(running);
     await fixture.cleanup();
   }
 });
