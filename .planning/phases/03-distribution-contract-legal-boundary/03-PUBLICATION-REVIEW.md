@@ -1,12 +1,117 @@
-# Private Publication Review — CONTENT-BOUND FINAL CHECKPOINT
+# Publication Review — PUBLIC RESULT VERIFIED
 
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
 **PRIVATE PREPARATION AUTHORIZATION:** Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` was explicitly authorized and applied as the exact guarded private fast-forward. Resulting CI/deployment exposure is under review.
-**FINAL PUBLICATION AUTHORIZATION:** Received directly from Alessandro for content-bound snapshot `e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18`, main `ff72519969da8d2c0761c9533ccb27b809cd17bb`, protections `6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48`. Complete current no-drift preflight remains required before one visibility-only mutation.
+**FINAL PUBLICATION AUTHORIZATION:** Exact snapshot `e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18` and protection disposition `6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48` were authorized by Alessandro, applied once, and verified. No further mutation is authorized.
 
-### Current content-bound final authorization
+## CURRENT RESULT — PUBLICATION APPLIED AND VERIFIED
+
+**The existing repository is public.** At `2026-09-08T13:02:24Z`, the single authorized visibility-only command succeeded using only the visibility-scoped credential. No source/ref push, npm operation, artifact deletion, retention change or other manual configuration mutation occurred. All earlier private checkpoints and unexecuted/superseded authorizations below are historical, not current mutation instructions.
+
+Before the action, the full current **47-collection** capture, all **50 decompressed log-content bindings**, **20 exact artifact ZIP bindings**, legal assents, private protections, immutable identity, approved main and terminal producers matched snapshot `e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18` exactly. A final scoped identity/private-state and native-ref check immediately preceded the command. GitHub exposes no atomic visibility compare-and-swap; the documented no-write window and immediate checks narrowed that race without pretending to eliminate it.
+
+### Observed public proof
+
+- Immutable repository: **1327753770 / R_kgDOTyPqKg**, `Ship-With-AI/cumpa`, `private=false`, `visibility=public`.
+- Public main: **ff72519969da8d2c0761c9533ccb27b809cd17bb**. No later local approval/review/summary commit was pushed.
+- Credential-free Node HTTP requests used explicit public URLs, no Authorization/Cookie headers or Git credential helper, and an environment without GitHub token variables or NODE_OPTIONS. Repository/ref/Issues APIs returned success; the 1,104-byte public MIT LICENSE matched SHA-256 **c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d**.
+- Public source HTML and Issues HTML both returned **HTTP 200**, with GitHub titles identifying `Ship-With-AI/cumpa` and its Issues page. Browser-tool attempts timed out; no graphical browser observation is claimed. These direct HTTP/API checks are the exercised fallback proof.
+- Authenticated post-public controls matched the approved disposition: zero effective/inherited rulesets, zero classic branch protections, zero linked Projects; unchanged collaborators/teams, environment controls, secret/variable metadata, Actions defaults and 90-day retention.
+- Actual public-fork approval is **first_time_contributors**, one of the explicitly approved supported outcomes. The private-only fork-workflow endpoint is now inapplicable. Public forking became enabled as expected.
+- Dependabot alerts became available/enabled with zero listed alerts, while automated security fixes remain disabled. Secret scanning remains disabled; code scanning reports no analysis. No completed/clean security-scan claim is made.
+- The run, artifact and deployment ID sets remained unchanged. Both owner-retained legacy artifacts remain present with their accepted unremediated notice risk; no new waiver or third-party compliance claim is made.
+
+### Remaining human cleanup and phase close-out
+
+The operator has been asked to revoke the two temporary fine-grained GitHub tokens used for preparation and visibility. **Revocation is not yet confirmed.** Removing a Keychain copy alone is not server-side revocation. No leaked-credential revocation report was submitted: that API is documented for exposed credentials, which is not the status of these safely used temporary tokens. Keep this explicit human cleanup item pending; do not claim the tokens revoked or the entire phase verified until it is resolved.
+
+Phase execution evidence and reviews can now close out locally. All subsequent evidence/SUMMARY/verification commits remain outside the approved public source and must not be pushed automatically. Public source eligibility is established; npm artifact acceptance, registry availability and actual provenance remain later-phase work.
+
+**Observed-result record SHA-256:** `a07ef6b27036e8d80092aa18356abf201678ba58b381fe38648ed27cd6176132`.
+
+```json
+{
+  "kind": "cumpa.publication-result/v1",
+  "repository": "Ship-With-AI/cumpa",
+  "repository_id": 1327753770,
+  "repository_node_id": "R_kgDOTyPqKg",
+  "authorized_snapshot_sha256": "e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18",
+  "authorized_protection_disposition_sha256": "6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48",
+  "main": "ff72519969da8d2c0761c9533ccb27b809cd17bb",
+  "license_sha256": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+  "mutation": {
+    "only_setting": "visibility",
+    "before": "private",
+    "after": "public",
+    "started_at": "2026-09-08T13:02:23Z",
+    "completed_at": "2026-09-08T13:02:24Z",
+    "exit_code": 0
+  },
+  "anonymous_verification": {
+    "completed_at": "2026-09-08T13:03:53Z",
+    "repository_identity": true,
+    "main_oid": true,
+    "license_bytes": 1104,
+    "license_sha256": true,
+    "issues_api": true,
+    "source_html_status": 200,
+    "issues_html_status": 200,
+    "authorization_header": false,
+    "credential_helper": false
+  },
+  "post_public_protections": {
+    "verified_at": "2026-09-08T13:06:06Z",
+    "rulesets": 0,
+    "classic_branch_protections": 0,
+    "linked_projects": 0,
+    "public_fork_approval": "first_time_contributors",
+    "actions_permissions": {
+      "enabled": true,
+      "allowed_actions": "all",
+      "sha_pinning_required": false
+    },
+    "workflow_permissions": {
+      "default_workflow_permissions": "read",
+      "can_approve_pull_request_reviews": false
+    },
+    "retention": {
+      "days": 90,
+      "maximum_allowed_days": 90
+    },
+    "environment_controls_unchanged": true,
+    "collaborators_and_teams_unchanged": true,
+    "secret_variable_metadata_unchanged": true,
+    "automated_security_fixes": {
+      "enabled": false,
+      "paused": false
+    },
+    "dependabot_alerts_enabled": true,
+    "dependabot_alert_count": 0,
+    "secret_scanning": "disabled",
+    "code_scanning": "no analysis found"
+  },
+  "preserved": {
+    "main_not_pushed_again": true,
+    "run_ids_unchanged": true,
+    "artifact_ids_unchanged": true,
+    "deployment_ids_unchanged": true,
+    "legacy_artifacts_retained": [
+      9907668126,
+      9928300866
+    ],
+    "npm_not_published": true,
+    "no_manual_settings_change_except_visibility": true
+  },
+  "limitations": {
+    "browser_visual_verification": "Browser tool timed out; direct credential-free API and HTML checks passed instead.",
+    "temporary_token_revocation": "Operator has been asked to revoke preparation and visibility tokens; not yet confirmed."
+  }
+}
+```
+
+### Executed content-bound final authorization
 
 - **Authorizer:** Alessandro Magionami, direct user message.
 - **Captured:** 2026-09-08T12:55:56Z.
