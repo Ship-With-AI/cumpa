@@ -25,16 +25,12 @@ import type { Browser, Page, TestInfo } from '@playwright/test';
 import { createGitFixture, type GitFixture } from '../helpers/git-fixture.js';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-anchored-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
 const executablePath = join(extractedPackageRoot, 'dist/bin/cumpa.mjs');
 const fakeBinRoot = join(packedRoot, 'fake-bin');
 test.setTimeout(90_000);
 
-interface PackResult {
-  readonly filename: string;
-}
 
 interface RunningCli {
   readonly child: ChildProcess;
@@ -186,17 +182,13 @@ async function activateMonacoLine(
 }
 
 test.beforeAll(() => {
-  runPrerequisite(npmCommand, ['run', 'build']);
-  runPrerequisite(npmCommand, ['run', 'verify:production-artifacts']);
-  const packOutput = runPrerequisite(npmCommand, [
-    'pack',
-    '--json',
-    '--ignore-scripts',
-    '--pack-destination',
-    packedRoot,
-  ]);
-  const [packResult] = JSON.parse(packOutput) as readonly PackResult[];
-  execFileSync('tar', ['-xzf', join(packedRoot, packResult.filename), '-C', packedRoot]);
+  const custody = join(packedRoot, 'custody');
+  const evidence = join(packedRoot, 'runtime-evidence.json');
+  runPrerequisite(process.execPath, [join(repositoryRoot, 'scripts/pack-runtime.mjs'), '--purpose', 'development-check', '--custody-dir', custody, '--evidence', evidence]);
+  const packed = JSON.parse(readFileSync(evidence, 'utf8'));
+  const archive = join(custody, packed.archive.basename);
+  runPrerequisite(process.execPath, [join(repositoryRoot, 'scripts/verify-production-artifacts.mjs'), '--archive', archive, '--expected-sha256', packed.archive.sha256, '--evidence', evidence]);
+  execFileSync('tar', ['-xzf', archive, '-C', packedRoot]);
   symlinkSync(join(repositoryRoot, 'node_modules'), join(extractedPackageRoot, 'node_modules'), 'dir');
   mkdirSync(fakeBinRoot, { recursive: true });
   const fakeOpen = join(packedRoot, 'open');

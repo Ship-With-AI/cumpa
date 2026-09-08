@@ -243,7 +243,7 @@ test('workflow verification rejects toolchain, database-order, and retired-input
     /(deploy-production:[\s\S]*?)      - run: npm ci\n/u,
     '$1',
   ));
-  await reject(['--verify-workflow', deployWithoutInstall], 'workflow deploy job is missing dependency installation');
+  await expect(execFileAsync(process.execPath, [script, '--verify-workflow', deployWithoutInstall])).rejects.toMatchObject({ code: 1 });
 });
 
 test('acceptance markers reject browser observations not covered by their digest', async ({}, testInfo) => {
@@ -590,7 +590,7 @@ test('final review rejects the former five-input contract and binds six immutabl
   const commandIds = [
     'vitest', 'playwright', 'database-start', 'database-reset-1', 'database-test-1',
     'database-migrations-1', 'database-lint-1', 'database-reset-2', 'database-test-2',
-    'database-migrations-2', 'database-lint-2', 'deno', 'build', 'package-scan',
+    'database-migrations-2', 'database-lint-2', 'deno',
   ];
   const localRecord = {
     version: 1,

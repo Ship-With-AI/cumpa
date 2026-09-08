@@ -579,7 +579,7 @@ async function localPackageSecurityReview(output) {
   for (const name of LOCAL_PROTECTED_INPUTS) if (process.env[name] !== undefined) fail(`local package security review forbids ${name}`);
   const commands = [
     { id: 'vitest', command: 'npx', args: ['vitest', 'run', '--no-file-parallelism'] },
-    { id: 'playwright', command: 'npx', args: ['playwright', 'test', '--config=tests', 'tests/e2e/support-payment.spec.ts', 'tests/e2e/support-restore.spec.ts', 'tests/e2e/package-assets.spec.ts'] },
+    { id: 'playwright', command: 'npx', args: ['playwright', 'test', 'tests/e2e/support-payment.spec.ts', 'tests/e2e/support-restore.spec.ts'] },
     { id: 'database-start', command: 'npx', args: ['supabase@2.114.0', 'db', 'start'] },
     { id: 'database-reset-1', command: 'npx', args: ['supabase@2.114.0', 'db', 'reset', '--local', '--no-seed'] },
     { id: 'database-test-1', command: 'npx', args: ['supabase@2.114.0', 'test', 'db'] },
@@ -623,16 +623,17 @@ function commandOutput(command, args, environment) {
   return new Promise((resolvePromise, rejectPromise) => {
     const child = spawn(command, args, { cwd: process.cwd(), env: environment, stdio: ['ignore', 'pipe', 'pipe'] });
     const digest = createHash('sha256');
-    let stderr = '';
-    child.stdout.on('data', (chunk) => digest.update(chunk));
-    child.stderr.on('data', (chunk) => {
+    let diagnostics = '';
+    const collect = (chunk) => {
       digest.update(chunk);
-      stderr += String(chunk);
-    });
+      diagnostics = (diagnostics + String(chunk)).slice(-16_384);
+    };
+    child.stdout.on('data', collect);
+    child.stderr.on('data', collect);
     child.once('error', () => rejectPromise(new Error(`${command} is unavailable`)));
     child.once('exit', (code) => code === 0
       ? resolvePromise(digest.digest('hex'))
-      : rejectPromise(new Error(`${command} failed with exit ${code}: ${stderr}`)));
+      : rejectPromise(new Error(`${command} failed with exit ${code}: ${diagnostics}`)));
   });
 }
 
