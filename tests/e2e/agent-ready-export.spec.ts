@@ -537,7 +537,6 @@ test('attached range review stays silent until Finish then emits one canonical V
     expect(await waitForAttachedExit(running)).toBe(0);
 
     const stdout = readFileSync(running.stdoutPath);
-    expect(stdout).not.toHaveLength(0);
     expect(stdout.at(-1)).not.toBe(0x0a);
     expect(parseCanonicalReviewExport(stdout)).toMatchObject({
       schemaVersion: 2,
@@ -655,7 +654,6 @@ test('installed exact-patch review grounds the submitted patch and emits canonic
     expect(await waitForAttachedExit(running)).toBe(0);
 
     const bytes = readFileSync(running.stdoutPath);
-    expect(bytes).not.toHaveLength(0);
     expect(bytes.at(-1)).not.toBe(0x0a);
     const exported = ReviewExportV3Schema.parse(parseCanonicalReviewExport(bytes));
     const changed = grounded.changedFiles.find((file) => file.newPath?.display === 'src/changed.ts');

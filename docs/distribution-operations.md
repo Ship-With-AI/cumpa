@@ -30,6 +30,12 @@ Use `candidate` for final local acceptance and `deployment-check` for disposable
 
 Verify those same bytes with `npm run verify:production-artifacts -- --archive <absolute-tgz> --expected-sha256 <recorded-sha256> --evidence <absolute-json>`. No verification command rebuilds or repacks. The verifier uses native `tar` in protected temporary storage, compares post-extraction permissions under umask 077, and parses JavaScript with Vue's already-installed compiler parser to distinguish real imports/worker URLs from compiler strings. The scope is trusted local producer output with bounded disclosure scanning, not arbitrary hostile archives or exhaustive secret detection.
 
+Run installed acceptance with `npm run accept:runtime-artifact`. Supply `CUMPA_RUNTIME_CUSTODY_DIR`, `CUMPA_RUNTIME_ARCHIVE_BASENAME`, `CUMPA_RUNTIME_ARCHIVE_SHA256`, `CUMPA_RUNTIME_EVIDENCE`, and a new absolute `CUMPA_RUNTIME_ACCEPTANCE_REPORT` path, plus the protected `CUMPA_RELEASE_SUPPORT_SERVICE_URL`. The parent verifies the archive, then launches the dedicated browser suites without origin overrides. Neither acceptance runner builds or packs.
+
+Each suite installs the supplied tarball under a fresh npm prefix, HOME, cache and config with install scripts disabled. It verifies direct runtime versions and records a digest of the resolved dependency inventory; npm's explicitly optional, absent peers are not missing required dependencies. Runtime Node fetch and browser routing deny non-loopback support access while exercising the real unavailable/dismissal flow. The test-only Node preloader is outside the package. Windows generated command shims use `cmd.exe`; guarded launches use the installed JavaScript entrypoint.
+
+Passing fixture tests are not approval. The final archive must use the already-approved real origin, pass its own unchanged-byte acceptance, become read-only in durable outside-checkout custody, and receive attributable approval repeating its actual SHA-256 and byte length. No synthetic-origin test archive can satisfy that gate.
+
 ## Phase 5 — registry publication and actual provenance
 
 Only Phase 5 performs the approved registry bootstrap and stable OIDC trusted-publishing flow. Do not introduce long-lived publication credentials. Publish the exact Phase 4 tarball; neither a rebuild nor a different archive with the same name/version is an acceptable substitution.
