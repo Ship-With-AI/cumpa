@@ -4,7 +4,21 @@
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
 **PRIVATE PREPARATION AUTHORIZATION:** Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` was explicitly authorized and applied as the exact guarded private fast-forward. Resulting CI/deployment exposure is under review.
-**FINAL PUBLICATION AUTHORIZATION:** Earlier snapshot authorization was not executed. Corrected content-bound snapshot `e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18` awaits renewed authorization; source/protection decision and working visibility credential are unchanged.
+**FINAL PUBLICATION AUTHORIZATION:** Received directly from Alessandro for content-bound snapshot `e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18`, main `ff72519969da8d2c0761c9533ccb27b809cd17bb`, protections `6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48`. Complete current no-drift preflight remains required before one visibility-only mutation.
+
+### Current content-bound final authorization
+
+- **Authorizer:** Alessandro Magionami, direct user message.
+- **Captured:** 2026-09-08T12:55:56Z.
+- **Verbatim statement** (the line break after `main` is insignificant whitespace; identifiers match exactly):
+
+```text
+FINAL PUBLICATION AUTHORIZATION: Ship-With-AI/cumpa snapshot e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18 main
+ff72519969da8d2c0761c9533ccb27b809cd17bb protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48
+```
+
+- **Scope/readiness:** The same visibility-only action and unchanged protection/platform/risk disposition, with the previously confirmed repository-only short-lived Administration-write credential and no-write/no-rename/no-transfer/policy-change window. A fresh secure token retrieval and scoped read matched the immutable private repository. No credential bytes are recorded.
+- **Not authorized:** Any source/ref push, npm publication, artifact deletion, retention change or separate configuration mutation. Earlier failed-preflight authorizations remain historical.
 
 ## CURRENT FINAL CHECKPOINT — CONTENT-BOUND LOGS — 2026-09-08T12:42:19Z
 
@@ -466,7 +480,7 @@ The `archive_bytes` collection now binds **only the 20 artifact ZIPs**, whose ex
 }
 ```
 
-### Required renewed final authorization
+### Current final authorization gate
 
 The exact-digest gate requires renewed authorization because the snapshot projection changed, even though no new source, protection or current log payload is being exposed. The approved visibility-only action, platform terms/consequences, existing 90-day retention and exact owner-accepted PUB-02 notice risk are unchanged. No technical re-test or new credential setup is requested.
 
@@ -474,7 +488,7 @@ Send exactly:
 
 `FINAL PUBLICATION AUTHORIZATION: Ship-With-AI/cumpa snapshot e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18 main ff72519969da8d2c0761c9533ccb27b809cd17bb protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48`
 
-No authorization for this corrected snapshot has been received. After receiving it, repeat the full **47-collection** current capture with all log-content and exact artifact bindings, recheck identity/private visibility, main, legal assent, scoped credential and terminal producers, then perform only the authorized visibility operation if identical. Every earlier proposal/authorization below is historical and does not grant broader mutation authority.
+Authorization for this corrected snapshot is now recorded above. Repeat the full **47-collection** current capture with all log-content and exact artifact bindings, recheck identity/private visibility, main, legal assent, scoped credential and terminal producers, then perform only the authorized visibility operation if identical. Every earlier proposal/authorization below is historical and does not grant broader mutation authority.
 
 ### Earlier final authorizer statement and readiness
 
