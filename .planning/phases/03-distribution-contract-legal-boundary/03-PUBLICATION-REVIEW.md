@@ -1,12 +1,482 @@
-# Private Publication Review — FINAL PUBLICATION CHECKPOINT
+# Private Publication Review — CONTENT-BOUND FINAL CHECKPOINT
 
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
 **PRIVATE PREPARATION AUTHORIZATION:** Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` was explicitly authorized and applied as the exact guarded private fast-forward. Resulting CI/deployment exposure is under review.
-**FINAL PUBLICATION AUTHORIZATION:** Received directly from Alessandro for snapshot `8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4`, main `ff72519969da8d2c0761c9533ccb27b809cd17bb`, protections `6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48`. Complete no-drift preflight remains required before one visibility-only mutation.
+**FINAL PUBLICATION AUTHORIZATION:** Earlier snapshot authorization was not executed. Corrected content-bound snapshot `e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18` awaits renewed authorization; source/protection decision and working visibility credential are unchanged.
 
-### Final authorizer statement and readiness
+## CURRENT FINAL CHECKPOINT — CONTENT-BOUND LOGS — 2026-09-08T12:42:19Z
+
+**No visibility mutation occurred.** The earlier exact authorization for snapshot `8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4` was received, but the final gate stopped on changed GitHub log ZIP bindings. It is preserved below as historical authorization and must not be reused for this corrected snapshot.
+
+### What changed, and what did not
+
+- GitHub's download representation for runs **34216472139** and **34220014720** changed from 14/34 members to 2/4 members. Per-step files disappeared; every retained aggregate/system log file is **byte-for-byte identical to a previously reviewed file**. There are zero added or changed current member payloads. This is not evidence of new private content or a changed source commit.
+- Failed-run ZIP transport is now 20,832 bytes / `9684d790f6501d92a2016c12a67f020c8e99f497546cae3c368abd3b938e6777`; successful-run ZIP transport is 33,786 bytes / `6bb09b1b7e91df537d766aaa031f60c350523a79ae088548deeb677b9e044a7a`. These are observations, not future authorization inputs.
+- The complete concurrent preflight found **no other changed collection**. Source/main/tree, all 20 artifact ZIP bindings, protected settings, 50 terminal runs, legal assents, retained notice-risk disposition and the approved public-protection consequences remain unchanged.
+- The visibility-specific Keychain credential is working. No new token setup, permission, code change, source push or protection decision is required. The operator must continue the previously requested no-write/no-rename/no-transfer/policy-change window through final verification.
+
+### Corrected deterministic log projection
+
+Log ZIP encoding is transport, not the content authorized for exposure. For **every one of the 50 log archives**, read every non-directory member without extraction/execution; reject encrypted, traversal/absolute-path or oversized entries. Hash a deterministically sorted array of `[member_name, uncompressed_byte_size, sha256_of_exact_member_bytes]` using the same canonical JSON serializer. The new `log_contents` collection binds sorted `run_id`, `member_count` and `content_sha256` records. Member additions/removals or changed payloads remain detectable; no log member is silently filtered or semantically rewritten.
+
+The `archive_bytes` collection now binds **only the 20 artifact ZIPs**, whose exact distribution bytes remain authoritative. Log ZIP byte sizes, compression, ordering and transport digests are retained as observations only. All other collection projections and the `temp_clone_token` exclusion are unchanged. This is a one-off audit projection correction, not a new application component.
+
+**Executable proof:** Repacking real captured log payloads with different ZIP compression and reversed member order preserves the content digest; changing a member's bytes changes it. All current payloads of the two consolidated archives were matched against their earlier reviewed member hashes. Full content projections were collected for all 50 runs under protected temporary storage/cleanup; no archive member was extracted or executed.
+
+### Current exact bindings
+
+- **Source/main:** `ff72519969da8d2c0761c9533ccb27b809cd17bb` (unchanged).
+- **Source tree:** `1b0f095862fba8ead7c92d260d0c3b72c52240a3` (unchanged).
+- **Content-bound exposure SHA-256:** `ba3840a74caa51dafc522ca768fbb622f539dfd6bab2dfb9e82fe9a7cd909356`.
+- **Current final snapshot SHA-256:** `e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18`.
+- **Public protection disposition SHA-256:** `6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48` (unchanged).
+- **Private protection baseline SHA-256:** `b77330724b28ed9ba6a1a2ed2c5c56ac3f17188c04e6beae5709c22d7d6bdec8` (unchanged).
+
+<details>
+<summary>Exact current log and collection content bindings</summary>
+
+```json
+{
+  "collections": {
+    "annotations": "1fe38e27247c62bc3eb3e6682c1690f4c32609d5399703543430089703eb00a3",
+    "archive_bytes": "8f5d367f62f9d2184cf663f0cdb457dd5571615f99f36885d89ac6164b296346",
+    "base/artifacts": "8f353744ddbbfec1cef80496c5b405cf0a541911944a879bc7e229d7757473d3",
+    "base/deployments": "d5f9b5e9d88d42907f4cef192284a8d71e2eb25d798d6228736b147a09021671",
+    "base/runs": "612781dd39fc7789abe2dffa6efcfa0aa4b680834d25db5b20e6ca7909a9609d",
+    "base/workflows": "d408a19d8fedc49d961d407b19679d35f6bd22d4ffa4c6fbf5f7f5344a6f08ce",
+    "checks": "cd3ac95c7e3c1788001d96977975021a344d9dc90161930410fd957f0f1e19e2",
+    "collaborators": "a525f348d8502777b9409a97100c0f450ed4bcfb601700cba34d21062e608431",
+    "commit_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "deployment_statuses": "fb52e7275bebbe774d574ac77708035d9d228caf5ce85626519d1c4a4db08ac5",
+    "graphql": "c8079b2e7d2e11d8f3b9aae7fd61a5eb221040007ae8892fa04201794c762249",
+    "jobs": "2245b7feb4dfa53d16770236b23d3e886fc14ea59eabb4249f6b40916668f713",
+    "log_contents": "8738993983ccdc13f52d3f77d2e11811effb2f423d9565bb6464934e965dbad0",
+    "surface/actions_permissions": "25842d2b9453f8e5fed37a198b9a268cf6aee1225690bf5fb91a89e8542ea718",
+    "surface/automated_security_fixes": "8a0a15ba9d18fbed2294a579cbae9c005dd2fc71b83c56a28e7f55f984e8771f",
+    "surface/branches": "ea3294ee4feb019e2e35c4882a96807b452cc307df8c16602f15497f0bc99622",
+    "surface/code_scanning": "5547f4c73465214a091963b2e70ca1331dc3dc76a58c3d91966d0cfb348962b5",
+    "surface/code_security_configuration": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+    "surface/dependabot": "a75019e06dfded2c0b8a3c17e844fe8d5bde12b716fd21a6867ff4dcfff1ed9c",
+    "surface/deployment_branch_policies": "5b2f5a10055778602f1dc91780de12e8d10e8d5785367675fe5b18b16d885f02",
+    "surface/deployment_protection_rules": "8ebbe4538a833927b69cd64a669741e5ada91dd883c353c8626843e544af33a7",
+    "surface/env_secrets": "49aa3fe9d1aad31baced1bde8304d7f02be04ed37e0c2ddadd8cb74c6ed7716e",
+    "surface/env_variables": "d70c286581f28bd2b147c7d2d62824a9c091865e2aed7fca1f151a6347490124",
+    "surface/environment": "e6927b867d7836da75b210c93a07c5899621bf6307228f69d0b3264203e8f780",
+    "surface/environments": "64085f9341870df1ced97771f3c66ab9a0399b9856e62d4ccbcedd2a07416889",
+    "surface/fork_approval": "a98dd8c4b9aa1f925aa7156adabba3ecaa3129398f010b9f9ea17c747f590e7a",
+    "surface/fork_permissions": "b02b39c5f551845d4983ff38b6967f4acdcc4d05b4550d4e8d609a8e48b94de3",
+    "surface/forks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/hooks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/issue_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/issue_events": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/issues": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/main_protection": "2fb9628dc2d4b321f14a613e7263343126d1f62b67ef489ddf6e5ba98aa575e8",
+    "surface/pages": "4f85e4faa30c78ccd743d62e76176edf23ebc3fc8fecb44ceacfaa219a755ee5",
+    "surface/pulls": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/releases": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/repo_secrets": "c0f46bfb73dbb41d36cf2ea8f1d63ee7d6a498bde0a8e18b02796a41193de5da",
+    "surface/repo_variables": "ca54fa494652031e6b1212b5ea847b7d0b7d919e24df2654ce6d771d9d0f7f66",
+    "surface/repository": "d9c43fe2c2fb0e71d3ce5193b836c47748f84442715845eade16642d3ded37a0",
+    "surface/retention": "c442a43edd5cf6d7110c96e43860888e18bafa4586118fe0267b75780cbdb463",
+    "surface/review_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/rulesets": "2fb9628dc2d4b321f14a613e7263343126d1f62b67ef489ddf6e5ba98aa575e8",
+    "surface/secret_scanning": "31140ea22e43b342ce4b02867adff8b5a8226540b39535fbca91b497bff3c3e4",
+    "surface/tags": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/vulnerability_alerts": "8c8ac6c2613a31e07fd81b9a35f6b37a34e54d3a4f63972e00313244113fa4b4",
+    "surface/workflow_permissions": "fb00f7e1aab4200684b287b484155d5521381f4593552beed4bbb5f9b1622ede",
+    "teams": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "log_contents": [
+    {
+      "run_id": 33618605891,
+      "member_count": 2,
+      "content_sha256": "36e0ce9d929838c17e96f2b54b0f2a74f1ee880f07efa3003c3105051902dd43"
+    },
+    {
+      "run_id": 33619561988,
+      "member_count": 2,
+      "content_sha256": "cb270a20e659791f9d1c4eb19715a9b965c41a63878169314ae88ce4c4aad515"
+    },
+    {
+      "run_id": 33620193541,
+      "member_count": 2,
+      "content_sha256": "efd886e31c9e0063aef607a65b126df544910359fe15115a679f29ff6249ad52"
+    },
+    {
+      "run_id": 33620819750,
+      "member_count": 2,
+      "content_sha256": "f49228560fdaabadb89f6cf7f0549ba9b7243b2e9ae6572bb7ce91988f72f31f"
+    },
+    {
+      "run_id": 33621319168,
+      "member_count": 2,
+      "content_sha256": "d3cab9a3fc6e53e8a1163ac1facfcd57fd41f8672e3c9acddf0f67950b76eb98"
+    },
+    {
+      "run_id": 33622336751,
+      "member_count": 4,
+      "content_sha256": "019640cc1eee760df20e7c1944e68a756eed05f54c1e558e3731b66c7773c4c3"
+    },
+    {
+      "run_id": 33622943035,
+      "member_count": 4,
+      "content_sha256": "58abae9967a548e60d2fd1ce33e77a31a7afc4517b211387be715b74fed21ff2"
+    },
+    {
+      "run_id": 33623725680,
+      "member_count": 4,
+      "content_sha256": "3ca580cb42c0a5e67d205199cc8287da088712308115e10e25e5b02c3bd323ae"
+    },
+    {
+      "run_id": 33624498036,
+      "member_count": 4,
+      "content_sha256": "8b3117052385d3a6953018273829c991e9f170830e8955db61c4d59f1e3438de"
+    },
+    {
+      "run_id": 33627948449,
+      "member_count": 4,
+      "content_sha256": "3377001060da55e02eedff830926e33de9b0dfe1b20e29dfefc00e0dccb0331f"
+    },
+    {
+      "run_id": 33628703809,
+      "member_count": 4,
+      "content_sha256": "bb59fded47cb242a9816fc7db2f8bca9bcc22f25498cd120b1158ef4a61839f1"
+    },
+    {
+      "run_id": 33629315937,
+      "member_count": 4,
+      "content_sha256": "c72f5fb9489f4546e74bb82c8d28f20085c173d13726b5b5d2542e32313e3a92"
+    },
+    {
+      "run_id": 33630033807,
+      "member_count": 4,
+      "content_sha256": "ae7a8f33bb0f65be5a52db3c226351761ddf7f6db7f5b156d442e5925e0bec8a"
+    },
+    {
+      "run_id": 33630695772,
+      "member_count": 4,
+      "content_sha256": "256e43baa3fdcb03ac6d8572847400da9860144aae92a909cdeef59fcdccf876"
+    },
+    {
+      "run_id": 33631411293,
+      "member_count": 4,
+      "content_sha256": "75bd0ae10da85dea77b6c4d8d542926f07bef073de5691b4cc7401b9f59c5096"
+    },
+    {
+      "run_id": 33632233923,
+      "member_count": 4,
+      "content_sha256": "a81599d7689e1ecece26c19cb610f7e6f14797c8e023e21ff77f39f7b7c05c35"
+    },
+    {
+      "run_id": 33636367272,
+      "member_count": 4,
+      "content_sha256": "1fe944479f7d2d9081272f3173b4a4f1cf667d12be86fe8745e6d936ea57c0ac"
+    },
+    {
+      "run_id": 33640314126,
+      "member_count": 4,
+      "content_sha256": "add0885e1d50525ccb5effa74de2eb5336545e8ca13f1e45f0bdd1a863ce976e"
+    },
+    {
+      "run_id": 33647656445,
+      "member_count": 4,
+      "content_sha256": "4fb34c30dcd779c855b4c27d9dccf16525397c455ac36df87a8e092d7e941936"
+    },
+    {
+      "run_id": 33650123093,
+      "member_count": 4,
+      "content_sha256": "ef8db8cdaa8eb85b73498c66d1568aed31f00756b67252b2f5de7fa6c8e58fab"
+    },
+    {
+      "run_id": 33651963035,
+      "member_count": 4,
+      "content_sha256": "d798a080231020da1734fb79d49de7cf684fffe3efb4c970d5bbc11253079344"
+    },
+    {
+      "run_id": 33653988673,
+      "member_count": 4,
+      "content_sha256": "28fb4d55555150878b58626fef8c9e3aeac8a8586f70a10896e613a55bc3fbd6"
+    },
+    {
+      "run_id": 33655877488,
+      "member_count": 4,
+      "content_sha256": "48c222edb67e6dec596570d1a2ebfd74ca856580538514b0df5a2947da7e7f7e"
+    },
+    {
+      "run_id": 33680154193,
+      "member_count": 4,
+      "content_sha256": "405b35fee229803e0562533b28eb7ec1e81e9d9af3d01d582e85c059a659283d"
+    },
+    {
+      "run_id": 33734739980,
+      "member_count": 4,
+      "content_sha256": "468cc23e0e1982c175c1a5fa90c4f7eae289dcfdcf1737da1cb57f4162be9fe1"
+    },
+    {
+      "run_id": 33735505663,
+      "member_count": 4,
+      "content_sha256": "32a53214762ca5bfbf9e34618830408979e9694cdb0e22bfcb2115a90528ef0c"
+    },
+    {
+      "run_id": 33737170991,
+      "member_count": 4,
+      "content_sha256": "5de2f9571ea806e312f50472e40145a8bb5304f9c238cd0e4dade0e8631587d3"
+    },
+    {
+      "run_id": 33749015890,
+      "member_count": 4,
+      "content_sha256": "2a1a1b998f280a65f6eba746e32b1b9a4e83ab29680b47f986a38171bfa0a8d3"
+    },
+    {
+      "run_id": 33749654199,
+      "member_count": 4,
+      "content_sha256": "497be85fbb89019549a02beb08abf1465f0e7a010e3a1143a3309509dc4c1d42"
+    },
+    {
+      "run_id": 33750280316,
+      "member_count": 4,
+      "content_sha256": "8b677430d13291e3366acc4d0b171f41e373699f9e609263175671f192c744ef"
+    },
+    {
+      "run_id": 33750818328,
+      "member_count": 4,
+      "content_sha256": "207614256ef57d7cd4ada7cb74292a517a7582bfc3b7cd5a8a2e415212b2766a"
+    },
+    {
+      "run_id": 33751528044,
+      "member_count": 4,
+      "content_sha256": "8af4d07bfb61ad208ee2451e3306de83e24acb4ac51860a2e0b8aeb7b9956beb"
+    },
+    {
+      "run_id": 33751528558,
+      "member_count": 4,
+      "content_sha256": "6a350111599d63b63d2ad037c19c1fdc703805355143d59908a1fccd038cd83d"
+    },
+    {
+      "run_id": 33752361428,
+      "member_count": 4,
+      "content_sha256": "f11e803fe415143d5518f469a14874c53282608c8db73e4b8fc7aa90ccbd8666"
+    },
+    {
+      "run_id": 33753024645,
+      "member_count": 4,
+      "content_sha256": "5e54636bf705d2b50c91678cbfc6e717f4216da6c673f7c1ea4515ba7ab12a61"
+    },
+    {
+      "run_id": 33753592589,
+      "member_count": 4,
+      "content_sha256": "70018722b7771a9b42aacabc0bd0ef2138977a2c9b2e7765516f7c24abcf483d"
+    },
+    {
+      "run_id": 33754289126,
+      "member_count": 4,
+      "content_sha256": "89830777ee70cf1f975c9ba051c7ef92df94703f2d93def89ef79f1793708597"
+    },
+    {
+      "run_id": 33755626287,
+      "member_count": 2,
+      "content_sha256": "6e18c541e4cb91e29e43ea16c64fe1ff54ae8d626a7111ba48948c5876b2d5bc"
+    },
+    {
+      "run_id": 33757825727,
+      "member_count": 4,
+      "content_sha256": "349548b0eede779af29a7026b189b4c420df3f2ffd8444e9f40cc2ef493b9043"
+    },
+    {
+      "run_id": 33758707760,
+      "member_count": 4,
+      "content_sha256": "1dea52c8340cbdc4f7408280724397e15d4dbce33fdc56c8096087473d20a214"
+    },
+    {
+      "run_id": 33760658067,
+      "member_count": 4,
+      "content_sha256": "580b3ec221586d69538544be2025b4a37294541eb0c8c9409480b301280ca0f6"
+    },
+    {
+      "run_id": 33761455820,
+      "member_count": 4,
+      "content_sha256": "d87e90b9ed238745e64cdedd53433032fbd13bf3cd36173bab0224c7d02fbf69"
+    },
+    {
+      "run_id": 33763437194,
+      "member_count": 4,
+      "content_sha256": "fefdbd5e9c45ff0caa39a629f5ffbf35d7fec44b285174ee231f7f3b621f3475"
+    },
+    {
+      "run_id": 33764325699,
+      "member_count": 4,
+      "content_sha256": "a2e690c5a6b887182cc2df8d3e96f75856a68c8274c3708d44c0fbc7459d2bcc"
+    },
+    {
+      "run_id": 33790228307,
+      "member_count": 2,
+      "content_sha256": "b13c4012182686e3927d82ab449aebe1469f849d02250f6ae1eb22ce906a0a74"
+    },
+    {
+      "run_id": 33790809230,
+      "member_count": 4,
+      "content_sha256": "26ec0e06a10636a2457abf23960624f5f2d17f5e01cf3091c0ceb4c4daa11d1d"
+    },
+    {
+      "run_id": 33791539888,
+      "member_count": 4,
+      "content_sha256": "fb8b7216d4552a3ee72af416978377390bab603540a69f141b8ff1d9a6d002be"
+    },
+    {
+      "run_id": 33850174450,
+      "member_count": 4,
+      "content_sha256": "7052e6c83cdcbcbd50c990d671f463c86d9ad8611ed0c0fe88a3c8030937778c"
+    },
+    {
+      "run_id": 34216472139,
+      "member_count": 2,
+      "content_sha256": "191f9bc700957ce8b3de4ce3ca9b22e18c39092fed16857c8dc397609069d09f"
+    },
+    {
+      "run_id": 34220014720,
+      "member_count": 4,
+      "content_sha256": "cda933887a896e72364bc4ea174b90156d5322e8e85e133567ed5500d69648be"
+    }
+  ],
+  "consolidated_log_payload_proof": [
+    {
+      "run_id": 34216472139,
+      "previous_members": 14,
+      "current_members": 2,
+      "new_or_changed_member_payloads": 0,
+      "current_members_projection": [
+        [
+          "1_repository-gates.txt",
+          92729,
+          "7ede1b0c1919e47d7e756d4c2387aa2fdf022c5e639c650ecba0331ba226af3c"
+        ],
+        [
+          "repository-gates/system.txt",
+          602,
+          "cc93561b49370c08daea04e1f128b0ba72f2fe12b79baa41244d0531bf68f4ce"
+        ]
+      ]
+    },
+    {
+      "run_id": 34220014720,
+      "previous_members": 34,
+      "current_members": 4,
+      "new_or_changed_member_payloads": 0,
+      "current_members_projection": [
+        [
+          "0_deploy-production.txt",
+          40660,
+          "c98639427a3a1c0bfa1c940977ad42081bb82d6fc79dfa39b772d2d4fcc04465"
+        ],
+        [
+          "1_repository-gates.txt",
+          103536,
+          "7b16786acccdd2e5d176de9dbea1466cdd8f80a1b72e6b6985ca69c6620f2c2c"
+        ],
+        [
+          "deploy-production/system.txt",
+          603,
+          "73e229db07a7723c5bea1f8c3595feaa8ba49f4286714c43e58ccec464ff18d0"
+        ],
+        [
+          "repository-gates/system.txt",
+          602,
+          "19ca2bb8575394bffd2c15c7bffd7a3e00e2b15243cf6087ca5160f2aaa887d6"
+        ]
+      ]
+    }
+  ]
+}
+```
+
+</details>
+
+```json
+{
+  "accepted_findings": {
+    "PUB-01_identifier_fingerprints": [
+      "2043c31eacb2efa76123043fcd652ac45bd19b121db1ddaa537e86b3473bf73d",
+      "6eb4ae5e01c0f6096753cd0a167d433f31469dc03ec3878055cbb63360be2188",
+      "79be299e993c11e1acb5c43a8f8cf6e58eac64f503cf29a1737a5c0592ac3631",
+      "953333ebbd9b6118fadebc7f2b6fe9926b76adb22c6037788ce443d91d5cf71d",
+      "bf06620b01578c7d80cd90f1c8a35adcc722f0093c2752affe3fd9f641c76976",
+      "d5b7211207fd642904a90a71f7689e4a23941de21703df7f13f354db4bf9923e"
+    ],
+    "PUB-02_retained_archives": [
+      {
+        "archive": "3e4813bebbad2155ca473fe022cbb34196b1eadf85453f37bc675259b82cb453",
+        "id": 9907668126,
+        "members": "215ddd7bc9bec5b00c0bbc22d6e8385e9979a9d2e66bff99562cbc900950be58",
+        "size": 3482130
+      },
+      {
+        "archive": "bfbd790230ffaf37d5f6dc89fd792484c26a2062a32d8c50ab72e9ee7ec6afac",
+        "id": 9928300866,
+        "members": "d1dae1f17e6658b019c3edf889376649e684923f4d7fb585e181c4a2738eb720",
+        "size": 3482132
+      }
+    ]
+  },
+  "expected_current_visibility": "private",
+  "exposure_sha256": "ba3840a74caa51dafc522ca768fbb622f539dfd6bab2dfb9e82fe9a7cd909356",
+  "kind": "cumpa.remote-publication-snapshot/v1",
+  "later_local_evidence_commits_excluded": true,
+  "npm_publication_authorized": false,
+  "only_proposed_mutation": {
+    "visibility": "public"
+  },
+  "private_protection_sha256": "b77330724b28ed9ba6a1a2ed2c5c56ac3f17188c04e6beae5709c22d7d6bdec8",
+  "protection_disposition_sha256": "6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48",
+  "refs": [
+    [
+      "refs/heads/main",
+      "ff72519969da8d2c0761c9533ccb27b809cd17bb"
+    ]
+  ],
+  "repository": "Ship-With-AI/cumpa",
+  "repository_id": 1327753770,
+  "repository_node_id": "R_kgDOTyPqKg",
+  "reviewed_successful_deployment_ids": [
+    6326463240
+  ],
+  "reviewed_terminal_run": {
+    "commit": "ff72519969da8d2c0761c9533ccb27b809cd17bb",
+    "conclusion": "success",
+    "id": 34220014720
+  },
+  "source_bindings": {
+    ".github/workflows/deploy-supabase-production.yml": "0cc92062e9b5ccefc4ae68ddf9494be6d5fec4f03ab07d2df67262293b6fe2d0",
+    ".planning/phases/03-distribution-contract-legal-boundary/03-LICENSE-APPROVAL.md": "da8131b0cf7d76516dafee5c5ce8acb8d57904d9d6c1e49f89f93defa67eff6f",
+    ".planning/phases/03-distribution-contract-legal-boundary/03-RIGHTS-REVIEW.md": "d65e5f780c5469757fefef685100a1d4bc6ceaded20b1234b010e8d2b8136e94",
+    "LICENSE": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+    "README.md": "7eba4475ecf0d610ee57afb555c2afc328dcd8c604ae41e56b4ab1cfd1f0e065",
+    "THIRD_PARTY_NOTICES.md": "847c9cb7c9e3585ed7ae518208ac934c5658f0fdb01ad2f2a20b50f56015d143",
+    "docs/distribution-operations.md": "5d36cfaac8164567eaaf9775cd5a0c03db028a34e01df4ba49fa14de174f096f",
+    "docs/support-service-operations.md": "a453d5a1c86d34f553ce601082572307542fcc48c89c244254e4c49fb79b1515",
+    "package-lock.json": "896aefb20316dc2a6588b28eb3deb2bb5483388dc59daf51f2efd839e1b2df1f",
+    "package.json": "5ae67356a55c01be628cc4f82d4debba272984d9a28e1824069878e7ded2c5b3",
+    "scripts/verify-supabase-support.mjs": "6e83bb0ea66015d6ab446a0109e6730ad849dd68299ff14584316e9eb224110d",
+    "tests/e2e/support-payment.spec.ts": "2aa85ba8fa18c284de82a3732369775becce2e5655b5bbcecfdfd93dab98d33d",
+    "tests/e2e/support-restore.spec.ts": "de11d5bd17a391f96d2639accfd5ebcfe239ce5454279d416f1b2f72f132f473"
+  },
+  "source_target_oid": "ff72519969da8d2c0761c9533ccb27b809cd17bb",
+  "source_tree_oid": "1b0f095862fba8ead7c92d260d0c3b72c52240a3"
+}
+```
+
+### Required renewed final authorization
+
+The exact-digest gate requires renewed authorization because the snapshot projection changed, even though no new source, protection or current log payload is being exposed. The approved visibility-only action, platform terms/consequences, existing 90-day retention and exact owner-accepted PUB-02 notice risk are unchanged. No technical re-test or new credential setup is requested.
+
+Send exactly:
+
+`FINAL PUBLICATION AUTHORIZATION: Ship-With-AI/cumpa snapshot e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18 main ff72519969da8d2c0761c9533ccb27b809cd17bb protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48`
+
+No authorization for this corrected snapshot has been received. After receiving it, repeat the full **47-collection** current capture with all log-content and exact artifact bindings, recheck identity/private visibility, main, legal assent, scoped credential and terminal producers, then perform only the authorized visibility operation if identical. Every earlier proposal/authorization below is historical and does not grant broader mutation authority.
+
+### Earlier final authorizer statement and readiness
 
 - **Authorizer:** Alessandro Magionami, direct user message.
 - **Captured:** 2026-09-08T12:25:52Z.

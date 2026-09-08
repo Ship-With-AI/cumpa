@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "03-03 final visibility authorization received; scoped identity confirmed; running complete no-drift preflight before one public conversion"
-last_updated: "2026-09-08T12:25:52Z"
+stopped_at: "03-03 visibility not changed: GitHub consolidated two log ZIPs; stable content-bound snapshot e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18 awaits renewed final authorization"
+last_updated: "2026-09-08T12:42:19Z"
 last_activity: 2026-09-08
-last_activity_desc: Recorded Alessandro's exact FINAL PUBLICATION AUTHORIZATION for snapshot 8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4 and approved protection disposition; visibility-scoped credential read matches the immutable private repository.
+last_activity_desc: Final preflight stopped only on changed ZIP representations for two recent runs. Every retained payload matches prior reviewed bytes; all other collections match. Corrected log-content projection is verified; visibility credential remains ready and no public conversion occurred.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 executed; final publication authorization received; 03-03 Task 5 preflight in progress
-Status: Exact public-visibility decision and scoped authentication are recorded. Running complete no-drift checks before the visibility-only action.
-Last activity: 2026-09-08 — Final statement identifiers match despite a line break after main. No visibility mutation yet; source remains ff72519 and all later local evidence commits remain excluded.
+Plan: 2 of 3 executed; final review complete; content-bound snapshot correction awaits renewed exact final authorization
+Status: Source ff72519 remains private. No new content/protection finding; GitHub ZIP consolidation required stable decompressed-log bindings and a new exact snapshot digest.
+Last activity: 2026-09-08 — Current final snapshot e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18 binds all 50 log-content projections and 20 exact artifact ZIPs. ZIP compression/order changes are ignored; changed member content is still detected. No new token or source change is needed.
 
 Progress: [███████░░░] 67%
 
@@ -84,7 +84,7 @@ None yet.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives remain backed up privately. Owner now directs retaining remote artifacts 9907668126 and 9928300866 despite PUB-02; record unremediated owner-accepted notice risk, not verified third-party permission/compliance. Do not delete them or change retention settings.
 - 03-03 private preparation is complete at ff72519969da8d2c0761c9533ccb27b809cd17bb. Run 34220014720 and production deployment 6326463240 passed; exact source/run/receipt hashes, non-destructive live smoke and zero authority were verified. No more source push is authorized. Existing artifacts/backups remain retained under unchanged effective 90-day GitHub retention.
-- FINAL PUBLICATION AUTHORIZATION is now recorded for snapshot 8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4, main ff72519969da8d2c0761c9533ccb27b809cd17bb and protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48. The new visibility credential successfully read immutable private repository 1327753770; repository-only/one-day Administration-write scope and the no-write window are operator-confirmed. Complete exact preflight before one visibility-only mutation; no broad fallback, extra configuration change or later source push is permitted.
+- Renewed FINAL PUBLICATION AUTHORIZATION must bind content-bound snapshot e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18, unchanged main ff72519969da8d2c0761c9533ccb27b809cd17bb and unchanged protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48. Earlier 8f67d2ce authorization was not executed because GitHub consolidated two recent log archives. All retained payload hashes and all other approved collections are unchanged. Use the ready visibility-scoped credential, continue the operator no-write window and recheck all 47 collections using log CONTENT bindings (not ZIP transport bytes) before one visibility-only operation.
 
 ### Roadmap Evolution
 
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T12:25:52Z
-Stopped at: Running final publication preflight after exact human authorization and successful scoped identity read. Compare the complete approved snapshot/protection/assent/ref state, then change only existing repository visibility if identical. Verify public source/LICENSE/Issues without authentication and actual approved protections afterward; stop honestly on post-exposure failure, with no automatic rollback. Revoke temporary credentials after verified completion and keep later evidence commits local.
+Last session: 2026-09-08T12:42:19Z
+Stopped at: Corrected final snapshot checkpoint. Await exact FINAL PUBLICATION AUTHORIZATION for e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18 / main ff72519969da8d2c0761c9533ccb27b809cd17bb / protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48. Visibility token works; no new token setup or code change. All 50 logs now bind sorted decompressed member names/sizes/hashes; only 20 artifact ZIPs remain byte-bound. Complete current capture before the authorized visibility action, then verify public source and protections. No visibility mutation has occurred and no later local evidence commit may be pushed.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
