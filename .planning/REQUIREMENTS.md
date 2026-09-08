@@ -4,23 +4,25 @@
 **Core Value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback an agent can act on.
 
 ## v1.5 Requirements
+**Decision authority:** 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary direction. Historical proprietary approvals do not approve the MIT text; publication remains pending refreshed exact-text assent from both licensors and exposure review.
 
-### Proprietary npm Package
+
+### MIT npm Package
 
 - [ ] **PKG-01**: Users can globally install public `@shipwithai/cumpa@1.5.0` and run the `cumpa` command.
 - [ ] **PKG-02**: Users can run `npx --yes @shipwithai/cumpa@1.5.0` without a prior global installation.
 - [ ] **PKG-03**: Users running `cumpa --version` see exactly `1.5.0` and receive the existing Node.js 24+ and Git prerequisite guidance.
 - [ ] **PKG-04**: Users receive every compiled Node and browser asset required to complete the existing review workflow from the installed package.
 - [ ] **PKG-05**: Public package contents exclude TypeScript source, source maps or embedded source content, tests, fixtures, planning files, workflows, credentials, local review state, marketplace-skill files, and Git repository data or history.
-- [ ] **PKG-06**: Package metadata and public documentation identify Cumpa source and compiled releases as proprietary and source-available, include the exact terms approved by both Alessandro Magionami and Manuel Salvatore Martone and required third-party notices, and explain the permitted use/copy/modification rights and redistribution limits while preserving GitHub-required platform, statutory, and third-party rights.
-- [ ] **PKG-07**: The existing `Ship-With-AI/cumpa` repository, source, and reviewed Git history become public only after both licensors approve the exact license and rights/sensitive-material review is resolved; credentials and confidential operational material are not exposed, and destructive remediation or history rewriting requires separate approval.
+- [ ] **PKG-06**: Package metadata and public documentation identify Cumpa source and compiled releases as standard MIT-licensed, include the exact MIT text with Alessandro Magionami & Manuel Salvatore Martone copyright and required third-party notices, and explain that commercial use, modification, redistribution, sublicensing, and resale are permitted while third-party rights remain.
+- [ ] **PKG-07**: The existing `Ship-With-AI/cumpa` repository, source, and reviewed Git history become public only after both licensors give refreshed exact-text MIT assent and rights/sensitive-material review is resolved; credentials and confidential operational material are not exposed, and destructive remediation or history rewriting requires separate approval.
 
 ### Trusted Publication
 
-- [ ] **REL-01**: Maintainers can create the npm package through one usable, proprietary, non-`latest` bootstrap release using short-lived interactive authorization, then revoke that authorization before stable publication.
+- [ ] **REL-01**: Maintainers can create the npm package through one usable, MIT-licensed, non-`latest` bootstrap release using short-lived interactive authorization, then revoke that authorization before stable publication.
 - [ ] **REL-02**: Maintainers can publish `@shipwithai/cumpa@1.5.0` from the exact approved public `Ship-With-AI/cumpa` repository and fixed release workflow through npm trusted publishing without an npm automation token or another long-lived publication credential.
 - [ ] **REL-03**: Maintainers inspect, install, and publish the same immutable `.tgz` bytes so publication cannot rebuild or substitute an unreviewed archive.
-- [ ] **REL-04**: Public npm metadata accurately identifies the scoped package, version, executable, Node requirement, proprietary license file, and exact `Ship-With-AI/cumpa` repository identity; the self-contained user README links to its verified public Issues page and omits a separate homepage or invented contact channel.
+- [ ] **REL-04**: Public npm metadata accurately identifies the scoped package, version, executable, Node requirement, MIT license file, and exact `Ship-With-AI/cumpa` repository identity; the self-contained user README links to its verified public Issues page and omits a separate homepage or invented contact channel.
 - [ ] **REL-05**: Maintainers have a documented public-source provenance policy that preserves eligible automatic npm provenance, defines the release evidence needed to verify actual attestations, and permits only evidence-backed public-source and provenance claims. The publication phase records the actual result rather than treating OIDC authentication as attestation proof.
 
 ### Public Marketplace Skill
@@ -49,11 +51,10 @@
 | Feature | Reason |
 |---------|--------|
 | Unreviewed repository/history publication or destructive remediation without approval | Public source is authorized only after both licensors' approval and rights/sensitive-material review; deleting at HEAD does not remove historical exposure. |
-| Open-source license for the Cumpa application | Source and compiled releases remain proprietary; only the thin marketplace skill is MIT-licensed. |
 | Unsupported or unverified provenance claims | Preserve eligible automatic provenance, but claim only the attestation and source facts established by actual release evidence. |
-| TypeScript source, source maps, tests, fixtures, planning files, workflows, or Git data in npm artifacts | Public source availability does not change the compiled-runtime-only npm contract. |
+| TypeScript source, source maps, tests, fixtures, planning files, workflows, or Git data in npm artifacts | MIT licensing does not change the compiled-runtime-only npm contract. |
 | Obfuscation, DRM, activation, or license-server enforcement | Public compiled assets remain inspectable; access gating was not requested and would change the product. |
-| Bundling or automatically installing the CLI through the skill | CLI and skill have separate licenses, authorities, and installation lifecycles. |
+| Bundling or automatically installing the CLI through the skill | CLI and skill have separate installation lifecycles. |
 | New review behavior or protocol redesign | Existing review and agent handoff behavior is already validated; this milestone distributes it unchanged. |
 | Payment-gated review features | Voluntary support remains feature-neutral. |
 
@@ -90,4 +91,4 @@ Each active requirement maps to exactly one roadmap phase.
 
 ---
 *Requirements defined: 2026-09-06*
-*Last updated: 2026-09-07 after reconciling v1.5 with the approved proprietary source-available distribution contract; 19 active requirement IDs and phase assignments preserved*
+*Last updated: 2026-09-08 after quick task 260908-d25 superseded the 2026-09-07 proprietary source-available distribution direction with MIT Distribution; 19 active requirement IDs and phase assignments preserved*

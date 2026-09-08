@@ -8,6 +8,14 @@
 
 This redacted exposure review is not a final publishable snapshot. PUB-01 is resolved by the exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is now closed. The two legacy archives remain remote and still require separately authorized removal using scoped write credentials. No push, remote deletion, protection/configuration mutation, registry operation or visibility conversion has occurred.
 
+## Current MIT supersession — active publication blocker
+
+The 2026-09-08 MIT decision supersedes every prior proprietary-license/source binding in this review. The current `LICENSE` is the 1,104-byte standard MIT text with SHA-256 `c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d`.
+
+The historical proprietary approval digest `889614622bf0bf5da0f7f543868fe9dc9ff568e22872edcfa7b03996a15ad29a` and both related historical approvals are **not approval of these MIT bytes**. Renewed attributable exact-text assent from Alessandro Magionami and Manuel Salvatore Martone is pending; without it, no private preparation, source push, visibility conversion, package publication, or final publication authorization may proceed. This is a maintainer publication gate only: it does not add a bespoke permission requirement to MIT recipients.
+
+All earlier LICENSE/source-candidate bindings and any proprietary licensing language below are historical evidence, not current authority. The reviewed legacy-artifact removal scope, private backups, rights/sensitive-material review, security findings, exhaustive exposure requirements, protection disposition, scoped-credential requirement, and separate private-preparation/final-publication authorizations remain in force unchanged. Do not treat this supersession as clearance, artifact-removal authorization, or permission to mutate a remote.
+
 ## Exact repository and source candidate
 
 - Existing repository: Ship-With-AI/cumpa; immutable numeric ID **1327753770**, node ID **R_kgDOTyPqKg**.
@@ -21,9 +29,9 @@ This redacted exposure review is not a final publishable snapshot. PUB-01 is res
 
 Any eventual one-ref update must recheck the exact approved old OID with BOTH native ancestry and an explicit expected-old lease. No non-fast-forward, unconditional force, mirror, deletion, rewrite or additional ref is implied. Origin currently uses SSH; that broad ambient path is not approved mutation authentication.
 
-## License and candidate bindings
+## Historical proprietary license and candidate bindings
 
-Both exact-text approvals remain recorded in 03-LICENSE-APPROVAL.md, including Alessandro's own selection and his subsequent witnessed report of Manuel's own co-approval. This review does not fabricate a separate signed message or reopen those settled human facts. Initial R-01/R-02/R-03 dispositions remain exact-scope owner statements, not a general private-data allowlist.
+The following table and two recorded approvals bind the superseded proprietary candidate only. They are retained as historical evidence; the current MIT license/assent binding is the active blocker above. Initial R-01/R-02/R-03 dispositions remain exact-scope owner statements, not a general private-data allowlist.
 
 | Candidate artifact | SHA-256 |
 |---|---|
@@ -40,7 +48,7 @@ Both exact-text approvals remain recorded in 03-LICENSE-APPROVAL.md, including A
 | scripts/verify-supabase-support.mjs | c3977ba0a373053b2224e10bd0e6cd87664743a538dcb5b198d089764aa1bf1d |
 | tests/e2e/package-assets.spec.ts | 781e3dfc35c3673e30f45f8e9e6103d780a969b0d087569dcb1169499e3052c1 |
 
-The root-lock metadata change did not alter any of the 254 dependency locations, direct pins or transitive entries. The package guard and old allowlist remain intact for Phase 4. LICENSE is unchanged; no renewed license text is being inferred from this exposure review.
+The historical root-lock metadata change did not alter any of the 254 dependency locations, direct pins, or transitive entries. The package guard and old allowlist remain intact for Phase 4. This historical candidate did not contain the current MIT LICENSE; no renewed license text is inferred from this exposure review.
 
 ## Git coverage and classification
 

@@ -3,7 +3,7 @@
   "version": "1.5.0",
   "private": true,
   "description": "Local-first review of pinned Git comparisons",
-  "license": "SEE LICENSE IN LICENSE",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Ship-With-AI/cumpa.git"

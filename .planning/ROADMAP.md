@@ -7,49 +7,49 @@
 - **[v1.2 Fast Source Discovery](./milestones/v1.2-ROADMAP.md)** — Phases 09–11, 4 plans, 5/5 requirements, shipped 2026-07-30.
 - **[v1.3 Agent Review Handoff](./milestones/v1.3-ROADMAP.md)** — Phases 12–15, 14 plans, 42 tasks, 17/17 requirements, shipped 2026-08-06.
 - **[v1.4 Voluntary Support](./milestones/v1.4-ROADMAP.md)** — Phases 01–02, 22 plans, 30 tasks, 12/12 requirements, shipped 2026-09-04.
-- **v1.5 Proprietary Distribution** — Phases 03–07, 19 requirements, planned.
+- **v1.5 MIT Distribution** — Phases 03–07, 19 requirements, planned.
 
 ## Overview
 
-Proprietary distribution proceeds through five dependency-ordered outcomes. Cumpa first establishes approved proprietary source-available terms, rights and sensitive-history review, and safe publication of the existing repository and reviewed history. Maintainers then verify one complete runtime-only tarball before registry mutation, perform the usable non-`latest` bootstrap, revoke its temporary authorization, and publish stable `1.5.0` through OIDC trusted publishing from the approved public repository without long-lived credentials. Preserve eligible automatic npm provenance and substantiate release claims with verified evidence. The independently MIT-licensed ShipWithAI skill follows its separately installed CLI prerequisite. Clean global, npx, and marketplace acceptance closes the milestone without changing review or voluntary-support behavior.
+The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary source-available direction. MIT distribution proceeds through five dependency-ordered outcomes: Cumpa establishes standard MIT terms, refreshed dual-licensor exact-text assent, rights and sensitive-history review, and safe publication of the existing repository and reviewed history. Standard MIT permits commercial use, modification, redistribution, sublicensing, and resale; third-party rights remain. Maintainers then verify one complete runtime-only tarball before registry mutation, perform a usable non-`latest` bootstrap, revoke its temporary authorization, and publish stable `1.5.0` through OIDC trusted publishing from the approved public repository without long-lived credentials. Preserve eligible automatic npm provenance and substantiate release claims with verified evidence. The independently MIT-licensed ShipWithAI skill follows with a separately installed CLI prerequisite. Clean global, npx, and marketplace acceptance closes the milestone without changing review or voluntary-support behavior.
 
 ## Phases
 
-- [ ] **Phase 3: Distribution Contract & Legal Boundary** - Approve proprietary source-available terms, safely publish the existing repository and reviewed history, and establish truthful package links and provenance policy.
-- [ ] **Phase 4: Exact Runtime Tarball** - Produce one complete compiled-runtime-only tarball and verify those exact bytes before any npm release.
-- [ ] **Phase 5: Bootstrap & Trusted Stable Publication** - Establish the package with a usable non-`latest` bootstrap, revoke temporary authorization, and publish stable `1.5.0` through OIDC.
-- [ ] **Phase 6: Independent MIT Marketplace Skill** - Publish the thin MIT skill after the released proprietary CLI exists as its separate prerequisite.
+- [ ] **Phase 3: Distribution Contract & Legal Boundary** — Establish standard MIT terms, refreshed dual-licensor exact-text assent, safe publication of the existing repository and reviewed history, and truthful package links and provenance policy.
+- [ ] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release.
+- [ ] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable non-`latest` bootstrap, revoke temporary authorization, and publish stable `1.5.0` through OIDC.
+- [ ] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite.
 - [ ] **Phase 7: Clean Public-Artifact Acceptance** - Prove global, npx, and marketplace workflows from clean environments using only released public artifacts.
 
 ## Phase Details
 
 ### Phase 3: Distribution Contract & Legal Boundary
 
-**Goal**: Maintainers have approved proprietary source-available terms, a rights- and sensitive-material-reviewed public repository/history, accurate user-facing metadata, and an evidence-backed provenance policy that permits safe runtime-only package preparation.
+**Goal**: Maintainers establish standard MIT terms, refreshed dual-licensor exact-text assent, rights- and sensitive-material-reviewed public repository/history, accurate user-facing metadata, and an evidence-backed provenance policy that permits safe runtime-only package preparation.
 **Depends on**: Phase 2 (v1.4 complete)
 **Requirements**: PKG-06, PKG-07, REL-04, REL-05
 **UI hint**: no
 **Success Criteria** (what must be TRUE):
 
-  1. The exact proprietary license is approved by both Alessandro Magionami and Manuel Salvatore Martone, covers source and compiled releases with the agreed use/copy/modification permissions, preserves GitHub-required platform and third-party rights, and accompanies required notices without claiming open-source licensing.
-  2. Approved npm metadata names `@shipwithai/cumpa@1.5.0`, `cumpa`, Node.js 24+, the proprietary license file, and the exact `Ship-With-AI/cumpa` repository; its self-contained user guide links to the verified public Issues page and omits a separate homepage.
-  3. The existing `Ship-With-AI/cumpa` repository and reviewed history are public only after both licensors approve the exact license and rights/sensitive-material review is resolved; no credentials or confidential operational material are exposed, and destructive remediation or history rewriting requires separate approval.
+1. Standard MIT for Cumpa source and compiled releases is assented to in its exact text by both Alessandro Magionami and Manuel Salvatore Martone before publication, permits commercial use, modification, redistribution, sublicensing, and resale, preserves third-party rights and notices, and adds no downstream conditions.
+2. Approved npm metadata names `@shipwithai/cumpa@1.5.0`, `cumpa`, Node.js 24+, an MIT license file, and the exact `Ship-With-AI/cumpa` repository; the self-contained user guide links to the verified public Issues page and omits a separate homepage.
+3. The existing `Ship-With-AI/cumpa` repository and reviewed history are public under standard MIT only after both licensors give refreshed exact-text MIT assent and rights/sensitive-material review is resolved; no credentials or confidential operational material are exposed, and destructive remediation or history rewriting requires separate approval.
   4. The documented release policy preserves eligible automatic npm provenance, defines the public-source/attestation evidence Phase 5 must verify, and forbids unsupported claims; OIDC authentication alone is not attestation proof.
 
-**Plans**: 2/3 plans executed
+**Plans**: 2/3 plans executed under the superseded proprietary contract; their records remain historical. Refreshed MIT assent and the remaining publication plan are pending.
 
 Plans:
 **Wave 1**
 
-- [x] 03-01-PLAN.md — Rights, notices, and dual-licensor exact-text approval
+- [x] 03-01-PLAN.md — Historical proprietary rights, notices, and dual-licensor approval record
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Wave 2** *(historical proprietary work)*
 
-- [x] 03-02-PLAN.md — Guarded package metadata and truthful user/release documentation
+- [x] 03-02-PLAN.md — Historical proprietary package metadata and truthful user/release documentation record
 
-**Wave 3** *(blocked on Wave 2 completion)*
+**Wave 3** *(pending refreshed MIT assent and publication review)*
 
-- [ ] 03-03-PLAN.md — Reviewed private preparation and authorized public-source transition
+- [ ] 03-03-PLAN.md — Reviewed MIT preparation and authorized public-source transition
 
 ### Phase 4: Exact Runtime Tarball
 
@@ -67,13 +67,13 @@ Plans:
 
 ### Phase 5: Bootstrap & Trusted Stable Publication
 
-**Goal**: Users can obtain the proprietary Cumpa CLI from public npm while maintainers publish stable releases from the approved public repository without long-lived npm credentials and record verified provenance outcomes.
+**Goal**: Users can obtain the MIT-licensed Cumpa CLI from public npm while maintainers publish stable releases from the approved public repository without long-lived npm credentials and record verified provenance outcomes.
 **Depends on**: Phase 4
 **Requirements**: PKG-01, PKG-02, REL-01, REL-02
 **Success Criteria** (what must be TRUE):
 
-  1. A complete, usable proprietary bootstrap release exists under a non-`latest` tag through short-lived interactive authorization, and that authorization is revoked before stable publication.
-  2. The fixed release workflow in the approved public `Ship-With-AI/cumpa` repository publishes the reviewed `@shipwithai/cumpa@1.5.0` tarball through GitHub OIDC trusted publishing without long-lived publication credentials, preserves eligible automatic provenance, and records verified attestation results under the Phase 3 release policy.
+1. One complete, usable MIT-licensed bootstrap release exists under a non-`latest` tag through short-lived interactive authorization, and that authorization is revoked before stable publication.
+2. A fixed release workflow in the approved public `Ship-With-AI/cumpa` repository publishes the reviewed MIT-licensed `@shipwithai/cumpa@1.5.0` tarball through GitHub OIDC trusted publishing without long-lived publication credentials, preserves eligible automatic provenance, and records verified attestation results under the Phase 3 release policy.
   3. Public npm resolves exact `1.5.0` for both `npm install --global @shipwithai/cumpa@1.5.0` and `npx --yes @shipwithai/cumpa@1.5.0`, with the global install exposing the `cumpa` command.
 
 **Plans**: TBD
@@ -85,7 +85,7 @@ Plans:
 **Requirements**: SKL-01, SKL-02, SKL-03
 **Success Criteria** (what must be TRUE):
 
-  1. Coding-agent users can install the existing Cumpa skill from the public ShipWithAI marketplace, where the skill carries its own MIT license rather than the CLI's proprietary terms.
+1. Coding-agent users can install the existing Cumpa skill from the public ShipWithAI marketplace; the skill carries its own MIT license and delegates to the separately installed MIT Cumpa CLI.
   2. When `cumpa` is absent, the installed skill stops with the exact npm installation command and the Node.js 24+ and Git prerequisites instead of bundling or silently installing the CLI.
   3. With `@shipwithai/cumpa@1.5.0` installed separately, the skill delegates Git grounding, diff generation, browser review, persistence, Finish semantics, and canonical output to that CLI without duplicating application behavior.
 

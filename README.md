@@ -215,9 +215,9 @@ Binary, non-UTF-8, oversized, symlink, submodule, and unsupported mode/type entr
 
 ## License and independent notices
 
-Cumpa source and compiled/object releases are **proprietary source-available**, not open source. [LICENSE](LICENSE) is the controlling application license: it permits free personal/commercial use, internal copies and modifications, and perpetual compliant use of an acquired version. General public redistribution is restricted, with the stated statutory, prior-license, independent third-party and applicable GitHub-platform exceptions preserved. Public readability does not grant a broader application license.
+Cumpa is open source under the [MIT License](LICENSE). You may use, copy, modify, distribute, sublicense, and sell copies, including in commercial products, provided you retain the required copyright and permission notices. The software is provided without warranty.
 
-Required independent grants and attributions remain in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Neither the application license nor the skill's separate MIT grant replaces third-party terms. Read the full license and notices rather than treating this summary as an additional grant.
+Required independent grants and attributions remain in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The application and the separately distributed marketplace skill use MIT; third-party components retain their own licenses and notices.
 
 ## Voluntary support
 

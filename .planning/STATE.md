@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.5
-milestone_name: Proprietary Distribution
+milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "03-03 removal-only checkpoint: Projects resolved; approve exact two-artifact proposal and supply repository-selected expiring Actions-write authority"
-last_updated: "2026-09-08T06:34:09.956Z"
+stopped_at: "MIT cutover prepared; refresh both licensors' exact-text assent and publication bindings before continuing 03-03; existing removal-only gate remains"
+last_updated: "2026-09-08T07:28:18.334Z"
 last_activity: 2026-09-08
-last_activity_desc: Authenticated Projects inventory returned zero with no next page. Both remote artifact digests and both private backups still match. Await exact removal approval and scoped write credential.
+last_activity_desc: Prepared the standard MIT license and aligned package metadata and active distribution planning; prior proprietary approvals do not authorize MIT publication.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -21,7 +21,7 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-07)
+See: .planning/PROJECT.md (updated 2026-09-08)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
 **Current focus:** Phase 03 — Distribution Contract & Legal Boundary
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 complete; 03-03 inventory complete, removal-only human-action gate pending
-Status: Ready to execute
-Last activity: 2026-09-08 — Authenticated Projects inventory returned zero with no next page. Both remote artifact digests and both private backups still match. Await exact removal approval and scoped write credential.
+Plan: 2 of 3 executed; MIT license change requires renewed exact-text assent and refreshed publication bindings before 03-03 publication
+Status: Local MIT preparation complete; publication remains gated
+Last activity: 2026-09-08 — Prepared quick task 260908-d25: standard MIT licensing and active distribution reconciliation. No remote mutation or publication.
 
 Progress: [███████░░░] 67%
 
@@ -52,7 +52,7 @@ Progress: [███████░░░] 67%
 | v1.2 Fast Source Discovery | 3 | 4 | Complete |
 | v1.3 Agent Review Handoff | 4 | 14 | Complete |
 | v1.4 Voluntary Support | 2 | 22 | Complete |
-| v1.5 Proprietary Distribution | 5 | TBD | Ready to plan |
+| v1.5 MIT Distribution | 5 | TBD | In progress |
 
 *Updated after each plan completion.*
 **Per-Plan Metrics:**
@@ -68,7 +68,7 @@ Progress: [███████░░░] 67%
 
 Decisions are logged in PROJECT.md Key Decisions.
 
-- [v1.5]: Publish the existing Ship-With-AI/cumpa repository and reviewed history under proprietary source-available terms only after rights/sensitive-history review and exact-license approval by both Alessandro Magionami and Manuel Salvatore Martone. Preserve required GitHub platform and third-party rights; npm remains runtime-only.
+- [v1.5]: Standard MIT replaces the proprietary license direction and the abandoned permission-restriction interview. Commercial reuse, modification, redistribution and resale are permitted under MIT. Preserve third-party notices, runtime-only npm packaging, and maintainer rights/sensitive-history and dual-licensor exact-text publication gates; do not turn those gates into additional MIT recipient restrictions.
 - [v1.5]: Use OIDC trusted publishing from the approved public repository without long-lived credentials; preserve eligible automatic provenance and make only verified release/attestation claims.
 - [v1.5]: Verify one exact runtime-only tarball before registry mutation, then bootstrap with one usable non-`latest` release before stable OIDC publication.
 - [v1.5]: Publish the public MIT skill only after its separately installed CLI prerequisite exists; the CLI retains all review authority.
@@ -84,10 +84,12 @@ None yet.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives are backed up privately; selective remote removal still requires explicit authorization and repository-scoped short-lived credentials. Local recurrence prevention is implemented and tested, not pushed.
 - 03-03 Projects inventory is complete: zero linked projects. Next gate is explicit removal-only approval for proposal b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951 and an expiring repository-selected Actions-write credential; no remote mutation is authorized.
+- MIT LICENSE SHA-256 is c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d. Both licensors' previous approvals bind the old proprietary text only. Renew exact-text assent and refresh affected source/publication bindings before publication; no MIT approval or remote authority was inferred from the license choice.
 
 ### Roadmap Evolution
 
 - Phase 3 edited: Reconciled v1.5 Proprietary Distribution with approved public source and reviewed history; preserved all phase numbers, dependencies, and 19 requirement assignments
+- 2026-09-08: Reconciled v1.5 MIT Distribution after the user explicitly abandoned proprietary restrictions. Phase order, all 19 requirement assignments, runtime-only packaging and unrelated publication safety gates remain unchanged.
 
 ### Quick Tasks Completed
 
@@ -105,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T06:34:09.950Z
-Stopped at: 03-03 removal-only checkpoint: Projects resolved; approve exact two-artifact proposal and supply repository-selected expiring Actions-write authority
+Last session: 2026-09-08T07:28:18.334Z
+Stopped at: MIT cutover prepared; refresh exact-text assent and publication bindings before continuing 03-03; the existing removal-only approval and credential gate remains.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
