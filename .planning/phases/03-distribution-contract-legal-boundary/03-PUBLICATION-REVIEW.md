@@ -1,10 +1,553 @@
-# Private Publication Review — REPAIRED SOURCE CHECKPOINT
+# Private Publication Review — FINAL PUBLICATION CHECKPOINT
 
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
-**PRIVATE PREPARATION AUTHORIZATION:** Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` is now explicitly authorized by Alessandro; scoped authentication works. Complete no-drift preflight is required before the repaired private push.
+**PRIVATE PREPARATION AUTHORIZATION:** Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` was explicitly authorized and applied as the exact guarded private fast-forward. Resulting CI/deployment exposure is under review.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
+
+## FINAL PUBLICATION CHECKPOINT — 2026-09-08T11:39:12Z
+
+**Private preparation is complete; public visibility is NOT authorized.** The exact remotely exposed source is `ff72519969da8d2c0761c9533ccb27b809cd17bb`, tree `1b0f095862fba8ead7c92d260d0c3b72c52240a3`, in the existing private `Ship-With-AI/cumpa` repository (ID `1327753770`, node `R_kgDOTyPqKg`). No later local approval/review/STATE/SUMMARY commit is included. The only proposed next mutation is changing this same repository's visibility to public.
+
+### Completed repaired-source and deployment proof
+
+- The exact guarded repair push succeeded at `2026-09-08T11:18:40Z` after the approved full no-drift capture. Both ancestry and lease used the same immutable old OID, with one refspec and only the repository-selected short-lived credential.
+- Workflow run **34220014720** at the approved source completed **successfully**. Repository gates, the repaired **13/13** Playwright contracts, Vitest, Deno and database checks passed; the **Supabase production deployment succeeded**. Deployment **6326463240** reached success status **17983682355**.
+- The new deployment receipt binds that exact source/run, has a valid self-digest, successful coherence and non-destructive live-smoke conclusions, and zero authority before/after across all six inspected tables. Receipt bytes SHA-256: `23587e194630d7d72335d94a340b30ef54433833627d86c2ecc6fed03015fb2f`.
+- New artifact **10053481864** contains only `supabase-deployment-evidence.json`, not a runtime package. Its origin appears only as the already approved complete canonical Supabase URL; the remaining mode match is public enum vocabulary. New log identifiers match only the exact pre-existing PUB-01 fingerprints. No tested credential-pattern or new notice finding occurred.
+- New archive bindings and expanded-member projections are listed below. All members were read without extraction or execution under mode-0700 temporary storage/finally/SIGINT/SIGTERM cleanup; the directory was confirmed removed. Existing private backups were not modified.
+
+```json
+[
+  {
+    "kind": "artifact",
+    "id": 10053481864,
+    "bytes": 860,
+    "sha256": "63b51f90e47d4dea43bde8215631437adbf06ba5b9f6b5725616b7c8f1b19075",
+    "member_count": 1,
+    "expanded_bytes": 2297,
+    "member_projection_sha256": "9a419ad4d7adc48de4495381ab1b28a438d9b4fd3f9f50fba2653c546d2f4451"
+  },
+  {
+    "kind": "run",
+    "id": 34220014720,
+    "bytes": 79077,
+    "sha256": "1a8a3e4c333ad46810f105618dfaaf29d50b918c506c85c7fd06c41948f79c0a",
+    "member_count": 34,
+    "expanded_bytes": 289681,
+    "member_projection_sha256": "bcad30ffb063eb8f5558d62f8c68ff1b41359baae30fe6461bf5170c908d95d5"
+  }
+]
+```
+
+### Actual final private inventory
+
+The final terminal capture at `2026-09-08T11:27:10Z` covers **50 runs, 100 jobs, 100 check runs, 133 annotations, 70 reviewed archives, 20 unexpired artifacts and 42 deployment/status collections**. Latest deployments are **20 success / 22 failure**, all terminal. Native advertised refs and exhaustive branch/tag/PR inventories agree on only the approved main, with no tags, PRs or forks. Issues/comments/events/review comments/commit comments/releases/assets/webhooks/linked Projects/teams remain zero; two reviewed administrators remain. Disabled wiki/discussion/Pages and effective environment/Actions/security/ruleset controls were rechecked. No raw token, private configuration value or unredacted log payload is stored here.
+
+The added effective repository retention read is **90 days, maximum 90**. We have not changed retention settings and cannot promise indefinite GitHub retention. Raw organization-wide retention/fork-policy queries returned 403 and are **not claimed absent**. Current effective repository retention is directly known; public fork-approval is explicitly inapplicable while private (repository endpoint 422). The proposed disposition below accepts and requires inspection of the resulting supported public-only repository setting; the existing workflow has only a main-push trigger, not a fork-PR trigger. No inaccessible current repository content is inferred empty from those organization-wide denials.
+
+**Retained finding:** Exactly artifacts **9907668126** and **9928300866** retain their known missing-notice finding under the owner's explicit retention instruction. This remains unremediated owner-accepted risk, not third-party permission or verified notice compliance. No deletion or new risk waiver is requested.
+
+### Proposed public protection and access disposition
+
+- Make only this repository public at the exact reviewed main. Do not push another commit, mutate settings, publish npm, delete artifacts or change retention.
+- Accept public source/history and GitHub Actions log/artifact exposure, public forking/copying, visibility-change activity and the fact that later privacy changes cannot retract copies.
+- GitHub disables **all push rulesets** on conversion; the current effective/inherited count is zero. There are also zero branch/tag rulesets and classic branch-protection rules. Production has no reviewer/wait/branch/custom protection. No stronger protection is promised or silently installed.
+- Preserve the reviewed effective repository/environment/collaborator/Actions controls and 90-day retention. Public-only fork policy and newly available security features must be read after conversion under the exact supported disposition below, not guessed in advance. Increased feature availability is not a claim that scanning is enabled, complete or clean. Any unexpected weakening, new content, unreadable applicable surface or verification failure stops further mutation; no automatic privacy rollback or retraction claim is permitted.
+- [GitHub's visibility documentation](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) and [Terms D.4, D.5 and D.8](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#d-user-generated-content) apply. These include platform hosting/copying/analysis and AI-development/training rights, public viewing/forking and lawful public access. Standard MIT recipient rights remain unchanged; these are maintainer publication gates, not extra license restrictions.
+
+### Exact final authorization bindings
+
+- **Actual exposure SHA-256:** `048181737708968cd698abb2a89e90640b30faa48f1683a7f077e47296ac8f6b`.
+- **Private protection baseline SHA-256:** `b77330724b28ed9ba6a1a2ed2c5c56ac3f17188c04e6beae5709c22d7d6bdec8`.
+- **Final remote snapshot SHA-256:** `8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4`.
+- **Proposed post-public protection disposition SHA-256:** `6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48`.
+- **Expected main OID:** `ff72519969da8d2c0761c9533ccb27b809cd17bb`.
+
+Canonical serialization/projection rules below remain unchanged, with the effective retention collection added and `temp_clone_token` excluded. Capture timestamps, local approval fields and future local commits are not snapshot inputs. The exact complete collection vector and protection baseline/disposition are:
+
+<details>
+<summary>Final redacted collection and protection bindings</summary>
+
+```json
+{
+  "collections": {
+    "annotations": "1fe38e27247c62bc3eb3e6682c1690f4c32609d5399703543430089703eb00a3",
+    "archive_bytes": "2d3c4e61d8ceecc95cd1c7828acd79c63aae600dfc1f6aabe39ee1e434ecb71d",
+    "base/artifacts": "8f353744ddbbfec1cef80496c5b405cf0a541911944a879bc7e229d7757473d3",
+    "base/deployments": "d5f9b5e9d88d42907f4cef192284a8d71e2eb25d798d6228736b147a09021671",
+    "base/runs": "612781dd39fc7789abe2dffa6efcfa0aa4b680834d25db5b20e6ca7909a9609d",
+    "base/workflows": "d408a19d8fedc49d961d407b19679d35f6bd22d4ffa4c6fbf5f7f5344a6f08ce",
+    "checks": "cd3ac95c7e3c1788001d96977975021a344d9dc90161930410fd957f0f1e19e2",
+    "collaborators": "a525f348d8502777b9409a97100c0f450ed4bcfb601700cba34d21062e608431",
+    "commit_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "deployment_statuses": "fb52e7275bebbe774d574ac77708035d9d228caf5ce85626519d1c4a4db08ac5",
+    "graphql": "c8079b2e7d2e11d8f3b9aae7fd61a5eb221040007ae8892fa04201794c762249",
+    "jobs": "2245b7feb4dfa53d16770236b23d3e886fc14ea59eabb4249f6b40916668f713",
+    "surface/actions_permissions": "25842d2b9453f8e5fed37a198b9a268cf6aee1225690bf5fb91a89e8542ea718",
+    "surface/automated_security_fixes": "8a0a15ba9d18fbed2294a579cbae9c005dd2fc71b83c56a28e7f55f984e8771f",
+    "surface/branches": "ea3294ee4feb019e2e35c4882a96807b452cc307df8c16602f15497f0bc99622",
+    "surface/code_scanning": "5547f4c73465214a091963b2e70ca1331dc3dc76a58c3d91966d0cfb348962b5",
+    "surface/code_security_configuration": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+    "surface/dependabot": "a75019e06dfded2c0b8a3c17e844fe8d5bde12b716fd21a6867ff4dcfff1ed9c",
+    "surface/deployment_branch_policies": "5b2f5a10055778602f1dc91780de12e8d10e8d5785367675fe5b18b16d885f02",
+    "surface/deployment_protection_rules": "8ebbe4538a833927b69cd64a669741e5ada91dd883c353c8626843e544af33a7",
+    "surface/env_secrets": "49aa3fe9d1aad31baced1bde8304d7f02be04ed37e0c2ddadd8cb74c6ed7716e",
+    "surface/env_variables": "d70c286581f28bd2b147c7d2d62824a9c091865e2aed7fca1f151a6347490124",
+    "surface/environment": "e6927b867d7836da75b210c93a07c5899621bf6307228f69d0b3264203e8f780",
+    "surface/environments": "64085f9341870df1ced97771f3c66ab9a0399b9856e62d4ccbcedd2a07416889",
+    "surface/fork_approval": "a98dd8c4b9aa1f925aa7156adabba3ecaa3129398f010b9f9ea17c747f590e7a",
+    "surface/fork_permissions": "b02b39c5f551845d4983ff38b6967f4acdcc4d05b4550d4e8d609a8e48b94de3",
+    "surface/forks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/hooks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/issue_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/issue_events": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/issues": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/main_protection": "2fb9628dc2d4b321f14a613e7263343126d1f62b67ef489ddf6e5ba98aa575e8",
+    "surface/pages": "4f85e4faa30c78ccd743d62e76176edf23ebc3fc8fecb44ceacfaa219a755ee5",
+    "surface/pulls": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/releases": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/repo_secrets": "c0f46bfb73dbb41d36cf2ea8f1d63ee7d6a498bde0a8e18b02796a41193de5da",
+    "surface/repo_variables": "ca54fa494652031e6b1212b5ea847b7d0b7d919e24df2654ce6d771d9d0f7f66",
+    "surface/repository": "d9c43fe2c2fb0e71d3ce5193b836c47748f84442715845eade16642d3ded37a0",
+    "surface/retention": "c442a43edd5cf6d7110c96e43860888e18bafa4586118fe0267b75780cbdb463",
+    "surface/review_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/rulesets": "2fb9628dc2d4b321f14a613e7263343126d1f62b67ef489ddf6e5ba98aa575e8",
+    "surface/secret_scanning": "31140ea22e43b342ce4b02867adff8b5a8226540b39535fbca91b497bff3c3e4",
+    "surface/tags": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/vulnerability_alerts": "8c8ac6c2613a31e07fd81b9a35f6b37a34e54d3a4f63972e00313244113fa4b4",
+    "surface/workflow_permissions": "fb00f7e1aab4200684b287b484155d5521381f4593552beed4bbb5f9b1622ede",
+    "teams": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "private_protections": {
+    "access_controls": {
+      "collaborators": [
+        {
+          "login": "hoghweed",
+          "id": 127878,
+          "node_id": "MDQ6VXNlcjEyNzg3OA==",
+          "avatar_url": "https://avatars.githubusercontent.com/u/127878?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/hoghweed",
+          "html_url": "https://github.com/hoghweed",
+          "followers_url": "https://api.github.com/users/hoghweed/followers",
+          "following_url": "https://api.github.com/users/hoghweed/following{/other_user}",
+          "gists_url": "https://api.github.com/users/hoghweed/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/hoghweed/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/hoghweed/subscriptions",
+          "organizations_url": "https://api.github.com/users/hoghweed/orgs",
+          "repos_url": "https://api.github.com/users/hoghweed/repos",
+          "events_url": "https://api.github.com/users/hoghweed/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/hoghweed/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false,
+          "permissions": {
+            "admin": true,
+            "maintain": true,
+            "push": true,
+            "triage": true,
+            "pull": true
+          },
+          "role_name": "admin"
+        },
+        {
+          "login": "alemagio",
+          "id": 21338507,
+          "node_id": "MDQ6VXNlcjIxMzM4NTA3",
+          "avatar_url": "https://avatars.githubusercontent.com/u/21338507?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/alemagio",
+          "html_url": "https://github.com/alemagio",
+          "followers_url": "https://api.github.com/users/alemagio/followers",
+          "following_url": "https://api.github.com/users/alemagio/following{/other_user}",
+          "gists_url": "https://api.github.com/users/alemagio/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/alemagio/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/alemagio/subscriptions",
+          "organizations_url": "https://api.github.com/users/alemagio/orgs",
+          "repos_url": "https://api.github.com/users/alemagio/repos",
+          "events_url": "https://api.github.com/users/alemagio/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/alemagio/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false,
+          "permissions": {
+            "admin": true,
+            "maintain": true,
+            "push": true,
+            "triage": true,
+            "pull": true
+          },
+          "role_name": "admin"
+        }
+      ],
+      "teams": []
+    },
+    "classic_protection": {
+      "totalCount": 0,
+      "nodes": [],
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": null
+      }
+    },
+    "effective_rulesets": {
+      "totalCount": 0,
+      "nodes": [],
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": null
+      }
+    },
+    "main_branch_rule": null,
+    "repository": {
+      "id": 1327753770,
+      "node_id": "R_kgDOTyPqKg",
+      "full_name": "Ship-With-AI/cumpa",
+      "private": true,
+      "has_issues": true,
+      "has_projects": true,
+      "has_downloads": false,
+      "has_wiki": false,
+      "has_pages": false,
+      "has_discussions": false,
+      "archived": false,
+      "disabled": false,
+      "allow_forking": false,
+      "web_commit_signoff_required": false,
+      "has_pull_requests": true,
+      "visibility": "private",
+      "default_branch": "main",
+      "allow_squash_merge": true,
+      "allow_merge_commit": true,
+      "allow_rebase_merge": true,
+      "allow_auto_merge": false,
+      "delete_branch_on_merge": false,
+      "allow_update_branch": false
+    },
+    "requested_private_changes": [],
+    "settings": {
+      "actions_permissions": {
+        "enabled": true,
+        "allowed_actions": "all",
+        "sha_pinning_required": false
+      },
+      "automated_security_fixes": {
+        "enabled": false,
+        "paused": false
+      },
+      "code_scanning": {
+        "ok": false,
+        "status": "403",
+        "message": "Advanced Security must be enabled for this repository to use code scanning."
+      },
+      "code_security_configuration": null,
+      "dependabot": {
+        "ok": false,
+        "status": "403",
+        "message": "Dependabot alerts are disabled for this repository."
+      },
+      "deployment_branch_policies": {
+        "ok": false,
+        "status": "404",
+        "message": "Not Found",
+        "corroboration": "environment.deployment_branch_policy=null"
+      },
+      "deployment_protection_rules": {
+        "total_count": 0,
+        "custom_deployment_protection_rules": []
+      },
+      "env_secrets": [
+        {
+          "total_count": 5,
+          "secrets": [
+            {
+              "name": "STRIPE_SECRET_KEY",
+              "created_at": "2026-09-02T05:46:10Z",
+              "updated_at": "2026-09-03T13:20:28Z"
+            },
+            {
+              "name": "STRIPE_WEBHOOK_SECRET",
+              "created_at": "2026-09-02T10:09:45Z",
+              "updated_at": "2026-09-03T13:16:10Z"
+            },
+            {
+              "name": "SUPABASE_ACCESS_TOKEN",
+              "created_at": "2026-09-01T12:23:41Z",
+              "updated_at": "2026-09-02T12:03:40Z"
+            },
+            {
+              "name": "SUPABASE_DB_PASSWORD",
+              "created_at": "2026-09-01T12:23:58Z",
+              "updated_at": "2026-09-01T12:23:58Z"
+            },
+            {
+              "name": "SUPABASE_GITHUB_CLIENT_SECRET",
+              "created_at": "2026-09-01T12:26:25Z",
+              "updated_at": "2026-09-02T16:16:03Z"
+            }
+          ]
+        }
+      ],
+      "env_variables": [
+        {
+          "variables": [
+            {
+              "name": "STRIPE_PRICE_ID",
+              "value": "6eb4ae5e01c0f6096753cd0a167d433f31469dc03ec3878055cbb63360be2188",
+              "created_at": "2026-09-02T05:49:27Z",
+              "updated_at": "2026-09-03T13:16:58Z"
+            },
+            {
+              "name": "STRIPE_WEBHOOK_ENDPOINT_ID",
+              "value": "79be299e993c11e1acb5c43a8f8cf6e58eac64f503cf29a1737a5c0592ac3631",
+              "created_at": "2026-09-02T10:09:23Z",
+              "updated_at": "2026-09-03T13:16:31Z"
+            },
+            {
+              "name": "SUPABASE_GITHUB_CLIENT_ID",
+              "value": "953333ebbd9b6118fadebc7f2b6fe9926b76adb22c6037788ce443d91d5cf71d",
+              "created_at": "2026-09-02T11:15:29Z",
+              "updated_at": "2026-09-02T11:15:29Z"
+            },
+            {
+              "name": "SUPABASE_PROJECT_REF",
+              "value": "2043c31eacb2efa76123043fcd652ac45bd19b121db1ddaa537e86b3473bf73d",
+              "created_at": "2026-09-01T12:29:42Z",
+              "updated_at": "2026-09-01T12:29:42Z"
+            },
+            {
+              "name": "SUPPORT_PROVIDER_MODE",
+              "value": "349af68ebbc98a1a24a918cbcc2822c4e0235fa2f2abb41b92f0a02e69ad883f",
+              "created_at": "2026-09-01T12:32:17Z",
+              "updated_at": "2026-09-03T13:20:49Z"
+            }
+          ],
+          "total_count": 5
+        }
+      ],
+      "environment": {
+        "id": 21002754719,
+        "node_id": "EN_kwDOTyPqKs8AAAAE49yanw",
+        "name": "Production",
+        "url": "https://api.github.com/repos/Ship-With-AI/cumpa/environments/Production",
+        "html_url": "https://github.com/Ship-With-AI/cumpa/deployments/activity_log?environments_filter=Production",
+        "created_at": "2026-09-01T12:18:19Z",
+        "updated_at": "2026-09-01T12:18:19Z",
+        "can_admins_bypass": true,
+        "protection_rules": [],
+        "deployment_branch_policy": null
+      },
+      "fork_approval": {
+        "ok": false,
+        "status": "422",
+        "message": "Validation Failed"
+      },
+      "fork_permissions": {
+        "run_workflows_from_fork_pull_requests": false,
+        "send_write_tokens_to_workflows": false,
+        "send_secrets_and_variables": false,
+        "require_approval_for_fork_pr_workflows": false
+      },
+      "repo_secrets": [
+        {
+          "total_count": 0,
+          "secrets": []
+        }
+      ],
+      "repo_variables": [
+        {
+          "variables": [],
+          "total_count": 0
+        }
+      ],
+      "secret_scanning": {
+        "ok": false,
+        "status": "404",
+        "message": "Secret scanning is disabled on this repository."
+      },
+      "vulnerability_alerts": {
+        "ok": false,
+        "status": "404",
+        "message": "Vulnerability alerts are disabled."
+      },
+      "workflow_permissions": {
+        "default_workflow_permissions": "read",
+        "can_approve_pull_request_reviews": false
+      },
+      "retention": {
+        "days": 90,
+        "maximum_allowed_days": 90
+      }
+    },
+    "visibility_consequences": {
+      "all_push_rulesets_disabled": true,
+      "code_and_actions_history_public": true,
+      "observed_push_rulesets": 0,
+      "public_forks_and_persistent_copies": true,
+      "public_only_fork_approval": "unavailable while private; no configured value or enforcement claimed; requires separate final disposition"
+    }
+  },
+  "public_disposition": {
+    "kind": "cumpa.visibility-protection-disposition/v1",
+    "repository_id": 1327753770,
+    "private_baseline_sha256": "b77330724b28ed9ba6a1a2ed2c5c56ac3f17188c04e6beae5709c22d7d6bdec8",
+    "manual_protection_changes": [],
+    "required_post_public_state": {
+      "repository_id": 1327753770,
+      "repository_node_id": "R_kgDOTyPqKg",
+      "full_name": "Ship-With-AI/cumpa",
+      "private": false,
+      "visibility": "public",
+      "default_branch": "main",
+      "has_issues": true,
+      "refs": [
+        [
+          "refs/heads/main",
+          "ff72519969da8d2c0761c9533ccb27b809cd17bb"
+        ]
+      ],
+      "branch_and_tag_rulesets": [],
+      "push_rulesets": [],
+      "classic_branch_protection": [],
+      "collaborators_and_teams": "same reviewed IDs, roles and permissions",
+      "environment_controls": "same reviewed Production ID, reviewers/wait rules, branch policy, custom rules, and secret/variable metadata",
+      "actions_permissions": {
+        "enabled": true,
+        "allowed_actions": "all",
+        "sha_pinning_required": false
+      },
+      "workflow_permissions": {
+        "default_workflow_permissions": "read",
+        "can_approve_pull_request_reviews": false
+      },
+      "workflow_source_sha256": "0cc92062e9b5ccefc4ae68ddf9494be6d5fec4f03ab07d2df67262293b6fe2d0",
+      "webhooks": "none",
+      "no_unapproved_content_or_configuration_change": true,
+      "artifact_and_log_retention": {
+        "days": 90,
+        "maximum_allowed_days": 90
+      }
+    },
+    "accepted_platform_consequences": {
+      "all_push_rulesets_disabled": true,
+      "reviewed_push_ruleset_count": 0,
+      "public_code_history_issues_actions_logs_and_retained_artifacts": true,
+      "public_forks_and_copies_possible_and_not_retractable_by_returning_private": true,
+      "public_fork_access_overrides_private_only_fork_policy": true,
+      "private_fork_workflow_settings": "private-only endpoint may become inapplicable; do not assert it governs public forks",
+      "public_fork_contributor_approval": {
+        "before": "inapplicable: private endpoint returns 422",
+        "after": "accept and record initial GitHub-supported public setting; current workflow has only main-push trigger and no fork-PR trigger",
+        "allowed_values": [
+          "first_time_contributors_new_to_github",
+          "first_time_contributors",
+          "all_external_contributors"
+        ]
+      },
+      "security_features": "GitHub grants public-repository Advanced Security availability; inspect newly applicable read endpoints and record actual activation/alerts. Do not claim previously disabled scans were clean or complete; no security-control weakening or automatic remediation is approved.",
+      "stars_watchers_activity": "GitHub may erase stars/watchers and publish visibility-change activity",
+      "artifact_retention": "Retain existing artifacts without manual deletion or settings changes; current GitHub retention is 90 days, not indefinite retention.",
+      "organization_policy_visibility": "Raw organization-wide retention/fork policy reads are denied. Effective repository retention is 90/90; public fork approval is inapplicable while private. Inspect the resulting effective repository policy after conversion; never infer organization policy absence.",
+      "github_terms": {
+        "url": "https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#d-user-generated-content",
+        "effective_date": "2026-04-27",
+        "D4": "GitHub and affiliates receive hosting, copying, analysis and service/AI development and training rights under the platform terms.",
+        "D5": "Public content may be viewed and forked by others; the repository MIT license independently grants its standard reuse rights.",
+        "D8": "Public repository content is accessible to everyone on the internet; the terms do not restrict lawful access or use by third parties, GitHub or affiliates."
+      }
+    },
+    "on_verification_failure": "Record actual exposure and stop further mutation; no automatic visibility rollback or retraction claim"
+  }
+}
+```
+
+</details>
+
+```json
+{
+  "kind": "cumpa.remote-publication-snapshot/v1",
+  "repository": "Ship-With-AI/cumpa",
+  "repository_id": 1327753770,
+  "repository_node_id": "R_kgDOTyPqKg",
+  "expected_current_visibility": "private",
+  "refs": [
+    [
+      "refs/heads/main",
+      "ff72519969da8d2c0761c9533ccb27b809cd17bb"
+    ]
+  ],
+  "source_target_oid": "ff72519969da8d2c0761c9533ccb27b809cd17bb",
+  "source_tree_oid": "1b0f095862fba8ead7c92d260d0c3b72c52240a3",
+  "source_bindings": {
+    "LICENSE": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+    "THIRD_PARTY_NOTICES.md": "847c9cb7c9e3585ed7ae518208ac934c5658f0fdb01ad2f2a20b50f56015d143",
+    ".planning/phases/03-distribution-contract-legal-boundary/03-RIGHTS-REVIEW.md": "d65e5f780c5469757fefef685100a1d4bc6ceaded20b1234b010e8d2b8136e94",
+    ".planning/phases/03-distribution-contract-legal-boundary/03-LICENSE-APPROVAL.md": "da8131b0cf7d76516dafee5c5ce8acb8d57904d9d6c1e49f89f93defa67eff6f",
+    "package.json": "5ae67356a55c01be628cc4f82d4debba272984d9a28e1824069878e7ded2c5b3",
+    "package-lock.json": "896aefb20316dc2a6588b28eb3deb2bb5483388dc59daf51f2efd839e1b2df1f",
+    "README.md": "7eba4475ecf0d610ee57afb555c2afc328dcd8c604ae41e56b4ab1cfd1f0e065",
+    "docs/distribution-operations.md": "5d36cfaac8164567eaaf9775cd5a0c03db028a34e01df4ba49fa14de174f096f",
+    "docs/support-service-operations.md": "a453d5a1c86d34f553ce601082572307542fcc48c89c244254e4c49fb79b1515",
+    ".github/workflows/deploy-supabase-production.yml": "0cc92062e9b5ccefc4ae68ddf9494be6d5fec4f03ab07d2df67262293b6fe2d0",
+    "scripts/verify-supabase-support.mjs": "6e83bb0ea66015d6ab446a0109e6730ad849dd68299ff14584316e9eb224110d",
+    "tests/e2e/support-payment.spec.ts": "2aa85ba8fa18c284de82a3732369775becce2e5655b5bbcecfdfd93dab98d33d",
+    "tests/e2e/support-restore.spec.ts": "de11d5bd17a391f96d2639accfd5ebcfe239ce5454279d416f1b2f72f132f473"
+  },
+  "exposure_sha256": "048181737708968cd698abb2a89e90640b30faa48f1683a7f077e47296ac8f6b",
+  "private_protection_sha256": "b77330724b28ed9ba6a1a2ed2c5c56ac3f17188c04e6beae5709c22d7d6bdec8",
+  "protection_disposition_sha256": "6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48",
+  "reviewed_terminal_run": {
+    "id": 34220014720,
+    "commit": "ff72519969da8d2c0761c9533ccb27b809cd17bb",
+    "conclusion": "success"
+  },
+  "reviewed_successful_deployment_ids": [
+    6326463240
+  ],
+  "accepted_findings": {
+    "PUB-01_identifier_fingerprints": [
+      "2043c31eacb2efa76123043fcd652ac45bd19b121db1ddaa537e86b3473bf73d",
+      "6eb4ae5e01c0f6096753cd0a167d433f31469dc03ec3878055cbb63360be2188",
+      "79be299e993c11e1acb5c43a8f8cf6e58eac64f503cf29a1737a5c0592ac3631",
+      "953333ebbd9b6118fadebc7f2b6fe9926b76adb22c6037788ce443d91d5cf71d",
+      "bf06620b01578c7d80cd90f1c8a35adcc722f0093c2752affe3fd9f641c76976",
+      "d5b7211207fd642904a90a71f7689e4a23941de21703df7f13f354db4bf9923e"
+    ],
+    "PUB-02_retained_archives": [
+      {
+        "archive": "3e4813bebbad2155ca473fe022cbb34196b1eadf85453f37bc675259b82cb453",
+        "id": 9907668126,
+        "members": "215ddd7bc9bec5b00c0bbc22d6e8385e9979a9d2e66bff99562cbc900950be58",
+        "size": 3482130
+      },
+      {
+        "archive": "bfbd790230ffaf37d5f6dc89fd792484c26a2062a32d8c50ab72e9ee7ec6afac",
+        "id": 9928300866,
+        "members": "d1dae1f17e6658b019c3edf889376649e684923f4d7fb585e181c4a2738eb720",
+        "size": 3482132
+      }
+    ]
+  },
+  "later_local_evidence_commits_excluded": true,
+  "npm_publication_authorized": false,
+  "only_proposed_mutation": {
+    "visibility": "public"
+  }
+}
+```
+
+### Human-only prerequisites and final statement
+
+1. Review the exact public-access/protection consequences and retained PUB-02 risk above. Technical inventory and checks have been performed; this checkpoint requests the maintainer's publication decision, not repeated test execution.
+2. Provide a short-lived fine-grained credential selecting **only `Ship-With-AI/cumpa`**, immutable repository `1327753770`, with **Administration: write** for the visibility-only operation. The preparation token's Contents/Workflows permissions do not establish visibility authority. Recommended secure handoff: a new login-Keychain password item, service **`cumpa-public-visibility-1327753770`**, account **`github-token`**. Do not paste its token into chat/arguments/URLs or use the cancelled artifact-deletion item; no broad OAuth/SSH fallback is permitted. Operator confirmation must cover repository selection, expiry, permissions and any required organization approval.
+3. Maintain a **no-write/no-rename/no-transfer window**, including relevant policy changes, from final authorization through the immediate recheck, visibility action and verification. All producers are currently terminal, but no future no-write window has yet been asserted by the operator.
+4. After those prerequisites, supply the exact statement below. It authorizes **only public visibility of this snapshot**, acknowledges the disposition, and confirms scoped authentication/window readiness. It does not authorize npm publication, later source pushes or any other configuration change. Revoke temporary mutation credentials after verified completion; revocation has not yet been claimed.
+
+`FINAL PUBLICATION AUTHORIZATION: Ship-With-AI/cumpa snapshot 8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4 main ff72519969da8d2c0761c9533ccb27b809cd17bb protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48`
+
+**No FINAL PUBLICATION AUTHORIZATION has been received. No visibility mutation has been performed.** Before any future authorized conversion, repeat the same complete snapshot/protection capture and compare exact bindings, identity, main, license assent, credential and quiescence. On drift, do not convert. After conversion, require genuinely unauthenticated source/LICENSE/Issues access and exact repository/main identity, plus observed approved protection state. Phase 3 remains **2/3 plans complete** until that separate gate and verification finish.
 
 ### Repaired-source authorization received
 
@@ -13,6 +556,15 @@
 - **Verbatim statement:** `PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2`.
 - **Exact bounds:** Only private main `ece7fcfc7a993e751a999145b2c74ee233402a1f` → `ff72519969da8d2c0761c9533ccb27b809cd17bb`, guarded by matching old-OID ancestry and lease, plus the unchanged CI/Supabase deployment effects in the proposal. No retry of the old run, extra ref, later local evidence commit, public visibility, npm operation, deletion or settings change is authorized.
 - **Credential preflight:** A fresh secure retrieval returned the existing fine-grained token, and its authenticated read matched immutable private repository `1327753770` / `R_kgDOTyPqKg`. Scope/expiry remain as explicitly confirmed by the operator; no token bytes are recorded.
+
+### Repaired private push — observed result
+
+- **Push interval:** 2026-09-08T11:18:38Z through 2026-09-08T11:18:40Z.
+- **Preflight:** All 45 projected collection bindings matched authorized exposure SHA-256 `c178b45f3e69089b7999889cb2820d5a9af503a5c5a2301d39ceb6aad6b92f6c`; all 68 reviewed archives matched exact bytes. LICENSE/notice/rights/assent hashes matched, all earlier producers were terminal, and temporary audit storage was removed.
+- **Immediate guards and mutation:** Scoped authenticated identity/private-state read and native old-ref check passed. The same `ece7fcfc7a993e751a999145b2c74ee233402a1f` OID passed ancestry and `--force-with-lease=refs/heads/main:ece7fcfc7a993e751a999145b2c74ee233402a1f` for the single HTTPS refspec `ff72519969da8d2c0761c9533ccb27b809cd17bb:refs/heads/main`. Only scoped credential-helper authentication was enabled through command-local options; no stored authentication change, broad fallback, redirect, other ref or retry occurred.
+- **Observed result:** Git exit 0, porcelain fast-forward `ece7fcf..ff72519`. Native main now equals the approved repair target. Remote commit tree `1b0f095862fba8ead7c92d260d0c3b72c52240a3` matches the complete reviewed local tree; immutable repository ID remains `1327753770` and visibility remains **private**. Later local evidence commits were not pushed.
+- **Producer:** New push-triggered workflow run **34220014720**, head exactly `ff72519969da8d2c0761c9533ccb27b809cd17bb`. Its status-only watcher is active; final terminal logs/artifacts and deployment state must be inspected before requesting public visibility.
+- **No other mutation:** Both legacy artifacts and backups remain retained. No deletion, retention/protection change, npm publication or visibility conversion has been performed.
 
 ## Current repaired-source preparation review — 2026-09-08T11:07:44Z
 
