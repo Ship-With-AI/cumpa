@@ -1,10 +1,10 @@
 # Exact License Approval
 
 **Record kind:** `cumpa.license-approval/v1`
-**Current status:** MIT exact-text assent pending from Alessandro Magionami and Manuel Salvatore Martone; not final repository publication authorization.
+**Current status:** Renewed exact-text MIT assent recorded from both named licensors; Manuel's approval is Alessandro's witnessed report. This is not final repository publication authorization.
 **Current decision:** On 2026-09-08, the user selected the standard MIT license and abandoned the proprietary/anti-resale interview.
 
-## Current MIT binding — pending renewed assent
+## Current MIT binding — renewed assent recorded
 
 | Artifact | SHA-256 |
 |---|---|
@@ -14,7 +14,28 @@
 
 The current LICENSE is the standard MIT text naming **Alessandro Magionami & Manuel Salvatore Martone**. It grants downstream recipients the standard MIT permissions, including commercial use, modification, redistribution, sublicensing, and sale; no bespoke permission is required for those MIT-granted uses.
 
-**No renewed exact-text assent is recorded.** Before any maintainer publication, obtain attributable assent from both named licensors to the exact current MIT digest above, recheck the bound rights/notice findings as applicable, and preserve the separate publication gates. These are maintainer publication controls, not conditions on MIT recipients.
+**Renewed exact-text assent recorded on 2026-09-08.** Both approvals below bind the current MIT digest above. The notice and rights-review digests were rechecked and still match their bindings; no new rights or privacy disposition is inferred. Affected source/publication bindings still require refresh and all separate publication gates remain. These are maintainer publication controls, not conditions on MIT recipients.
+
+### Current MIT approval 1 — Alessandro Magionami
+
+- **Approver:** Alessandro Magionami.
+- **Record captured at:** 2026-09-08T07:59:39Z, after the approval response.
+- **Source:** Direct response to `alessandro_mit_assent` during `/gsd-execute-phase 3`.
+- **Actual selection:** `Approve exact MIT text`.
+- **Bound question:** Approval of the current 1,104-byte `LICENSE`, SHA-256 `c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d`, as Cumpa's MIT license.
+- **Disclosure:** Standard MIT permits commercial reuse, modification, redistribution, sublicensing and resale, subject to its notice condition. Approval does not authorize artifact deletion, pushing or public conversion.
+
+### Current MIT approval 2 — Manuel Salvatore Martone
+
+- **Approver:** Manuel Salvatore Martone.
+- **Report captured at:** 2026-09-08T07:59:39Z. Manuel's exact approval time was not separately supplied.
+- **Source:** Alessandro's witnessed report in response to `manuel_mit_assent`, asking whether Manuel personally approved the same current MIT `LICENSE` and exact SHA-256 rather than the superseded proprietary license.
+- **Actual selection:** `Yes, I witnessed his approval`.
+- **Decision recorded:** Manuel's own approval of the current 1,104-byte MIT `LICENSE`, SHA-256 `c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d`, as witnessed and reported by Alessandro. This is not approval granted on Manuel's behalf. No verbatim statement from Manuel, signed document or independently verified external message was supplied or is claimed.
+
+### Current approval limits
+
+These approvals concern the exact current MIT license only. They do not authorize remote artifact deletion, private source synchronization, changes to protections, npm publication or repository visibility conversion. Any license-byte change requires fresh assent from both licensors. Keep the separate rights, exposure, scoped-credential, private-preparation and final-publication gates; later local approval/review/SUMMARY commits are not automatically approved for pushing.
 
 ## Superseded proprietary approval record — historical evidence
 

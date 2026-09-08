@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "MIT cutover prepared; refresh both licensors' exact-text assent and publication bindings before continuing 03-03; existing removal-only gate remains"
-last_updated: "2026-09-08T07:28:18.334Z"
+stopped_at: "Renewed exact MIT assents recorded; 03-03 awaits separate removal-only approval and scoped credentials, then refreshed publication bindings"
+last_updated: "2026-09-08T07:59:39Z"
 last_activity: 2026-09-08
-last_activity_desc: Completed quick task 260908-d25, standard MIT licensing and active distribution reconciliation, in commit 2227f78; prior proprietary approvals do not authorize MIT publication.
+last_activity_desc: Recorded Alessandro's direct exact-MIT assent and his witnessed report of Manuel's approval; no remote mutation authorized.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 executed; MIT license change requires renewed exact-text assent and refreshed publication bindings before 03-03 publication
-Status: Local MIT preparation complete; publication remains gated
-Last activity: 2026-09-08 — Completed quick task 260908-d25: standard MIT licensing and active distribution reconciliation. Commit 2227f78. No remote mutation or publication.
+Plan: 2 of 3 executed; renewed exact-text MIT assent recorded, publication bindings still require refresh
+Status: MIT assent gate satisfied; separate removal and publication gates remain
+Last activity: 2026-09-08 — Recorded both current MIT assents with attribution and unchanged license/notice/rights-review digests. No remote mutation or publication.
 
 Progress: [███████░░░] 67%
 
@@ -84,7 +84,7 @@ None yet.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives are backed up privately; selective remote removal still requires explicit authorization and repository-scoped short-lived credentials. Local recurrence prevention is implemented and tested, not pushed.
 - 03-03 Projects inventory is complete: zero linked projects. Next gate is explicit removal-only approval for proposal b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951 and an expiring repository-selected Actions-write credential; no remote mutation is authorized.
-- MIT LICENSE SHA-256 is c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d. Both licensors' previous approvals bind the old proprietary text only. Renew exact-text assent and refresh affected source/publication bindings before publication; no MIT approval or remote authority was inferred from the license choice.
+- MIT LICENSE SHA-256 is c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d. Renewed assent is recorded: Alessandro's direct approval and his witnessed report of Manuel's actual approval. Refresh affected source/publication bindings before publication; this approval does not authorize remote mutation.
 
 ### Roadmap Evolution
 
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T07:28:18.334Z
-Stopped at: MIT cutover prepared; refresh exact-text assent and publication bindings before continuing 03-03; the existing removal-only approval and credential gate remains.
+Last session: 2026-09-08T07:59:39Z
+Stopped at: Both exact MIT assents recorded; 03-03 still needs separate removal-only approval and repository-selected short-lived credentials, then refreshed source/publication bindings.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md

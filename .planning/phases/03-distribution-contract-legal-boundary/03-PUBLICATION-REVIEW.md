@@ -8,11 +8,11 @@
 
 This redacted exposure review is not a final publishable snapshot. PUB-01 is resolved by the exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is now closed. The two legacy archives remain remote and still require separately authorized removal using scoped write credentials. No push, remote deletion, protection/configuration mutation, registry operation or visibility conversion has occurred.
 
-## Current MIT supersession — active publication blocker
+## Current MIT supersession — renewed assent recorded
 
 The 2026-09-08 MIT decision supersedes every prior proprietary-license/source binding in this review. The current `LICENSE` is the 1,104-byte standard MIT text with SHA-256 `c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d`.
 
-The historical proprietary approval digest `889614622bf0bf5da0f7f543868fe9dc9ff568e22872edcfa7b03996a15ad29a` and both related historical approvals are **not approval of these MIT bytes**. Renewed attributable exact-text assent from Alessandro Magionami and Manuel Salvatore Martone is pending; without it, no private preparation, source push, visibility conversion, package publication, or final publication authorization may proceed. This is a maintainer publication gate only: it does not add a bespoke permission requirement to MIT recipients.
+The historical proprietary approval digest `889614622bf0bf5da0f7f543868fe9dc9ff568e22872edcfa7b03996a15ad29a` and both related historical approvals are **not approval of the MIT bytes**. Renewed exact-text MIT assent was recorded on 2026-09-08: Alessandro directly selected `Approve exact MIT text`; he separately selected `Yes, I witnessed his approval` when asked about Manuel's own approval of the same current MIT digest. See `03-LICENSE-APPROVAL.md` for attribution and limitations. The current LICENSE, notices and rights-review digests were rechecked and match their bindings. This closes the exact-license-assent blocker only; source/exposure bindings still require refresh, and no remote mutation or publication is authorized. This is a maintainer publication gate only and adds no bespoke permission requirement for MIT recipients.
 
 All earlier LICENSE/source-candidate bindings and any proprietary licensing language below are historical evidence, not current authority. The reviewed legacy-artifact removal scope, private backups, rights/sensitive-material review, security findings, exhaustive exposure requirements, protection disposition, scoped-credential requirement, and separate private-preparation/final-publication authorizations remain in force unchanged. Do not treat this supersession as clearance, artifact-removal authorization, or permission to mutate a remote.
 
