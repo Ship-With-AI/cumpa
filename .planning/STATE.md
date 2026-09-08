@@ -8,7 +8,7 @@ status: executing
 stopped_at: "MIT cutover prepared; refresh both licensors' exact-text assent and publication bindings before continuing 03-03; existing removal-only gate remains"
 last_updated: "2026-09-08T07:28:18.334Z"
 last_activity: 2026-09-08
-last_activity_desc: Prepared the standard MIT license and aligned package metadata and active distribution planning; prior proprietary approvals do not authorize MIT publication.
+last_activity_desc: Completed quick task 260908-d25, standard MIT licensing and active distribution reconciliation, in commit 2227f78; prior proprietary approvals do not authorize MIT publication.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
 Plan: 2 of 3 executed; MIT license change requires renewed exact-text assent and refreshed publication bindings before 03-03 publication
 Status: Local MIT preparation complete; publication remains gated
-Last activity: 2026-09-08 — Prepared quick task 260908-d25: standard MIT licensing and active distribution reconciliation. No remote mutation or publication.
+Last activity: 2026-09-08 — Completed quick task 260908-d25: standard MIT licensing and active distribution reconciliation. Commit 2227f78. No remote mutation or publication.
 
 Progress: [███████░░░] 67%
 
@@ -96,6 +96,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260907-gdm | Reconcile approved proprietary source-available distribution | 2026-09-07 | 483671d | [260907-gdm-reconcile-cumpa-v1-5-with-approved-publi](./quick/260907-gdm-reconcile-cumpa-v1-5-with-approved-publi/) |
+| 260908-d25 | Switch Cumpa to standard MIT and reconcile distribution | 2026-09-08 | 2227f78 | [260908-d25-switch-cumpa-to-mit-and-reconcile-active](./quick/260908-d25-switch-cumpa-to-mit-and-reconcile-active/) |
 
 ## Deferred Items
 
