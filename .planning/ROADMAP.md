@@ -63,7 +63,7 @@ Plans:
   3. Archive inspection finds no TypeScript source, source maps or embedded source content, tests, fixtures, planning files, workflows, credentials, local review state, marketplace-skill files, Git data, or repository history.
   4. Maintainers record and approve one tarball digest, install and inspect those exact bytes, and designate the same immutable archive for publication without a later rebuild or substitution.
 
-**Plans**: 2/4 plans executed
+**Plans**: 3/4 plans executed
 **Wave 1**
 
 - [x] 04-01-PLAN.md
@@ -74,7 +74,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-03-PLAN.md
+- [x] 04-03-PLAN.md
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
@@ -127,7 +127,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
-| 4. Exact Runtime Tarball | 2/4 | In Progress|  |
+| 4. Exact Runtime Tarball | 3/4 | In Progress|  |
 | 5. Bootstrap & Trusted Stable Publication | 0/TBD | Not started | - |
 | 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
 | 7. Clean Public-Artifact Acceptance | 0/TBD | Not started | - |
