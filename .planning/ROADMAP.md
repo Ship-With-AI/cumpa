@@ -36,7 +36,7 @@ The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary sou
 3. The existing `Ship-With-AI/cumpa` repository and reviewed history are public under standard MIT only after both licensors give refreshed exact-text MIT assent and rights/sensitive-material review is resolved; no credentials or confidential operational material are exposed, and destructive remediation or history rewriting requires separate approval.
   4. The documented release policy preserves eligible automatic npm provenance, defines the public-source/attestation evidence Phase 5 must verify, and forbids unsupported claims; OIDC authentication alone is not attestation proof.
 
-**Plans**: 2/3 plans executed under the superseded proprietary contract; their records remain historical. Refreshed MIT assent and the remaining publication plan are pending.
+**Plans**: 3/3 executed. The MIT cutover, renewed exact-text assent and authorized public-source transition are verified; original proprietary-plan records remain historical. Final phase review and temporary-token revocation confirmation are pending.
 
 Plans:
 **Wave 1**
@@ -47,9 +47,9 @@ Plans:
 
 - [x] 03-02-PLAN.md — Historical proprietary package metadata and truthful user/release documentation record
 
-**Wave 3** *(pending refreshed MIT assent and publication review)*
+**Wave 3** *(MIT assent and authorized public source verified)*
 
-- [ ] 03-03-PLAN.md — Reviewed MIT preparation and authorized public-source transition
+- [x] 03-03-PLAN.md — Reviewed MIT preparation and authorized public-source transition
 
 ### Phase 4: Exact Runtime Tarball
 
@@ -111,7 +111,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 3. Distribution Contract & Legal Boundary | 2/3 | In Progress|  |
+| 3. Distribution Contract & Legal Boundary | 3/3 | Verification pending | - |
 | 4. Exact Runtime Tarball | 0/TBD | Not started | - |
 | 5. Bootstrap & Trusted Stable Publication | 0/TBD | Not started | - |
 | 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |

@@ -4,7 +4,7 @@
 **Core Value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback an agent can act on.
 
 ## v1.5 Requirements
-**Decision authority:** 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary direction. Historical proprietary approvals do not approve the MIT text; publication remains pending refreshed exact-text assent from both licensors and exposure review.
+**Decision authority:** 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary direction. Historical proprietary approvals do not approve the MIT text. Renewed exact-text MIT assent is recorded, and the reviewed existing repository is now public at the exact authorized source; final phase review and temporary-token cleanup confirmation remain pending before traceability close-out.
 
 
 ### MIT npm Package
