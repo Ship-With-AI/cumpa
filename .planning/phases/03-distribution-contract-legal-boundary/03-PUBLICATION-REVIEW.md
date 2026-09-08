@@ -3,7 +3,7 @@
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
-**PRIVATE PREPARATION AUTHORIZATION:** Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` was explicitly authorized and applied as the exact guarded private fast-forward. Resulting CI/deployment exposure is under review.
+**PRIVATE PREPARATION AUTHORIZATION:** Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` was explicitly authorized and applied as the exact guarded private fast-forward. Resulting CI/deployment exposure and the final public result are verified.
 **FINAL PUBLICATION AUTHORIZATION:** Exact snapshot `e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18` and protection disposition `6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48` were authorized by Alessandro, applied once, and verified. No further mutation is authorized.
 
 ## CURRENT RESULT — PUBLICATION APPLIED AND VERIFIED
@@ -23,9 +23,9 @@ Before the action, the full current **47-collection** capture, all **50 decompre
 - Dependabot alerts became available/enabled with zero listed alerts, while automated security fixes remain disabled. Secret scanning remains disabled; code scanning reports no analysis. No completed/clean security-scan claim is made.
 - The run, artifact and deployment ID sets remained unchanged. Both owner-retained legacy artifacts remain present with their accepted unremediated notice risk; no new waiver or third-party compliance claim is made.
 
-### Remaining human cleanup and phase close-out
+### Human cleanup and phase close-out — complete
 
-The operator has been asked to revoke the two temporary fine-grained GitHub tokens used for preparation and visibility. **Revocation is not yet confirmed.** Removing a Keychain copy alone is not server-side revocation. No leaked-credential revocation report was submitted: that API is documented for exposed credentials, which is not the status of these safely used temporary tokens. Keep this explicit human cleanup item pending; do not claim the tokens revoked or the entire phase verified until it is resolved.
+The operator confirmed both temporary preparation/visibility fine-grained GitHub tokens revoked by replying **`revoked`** at **2026-09-08T13:42:11Z**. Main then removed the two named login-Keychain copies successfully without retrieving token values. Server-side revocation is based on the operator's report, not inferred from Keychain deletion; no redundant remote credential check or other remote mutation occurred. The immutable observed-result record below retains its original at-publication cleanup-pending observation; this later close-out resolves it.
 
 Phase execution evidence and reviews can now close out locally. All subsequent evidence/SUMMARY/verification commits remain outside the approved public source and must not be pushed automatically. Public source eligibility is established; npm artifact acceptance, registry availability and actual provenance remain later-phase work.
 
@@ -2103,3 +2103,7 @@ After the remaining evidence and dispositions are complete, request the separate
 ## Final phase review outcome — 2026-09-08T13:34:02Z
 
 The independent standard-depth code review is clean with zero findings. The authored security threat register is closed/accepted **23/23**, with `threats_open: 0`. Goal verification confirms **10/10** must-haves and all four Phase 3 requirement implementations. Its canonical status is **human_needed** solely because server-side revocation of the two temporary scoped tokens is not yet confirmed. The single remaining administrative item is persisted in `03-UAT.md`; browser-tool unavailability remains an explicit limitation, with the successful credential-free HTTP/API fallback as the actual proof. No further repository mutation or later evidence-commit push is authorized.
+
+## Human cleanup completed — 2026-09-08T13:42:11Z
+
+Alessandro responded **`revoked`** to the single pending two-token cleanup item. That report is accepted as confirmation of server-side revocation. Local cleanup removed only service `cumpa-private-preparation-1327753770` and service `cumpa-public-visibility-1327753770`, both account `github-token`, from the login keychain; both commands exited 0. No token material was retrieved, no normal gh credential or cancelled earlier deletion credential was touched, and no remote check/mutation was performed. UAT now passes 1/1 and goal verification status is `passed`; code review remains clean and the security register remains closed 23/23. All prior pending-cleanup statements are historical observations resolved by this entry.

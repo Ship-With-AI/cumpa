@@ -16,9 +16,9 @@ created: 2026-09-08
 > mitigations and does not perform a retroactive whole-repository threat scan.
 >
 > **Result:** all declared threats are closed or explicitly accepted. The
-> separate operator confirmation that the two temporary scoped credentials were
-> revoked remains an open human cleanup gate; it is not represented by a
-> plan-time threat ID and therefore is not counted in `threats_open`.
+> separate temporary-token cleanup gate was closed on 2026-09-08T13:42:11Z
+> by the operator's `revoked` confirmation; both named local Keychain copies
+> were then removed. No independent remote revocation check is claimed.
 
 ## Trust Boundaries
 
@@ -77,12 +77,12 @@ created: 2026-09-08
 |---|---|---|
 | Retained legacy-artifact notice risk | T-03-01-DR / T-03-01-NO; PUB-02 | Closed as the exact accepted risk above. It remains explicitly unremediated and must never be called compliant. |
 | Organization-wide retention/fork policy reads denied | T-03-03-PR | Informational: no policy absence was inferred. The final effective repository retention and public-fork setting were observed directly. |
-| Temporary preparation/visibility token revocation is unconfirmed | `unregistered_flag` | **Open human cleanup gate, not a plan-time threat:** the operator was asked to revoke two temporary scoped credentials; Keychain deletion alone is not server-side revocation. This audit makes no revocation claim. |
+| Temporary preparation/visibility token revocation | `unregistered_flag` | **Human cleanup closed:** operator reported `revoked` at 2026-09-08T13:42:11Z; both named local Keychain copies were removed afterward without reading token values. Server-side revocation is operator-confirmed, not inferred from local deletion. |
 | Security/code/goal review artifacts are generated after execution summary | `unregistered_flag` | Informational phase-closeout warning: artifact presence alone does not prove phase completion. |
 
-## Open Human Cleanup Gate
+## Human Cleanup Gate — Closed
 
-`threats_open: 0` covers the declared threat register only. The phase must not be described as fully closed until an operator confirms revocation of both temporary preparation/visibility fine-grained credentials. No credential values were read or recorded by this audit; no remote change was made.
+The operator's `revoked` response at 2026-09-08T13:42:11Z confirms revocation of both temporary preparation/visibility fine-grained credentials. Main then removed the two named login-Keychain copies successfully. No token value was retrieved, no unrelated credential was touched, and no remote recheck or mutation occurred. `03-UAT.md` records the completed human item; `threats_open: 0` remains unchanged.
 
 ## Security Audit Trail
 
@@ -96,6 +96,6 @@ created: 2026-09-08
 - [x] Accepted risks are recorded with their exact scope.
 - [x] `threats_open: 0` confirmed for the authored threat register.
 - [x] `status: verified` applies to the threat register.
-- [ ] Operator confirmation of temporary credential revocation remains pending; this is a documented human cleanup gate, not evidence of revocation.
+- [x] Operator confirmed temporary credential revocation; local temporary copies were removed.
 
-**Approval:** Threat register verified 2026-09-08; phase closeout remains pending the human cleanup gate above.
+**Approval:** Threat register verified 2026-09-08; the final human cleanup gate is closed by the operator confirmation recorded above.

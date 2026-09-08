@@ -3,7 +3,7 @@ phase: 03-distribution-contract-legal-boundary
 plan: 03
 subsystem: distribution
 status: complete
-human_verification: temporary-token-revocation-pending
+human_verification: passed
 tags: [mit, github, publication, git, security, evidence]
 requires:
   - phase: 03-01
@@ -90,8 +90,8 @@ completed: 2026-09-08
 
 - The exact retained legacy-artifact notice risk is owner-accepted and must not be relabeled compliant or broadened to other findings.
 - Raw organization-wide retention/fork policy reads were denied. Effective repository retention and the actual post-public fork setting were directly observed; organization policy absence was never inferred.
-- The operator has been asked to **revoke the two temporary preparation/visibility fine-grained tokens**. Revocation is **not yet confirmed**. Keychain deletion alone is not revocation. This administrative human-verification item remains open for phase close-out.
-- Final reviews are complete: `03-REVIEW.md` is clean (0 findings), `03-SECURITY.md` closes all 23 declared threats, and `03-VERIFICATION.md` verifies 10/10 must-haves with `status: human_needed` solely for token-revocation confirmation. The remaining item is persisted in `03-UAT.md`.
+- The operator confirmed both temporary preparation/visibility tokens revoked by replying `revoked` at 2026-09-08T13:42:11Z. Their two named login-Keychain copies were then removed without reading token values. No redundant remote credential check or unrelated credential change occurred.
+- Final reviews are complete: code review is clean (0 findings), security closes all 23 declared threats, goal verification passes 10/10 must-haves, and `03-UAT.md` is complete with 1 passed/0 pending. Verification status is now `passed`.
 
 ## Next phase readiness
 
@@ -99,4 +99,4 @@ Public source/Issues access and the MIT legal/metadata boundary are established.
 
 ## Self-Check: PASSED — automated execution evidence
 
-The exact authorized repository/main/LICENSE, real public HTTP/API responses, approved post-public controls, successful repaired CI/deployment and redacted evidence records were verified. Final code, security and goal reviews passed their technical scope. **Human token-revocation confirmation remains pending in `03-UAT.md`; no phase-complete claim is made yet.**
+The exact authorized repository/main/LICENSE, real public HTTP/API responses, approved post-public controls, successful repaired CI/deployment and redacted evidence records were verified. Final code, security and goal reviews passed their technical scope. The operator's temporary-token revocation confirmation and successful local copy cleanup close the sole human item; the phase is ready for formal completion.

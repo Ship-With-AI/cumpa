@@ -1,42 +1,36 @@
 ---
-status: testing
+status: complete
 phase: 03-distribution-contract-legal-boundary
 source: [03-VERIFICATION.md, 03-03-SUMMARY.md]
 started: 2026-09-08T13:34:02Z
-updated: 2026-09-08T13:34:02Z
+updated: 2026-09-08T13:42:11Z
 ---
 
 ## Current Test
 
-number: 1
-name: Confirm temporary GitHub token revocation
-expected: |
-  The two temporary fine-grained GitHub tokens created for this publication
-  session are revoked server-side in GitHub. They were used for private
-  preparation and the visibility-only conversion. If the suggested names were
-  retained, they are Cumpa private preparation and Cumpa visibility.
-  Do not revoke the normal gh login or unrelated credentials.
-  Removing local Keychain entries alone is not server-side revocation.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
 ### 1. Confirm temporary GitHub token revocation
 expected: Both temporary preparation/visibility authorizations are revoked in GitHub, and the operator reports that outcome without sharing token material.
-result: pending
+result: pass
+reported: "revoked"
+confirmed_at: 2026-09-08T13:42:11Z
+evidence: Operator confirmation of server-side revocation; both named temporary login-Keychain copies were then removed successfully without retrieving token values. No redundant remote credential check was performed.
 
 ## Summary
 
 total: 1
-passed: 0
+passed: 1
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 
 ## Gaps
 
-None in the implemented/publication behavior. Phase goal verification scored 10/10; code review is clean and the authored security threat register is closed 23/23. The only remaining human item is the administrative revocation confirmation above.
+None. Phase goal verification scored 10/10; code review is clean and the authored security threat register is closed 23/23. The operator's revocation confirmation resolves the sole remaining human cleanup item.
 
 ## Verified Scope and Limits
 

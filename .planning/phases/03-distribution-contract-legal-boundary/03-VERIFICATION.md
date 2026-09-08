@@ -1,23 +1,24 @@
 ---
 phase: 03-distribution-contract-legal-boundary
-verified: 2026-09-08T13:28:56Z
-status: human_needed
+verified: 2026-09-08T13:42:11Z
+status: passed
 score: "10/10 must-haves verified"
 behavior_unverified: 0
 overrides_applied: 0
-human_verification:
-  - test: "Operator revokes the two temporary fine-grained GitHub tokens used for private preparation and the visibility-only conversion, then records server-side revocation confirmation without exposing token material."
-    expected: "Both temporary authorizations are revoked; the record no longer reports revocation as pending."
-    why_human: "The retained evidence explicitly says revocation is unconfirmed, and local Keychain removal cannot prove server-side token revocation."
+human_verification: []
+human_verification_completed:
+  - test: Temporary preparation and visibility GitHub token revocation
+    confirmed: 2026-09-08T13:42:11Z
+    source: 'Operator reported: "revoked"; local Keychain copies removed afterward'
 ---
 
 # Phase 3: Distribution Contract & Legal Boundary Verification Report
 
 **Phase Goal:** Establish standard MIT terms, refreshed dual-licensor exact-text assent, rights/sensitive-history review, safe publication of the existing repository and reviewed history, truthful metadata/Issues links, and an evidence-backed future provenance policy.
 
-**Verified:** 2026-09-08T13:28:56Z  
-**Status:** human_needed — implementation and observed public-state must-haves are verified; the single administrative token-revocation confirmation remains open.  
-**Re-verification:** No — initial verification; no earlier `03-VERIFICATION.md` existed.
+**Verified:** Automated/source review at 2026-09-08T13:28:56Z; human cleanup closed at 2026-09-08T13:42:11Z.
+**Status:** passed — 10/10 implementation/public-state must-haves and the sole human cleanup item are verified.
+**Re-verification:** Human close-out only: the operator reported `revoked` in response to the pending two-token cleanup item. No source, public-state or credential checks were rerun to reconfirm the user's report.
 
 ## Goal Achievement
 
@@ -90,15 +91,15 @@ No blocker debt markers (`TODO`, `FIXME`, `XXX`, `HACK`, or `PLACEHOLDER`) were 
 - The review records approved public source eligibility only. Runtime tarball contents/notice inclusion are Phase 4; registry availability, OIDC trusted publishing, and an emitted provenance attestation are Phase 5.
 - No raw token, credential, or private configuration value was read or recorded during this verification.
 
-## Human Verification Required
+## Human Verification Completed
 
-### 1. Confirm temporary-token revocation
+### 1. Temporary-token revocation confirmed
 
-**Test:** The responsible operator revokes the two temporary fine-grained GitHub tokens used for preparation and public conversion, then records confirmation through the authorized administrative channel without revealing token values.
+**Operator result:** `revoked`, received 2026-09-08T13:42:11Z in response to the pending preparation/visibility token cleanup item. This is the operator's confirmation of server-side revocation, not an agent-inferred API result.
 
-**Expected:** Both temporary authorizations are revoked. The publication-review limitation can be updated from “not yet confirmed” only after that server-side confirmation.
+**Local cleanup:** Both temporary login-Keychain items, `cumpa-private-preparation-1327753770` and `cumpa-public-visibility-1327753770` (account `github-token`), were removed successfully. No token value was retrieved, no unrelated credential was touched, and no remote mutation or redundant credential check occurred.
 
-**Why human:** The evidence confirms no token values were disclosed and no public-state verification needs them, but local removal cannot establish that remote authorization has been revoked.
+**Result:** `03-UAT.md` is complete: 1 passed, 0 issues, 0 pending. No human verification item remains.
 
 ---
 
