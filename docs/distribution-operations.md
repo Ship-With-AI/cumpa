@@ -28,6 +28,8 @@ Create bytes explicitly with `npm run pack:runtime-artifact -- --purpose develop
 
 Use `candidate` for final local acceptance and `deployment-check` for disposable deployment checks; both require clean tracked source/index and the canonical `CUMPA_RELEASE_SUPPORT_SERVICE_URL` in the protected environment. `development-check` allows stable uncommitted changes and configured absence, but cannot become an approved release. Never pass the origin in argv. Evidence retains only its configured flag/fingerprint, basename, independent SHA-256/SHA-1/SHA-512 identities, source/build/legal/native facts, and inventories—not custody paths or origin cleartext.
 
+Verify those same bytes with `npm run verify:production-artifacts -- --archive <absolute-tgz> --expected-sha256 <recorded-sha256> --evidence <absolute-json>`. No verification command rebuilds or repacks. The verifier uses native `tar` in protected temporary storage, compares post-extraction permissions under umask 077, and parses JavaScript with Vue's already-installed compiler parser to distinguish real imports/worker URLs from compiler strings. The scope is trusted local producer output with bounded disclosure scanning, not arbitrary hostile archives or exhaustive secret detection.
+
 ## Phase 5 — registry publication and actual provenance
 
 Only Phase 5 performs the approved registry bootstrap and stable OIDC trusted-publishing flow. Do not introduce long-lived publication credentials. Publish the exact Phase 4 tarball; neither a rebuild nor a different archive with the same name/version is an acceptable substitution.
