@@ -97,8 +97,8 @@ flowchart TD
     G -- yes --> H[Install same .tgz outside checkout with scripts disabled]
     H --> I{Version, prerequisites, browser review/export/Finish/handoff pass?}
     I -- no --> X
-    I -- yes --> J[Copy exact bytes to approved primary and backup custody]
-    J --> K{All custody SHA-256 values equal?}
+    I -- yes --> J[Retain accepted archive in durable read-only custody]
+    J --> K{Reopened archive SHA-256 still matches?}
     K -- no --> X
     K -- yes --> L[Human approval binds SHA-256 and limitations]
     L --> M[Designate same bytes for Phase 5; no publish/provenance claim]
@@ -126,7 +126,7 @@ The final source metadata should make these clean changes together:
 2. Change `files` from `dist/` plus `.kimi-code/skills/cumpa/` to `dist/` plus `THIRD_PARTY_NOTICES.md`. npm always includes `package.json`, a README, a license file, and declared bin targets, but the notices file needs explicit inclusion. [VERIFIED: `package.json`; CITED: https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#files]
 3. Keep `name`, `version`, `license`, repository, bugs URL, `engines.node`, and `bin` exactly aligned with the already approved metadata. [VERIFIED: `package.json`, `.planning/REQUIREMENTS.md`]
 4. Make Commander expose the package's `1.5.0` value from one source of truth. The current command chain at `src/cli/run.ts:732-746` has `.name`, `.description`, `.action`, and `.parseAsync`, but no `.version`; an installed `--version` check is therefore required before approval. [VERIFIED: `src/cli/run.ts`]
-5. Repair `scripts/verify-prerequisites.mjs` while touching the gate: its fixed map has 15 entries while `package.json` contains 19 direct production/dev dependencies, omitting `markdown-it`, `@types/markdown-it`, `supabase`, and one other configured entry. The current exact-count check cannot pass the current manifest. [VERIFIED: `scripts/verify-prerequisites.mjs`, `package.json`]
+5. Repair `scripts/verify-prerequisites.mjs` while touching the gate: its fixed map has 15 entries while `package.json` contains 18 direct production/dev dependencies, omitting `markdown-it`, `@types/markdown-it`, and `supabase`. The current exact-count check cannot pass the current manifest. [VERIFIED: `scripts/verify-prerequisites.mjs`, `package.json`]
 
 Do not add source maps, declaration files, source copies, a bundled marketplace skill, or a new install-time lifecycle. The packed `package.json` should be inspected to prove that no `preinstall`, `install`, `postinstall`, or `prepare` hook is required by Cumpa; acceptance should install with `--ignore-scripts`. [VERIFIED: `package.json`; CITED: https://docs.npmjs.com/cli/v11/using-npm/scripts/]
 
@@ -182,7 +182,7 @@ Minimum observations, all bound to the precomputed archive SHA-256:
 | Agent handoff | Installed attached flow delivers canonical output and owns isolated draft state. [VERIFIED: existing packaged scenario] |
 | Support | Configured launcher contains exactly the approved origin and no protected value; review/export succeeds without payment or support interaction. [VERIFIED: support boundary] |
 | Native behavior | Current Darwin ARM64 acceptance observes native second export; unsupported targets retain successful initial export and explicit `reExportUnsupported` for a second export. [VERIFIED: native capability code and tests] |
-| Archive after all checks | SHA-256 remains unchanged and equals both custody copies. [VERIFIED: `REL-03`] |
+| Archive after all checks | SHA-256 remains unchanged when the single accepted read-only archive is reopened and rehashed. Any backup is optional and outside the approval gate. [VERIFIED: `REL-03`; `04-04-PLAN.md`] |
 
 ## Native Capability and Portability
 
@@ -222,7 +222,7 @@ contents: sorted entries[path, type, mode, bytes, sha256], inventorySha256
 legal: licenseSha256, noticesSha256, rightsReviewSha256, reconciliationDisposition
 acceptance: archiveSha256BeforeEachStage, isolatedInstallLabel, installedMetadata,
             versionResult, prerequisiteResults, browserResult, supportResult, nativeResult
-custody: bounded primary/backup labels, copiedAt, sha256Equality
+custody: bounded accepted-candidate label, archive basename, readOnly, sha256, byteLength
 approval: approver, approvedAt, approvedArchiveSha256, limitations,
           designation = "Phase 5 input; not publication authorization or provenance proof"
 ```
@@ -231,7 +231,7 @@ Do not store credentials, raw environment dumps, access tokens, npm configuratio
 
 ## Custody and Phase 5 Handoff
 
-After acceptance, copy—not repack—the archive into an operator-approved directory outside the checkout and retain a second independently named local custody copy. Marking copies read-only reduces accidental overwrite but is not proof; recompute and compare SHA-256 after each copy and immediately before any Phase 5 transfer. If either copy disappears or differs, Phase 4 is no longer ready and `1.5.0` must not be reconstructed under the same approval. [VERIFIED: `REL-03`; recommended custody pattern]
+Retain the accepted candidate itself as one durable read-only archive outside the checkout. Reopen and recompute its SHA-256 and byte length after mode changes and immediately before Phase 5 transfer; missing or mismatched bytes block handoff and cannot be rebuilt under the same approval. A byte-identical backup is optional, omitted by default, and not an approval gate. [VERIFIED: `REL-03`; planning disposition in `04-04-PLAN.md`]
 
 Phase 4's handoff consists of the exact archive, its expected SHA-256/byte length/npm integrity, source/build bindings, acceptance evidence, and limitations. It does not upload a release asset, alter the existing deployment workflow, publish to npm, configure a trusted publisher, or assert provenance. The current deployment workflow intentionally uploads only `supabase-deployment-evidence.json`, not an unaccepted runtime tarball. [VERIFIED: `docs/distribution-operations.md`, `.github/workflows/deploy-supabase-production.yml`]
 
@@ -379,7 +379,7 @@ Recommended verification order:
 4. Closed archive inspection and complete `dist` parity against those exact bytes. [VERIFIED: `PKG-04`, `PKG-05`]
 5. Isolated global-prefix install of that same path with scripts disabled and no checkout dependency link. [CITED: npm install docs]
 6. Installed `--version`, prerequisite guidance, browser review/export/Finish, agent handoff, support-neutral, and target-aware native acceptance. [VERIFIED: phase success criteria]
-7. Post-acceptance hash, custody-copy equality, bounded evidence review, and human approval bound to SHA-256. [VERIFIED: `REL-03`]
+7. Post-acceptance read-only custody rehash, bounded evidence review, and human approval bound to SHA-256. [VERIFIED: `REL-03`]
 
 If any step requires a source edit, rebuild, repack, notice change, or different native binary, reject the candidate and begin a new one-candidate cycle. Never patch or replace files inside the archive. [VERIFIED: immutable-artifact contract]
 
@@ -408,29 +408,29 @@ If any step requires a source edit, rebuild, repack, notice change, or different
 | Filename/version identity | SHA-256-bound custody and approval | Prevents same-label substitution. [VERIFIED: artifact contract] |
 | General provenance intent | Actual later attestation subject/source inspection | Keeps preparation evidence distinct from publication proof. [VERIFIED: `REL-05`] |
 
-## Open Questions and Blocking Decisions
+## Open Questions Blocking Decisions (RESOLVED FOR PLANNING)
 
-1. **How will Phase 5's GitHub-hosted OIDC run receive the exact local bytes?**
-   - Known: GitHub Actions artifacts are immutable in v4 and expose a SHA-256 digest, but retention is bounded and a download digest mismatch is reported as a warning rather than this project's hard gate. [CITED: https://docs.github.com/en/actions/tutorials/store-and-share-data]
-   - Unknown: no remote staging/upload action is authorized for Phase 4. [VERIFIED: Phase 3 approval limits]
-   - Recommendation: preserve locally now. Phase 5 must select and authorize the transport, compare the project SHA-256 before publish, and distinguish artifact-production evidence from publication-run provenance. Block publication until that path is proven; do not design it in Phase 4.
+All five items below are resolved only as Phase 4 planning dispositions. They do not claim execution, artifact approval, publication, provenance, or new user policy.
 
-2. **What exact configured production Supabase origin is the candidate built with?**
-   - Known: the launcher accepts only one canonical Supabase origin and ordinary builds omit it. [VERIFIED: `scripts/build-bin.mjs`]
-   - Unknown: research intentionally did not expose the value. [VERIFIED: evidence policy]
-   - Recommendation: supply the existing authorized value at execution, verify exactly one assignment/no protected values, and record only its SHA-256 fingerprint. Missing or changed input blocks packing.
+1. **Phase 5 transport channel and trusted-publishing prerequisites**
+   - **Status:** RESOLVED FOR PLANNING
+   - **Disposition:** Deferred to Phase 5 as an explicit authorization gate. Phase 4 performs no upload, remote staging, publication, transport selection, or provenance action/claim. `04-04 Task 3` records the limitation and requires Phase 5 to rehash the approved local archive before any separately authorized transfer.
 
-3. **Is Darwin ARM64-only native second export the intended `1.5.0` support statement?**
-   - Known: source and tests implement exactly that boundary and gracefully preserve initial export elsewhere. [VERIFIED: native code/tests]
-   - Recommendation: treat it as the current accepted limitation and include it in evidence. Any request for additional native targets is a scope change and blocks rather than silently weakening acceptance.
+2. **Canonical configured support origin at final build time**
+   - **Status:** RESOLVED FOR PLANNING
+   - **Disposition:** `CUMPA_RELEASE_SUPPORT_SERVICE_URL` is the sole canonical cleartext input, recovered at execution from the protected executor environment or documented existing protected local configuration. It never appears in argv or durable evidence; `04-01 Task 3` defines purpose-aware production, `04-02 Tasks 1–2` define scanner/caller modes, and `04-04 Task 1` blocks on a dynamic human input gate if local recovery is unavailable.
 
-4. **Which local custody locations remain durable through Phase 5?**
-   - Known: the archive must survive checkout changes and cannot be reconstructed under the same approval. [VERIFIED: `REL-03`]
-   - Recommendation: select an operator-approved outside-checkout primary and backup before the pack command; record bounded labels and matching hashes, not private absolute paths.
+3. **Native binary target scope for this release**
+   - **Status:** RESOLVED FOR PLANNING
+   - **Disposition:** The release claim remains Darwin ARM64 for `src/native/directory-exchange.cc` -> `dist/native/directory_exchange.node`, with the current explicit `reExportUnsupported` fallback elsewhere. `04-02 Task 1` verifies target-appropriate contents and `04-03 Tasks 1–2` exercise the installed real-addon/fallback behavior without a broader platform-matrix claim.
 
-5. **Does the current notices file cover the final candidate's exact conveyed bytes?**
-   - Known: Phase 3 deliberately left final Vite/native output reconciliation to Phase 4. [VERIFIED: rights review]
-   - Recommendation: perform the bounded reconciliation against final lock/build/archive inventories. Any uncovered material or changed legal byte blocks artifact approval.
+4. **Minimum local custody before Phase 4 completion**
+   - **Status:** RESOLVED FOR PLANNING
+   - **Disposition:** The accepted candidate itself is the one required durable outside-checkout read-only archive. This planning disposition supersedes earlier research suggestions for two mandatory custody locations. `04-04 Tasks 2–3` rehash the archive after mode change and at approval. A byte-identical backup is optional operator policy, is omitted by default, and its absence cannot block approval; Phase 4 does not require triplication, inode/device diversity, or non-writable custody directories.
+
+5. **Final third-party notice reconciliation**
+   - **Status:** RESOLVED FOR PLANNING
+   - **Disposition:** `04-04 Task 1` recomputes final package/lock/legal digests and reconciles the actual conveyed lockfile/browser/native material against `THIRD_PARTY_NOTICES.md`. Any unresolved copied-component license/notice or changed approved legal text blocks artifact approval; this is a planning gate, not a claim that reconciliation or approval has already completed.
 
 ## Assumptions Log
 
@@ -452,7 +452,7 @@ No unverified package names, compliance requirements, platform promises, retenti
 
 ### Slice 3: Digest-bound approval and Phase 5 handoff
 
-- Create matching local custody copies, review bounded evidence, and obtain explicit human approval naming the exact SHA-256 and native/transport limitations. [VERIFIED: phase goal]
+- Retain one durable read-only accepted candidate, review bounded evidence, and obtain human approval naming its exact SHA-256 and native/transport limitations. A backup is optional and non-gating. [VERIFIED: phase goal; `04-04-PLAN.md`]
 - Designate those bytes as Phase 5 input while stating that no npm mutation, remote upload, source push, or provenance result is authorized/proven. [VERIFIED: phase boundary]
 - Leave remote transfer and actual provenance inspection to Phase 5. [VERIFIED: parent scope direction]
 
