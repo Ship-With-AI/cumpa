@@ -12,12 +12,12 @@ This is an incomplete, redacted exposure review, not a publishable canonical sna
 
 - Existing repository: Ship-With-AI/cumpa; immutable numeric ID **1327753770**, node ID **R_kgDOTyPqKg**.
 - Observed visibility: **private**; default branch **main**; not archived or disabled.
-- Clean committed source candidate, captured before this record: **a80ac723189d428193d685836c01bbc3d7bbbd9a**.
+- Current clean committed source candidate, captured before this review refresh: **5939daec8afa04f97a283c9fe9ea93c0bac6cd29**.
 - Actual advertised remote main: **7c9b22801378de313a7f2b9be7261eb17c4bb613**.
 - Native Git advertised only refs/heads/main. Paginated branch/tag/PR reads corroborated one branch, zero tags and zero PRs. There are no observed remote-only roots or forks.
-- Native ancestry checks proved old remote main is an ancestor of the candidate, with **39 intervening commits**. No-sync is therefore **not** available.
-- The old tentative f75e316 source target was superseded before any publication-review write: the GSD commit wrapper had omitted the tracked checkpoint deletion. The deletion was explicitly staged and committed at a80ac72, then the tracked tree was verified clean.
-- Later commits containing this review, decisions or summaries are outside the candidate and must never be pushed automatically. A workflow/content change needed for remediation requires a newly reviewed candidate; do not silently substitute current HEAD.
+- Native ancestry checks proved old remote main is an ancestor of this candidate, with **44 intervening commits**. No-sync is therefore **not** available.
+- The initial a80ac723189d428193d685836c01bbc3d7bbbd9a candidate is superseded by the reviewed identifier disposition, workflow recurrence-prevention fix and updated execution state. The earlier tentative f75e316 was already superseded when the omitted checkpoint deletion was committed at a80ac72.
+- Earlier redacted review/disposition records are now explicitly included in the newly reviewed candidate history. This refresh and any later authorization/post-change/SUMMARY commits remain outside it; none may be pushed automatically. Do not silently substitute a later HEAD.
 
 Any eventual one-ref update must recheck the exact approved old OID with BOTH native ancestry and an explicit expected-old lease. No non-fast-forward, unconditional force, mirror, deletion, rewrite or additional ref is implied. Origin currently uses SSH; that broad ambient path is not approved mutation authentication.
 
@@ -34,17 +34,23 @@ Both exact-text approvals remain recorded in 03-LICENSE-APPROVAL.md, including A
 | package.json | 9e7b82f462bb4cafd8c0aa580dd85126d4d0db7f0a7582b0e5543dfac756370b |
 | package-lock.json | 920091a7f027e13479ab8fdae7d266d171b17e4aa039f2dd46e0a16b75750e01 |
 | README.md | 02d1f75da1bc48be63449242df93b93ee47e631a5ca13155d2ec2292051b4482 |
-| docs/distribution-operations.md | cb6c06efb727366f19f08a113bee776f895519ba7a29bb2cc5106b8aacd61a4d |
+| docs/distribution-operations.md | d9dbd8bce6db618dc44123f0d8968ff9427fa1f6e364c27672b1e5d4f3f6cadd |
+| docs/support-service-operations.md | 89dc5b1b005f208ee885a0d3c7ba00db46e2bd9ed29722cdcb4ac33813b2873e |
+| .github/workflows/deploy-supabase-production.yml | 0cc92062e9b5ccefc4ae68ddf9494be6d5fec4f03ab07d2df67262293b6fe2d0 |
+| scripts/verify-supabase-support.mjs | c3977ba0a373053b2224e10bd0e6cd87664743a538dcb5b198d089764aa1bf1d |
+| tests/e2e/package-assets.spec.ts | 781e3dfc35c3673e30f45f8e9e6103d780a969b0d087569dcb1169499e3052c1 |
 
 The root-lock metadata change did not alter any of the 254 dependency locations, direct pins or transitive entries. The package guard and old allowlist remain intact for Phase 4. LICENSE is unchanged; no renewed license text is being inferred from this exposure review.
 
 ## Git coverage and classification
 
-The completed initial baseline at 2cc86b144307284e43bfc7f6fa31eb8cc5e2433d was reused, not replaced by a package scan. Native reachability and content reads covered the entire candidate root: **857 commits, 3,607 trees, 2,647 blobs; 7,111 objects**. Every blob decoded as UTF-8. The extension contains **13 commits, 74 new objects and 13 changed historical paths**, including the checkpoint added and later deleted in history.
+The completed baseline at 2cc86b144307284e43bfc7f6fa31eb8cc5e2433d was reused, not replaced by a package scan. Native reachability/content reads first covered candidate a80ac72: **857 commits, 3,607 trees, 2,647 blobs; 7,111 objects**. Every blob decoded as UTF-8. That extension contained **13 commits, 74 new objects and 13 changed historical paths**, including the checkpoint added and later deleted.
 
-All candidate objects were additionally swept for the newly known protected environment values; there were **zero prohibited-value matches**. The new object/message/path delta was lexically reviewed. Its 13 email finding locations are commit metadata; comparison with the original author/committer identities found **zero new email identities**. R-02 already covers that reviewed Git identity. This is not a general confidentiality or ownership certification.
+All initial-candidate objects were additionally swept for the newly known protected environment values; there were **zero prohibited-value matches**. Its new object/message/path delta was lexically reviewed. The 13 email locations were already-reviewed commit identities, with **zero new email identities** relative to the original audit. R-02 covers that Git identity; this is not a general confidentiality or ownership certification.
 
 The deterministic scanned-object/content projection SHA-256 was **2bd2277c0e452cbf8d3025647949277a6e6b83e3f3105b4aa445d843daa30d42**. Unchanged initial history/rights classifications remain in the bound rights review. Final-source changes must extend this evidence, not silently inherit it.
+
+The current 5939dae candidate adds **5 commits and 36 objects** over a80ac72: 5 commits, 20 trees and 11 blobs. Those objects were read and content-hashed, with zero matches to the protected environment values. The reviewed changes are redacted evidence/state, the exact-scope policy disposition and the existing workflow/verifier/regression changes; no dependency or LICENSE change occurred. The sorted OID/type/content-SHA-256 delta projection is **80ed9f0f04c79900fea91383ad92b08e61abe0d4fdb45a97989f8cf487832483**. Together these cover 862 commits, 3,627 trees and 2,658 blobs, or 7,147 reachable objects.
 
 ## Authenticated GitHub surface coverage
 
@@ -127,7 +133,42 @@ Current configuration bindings:
 
 **HIGH notice/distribution blocker.** Artifacts **9928300866** and **9907668126** contain release-package/cumpa-0.0.0.tgz. Each package has **142 entries**, no root LICENSE, no root THIRD_PARTY_NOTICES.md, and no license/notice/copying-named file. A targeted check found **zero copies of the complete upstream Monaco notice**, either exact bytes or whitespace-normalized text, within either archive's members. Upstream reference SHA-256: **790537262fc78a764e121e6b92b959bcd3f5c310b47d9d9b9e92e17fe0af5336**. The checked archive digests were unchanged.
 
-These are not Phase 4 accepted runtime artifacts. Neither the newly approved repository license nor a current-tree notice file retroactively supplies missing conveyed notices inside an older standalone archive. Do not claim full archive compliance from these checks; require exclusion from public exposure or a completed, evidence-backed notice/material disposition. Deletion or private preservation requires explicit authorization; neither occurred.
+These are not Phase 4 accepted runtime artifacts. Current repository license/notices do not supply missing notices inside an older standalone archive. The owner chose private preservation before selective removal; the byte-verified backups and exact proposal below are prepared. Remote deletion remains unauthorized and unperformed, so this publication blocker is not yet cleared.
+
+#### Private backups and removal-only proposal
+
+The owner-requested backups were completed at **2026-09-08T05:30:57.000128+00:00**, while the same repository ID was still private. Both downloaded ZIPs matched the pre-decision archive sizes and SHA-256 values exactly. Storage is the gitignored **.cumpa/publication-backup-vn77bbs5/** directory, mode **0700**; both archive files and manifest are owner-readable **0400**. No archive member was extracted or executed.
+
+The local manifest is **manifest.json**, kind **cumpa.publication-private-backup/v1**, SHA-256 **0da8d1d46f67a379a1c58669c205399f5e50513a7ff803d54e4b687e4a7e97a6**. This intentional private retention is separate from the completed temporary-audit cleanup.
+
+The following is a **proposal, not an authorization**. Its digest is SHA-256 of compact UTF-8 JSON with the shown key/array order: **b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951**.
+
+```json
+{
+  "kind": "cumpa.private-artifact-removal-proposal/v1",
+  "repository": "Ship-With-AI/cumpa",
+  "repository_id": 1327753770,
+  "expected_visibility": "private",
+  "artifacts": [
+    {
+      "id": 9907668126,
+      "bytes": 3482130,
+      "sha256": "3e4813bebbad2155ca473fe022cbb34196b1eadf85453f37bc675259b82cb453"
+    },
+    {
+      "id": 9928300866,
+      "bytes": 3482132,
+      "sha256": "bfbd790230ffaf37d5f6dc89fd792484c26a2062a32d8c50ab72e9ee7ec6afac"
+    }
+  ],
+  "backup_directory": ".cumpa/publication-backup-vn77bbs5",
+  "backup_manifest_sha256": "0da8d1d46f67a379a1c58669c205399f5e50513a7ff803d54e4b687e4a7e97a6",
+  "preserve": "all run records and logs, all other artifacts, all refs and Git history",
+  "required_authority": "separate explicit removal approval and operator-confirmed expiring repository-selected Actions-write credential"
+}
+```
+
+Before any removal, recheck immutable repository identity/private state, both current artifact bindings, both private backup bytes and the manifest digest, and the actual scoped credential. A separate blocking human-action authorization must name this exact proposal. Delete only the two named artifact objects if authorized; do not delete runs, logs, other artifacts, refs, source or history. Re-list afterward and refresh the full publication review. No such action has been authorized or executed.
 
 ### PUB-03 — Projects and mutation authority
 
@@ -135,9 +176,9 @@ Linked Projects are an inaccessible applicable surface until a read:project-capa
 
 ### PUB-04 — Prevent new unaccepted runtime archive uploads
 
-The identifier output is covered only by PUB-01's exact-scope disposition. The remaining recurrence problem is the workflow's release-package/*.tgz upload: the publication guard does not prevent CI artifact distribution, and the current package allowlist still omits the reconciled notice file.
+**Local prevention implemented and verified; not deployed.** Commit **1c270c7** retains repository gates, automatic production deployment and configured package build/scanning, but uploads only supabase-deployment-evidence.json. The existing release-workflow verifier now rejects an archive upload target or an additional upload step.
 
-Prepare the smallest source change: retain repository gates, automatic production deployment, configured package build/scanning and redacted deployment evidence, but stop uploading the unaccepted runtime tarball. Update its existing verifier/test contract rather than disabling production automation or adding a release service. Phase 4 still owns the runtime-only artifact cutover and acceptance. The changed source must be committed, reviewed and captured as a new candidate before any push authorization.
+The original verifier accepted the unsafe runtime upload. The focused Playwright regression now passes, exercising the actual Node verifier against the configured workflow and both unsafe variants. Source-text-only assertions were removed. The direct CLI verifier also passes for the current workflow; LSP reported no errors in the changed test/verifier (two unrelated existing unused hints remain). No live workflow, build, deployment or push was triggered. Phase 4 still owns final runtime-only artifact/notice acceptance.
 
 ## Scanner coverage, classification and cleanup
 
@@ -145,7 +186,7 @@ All **67** accessible log/artifact archives were read, including nested tarballs
 
 No genuine credential/key/JWT candidate was established. One broader prefix pass matched 90 compiler-identifier substrings; a token-boundary-corrected pass against the identical archives returned zero candidates. Other email/home-path matches were grammar strings, a currency-reference URL and a synthetic fixture. The scanner did not grant privacy clearance: PUB-01 was resolved by the actual owner selection above, and the notice/distribution finding remains blocking.
 
-Audit downloads used mode-0700 temporary directories under umask 077, finally/SIGINT/SIGTERM cleanup, bounded member/depth/expansion checks and no execution. Every completed pass confirmed cleanup and no read/safety errors. A focused check after the tool-kernel reset found no owned audit temporary directories. No raw payload is stored in Git or this evidence; the operator has now separately requested private, digest-verified backups of the two legacy archives, whose location and hashes will be recorded when created.
+Audit downloads used mode-0700 temporary directories under umask 077, finally/SIGINT/SIGTERM cleanup, bounded archive checks and no execution. All completed passes confirmed cleanup; a focused check after the tool-kernel reset found no owned audit temporary directories. No raw payload is stored in Git or this evidence. The separately requested, verified private backups above are intentionally retained under .cumpa/ and remain excluded from Git and package contents.
 
 ## Deterministic evidence boundaries
 
