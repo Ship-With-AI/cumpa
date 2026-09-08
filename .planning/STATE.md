@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: MIT Distribution
-current_phase: 03
-current_phase_name: Distribution Contract & Legal Boundary
-status: verifying
-stopped_at: "Phase 03 technical verification passed; 03-UAT has one pending item: confirm server-side revocation of the two temporary GitHub tokens"
-last_updated: "2026-09-08T13:34:02Z"
+current_phase: 4
+current_phase_name: Exact Runtime Tarball
+status: ready_to_plan
+stopped_at: "Phase 3 complete; all technical and human verification passed; ready to plan Phase 4"
+last_updated: "2026-09-08T13:46:52.792Z"
 last_activity: 2026-09-08
-last_activity_desc: Code review clean with 0 findings; security register closed 23/23; goal verification passed 10/10 must-haves. Canonical status is human_needed only for temporary-token revocation confirmation, persisted in 03-UAT.md.
+last_activity_desc: Phase 3 complete, transitioned to Phase 4
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
   completed_plans: 3
-  percent: 100
+  percent: 20
 ---
 
 # Project State
@@ -24,22 +24,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-08)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 03 — Distribution Contract & Legal Boundary
+**Current focus:** Phase 04 — Exact Runtime Tarball
 
 ## Current Position
 
-Phase: 03 (Distribution Contract & Legal Boundary) — VERIFYING
-Plan: 3 of 3 executed; all technical reviews passed; one human cleanup confirmation remains
-Status: Public at approved main ff72519969da8d2c0761c9533ccb27b809cd17bb. Phase verification is human_needed solely for revocation of the two temporary GitHub tokens.
-Last activity: 2026-09-08 — Reviewed code is clean, all 23 plan-time threats are closed/accepted, and 10/10 goal must-haves are verified. One administrative UAT item is saved; no new source, visibility or configuration action is authorized.
+Phase: 4 — Exact Runtime Tarball
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-08 — Phase 3 complete, transitioned to Phase 4
 
-Progress: [██████████] 100% plans executed — one human cleanup confirmation pending
+Progress: [██░░░░░░░░] 20% — 1 of 5 milestone phases complete
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 96
+- Total plans completed: 99
 - Average duration: 23 min
 - Total execution time: 4.7 hours
 
@@ -80,11 +80,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
-- Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
-- 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives remain backed up privately. Owner now directs retaining remote artifacts 9907668126 and 9928300866 despite PUB-02; record unremediated owner-accepted notice risk, not verified third-party permission/compliance. Do not delete them or change retention settings.
-- 03-03 source publication is complete: repository 1327753770 is public at ff72519969da8d2c0761c9533ccb27b809cd17bb. Exact content-bound final authorization e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18 was applied once; anonymous source/LICENSE/Issues and approved public controls passed. No later evidence commit, npm operation, artifact deletion or unrelated configuration change was published.
-- The only phase close-out blocker is operator confirmation that both temporary fine-grained preparation/visibility tokens were revoked in GitHub. `03-UAT.md` contains the one pending test. Code review is clean, security has 0 open declared threats, and goal verification is 10/10 with `status: human_needed`. Keychain deletion alone is not revocation. Browser rendering was unavailable; genuine anonymous HTTP/API fallback passed and is the recorded proof.
+- [Phase 5] Re-check then-current trusted-publisher/provenance eligibility and actual attestation evidence; public source or OIDC authentication alone is not a provenance claim.
+- [Phase 5] Confirm npm scope/package ownership and protected workflow identity before the bootstrap release.
+- [Phase 3 accepted risk] Retain artifacts 9907668126 and 9928300866 and their private backups under the owner's exact disposition despite the unremediated notice finding; do not claim third-party permission/compliance or change retention settings.
+- [Phase 4] The exact runtime-only tarball, included notices, compiled assets and exclusion boundary still require artifact acceptance. The current package private guard and pre-Phase-4 allowlist remain intentional.
+- [Publication boundary] Phase 3 published commit ff72519969da8d2c0761c9533ccb27b809cd17bb. Later local evidence and completion commits are not automatically authorized for pushing.
 
 ### Roadmap Evolution
 
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T13:34:02Z
-Stopped at: Final technical reviews complete. Public source/Issues and protections are verified; only the server-side revocation confirmation for the two temporary scoped tokens remains. Continue with /gsd:verify-work 3 and the single 03-UAT item, then close the phase through the normal passed-verification gate. Do not repeat publication or push later local evidence commits.
-Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-UAT.md
+Last session: 2026-09-08T13:46:52Z
+Stopped at: Phase 3 complete. Code review is clean, security is closed 23/23, goal verification passes 10/10, and UAT passes 1/1. The operator confirmed temporary-token revocation and both local copies were removed. Ready to plan Phase 4; no Phase 4 execution or further remote mutation has started.
+Resume file: None

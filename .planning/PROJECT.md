@@ -14,11 +14,13 @@ A developer can accurately review repository-grounded changes chosen by a develo
 
 Cumpa now offers an optional one-time USD $49.99 support flow in configured release packages without gating review behavior. The local app hands Support or Restore actions to a canonical Supabase-hosted GitHub OAuth flow; only a signature-verified Stripe webhook can establish paid status. Verified status persists installation-wide and a paid GitHub account can restore suppression on unlimited installations. Ordinary unconfigured local builds contain no hosted capability, provider credential, or support route.
 
+**v1.5 progress:** Phase 03 — Distribution Contract & Legal Boundary completed on 2026-09-08. The existing `Ship-With-AI/cumpa` repository is public under the approved MIT terms at reviewed publication commit `ff72519969da8d2c0761c9533ccb27b809cd17bb`; anonymous source/LICENSE/Issues access and the approved public controls were verified. Temporary publication tokens are revoked per operator confirmation and their local copies were removed. Public npm availability and provenance are not yet claimed; Phase 04 — Exact Runtime Tarball is next.
+
 ## Current Milestone: v1.5 MIT Distribution
 
 **Goal:** Let users install and run MIT-licensed Cumpa from public npm and install its public ShipWithAI skill, with the existing Cumpa source repository and reviewed history publicly available under the same standard MIT license.
 
-**Decision authority:** 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary source-available direction. The standard MIT license permits commercial use, modification, redistribution, sublicensing, and resale; third-party rights and notices remain unchanged. Repository and registry publication remain gated on rights/sensitive-history review and refreshed exact-text MIT assent from both licensors; this milestone definition does not change visibility.
+**Decision authority:** 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary source-available direction. Standard MIT permits commercial use, modification, redistribution, sublicensing, and resale; third-party rights and notices remain unchanged. Phase 03 completed the named exact-text assent, rights/sensitive-history review and separately authorized source-publication gates. Runtime artifact and registry publication remain gated by the later phases.
 
 **Target features:**
 - Publish MIT-licensed `@shipwithai/cumpa@1.5.0` for global installation and exact-version `npx` execution.
@@ -27,7 +29,7 @@ Cumpa now offers an optional one-time USD $49.99 support flow in configured rele
 - Publish the existing thin Cumpa coding-agent skill publicly under the ShipWithAI marketplace with an independent MIT license.
 - Declare the separately installed public CLI prerequisite and keep all review authority in the CLI.
 - Verify clean global, npx, and marketplace-installed browser-review flows against released artifacts.
-- Publish the existing `Ship-With-AI/cumpa` repository and reviewed history after the approval gates, and use its public Issues page without creating a separate homepage.
+- Completed in Phase 03: publish the existing `Ship-With-AI/cumpa` repository and reviewed history after the approval gates, with its verified public Issues page and no separate homepage.
 
 
 <details>
@@ -125,12 +127,18 @@ Validated in v1.4 Voluntary Support:
 - [x] Recovery uses a privacy-safe, one-use, installation-bound OAuth intent and returns no OAuth material locally.
 - [x] One paid account can restore unlimited installations.
 
+Validated in v1.5 Phase 03: Distribution Contract & Legal Boundary:
+
+- [x] Standard MIT terms with the named licensors' recorded exact-text assent and retained independent third-party notices.
+- [x] Public source and reviewed history in the existing `Ship-With-AI/cumpa` repository, after rights/sensitive-material review and exact scoped publication authorization.
+- [x] Coherent prepared package metadata and verified public source/Issues links without claiming npm availability.
+- [x] An evidence-backed provenance policy that assigns actual artifact, registry and attestation verification to the later release phases.
+
 ### Active
 
 - [ ] Users can install MIT-licensed `@shipwithai/cumpa@1.5.0` globally to obtain the `cumpa` command or run it through `npx @shipwithai/cumpa@1.5.0`.
 - [ ] Maintainers can publish approved releases from the public repository through npm trusted publishing without a long-lived token, retaining eligible automatic provenance and verifying any attestation claims.
-- [ ] Public npm packages contain only required compiled runtime and browser assets plus accurate MIT license and package metadata.
-- [ ] Cumpa's existing repository, source, and reviewed history become public under standard MIT only after refreshed exact-text MIT assent from both licensors and rights and sensitive-material review; npm artifacts still exclude source, source maps, tests, planning files, and Git data.
+- [ ] Public npm packages contain only required compiled runtime and browser assets plus accurate MIT license and package metadata, excluding TypeScript source, source maps, tests, planning files, and Git data.
 - [ ] Coding-agent users can install the existing public MIT-licensed Cumpa skill through ShipWithAI and follow its declared CLI prerequisite.
 - [ ] Clean global, npx, and marketplace installation paths complete the existing browser-review workflow against released artifacts.
 
@@ -219,10 +227,10 @@ Accepted v1.4 debt is bounded to a stale deleted-suite filename in the deploymen
 | Let only a signature-verified Stripe webhook establish payment | Browser redirects and OAuth completion cannot prove settlement | Good — exact product, amount, currency, mode, and replay invariants precede idempotent fulfillment |
 | Restore support through one-use installation-bound GitHub OAuth intents | Avoid retaining or returning email, OAuth tokens, or profile material in the local app | Good — paid accounts restore unlimited installations while unpaid restoration remains non-enumerating |
 | Embed one canonical Supabase origin only in configured release packages | Keep ordinary local builds free of hosted capability and prevent arbitrary support origins | Good — package scans and immutable release evidence bind the approved origin and package digest |
-| Publish the existing repository and reviewed history under standard MIT | Make source and compiled releases available for commercial reuse, modification, redistribution, sublicensing, and resale while retaining third-party rights and notices | Pending — 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary direction; refreshed exact-text MIT assent from both licensors and rights/sensitive-history review must precede visibility change |
+| Publish the existing repository and reviewed history under standard MIT | Make source and compiled releases available for commercial reuse, modification, redistribution, sublicensing, and resale while retaining third-party rights and notices | Good — Phase 03 published the exact reviewed source at ff72519969da8d2c0761c9533ccb27b809cd17bb after the rights/exposure/authorization gates and verified anonymous source/LICENSE/Issues access |
 | Keep marketplace skill public under MIT | Preserve ShipWithAI's thin permissive installation and delegation layer while the separately installed Cumpa CLI remains the review authority | Pending — marketplace skill delegates all review authority to a compatible released CLI |
-| Require both Alessandro Magionami and Manuel Salvatore Martone to approve the exact MIT text before publication | Keep publication of the mutually licensed work under both named licensors' authority without conditioning downstream MIT grants | Pending — proprietary approvals are historical and do not approve MIT bytes |
-| Preserve eligible automatic npm provenance from the public repository | Replace the superseded private-source prohibition with truthful, evidence-backed release claims | Pending — public visibility and actual publication/attestation evidence must be verified |
+| Require both Alessandro Magionami and Manuel Salvatore Martone to approve the exact MIT text before publication | Keep publication of the mutually licensed work under both named licensors' authority without conditioning downstream MIT grants | Good — exact MIT assent is recorded as Alessandro's direct approval and his witnessed report of Manuel's own approval; independent verification of Manuel is not claimed |
+| Preserve eligible automatic npm provenance from the public repository | Replace the superseded private-source prohibition with truthful, evidence-backed release claims | Policy validated in Phase 03 and public source established; actual registry publication and attestation evidence remain Phase 05 |
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -241,4 +249,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-09-08 after quick task 260908-d25 superseded the 2026-09-07 proprietary source-available distribution direction with MIT Distribution*
+*Last updated: 2026-09-08 after Phase 03 completion and transition to Phase 04 — Exact Runtime Tarball*

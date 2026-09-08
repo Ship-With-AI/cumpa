@@ -2,7 +2,7 @@
 
 **Gathered:** 2026-09-07
 **Reconciled:** 2026-09-08
-**Status:** Active MIT distribution contract; publication remains gated.
+**Status:** Phase complete: approved MIT source publication and verification passed. Runtime artifact and registry publication remain gated by later phases.
 
 <domain>
 ## Phase Boundary

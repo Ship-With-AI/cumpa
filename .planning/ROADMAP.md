@@ -15,7 +15,7 @@ The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary sou
 
 ## Phases
 
-- [ ] **Phase 3: Distribution Contract & Legal Boundary** — Establish standard MIT terms, refreshed dual-licensor exact-text assent, safe publication of the existing repository and reviewed history, and truthful package links and provenance policy.
+- [x] **Phase 3: Distribution Contract & Legal Boundary** — Establish standard MIT terms, refreshed dual-licensor exact-text assent, safe publication of the existing repository and reviewed history, and truthful package links and provenance policy. (completed 2026-09-08)
 - [ ] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release.
 - [ ] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable non-`latest` bootstrap, revoke temporary authorization, and publish stable `1.5.0` through OIDC.
 - [ ] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite.
@@ -36,7 +36,7 @@ The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary sou
 3. The existing `Ship-With-AI/cumpa` repository and reviewed history are public under standard MIT only after both licensors give refreshed exact-text MIT assent and rights/sensitive-material review is resolved; no credentials or confidential operational material are exposed, and destructive remediation or history rewriting requires separate approval.
   4. The documented release policy preserves eligible automatic npm provenance, defines the public-source/attestation evidence Phase 5 must verify, and forbids unsupported claims; OIDC authentication alone is not attestation proof.
 
-**Plans**: 3/3 executed. MIT assent and authorized public source are verified; code review is clean, all 23 declared threats are closed/accepted, and goal verification is 10/10. Phase close-out awaits only temporary-token revocation confirmation in 03-UAT.md.
+**Plans**: 3/3 complete. MIT assent and authorized public source are verified; code review is clean, all 23 declared threats are closed/accepted, goal verification is 10/10, and the token-cleanup UAT passed 1/1. Phase 3 completed 2026-09-08.
 
 Plans:
 **Wave 1**
@@ -111,7 +111,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 3. Distribution Contract & Legal Boundary | 3/3 | Human verification | - |
+| 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
 | 4. Exact Runtime Tarball | 0/TBD | Not started | - |
 | 5. Bootstrap & Trusted Stable Publication | 0/TBD | Not started | - |
 | 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
