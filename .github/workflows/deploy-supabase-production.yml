@@ -80,8 +80,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: supabase-production-release-${{ github.run_id }}
-          path: |
-            supabase-deployment-evidence.json
-            release-package/*.tgz
+          path: supabase-deployment-evidence.json
           if-no-files-found: error
           retention-days: 90

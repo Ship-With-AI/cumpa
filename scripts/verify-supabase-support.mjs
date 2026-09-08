@@ -1751,8 +1751,12 @@ async function verifyWorkflow(path, options) {
       || !release.includes(scanner)
       || !release.includes('npm pack --json --ignore-scripts --pack-destination release-package')
       || release.indexOf(scanner) > release.indexOf('npm pack --json --ignore-scripts --pack-destination release-package')
-      || !workflow.includes('release-package/*.tgz')
     ) fail('workflow does not build and scan the configured release artifact');
+    const uploadSteps = workflow.match(/^\s*(?:-\s+)?uses:\s+actions\/upload-artifact@/gmu) ?? [];
+    const uploadPath = workflow.slice(upload).match(/^\s*path:\s*([^\r\n]+)$/mu)?.[1]?.trim();
+    if (uploadSteps.length !== 1 || uploadPath !== 'supabase-deployment-evidence.json') {
+      fail('workflow must upload only redacted deployment evidence');
+    }
   }
 }
 

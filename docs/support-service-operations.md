@@ -6,6 +6,8 @@ Cumpa has one hosted Supabase production project. Ordinary local development has
 
 The credential-free `repository-gates` job runs before the serialized `deploy-production` job enters GitHub's protected `production` environment. Only the protected job receives the project ref, deployment credentials, and provider inputs.
 
+The configured package is still built and scanned, but this deployment workflow persists only redacted deployment evidence as a GitHub artifact. Runtime tarballs are not uploaded by this workflow; their distribution requires the separate artifact/notice acceptance gate.
+
 ## Default project origin
 
 The sole browser-facing origin is `https://<project-ref>.supabase.co`. The protected executor validates `SUPABASE_PROJECT_REF` immediately before hosted mutation and derives routes only in memory. Do not store a separate public-origin, site URL, redirect URL, GitHub callback URL, or webhook URL input.

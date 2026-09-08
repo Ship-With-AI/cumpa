@@ -4,6 +4,7 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
+  writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -189,15 +190,31 @@ test('configured package contains exactly the canonical support origin', () => {
   ]);
 });
 
-test('release workflow derives and verifies its configured package', () => {
+test('release workflow verifies its package without publishing runtime archives', () => {
   const workflow = readFileSync(workflowPath, 'utf8');
-
-  expect(workflow).toContain('CUMPA_RELEASE_SUPPORT_SERVICE_URL="$origin" npm run build');
-  expect(workflow).toContain('--expected-support-origin "$origin" --require-configured-launcher dist/bin/cumpa.mjs');
   runPrerequisite(process.execPath, [
     workflowVerifier,
     '--verify-workflow',
     workflowPath,
     '--require-release-artifact',
   ]);
+
+  const temporaryDirectory = mkdtempSync(join(tmpdir(), 'cumpa-workflow-'));
+  const unsafePath = join(temporaryDirectory, 'unsafe.yml');
+  try {
+    for (const unsafeWorkflow of [
+      workflow.replace('path: supabase-deployment-evidence.json', 'path: release-package/*.tgz'),
+      `${workflow}\n      - uses: actions/upload-artifact@v4\n        with:\n          path: release-package/\n`,
+    ]) {
+      writeFileSync(unsafePath, unsafeWorkflow);
+      expect(() => execFileSync(process.execPath, [
+        workflowVerifier,
+        '--verify-workflow',
+        unsafePath,
+        '--require-release-artifact',
+      ], { stdio: 'pipe' })).toThrow();
+    }
+  } finally {
+    rmSync(temporaryDirectory, { recursive: true, force: true });
+  }
 });

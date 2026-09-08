@@ -44,3 +44,9 @@ If no attestation is emitted or any verification mismatches, record that actual 
 D-22/D-23 do not authorize a source-inclusive tarball, application protocol change, AI/API/schema/UI work, new release framework or approval engine. Do not add activation, DRM, a license server or payment gating. Voluntary support remains feature-neutral and buys no service commitment.
 
 The marketplace skill is an independently MIT-licensed later distribution requiring a separately installed CLI. Do not merge its license with the proprietary application grant or treat the retained pre-Phase-4 allowlist as authorization to bundle the skill in the final runtime-only package.
+
+## Supabase deployment artifacts during preparation
+
+The existing deployment workflow keeps its repository gates, production deployment and configured package build/scan. It uploads only `supabase-deployment-evidence.json`, not the unaccepted runtime tarball. The existing workflow verifier rejects archive upload targets and additional upload steps.
+
+Do not reintroduce runtime-package uploads before the applicable Phase 4 artifact/notice acceptance and publication review. The two older runtime archives are subject to the operator's private-backup/selective-removal direction; neither that direction nor a completed local backup authorizes remote deletion.
