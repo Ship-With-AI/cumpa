@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { readFile } from 'node:fs/promises';
 import { Command } from 'commander';
 
 import open from 'open';
@@ -56,6 +57,27 @@ import {
   type ShutdownController,
   type ShutdownSignalSource,
 } from '../server/lifecycle.js';
+
+const expectedPackageName = '@shipwithai/cumpa';
+const semanticVersionPattern =
+  /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u;
+
+export async function readPackageVersionFromManifest(
+  manifestUrl = new URL('../../package.json', import.meta.url),
+): Promise<string> {
+  const manifest: unknown = JSON.parse(await readFile(manifestUrl, 'utf8'));
+  if (manifest === null || typeof manifest !== 'object' || Array.isArray(manifest)) {
+    throw new Error('Package manifest must be an object');
+  }
+  const { name, version } = manifest as { name?: unknown; version?: unknown };
+  if (name !== expectedPackageName) {
+    throw new Error(`Package manifest name must be ${expectedPackageName}`);
+  }
+  if (typeof version !== 'string' || !semanticVersionPattern.test(version)) {
+    throw new Error('Package manifest version must be a semantic version');
+  }
+  return version;
+}
 
 const packagedLaunchOptionsSchema = z.strictObject({
   cwd: z.string().min(1),
@@ -732,6 +754,7 @@ export async function run(
   await new Command()
     .name('cumpa')
     .description('Local-first review of pinned Git comparisons')
+    .version(await readPackageVersionFromManifest())
     .action(async () => {
       const serializedLaunchOptions = process.env.CUMPA_LAUNCH_OPTIONS;
       if (serializedLaunchOptions === undefined) {

@@ -1,7 +1,6 @@
 {
   "name": "@shipwithai/cumpa",
   "version": "1.5.0",
-  "private": true,
   "description": "Local-first review of pinned Git comparisons",
   "license": "MIT",
   "repository": {
@@ -20,7 +19,9 @@
   },
   "files": [
     "dist/",
-    ".kimi-code/skills/cumpa/"
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "scripts": {
     "build:bin": "node scripts/build-bin.mjs",
