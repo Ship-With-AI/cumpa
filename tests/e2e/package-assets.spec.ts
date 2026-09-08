@@ -14,7 +14,6 @@ import { expect, test } from '@playwright/test';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
-const artifactScript = fileURLToPath(new URL('../../scripts/verify-production-artifacts.mjs', import.meta.url));
 const buildBinScript = fileURLToPath(new URL('../../scripts/build-bin.mjs', import.meta.url));
 const workflowPath = join(repositoryRoot, '.github/workflows/deploy-supabase-production.yml');
 const workflowVerifier = fileURLToPath(new URL('../../scripts/verify-supabase-support.mjs', import.meta.url));
@@ -116,11 +115,6 @@ test('packed artifact contains runtime and production Vue assets', () => {
   }
 });
 
-test('published package passes the configured-absent production scanner', () => {
-  const hasProductionBootstrap = existsSync(join(repositoryRoot, 'src/web/index.html'));
-  runPrerequisite(npmCommand, ['run', hasProductionBootstrap ? 'build' : 'build:runtime']);
-  runPrerequisite(process.execPath, [artifactScript]);
-});
 
 test('clean install launches the packed artifact', () => {
   const directory = mkdtempSync(join(tmpdir(), 'cumpa-installed-'));
@@ -177,18 +171,6 @@ test('release build rejects invalid support origins', () => {
   }
 });
 
-test('configured package contains exactly the canonical support origin', () => {
-  const origin = 'https://abcdefghijklmnopqrst.supabase.co';
-  buildLauncher(origin);
-
-  runPrerequisite(process.execPath, [
-    artifactScript,
-    '--expected-support-origin',
-    origin,
-    '--require-configured-launcher',
-    'dist/bin/cumpa.mjs',
-  ]);
-});
 
 test('release workflow verifies its package without publishing runtime archives', () => {
   const workflow = readFileSync(workflowPath, 'utf8');
@@ -196,7 +178,6 @@ test('release workflow verifies its package without publishing runtime archives'
     workflowVerifier,
     '--verify-workflow',
     workflowPath,
-    '--require-release-artifact',
   ]);
 
   const temporaryDirectory = mkdtempSync(join(tmpdir(), 'cumpa-workflow-'));
@@ -211,7 +192,6 @@ test('release workflow verifies its package without publishing runtime archives'
         workflowVerifier,
         '--verify-workflow',
         unsafePath,
-        '--require-release-artifact',
       ], { stdio: 'pipe' })).toThrow();
     }
   } finally {

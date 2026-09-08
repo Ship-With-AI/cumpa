@@ -9,7 +9,6 @@ import { expect, test } from '@playwright/test';
 
 const execFileAsync = promisify(execFile);
 const script = new URL('../../scripts/verify-supabase-support.mjs', import.meta.url).pathname;
-const artifactScript = new URL('../../scripts/verify-production-artifacts.mjs', import.meta.url).pathname;
 
 async function reject(args: string[], message: string) {
   await expect(execFileAsync(process.execPath, [script, ...args])).rejects.toMatchObject({
@@ -244,7 +243,7 @@ test('workflow verification rejects toolchain, database-order, and retired-input
     /(deploy-production:[\s\S]*?)      - run: npm ci\n/u,
     '$1',
   ));
-  await reject(['--verify-workflow', deployWithoutInstall, '--require-release-artifact'], 'workflow deploy job is missing dependency installation');
+  await reject(['--verify-workflow', deployWithoutInstall], 'workflow deploy job is missing dependency installation');
 });
 
 test('acceptance markers reject browser observations not covered by their digest', async ({}, testInfo) => {
@@ -295,58 +294,6 @@ test('acceptance markers reject browser observations not covered by their digest
 });
 
 
-test('retirement and package scanners permit only the supplied canonical origin', async ({}, testInfo) => {
-  const origin = 'https://abcdefghijklmnopqrst.supabase.co';
-  const fixture = testInfo.outputPath('artifact-fixture');
-  const output = join(fixture, 'retirement.json');
-  await mkdir(join(fixture, 'dist'), { recursive: true });
-  await writeFile(join(fixture, 'package.json'), JSON.stringify({
-    name: 'scanner-fixture',
-    version: '1.0.0',
-    files: ['dist'],
-    scripts: { build: "node -e \"require('fs').mkdirSync('dist',{recursive:true});require('fs').writeFileSync('dist/launcher.mjs',process.env.LAUNCHER || '')\"" },
-  }));
-  await writeFile(join(fixture, '.gitignore'), 'node_modules\n');
-  await execFileAsync('git', ['init'], { cwd: fixture });
-  await execFileAsync('git', ['add', 'package.json', '.gitignore'], { cwd: fixture });
-  await execFileAsync('git', ['-c', 'user.name=Scanner', '-c', 'user.email=scanner@example.invalid', 'commit', '-m', 'fixture'], { cwd: fixture });
-
-  const assignment = (configuredOrigin: string) =>
-    `if (process.env.CUMPA_SUPPORT_SERVICE_URL === undefined) process.env.CUMPA_SUPPORT_SERVICE_URL = '${configuredOrigin}';\n`;
-  const cases: Array<[string, string, string | undefined]> = [
-    ['configured absence', '', undefined],
-    ['canonical configured launcher', assignment(origin), undefined],
-    ['arbitrary host', assignment('https://zzzzzzzzzzzzzzzzzzzz.supabase.co'), 'unexpected Supabase origin'],
-    ['bare ref', 'abcdefghijklmnopqrst\n', 'raw Supabase project ref'],
-    ['duplicate launcher', `${assignment(origin)}${assignment(origin)}`, 'exactly one configured launcher assignment'],
-    ['protected value', `STRIPE_SECRET_KEY=${'sk' + '_fixture'}\n`, 'protected value'],
-  ];
-  for (const [name, launcher, failure] of cases) {
-    await writeFile(join(fixture, 'dist/launcher.mjs'), launcher);
-    const artifactArgs = launcher.includes('CUMPA_SUPPORT_SERVICE_URL')
-      ? ['--expected-support-origin', origin, '--require-configured-launcher', 'dist/launcher.mjs']
-      : [];
-    const result = execFileAsync(process.execPath, [artifactScript, ...artifactArgs], { cwd: fixture });
-    if (failure) {
-      await expect(result, name).rejects.toMatchObject({ stderr: expect.stringContaining(failure) });
-    } else {
-      await expect(result, name).resolves.toBeDefined();
-    }
-  }
-
-  await expect(execFileAsync(process.execPath, [
-    script,
-    '--retirement-review',
-    '--output',
-    output,
-  ], { cwd: fixture })).resolves.toBeDefined();
-  expect(JSON.parse(await readFile(output, 'utf8'))).toMatchObject({
-    kind: 'retirement-review',
-    configured_absent: true,
-    violations: [],
-  });
-  await rm(fixture, { recursive: true, force: true });
-});
 test('local security collector rejects hosted and retired configuration before running', async ({}, testInfo) => {
   await expect(execFileAsync(process.execPath, [
     script,

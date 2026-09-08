@@ -1,10 +1,11 @@
 import { createHash, createHmac, randomBytes, randomUUID } from 'node:crypto';
 import { mkdtemp, readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { execFileSync, spawn } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const EVIDENCE_VERSION = 1;
 const MANAGEMENT_ORIGIN = 'https://api.supabase.com';
@@ -140,7 +141,7 @@ function canonicalOriginPolicyOrigin(origin) {
 const commandDefinitions = {
   '--verify-workflow': {
     values: new Set(['--verify-workflow', '--require-environment', '--expected-mode']),
-    flags: new Set(['--require-release-artifact']),
+    flags: new Set(),
   },
   '--check-release-evidence': {
     values: new Set(['--check-release-evidence', '--live-promotion', '--retirement']),
@@ -233,7 +234,7 @@ function parseArguments(argv) {
 
 const RETIREMENT_SCOPE_VERSION = 1;
 const RETIREMENT_LEGACY = /(?:services\/support|render(?:\.com|\.ya?ml)|RESEND_API_KEY|magic[-_ ]?link|recovery[-_ ]?token|DATABASE_URL|EMAIL_LOOKUP_HMAC_KEY|RECOVERY_TOKEN_HMAC_KEY)/iu;
-const RETIREMENT_PROTECTED = /(?:\b(?:sk|rk|pk)_[A-Za-z0-9_]+|\bwhsec_[A-Za-z0-9_]+|\bgh[ops]_[A-Za-z0-9_]+|(?:oauth|access_token|id_token|payer_email|profile_email)=)/iu;
+const RETIREMENT_PROTECTED = /(?:\b(?:sk|rk|pk)_[A-Za-z0-9_]*[A-Za-z0-9](?![A-Za-z0-9_])|\bwhsec_[A-Za-z0-9_]+|\bgh[ops]_[A-Za-z0-9_]+|(?:oauth|access_token|id_token|payer_email|profile_email)=)/iu;
 const RETIREMENT_CONTRACT_PATHS = new Set([
   'scripts/verify-supabase-support.mjs',
   'scripts/verify-production-artifacts.mjs',
@@ -273,77 +274,103 @@ async function scanRetirementFiles(paths, root, policy) {
   return count;
 }
 
-function packageInventory() {
-  const temporary = mkdtempSync(join(tmpdir(), 'cumpa-retirement-'));
-  try {
-    const [dryRun] = JSON.parse(execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], { encoding: 'utf8' }));
-    const [pack] = JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', temporary], { encoding: 'utf8' }));
-    execFileSync('tar', ['-xzf', join(temporary, pack.filename), '-C', temporary]);
-    return {
-      directory: temporary,
-      inventory: dryRun.files.map((file) => file.path),
-      archive: join(temporary, pack.filename),
-      packageRoot: join(temporary, 'package'),
-    };
-  } catch (error) {
-    rmSync(temporary, { recursive: true, force: true });
-    throw error;
-  }
-}
 
 function digestFile(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
+async function verifyRuntimeArtifact(purpose) {
+  const temporary = await mkdtemp(join(tmpdir(), 'cumpa-runtime-'));
+  const custodyDirectory = join(temporary, 'custody');
+  const evidencePath = join(temporary, 'runtime-artifact-evidence.json');
+  const environment = { ...process.env };
+  delete environment.CUMPA_RELEASE_SUPPORT_SERVICE_URL;
+  const cleanup = () => rm(temporary, { recursive: true, force: true });
+  const onInterrupt = () => { void cleanup().finally(() => process.exit(130)); };
+  const onTerminate = () => { void cleanup().finally(() => process.exit(143)); };
+  process.once('SIGINT', onInterrupt);
+  process.once('SIGTERM', onTerminate);
+  try {
+    execFileSync(process.execPath, [
+      fileURLToPath(new URL('./pack-runtime.mjs', import.meta.url)),
+      '--purpose', purpose,
+      '--custody-dir', custodyDirectory,
+      '--evidence', evidencePath,
+    ], { encoding: 'utf8', stdio: 'pipe', env: environment });
+    const evidence = JSON.parse(await readFile(evidencePath, 'utf8'));
+    if (
+      evidence?.kind !== 'cumpa.runtime-artifact-evidence/v1'
+      || evidence.status !== purpose
+      || evidence.purpose !== purpose
+      || evidence.support?.configured !== false
+      || typeof evidence.archive?.basename !== 'string'
+      || basename(evidence.archive.basename) !== evidence.archive.basename
+    ) fail('runtime producer did not create an unconfigured development-check artifact');
+    const archivePath = join(custodyDirectory, evidence.archive.basename);
+    const expectedSha256 = digestFile(archivePath);
+    const result = JSON.parse(execFileSync(process.execPath, [
+      fileURLToPath(new URL('./verify-production-artifacts.mjs', import.meta.url)),
+      '--archive', archivePath,
+      '--expected-sha256', expectedSha256,
+      '--evidence', evidencePath,
+    ], { encoding: 'utf8', stdio: 'pipe', env: environment }));
+    if (
+      result?.kind !== 'cumpa.runtime-artifact-verification/v1'
+      || result.status !== 'passed'
+      || result.purpose !== purpose
+      || result.archive?.sha256 !== expectedSha256
+      || result.support?.configured !== false
+    ) fail('runtime verifier did not pass the unconfigured development-check artifact');
+    return result;
+  } finally {
+    process.off('SIGINT', onInterrupt);
+    process.off('SIGTERM', onTerminate);
+    await cleanup();
+  }
+}
+
 async function retirementReview(output) {
+  if (basename(output) !== '02-15-RETIREMENT-EVIDENCE.md') fail('retirement review output basename is invalid');
+  if (process.env.CUMPA_RELEASE_SUPPORT_SERVICE_URL !== undefined) fail('retirement review forbids CUMPA_RELEASE_SUPPORT_SERVICE_URL');
   const root = process.cwd();
   const tracked = trackedPaths();
   const trackedCount = await scanRetirementFiles(tracked, root, (path) => ({
     allowContractDescriptions: path.startsWith('.planning/') || RETIREMENT_CONTRACT_PATHS.has(path),
     allowOrigin: true,
   }));
-  execFileSync('npm', ['run', 'build'], { encoding: 'utf8', stdio: 'pipe' });
+  const verified = await verifyRuntimeArtifact('development-check');
   const dist = await filePaths(join(root, 'dist'));
   const distCount = await scanRetirementFiles(dist.map((path) => relative(root, path)), root, () => ({}));
-  execFileSync(process.execPath, [new URL('./verify-production-artifacts.mjs', import.meta.url).pathname], { encoding: 'utf8', stdio: 'pipe' });
-  const packed = packageInventory();
-  try {
-    const inventoryCount = packed.inventory.length;
-    const extracted = await filePaths(packed.packageRoot);
-    const extractedCount = await scanRetirementFiles(extracted.map((path) => relative(packed.packageRoot, path)), packed.packageRoot, () => ({}));
-    const record = {
-      version: EVIDENCE_VERSION,
-      kind: 'retirement-review',
-      status: 'passed',
-      policy: {
-        version: RETIREMENT_SCOPE_VERSION,
-        classifier_sha256: sha256(`${RETIREMENT_LEGACY.source}\n${RETIREMENT_PROTECTED.source}\n${[...RETIREMENT_CONTRACT_PATHS].join('\n')}`),
-      },
-      scope: {
-        tracked_paths: tracked.length,
-        scanned_tracked_files: trackedCount,
-        immutable_description_exclusion: '.planning/**',
-        contract_description_exclusions: [...RETIREMENT_CONTRACT_PATHS].sort(),
-      },
-      configured_absent: true,
-      package: {
-        scanned_dist_files: distCount,
-        inventory_paths: inventoryCount,
-        extracted_files: extractedCount,
-        archive_sha256: digestFile(packed.archive),
-        inventory_sha256: sha256(JSON.stringify(packed.inventory)),
-      },
-      artifacts: {
-        commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-        evidence_sha256: '',
-      },
-      violations: [],
-    };
-    record.artifacts.evidence_sha256 = sha256(JSON.stringify({ ...record, artifacts: { ...record.artifacts, evidence_sha256: '' } }));
-    await writeEvidence(output, record);
-  } finally {
-    await rm(packed.directory, { recursive: true, force: true });
-  }
+  const record = {
+    version: EVIDENCE_VERSION,
+    kind: 'retirement-review',
+    status: 'passed',
+    policy: {
+      version: RETIREMENT_SCOPE_VERSION,
+      classifier_sha256: sha256(`${RETIREMENT_LEGACY.source}\n${RETIREMENT_PROTECTED.source}\n${[...RETIREMENT_CONTRACT_PATHS].join('\n')}`),
+    },
+    scope: {
+      tracked_paths: tracked.length,
+      scanned_tracked_files: trackedCount,
+      immutable_description_exclusion: '.planning/**',
+      contract_description_exclusions: [...RETIREMENT_CONTRACT_PATHS].sort(),
+    },
+    configured_absent: true,
+    package: {
+      scanned_dist_files: distCount,
+      inventory_paths: verified.inventory.count,
+      archive_sha256: verified.archive.sha256,
+      archive_bytes: verified.archive.byteLength,
+      inventory_sha256: verified.inventory.sha256,
+    },
+    artifacts: {
+      commit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+      evidence_sha256: '',
+    },
+    violations: [],
+  };
+  record.artifacts.evidence_sha256 = sha256(JSON.stringify({ ...record, artifacts: { ...record.artifacts, evidence_sha256: '' } }));
+  await writeEvidence(output, record);
 }
 
 const FINAL_INPUTS = [
@@ -375,8 +402,6 @@ const LOCAL_SECURITY_COMMAND_IDS = [
   'database-migrations-2',
   'database-lint-2',
   'deno',
-  'build',
-  'package-scan',
 ];
 
 function finalDigest(record) {
@@ -565,8 +590,6 @@ async function localPackageSecurityReview(output) {
     { id: 'database-migrations-2', command: 'npx', args: ['supabase@2.114.0', 'migration', 'list', '--local'] },
     { id: 'database-lint-2', command: 'npx', args: ['supabase@2.114.0', 'db', 'lint', '--local'] },
     { id: 'deno', command: 'deno', args: ['test', '--allow-env', '--config', 'supabase/functions/deno.json', 'supabase/functions/tests'] },
-    { id: 'build', command: 'npm', args: ['run', 'build'] },
-    { id: 'package-scan', command: process.execPath, args: [new URL('./verify-production-artifacts.mjs', import.meta.url).pathname] },
   ];
   const retirement = join(await mkdtemp(join(tmpdir(), 'cumpa-local-security-')), '02-15-RETIREMENT-EVIDENCE.md');
   try {
@@ -1736,32 +1759,37 @@ async function verifyWorkflow(path, options) {
   for (const input of RETIRED_INPUTS) if (workflow.includes(input)) fail('workflow contains forbidden retired input');
   if (workflow.includes('--acceptance-marker')) fail('workflow retains obsolete hostile acceptance branch');
   if (/\b(?:domains|custom-domain|custom domain|dns|cname|txt)\b/iu.test(workflow)) fail('workflow contains forbidden domain lifecycle');
-  if (options.flags.has('--require-release-artifact')) {
-    const guard = '[[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || exit 1';
-    const deployGuard = workflow.indexOf('name: Guard canonical Supabase target');
-    const deploy = workflow.indexOf('name: Deploy guarded Supabase release');
-    const build = workflow.indexOf('name: Build configured release package');
-    const upload = workflow.indexOf('actions/upload-artifact@v4');
-    const deployInstall = workflow.indexOf('      - run: npm ci', workflow.indexOf('deploy-production:'));
-    if (deployInstall < 0 || deployInstall > build) fail('workflow deploy job is missing dependency installation');
-    if (
-      deployGuard < 0 || deploy < 0 || build < 0 || upload < 0 || deployGuard > deploy
-      || !workflow.includes(guard) || /CUMPA_RELEASE_SUPPORT_SERVICE_URL:\s*\$\{\{/u.test(workflow)
-    ) fail('workflow does not guard the release project ref');
-    const release = workflow.slice(build, upload);
-    const scanner = 'node scripts/verify-production-artifacts.mjs --expected-support-origin "$origin" --require-configured-launcher dist/bin/cumpa.mjs';
-    if (
-      !release.includes(`origin="https://${'${SUPABASE_PROJECT_REF}'}.supabase.co"`)
-      || !release.includes('CUMPA_RELEASE_SUPPORT_SERVICE_URL="$origin" npm run build')
-      || !release.includes(scanner)
-      || !release.includes('npm pack --json --ignore-scripts --pack-destination release-package')
-      || release.indexOf(scanner) > release.indexOf('npm pack --json --ignore-scripts --pack-destination release-package')
-    ) fail('workflow does not build and scan the configured release artifact');
-    const uploadSteps = workflow.match(/^\s*(?:-\s+)?uses:\s+actions\/upload-artifact@/gmu) ?? [];
-    const uploadPath = workflow.slice(upload).match(/^\s*path:\s*([^\r\n]+)$/mu)?.[1]?.trim();
-    if (uploadSteps.length !== 1 || uploadPath !== 'supabase-deployment-evidence.json') {
-      fail('workflow must upload only redacted deployment evidence');
-    }
+  const guard = '[[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || exit 1';
+  const deployGuard = workflow.indexOf('name: Guard canonical Supabase target');
+  const deploy = workflow.indexOf('name: Deploy guarded Supabase release');
+  const release = workflow.indexOf('name: Verify configured deployment runtime package');
+  const upload = workflow.indexOf('actions/upload-artifact@v4');
+  const deployInstall = workflow.indexOf('      - run: npm ci', workflow.indexOf('deploy-production:'));
+  if (
+    deployInstall < 0 || deployInstall > release || deployGuard < 0 || deploy < 0 || release < 0 || upload < 0
+    || deployGuard > deploy || !workflow.includes(guard) || /CUMPA_RELEASE_SUPPORT_SERVICE_URL:\s*\$\{\{/u.test(workflow)
+  ) fail('workflow does not guard the release project ref');
+  const releaseBlock = workflow.slice(release, upload);
+  const producer = 'node scripts/pack-runtime.mjs --purpose deployment-check --custody-dir "$custody" --evidence "$evidence"';
+  const verifier = 'node scripts/verify-production-artifacts.mjs --archive "$archive" --expected-sha256 "$expected_sha256" --evidence "$evidence"';
+  if (
+    !releaseBlock.includes(`origin="https://${'${SUPABASE_PROJECT_REF}'}.supabase.co"`)
+    || !releaseBlock.includes('export CUMPA_RELEASE_SUPPORT_SERVICE_URL="$origin"')
+    || !releaseBlock.includes(producer)
+    || !releaseBlock.includes('archive_basename=')
+    || !releaseBlock.includes('archive="$custody/$archive_basename"')
+    || !releaseBlock.includes('expected_sha256=')
+    || !releaseBlock.includes(verifier)
+    || !releaseBlock.includes('trap cleanup EXIT')
+    || releaseBlock.includes('npm run build')
+    || releaseBlock.includes('npm pack')
+    || (workflow.match(/scripts\/pack-runtime\.mjs/g) ?? []).length !== 1
+    || (workflow.match(/scripts\/verify-production-artifacts\.mjs/g) ?? []).length !== 1
+  ) fail('workflow does not verify one configured deployment-check artifact');
+  const uploadSteps = workflow.match(/^\s*(?:-\s+)?uses:\s+actions\/upload-artifact@/gmu) ?? [];
+  const uploadPath = workflow.slice(upload).match(/^\s*path:\s*([^\r\n]+)$/mu)?.[1]?.trim();
+  if (uploadSteps.length !== 1 || uploadPath !== 'supabase-deployment-evidence.json') {
+    fail('workflow must upload only redacted deployment evidence');
   }
 }
 

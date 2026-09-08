@@ -69,14 +69,23 @@ jobs:
             exit 1
           fi
           node scripts/verify-supabase-support.mjs "${args[@]}"
-      - name: Build configured release package
+      - name: Verify configured deployment runtime package
         run: |
           [[ "$SUPABASE_PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || exit 1
           origin="https://${SUPABASE_PROJECT_REF}.supabase.co"
-          CUMPA_RELEASE_SUPPORT_SERVICE_URL="$origin" npm run build
-          node scripts/verify-production-artifacts.mjs --expected-support-origin "$origin" --require-configured-launcher dist/bin/cumpa.mjs
-          mkdir release-package
-          npm pack --json --ignore-scripts --pack-destination release-package > release-package.json
+          temporary="$(mktemp -d)"
+          custody="$temporary/custody"
+          evidence="$temporary/runtime-artifact-evidence.json"
+          cleanup() { rm -rf "$temporary"; }
+          trap cleanup EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          export CUMPA_RELEASE_SUPPORT_SERVICE_URL="$origin"
+          node scripts/pack-runtime.mjs --purpose deployment-check --custody-dir "$custody" --evidence "$evidence"
+          archive_basename="$(node -e "process.stdout.write(JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8')).archive.basename)" "$evidence")"
+          archive="$custody/$archive_basename"
+          expected_sha256="$(node -e "process.stdout.write(JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8')).archive.sha256)" "$evidence")"
+          node scripts/verify-production-artifacts.mjs --archive "$archive" --expected-sha256 "$expected_sha256" --evidence "$evidence"
       - uses: actions/upload-artifact@v4
         with:
           name: supabase-production-release-${{ github.run_id }}
