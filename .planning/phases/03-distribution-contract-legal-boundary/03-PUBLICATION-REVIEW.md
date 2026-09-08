@@ -2,10 +2,11 @@
 
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
+**Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
 **PRIVATE PREPARATION AUTHORIZATION:** Not granted.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
 
-This is an incomplete, redacted exposure review, not a publishable canonical snapshot. Linked Projects remain unreadable with the current credential. Confirmed historical exposure and recurring workflow behavior need explicit dispositions. No push, remote deletion, protection/configuration mutation, registry operation or visibility conversion has occurred.
+This is an incomplete, redacted exposure review, not a publishable canonical snapshot. The owner has resolved PUB-01 by accepting the six reviewed identifier values as public and selected private backups before any proposed legacy-archive removal. Linked Projects access, archive remediation and exact mutation authorizations remain pending. No push, remote deletion, protection/configuration mutation, registry operation or visibility conversion has occurred.
 
 ## Exact repository and source candidate
 
@@ -88,13 +89,13 @@ Scout unauthenticated 404 reports reflected their restricted tool surface, not r
 
 ## Blocking findings and recurrence
 
-### PUB-01 — Operational identifiers in 41 retained workflow logs
+### PUB-01 — Reviewed CI identifiers accepted as public
 
-**HIGH under the current repository exposure policy.** This is not a claim of secret-key leakage. Four configuration categories appear unmasked: SUPABASE_PROJECT_REF, SUPABASE_GITHUB_CLIENT_ID, STRIPE_PRICE_ID and STRIPE_WEBHOOK_ENDPOINT_ID. Historical header review found **six distinct value fingerprints**: one each for the first two categories, and two each for Stripe price and webhook endpoint IDs.
+**Resolved by explicit owner privacy disposition on 2026-09-08.** This was not secret-key leakage. Four configuration categories appeared unmasked: SUPABASE_PROJECT_REF, SUPABASE_GITHUB_CLIENT_ID, STRIPE_PRICE_ID and STRIPE_WEBHOOK_ENDPOINT_ID. The owner accepted the **six exact value fingerprints** below: one each for the first two categories and two each for the historical Stripe price and webhook endpoint IDs.
 
-The current values alone produced **361 prohibited-form matches**. Complete canonical Supabase routing URLs were distinguished from bare/project-dashboard forms; 21 canonical-origin matches in the archive review were not treated as bare-ref findings. Log values are omitted from this record.
+The current values alone produced **361 matches prohibited by the former policy**, now covered by this exact-scope CI disposition. Complete canonical Supabase routing URLs were separately distinguished from bare/project-dashboard forms; 21 canonical-origin matches were already permitted. Raw log values remain omitted from this record.
 
-The root cause is directly observed: the workflow maps these inputs from GitHub vars into job env, which the runner prints unmasked. The same logs show neighboring inputs supplied through secrets masked as ***. Removing old logs alone does not stop the next main push from recreating the exposure.
+The output mechanism was directly observed: the workflow maps these values from GitHub vars into job env, which the runner prints unmasked; neighboring secret-backed inputs are masked. The operator accepted the reviewed non-secret values, so no migration of these variables to secrets or deletion of the 41 historical logs is proposed. Different values and unrelated private data still require fresh review.
 
 Exact affected run IDs:
 
@@ -120,7 +121,7 @@ Current configuration bindings:
 | SUPABASE_GITHUB_CLIENT_ID | `953333ebbd9b6118fadebc7f2b6fe9926b76adb22c6037788ce443d91d5cf71d` |
 | SUPABASE_PROJECT_REF | `2043c31eacb2efa76123043fcd652ac45bd19b121db1ddaa537e86b3473bf73d` |
 
-Required disposition: either preserve the existing restriction with a bounded prevention/remediation plan, or obtain explicit owner acceptance of these exact reviewed non-secret identifiers and update the applicable policy deliberately. Neither source-license approval nor the earlier R-02/R-03 dispositions authorize this new exposure.
+**Attributable disposition:** The operator selected `Accept these IDs as public` in `publication_identifier_policy`, explicitly scoped to review SHA-256 **0c0ebee771ce6fd26edcb12bb5a0fb1fe9d2baeafdec0e739d5b58bd91eabe35**. This accepts only the six fingerprints and reviewed Cumpa CI exposure; it is not a general private-data allowlist and authorizes no deletion, configuration mutation, push or visibility change. The operator separately selected `Back up, then remove` for the legacy archive disposition; that selects private preservation and preparation of a selective removal proposal, not execution of a remote deletion.
 
 ### PUB-02 — Two unaccepted legacy runtime archives
 
@@ -132,19 +133,19 @@ These are not Phase 4 accepted runtime artifacts. Neither the newly approved rep
 
 Linked Projects are an inaccessible applicable surface until a read:project-capable authenticated read or a complete attributable supported alternative supplies the missing inventory. The current CLI token has broad OAuth repository scope; it is **not** operator-confirmed short-lived repository-selected mutation authority. Do not use it as a write fallback. No token value is requested in chat or stored here.
 
-### PUB-04 — The current workflow recreates unapproved exposure
+### PUB-04 — Prevent new unaccepted runtime archive uploads
 
-The current source workflow still prints variable-backed identifiers and uploads release-package/*.tgz. The retained publication guard does not prevent a CI artifact upload, and the current package allowlist still omits the reconciled notice file. A private push of the current candidate can therefore recreate both findings.
+The identifier output is covered only by PUB-01's exact-scope disposition. The remaining recurrence problem is the workflow's release-package/*.tgz upload: the publication guard does not prevent CI artifact distribution, and the current package allowlist still omits the reconciled notice file.
 
-Before a new exact private-preparation proposal is accepted, choose a bounded prevention strategy: appropriate existing-workflow/configuration changes, or an explicitly authorized supported workflow-control disposition. Preserve existing production behavior unless the operator authorizes its change. Do not add a scanner/approval/release service or silently move Phase 4 artifact acceptance earlier. Any source fix must be committed/reviewed and produce a new source target before push authorization.
+Prepare the smallest source change: retain repository gates, automatic production deployment, configured package build/scanning and redacted deployment evidence, but stop uploading the unaccepted runtime tarball. Update its existing verifier/test contract rather than disabling production automation or adding a release service. Phase 4 still owns the runtime-only artifact cutover and acceptance. The changed source must be committed, reviewed and captured as a new candidate before any push authorization.
 
 ## Scanner coverage, classification and cleanup
 
 All **67** accessible log/artifact archives were read, including nested tarballs, without extracting or executing archive members. Original expanded coverage: **35,040,516 bytes**, 1,029 UTF-8 members/metadata records and two binary members. Repeated exact-provider-pattern checks added the existing production-policy key families, credential URLs and secret-assignment forms.
 
-No genuine credential/key/JWT candidate was established. One deliberately broader prefix pass matched 90 substrings in TypeScript compiler workers; applying the correct token boundary to the identical two archives returned zero candidates. Other email/home-path matches were language-grammar keyword strings, a currency-reference URL path and a synthetic test fixture, not personal data. Those classifications do not waive the confirmed operational-ID or notice findings.
+No genuine credential/key/JWT candidate was established. One broader prefix pass matched 90 compiler-identifier substrings; a token-boundary-corrected pass against the identical archives returned zero candidates. Other email/home-path matches were grammar strings, a currency-reference URL and a synthetic fixture. The scanner did not grant privacy clearance: PUB-01 was resolved by the actual owner selection above, and the notice/distribution finding remains blocking.
 
-Downloads used mode-0700 temporary directories under umask 077, finally cleanup and SIGINT/SIGTERM handlers, bounded member/depth/expansion checks, and no execution. Every completed pass reported cleanup=true and no read/safety errors. After an unexpected tool-kernel reset, a focused check found no owned audit temporary directories; the lost per-archive evidence was then recovered and persisted here. No raw logs, packages or protected values are retained in the repository.
+Audit downloads used mode-0700 temporary directories under umask 077, finally/SIGINT/SIGTERM cleanup, bounded member/depth/expansion checks and no execution. Every completed pass confirmed cleanup and no read/safety errors. A focused check after the tool-kernel reset found no owned audit temporary directories. No raw payload is stored in Git or this evidence; the operator has now separately requested private, digest-verified backups of the two legacy archives, whose location and hashes will be recorded when created.
 
 ## Deterministic evidence boundaries
 
@@ -226,6 +227,6 @@ The table below binds each exact archive and a deterministically serialized memb
 
 ## Resume and non-authorizations
 
-Plans 03-01 and 03-02 are complete. Plan 03-03 is blocked in Task 1 pending Projects access and the exposure/remediation decision. The existing license/notice/source approvals do not authorize log/artifact deletion, variable/secret migration, workflow disablement, any push, or public visibility.
+Plans 03-01 and 03-02 are complete. Plan 03-03 remains blocked in Task 1 pending Projects access and the legacy-archive remediation proposal/authorizations. PUB-01 is resolved; retaining its 41 historical logs is intentional. The backup preference does not authorize remote deletion, configuration changes, workflow disablement, pushing or public visibility.
 
 After the remaining evidence and dispositions are complete, request the separate canonical blocking human-action private-preparation authorization for the exact reviewed changes and repository-selected credential. Only after authorized private preparation and a fresh actual remote snapshot may the separate FINAL PUBLICATION AUTHORIZATION be requested. No completed 03-03 summary or Phase 3 completion is justified now.

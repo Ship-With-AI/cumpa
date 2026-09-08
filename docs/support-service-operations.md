@@ -10,7 +10,9 @@ The credential-free `repository-gates` job runs before the serialized `deploy-pr
 
 The sole browser-facing origin is `https://<project-ref>.supabase.co`. The protected executor validates `SUPABASE_PROJECT_REF` immediately before hosted mutation and derives routes only in memory. Do not store a separate public-origin, site URL, redirect URL, GitHub callback URL, or webhook URL input.
 
-The public origin may appear only as that complete canonical URL or a documented Auth/function route derived from it. Never expose the bare ref, another Supabase host, credentials, OAuth or PII values, provider IDs, or provider secrets in packages, logs, or evidence.
+Packages and redacted evidence retain the canonical-origin-only boundary: no bare project ref, another Supabase host, credentials, OAuth secrets, personal data, unapproved provider identifiers or provider secrets.
+
+The operator accepted six exact non-secret configuration identifier fingerprints for the reviewed Cumpa CI exposure on 2026-09-08, recorded in `.planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md` under PUB-01. That CI-only disposition covers the reviewed Supabase project ref, GitHub OAuth client ID and historical Stripe price/webhook endpoint IDs. It does not permit secret keys, personal data, new identifier values or additional package contents; keep the raw values out of review records.
 
 ## Retirement and release scanning
 
