@@ -1,10 +1,126 @@
-# Private Publication Review — PRIVATE PUSH APPLIED; POST-SYNC REVIEW
+# Private Publication Review — REPAIRED SOURCE CHECKPOINT
 
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
-**PRIVATE PREPARATION AUTHORIZATION:** Corrected review `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c` was authorized directly by Alessandro and applied as the exact one-ref private fast-forward after matching preflight.
+**PRIVATE PREPARATION AUTHORIZATION:** The first approved push was applied. Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` is pending authorization; the existing scoped credential is available.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
+
+## Current repaired-source preparation review — 2026-09-08T11:07:44Z
+
+**The first authorized private push is complete. This is a new proposal, not permission to repeat it or push local HEAD.** The current private remote main is `ece7fcfc7a993e751a999145b2c74ee233402a1f`; the reviewed repair target is `ff72519969da8d2c0761c9533ccb27b809cd17bb`. Later local review/STATE/approval/SUMMARY commits remain excluded.
+
+- **Source review:** Five intervening commits, 24 trees and 14 blobs: **43 new reachable objects**, all read/content-hashed. Sorted `[oid,type,content_sha256]` projection: `ccdaefb35950aa4009304506a51b9663d35ffafb1c48497d9b089e353eb209f4`. Complete reviewed reachability is **875 commits, 3,684 trees, 2,700 blobs; 7,259 objects**. Native ancestry proved the exact remote old OID is an ancestor of the repair target.
+- **Changed paths:** Only the maintainer verifier, the two existing verifier-contract test files, their operations documentation, and redacted publication/STATE history. No application, UI/API, package dependency/metadata, LICENSE, notices, license-assent record or workflow byte change. All corresponding unchanged bindings were rehashed against the prior approved source.
+- **Classification:** Zero tested credential-pattern matches or new commit-email identities. Three full-blob matches for the configured provider mode are the verifier's existing public enum vocabulary reused in synthetic tests, not private provider identifiers. No new rights or confidentiality finding was identified. The owner-accepted exact PUB-02 artifact retention remains unremediated notice risk.
+- **Verification:** 13/13 focused Playwright contracts pass; four real verifier commands also pass in an isolated temporary directory with no `.planning` directory. All previous manifest/lineage/digest rejection checks remain active. The small verifier change eliminates hidden deployment-input substitution; it does not bypass validation or change deployment/app behavior.
+- **Actual remote exposure:** The fully reviewed terminal post-sync state above has exposure SHA-256 `c178b45f3e69089b7999889cb2820d5a9af503a5c5a2301d39ceb6aad6b92f6c` and unchanged protection SHA-256 `96b362425508a1340047171187a2c2559c56dc193328d9dd7cfa87d92d5cbe90`. The only new prior-run exposure is the reviewed failed run `34216472139`; production deployment was skipped. There is no new artifact or unresolved exposure finding beyond the exact accepted PUB-02 risk.
+- **Proposed effect:** One ancestry-and-exact-lease-guarded private main fast-forward to the repair target, triggering the unchanged repository gates and, if they pass, the existing Supabase production deployment and deployment-evidence upload. No workflow retry, additional ref, public visibility, npm publication, deletion, retention/protection change or later evidence-commit push is authorized here.
+- **Credential:** The existing repository-selected short-lived credential is working, subject to expiry/revalidation. Contents-write is needed for this update; its already operator-approved Workflows-write permission is unchanged and no new permissions are requested. No new token setup or cancelled deletion credential is needed.
+
+**Repaired private-preparation review SHA-256: `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2`.** Serialization and projection rules are unchanged from the corrected contract below, including exclusion of `temp_clone_token`. The exact proposal is:
+
+```json
+{
+  "credential_requirement": {
+    "ambient_write_fallback": false,
+    "cancelled_deletion_credential": "do not retrieve or reuse",
+    "repository_id": 1327753770,
+    "required_push_permissions": [
+      "Contents:write"
+    ],
+    "selection": "only Ship-With-AI/cumpa",
+    "short_lived": true,
+    "operator_confirmed_existing_permissions": [
+      "Contents:write",
+      "Workflows:write"
+    ]
+  },
+  "expected_push_effects": [
+    "existing repository-gates workflow",
+    "existing Supabase production deployment after gates pass",
+    "supabase-deployment-evidence.json upload only; inspect resulting logs/artifacts before final publication authorization"
+  ],
+  "expected_visibility": "private",
+  "exposure_sha256": "c178b45f3e69089b7999889cb2820d5a9af503a5c5a2301d39ceb6aad6b92f6c",
+  "kind": "cumpa.private-preparation-proposal/v1",
+  "later_local_evidence_commits_authorized": false,
+  "main_update": {
+    "ref": "refs/heads/main",
+    "fast_forward_only": true,
+    "ancestor_must_be": "ece7fcfc7a993e751a999145b2c74ee233402a1f",
+    "lease": "--force-with-lease=refs/heads/main:ece7fcfc7a993e751a999145b2c74ee233402a1f",
+    "refspec": "ff72519969da8d2c0761c9533ccb27b809cd17bb:refs/heads/main"
+  },
+  "npm_authorized": false,
+  "preserve": [
+    "all artifacts and private backups",
+    "all run records and logs",
+    "all other refs",
+    "all Git history",
+    "all retention and protection settings"
+  ],
+  "prior_reviewed_source_oid": "ece7fcfc7a993e751a999145b2c74ee233402a1f",
+  "protection_changes": [],
+  "protection_sha256": "96b362425508a1340047171187a2c2559c56dc193328d9dd7cfa87d92d5cbe90",
+  "remote_main_before": "ece7fcfc7a993e751a999145b2c74ee233402a1f",
+  "remote_refs": [
+    [
+      "refs/heads/main",
+      "ece7fcfc7a993e751a999145b2c74ee233402a1f"
+    ]
+  ],
+  "repository": "Ship-With-AI/cumpa",
+  "repository_id": 1327753770,
+  "repository_node_id": "R_kgDOTyPqKg",
+  "retained_owner_accepted_notice_risk": [
+    {
+      "archive": "3e4813bebbad2155ca473fe022cbb34196b1eadf85453f37bc675259b82cb453",
+      "id": 9907668126,
+      "members": "215ddd7bc9bec5b00c0bbc22d6e8385e9979a9d2e66bff99562cbc900950be58",
+      "size": 3482130
+    },
+    {
+      "archive": "bfbd790230ffaf37d5f6dc89fd792484c26a2062a32d8c50ab72e9ee7ec6afac",
+      "id": 9928300866,
+      "members": "d1dae1f17e6658b019c3edf889376649e684923f4d7fb585e181c4a2738eb720",
+      "size": 3482132
+    }
+  ],
+  "source_bindings": {
+    "LICENSE": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+    "THIRD_PARTY_NOTICES.md": "847c9cb7c9e3585ed7ae518208ac934c5658f0fdb01ad2f2a20b50f56015d143",
+    ".planning/phases/03-distribution-contract-legal-boundary/03-RIGHTS-REVIEW.md": "d65e5f780c5469757fefef685100a1d4bc6ceaded20b1234b010e8d2b8136e94",
+    ".planning/phases/03-distribution-contract-legal-boundary/03-LICENSE-APPROVAL.md": "da8131b0cf7d76516dafee5c5ce8acb8d57904d9d6c1e49f89f93defa67eff6f",
+    "package.json": "5ae67356a55c01be628cc4f82d4debba272984d9a28e1824069878e7ded2c5b3",
+    "package-lock.json": "896aefb20316dc2a6588b28eb3deb2bb5483388dc59daf51f2efd839e1b2df1f",
+    "README.md": "7eba4475ecf0d610ee57afb555c2afc328dcd8c604ae41e56b4ab1cfd1f0e065",
+    "docs/distribution-operations.md": "5d36cfaac8164567eaaf9775cd5a0c03db028a34e01df4ba49fa14de174f096f",
+    "docs/support-service-operations.md": "a453d5a1c86d34f553ce601082572307542fcc48c89c244254e4c49fb79b1515",
+    ".github/workflows/deploy-supabase-production.yml": "0cc92062e9b5ccefc4ae68ddf9494be6d5fec4f03ab07d2df67262293b6fe2d0",
+    "scripts/verify-supabase-support.mjs": "6e83bb0ea66015d6ab446a0109e6730ad849dd68299ff14584316e9eb224110d",
+    "tests/e2e/support-payment.spec.ts": "2aa85ba8fa18c284de82a3732369775becce2e5655b5bbcecfdfd93dab98d33d",
+    "tests/e2e/support-restore.spec.ts": "de11d5bd17a391f96d2639accfd5ebcfe239ce5454279d416f1b2f72f132f473"
+  },
+  "source_delta_sha256": "ccdaefb35950aa4009304506a51b9663d35ffafb1c48497d9b089e353eb209f4",
+  "source_target_oid": "ff72519969da8d2c0761c9533ccb27b809cd17bb",
+  "visibility_authorized": false,
+  "repair_scope": {
+    "maintainer_verifier": "Use explicit deployment evidence for detached cleanup/promotion validation and forward --test-deployment through final review; retain all validation guards.",
+    "tests": "Self-contained deterministic fixtures; 13 focused tests and four detached real-CLI commands passed.",
+    "documentation": "Document detached evidence inputs and preserve redacted phase authorization/execution history.",
+    "application_and_workflow_changes": false
+  }
+}
+```
+
+### Required renewed source authorization
+
+Send exactly:
+
+`PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2`
+
+No authorization for this repaired-source digest has been received. Recheck current identity/private visibility, exact old ref, complete exposure/protection bindings, LICENSE/assent and credential validity before applying it. After a successful separately authorized push, review the resulting CI/deployment content and rebuild the actual snapshot for the distinct final-publication gate. **Do not use the earlier `3f44e7f…` authorization for this new source target.**
 
 ### Renewed private-preparation authorization
 

@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "03-03 local evidence-validation repair passes 13 tests and detached CLI smoke; capture repaired source candidate and obtain new private-push authorization"
-last_updated: "2026-09-08T10:46:38Z"
+stopped_at: "03-03 repaired source ff72519 is reviewed and verified; await exact private-preparation authorization a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2"
+last_updated: "2026-09-08T11:07:44Z"
 last_activity: 2026-09-08
-last_activity_desc: Repaired synthetic verifier test fixtures and explicit deployment-input propagation; 13/13 Playwright contract tests and four detached CLI commands pass. Original private push remains remote; repaired source has not been authorized or pushed.
+last_activity_desc: Captured repaired source ff72519969da8d2c0761c9533ccb27b809cd17bb, reviewed its 43 new reachable objects and unchanged legal/package/workflow bindings, and prepared the new exact one-ref private-push proposal. Existing scoped credential is available.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 executed; original private preparation reviewed; local CI repair verified, awaiting repaired-source review and authorization
-Status: Remote remains private at the first approved source. Local fixture/verifier repair passes; another source update requires separate exact authorization. Public visibility remains unauthorized.
-Last activity: 2026-09-08 — The three failing contracts now pass within a 13/13 focused suite. Final/check-final, promotion and exact-cleanup CLI validation also passed in a temporary directory without .planning. No second push or deployment occurred.
+Plan: 2 of 3 executed; original private preparation complete; repaired source reviewed and verified, awaiting exact new authorization
+Status: Repaired private-preparation review a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2 is ready. Remote remains private at ece7fcf. Public visibility remains unauthorized.
+Last activity: 2026-09-08 — Local repair ff72519 passes 13/13 verifier tests and detached CLI smoke. Its exact source/history review is complete; no second push, retry or production deployment has occurred.
 
 Progress: [███████░░░] 67%
 
@@ -83,7 +83,7 @@ None yet.
 - Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives remain backed up privately. Owner now directs retaining remote artifacts 9907668126 and 9928300866 despite PUB-02; record unremediated owner-accepted notice risk, not verified third-party permission/compliance. Do not delete them or change retention settings.
-- 03-03 original private preparation succeeded at ece7fcfc7a993e751a999145b2c74ee233402a1f; run 34216472139 failed on planning-dependent verifier tests and skipped production deployment. Complete post-sync exposure was reviewed with no new finding. Local repair now uses synthetic records and explicit deployment-input propagation; all 13 contract tests and detached CLI smoke pass. Capture/review the repaired source and obtain a new exact private-push authorization; do not retry the old run or push later evidence commits automatically.
+- 03-03 repaired private-preparation proposal a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2 binds only the private fast-forward from ece7fcfc7a993e751a999145b2c74ee233402a1f to ff72519969da8d2c0761c9533ccb27b809cd17bb and unchanged CI/Supabase effects. The 43 new source objects are reviewed; MIT/assent/notices/rights/package/workflow bindings are unchanged. Use the working repository-selected short-lived credential subject to expiry/revalidation; no new permissions or token setup are requested. Await the exact new authorization, not a generic ready response, before the repaired push.
 - MIT LICENSE SHA-256 remains c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d; both recorded assents and bound notices/rights review match. Projects/rulesets/classic protections are explicitly zero. No private protection change is proposed. After authorized preparation, recapture actual exposure and obtain the distinct final-publication authorization and supported post-public protection disposition.
 
 ### Roadmap Evolution
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T10:46:38Z
-Stopped at: Original private push and actual post-sync exposure review complete. Remote remains private at ece7fcfc7a993e751a999145b2c74ee233402a1f. Local verifier/test-fixture repair is verified: 13/13 contract tests plus four detached CLI commands pass without planning receipts. Capture/review a repaired source target and obtain a new bounded private-push authorization. Existing scoped credential is available subject to expiry/revalidation; no new token setup or artifact deletion is requested. Final visibility remains separately unauthorized.
+Last session: 2026-09-08T11:07:44Z
+Stopped at: Repaired-source checkpoint. Await PRIVATE PREPARATION AUTHORIZED for review a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2. The approved first push is complete and must not be repeated. Current private remote main ece7fcfc7a993e751a999145b2c74ee233402a1f may advance only to reviewed repair target ff72519969da8d2c0761c9533ccb27b809cd17bb after fresh no-drift/ancestry/lease checks. Then review the newly triggered run and actual exposure before separate final-publication authorization. Preserve artifacts/backups and exclude later local evidence commits.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
