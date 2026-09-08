@@ -6,7 +6,7 @@
 **PRIVATE PREPARATION AUTHORIZATION:** Not granted.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
 
-This is an incomplete, redacted exposure review, not a publishable canonical snapshot. The owner has resolved PUB-01 by accepting the six reviewed identifier values as public and selected private backups before any proposed legacy-archive removal. Linked Projects access, archive remediation and exact mutation authorizations remain pending. No push, remote deletion, protection/configuration mutation, registry operation or visibility conversion has occurred.
+This redacted exposure review is not a final publishable snapshot. PUB-01 is resolved by the exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is now closed. The two legacy archives remain remote and still require separately authorized removal using scoped write credentials. No push, remote deletion, protection/configuration mutation, registry operation or visibility conversion has occurred.
 
 ## Exact repository and source candidate
 
@@ -66,7 +66,7 @@ All successful collection endpoints used exhaustive REST pagination (per_page=10
 | Discussions | Disabled. |
 | Wiki | Disabled; authenticated native wiki Git probe returned repository-not-found. No active wiki exposure was inferred. |
 | Pages | Disabled, no advertised Pages ref, Pages API 404 consistent with unconfigured state. |
-| Linked Projects | **BLOCKED**: Projects enabled; GraphQL requires read:project, absent from current OAuth scope. Scoped authenticated browser fallback timed out and left no managed tab. Never interpret this as zero projects. |
+| Linked Projects | **Resolved** on 2026-09-08 after the operator supplied read access: authenticated GraphQL returned repository R_kgDOTyPqKg, isPrivate=true, projectsV2.totalCount=0, nodes=[], hasNextPage=false, endCursor=null. Zero linked projects; pagination exhausted. |
 | Actions workflows / runs / attempts | 1 workflow (348310628); 48 runs, 48 attempts, all completed. |
 | Jobs / check runs / annotation lists | 96 / 96 / 96 read; 129 annotation records inspected. |
 | Run logs | All 48 run-log archives downloaded and inspected. |
@@ -170,9 +170,15 @@ The following is a **proposal, not an authorization**. Its digest is SHA-256 of 
 
 Before any removal, recheck immutable repository identity/private state, both current artifact bindings, both private backup bytes and the manifest digest, and the actual scoped credential. A separate blocking human-action authorization must name this exact proposal. Delete only the two named artifact objects if authorized; do not delete runs, logs, other artifacts, refs, source or history. Re-list afterward and refresh the full publication review. No such action has been authorized or executed.
 
-### PUB-03 — Projects and mutation authority
+### PUB-03 — Projects resolved; mutation authority pending
 
-Linked Projects are an inaccessible applicable surface until a read:project-capable authenticated read or a complete attributable supported alternative supplies the missing inventory. The current CLI token has broad OAuth repository scope; it is **not** operator-confirmed short-lived repository-selected mutation authority. Do not use it as a write fallback. No token value is requested in chat or stored here.
+Projects access was verified at **2026-09-08T06:29:40.756Z** after the operator replied `ready` to the read-scope request. The authenticated repository-scoped query returned zero linked projects and no next page, closing the former access blocker. This does not grant mutation authority.
+
+The existing CLI still uses broad OAuth repository access, not operator-confirmed short-lived repository-selected write authority. The removal-only gate requires an expiring fine-grained credential selecting only Ship-With-AI/cumpa (repository ID 1327753770), with Actions write for the two proposed artifact deletions. Preserve the existing OAuth login for authenticated reads; never use it as a write fallback.
+
+The proposed secure transfer mechanism is a temporary macOS Keychain item with service `cumpa-publication-1327753770` and account `github-token`. The operator may enter the credential at the native hidden prompt by placing `-w` last in `security add-generic-password`. Do not put its value in command arguments, repository files, chat, URLs or logs. No credential has yet been supplied or approved for use. Its repository selection and short expiry require operator confirmation; temporary authorization must be revoked and the temporary item removed when no longer needed.
+
+Both remote artifacts were re-read at this boundary: IDs, sizes and GitHub SHA-256 digests still match the proposal and neither is expired. The local manifest and both backup files were also rehashed successfully. These checks prepare authorization; they are not authorization.
 
 ### PUB-04 — Prevent new unaccepted runtime archive uploads
 
@@ -192,7 +198,7 @@ Audit downloads used mode-0700 temporary directories under umask 077, finally/SI
 
 The table below binds each exact archive and a deterministically serialized member/path/byte digest projection. Configuration values are represented only by SHA-256. Git content is bound separately to the fixed source target and scanned-object projection. Transport headers, capture timestamps, view/download counters, local approval fields and future report commits are not content authorization inputs.
 
-**No complete canonical remote snapshot or private-preparation authorization digest is issued while Projects are missing and these findings remain unresolved.** Before final authorization, rebuild the full sorted ref/content/surface/protection projection from the actual post-remediation/post-sync remote, preserve every security-relevant setting/content field, require terminal exposure producers and an operator-confirmed no-write window, and recheck all bindings immediately before the supported visibility-only action.
+**No final publication snapshot or private-preparation authorization is issued while the legacy-archive finding and write-authority gate remain unresolved.** Projects are fully inventoried. After authorized remediation, rebuild the full sorted ref/content/surface/protection projection from the actual remote; preserve every security-relevant field, require terminal exposure producers and an operator-confirmed no-write window, and recheck all bindings before any approved visibility-only action.
 
 ## Per-archive evidence
 
@@ -268,6 +274,6 @@ The table below binds each exact archive and a deterministically serialized memb
 
 ## Resume and non-authorizations
 
-Plans 03-01 and 03-02 are complete. Plan 03-03 remains blocked in Task 1 pending Projects access and the legacy-archive remediation proposal/authorizations. PUB-01 is resolved; retaining its 41 historical logs is intentional. The backup preference does not authorize remote deletion, configuration changes, workflow disablement, pushing or public visibility.
+Plans 03-01 and 03-02 are complete. All accessible-surface inventory gaps are closed, including Projects. Plan 03-03 now awaits the exact removal-only authorization and repository-selected expiring Actions-write credential for its two legacy artifacts. PUB-01 is resolved; retaining all run records/logs is intentional. `ready` only supplied the requested read access; it did not authorize deletion, pushing or public visibility.
 
 After the remaining evidence and dispositions are complete, request the separate canonical blocking human-action private-preparation authorization for the exact reviewed changes and repository-selected credential. Only after authorized private preparation and a fresh actual remote snapshot may the separate FINAL PUBLICATION AUTHORIZATION be requested. No completed 03-03 summary or Phase 3 completion is justified now.

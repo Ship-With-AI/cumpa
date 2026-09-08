@@ -5,10 +5,10 @@ milestone_name: Proprietary Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "03-03: Projects read access and exact selective-removal/preparation authorization pending; local prevention and backups complete"
-last_updated: "2026-09-08T05:54:06.629Z"
+stopped_at: "03-03 removal-only checkpoint: Projects resolved; approve exact two-artifact proposal and supply repository-selected expiring Actions-write authority"
+last_updated: "2026-09-08T06:34:09.956Z"
 last_activity: 2026-09-08
-last_activity_desc: Accepted the six reviewed CI identifier values, preserved exact private archive backups, and verified evidence-only workflow uploads locally. No remote mutation authorized.
+last_activity_desc: Authenticated Projects inventory returned zero with no next page. Both remote artifact digests and both private backups still match. Await exact removal approval and scoped write credential.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 complete; 03-03 blocked on Projects access and authorized archive remediation
+Plan: 2 of 3 complete; 03-03 inventory complete, removal-only human-action gate pending
 Status: Ready to execute
-Last activity: 2026-09-08 — Accepted the six reviewed CI identifier values, preserved exact private archive backups, and verified evidence-only workflow uploads locally. No remote mutation authorized.
+Last activity: 2026-09-08 — Authenticated Projects inventory returned zero with no next page. Both remote artifact digests and both private backups still match. Await exact removal approval and scoped write credential.
 
 Progress: [███████░░░] 67%
 
@@ -82,8 +82,8 @@ None yet.
 
 - Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
-- 03-03 linked Projects inventory requires read:project; authenticated browser fallback unavailable. Repository-scoped short-lived mutation authority and both preparation/publication authorizations remain pending.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives are backed up privately; selective remote removal still requires explicit authorization and repository-scoped short-lived credentials. Local recurrence prevention is implemented and tested, not pushed.
+- 03-03 Projects inventory is complete: zero linked projects. Next gate is explicit removal-only approval for proposal b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951 and an expiring repository-selected Actions-write credential; no remote mutation is authorized.
 
 ### Roadmap Evolution
 
@@ -105,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T05:54:06.624Z
-Stopped at: 03-03: Projects read access and exact selective-removal/preparation authorization pending; local prevention and backups complete
+Last session: 2026-09-08T06:34:09.950Z
+Stopped at: 03-03 removal-only checkpoint: Projects resolved; approve exact two-artifact proposal and supply repository-selected expiring Actions-write authority
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
