@@ -10,6 +10,7 @@ export default defineConfig({
       'tests/cli/**/*.test.ts',
       'tests/package/**/*.test.ts',
     ],
+    exclude: ['tests/package/agent-ready-export.test.ts'],
     testTimeout: 10_000,
     hookTimeout: 10_000,
   },

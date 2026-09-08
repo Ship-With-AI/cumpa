@@ -40,7 +40,8 @@
     "test:browser": "playwright test",
     "test:package-export-safety": "node scripts/run-package-export-safety.mjs",
     "pack:runtime-artifact": "node scripts/pack-runtime.mjs",
-    "test:package-contract": "npm run build && vitest run --no-file-parallelism tests/package/agent-ready-export.test.ts tests/package/agent-ready-export-safety.test.ts",
+    "test:package-contract": "npm run build && vitest run --no-file-parallelism tests/package/agent-ready-export-safety.test.ts",
+    "accept:runtime-artifact": "vitest run --config vitest.runtime-artifact.config.ts --no-file-parallelism",
     "test:performance": "npm run build:runtime && node tests/performance/production-picker.mjs"
   },
   "dependencies": {
