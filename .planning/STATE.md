@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "Renewed exact MIT assents recorded; 03-03 awaits separate removal-only approval and scoped credentials, then refreshed publication bindings"
-last_updated: "2026-09-08T07:59:39Z"
+stopped_at: "MIT assents and exact artifact removal authorized; scoped Keychain item not visible to this session; no remote mutation attempted"
+last_updated: "2026-09-08T08:06:46.045300+00:00"
 last_activity: 2026-09-08
-last_activity_desc: Recorded Alessandro's direct exact-MIT assent and his witnessed report of Manuel's approval; no remote mutation authorized.
+last_activity_desc: Recorded both exact MIT assents and two-artifact removal authorization; verified private repository and backup bindings; blocked on scoped Keychain credential visibility.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
 Plan: 2 of 3 executed; renewed exact-text MIT assent recorded, publication bindings still require refresh
-Status: MIT assent gate satisfied; separate removal and publication gates remain
-Last activity: 2026-09-08 — Recorded both current MIT assents with attribution and unchanged license/notice/rights-review digests. No remote mutation or publication.
+Status: MIT assent and removal-only authorization recorded; scoped credential handoff blocked
+Last activity: 2026-09-08 — MIT approvals committed as b3a04df. Exact two-artifact removal authorized and scope/expiry confirmed by operator, but this session cannot find the specified Keychain item. No remote mutation attempted.
 
 Progress: [███████░░░] 67%
 
@@ -82,8 +82,8 @@ None yet.
 
 - Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
-- 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives are backed up privately; selective remote removal still requires explicit authorization and repository-scoped short-lived credentials. Local recurrence prevention is implemented and tested, not pushed.
-- 03-03 Projects inventory is complete: zero linked projects. Next gate is explicit removal-only approval for proposal b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951 and an expiring repository-selected Actions-write credential; no remote mutation is authorized.
+- 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives are backed up privately; exact removal-only authorization is now recorded. Live artifact and backup bindings still match. Local recurrence prevention is implemented and tested, not pushed.
+- 03-03 Projects inventory is complete: zero linked projects. Proposal b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951 is authorized for only artifacts 9907668126 and 9928300866. Operator confirmed repository-selected short expiry and Actions write, but Keychain service cumpa-publication-1327753770/account github-token is not visible to this session (exit 44). No mutation attempted and no broad credential fallback permitted.
 - MIT LICENSE SHA-256 is c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d. Renewed assent is recorded: Alessandro's direct approval and his witnessed report of Manuel's actual approval. Refresh affected source/publication bindings before publication; this approval does not authorize remote mutation.
 
 ### Roadmap Evolution
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T07:59:39Z
-Stopped at: Both exact MIT assents recorded; 03-03 still needs separate removal-only approval and repository-selected short-lived credentials, then refreshed source/publication bindings.
+Last session: 2026-09-08T08:06:46.045300+00:00
+Stopped at: Both exact MIT assents and removal-only authorization recorded. Restore this session's access to the approved scoped Keychain credential, recheck exact bindings and perform only the two authorized artifact deletions; then refresh source/publication review and obtain the remaining separate authorizations.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
