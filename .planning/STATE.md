@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: verifying
-stopped_at: "03-03 public conversion and anonymous/protection verification complete; final phase reviews and operator token-revocation confirmation pending"
-last_updated: "2026-09-08T13:06:06Z"
+stopped_at: "Phase 03 technical verification passed; 03-UAT has one pending item: confirm server-side revocation of the two temporary GitHub tokens"
+last_updated: "2026-09-08T13:34:02Z"
 last_activity: 2026-09-08
-last_activity_desc: Existing Ship-With-AI/cumpa is public at ff72519. Anonymous source/LICENSE/Issues checks and all approved post-public controls passed. Execution summary is committed; quality/security/goal reviews and temporary-token cleanup confirmation remain.
+last_activity_desc: Code review clean with 0 findings; security register closed 23/23; goal verification passed 10/10 must-haves. Canonical status is human_needed only for temporary-token revocation confirmation, persisted in 03-UAT.md.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — VERIFYING
-Plan: 3 of 3 executed; public result verified; final phase reviews and human credential cleanup pending
-Status: Public at approved main ff72519969da8d2c0761c9533ccb27b809cd17bb. Anonymous HTTP/API and post-public protection verification passed; no further mutation is authorized.
-Last activity: 2026-09-08 — Visibility-only conversion succeeded at 13:02:24Z; anonymous source/Issues HTML returned HTTP 200 and the 1,104-byte MIT LICENSE matched its approved SHA-256. Actual public controls match the approved disposition.
+Plan: 3 of 3 executed; all technical reviews passed; one human cleanup confirmation remains
+Status: Public at approved main ff72519969da8d2c0761c9533ccb27b809cd17bb. Phase verification is human_needed solely for revocation of the two temporary GitHub tokens.
+Last activity: 2026-09-08 — Reviewed code is clean, all 23 plan-time threats are closed/accepted, and 10/10 goal must-haves are verified. One administrative UAT item is saved; no new source, visibility or configuration action is authorized.
 
-Progress: [██████████] 100% plans executed — phase verification pending
+Progress: [██████████] 100% plans executed — one human cleanup confirmation pending
 
 ## Performance Metrics
 
@@ -84,7 +84,7 @@ None yet.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives remain backed up privately. Owner now directs retaining remote artifacts 9907668126 and 9928300866 despite PUB-02; record unremediated owner-accepted notice risk, not verified third-party permission/compliance. Do not delete them or change retention settings.
 - 03-03 source publication is complete: repository 1327753770 is public at ff72519969da8d2c0761c9533ccb27b809cd17bb. Exact content-bound final authorization e784668b66563df3476f9f1039847b40df8c79bc803fc569d70f725a9e27da18 was applied once; anonymous source/LICENSE/Issues and approved public controls passed. No later evidence commit, npm operation, artifact deletion or unrelated configuration change was published.
-- Operator must confirm revocation of the two temporary fine-grained preparation/visibility tokens. Revocation is not yet claimed; Keychain deletion alone does not revoke GitHub access. Browser tooling timed out, so graphical observation is unavailable; the credential-free API/HTML fallback passed. Final code/security/goal reviews are pending before marking Phase 3 complete.
+- The only phase close-out blocker is operator confirmation that both temporary fine-grained preparation/visibility tokens were revoked in GitHub. `03-UAT.md` contains the one pending test. Code review is clean, security has 0 open declared threats, and goal verification is 10/10 with `status: human_needed`. Keychain deletion alone is not revocation. Browser rendering was unavailable; genuine anonymous HTTP/API fallback passed and is the recorded proof.
 
 ### Roadmap Evolution
 
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T13:06:06Z
-Stopped at: All three plans executed and public result independently verified. Finish code/security/goal review and record the operator's temporary-token revocation confirmation. Do not repeat visibility conversion or push later local evidence commits. Then close Phase 3 through the normal verification/completion gate; runtime tarball, registry and provenance work remain later phases.
-Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
+Last session: 2026-09-08T13:34:02Z
+Stopped at: Final technical reviews complete. Public source/Issues and protections are verified; only the server-side revocation confirmation for the two temporary scoped tokens remains. Continue with /gsd:verify-work 3 and the single 03-UAT item, then close the phase through the normal passed-verification gate. Do not repeat publication or push later local evidence commits.
+Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-UAT.md
