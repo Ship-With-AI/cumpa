@@ -9,6 +9,8 @@ import { createExactPatchSessionApp } from '../../src/server/app.js';
 import { ExportReviewResultSchema } from '../../src/contracts/api.js';
 import { ReviewExportV3Schema } from '../../src/contracts/draft.js';
 import { createAttachedCompletionCoordinator } from '../../src/server/attached-completion.js';
+import { createGroundedExactPatch } from '../../src/git/exact-patch.js';
+import { createGitFixture } from '../helpers/git-fixture.js';
 
 const token = 'p'.repeat(43);
 const host = '127.0.0.1:43130';
@@ -137,6 +139,40 @@ afterEach(async () => {
 });
 
 describe('exact patch snapshot sessions', () => {
+  test('finishes canonical V3 delivery for real added and deleted patch files', async () => {
+    const fixture = await createGitFixture({ anchoredReview: true });
+    try {
+      const content = fixture.git(['diff', '--no-ext-diff', '--no-textconv', '--binary', '--full-index', fixture.baseRef, fixture.headRef]).toString('utf8');
+      const patch = await createGroundedExactPatch({ cwd: fixture.root, patchContent: content, target: { kind: 'repository' } });
+      const delivered: Uint8Array[] = [];
+      const app = await createExactPatchSessionApp(patch, {
+        sessionToken: token,
+        snapshotParent: fixture.root,
+        attachedCompletion: {
+          coordinator: createAttachedCompletionCoordinator(),
+          storageScope: `agent-${'c'.repeat(32)}`,
+          deliver: async (bytes) => { delivered.push(bytes); return true; },
+        },
+      });
+      try {
+        app.bindSessionSecurity({ expectedHost: host, expectedOrigin: `http://${host}` });
+        await setSummary(app);
+        expect(delivered).toEqual([]);
+        const response = await app.inject({ method: 'POST', url: '/api/review-completion/finish', headers, payload: { expectedRevision: 1 } });
+        expect(response.statusCode, response.body).toBe(201);
+        expect(delivered).toHaveLength(1);
+        const document = ReviewExportV3Schema.parse(JSON.parse(Buffer.from(delivered[0]!).toString('utf8')));
+        expect(document.patch.snapshot.files.map((file) => file.status.kind)).toEqual(expect.arrayContaining(['added', 'deleted']));
+        expect(document.patch.snapshot.files.find((file) => file.status.kind === 'added')).not.toHaveProperty('oldPath');
+        expect(document.patch.snapshot.files.find((file) => file.status.kind === 'deleted')).not.toHaveProperty('newPath');
+      } finally {
+        await app.close();
+      }
+    } finally {
+      await fixture.cleanup();
+    }
+  });
+
   test('serves a strict patch-only frozen session and content across reload-like reads', async () => {
     const repositoryRoot = await root();
     const source = grounded(repositoryRoot);
