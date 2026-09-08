@@ -5,10 +5,10 @@ milestone_name: Proprietary Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "03-03 Task 1: awaiting operational-ID policy/remediation decision and Projects read access; legal and metadata plans complete"
-last_updated: "2026-09-07T20:38:24.124Z"
-last_activity: 2026-09-07
-last_activity_desc: Recorded complete reachable GitHub exposure evidence; 41 log and two legacy-package findings, recurrence prevention, and Projects access require human input. No remote mutations.
+stopped_at: "03-03: Projects read access and exact selective-removal/preparation authorization pending; local prevention and backups complete"
+last_updated: "2026-09-08T05:54:06.629Z"
+last_activity: 2026-09-08
+last_activity_desc: Accepted the six reviewed CI identifier values, preserved exact private archive backups, and verified evidence-only workflow uploads locally. No remote mutation authorized.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-07)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 complete; 03-03 Task 1 blocked on exposure disposition and Projects access
+Plan: 2 of 3 complete; 03-03 blocked on Projects access and authorized archive remediation
 Status: Ready to execute
-Last activity: 2026-09-07 — Recorded complete reachable GitHub exposure evidence; 41 log and two legacy-package findings, recurrence prevention, and Projects access require human input. No remote mutations.
+Last activity: 2026-09-08 — Accepted the six reviewed CI identifier values, preserved exact private archive backups, and verified evidence-only workflow uploads locally. No remote mutation authorized.
 
 Progress: [███████░░░] 67%
 
@@ -82,8 +82,8 @@ None yet.
 
 - Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
-- 03-03 publication blocked: 41 retained run logs expose policy-protected operational IDs; two runtime archives lack required notices; current workflow recreates both exposures. Await explicit policy/remediation choice; no remote mutation authorized.
 - 03-03 linked Projects inventory requires read:project; authenticated browser fallback unavailable. Repository-scoped short-lived mutation authority and both preparation/publication authorizations remain pending.
+- 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives are backed up privately; selective remote removal still requires explicit authorization and repository-scoped short-lived credentials. Local recurrence prevention is implemented and tested, not pushed.
 
 ### Roadmap Evolution
 
@@ -105,6 +105,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T20:38:24.120Z
-Stopped at: 03-03 Task 1: awaiting operational-ID policy/remediation decision and Projects read access; legal and metadata plans complete
+Last session: 2026-09-08T05:54:06.624Z
+Stopped at: 03-03: Projects read access and exact selective-removal/preparation authorization pending; local prevention and backups complete
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
