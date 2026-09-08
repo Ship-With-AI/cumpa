@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "MIT assents and exact artifact removal authorized; scoped Keychain item not visible to this session; no remote mutation attempted"
-last_updated: "2026-09-08T08:06:46.045300+00:00"
+stopped_at: "Owner directs retention of legacy artifacts despite notice finding; deletion and token request cancelled; refresh publication review with explicit accepted risk"
+last_updated: "2026-09-08T08:20:14Z"
 last_activity: 2026-09-08
-last_activity_desc: Recorded both exact MIT assents and two-artifact removal authorization; verified private repository and backup bindings; blocked on scoped Keychain credential visibility.
+last_activity_desc: Recorded owner instruction to retain the two legacy artifacts despite their notice finding, superseding removal authority and cancelling its credential request; no remote mutation.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
 Plan: 2 of 3 executed; renewed exact-text MIT assent recorded, publication bindings still require refresh
-Status: MIT assent and removal-only authorization recorded; scoped credential handoff blocked
-Last activity: 2026-09-08 — MIT approvals committed as b3a04df. Exact two-artifact removal authorized and scope/expiry confirmed by operator, but this session cannot find the specified Keychain item. No remote mutation attempted.
+Status: MIT assents recorded; legacy-artifact retention accepted by owner; separate publication review and authorizations remain
+Last activity: 2026-09-08 — Owner cancelled deletion of artifacts 9907668126 and 9928300866 and accepted retaining them despite missing notices. No deletion token is required. No remote mutation.
 
 Progress: [███████░░░] 67%
 
@@ -82,8 +82,8 @@ None yet.
 
 - Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
-- 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives are backed up privately; exact removal-only authorization is now recorded. Live artifact and backup bindings still match. Local recurrence prevention is implemented and tested, not pushed.
-- 03-03 Projects inventory is complete: zero linked projects. Proposal b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951 is authorized for only artifacts 9907668126 and 9928300866. Operator confirmed repository-selected short expiry and Actions write, but Keychain service cumpa-publication-1327753770/account github-token is not visible to this session (exit 44). No mutation attempted and no broad credential fallback permitted.
+- 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives remain backed up privately. Owner now directs retaining remote artifacts 9907668126 and 9928300866 despite PUB-02; record unremediated owner-accepted notice risk, not verified third-party permission/compliance. Do not delete them or change retention settings.
+- 03-03 Projects inventory is complete: zero linked projects. Prior removal proposal b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951 and its credential request are superseded by the retention instruction. The missing deletion token is no longer a blocker. Refreshed publication bindings and all unrelated authorization/security gates remain required.
 - MIT LICENSE SHA-256 is c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d. Renewed assent is recorded: Alessandro's direct approval and his witnessed report of Manuel's actual approval. Refresh affected source/publication bindings before publication; this approval does not authorize remote mutation.
 
 ### Roadmap Evolution
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T08:06:46.045300+00:00
-Stopped at: Both exact MIT assents and removal-only authorization recorded. Restore this session's access to the approved scoped Keychain credential, recheck exact bindings and perform only the two authorized artifact deletions; then refresh source/publication review and obtain the remaining separate authorizations.
+Last session: 2026-09-08T08:20:14Z
+Stopped at: Owner directs retention of both legacy artifacts despite their notice finding. Do not resume deletion or request its token. Refresh the MIT source/remote/GitHub publication review with the explicit retained-artifact risk, then obtain the remaining separate private-preparation and final-publication authorizations.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md

@@ -6,7 +6,7 @@
 **PRIVATE PREPARATION AUTHORIZATION:** Not granted.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
 
-This redacted exposure review is not the final publishable snapshot. PUB-01 is resolved by exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is closed. Removal-only authorization for the two legacy archives is now recorded below, but execution is blocked because the scoped credential is not visible in this session's Keychain. No push, remote deletion, protection/configuration mutation, registry operation or visibility conversion has occurred.
+This redacted exposure review is not the final publishable snapshot. PUB-01 is resolved by exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is closed. The owner now directs retention of the two legacy archives despite their recorded notice finding. This supersedes the prior removal authorization and cancels its credential handoff. No push, remote deletion, retention/protection/configuration mutation, registry operation or visibility conversion has occurred. The final publication review must disclose the retained, unremediated notice finding rather than claim notice compliance.
 
 ## Current MIT supersession — renewed assent recorded
 
@@ -137,11 +137,13 @@ Current configuration bindings:
 
 **Attributable disposition:** The operator selected `Accept these IDs as public` in `publication_identifier_policy`, explicitly scoped to review SHA-256 **0c0ebee771ce6fd26edcb12bb5a0fb1fe9d2baeafdec0e739d5b58bd91eabe35**. This accepts only the six fingerprints and reviewed Cumpa CI exposure; it is not a general private-data allowlist and authorizes no deletion, configuration mutation, push or visibility change. The operator separately selected `Back up, then remove` for the legacy archive disposition; that selects private preservation and preparation of a selective removal proposal, not execution of a remote deletion.
 
-### PUB-02 — Two unaccepted legacy runtime archives
+### PUB-02 — Retained legacy runtime archives; owner-accepted notice risk
 
-**HIGH notice/distribution blocker.** Artifacts **9928300866** and **9907668126** contain release-package/cumpa-0.0.0.tgz. Each package has **142 entries**, no root LICENSE, no root THIRD_PARTY_NOTICES.md, and no license/notice/copying-named file. A targeted check found **zero copies of the complete upstream Monaco notice**, either exact bytes or whitespace-normalized text, within either archive's members. Upstream reference SHA-256: **790537262fc78a764e121e6b92b959bcd3f5c310b47d9d9b9e92e17fe0af5336**. The checked archive digests were unchanged.
+**HIGH notice/distribution finding; unremediated, with owner-accepted retention.** Artifacts **9928300866** and **9907668126** contain release-package/cumpa-0.0.0.tgz. Each package has **142 entries**, no root LICENSE, no root THIRD_PARTY_NOTICES.md, and no license/notice/copying-named file. A targeted check found **zero copies of the complete upstream Monaco notice**, either as exact bytes or whitespace-normalized text, within either archive's members. Upstream reference SHA-256: **790537262fc78a764e121e6b92b959bcd3f5c310b47d9d9b9e92e17fe0af5336**. The checked archive digests are unchanged.
 
-These are not Phase 4 accepted runtime artifacts. Current repository license/notices do not supply missing notices inside an older standalone archive. The owner chose private preservation before selective removal; byte-verified backups and the exact proposal below are prepared. Removal-only authorization is now recorded below, but remote deletion remains unperformed because the scoped credential is unavailable to this session, so the publication blocker is not yet cleared.
+These are not Phase 4 accepted runtime artifacts. The owner has explicitly chosen to retain them despite the recorded missing-license/notice issue. Deletion is no longer a prerequisite under that exact-scope owner disposition. This is acceptance of a known, unremediated risk, not evidence of third-party permission or verified notice compliance. Preserve the archives and existing private backups without changing retention settings; include this disposition and the actual artifact bindings in the refreshed final-publication review.
+
+**Superseding owner instruction, recorded 2026-09-08T08:20:14Z:** `I don't care about those artifacts. They can live there forever even without license`. This cancels the earlier authorization to delete artifacts 9907668126 and 9928300866 and the associated request for an Actions-write token. Do not seek the same deletion approval again or use its old authorization. No remote retention-setting change or guarantee of indefinite GitHub retention is inferred. All other rights/security/exposure checks and separate final-publication authorization remain in force.
 
 #### Private backups and removal-only proposal
 
@@ -149,7 +151,7 @@ The owner-requested backups were completed at **2026-09-08T05:30:57.000128+00:00
 
 The local manifest is **manifest.json**, kind **cumpa.publication-private-backup/v1**, SHA-256 **0da8d1d46f67a379a1c58669c205399f5e50513a7ff803d54e4b687e4a7e97a6**. This intentional private retention is separate from the completed temporary-audit cleanup.
 
-The following remains the unchanged **proposal**, with the separate attributable removal-only authorization recorded below. Its digest is the SHA-256 of compact UTF-8 JSON with the shown key/array order: **b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951**.
+The following is the unchanged **historical removal proposal**, now superseded by the owner's retention instruction above. Its digest is the SHA-256 of compact UTF-8 JSON with the shown key/array order: **b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951**. Preserve it as history only, not current mutation authority.
 
 ```json
 {
@@ -176,19 +178,19 @@ The following remains the unchanged **proposal**, with the separate attributable
 }
 ```
 
-Before any removal, recheck immutable repository identity/private state, both current artifact bindings, both private backup bytes and manifest digest, and the actual scoped credential. The separate blocking human-action authorization below names this exact proposal. Delete only the two named artifact objects within that authorization; do not delete runs, logs, other artifacts, refs, source or history. Re-list afterward and refresh the full publication review. No deletion request has been sent; credential access remains blocked.
+**Do not execute this removal proposal.** The owner's 2026-09-08 retention instruction supersedes the earlier authorization. No deletion request was sent. Any future removal would require a new explicit instruction and appropriately scoped authority; the current workflow must not request a deletion token or treat removal as a prerequisite.
 
-### PUB-03 — Projects resolved; scoped credential handoff blocked
+### PUB-03 — Projects resolved; removal credential request cancelled
 
 Projects access was verified at **2026-09-08T06:29:40.756Z** after the operator replied `ready` to the read-scope request. The authenticated repository-scoped query returned zero linked projects and no next page, closing the former access blocker. This does not grant mutation authority.
 
-The existing CLI still uses broad OAuth repository access, not operator-confirmed short-lived repository-selected write authority. The removal-only gate requires an expiring fine-grained credential selecting only Ship-With-AI/cumpa (repository ID 1327753770), with Actions write for the two proposed artifact deletions. Preserve the existing OAuth login for authenticated reads; never use it as a write fallback.
+The existing broad OAuth login remains suitable for authenticated reads only under the separate mutation-scope policy. The Actions-write credential requested solely for legacy-artifact deletion is no longer required because that operation is cancelled. Other future remote mutations still require their own exact authorization and verified repository-scoped credentials; no broad OAuth/SSH write fallback is implied.
 
-The secure transfer mechanism is a temporary macOS Keychain item with service `cumpa-publication-1327753770` and account `github-token`. The operator may enter the credential in the native hidden prompt by placing `-w` last in `security add-generic-password`. Do not put its value in command arguments, repository files, chat, URLs or logs. The operator has now confirmed a short expiry, only the approved repository selected, and Actions write permission, and authorized its use solely for the two approved deletions. Those restrictions are operator-reported, not independently verified token metadata. This session cannot yet retrieve the item; no credential has been loaded or used. The temporary token must be revoked and the temporary item removed when no longer needed.
+The historical token handoff used macOS Keychain service `cumpa-publication-1327753770` and account `github-token`. No credential was loaded or used before the owner cancelled deletion. Do not retrieve or use that token for the cancelled operation. If the operator created a temporary token solely for deletion, it is no longer needed and should be revoked; no token revocation or Keychain removal has been performed or is claimed here.
 
 Both remote artifacts were re-read during the 2026-09-08 resume: IDs, sizes and GitHub SHA-256 digests still match the proposal and neither is expired. Repository ID 1327753770 remains private. The local manifest and both backup files were rehashed successfully; their sizes and 0700-directory/0400-file permissions still match. The unchanged proposal was reserialized and its digest verified. These are preflight observations, not proof of remote deletion or final publication clearance.
 
-#### Removal-only authorization — credential handoff blocked
+#### Historical removal-only authorization — superseded; do not execute
 
 - **Operator:** Alessandro Magionami.
 - **Record captured at:** 2026-09-08T08:05:47.511365+00:00, after the checkpoint responses.
@@ -198,7 +200,7 @@ Both remote artifacts were re-read during the 2026-09-08 resume: IDs, sizes and 
 - **Scope preserved:** Only the two named artifact objects; preserve private backups, all runs/logs, all other artifacts, all refs and Git history. This grants no source push, protection/configuration mutation, registry operation or public conversion.
 - **Observed handoff blocker:** `security find-generic-password` for the exact service/account returned exit **44**, `The specified item could not be found in the keychain.` A service-only lookup also returned 44. This session's user search list and default keychain both identify `/Users/alessandro/Library/Keychains/login.keychain-db`.
 - **Last checked:** 2026-09-08T08:06:46.045300+00:00. The operator's ready confirmation is recorded; the observed session visibility problem is not treated as a withdrawal of authorization or an invitation to use broad credentials.
-- **Mutation attempts:** **0**. Resume by making the approved token visible to this session, then repeat the exact-bound preflight and use only the scoped credential. A material proposal or binding change requires renewed authorization.
+- **Mutation attempts:** **0**. The later retention instruction supersedes this authorization and cancels the credential handoff. This historical checkpoint must not be resumed as a deletion task.
 
 ### PUB-04 — Prevent new unaccepted runtime archive uploads
 
@@ -294,6 +296,6 @@ The table below binds each exact archive and a deterministically serialized memb
 
 ## Resume and non-authorizations
 
-Plans 03-01 and 03-02 are complete. The earlier accessible-surface inventory gaps are closed, including Projects; the current MIT candidate still requires refreshed exposure bindings. Both MIT assents and exact removal-only authorization are now recorded. Plan 03-03 awaits access to the operator-confirmed repository-selected expiring Actions-write credential: the specified Keychain item is not visible to this session. PUB-01 is resolved; retaining all run records/logs is intentional. The earlier Projects `ready` response was read-access only; the separate 2026-09-08 removal checkpoint above authorizes only its two exact artifact deletions.
+Plans 03-01 and 03-02 are complete. Both current MIT assents are recorded. The owner now accepts retaining the two exact legacy artifacts despite the unremediated notice finding; their removal and the deletion-token handoff are cancelled, not blocked on credentials. Resume with refreshed MIT source/remote/GitHub exposure bindings, preserving and explicitly disclosing those retained artifacts and their owner-accepted risk. Do not reinterpret this instruction as general acceptance of other findings or as authorization to push, change protections, publish npm or convert repository visibility.
 
 After the remaining evidence and dispositions are complete, request the separate canonical blocking human-action private-preparation authorization for the exact reviewed changes and repository-selected credential. Only after authorized private preparation and a fresh actual remote snapshot may the separate FINAL PUBLICATION AUTHORIZATION be requested. No completed 03-03 summary or Phase 3 completion is justified now.
