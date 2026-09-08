@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "Owner directs retention of legacy artifacts despite notice finding; deletion and token request cancelled; refresh publication review with explicit accepted risk"
-last_updated: "2026-09-08T08:20:14Z"
+stopped_at: "03-03 Task 2: exact private-preparation review ready; await scoped push credential and attributable authorization; no remote mutation"
+last_updated: "2026-09-08T09:32:13Z"
 last_activity: 2026-09-08
-last_activity_desc: Recorded owner instruction to retain the two legacy artifacts despite their notice finding, superseding removal authority and cancelling its credential request; no remote mutation.
+last_activity_desc: Refreshed source and authenticated exposure bindings, verified all 67 archives unchanged, retained exact owner-accepted notice risk, and prepared private fast-forward proposal 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 executed; renewed exact-text MIT assent recorded, publication bindings still require refresh
-Status: MIT assents recorded; legacy-artifact retention accepted by owner; separate publication review and authorizations remain
-Last activity: 2026-09-08 — Owner cancelled deletion of artifacts 9907668126 and 9928300866 and accepted retaining them despite missing notices. No deletion token is required. No remote mutation.
+Plan: 2 of 3 executed; 03-03 Task 1 refreshed, Task 2 human-action checkpoint
+Status: Exact private-preparation review ready; scoped push authentication and attributable authorization missing. Public visibility remains unauthorized.
+Last activity: 2026-09-08 — Source pinned to ece7fcfc7a993e751a999145b2c74ee233402a1f; remote main remains 7c9b22801378de313a7f2b9be7261eb17c4bb613 and private. All 67 archives match prior bytes. No remote mutation.
 
 Progress: [███████░░░] 67%
 
@@ -83,8 +83,8 @@ None yet.
 - Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives remain backed up privately. Owner now directs retaining remote artifacts 9907668126 and 9928300866 despite PUB-02; record unremediated owner-accepted notice risk, not verified third-party permission/compliance. Do not delete them or change retention settings.
-- 03-03 Projects inventory is complete: zero linked projects. Prior removal proposal b0cc10ef0721b782bc4b6bcaf4d1e272d34f01c7d881299362d728a32f59f951 and its credential request are superseded by the retention instruction. The missing deletion token is no longer a blocker. Refreshed publication bindings and all unrelated authorization/security gates remain required.
-- MIT LICENSE SHA-256 is c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d. Renewed assent is recorded: Alessandro's direct approval and his witnessed report of Manuel's actual approval. Refresh affected source/publication bindings before publication; this approval does not authorize remote mutation.
+- 03-03 current private-preparation review digest is 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b, binding only the guarded private main fast-forward from 7c9b22801378de313a7f2b9be7261eb17c4bb613 to ece7fcfc7a993e751a999145b2c74ee233402a1f and its existing CI/Supabase production-deployment effects. Obtain a new short-lived repository-selected Contents-write/Workflows-write credential and the exact PRIVATE PREPARATION AUTHORIZED statement. Do not retrieve/reuse the cancelled artifact-deletion credential or request deletion.
+- MIT LICENSE SHA-256 remains c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d; both recorded assents and bound notices/rights review match. Projects/rulesets/classic protections are explicitly zero. No private protection change is proposed. After authorized preparation, recapture actual exposure and obtain the distinct final-publication authorization and supported post-public protection disposition.
 
 ### Roadmap Evolution
 
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T08:20:14Z
-Stopped at: Owner directs retention of both legacy artifacts despite their notice finding. Do not resume deletion or request its token. Refresh the MIT source/remote/GitHub publication review with the explicit retained-artifact risk, then obtain the remaining separate private-preparation and final-publication authorizations.
+Last session: 2026-09-08T09:32:13Z
+Stopped at: 03-03 Task 2. Exact private-preparation proposal is ready and all reachable read-only review work is complete. Await repository-selected short-lived push credential and attributable review-digest authorization; existing workflow will run CI and may deploy Supabase production. Retain the two exact legacy artifacts and their backups. No push, deletion, protection/retention change or visibility mutation is authorized. Later local evidence commits are excluded from source target ece7fcfc7a993e751a999145b2c74ee233402a1f.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md

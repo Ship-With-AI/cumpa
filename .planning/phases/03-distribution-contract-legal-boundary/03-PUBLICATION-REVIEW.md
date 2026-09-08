@@ -1,4 +1,4 @@
-# Private Publication Review — BLOCKED
+# Private Publication Review — PRIVATE PREPARATION CHECKPOINT
 
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
@@ -8,7 +8,464 @@
 
 This redacted exposure review is not the final publishable snapshot. PUB-01 is resolved by exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is closed. The owner now directs retention of the two legacy archives despite their recorded notice finding. This supersedes the prior removal authorization and cancels its credential handoff. No push, remote deletion, retention/protection/configuration mutation, registry operation or visibility conversion has occurred. The final publication review must disclose the retained, unremediated notice finding rather than claim notice compliance.
 
-## Current MIT supersession — renewed assent recorded
+## Active private-preparation review — 2026-09-08T09:32:13Z
+
+This section supersedes earlier candidate/snapshot and blocker descriptions below, which remain historical evidence. **Task 1 is complete; Task 2 is blocked on attributable private-preparation authorization and a new, operator-confirmed repository-selected short-lived push credential.** No private-preparation or final-publication authorization has been granted. The cancelled artifact-deletion credential is not requested, retrieved or reused.
+
+### Frozen source and native Git proof
+
+- Repository: `Ship-With-AI/cumpa`, immutable ID `1327753770`, node `R_kgDOTyPqKg`; still private, default branch main, not archived or disabled.
+- `remote_main_before`: `7c9b22801378de313a7f2b9be7261eb17c4bb613`. Native advertised refs and paginated branch/tag/PR reads agree: only main, one branch, zero tags, zero PRs, zero forks.
+- `source_target_oid`: `ece7fcfc7a993e751a999145b2c74ee233402a1f`. The exact approved old OID is its ancestor; **52 intervening commits**. No-sync is not available. The one-ref proposal below uses that same old OID for both ancestry and the explicit lease.
+- Before freezing this target, commit `ece7fcf` corrected two stale documentation statements: current MIT assent is recorded, and legacy-artifact deletion is cancelled. No application or workflow behavior changed in this resume. Later local review/STATE/authorization/SUMMARY commits are excluded from the proposed push.
+- Extension from previously reviewed `5939daec8afa04f97a283c9fe9ea93c0bac6cd29`: **8 commits, 33 trees, 28 blobs; 69 newly reachable objects**, all read and content-hashed. Sorted `[oid,type,content_sha256]` projection SHA-256: `6d7471eecc95474d6951cd694eeff8f82c67efa7e260f00b48616d7af6fee22f`. Combined coverage: **870 commits, 3,660 trees, 2,686 blobs; 7,216 objects**.
+- All 15 changed historical paths were enumerated, including intermediate planning records. Changes are MIT legal/metadata/documentation cutover, redacted backup/Projects/assent/credential-handoff records and their superseding retention disposition, plus the two corrected policy statements. No new dependency graph, runtime behavior, external code or new commit-email identity was introduced. Package and lock objects are semantically identical to the prior candidate after changing only their MIT license fields; `private: true` and the package allowlist remain unchanged.
+- New object bytes and messages produced zero known protected-environment-value matches and zero tested private-key/GitHub-token/AWS-key/Stripe-secret/JWT/credential-URL patterns. Contextual classification preserves earlier exact R-01/R-02/R-03 dispositions; scanning is not ownership, confidentiality or license-compliance certification.
+- Current 1,104-byte MIT LICENSE, unchanged notices and rights-review digests match their recorded bindings. Alessandro's direct assent and his witnessed report of Manuel's own assent remain distinct; no independently verified statement from Manuel is claimed.
+
+### Fresh authenticated exposure and protection observations
+
+All list endpoints used exhaustive REST `per_page=100` pagination or explicit GraphQL totals/pageInfo. Observed counts: branches/tags/PRs **1/0/0**; issues, issue comments/events, PR review comments, commit comments, releases/assets, forks, webhooks and teams **0**; collaborators **2**, both administrators. Linked Projects **0**, cursor exhausted. No PR-dependent review or release-asset collection exists to traverse. Discussions and wiki are disabled; the native wiki Git probe returned repository-not-found. Pages is disabled and its API returns 404.
+
+Actions: **1 workflow, 48 completed runs/48 attempts, 96 jobs, 96 check runs, 96 annotation lists/129 annotations**. Deployments: **41** fully read status collections, latest states **19 success / 22 failure**. All exposure producers were terminal when read; an operator no-write/no-rename/no-transfer window has not been asserted.
+
+All **67 archives** (48 run logs and 19 unexpired artifacts; **8,278,181 downloaded bytes**) were downloaded again and matched the exact prior byte-size/SHA-256 bindings. Prior member-level inspection/classification therefore applies to identical bytes, including both retained legacy archives; no changed or unreviewed archive was substituted. No archive was extracted or executed. The mode-0700 temporary directory under umask 077 had finally/SIGINT/SIGTERM cleanup and was confirmed removed. Existing requested private backups were not modified. Current API payload coverage was **1,587,694 bytes** before the additional empty commit-comment list; no tested credential-pattern match occurred. Known protected values appeared only in the intentionally read environment-variable values, whose durable representation is SHA-256 only.
+
+Effective/inherited rulesets (all targets) and classic branch-protection rules are **0**, with GraphQL `hasNextPage=false`; main's branch rule is null. REST protection/ruleset 403 responses are private-plan restrictions, not the basis for assuming absence. Production environment `21002754719` has **no protection rules**, null deployment-branch policy and **0 custom deployment protections**; the branch-policy endpoint's 404 is corroborated by the explicit null setting. Environment variables/secrets are **5/5** (secret metadata only); repository variables/secrets are **0/0**. Environment value fingerprints match the previously reviewed bindings.
+
+Actions are enabled, `allowed_actions=all`, SHA pinning is not required; default GITHUB_TOKEN permission is read and PR-review approval is disabled. Private-fork workflows, write-token delivery and secret/variable delivery are disabled. Private forking is disabled. There is no associated code-security configuration; vulnerability/Dependabot alerts, automated security fixes and secret scanning are disabled; code scanning reports Advanced Security is not enabled. These are explicit feature-state observations, not clean-alert certifications. Public-only fork-contributor approval returns 422 while private; **no future configured value is invented or approved here**.
+
+Proposed private protection changes: **none**. The separate final-publication checkpoint must approve the supported post-public disposition, including existing unprotected main/Production, public-fork behavior and GitHub disabling **all push rulesets** (currently zero). [GitHub's documented visibility consequences](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility) also include public Actions history/logs, public code/forks and copies that cannot be retracted by later privacy changes.
+
+**PUB-02 remains an unremediated owner-accepted notice risk for exactly artifacts 9907668126 and 9928300866.** They remain retained at the exact archive bindings below. No deletion, retention-setting change, third-party permission or notice-compliance claim is made. PUB-01's exact identifier acceptance and all unrelated rights/security gates remain bounded.
+
+### Canonical projection and proposal
+
+Serialization is UTF-8 `json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)`, hashed with SHA-256. Collection record arrays are sorted by their serialized projected record; nested semantic arrays retain API order. REST pagination envelopes are flattened; object-valued pages retain their wrappers. Object keys are recursively sorted for serialization. Variable objects retain `name` and replace string `value` with its SHA-256. No secret value is read from secret-metadata endpoints. Omitted keys are exactly `download_count, forks, forks_count, network_count, open_issues, open_issues_count, size, stargazers_count, subscribers_count, watchers, watchers_count` (repository/view/download counters); archive byte sizes and artifact `size_in_bytes` remain bound. Resource timestamps, content, actor IDs, statuses, permissions, environment/security values and error/feature-state observations remain included. Transport headers and capture timestamps are not response-body inputs. Future local approval/report fields are not snapshot inputs.
+
+The exposure digest is the canonical sorted map of collection names to their projected-content digests. Protection digest independently binds repository feature/access controls, effective/classic rules, environment and Actions/security settings, the empty private change set and explicit visibility consequences. These are **preparation-review bindings**, not a final post-sync publication snapshot. Task 3 must recapture all actual remote content after authorized preparation and resulting CI/deployment, then obtain separate final authorization.
+
+- Exposure SHA-256: `79c8b6dc374ae8b62f66d85d3c7b74db91023d9bf0d6110d7bafabead106a74c`.
+- Protection/disposition SHA-256: `96b362425508a1340047171187a2c2559c56dc193328d9dd7cfa87d92d5cbe90`.
+- **Private-preparation review SHA-256: `262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`** (canonical JSON proposal below, independent of this document's future commit).
+
+<details>
+<summary>Exact redacted collection digests and protection projection</summary>
+
+```json
+{
+  "collections": {
+    "annotations": "148f36be122d62a27d2a072d7a48fd51ccfc33e499cffdc19b6bfdc2a5c0ca8a",
+    "archive_bytes": "4b5d1982cf4e66b2ff21387c7b799b7171149407e94ea1ba543ad5287e84d996",
+    "base/artifacts": "5b487eac8c72271614a493644d321b8dc0b9d12d1e04fd1485469744e04dda1c",
+    "base/deployments": "66ee14cd95e15e4b44914061b83ca006944a4ed83681e360d7db7a6dbd9d839b",
+    "base/runs": "0785313ddc7f4bbae254f38759576adf8ffc5c8ff3153a1cce462dcd98ab3547",
+    "base/workflows": "d408a19d8fedc49d961d407b19679d35f6bd22d4ffa4c6fbf5f7f5344a6f08ce",
+    "checks": "38fa67b4fd6465c94c1ad6fb4d79eba9e6bc93d5bdd2dc821f579b1fa935485c",
+    "collaborators": "a525f348d8502777b9409a97100c0f450ed4bcfb601700cba34d21062e608431",
+    "commit_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "deployment_statuses": "1650de80ef2d1f636ef3edd7ef9f9f951e7f4ab02706c690f9dde81aba993bae",
+    "graphql": "c8079b2e7d2e11d8f3b9aae7fd61a5eb221040007ae8892fa04201794c762249",
+    "jobs": "dd57f782446fee7a8946dcf60da935b345d9698cb3a3f335a14348ad2a4e78ad",
+    "surface/actions_permissions": "25842d2b9453f8e5fed37a198b9a268cf6aee1225690bf5fb91a89e8542ea718",
+    "surface/automated_security_fixes": "8a0a15ba9d18fbed2294a579cbae9c005dd2fc71b83c56a28e7f55f984e8771f",
+    "surface/branches": "ec234153daa6ad5f88ce23cab22f519d6526be714f553eebaa7b68a3c7076e4a",
+    "surface/code_scanning": "5547f4c73465214a091963b2e70ca1331dc3dc76a58c3d91966d0cfb348962b5",
+    "surface/code_security_configuration": "74234e98afe7498fb5daf1f36ac2d78acc339464f950703b8c019892f982b90b",
+    "surface/dependabot": "a75019e06dfded2c0b8a3c17e844fe8d5bde12b716fd21a6867ff4dcfff1ed9c",
+    "surface/deployment_branch_policies": "5b2f5a10055778602f1dc91780de12e8d10e8d5785367675fe5b18b16d885f02",
+    "surface/deployment_protection_rules": "8ebbe4538a833927b69cd64a669741e5ada91dd883c353c8626843e544af33a7",
+    "surface/env_secrets": "49aa3fe9d1aad31baced1bde8304d7f02be04ed37e0c2ddadd8cb74c6ed7716e",
+    "surface/env_variables": "d70c286581f28bd2b147c7d2d62824a9c091865e2aed7fca1f151a6347490124",
+    "surface/environment": "e6927b867d7836da75b210c93a07c5899621bf6307228f69d0b3264203e8f780",
+    "surface/environments": "64085f9341870df1ced97771f3c66ab9a0399b9856e62d4ccbcedd2a07416889",
+    "surface/fork_approval": "a98dd8c4b9aa1f925aa7156adabba3ecaa3129398f010b9f9ea17c747f590e7a",
+    "surface/fork_permissions": "b02b39c5f551845d4983ff38b6967f4acdcc4d05b4550d4e8d609a8e48b94de3",
+    "surface/forks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/hooks": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/issue_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/issue_events": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/issues": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/main_protection": "2fb9628dc2d4b321f14a613e7263343126d1f62b67ef489ddf6e5ba98aa575e8",
+    "surface/pages": "4f85e4faa30c78ccd743d62e76176edf23ebc3fc8fecb44ceacfaa219a755ee5",
+    "surface/pulls": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/releases": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/repo_secrets": "c0f46bfb73dbb41d36cf2ea8f1d63ee7d6a498bde0a8e18b02796a41193de5da",
+    "surface/repo_variables": "ca54fa494652031e6b1212b5ea847b7d0b7d919e24df2654ce6d771d9d0f7f66",
+    "surface/repository": "796c31a0667ec67ca2ff7fbe7c37b8c94fdd00f5f0e51bf583c421e85b99c8c5",
+    "surface/review_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/rulesets": "2fb9628dc2d4b321f14a613e7263343126d1f62b67ef489ddf6e5ba98aa575e8",
+    "surface/secret_scanning": "31140ea22e43b342ce4b02867adff8b5a8226540b39535fbca91b497bff3c3e4",
+    "surface/tags": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+    "surface/vulnerability_alerts": "8c8ac6c2613a31e07fd81b9a35f6b37a34e54d3a4f63972e00313244113fa4b4",
+    "surface/workflow_permissions": "fb00f7e1aab4200684b287b484155d5521381f4593552beed4bbb5f9b1622ede",
+    "teams": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "protections": {
+    "repository": {
+      "id": 1327753770,
+      "node_id": "R_kgDOTyPqKg",
+      "full_name": "Ship-With-AI/cumpa",
+      "private": true,
+      "has_issues": true,
+      "has_projects": true,
+      "has_downloads": false,
+      "has_wiki": false,
+      "has_pages": false,
+      "has_discussions": false,
+      "archived": false,
+      "disabled": false,
+      "allow_forking": false,
+      "web_commit_signoff_required": false,
+      "has_pull_requests": true,
+      "visibility": "private",
+      "default_branch": "main",
+      "allow_squash_merge": true,
+      "allow_merge_commit": true,
+      "allow_rebase_merge": true,
+      "allow_auto_merge": false,
+      "delete_branch_on_merge": false,
+      "allow_update_branch": false
+    },
+    "access_controls": {
+      "collaborators": [
+        {
+          "login": "hoghweed",
+          "id": 127878,
+          "node_id": "MDQ6VXNlcjEyNzg3OA==",
+          "avatar_url": "https://avatars.githubusercontent.com/u/127878?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/hoghweed",
+          "html_url": "https://github.com/hoghweed",
+          "followers_url": "https://api.github.com/users/hoghweed/followers",
+          "following_url": "https://api.github.com/users/hoghweed/following{/other_user}",
+          "gists_url": "https://api.github.com/users/hoghweed/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/hoghweed/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/hoghweed/subscriptions",
+          "organizations_url": "https://api.github.com/users/hoghweed/orgs",
+          "repos_url": "https://api.github.com/users/hoghweed/repos",
+          "events_url": "https://api.github.com/users/hoghweed/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/hoghweed/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false,
+          "permissions": {
+            "admin": true,
+            "maintain": true,
+            "push": true,
+            "triage": true,
+            "pull": true
+          },
+          "role_name": "admin"
+        },
+        {
+          "login": "alemagio",
+          "id": 21338507,
+          "node_id": "MDQ6VXNlcjIxMzM4NTA3",
+          "avatar_url": "https://avatars.githubusercontent.com/u/21338507?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/alemagio",
+          "html_url": "https://github.com/alemagio",
+          "followers_url": "https://api.github.com/users/alemagio/followers",
+          "following_url": "https://api.github.com/users/alemagio/following{/other_user}",
+          "gists_url": "https://api.github.com/users/alemagio/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/alemagio/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/alemagio/subscriptions",
+          "organizations_url": "https://api.github.com/users/alemagio/orgs",
+          "repos_url": "https://api.github.com/users/alemagio/repos",
+          "events_url": "https://api.github.com/users/alemagio/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/alemagio/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false,
+          "permissions": {
+            "admin": true,
+            "maintain": true,
+            "push": true,
+            "triage": true,
+            "pull": true
+          },
+          "role_name": "admin"
+        }
+      ],
+      "teams": []
+    },
+    "effective_rulesets": {
+      "totalCount": 0,
+      "nodes": [],
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": null
+      }
+    },
+    "classic_protection": {
+      "totalCount": 0,
+      "nodes": [],
+      "pageInfo": {
+        "hasNextPage": false,
+        "endCursor": null
+      }
+    },
+    "main_branch_rule": null,
+    "settings": {
+      "environment": {
+        "id": 21002754719,
+        "node_id": "EN_kwDOTyPqKs8AAAAE49yanw",
+        "name": "Production",
+        "url": "https://api.github.com/repos/Ship-With-AI/cumpa/environments/Production",
+        "html_url": "https://github.com/Ship-With-AI/cumpa/deployments/activity_log?environments_filter=Production",
+        "created_at": "2026-09-01T12:18:19Z",
+        "updated_at": "2026-09-01T12:18:19Z",
+        "can_admins_bypass": true,
+        "protection_rules": [],
+        "deployment_branch_policy": null
+      },
+      "env_variables": [
+        {
+          "variables": [
+            {
+              "name": "STRIPE_PRICE_ID",
+              "value": "6eb4ae5e01c0f6096753cd0a167d433f31469dc03ec3878055cbb63360be2188",
+              "created_at": "2026-09-02T05:49:27Z",
+              "updated_at": "2026-09-03T13:16:58Z"
+            },
+            {
+              "name": "STRIPE_WEBHOOK_ENDPOINT_ID",
+              "value": "79be299e993c11e1acb5c43a8f8cf6e58eac64f503cf29a1737a5c0592ac3631",
+              "created_at": "2026-09-02T10:09:23Z",
+              "updated_at": "2026-09-03T13:16:31Z"
+            },
+            {
+              "name": "SUPABASE_GITHUB_CLIENT_ID",
+              "value": "953333ebbd9b6118fadebc7f2b6fe9926b76adb22c6037788ce443d91d5cf71d",
+              "created_at": "2026-09-02T11:15:29Z",
+              "updated_at": "2026-09-02T11:15:29Z"
+            },
+            {
+              "name": "SUPABASE_PROJECT_REF",
+              "value": "2043c31eacb2efa76123043fcd652ac45bd19b121db1ddaa537e86b3473bf73d",
+              "created_at": "2026-09-01T12:29:42Z",
+              "updated_at": "2026-09-01T12:29:42Z"
+            },
+            {
+              "name": "SUPPORT_PROVIDER_MODE",
+              "value": "349af68ebbc98a1a24a918cbcc2822c4e0235fa2f2abb41b92f0a02e69ad883f",
+              "created_at": "2026-09-01T12:32:17Z",
+              "updated_at": "2026-09-03T13:20:49Z"
+            }
+          ],
+          "total_count": 5
+        }
+      ],
+      "env_secrets": [
+        {
+          "total_count": 5,
+          "secrets": [
+            {
+              "name": "STRIPE_SECRET_KEY",
+              "created_at": "2026-09-02T05:46:10Z",
+              "updated_at": "2026-09-03T13:20:28Z"
+            },
+            {
+              "name": "STRIPE_WEBHOOK_SECRET",
+              "created_at": "2026-09-02T10:09:45Z",
+              "updated_at": "2026-09-03T13:16:10Z"
+            },
+            {
+              "name": "SUPABASE_ACCESS_TOKEN",
+              "created_at": "2026-09-01T12:23:41Z",
+              "updated_at": "2026-09-02T12:03:40Z"
+            },
+            {
+              "name": "SUPABASE_DB_PASSWORD",
+              "created_at": "2026-09-01T12:23:58Z",
+              "updated_at": "2026-09-01T12:23:58Z"
+            },
+            {
+              "name": "SUPABASE_GITHUB_CLIENT_SECRET",
+              "created_at": "2026-09-01T12:26:25Z",
+              "updated_at": "2026-09-02T16:16:03Z"
+            }
+          ]
+        }
+      ],
+      "repo_variables": [
+        {
+          "variables": [],
+          "total_count": 0
+        }
+      ],
+      "repo_secrets": [
+        {
+          "total_count": 0,
+          "secrets": []
+        }
+      ],
+      "deployment_branch_policies": {
+        "ok": false,
+        "status": "404",
+        "message": "Not Found",
+        "corroboration": "environment.deployment_branch_policy=null"
+      },
+      "deployment_protection_rules": {
+        "total_count": 0,
+        "custom_deployment_protection_rules": []
+      },
+      "actions_permissions": {
+        "enabled": true,
+        "allowed_actions": "all",
+        "sha_pinning_required": false
+      },
+      "workflow_permissions": {
+        "default_workflow_permissions": "read",
+        "can_approve_pull_request_reviews": false
+      },
+      "fork_permissions": {
+        "run_workflows_from_fork_pull_requests": false,
+        "send_write_tokens_to_workflows": false,
+        "send_secrets_and_variables": false,
+        "require_approval_for_fork_pr_workflows": false
+      },
+      "fork_approval": {
+        "ok": false,
+        "status": "422",
+        "message": "Validation Failed"
+      },
+      "code_security_configuration": null,
+      "vulnerability_alerts": {
+        "ok": false,
+        "status": "404",
+        "message": "Vulnerability alerts are disabled."
+      },
+      "automated_security_fixes": {
+        "enabled": false,
+        "paused": false
+      },
+      "code_scanning": {
+        "ok": false,
+        "status": "403",
+        "message": "Advanced Security must be enabled for this repository to use code scanning."
+      },
+      "secret_scanning": {
+        "ok": false,
+        "status": "404",
+        "message": "Secret scanning is disabled on this repository."
+      },
+      "dependabot": {
+        "ok": false,
+        "status": "403",
+        "message": "Dependabot alerts are disabled for this repository."
+      }
+    },
+    "requested_private_changes": [],
+    "visibility_consequences": {
+      "all_push_rulesets_disabled": true,
+      "observed_push_rulesets": 0,
+      "code_and_actions_history_public": true,
+      "public_forks_and_persistent_copies": true,
+      "public_only_fork_approval": "unavailable while private; no configured value or enforcement claimed; requires separate final disposition"
+    }
+  }
+}
+```
+
+</details>
+
+```json
+{
+  "kind": "cumpa.private-preparation-proposal/v1",
+  "repository": "Ship-With-AI/cumpa",
+  "repository_id": 1327753770,
+  "repository_node_id": "R_kgDOTyPqKg",
+  "expected_visibility": "private",
+  "remote_refs": [
+    [
+      "refs/heads/main",
+      "7c9b22801378de313a7f2b9be7261eb17c4bb613"
+    ]
+  ],
+  "remote_main_before": "7c9b22801378de313a7f2b9be7261eb17c4bb613",
+  "source_target_oid": "ece7fcfc7a993e751a999145b2c74ee233402a1f",
+  "source_bindings": {
+    "LICENSE": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+    "THIRD_PARTY_NOTICES.md": "847c9cb7c9e3585ed7ae518208ac934c5658f0fdb01ad2f2a20b50f56015d143",
+    ".planning/phases/03-distribution-contract-legal-boundary/03-RIGHTS-REVIEW.md": "d65e5f780c5469757fefef685100a1d4bc6ceaded20b1234b010e8d2b8136e94",
+    ".planning/phases/03-distribution-contract-legal-boundary/03-LICENSE-APPROVAL.md": "da8131b0cf7d76516dafee5c5ce8acb8d57904d9d6c1e49f89f93defa67eff6f",
+    "package.json": "5ae67356a55c01be628cc4f82d4debba272984d9a28e1824069878e7ded2c5b3",
+    "package-lock.json": "896aefb20316dc2a6588b28eb3deb2bb5483388dc59daf51f2efd839e1b2df1f",
+    "README.md": "7eba4475ecf0d610ee57afb555c2afc328dcd8c604ae41e56b4ab1cfd1f0e065",
+    "docs/distribution-operations.md": "5d36cfaac8164567eaaf9775cd5a0c03db028a34e01df4ba49fa14de174f096f",
+    "docs/support-service-operations.md": "89dc5b1b005f208ee885a0d3c7ba00db46e2bd9ed29722cdcb4ac33813b2873e",
+    ".github/workflows/deploy-supabase-production.yml": "0cc92062e9b5ccefc4ae68ddf9494be6d5fec4f03ab07d2df67262293b6fe2d0"
+  },
+  "prior_reviewed_source_oid": "5939daec8afa04f97a283c9fe9ea93c0bac6cd29",
+  "source_delta_sha256": "6d7471eecc95474d6951cd694eeff8f82c67efa7e260f00b48616d7af6fee22f",
+  "exposure_sha256": "79c8b6dc374ae8b62f66d85d3c7b74db91023d9bf0d6110d7bafabead106a74c",
+  "protection_sha256": "96b362425508a1340047171187a2c2559c56dc193328d9dd7cfa87d92d5cbe90",
+  "main_update": {
+    "ref": "refs/heads/main",
+    "fast_forward_only": true,
+    "ancestor_must_be": "7c9b22801378de313a7f2b9be7261eb17c4bb613",
+    "lease": "--force-with-lease=refs/heads/main:7c9b22801378de313a7f2b9be7261eb17c4bb613",
+    "refspec": "ece7fcfc7a993e751a999145b2c74ee233402a1f:refs/heads/main"
+  },
+  "protection_changes": [],
+  "expected_push_effects": [
+    "existing repository-gates workflow",
+    "existing Supabase production deployment after gates pass",
+    "supabase-deployment-evidence.json upload only; inspect resulting logs/artifacts before final publication authorization"
+  ],
+  "retained_owner_accepted_notice_risk": [
+    {
+      "id": 9907668126,
+      "size": 3482130,
+      "archive": "3e4813bebbad2155ca473fe022cbb34196b1eadf85453f37bc675259b82cb453",
+      "members": "215ddd7bc9bec5b00c0bbc22d6e8385e9979a9d2e66bff99562cbc900950be58"
+    },
+    {
+      "id": 9928300866,
+      "size": 3482132,
+      "archive": "bfbd790230ffaf37d5f6dc89fd792484c26a2062a32d8c50ab72e9ee7ec6afac",
+      "members": "d1dae1f17e6658b019c3edf889376649e684923f4d7fb585e181c4a2738eb720"
+    }
+  ],
+  "preserve": [
+    "all artifacts and private backups",
+    "all run records and logs",
+    "all other refs",
+    "all Git history",
+    "all retention and protection settings"
+  ],
+  "credential_requirement": {
+    "repository_id": 1327753770,
+    "selection": "only Ship-With-AI/cumpa",
+    "short_lived": true,
+    "required_push_permissions": [
+      "Contents:write",
+      "Workflows:write"
+    ],
+    "ambient_write_fallback": false,
+    "cancelled_deletion_credential": "do not retrieve or reuse"
+  },
+  "visibility_authorized": false,
+  "npm_authorized": false,
+  "later_local_evidence_commits_authorized": false
+}
+```
+
+### Blocking human-action checkpoint
+
+The private push requires a new short-lived credential selecting **only this immutable repository**, with **Contents: write** and **Workflows: write** (the reviewed history updates the existing workflow). Use an operator-verified secure mechanism; do not paste token bytes into chat, arguments, URLs or this record. Broad ambient OAuth/SSH is read-only for this procedure; the cancelled Actions-write deletion handoff is not reusable authorization. Repository administration/visibility permission is not needed for this preparation step and is not requested here.
+
+The exact one-ref private fast-forward will trigger existing CI and, if gates pass, the existing **Supabase production deployment** and deployment-evidence upload. Authorization must cover those effects. It grants no visibility change, npm publication, artifact deletion, retention/protection change, extra ref or later evidence commit.
+
+After reviewing these bindings and confirming scoped authentication, the operator must supply:
+
+`PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`
+
+No such statement has been received. Immediately before any authorized push, recheck exact repository identity/private state, current old ref, affected exposure/protection bindings and current MIT assent; drift requires refreshed review. The one-ref update must pass the same-old-OID ancestry check and exact lease. Phase 3 remains **2/3 plans complete**; 03-03 SUMMARY and phase completion are not justified.
+
+## Historical MIT supersession — renewed assent recorded
 
 The 2026-09-08 MIT decision supersedes every prior proprietary-license/source binding in this review. The current `LICENSE` is the 1,104-byte standard MIT text with SHA-256 `c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d`.
 
@@ -20,7 +477,7 @@ All earlier LICENSE/source-candidate bindings and any proprietary licensing lang
 
 - Existing repository: Ship-With-AI/cumpa; immutable numeric ID **1327753770**, node ID **R_kgDOTyPqKg**.
 - Observed visibility: **private**; default branch **main**; not archived or disabled.
-- Current clean committed source candidate, captured before this review refresh: **5939daec8afa04f97a283c9fe9ea93c0bac6cd29**.
+- Earlier reviewed source candidate (superseded by the active review above): **5939daec8afa04f97a283c9fe9ea93c0bac6cd29**.
 - Actual advertised remote main: **7c9b22801378de313a7f2b9be7261eb17c4bb613**.
 - Native Git advertised only refs/heads/main. Paginated branch/tag/PR reads corroborated one branch, zero tags and zero PRs. There are no observed remote-only roots or forks.
 - Native ancestry checks proved old remote main is an ancestor of this candidate, with **44 intervening commits**. No-sync is therefore **not** available.
@@ -212,7 +669,7 @@ The original verifier accepted the unsafe runtime upload. The focused Playwright
 
 All **67** accessible log/artifact archives were read, including nested tarballs, without extracting or executing archive members. Original expanded coverage: **35,040,516 bytes**, 1,029 UTF-8 members/metadata records and two binary members. Repeated exact-provider-pattern checks added the existing production-policy key families, credential URLs and secret-assignment forms.
 
-No genuine credential/key/JWT candidate was established. One broader prefix pass matched 90 compiler-identifier substrings; a token-boundary-corrected pass against the identical archives returned zero candidates. Other email/home-path matches were grammar strings, a currency-reference URL and a synthetic fixture. The scanner did not grant privacy clearance: PUB-01 was resolved by the actual owner selection above, and the notice/distribution finding remains blocking.
+No genuine credential/key/JWT candidate was established. One broader prefix pass matched 90 compiler-identifier substrings; a token-boundary-corrected pass against the identical archives returned zero candidates. Other email/home-path matches were grammar strings, a currency-reference URL and a synthetic fixture. The scanner did not grant privacy clearance: PUB-01 was resolved by the actual owner selection above, and the exact PUB-02 notice/distribution finding remains unremediated under the owner-accepted retention disposition above.
 
 Audit downloads used mode-0700 temporary directories under umask 077, finally/SIGINT/SIGTERM cleanup, bounded archive checks and no execution. All completed passes confirmed cleanup; a focused check after the tool-kernel reset found no owned audit temporary directories. No raw payload is stored in Git or this evidence. The separately requested, verified private backups above are intentionally retained under .cumpa/ and remain excluded from Git and package contents.
 
@@ -220,7 +677,7 @@ Audit downloads used mode-0700 temporary directories under umask 077, finally/SI
 
 The table below binds each exact archive and a deterministically serialized member/path/byte digest projection. Configuration values are represented only by SHA-256. Git content is bound separately to the fixed source target and scanned-object projection. Transport headers, capture timestamps, view/download counters, local approval fields and future report commits are not content authorization inputs.
 
-**No final publication snapshot or private-preparation authorization is issued while the legacy-archive finding and write-authority gate remain unresolved.** Projects are fully inventoried. After authorized remediation, rebuild the full sorted ref/content/surface/protection projection from the actual remote; preserve every security-relevant field, require terminal exposure producers and an operator-confirmed no-write window, and recheck all bindings before any approved visibility-only action.
+**The following is historical snapshot-boundary guidance, superseded by the active preparation review above.** Projects are fully inventoried; the exact legacy-artifact finding is owner-accepted risk, not a deletion prerequisite. After separately authorized private preparation, rebuild the full sorted ref/content/surface/protection projection from the actual remote; preserve every security-relevant field, require terminal exposure producers and an operator-confirmed no-write window, and recheck all bindings before any approved visibility-only action.
 
 ## Per-archive evidence
 
