@@ -3,8 +3,16 @@
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
-**PRIVATE PREPARATION AUTHORIZATION:** The first approved push was applied. Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` is pending authorization; the existing scoped credential is available.
+**PRIVATE PREPARATION AUTHORIZATION:** Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` is now explicitly authorized by Alessandro; scoped authentication works. Complete no-drift preflight is required before the repaired private push.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
+
+### Repaired-source authorization received
+
+- **Authorizer:** Alessandro Magionami, direct user message.
+- **Captured:** 2026-09-08T11:14:53Z.
+- **Verbatim statement:** `PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2`.
+- **Exact bounds:** Only private main `ece7fcfc7a993e751a999145b2c74ee233402a1f` → `ff72519969da8d2c0761c9533ccb27b809cd17bb`, guarded by matching old-OID ancestry and lease, plus the unchanged CI/Supabase deployment effects in the proposal. No retry of the old run, extra ref, later local evidence commit, public visibility, npm operation, deletion or settings change is authorized.
+- **Credential preflight:** A fresh secure retrieval returned the existing fine-grained token, and its authenticated read matched immutable private repository `1327753770` / `R_kgDOTyPqKg`. Scope/expiry remain as explicitly confirmed by the operator; no token bytes are recorded.
 
 ## Current repaired-source preparation review — 2026-09-08T11:07:44Z
 
@@ -114,13 +122,13 @@
 }
 ```
 
-### Required renewed source authorization
+### Repaired-source authorization gate
 
-Send exactly:
+The operator supplied exactly:
 
 `PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2`
 
-No authorization for this repaired-source digest has been received. Recheck current identity/private visibility, exact old ref, complete exposure/protection bindings, LICENSE/assent and credential validity before applying it. After a successful separately authorized push, review the resulting CI/deployment content and rebuild the actual snapshot for the distinct final-publication gate. **Do not use the earlier `3f44e7f…` authorization for this new source target.**
+Authorization for this repaired-source digest is recorded above. Recheck current identity/private visibility, exact old ref, complete exposure/protection bindings, LICENSE/assent and credential validity before applying it. After the authorized push, review the resulting CI/deployment content and rebuild the actual snapshot for the distinct final-publication gate. **Do not substitute a later local HEAD or broaden the authorization.**
 
 ### Renewed private-preparation authorization
 
