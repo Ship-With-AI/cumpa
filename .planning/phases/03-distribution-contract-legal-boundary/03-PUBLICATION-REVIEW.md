@@ -4,11 +4,26 @@
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
 **PRIVATE PREPARATION AUTHORIZATION:** Repaired-source review `a8c4b2ce103067d3b7592c4a8248bdba0fede329b860e7ec074f0129816b1da2` was explicitly authorized and applied as the exact guarded private fast-forward. Resulting CI/deployment exposure is under review.
-**FINAL PUBLICATION AUTHORIZATION:** Not granted.
+**FINAL PUBLICATION AUTHORIZATION:** Received directly from Alessandro for snapshot `8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4`, main `ff72519969da8d2c0761c9533ccb27b809cd17bb`, protections `6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48`. Complete no-drift preflight remains required before one visibility-only mutation.
+
+### Final authorizer statement and readiness
+
+- **Authorizer:** Alessandro Magionami, direct user message.
+- **Captured:** 2026-09-08T12:25:52Z.
+- **Verbatim statement** (the line break after `main` is whitespace only; all supplied identifiers match exactly):
+
+```text
+FINAL PUBLICATION AUTHORIZATION: Ship-With-AI/cumpa snapshot 8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4 main
+ff72519969da8d2c0761c9533ccb27b809cd17bb protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48
+```
+
+- **Bound decision:** Only public visibility of the exact snapshot and approved protection/access disposition below, including the disclosed legacy-artifact notice risk and platform consequences. No push, npm operation, artifact deletion, retention change or additional settings mutation is authorized.
+- **Operator readiness:** The final statement was supplied after the instructions requiring a repository-only, one-day Administration-write credential and a no-write/no-rename/no-transfer/policy-change window through verification. Those are operator confirmations, not inferred token metadata. Secure retrieval from the new visibility Keychain item succeeded, and its authenticated read matched the exact immutable private repository. No credential bytes are recorded.
+- **Execution gate:** The complete current ref/content/exposure/protection/assent capture must still match exactly. No visibility mutation has occurred at this receipt.
 
 ## FINAL PUBLICATION CHECKPOINT — 2026-09-08T11:39:12Z
 
-**Private preparation is complete; public visibility is NOT authorized.** The exact remotely exposed source is `ff72519969da8d2c0761c9533ccb27b809cd17bb`, tree `1b0f095862fba8ead7c92d260d0c3b72c52240a3`, in the existing private `Ship-With-AI/cumpa` repository (ID `1327753770`, node `R_kgDOTyPqKg`). No later local approval/review/STATE/SUMMARY commit is included. The only proposed next mutation is changing this same repository's visibility to public.
+**Private preparation is complete; the exact visibility-only authorization is now recorded above.** The remotely exposed source is `ff72519969da8d2c0761c9533ccb27b809cd17bb`, tree `1b0f095862fba8ead7c92d260d0c3b72c52240a3`, in the existing private `Ship-With-AI/cumpa` repository (ID `1327753770`, node `R_kgDOTyPqKg`). No later local approval/review/STATE/SUMMARY commit is included. Only changing this same repository's visibility to public is authorized, subject to the final no-drift gate.
 
 ### Completed repaired-source and deployment proof
 
@@ -542,12 +557,12 @@ Canonical serialization/projection rules below remain unchanged, with the effect
 
 1. Review the exact public-access/protection consequences and retained PUB-02 risk above. Technical inventory and checks have been performed; this checkpoint requests the maintainer's publication decision, not repeated test execution.
 2. Provide a short-lived fine-grained credential selecting **only `Ship-With-AI/cumpa`**, immutable repository `1327753770`, with **Administration: write** for the visibility-only operation. The preparation token's Contents/Workflows permissions do not establish visibility authority. Recommended secure handoff: a new login-Keychain password item, service **`cumpa-public-visibility-1327753770`**, account **`github-token`**. Do not paste its token into chat/arguments/URLs or use the cancelled artifact-deletion item; no broad OAuth/SSH fallback is permitted. Operator confirmation must cover repository selection, expiry, permissions and any required organization approval.
-3. Maintain a **no-write/no-rename/no-transfer window**, including relevant policy changes, from final authorization through the immediate recheck, visibility action and verification. All producers are currently terminal, but no future no-write window has yet been asserted by the operator.
+3. Maintain a **no-write/no-rename/no-transfer window**, including relevant policy changes, from final authorization through the immediate recheck, visibility action and verification. The authorizer's exact statement now confirms this requested window; live producer/ref checks must still pass immediately before mutation.
 4. After those prerequisites, supply the exact statement below. It authorizes **only public visibility of this snapshot**, acknowledges the disposition, and confirms scoped authentication/window readiness. It does not authorize npm publication, later source pushes or any other configuration change. Revoke temporary mutation credentials after verified completion; revocation has not yet been claimed.
 
 `FINAL PUBLICATION AUTHORIZATION: Ship-With-AI/cumpa snapshot 8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4 main ff72519969da8d2c0761c9533ccb27b809cd17bb protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48`
 
-**No FINAL PUBLICATION AUTHORIZATION has been received. No visibility mutation has been performed.** Before any future authorized conversion, repeat the same complete snapshot/protection capture and compare exact bindings, identity, main, license assent, credential and quiescence. On drift, do not convert. After conversion, require genuinely unauthenticated source/LICENSE/Issues access and exact repository/main identity, plus observed approved protection state. Phase 3 remains **2/3 plans complete** until that separate gate and verification finish.
+**FINAL PUBLICATION AUTHORIZATION is recorded above. No visibility mutation has yet been performed.** Repeat the same complete snapshot/protection capture and compare exact bindings, identity, main, license assent, credential and quiescence before the one authorized conversion. On drift, do not convert. After conversion, require genuinely unauthenticated source/LICENSE/Issues access and exact repository/main identity, plus observed approved protection state. Phase 3 remains **2/3 plans complete** until execution and verification finish.
 
 ### Repaired-source authorization received
 

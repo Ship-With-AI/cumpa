@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "03-03 FINAL PUBLICATION CHECKPOINT: repaired CI and live deployment passed; exact public snapshot ready, awaiting visibility credential, no-write window and final authorization"
-last_updated: "2026-09-08T11:39:12Z"
+stopped_at: "03-03 final visibility authorization received; scoped identity confirmed; running complete no-drift preflight before one public conversion"
+last_updated: "2026-09-08T12:25:52Z"
 last_activity: 2026-09-08
-last_activity_desc: Run 34220014720 and production deployment 6326463240 succeeded. Reviewed all 70 archives and complete terminal GitHub exposure; final snapshot 8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4 is ready for separate visibility-only authorization.
+last_activity_desc: Recorded Alessandro's exact FINAL PUBLICATION AUTHORIZATION for snapshot 8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4 and approved protection disposition; visibility-scoped credential read matches the immutable private repository.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 ## Current Position
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
-Plan: 2 of 3 executed; private preparation and final exposure review complete; 03-03 Task 4 human-action checkpoint
-Status: CI and live deployment passed at private main ff72519. Final public snapshot/protection disposition are ready; public visibility is not authorized.
-Last activity: 2026-09-08 — Final review covers 50 terminal runs, 100 jobs/checks, 133 annotations, 70 archives and 42 deployment collections. The new artifact contains only verified deployment evidence; no new finding beyond exact owner-accepted legacy notice risk.
+Plan: 2 of 3 executed; final publication authorization received; 03-03 Task 5 preflight in progress
+Status: Exact public-visibility decision and scoped authentication are recorded. Running complete no-drift checks before the visibility-only action.
+Last activity: 2026-09-08 — Final statement identifiers match despite a line break after main. No visibility mutation yet; source remains ff72519 and all later local evidence commits remain excluded.
 
 Progress: [███████░░░] 67%
 
@@ -84,7 +84,7 @@ None yet.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives remain backed up privately. Owner now directs retaining remote artifacts 9907668126 and 9928300866 despite PUB-02; record unremediated owner-accepted notice risk, not verified third-party permission/compliance. Do not delete them or change retention settings.
 - 03-03 private preparation is complete at ff72519969da8d2c0761c9533ccb27b809cd17bb. Run 34220014720 and production deployment 6326463240 passed; exact source/run/receipt hashes, non-destructive live smoke and zero authority were verified. No more source push is authorized. Existing artifacts/backups remain retained under unchanged effective 90-day GitHub retention.
-- FINAL PUBLICATION AUTHORIZATION must bind snapshot 8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4, main ff72519969da8d2c0761c9533ccb27b809cd17bb and protection disposition 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48. Await a short-lived Administration-write credential selecting only repository 1327753770 (recommended Keychain service cumpa-public-visibility-1327753770/account github-token), operator-confirmed no-write/no-rename/no-transfer window and the exact final statement. Preparation Contents/Workflows permissions do not establish visibility authority. No broad fallback or automatic publication is permitted.
+- FINAL PUBLICATION AUTHORIZATION is now recorded for snapshot 8f67d2ce8e41371ed2802dfee627765094604e6f1f16bc678f9c4ed4cbf82ca4, main ff72519969da8d2c0761c9533ccb27b809cd17bb and protections 6dc6bf9649b4be99a9dd5ec34b71f10d673d284d8028a1077fd65150fca8ea48. The new visibility credential successfully read immutable private repository 1327753770; repository-only/one-day Administration-write scope and the no-write window are operator-confirmed. Complete exact preflight before one visibility-only mutation; no broad fallback, extra configuration change or later source push is permitted.
 
 ### Roadmap Evolution
 
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T11:39:12Z
-Stopped at: Final publication checkpoint. All private preparation and final exposure review are complete and CI/live deployment passed. Current main ff72519969da8d2c0761c9533ccb27b809cd17bb remains private. Obtain scoped Administration-write visibility authentication, no-write window and exact FINAL PUBLICATION AUTHORIZATION from the current review; then repeat full snapshot/protection checks before one visibility-only mutation and unauthenticated verification. Preserve accepted legacy-artifact risk, verify actual post-public controls, revoke temporary credentials after completion, and never push later local evidence commits automatically.
+Last session: 2026-09-08T12:25:52Z
+Stopped at: Running final publication preflight after exact human authorization and successful scoped identity read. Compare the complete approved snapshot/protection/assent/ref state, then change only existing repository visibility if identical. Verify public source/LICENSE/Issues without authentication and actual approved protections afterward; stop honestly on post-exposure failure, with no automatic rollback. Revoke temporary credentials after verified completion and keep later evidence commits local.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
