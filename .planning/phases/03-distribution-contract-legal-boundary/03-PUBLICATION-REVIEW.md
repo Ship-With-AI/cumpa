@@ -3,14 +3,14 @@
 **Record kind:** cumpa.publication-review/v1
 **Collected:** 2026-09-07; authenticated observations accumulated during Task 1.
 **Owner dispositions recorded:** 2026-09-08T05:23:51.698Z.
-**PRIVATE PREPARATION AUTHORIZATION:** Received from Alessandro for exact review `262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`; execution blocked on usable scoped authentication and preflight.
+**PRIVATE PREPARATION AUTHORIZATION:** Earlier exact review `262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b` was authorized but never executed. Corrected review `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c` awaits renewed authorization; scoped authentication is ready.
 **FINAL PUBLICATION AUTHORIZATION:** Not granted.
 
 This redacted exposure review is not the final publishable snapshot. PUB-01 is resolved by exact identifier disposition, private backups and local recurrence prevention are complete, and the Projects access gap is closed. The owner now directs retention of the two legacy archives despite their recorded notice finding. This supersedes the prior removal authorization and cancels its credential handoff. No push, remote deletion, retention/protection/configuration mutation, registry operation or visibility conversion has occurred. The final publication review must disclose the retained, unremediated notice finding rather than claim notice compliance.
 
 ## Active private-preparation review — 2026-09-08T09:32:13Z
 
-This section supersedes earlier candidate/snapshot and blocker descriptions below, which remain historical evidence. **Task 1 is complete; the exact private-preparation authorization has been received, but Task 2 remains blocked on a usable, operator-confirmed repository-selected short-lived push credential.** Final-publication authorization has not been granted. The cancelled artifact-deletion credential is not requested, retrieved or reused.
+This section supersedes earlier candidate/snapshot and blocker descriptions below, which remain historical evidence. **Task 1 is complete and scoped authentication is ready. Preflight exposed one projection bug: a rotating GitHub transport credential was included in the exposure digest. The corrected review requires renewed exact-digest authorization before Task 3 may execute.** Source/ref/archive/protection bindings and requested effects are unchanged. Final-publication authorization has not been granted. The cancelled artifact-deletion credential is not requested, retrieved or reused.
 
 ### Frozen source and native Git proof
 
@@ -41,13 +41,13 @@ Proposed private protection changes: **none**. The separate final-publication ch
 
 ### Canonical projection and proposal
 
-Serialization is UTF-8 `json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)`, hashed with SHA-256. Collection record arrays are sorted by their serialized projected record; nested semantic arrays retain API order. REST pagination envelopes are flattened; object-valued pages retain their wrappers. Object keys are recursively sorted for serialization. Variable objects retain `name` and replace string `value` with its SHA-256. No secret value is read from secret-metadata endpoints. Omitted keys are exactly `download_count, forks, forks_count, network_count, open_issues, open_issues_count, size, stargazers_count, subscribers_count, watchers, watchers_count` (repository/view/download counters); archive byte sizes and artifact `size_in_bytes` remain bound. Resource timestamps, content, actor IDs, statuses, permissions, environment/security values and error/feature-state observations remain included. Transport headers and capture timestamps are not response-body inputs. Future local approval/report fields are not snapshot inputs.
+Serialization is UTF-8 `json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)`, hashed with SHA-256. Collection record arrays are sorted by their serialized projected record; nested semantic arrays retain API order. REST pagination envelopes are flattened; object-valued pages retain their wrappers. Object keys are recursively sorted for serialization. Variable objects retain `name` and replace string `value` with its SHA-256. No secret value is read from secret-metadata endpoints. Omitted keys are exactly `download_count, forks, forks_count, network_count, open_issues, open_issues_count, size, stargazers_count, subscribers_count, temp_clone_token, watchers, watchers_count` (repository/view/download counters and the transient GitHub clone-authentication token); archive byte sizes and artifact `size_in_bytes` remain bound. Resource timestamps, content, actor IDs, statuses, permissions, environment/security values and error/feature-state observations remain included. Transport headers and capture timestamps are not response-body inputs. Future local approval/report fields are not snapshot inputs.
 
 The exposure digest is the canonical sorted map of collection names to their projected-content digests. Protection digest independently binds repository feature/access controls, effective/classic rules, environment and Actions/security settings, the empty private change set and explicit visibility consequences. These are **preparation-review bindings**, not a final post-sync publication snapshot. Task 3 must recapture all actual remote content after authorized preparation and resulting CI/deployment, then obtain separate final authorization.
 
-- Exposure SHA-256: `79c8b6dc374ae8b62f66d85d3c7b74db91023d9bf0d6110d7bafabead106a74c`.
+- Exposure SHA-256: `428b276b8ecff316a45dd13449bc34b2ce5b9346a2c6d16456f74de048d03504`.
 - Protection/disposition SHA-256: `96b362425508a1340047171187a2c2559c56dc193328d9dd7cfa87d92d5cbe90`.
-- **Private-preparation review SHA-256: `262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`** (canonical JSON proposal below, independent of this document's future commit).
+- **Private-preparation review SHA-256: `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c`** (canonical JSON proposal below, independent of this document's future commit).
 
 <details>
 <summary>Exact redacted collection digests and protection projection</summary>
@@ -92,7 +92,7 @@ The exposure digest is the canonical sorted map of collection names to their pro
     "surface/releases": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "surface/repo_secrets": "c0f46bfb73dbb41d36cf2ea8f1d63ee7d6a498bde0a8e18b02796a41193de5da",
     "surface/repo_variables": "ca54fa494652031e6b1212b5ea847b7d0b7d919e24df2654ce6d771d9d0f7f66",
-    "surface/repository": "796c31a0667ec67ca2ff7fbe7c37b8c94fdd00f5f0e51bf583c421e85b99c8c5",
+    "surface/repository": "58231f21fc7e9b313bbab441c0182d010bf3dfbbfc3c895b6886a3c8c9fa133d",
     "surface/review_comments": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
     "surface/rulesets": "2fb9628dc2d4b321f14a613e7263343126d1f62b67ef489ddf6e5ba98aa575e8",
     "surface/secret_scanning": "31140ea22e43b342ce4b02867adff8b5a8226540b39535fbca91b497bff3c3e4",
@@ -400,7 +400,7 @@ The exposure digest is the canonical sorted map of collection names to their pro
   },
   "prior_reviewed_source_oid": "5939daec8afa04f97a283c9fe9ea93c0bac6cd29",
   "source_delta_sha256": "6d7471eecc95474d6951cd694eeff8f82c67efa7e260f00b48616d7af6fee22f",
-  "exposure_sha256": "79c8b6dc374ae8b62f66d85d3c7b74db91023d9bf0d6110d7bafabead106a74c",
+  "exposure_sha256": "428b276b8ecff316a45dd13449bc34b2ce5b9346a2c6d16456f74de048d03504",
   "protection_sha256": "96b362425508a1340047171187a2c2559c56dc193328d9dd7cfa87d92d5cbe90",
   "main_update": {
     "ref": "refs/heads/main",
@@ -459,20 +459,30 @@ The private push requires a new short-lived credential selecting **only this imm
 
 The exact one-ref private fast-forward will trigger existing CI and, if gates pass, the existing **Supabase production deployment** and deployment-evidence upload. Authorization must cover those effects. It grants no visibility change, npm publication, artifact deletion, retention/protection change, extra ref or later evidence commit.
 
-After reviewing these bindings and confirming scoped authentication, the operator must supply:
+Scoped authentication is ready. After reviewing the projection correction below, the operator must supply:
 
-`PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`
+`PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review 3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c`
 
-The exact statement below has been received. Immediately before any authorized push, recheck exact repository identity/private state, current old ref, affected exposure/protection bindings and current MIT assent; drift requires refreshed review. The one-ref update must pass the same-old-OID ancestry check and exact lease. Phase 3 remains **2/3 plans complete**; 03-03 SUMMARY and phase completion are not justified.
+The earlier exact statement is preserved below, but no authorization for this corrected digest has been received. Immediately before any authorized push, recheck exact repository identity/private state, current old ref, affected exposure/protection bindings and current MIT assent; drift requires refreshed review. The one-ref update must pass the same-old-OID ancestry check and exact lease. Phase 3 remains **2/3 plans complete**; 03-03 SUMMARY and phase completion are not justified.
 
-### Received preparation authorization — credential still blocked
+### Scoped authentication ready; projection correction verified
+
+- **Credential readiness captured:** 2026-09-08T10:16:52Z. The operator's `ready` response confirms only `Ship-With-AI/cumpa` selected, expiry within one day, Contents-write and Workflows-write. The nonempty fine-grained token was retrieved from the new Keychain item without disclosure; an authenticated repository read matched immutable ID `1327753770`, node `R_kgDOTyPqKg`, exact owner/name and private visibility. Scope/expiry/permissions are operator-reported, not inferred from that successful read. No new credential setup is needed.
+- **Complete preflight:** Native refs, all 45 projected collection bindings, 48 terminal runs, 96 jobs/checks, 129 annotations, 41 terminal deployment-status collections, GraphQL Projects/rulesets/classic protection and all 67 archive byte bindings were refreshed. All archives matched exactly and the protected temporary directory was removed. Only `/temp_clone_token` in the repository response differed from the earlier capture.
+- **Diagnosis:** The original repository response projection mistakenly included GitHub's transient clone-authentication token. It is not published repository content or a protection setting. No token bytes are recorded here. No write was attempted after the original exposure digest mismatch.
+- **Correction captured:** 2026-09-08T10:21:06Z. Omit exactly `temp_clone_token` in addition to the documented counters. Reprojecting both the original capture and the current full preflight produced exactly the same corrected collection-digest vector. Source, old-main OID, archive bindings, rights/assents, protections, credential requirements and all proposed effects remain unchanged.
+- **Executable checks:** The real captured-data replay passes after correction. Changing only `temp_clone_token` leaves the projected value unchanged; changing repository ID, private visibility or the forking setting still changes it. This is a one-off audit-projection correction, not an application behavior change.
+- **Historical bindings:** Earlier exposure SHA-256 `79c8b6dc374ae8b62f66d85d3c7b74db91023d9bf0d6110d7bafabead106a74c`, repository-collection SHA-256 `796c31a0667ec67ca2ff7fbe7c37b8c94fdd00f5f0e51bf583c421e85b99c8c5`, and authorized proposal SHA-256 `262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b` are superseded only by this projection correction. The proposal JSON differs only in `exposure_sha256`. Replacing that field with the historical exposure digest reconstructs the earlier authorized proposal.
+- **Current gate:** Renewed authorization for `3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c` is required. The working scoped token remains available; no new token permissions or private-preparation effects are requested. Mutation attempts remain **0**.
+
+### Earlier preparation authorization and resolved credential blocker
 
 - **Authorizer:** Alessandro Magionami, direct user message.
 - **Captured:** 2026-09-08T10:11:46Z.
 - **Verbatim statement:** `PRIVATE PREPARATION AUTHORIZED: Ship-With-AI/cumpa review 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`.
-- **Scope:** The exact proposal above, including only the guarded private main fast-forward and existing CI/Supabase deployment effects. No public visibility, npm operation, artifact deletion, retention/protection change or later evidence-commit push is authorized.
+- **Scope:** The then-current proposal `262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b`, reconstructed using the historical exposure digest above, including only the guarded private main fast-forward and existing CI/Supabase deployment effects. It was not executed. No public visibility, npm operation, artifact deletion, retention/protection change or later evidence-commit push was authorized.
 - **Observed authentication blocker:** The new Keychain item with service `cumpa-private-preparation-1327753770`, account `github-token`, exists in the login keychain. Password-only lookup succeeded but returned only a newline; a second captured diagnostic explicitly confirmed an empty password. No nonempty credential was available or sent to GitHub. No secret bytes were printed or recorded.
-- **Still required:** Populate that new item with the intended fine-grained token, then confirm its repository-only selection, short expiry and Contents-write/Workflows-write permissions. Do not retrieve or reuse the cancelled artifact-deletion item. Approval need not be repeated unless the exact reviewed proposal or relevant remote bindings change.
+- **Resolution:** The later `ready` response and successful scoped repository read above resolve this credential blocker. Do not retrieve or reuse the cancelled artifact-deletion item. Renewed review-digest authorization is now needed solely because the exact projection binding changed.
 - **Mutation attempts:** 0. The credential blocker was reached before remote-preparation execution; no claim of a fresh no-drift preflight is made at this checkpoint.
 
 ## Historical MIT supersession — renewed assent recorded

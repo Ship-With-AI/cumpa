@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 03
 current_phase_name: Distribution Contract & Legal Boundary
 status: executing
-stopped_at: "03-03 Task 2: exact private-preparation authorization received; new Keychain item has empty password; no remote mutation"
-last_updated: "2026-09-08T10:11:46Z"
+stopped_at: "03-03 Task 2: scoped authentication ready; corrected transient-token projection requires renewed exact-digest authorization; no remote mutation"
+last_updated: "2026-09-08T10:21:06Z"
 last_activity: 2026-09-08
-last_activity_desc: Recorded Alessandro's exact private-preparation authorization for review 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b; verified the new scoped-credential Keychain item exists but contains an empty password.
+last_activity_desc: Scoped credential works for the exact private repository. Complete preflight found only rotating temp_clone_token drift; corrected projection matches both captures and now binds review 3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c.
 progress:
   total_phases: 5
   completed_phases: 0
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 
 Phase: 03 (Distribution Contract & Legal Boundary) — EXECUTING
 Plan: 2 of 3 executed; 03-03 Task 1 refreshed, Task 2 human-action checkpoint
-Status: Exact private-preparation authorization received; execution blocked on usable scoped authentication and subsequent preflight. Public visibility remains unauthorized.
-Last activity: 2026-09-08 — New Keychain item cumpa-private-preparation-1327753770/github-token exists in the login keychain but its password is empty. No credential sent to GitHub and no remote mutation.
+Status: Scoped authentication ready; renewed authorization needed for corrected review digest. Earlier authorization was not executed. Public visibility remains unauthorized.
+Last activity: 2026-09-08 — All source/ref/archive/protection bindings match. Removed only transient GitHub clone-authentication metadata from the exposure projection; corrected prior/current captures match exactly. No remote mutation.
 
 Progress: [███████░░░] 67%
 
@@ -83,7 +83,7 @@ None yet.
 - Re-check current public-source trusted-publisher/provenance eligibility before release and verify actual attestation evidence; OIDC authentication alone is not a provenance claim.
 - Confirm npm scope/package ownership and protected GitHub workflow identity before the bootstrap release.
 - 03-03 PUB-01 resolved by exact-scope identifier acceptance. The two legacy runtime archives remain backed up privately. Owner now directs retaining remote artifacts 9907668126 and 9928300866 despite PUB-02; record unremediated owner-accepted notice risk, not verified third-party permission/compliance. Do not delete them or change retention settings.
-- 03-03 private-preparation review 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b is explicitly authorized by Alessandro, binding only the guarded private main fast-forward from 7c9b22801378de313a7f2b9be7261eb17c4bb613 to ece7fcfc7a993e751a999145b2c74ee233402a1f and its existing CI/Supabase production-deployment effects. The new Keychain service cumpa-private-preparation-1327753770/account github-token exists but has an empty password. Populate it and confirm repository-only selection, short expiry and Contents-write/Workflows-write permissions before preflight. Do not retrieve/reuse the cancelled artifact-deletion credential.
+- 03-03 corrected private-preparation review is 3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c. The only change from earlier authorized review 262cb67e042d528de1e3318421987e9c72a3d4abbe8e1ca0f23ca5d4cc6cc19b is excluding GitHub's rotating temp_clone_token from the exposure projection. Source remains ece7fcfc7a993e751a999145b2c74ee233402a1f, expected old main remains 7c9b22801378de313a7f2b9be7261eb17c4bb613, and requested private fast-forward/CI/Supabase effects are unchanged. Scoped token retrieval and exact private-repository read succeeded; the operator confirms repository-only selection, one-day expiry and Contents-write/Workflows-write. No new token setup is needed. Obtain renewed authorization for the corrected digest before any push.
 - MIT LICENSE SHA-256 remains c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d; both recorded assents and bound notices/rights review match. Projects/rulesets/classic protections are explicitly zero. No private protection change is proposed. After authorized preparation, recapture actual exposure and obtain the distinct final-publication authorization and supported post-public protection disposition.
 
 ### Roadmap Evolution
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T10:11:46Z
-Stopped at: 03-03 Task 2. Exact private-preparation authorization is recorded; do not request it again unless review bindings change. Await a nonempty scoped token in the new Keychain item and operator-confirmed scope/expiry/permissions. Then perform no-drift preflight before the authorized private push. Retain both legacy artifacts and backups. Public visibility and all other remote mutations remain unauthorized. Later local evidence commits stay excluded from source target ece7fcfc7a993e751a999145b2c74ee233402a1f.
+Last session: 2026-09-08T10:21:06Z
+Stopped at: 03-03 Task 2. Scoped authentication is ready and the complete preflight found no content/protection drift; only a transient GitHub clone token had mistakenly entered the original hash. Corrected prior/current projections match and bind review 3f44e7f08e193f915e35698af8ac33e4ee3b75e9725549a4d4e48394b8e1209c, which awaits renewed exact authorization. Do not push under the superseded digest. No new token setup or deletion credential is needed. Preserve both legacy artifacts/backups and the frozen source target; public visibility remains separately unauthorized.
 Resume file: .planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md
