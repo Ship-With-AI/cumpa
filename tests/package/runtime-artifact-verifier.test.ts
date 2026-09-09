@@ -189,7 +189,7 @@ describe('runtime artifact verifier', () => {
     const bootstrap = await produce('bootstrap', true);
     const output = JSON.parse((await execute(
       verifier,
-      verifierArgs(bootstrap, bootstrap.evidencePath, bootstrap.evidence.archive.sha256, 'bootstrap'),
+      ['--profile', 'bootstrap', ...verifierArgs(bootstrap)],
       { CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin },
     )).stdout) as Record<string, unknown>;
 
