@@ -1,8 +1,8 @@
-# Phase 5 Source Publication Review — EXACT SOURCE PUSH AUTHORIZED, NOT YET APPLIED
+# Phase 5 Source Publication Review — PUBLIC SOURCE RESULT VERIFIED
 
 **Record kind:** `cumpa.source-publication-review/v1`  
-**Current observations:** `2026-09-09T16:51:27Z`  
-**Status:** The exact source-only authorization below was received and matched at `2026-09-09T19:49:19Z`; the source push has not yet been applied. The originally reviewed snapshot remains immutable at local commit `4a68f98`, blob `fdefcb76c1853a2510a020769498d6bbfd00af3d`, SHA-256 `ca228e33383d75ab97d28da9133952302515a93e9e0ac6f735e71b3d724bd455`. Earlier unapproved-state wording below describes that reviewed snapshot. No artifact approval, npm login, CI dispatch/upload, hosted configuration change or registry publication is authorized.
+**Current observations:** `2026-09-09T19:56:42Z`  
+**Status:** The one exact authorized source push succeeded. Credential-free checks verified public main `72c9bb499538a2c542d5165148e2d45096f7da56`, tree `cee68f305f818383364edc1a9595800970dac580` and all 757 recursive tree entries. Two post-push observations found zero target workflow runs and deployment records, consistent with `[skip ci]`; no repository-triggered Supabase execution was observed. The approved review snapshot remains immutable at local commit `4a68f98`, blob `fdefcb76c1853a2510a020769498d6bbfd00af3d`, SHA-256 `ca228e33383d75ab97d28da9133952302515a93e9e0ac6f735e71b3d724bd455`. Earlier pre-push/unapproved-state paragraphs below are retained as that reviewed history. Bootstrap artifact approval, npm login, CI dispatch/upload, hosted configuration and registry publication remain unauthorized.
 
 ## Exact proposed source action
 
@@ -186,4 +186,15 @@ observed-main ff72519969da8d2c0761c9533ccb27b809cd17bb review ca228e33383d75ab97
 acknowledged; source push only
 ```
 
-**Execution result:** Pending. The source authorization is recorded; it is not a claim that the remote ref changed or that collateral-deployment verification passed.
+**Execution result:** Applied once and verified below. No further source push is authorized by this receipt.
+
+## Authorized Source Push — Observed Result
+
+- **Started:** `2026-09-09T19:52:24Z`; the Git command exited successfully after approximately 3.38 seconds.
+- **Actual update:** `ff72519969da8d2c0761c9533ccb27b809cd17bb` → `72c9bb499538a2c542d5165148e2d45096f7da56`, only `refs/heads/main`, using the literal reviewed refspec with `--no-follow-tags`; no force, alternate ref, current-HEAD shorthand or later bookkeeping was pushed.
+- **Credential-free proof:** Public repository/ref/commit/recursive-tree APIs returned HTTP 200. Repository ID `1327753770`, public visibility, exact main P, tree T and all **757** remote tree entries matched native Git. The actual pushed message contains `[skip ci]`.
+- **Execution observations:** At `2026-09-09T19:54:43Z` and `2026-09-09T19:56:42Z`, every page for the target commit contained **0 Actions workflow runs** and **0 GitHub deployment records**. Together with the documented skip rule and reviewed workflow, this corroborates no repository-triggered Supabase execution for this push; it is not a claim of independent global Supabase-provider telemetry.
+- **Preserved:** Existing SSH/GitHub authentication and host configuration; the original accepted Phase 4 archive/evidence/approval; retained legacy artifacts; exact private bootstrap archive and both canonical/private evidence copies. No credential was created/revoked, no npm command was run for this source action, and no CI dispatch/upload or hosted setting was changed.
+- **Bootstrap recheck:** The same read-only 3514006-byte archive still matches SHA-256 `4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f`, npm SHA-1/SHA-512 and sealed evidence `54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4`.
+
+**Next gate:** 05-04 Task 4 requires actual attributable bootstrap artifact approval. This completed source action grants neither that approval nor npm authentication/publication authority.
