@@ -6,6 +6,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
+import { readRuntimeArtifact } from '../helpers/runtime-artifact.js';
+
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 const execFileAsync = promisify(execFile);
@@ -45,7 +47,7 @@ async function execute(
   });
 }
 
-async function produce(purpose: 'candidate' | 'development-check', configured = false): Promise<Produced> {
+async function produce(purpose: 'bootstrap' | 'candidate' | 'development-check', configured = false): Promise<Produced> {
   const custody = join(temporaryRoot, `custody-${purpose}-${configured ? 'configured' : 'absent'}-${Math.random()}`);
   const evidencePath = join(temporaryRoot, `${purpose}-${configured ? 'configured' : 'absent'}-${Math.random()}.json`);
   const environment = { ...process.env };
@@ -60,8 +62,14 @@ function verifierArgs(
   produced: Produced,
   evidencePath = produced.evidencePath,
   expectedSha256 = produced.evidence.archive.sha256,
+  profile?: string,
 ): string[] {
-  return ['--archive', produced.archive, '--expected-sha256', expectedSha256, '--evidence', evidencePath];
+  return [
+    '--archive', produced.archive,
+    '--expected-sha256', expectedSha256,
+    '--evidence', evidencePath,
+    ...(profile === undefined ? [] : ['--profile', profile]),
+  ];
 }
 
 async function verifierFailure(args: readonly string[], environment: NodeJS.ProcessEnv = {}): Promise<string> {
@@ -110,6 +118,15 @@ async function reboundedModifiedArchive(produced: Produced): Promise<{ readonly 
   const evidencePath = join(temporaryRoot, `rebound-${Math.random()}.json`);
   await writeFile(evidencePath, `${JSON.stringify(evidence)}\n`, 'utf8');
   return { archive, evidence: evidencePath };
+}
+
+async function reboundEvidence(produced: Produced, mutate: (evidence: Evidence) => void): Promise<string> {
+  const evidence = structuredClone(produced.evidence);
+  mutate(evidence);
+  Object.assign(evidence.archive, archiveIdentity(await readFile(produced.archive)));
+  const evidencePath = join(temporaryRoot, `rebound-policy-${Math.random()}.json`);
+  await writeFile(evidencePath, `${JSON.stringify(evidence)}\n`, 'utf8');
+  return evidencePath;
 }
 
 beforeAll(async () => {
@@ -167,6 +184,79 @@ describe('runtime artifact verifier', () => {
     });
     expect(after).toMatchObject({ ino: before.ino, size: before.size });
   }, 120_000);
+
+  test('accepts bootstrap only with its explicit verifier profile and rejects crossed policy identities after archive hashes are rebound', async () => {
+    const bootstrap = await produce('bootstrap', true);
+    const output = JSON.parse((await execute(
+      verifier,
+      verifierArgs(bootstrap, bootstrap.evidencePath, bootstrap.evidence.archive.sha256, 'bootstrap'),
+      { CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin },
+    )).stdout) as Record<string, unknown>;
+
+    expect(output).toMatchObject({
+      status: 'passed',
+      purpose: 'bootstrap',
+      package: { name: '@shipwithai/cumpa', version: '1.5.0-bootstrap.0' },
+      support: { configured: true, originSha256: createHash('sha256').update(origin).digest('hex') },
+    });
+    await expect(verifierFailure(verifierArgs(bootstrap), { CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin })).resolves.toContain('runtime artifact verifier failed');
+    await expect(verifierFailure(verifierArgs(bootstrap, bootstrap.evidencePath, bootstrap.evidence.archive.sha256, 'stable'), { CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin })).resolves.toContain('runtime artifact verifier failed');
+    await expect(verifierFailure([
+      ...verifierArgs(bootstrap, bootstrap.evidencePath, bootstrap.evidence.archive.sha256, 'bootstrap'),
+      '--profile',
+      'bootstrap',
+    ], { CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin })).resolves.toContain('runtime artifact verifier failed');
+
+    const crossed = await Promise.all([
+      reboundEvidence(bootstrap, (evidence) => {
+        evidence.purpose = 'candidate';
+        evidence.status = 'candidate';
+      }),
+      reboundEvidence(bootstrap, (evidence) => {
+        (evidence.package as Record<string, unknown>).version = '1.5.0';
+      }),
+      reboundEvidence(bootstrap, (evidence) => {
+        (evidence.package as Record<string, unknown>).manifestProjection = {
+          field: 'name',
+          sourceVersion: '1.5.0',
+          packedVersion: '1.5.0-bootstrap.0',
+          sourceSha256: (evidence.source as Record<string, unknown>).packageJsonSha256,
+          projectedInputSha256: (evidence.source as Record<string, unknown>).packageJsonSha256,
+          packedOutputSha256: (evidence.source as Record<string, unknown>).packageJsonSha256,
+        };
+      }),
+    ]);
+    for (const evidencePath of crossed) {
+      await expect(verifierFailure(
+        verifierArgs(bootstrap, evidencePath, archiveIdentity(await readFile(bootstrap.archive)).sha256, 'bootstrap'),
+        { CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin },
+      )).resolves.toContain('runtime artifact verifier failed');
+    }
+  }, 180_000);
+
+  test('selects the trusted runtime profile before installation while the default remains stable', async () => {
+    const stable = await produce('development-check');
+    const stableEnvironment = {
+      CUMPA_RUNTIME_CUSTODY_DIR: stable.custody,
+      CUMPA_RUNTIME_ARCHIVE_BASENAME: stable.evidence.archive.basename,
+      CUMPA_RUNTIME_ARCHIVE_SHA256: stable.evidence.archive.sha256,
+      CUMPA_RUNTIME_EVIDENCE: stable.evidencePath,
+    };
+    expect(readRuntimeArtifact(stableEnvironment).package.version).toBe('1.5.0');
+
+    const bootstrap = await produce('bootstrap', true);
+    const bootstrapEnvironment = {
+      CUMPA_RUNTIME_CUSTODY_DIR: bootstrap.custody,
+      CUMPA_RUNTIME_ARCHIVE_BASENAME: bootstrap.evidence.archive.basename,
+      CUMPA_RUNTIME_ARCHIVE_SHA256: bootstrap.evidence.archive.sha256,
+      CUMPA_RUNTIME_EVIDENCE: bootstrap.evidencePath,
+      CUMPA_RUNTIME_PROFILE: 'bootstrap',
+    };
+    expect(readRuntimeArtifact(bootstrapEnvironment).package.version).toBe('1.5.0-bootstrap.0');
+    for (const profile of ['', 'candidate']) {
+      expect(() => readRuntimeArtifact({ ...bootstrapEnvironment, CUMPA_RUNTIME_PROFILE: profile })).toThrow();
+    }
+  }, 180_000);
 
   test('reports independent archive identity failures before accepting content', async () => {
     const produced = await produce('development-check');

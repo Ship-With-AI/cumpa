@@ -25,6 +25,7 @@ type Fixture = Readonly<{
   custody: string;
   evidence: string;
   calls: string;
+  packingObservations: string;
   env: NodeJS.ProcessEnv;
 }>;
 
@@ -56,10 +57,12 @@ async function createFixture(): Promise<Fixture> {
   ]);
 
   const calls = join(root, 'calls.log');
+  const packingObservations = join(root, 'packing-observations.json');
   const npm = join(bin, 'npm');
   await writeFile(npm, `#!${process.execPath}
 import { createHash } from 'node:crypto';
-import { appendFileSync, mkdirSync, statSync, writeFileSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { join } from 'node:path';
 
 const args = process.argv.slice(2);
@@ -80,28 +83,67 @@ if (args[0] === 'run' && args[1] === 'build') {
 }
 if (args[0] !== 'pack') process.exit(8);
 const custody = args[args.indexOf('--pack-destination') + 1];
-const filename = 'cumpa-1.5.0.tgz';
-const expected = Buffer.from('candidate archive');
-const archive = process.env.CUMPA_FAKE_ARCHIVE_SUBSTITUTION ? Buffer.from('substituted archive') : expected;
+const packingDirectory = args.find((argument, index) => index > 0 && !argument.startsWith('-') && args[index - 1] !== '--pack-destination');
+const packageRoot = packingDirectory ?? process.cwd();
+const files = [];
+const add = (path) => {
+  const bytes = readFileSync(join(packageRoot, path));
+  const stat = statSync(join(packageRoot, path));
+  files.push({ path, size: stat.size, mode: stat.mode & 0o777, bytes });
+};
+const addDirectory = (path) => {
+  for (const entry of readdirSync(join(packageRoot, path), { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+    const child = path + '/' + entry.name;
+    if (entry.isDirectory()) addDirectory(child);
+    else add(child);
+  }
+};
+for (const path of ['package.json', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md']) add(path);
+addDirectory('dist');
+files.sort((left, right) => left.path.localeCompare(right.path));
+const manifest = JSON.parse(readFileSync(join(packageRoot, 'package.json'), 'utf8'));
+if (packingDirectory) {
+  writeFileSync(process.env.CUMPA_FAKE_PACK_OBSERVATIONS, JSON.stringify({
+    directory: packingDirectory,
+    mode: statSync(packingDirectory).mode & 0o777,
+    manifest,
+    manifestSha256: createHash('sha256').update(readFileSync(join(packageRoot, 'package.json'))).digest('hex'),
+    files: files.map(({ path, size, mode, bytes }) => ({ path, size, mode, sha256: createHash('sha256').update(bytes).digest('hex') })),
+  }) + '\\n');
+}
+const field = (header, offset, length, value) => header.write(String(value).slice(0, length), offset, length, 'utf8');
+const octal = (value, length) => value.toString(8).padStart(length - 1, '0') + '\\0';
+const entry = ({ path, mode, bytes }) => {
+  const header = Buffer.alloc(512);
+  field(header, 0, 100, 'package/' + path);
+  field(header, 100, 8, octal(mode, 8));
+  field(header, 108, 8, octal(0, 8));
+  field(header, 116, 8, octal(0, 8));
+  field(header, 124, 12, octal(bytes.byteLength, 12));
+  field(header, 136, 12, octal(0, 12));
+  header.fill(0x20, 148, 156);
+  header[156] = '0'.charCodeAt(0);
+  field(header, 257, 6, 'ustar');
+  field(header, 263, 2, '00');
+  field(header, 329, 8, octal(0, 8));
+  field(header, 337, 8, octal(0, 8));
+  field(header, 148, 8, octal(header.reduce((sum, value) => sum + value, 0), 8));
+  const padding = Buffer.alloc((512 - bytes.byteLength % 512) % 512);
+  return [header, bytes, padding];
+};
+const archiveBytes = gzipSync(Buffer.concat([...files.flatMap(entry), Buffer.alloc(1024)]));
+const filename = 'cumpa-' + manifest.version + '.tgz';
+const archive = process.env.CUMPA_FAKE_ARCHIVE_SUBSTITUTION ? Buffer.concat([archiveBytes, Buffer.from('substituted archive')]) : archiveBytes;
 writeFileSync(join(custody, filename), archive);
 if (process.env.CUMPA_FAKE_PACK_FAILURE) process.exit(9);
-const files = [
-  { path: 'package.json', size: 1, mode: 420 },
-  { path: 'README.md', size: 1, mode: 420 },
-  { path: 'LICENSE', size: 1, mode: 420 },
-  { path: 'THIRD_PARTY_NOTICES.md', size: 1, mode: 420 },
-  { path: 'dist/bin/cumpa.mjs', size: 4, mode: 420 },
-  { path: 'dist/web/index.html', size: 14, mode: 420 },
-  { path: 'dist/native/directory_exchange.node', size: 7, mode: 420 },
-];
-for (const file of files) file.size = statSync(join(process.cwd(), file.path)).size;
-if (process.env.CUMPA_FAKE_EXTRA_FILE) files.push({ path: 'unexpected.txt', size: 1, mode: 420 });
-if (process.env.CUMPA_FAKE_INVENTORY_MISMATCH) files.pop();
+const inventory = files.map(({ path, size, mode }) => ({ path, size, mode }));
+if (process.env.CUMPA_FAKE_EXTRA_FILE) inventory.push({ path: 'unexpected.txt', size: 1, mode: 420 });
+if (process.env.CUMPA_FAKE_INVENTORY_MISMATCH) inventory.pop();
 const result = {
   filename,
-  shasum: createHash('sha1').update(expected).digest('hex'),
-  integrity: 'sha512-' + createHash('sha512').update(expected).digest('base64'),
-  files,
+  shasum: createHash('sha1').update(archiveBytes).digest('hex'),
+  integrity: 'sha512-' + createHash('sha512').update(archiveBytes).digest('base64'),
+  files: inventory,
 };
 process.stdout.write(JSON.stringify(process.env.CUMPA_FAKE_MULTIPLE_RESULTS ? [result, result] : [result]));
 `, 'utf8');
@@ -119,7 +161,13 @@ process.stdout.write(JSON.stringify(process.env.CUMPA_FAKE_MULTIPLE_RESULTS ? [r
     custody: join(root, 'custody'),
     evidence: join(root, 'runtime-evidence.json'),
     calls,
-    env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}`, CUMPA_FAKE_NPM_CALLS: calls },
+    packingObservations,
+    env: {
+      ...process.env,
+      PATH: `${bin}:${process.env.PATH ?? ''}`,
+      CUMPA_FAKE_NPM_CALLS: calls,
+      CUMPA_FAKE_PACK_OBSERVATIONS: packingObservations,
+    },
   };
 }
 
@@ -146,6 +194,18 @@ async function npmCalls(fixture: Fixture): Promise<string[]> {
   } catch {
     return [];
   }
+}
+
+type PackingObservation = Readonly<{
+  directory: string;
+  mode: number;
+  manifest: Record<string, unknown>;
+  manifestSha256: string;
+  files: readonly Readonly<{ path: string; size: number; mode: number; sha256: string }>[];
+}>;
+
+async function packingObservation(fixture: Fixture): Promise<PackingObservation> {
+  return JSON.parse(await readFile(fixture.packingObservations, 'utf8')) as PackingObservation;
 }
 
 
@@ -282,6 +342,7 @@ describe('runtime archive producer', () => {
     expect((await npmCalls(fixture))[0]).toBe('run build');
     expect((await npmCalls(fixture))[1]).toMatch(/^pack --json --ignore-scripts --pack-destination /u);
     expect(evidence.kind).toBe('cumpa.runtime-artifact-evidence/v1');
+    expect(evidence.package.version).toBe('1.5.0');
     expect(evidence.archive).toMatchObject({
       basename: 'cumpa-1.5.0.tgz',
       byteLength: archive.byteLength,
@@ -296,6 +357,92 @@ describe('runtime archive producer', () => {
       expect.objectContaining({ path: 'dist/bin/cumpa.mjs' }),
       expect.objectContaining({ path: 'dist/web/index.html' }),
     ]));
+  });
+
+  test('creates the configured bootstrap archive from one private version-only packing tree without changing stable source files', async () => {
+    const fixture = await createFixture();
+    const sourceManifest = await readFile(join(fixture.root, 'package.json'));
+    const sourceLock = await readFile(join(fixture.root, 'package-lock.json'));
+    const sourceManifestMode = (await lstat(join(fixture.root, 'package.json'))).mode & 0o777;
+    const sourceLockMode = (await lstat(join(fixture.root, 'package-lock.json'))).mode & 0o777;
+
+    const result = await invoke(fixture, producerArgs(fixture, 'bootstrap'), { CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin });
+    expect(result).not.toBeInstanceOf(Error);
+
+    const evidenceText = await readFile(fixture.evidence, 'utf8');
+    const evidence = JSON.parse(evidenceText);
+    const observation = await packingObservation(fixture);
+    const archive = join(fixture.custody, evidence.archive.basename);
+    const packedManifest = Buffer.from((await execFileAsync('tar', ['-xOf', archive, 'package/package.json'])).stdout);
+
+    expect(await npmCalls(fixture)).toEqual([
+      'run build',
+      `pack ${observation.directory} --json --ignore-scripts --pack-destination ${fixture.custody}`,
+    ]);
+    expect(observation.mode).toBe(0o700);
+    expect(observation.manifest).toEqual({ ...JSON.parse(sourceManifest.toString('utf8')), version: '1.5.0-bootstrap.0' });
+    expect(observation.files.map((file) => file.path)).toEqual([
+      'LICENSE',
+      'README.md',
+      'THIRD_PARTY_NOTICES.md',
+      'dist/bin/cumpa.mjs',
+      'dist/native/directory_exchange.node',
+      'dist/web/index.html',
+      'package.json',
+    ]);
+    expect(observation.files.some((file) => ['package-lock.json', 'src/native/directory-exchange.cc'].includes(file.path))).toBe(false);
+    expect(evidence).toMatchObject({
+      purpose: 'bootstrap',
+      status: 'bootstrap',
+      package: {
+        name: '@shipwithai/cumpa',
+        version: '1.5.0-bootstrap.0',
+        manifestProjection: {
+          field: 'version',
+          sourceVersion: '1.5.0',
+          packedVersion: '1.5.0-bootstrap.0',
+          sourceSha256: createHash('sha256').update(sourceManifest).digest('hex'),
+          projectedInputSha256: observation.manifestSha256,
+          packedOutputSha256: createHash('sha256').update(packedManifest).digest('hex'),
+        },
+      },
+      source: {
+        packageJsonSha256: createHash('sha256').update(sourceManifest).digest('hex'),
+        packageLockSha256: createHash('sha256').update(sourceLock).digest('hex'),
+      },
+      archive: {
+        basename: 'cumpa-1.5.0-bootstrap.0.tgz',
+        byteLength: (await readFile(archive)).byteLength,
+        sha256: createHash('sha256').update(await readFile(archive)).digest('hex'),
+      },
+    });
+    expect(evidenceText).not.toContain(fixture.root);
+    expect(evidenceText).not.toContain(observation.directory);
+    expect(await readFile(join(fixture.root, 'package.json'))).toEqual(sourceManifest);
+    expect((await lstat(join(fixture.root, 'package.json'))).mode & 0o777).toBe(sourceManifestMode);
+    expect(await readFile(join(fixture.root, 'package-lock.json'))).toEqual(sourceLock);
+    expect((await lstat(join(fixture.root, 'package-lock.json'))).mode & 0o777).toBe(sourceLockMode);
+    await expect(lstat(observation.directory)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
+  test('cleans the bootstrap packing tree and preserves stable source files after pack failure', async () => {
+    const sourceManifest = await readFile(join(fixture.root, 'package.json'));
+    const sourceLock = await readFile(join(fixture.root, 'package-lock.json'));
+    const sourceManifestMode = (await lstat(join(fixture.root, 'package.json'))).mode & 0o777;
+    const sourceLockMode = (await lstat(join(fixture.root, 'package-lock.json'))).mode & 0o777;
+
+    await invoke(fixture, producerArgs(fixture, 'bootstrap'), {
+      CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin,
+      CUMPA_FAKE_PACK_FAILURE: '1',
+    });
+    expect(await npmCalls(fixture)).toHaveLength(2);
+
+    const observation = await packingObservation(fixture);
+    await expect(lstat(fixture.evidence)).rejects.toMatchObject({ code: 'ENOENT' });
+    expect(await readFile(join(fixture.root, 'package.json'))).toEqual(sourceManifest);
+    expect((await lstat(join(fixture.root, 'package.json'))).mode & 0o777).toBe(sourceManifestMode);
+    expect(await readFile(join(fixture.root, 'package-lock.json'))).toEqual(sourceLock);
+    expect((await lstat(join(fixture.root, 'package-lock.json'))).mode & 0o777).toBe(sourceLockMode);
   });
 
   test('denies evidence after build/pack failures, ambiguous results, inventory mismatch, or archive substitution without deleting emitted archives', async () => {

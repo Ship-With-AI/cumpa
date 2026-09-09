@@ -189,18 +189,20 @@ test('accepts one supplied candidate through isolated installed browser and Fini
   }
 });
 
-test('rejects substituted identities, stale runs, failed behavior and scenario-authored scanner authority', () => {
+test.for(['stable', 'bootstrap'] as const)('enforces trusted %s scenario identity across passed and substituted reports', (profile) => {
+  const version = profile === 'bootstrap' ? '1.5.0-bootstrap.0' : '1.5.0';
+  const selectedProfile = profile === 'bootstrap' ? 'bootstrap' : undefined;
   const digest = 'a'.repeat(64);
   const expected = {
-    archive: archiveSchema.parse({ basename: 'shipwithai-cumpa-1.5.0.tgz', byteLength: 1, sha256: digest, npmShasumSha1: 'b'.repeat(40), npmIntegritySha512: `sha512-${createHash('sha512').update('fixture').digest('base64')}` }),
-    package: packageSchema.parse({ name: '@shipwithai/cumpa', version: '1.5.0', runtimeDependencies: { zod: '4.4.3' } }),
+    archive: { basename: `shipwithai-cumpa-${version}.tgz`, byteLength: 1, sha256: digest, npmShasumSha1: 'b'.repeat(40), npmIntegritySha512: `sha512-${createHash('sha512').update('fixture').digest('base64')}` },
+    package: { name: '@shipwithai/cumpa' as const, version, runtimeDependencies: { zod: '4.4.3' } },
     manifestSha256: digest,
   };
   const native = hasObservedNativeReExport(process.platform, process.arch);
   const common = {
     kind: 'cumpa.runtime-artifact-scenario/v1', status: 'passed', runId: 'current-run',
     archive: expected.archive, package: expected.package,
-    install: { packageLabel: '@shipwithai/cumpa@1.5.0', binLabel: 'cumpa', manifestSha256: digest, dependencyCount: 1, dependencyInventorySha256: digest },
+    install: { packageLabel: `@shipwithai/cumpa@${version}`, binLabel: 'cumpa', manifestSha256: digest, dependencyCount: 1, dependencyInventorySha256: digest },
     target: { platform: process.platform, arch: process.arch }, cleanup: { complete: true },
   };
   const assets = { ...common, scenario: 'package-assets', browser: { assets: true, workers: true, codicon: true }, checks: { version: true, help: true, isolatedInstall: true, dependencyTree: true } };
@@ -212,7 +214,9 @@ test('rejects substituted identities, stale runs, failed behavior and scenario-a
     native: { observedReExport: native, fallback: 'reExportUnsupported' },
     sourceControl: { unchanged: true }, checks: { finish: true },
   };
-  parseScenarios('current-run', expected, assets, review);
+  const parsed = parseScenarios('current-run', expected, assets, review, selectedProfile);
+  expect(parsed.assets.package.version).toBe(version);
+  if (selectedProfile === 'bootstrap') expect(() => parseScenarios('current-run', expected, assets, review)).toThrow();
   const substitutions: Array<[string[], unknown]> = [
     [['assets', 'archive', 'sha256'], 'c'.repeat(64)],
     [['assets', 'archive', 'npmShasumSha1'], 'c'.repeat(40)],
@@ -233,6 +237,6 @@ test('rejects substituted identities, stale runs, failed behavior and scenario-a
     let target = reports;
     for (const key of path.slice(0, -1)) target = target[key];
     target[path.at(-1)!] = value;
-    expect(() => parseScenarios('current-run', expected, reports.assets, reports.review)).toThrow();
+    expect(() => parseScenarios('current-run', expected, reports.assets, reports.review, selectedProfile)).toThrow();
   }
 });
