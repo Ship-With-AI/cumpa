@@ -62,3 +62,7 @@ The audit shape was checked against npm/cli v11.19.1 `lib/utils/verify-signature
 ## Operational boundary
 
 PKG-01, PKG-02 and REL-02 remain globally incomplete until their actual gated operations succeed. No CI candidate was built/uploaded, no real public npm verification was run, and no credential/configuration/publication authority was exercised. The next consumer is the local 05-03 workflow implementation.
+
+## Post-Wave Integration Correction
+
+Independent 05-03 review found two real-output mismatches that these initial synthetic fixtures missed. `bad28f7` now requires the producer's actual clean-diff fingerprint (`sha256(JSON.stringify(['', '']))`) and requires/preserves the aggregator's actual `profile: stable` acceptance field. Main first changed the fixtures to the real formats, observed both failures in sequence, then verified all 21 affected tests and strict typechecking after repair. See `05-REVIEW.md` for the resolved findings; the original local prerequisite work is not an operational success claim.
