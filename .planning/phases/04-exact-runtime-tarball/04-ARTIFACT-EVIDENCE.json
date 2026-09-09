@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.runtime-artifact-evidence/v1",
-  "status": "verified",
+  "status": "accepted-local",
   "purpose": "candidate",
   "package": {
     "name": "@shipwithai/cumpa",
@@ -1905,5 +1905,13 @@
     "sha256": "e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca",
     "byteLength": 3513998,
     "readOnly": true
+  },
+  "approval": {
+    "status": "approved",
+    "sha256": "e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca",
+    "byteLength": 3513998,
+    "limitationsAcknowledged": true,
+    "approvedAt": "2026-09-09T07:16:13.622996+00:00",
+    "approvedBy": "Alessandro Magionami"
   }
 }
