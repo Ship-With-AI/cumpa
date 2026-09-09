@@ -381,7 +381,7 @@ describe('runtime archive producer', () => {
     ]);
     expect(observation.mode).toBe(0o700);
     expect(observation.manifest).toEqual({ ...JSON.parse(sourceManifest.toString('utf8')), version: '1.5.0-bootstrap.0' });
-    expect(observation.files.map((file) => file.path)).toEqual([
+    expect(observation.files.map((file) => file.path).sort()).toEqual([
       'LICENSE',
       'README.md',
       'THIRD_PARTY_NOTICES.md',
@@ -426,6 +426,7 @@ describe('runtime archive producer', () => {
   });
 
   test('cleans the bootstrap packing tree and preserves stable source files after pack failure', async () => {
+    const fixture = await createFixture();
     const sourceManifest = await readFile(join(fixture.root, 'package.json'));
     const sourceLock = await readFile(join(fixture.root, 'package-lock.json'));
     const sourceManifestMode = (await lstat(join(fixture.root, 'package.json'))).mode & 0o777;
@@ -438,6 +439,7 @@ describe('runtime archive producer', () => {
     expect(await npmCalls(fixture)).toHaveLength(2);
 
     const observation = await packingObservation(fixture);
+    await expect(lstat(observation.directory)).rejects.toMatchObject({ code: 'ENOENT' });
     await expect(lstat(fixture.evidence)).rejects.toMatchObject({ code: 'ENOENT' });
     expect(await readFile(join(fixture.root, 'package.json'))).toEqual(sourceManifest);
     expect((await lstat(join(fixture.root, 'package.json'))).mode & 0o777).toBe(sourceManifestMode);

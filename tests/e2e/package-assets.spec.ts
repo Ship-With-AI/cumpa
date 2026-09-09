@@ -89,7 +89,7 @@ test.afterAll(() => {
 
 test('supplied archive installs globally and serves its complete browser asset graph', async ({ page }) => {
   if (installed === undefined || temporaryRoot === undefined) throw new Error('[runtime-artifact] isolated installation was not initialized');
-  expect(commandOutput(installed.executablePath, ['--version'], installed.env)).toBe('1.5.0\n');
+  expect(commandOutput(installed.executablePath, ['--version'], installed.env)).toBe(`${artifact.package.version}\n`);
   expect(commandOutput(installed.executablePath, ['--help'], installed.env)).toMatch(/--version\b/u);
 
   const packageManifest = JSON.parse(readFileSync(join(installed.packageRoot, 'package.json'), 'utf8')) as {
@@ -100,7 +100,7 @@ test('supplied archive installs globally and serves its complete browser asset g
   };
   expect(packageManifest).toEqual(expect.objectContaining({
     name: '@shipwithai/cumpa',
-    version: '1.5.0',
+    version: artifact.package.version,
     engines: { node: '>=24' },
     bin: { cumpa: 'dist/bin/cumpa.mjs' },
   }));

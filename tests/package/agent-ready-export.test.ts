@@ -21,32 +21,50 @@ const archiveSchema = z.strictObject({
   npmShasumSha1: z.string().regex(/^[a-f0-9]{40}$/u),
   npmIntegritySha512: z.string().regex(/^sha512-[A-Za-z0-9+/]{86}==$/u),
 });
-const packageSchema = z.strictObject({
-  name: z.literal('@shipwithai/cumpa'),
-  version: z.literal('1.5.0'),
-  runtimeDependencies: z.record(z.string(), z.string()),
-});
-const installSchema = z.strictObject({
-  packageLabel: z.literal('@shipwithai/cumpa@1.5.0'),
-  binLabel: z.literal('cumpa'),
-  manifestSha256: hash,
-  dependencyCount: z.number().int().positive(),
-  dependencyInventorySha256: hash,
-});
-const scannerSchema = z.strictObject({
-  kind: z.literal('cumpa.runtime-artifact-verification/v1'),
-  status: z.literal('passed'),
-  purpose: z.literal('candidate'),
-  archive: archiveSchema,
-  inventory: z.strictObject({ sha256: hash, count: z.number().int().positive(), bytes: z.number().int().positive() }),
-  legal: z.strictObject({ README: hash, LICENSE: hash, THIRD_PARTY_NOTICES: hash }),
-  package: packageSchema,
-  web: z.strictObject({ entry: z.literal('dist/web/index.html'), reachableFiles: z.number().int().positive(), workerRoles: z.array(z.string()), codicon: passed }),
-  native: z.strictObject({ target: z.string(), binary: z.boolean(), fallback: z.literal('reExportUnsupported') }),
-  support: z.strictObject({ configured: passed, originSha256: hash }),
-  checks: z.strictObject({ archiveIdentity: passed, protectedExtraction: passed, inventoryParity: passed, legalParity: passed, completeDistParity: passed, boundedContentScan: passed }),
-  limitations: z.array(z.string()),
-});
+type SelectedProfile = 'stable' | 'bootstrap';
+
+function profileIdentity(profile: 'bootstrap' | undefined) {
+  return profile === 'bootstrap'
+    ? { profile: 'bootstrap' as const, purpose: 'bootstrap' as const, version: '1.5.0-bootstrap.0' as const }
+    : { profile: 'stable' as const, purpose: 'candidate' as const, version: '1.5.0' as const };
+}
+
+function packageSchema(version: string) {
+  return z.strictObject({
+    name: z.literal('@shipwithai/cumpa'),
+    version: z.literal(version),
+    runtimeDependencies: z.record(z.string(), z.string()),
+  });
+}
+
+function installSchema(version: string) {
+  return z.strictObject({
+    packageLabel: z.literal(`@shipwithai/cumpa@${version}`),
+    binLabel: z.literal('cumpa'),
+    manifestSha256: hash,
+    dependencyCount: z.number().int().positive(),
+    dependencyInventorySha256: hash,
+  });
+}
+
+function scannerSchema(profile: SelectedProfile) {
+  const identity = profileIdentity(profile === 'bootstrap' ? 'bootstrap' : undefined);
+  return z.strictObject({
+    kind: z.literal('cumpa.runtime-artifact-verification/v1'),
+    status: z.literal('passed'),
+    purpose: z.literal(identity.purpose),
+    ...(profile === 'bootstrap' ? { profile: z.literal('bootstrap') } : {}),
+    archive: archiveSchema,
+    inventory: z.strictObject({ sha256: hash, count: z.number().int().positive(), bytes: z.number().int().positive() }),
+    legal: z.strictObject({ README: hash, LICENSE: hash, THIRD_PARTY_NOTICES: hash }),
+    package: packageSchema(identity.version),
+    web: z.strictObject({ entry: z.literal('dist/web/index.html'), reachableFiles: z.number().int().positive(), workerRoles: z.array(z.string()), codicon: passed }),
+    native: z.strictObject({ target: z.string(), binary: z.boolean(), fallback: z.literal('reExportUnsupported') }),
+    support: z.strictObject({ configured: passed, originSha256: hash }),
+    checks: z.strictObject({ archiveIdentity: passed, protectedExtraction: passed, inventoryParity: passed, legalParity: passed, completeDistParity: passed, boundedContentScan: passed }),
+    limitations: z.array(z.string()),
+  });
+}
 
 function driverEnvironment(): NodeJS.ProcessEnv {
   const environment: NodeJS.ProcessEnv = {};
@@ -68,18 +86,21 @@ function runChild(command: string, args: string[], environment: NodeJS.ProcessEn
 
 function parseScenarios(
   runId: string,
-  expected: { archive: z.infer<typeof archiveSchema>; package: z.infer<typeof packageSchema>; manifestSha256: string },
+  expected: { archive: z.infer<typeof archiveSchema>; package: { name: string; version: string; runtimeDependencies: Record<string, string> }; manifestSha256: string },
   assetInput: unknown,
   reviewInput: unknown,
+  selectedBootstrapProfile?: 'bootstrap',
 ) {
+  const identity = profileIdentity(selectedBootstrapProfile);
   const native = hasObservedNativeReExport(process.platform, process.arch);
   const common = {
     kind: z.literal('cumpa.runtime-artifact-scenario/v1'),
     status: z.literal('passed'),
     runId: z.literal(runId),
+    profile: z.literal(identity.profile),
     archive: archiveSchema,
-    package: packageSchema,
-    install: installSchema,
+    package: packageSchema(identity.version),
+    install: installSchema(identity.version),
     target: z.strictObject({ platform: z.literal(process.platform), arch: z.literal(process.arch) }),
     cleanup: z.strictObject({ complete: passed }),
   };
@@ -116,19 +137,28 @@ test('accepts one supplied candidate through isolated installed browser and Fini
   const reportPath = process.env.CUMPA_RUNTIME_ACCEPTANCE_REPORT;
   if (!reportPath || !isAbsolute(reportPath) || existsSync(reportPath)) throw new Error('A new absolute acceptance report path is required');
   if (!lstatSync(dirname(reportPath)).isDirectory()) throw new Error('Acceptance report parent must be a directory');
+  const requestedProfile = process.env.CUMPA_RUNTIME_PROFILE;
+  if (requestedProfile !== undefined && requestedProfile !== 'bootstrap') throw new Error('CUMPA_RUNTIME_PROFILE must be bootstrap when set');
+  const selected = profileIdentity(requestedProfile);
   const artifact = readRuntimeArtifact();
   const archive = archiveSchema.parse(artifact.archive);
-  const packageIdentity = packageSchema.parse(artifact.package);
-  if (artifact.evidence.purpose !== 'candidate' || !['candidate', 'verified', 'accepted-local'].includes(artifact.evidence.status)) throw new Error('Only candidate-purpose evidence is eligible for acceptance');
+  const packageIdentity = packageSchema(selected.version).parse(artifact.package);
+  if (
+    artifact.profile !== selected.profile
+    || artifact.evidence.purpose !== selected.purpose
+    || (selected.profile === 'bootstrap' && artifact.evidence.status !== 'bootstrap')
+    || (selected.profile === 'stable' && !['candidate', 'verified', 'accepted-local'].includes(artifact.evidence.status))
+  ) throw new Error('Runtime profile evidence is not eligible for acceptance');
   if (resolve(reportPath) === artifact.archivePath || resolve(reportPath) === resolve(process.env.CUMPA_RUNTIME_EVIDENCE!)) throw new Error('Acceptance report must not overwrite archive or evidence');
   if (realpathSync(dirname(reportPath)) === realpathSync(dirname(artifact.archivePath))) throw new Error('Acceptance reports must remain outside archive custody');
 
   const before = await captureSourceControlSnapshot(projectRoot);
-  const scanner = scannerSchema.parse(JSON.parse(runChild(process.execPath, [
+  const scanner = scannerSchema(selected.profile).parse(JSON.parse(runChild(process.execPath, [
     join(projectRoot, 'scripts/verify-production-artifacts.mjs'),
     '--archive', artifact.archivePath,
     '--expected-sha256', archive.sha256,
     '--evidence', process.env.CUMPA_RUNTIME_EVIDENCE!,
+    ...(selected.profile === 'bootstrap' ? ['--profile', 'bootstrap'] : []),
   ], { ...driverEnvironment(), CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin }, origin)));
   expect(scanner.archive).toEqual(archive);
   expect(scanner.package).toEqual(packageIdentity);
@@ -142,14 +172,22 @@ test('accepts one supplied candidate through isolated installed browser and Fini
   try {
     const childEnvironment = driverEnvironment();
     for (const key of ['CUMPA_RUNTIME_CUSTODY_DIR', 'CUMPA_RUNTIME_ARCHIVE_BASENAME', 'CUMPA_RUNTIME_ARCHIVE_SHA256', 'CUMPA_RUNTIME_EVIDENCE']) childEnvironment[key] = process.env[key];
+    if (selected.profile === 'bootstrap') childEnvironment.CUMPA_RUNTIME_PROFILE = 'bootstrap';
     childEnvironment.CUMPA_AGENT_READY_EVIDENCE_REPORT = bridge;
     childEnvironment.CUMPA_AGENT_READY_EVIDENCE_RUN_ID = runId;
     runChild(process.execPath, [join(projectRoot, 'node_modules/@playwright/test/cli.js'), 'test', '--config', 'playwright.runtime-artifact.config.ts'], childEnvironment, origin);
     const { assets, review } = parseScenarios(
       runId,
-      { archive, package: packageIdentity, manifestSha256: artifact.evidence.source.packageJsonSha256 },
+      {
+        archive,
+        package: packageIdentity,
+        manifestSha256: selected.profile === 'bootstrap'
+          ? artifact.evidence.package.manifestProjection!.packedOutputSha256
+          : artifact.evidence.source.packageJsonSha256,
+      },
       JSON.parse(readFileSync(`${bridge}.package-assets.json`, 'utf8')),
       JSON.parse(readFileSync(`${bridge}.review.json`, 'utf8')),
+      selected.profile === 'bootstrap' ? 'bootstrap' : undefined,
     );
     rehashRuntimeArtifact(artifact);
     await assertSourceControlUnchanged(before, await captureSourceControlSnapshot(projectRoot));
@@ -157,7 +195,8 @@ test('accepts one supplied candidate through isolated installed browser and Fini
     const result = {
       kind: 'cumpa.runtime-artifact-acceptance/v1',
       status: 'passed',
-      purpose: 'candidate',
+      profile: selected.profile,
+      purpose: selected.purpose,
       archive,
       package: packageIdentity,
       install: assets.install,
@@ -194,25 +233,43 @@ test.for(['stable', 'bootstrap'] as const)('enforces trusted %s scenario identit
   const selectedProfile = profile === 'bootstrap' ? 'bootstrap' : undefined;
   const digest = 'a'.repeat(64);
   const expected = {
-    archive: { basename: `shipwithai-cumpa-${version}.tgz`, byteLength: 1, sha256: digest, npmShasumSha1: 'b'.repeat(40), npmIntegritySha512: `sha512-${createHash('sha512').update('fixture').digest('base64')}` },
+    archive: {
+      basename: `shipwithai-cumpa-${version}.tgz`,
+      byteLength: 1,
+      sha256: digest,
+      npmShasumSha1: 'b'.repeat(40),
+      npmIntegritySha512: `sha512-${createHash('sha512').update('fixture').digest('base64')}`,
+    },
     package: { name: '@shipwithai/cumpa' as const, version, runtimeDependencies: { zod: '4.4.3' } },
     manifestSha256: digest,
   };
   const native = hasObservedNativeReExport(process.platform, process.arch);
   const common = {
-    kind: 'cumpa.runtime-artifact-scenario/v1', status: 'passed', runId: 'current-run',
-    archive: expected.archive, package: expected.package,
+    kind: 'cumpa.runtime-artifact-scenario/v1',
+    status: 'passed',
+    runId: 'current-run',
+    profile,
+    archive: expected.archive,
+    package: expected.package,
     install: { packageLabel: `@shipwithai/cumpa@${version}`, binLabel: 'cumpa', manifestSha256: digest, dependencyCount: 1, dependencyInventorySha256: digest },
-    target: { platform: process.platform, arch: process.arch }, cleanup: { complete: true },
+    target: { platform: process.platform, arch: process.arch },
+    cleanup: { complete: true },
   };
-  const assets = { ...common, scenario: 'package-assets', browser: { assets: true, workers: true, codicon: true }, checks: { version: true, help: true, isolatedInstall: true, dependencyTree: true } };
+  const assets = {
+    ...common,
+    scenario: 'package-assets',
+    browser: { assets: true, workers: true, codicon: true },
+    checks: { version: true, help: true, isolatedInstall: true, dependencyTree: true },
+  };
   const review = {
-    ...common, scenario: 'review',
+    ...common,
+    scenario: 'review',
     review: { relaunch: true, canonicalV2: true, isolatedDrafts: true, reExport: native ? 'exported' : 'reExportUnsupported' },
     support: { unavailable: true, dismissed: true, unrestricted: true },
     exactPatch: { canonicalV3: true, grounded: true },
     native: { observedReExport: native, fallback: 'reExportUnsupported' },
-    sourceControl: { unchanged: true }, checks: { finish: true },
+    sourceControl: { unchanged: true },
+    checks: { finish: true },
   };
   const parsed = parseScenarios('current-run', expected, assets, review, selectedProfile);
   expect(parsed.assets.package.version).toBe(version);

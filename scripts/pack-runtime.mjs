@@ -1,15 +1,20 @@
 import { execFileSync } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import {
+  chmodSync,
   closeSync,
+  copyFileSync,
+  cpSync,
   fstatSync,
   fsyncSync,
   linkSync,
   lstatSync,
   mkdirSync,
+  mkdtempSync,
   openSync,
   readFileSync,
   readdirSync,
+  rmSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -18,7 +23,9 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(dirname(fileURLToPath(import.meta.url))));
-const purposes = new Set(['candidate', 'development-check', 'deployment-check']);
+const purposes = new Set(['bootstrap', 'candidate', 'development-check', 'deployment-check']);
+const stableVersion = '1.5.0';
+const bootstrapVersion = '1.5.0-bootstrap.0';
 const requiredFiles = ['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'];
 const buildInputs = ['src', 'scripts', 'index.html', 'tsconfig.json', 'tsconfig.web.json', 'vite.config.ts'];
 const packageFiles = ['package.json', 'package-lock.json', ...requiredFiles];
@@ -195,7 +202,7 @@ function packageContract() {
   if (
     !manifest
     || manifest.name !== '@shipwithai/cumpa'
-    || manifest.version !== '1.5.0'
+    || manifest.version !== stableVersion
     || manifest.engines?.node !== '>=24'
     || manifest.bin?.cumpa !== 'dist/bin/cumpa.mjs'
     || Object.hasOwn(manifest, 'private')
@@ -205,6 +212,7 @@ function packageContract() {
   ) fail('package manifest does not satisfy the runtime contract');
   return {
     manifest,
+    manifestBytes,
     manifestSha256: sha256(manifestBytes),
     lockSha256: sha256(readFileSync(join(root, 'package-lock.json'))),
     runtimeDependencies: exactDependencies(manifest),
@@ -252,11 +260,11 @@ function legalIdentity() {
   return Object.fromEntries(requiredFiles.filter((path) => path !== 'README.md').map((path) => [path, sha256(readFileSync(join(root, path)))]));
 }
 
-function inventoryFromNpm(files, distInventory) {
+function inventoryFromNpm(files, distInventory, packageRoot = root) {
   if (!Array.isArray(files) || files.length === 0) fail('npm pack did not return an inventory');
   const expected = new Map(distInventory.files.map((file) => [file.path, file]));
   for (const path of ['package.json', ...requiredFiles]) {
-    const stat = lstatSync(join(root, path));
+    const stat = lstatSync(join(packageRoot, path));
     expected.set(path, { byteLength: stat.size, mode: stat.mode & 0o777 });
   }
   const paths = new Set();
@@ -354,6 +362,51 @@ function packEnvironment() {
   return environment;
 }
 
+function sameValue(left, right) {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((value, index) => sameValue(value, right[index]));
+  }
+  if (left && right && typeof left === 'object' && typeof right === 'object') {
+    const leftEntries = Object.entries(left);
+    const rightEntries = Object.entries(right);
+    return leftEntries.length === rightEntries.length
+      && leftEntries.every(([key, value]) => Object.hasOwn(right, key) && sameValue(value, right[key]));
+  }
+  return left === right;
+}
+
+function bootstrapPackingTree(packageIdentity) {
+  const packingTree = mkdtempSync(join(os.tmpdir(), 'cumpa-bootstrap-pack-'));
+  chmodSync(packingTree, 0o700);
+  const manifest = { ...packageIdentity.manifest, version: bootstrapVersion };
+  if (
+    !sameValue(packageIdentity.manifest, { ...manifest, version: stableVersion })
+    || manifest.version !== bootstrapVersion
+  ) fail('bootstrap manifest projection must change only version');
+  try {
+    cpSync(join(root, 'dist'), join(packingTree, 'dist'), { recursive: true, force: false, errorOnExist: true });
+    for (const path of requiredFiles) {
+      copyFileSync(join(root, path), join(packingTree, path));
+      chmodSync(join(packingTree, path), lstatSync(join(root, path)).mode & 0o777);
+    }
+    const projectedBytes = Buffer.from(`${JSON.stringify(manifest, null, 2)}\n`);
+    writeFileSync(join(packingTree, 'package.json'), projectedBytes, { mode: lstatSync(join(root, 'package.json')).mode & 0o777, flag: 'wx' });
+    return {
+      packingTree,
+      manifestProjection: {
+        field: 'version',
+        sourceVersion: stableVersion,
+        packedVersion: bootstrapVersion,
+        sourceSha256: packageIdentity.manifestSha256,
+        projectedInputSha256: sha256(projectedBytes),
+      },
+    };
+  } catch (error) {
+    rmSync(packingTree, { recursive: true, force: true });
+    throw error;
+  }
+}
+
 function main() {
   const options = parseArguments(process.argv.slice(2));
   const origin = process.env.CUMPA_RELEASE_SUPPORT_SERVICE_URL;
@@ -365,62 +418,105 @@ function main() {
   mkdirSync(options.custodyDirectory, { mode: 0o700 });
   command('npm', ['run', 'build'], { env: buildEnvironment(origin) });
   const contents = { dist: packageOutputInventory() };
-  const sourceAfter = trackedSource();
+  const sourceAfterBuild = trackedSource();
   if (
-    sourceBefore.head !== sourceAfter.head
-    || sourceBefore.tree !== sourceAfter.tree
-    || sourceBefore.trackedDiffSha256 !== sourceAfter.trackedDiffSha256
+    sourceBefore.head !== sourceAfterBuild.head
+    || sourceBefore.tree !== sourceAfterBuild.tree
+    || sourceBefore.trackedDiffSha256 !== sourceAfterBuild.trackedDiffSha256
     || inputsSha256 !== preflightSource()
   ) fail('tracked source changed during build');
   const native = nativeIdentity();
-  const packOutput = command('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', options.custodyDirectory], { env: packEnvironment() });
-  let packResults;
-  try {
-    packResults = JSON.parse(packOutput);
-  } catch {
-    fail('npm pack did not return JSON');
-  }
-  if (!Array.isArray(packResults) || packResults.length !== 1) fail('npm pack must return exactly one archive');
-  const archive = archiveIdentity(options.custodyDirectory, packResults[0]);
-  archive.files = inventoryFromNpm(packResults[0].files, contents.dist);
-  const evidence = {
-    kind: 'cumpa.runtime-artifact-evidence/v1',
-    status: options.purpose === 'candidate' ? 'candidate' : options.purpose,
-    purpose: options.purpose,
-    package: {
-      name: packageIdentity.manifest.name,
-      version: packageIdentity.manifest.version,
-      runtimeDependencies: packageIdentity.runtimeDependencies,
-    },
-    archive,
-    source: {
-      repository: packageIdentity.manifest.repository?.url ?? null,
-      head: sourceBefore.head,
-      tree: sourceBefore.tree,
-      clean: sourceBefore.clean,
-      trackedDiffSha256: sourceBefore.trackedDiffSha256,
-      packageJsonSha256: packageIdentity.manifestSha256,
-      inputsSha256,
-      packageLockSha256: packageIdentity.lockSha256,
-    },
-    build: {
-      configured: support.configured,
-      node: process.version,
-      npm: npmVersion(),
-      git: command('git', ['--version']),
-      os: os.release(),
-      platform: process.platform,
-      arch: process.arch,
-      napi: process.versions.napi ?? null,
-      compiler: compilerIdentity(),
-    },
-    contents,
-    legal: legalIdentity(),
-    native,
-    support,
+  let packingTree;
+  const cleanup = () => {
+    if (packingTree !== undefined) {
+      rmSync(packingTree, { recursive: true, force: true });
+      packingTree = undefined;
+    }
   };
-  writeEvidence(options.evidencePath, evidence);
-  process.stdout.write(`Created ${options.purpose} runtime artifact evidence.\n`);
+  const onSignal = () => {
+    cleanup();
+    process.exit(128);
+  };
+  process.once('SIGINT', onSignal);
+  process.once('SIGTERM', onSignal);
+  try {
+    let packOutput;
+    let projection;
+    if (options.purpose === 'bootstrap') {
+      const bootstrap = bootstrapPackingTree(packageIdentity);
+      packingTree = bootstrap.packingTree;
+      projection = bootstrap.manifestProjection;
+      packOutput = command('npm', ['pack', packingTree, '--json', '--ignore-scripts', '--pack-destination', options.custodyDirectory], { env: packEnvironment() });
+    } else {
+      packOutput = command('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', options.custodyDirectory], { env: packEnvironment() });
+    }
+    let packResults;
+    try {
+      packResults = JSON.parse(packOutput);
+    } catch {
+      fail('npm pack did not return JSON');
+    }
+    if (!Array.isArray(packResults) || packResults.length !== 1) fail('npm pack must return exactly one archive');
+    const archive = archiveIdentity(options.custodyDirectory, packResults[0]);
+    archive.files = inventoryFromNpm(packResults[0].files, contents.dist, packingTree ?? root);
+    if (projection) {
+      const packedManifest = execFileSync('tar', ['-xOf', join(options.custodyDirectory, archive.basename), 'package/package.json'], {
+        cwd: root,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      projection.packedOutputSha256 = sha256(packedManifest);
+    }
+    const sourceAfterPack = trackedSource();
+    if (
+      sourceBefore.head !== sourceAfterPack.head
+      || sourceBefore.tree !== sourceAfterPack.tree
+      || sourceBefore.trackedDiffSha256 !== sourceAfterPack.trackedDiffSha256
+      || inputsSha256 !== preflightSource()
+    ) fail('tracked source changed during pack');
+    const evidence = {
+      kind: 'cumpa.runtime-artifact-evidence/v1',
+      status: options.purpose === 'candidate' ? 'candidate' : options.purpose,
+      purpose: options.purpose,
+      package: {
+        name: packageIdentity.manifest.name,
+        version: options.purpose === 'bootstrap' ? bootstrapVersion : packageIdentity.manifest.version,
+        runtimeDependencies: packageIdentity.runtimeDependencies,
+        ...(projection === undefined ? {} : { manifestProjection: projection }),
+      },
+      archive,
+      source: {
+        repository: packageIdentity.manifest.repository?.url ?? null,
+        head: sourceBefore.head,
+        tree: sourceBefore.tree,
+        clean: sourceBefore.clean,
+        trackedDiffSha256: sourceBefore.trackedDiffSha256,
+        packageJsonSha256: packageIdentity.manifestSha256,
+        inputsSha256,
+        packageLockSha256: packageIdentity.lockSha256,
+      },
+      build: {
+        configured: support.configured,
+        node: process.version,
+        npm: npmVersion(),
+        git: command('git', ['--version']),
+        os: os.release(),
+        platform: process.platform,
+        arch: process.arch,
+        napi: process.versions.napi ?? null,
+        compiler: compilerIdentity(),
+      },
+      contents,
+      legal: legalIdentity(),
+      native,
+      support,
+    };
+    writeEvidence(options.evidencePath, evidence);
+    process.stdout.write(`Created ${options.purpose} runtime artifact evidence.\n`);
+  } finally {
+    process.removeListener('SIGINT', onSignal);
+    process.removeListener('SIGTERM', onSignal);
+    cleanup();
+  }
 }
 
 try {

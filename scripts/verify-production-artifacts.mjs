@@ -19,8 +19,12 @@ import { fileURLToPath } from 'node:url';
 import { babelParse, walk } from 'vue/compiler-sfc';
 
 const root = resolve(dirname(dirname(fileURLToPath(import.meta.url))));
-const purposes = new Set(['candidate', 'development-check', 'deployment-check']);
+const purposes = new Set(['bootstrap', 'candidate', 'development-check', 'deployment-check']);
 const reusableStatuses = new Set(['candidate', 'verified', 'accepted-local']);
+const profiles = {
+  stable: { purpose: undefined, version: '1.5.0' },
+  bootstrap: { purpose: 'bootstrap', version: '1.5.0-bootstrap.0' },
+};
 const requiredRoots = ['package.json', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'dist/bin/cumpa.mjs'];
 const legalRoots = ['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'];
 const workerRoles = ['editor', 'css', 'html', 'json', 'ts'];
@@ -76,22 +80,27 @@ function safeAbsoluteFile(path, label) {
 }
 
 function parseArguments(argv) {
-  if (argv.length !== 6) fail('expected exactly --archive, --expected-sha256, and --evidence');
+  if (argv.length !== 6 && argv.length !== 8) fail('expected --archive, --expected-sha256, --evidence, and optional --profile bootstrap');
+  if (argv.length === 8 && (argv[6] !== '--profile' || argv[7] !== 'bootstrap')) fail('bootstrap profile must be appended exactly as --profile bootstrap');
   const options = new Map();
   for (let index = 0; index < argv.length; index += 2) {
     const name = argv[index];
     const value = argv[index + 1];
-    if (!['--archive', '--expected-sha256', '--evidence'].includes(name) || typeof value !== 'string' || value === '' || options.has(name)) {
+    if (!['--archive', '--expected-sha256', '--evidence', '--profile'].includes(name) || typeof value !== 'string' || value === '' || options.has(name)) {
       fail('invalid runtime artifact verifier options');
     }
     options.set(name, value);
   }
+  const profile = options.get('--profile') ?? 'stable';
+  if (profile !== 'stable' && profile !== 'bootstrap') fail('invalid runtime artifact verifier profile');
+  if (profile === 'stable' && options.has('--profile')) fail('stable verifier profile must be omitted');
   const expectedSha256 = options.get('--expected-sha256');
   if (!sha256Pattern.test(expectedSha256)) fail('expected SHA-256 must be lowercase hexadecimal');
   return {
     archivePath: safeAbsoluteFile(options.get('--archive'), 'archive'),
     expectedSha256,
     evidencePath: safeAbsoluteFile(options.get('--evidence'), 'evidence'),
+    profile,
   };
 }
 
@@ -143,7 +152,24 @@ function requiredHash(value, label, pattern = sha256Pattern) {
   return value;
 }
 
-function readEvidence(path) {
+function exactKeys(value, keys, label) {
+  if (!isRecord(value) || JSON.stringify(Object.keys(value).sort()) !== JSON.stringify([...keys].sort())) fail(`invalid ${label}`);
+}
+
+function sameValue(left, right) {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right) && left.length === right.length && left.every((value, index) => sameValue(value, right[index]));
+  }
+  if (left && right && typeof left === 'object' && typeof right === 'object') {
+    const leftEntries = Object.entries(left);
+    const rightEntries = Object.entries(right);
+    return leftEntries.length === rightEntries.length
+      && leftEntries.every(([key, value]) => Object.hasOwn(right, key) && sameValue(value, right[key]));
+  }
+  return left === right;
+}
+
+function readEvidence(path, profile) {
   let evidence;
   try {
     evidence = JSON.parse(readFileSync(path, 'utf8'));
@@ -152,13 +178,26 @@ function readEvidence(path) {
   }
   if (!isRecord(evidence) || evidence.kind !== 'cumpa.runtime-artifact-evidence/v1') fail('unexpected producer evidence kind');
   if (!purposes.has(evidence.purpose) || typeof evidence.status !== 'string') fail('invalid producer evidence purpose or status');
-  if (reusableStatuses.has(evidence.status)) {
+  if (profile === 'bootstrap') {
+    if (evidence.purpose !== profiles.bootstrap.purpose || evidence.status !== 'bootstrap') fail('bootstrap profile requires bootstrap evidence');
+  } else if (reusableStatuses.has(evidence.status)) {
     if (evidence.purpose !== 'candidate') fail('candidate status requires candidate purpose');
   } else if (evidence.status !== evidence.purpose || !['development-check', 'deployment-check'].includes(evidence.status)) {
     fail('invalid producer evidence status');
   }
-  if (!isRecord(evidence.package) || evidence.package.name !== '@shipwithai/cumpa' || evidence.package.version !== '1.5.0') fail('invalid package identity');
+  if (!isRecord(evidence.package) || evidence.package.name !== '@shipwithai/cumpa' || evidence.package.version !== profiles[profile].version) fail('invalid package identity');
   evidence.package.runtimeDependencies = exactDependencies(evidence.package.runtimeDependencies, 'runtime dependencies');
+  if (profile === 'bootstrap') {
+    exactKeys(evidence.package.manifestProjection, ['field', 'sourceVersion', 'packedVersion', 'sourceSha256', 'projectedInputSha256', 'packedOutputSha256'], 'bootstrap manifest projection');
+    const projection = evidence.package.manifestProjection;
+    if (
+      projection.field !== 'version'
+      || projection.sourceVersion !== profiles.stable.version
+      || projection.packedVersion !== profiles.bootstrap.version
+      || requiredHash(projection.sourceSha256, 'bootstrap source manifest SHA-256') !== evidence.source?.packageJsonSha256
+      || requiredHash(projection.projectedInputSha256, 'bootstrap projected manifest SHA-256') !== requiredHash(projection.packedOutputSha256, 'bootstrap packed manifest SHA-256')
+    ) fail('invalid bootstrap manifest projection');
+  } else if (Object.hasOwn(evidence.package, 'manifestProjection')) fail('stable evidence must not contain a manifest projection');
   if (!isRecord(evidence.archive)) fail('invalid archive evidence');
   if (
     typeof evidence.archive.basename !== 'string'
@@ -174,9 +213,9 @@ function readEvidence(path) {
   const archiveFiles = new Map();
   for (const entry of evidence.archive.files) {
     if (!isRecord(entry) || typeof entry.path !== 'string' || !Number.isSafeInteger(entry.size) || entry.size < 0 || !Number.isSafeInteger(entry.mode)) fail('invalid npm archive inventory entry');
-    const path = normalizePath(entry.path);
-    if (archiveFiles.has(path)) fail('duplicate npm archive inventory entry');
-    archiveFiles.set(path, { size: entry.size, mode: entry.mode });
+    const archivePath = normalizePath(entry.path);
+    if (archiveFiles.has(archivePath)) fail('duplicate npm archive inventory entry');
+    archiveFiles.set(archivePath, { size: entry.size, mode: entry.mode });
   }
   if (!isRecord(evidence.contents) || !isRecord(evidence.contents.dist) || !Array.isArray(evidence.contents.dist.files)) fail('invalid dist evidence');
   const distFiles = new Map();
@@ -203,7 +242,7 @@ function readEvidence(path) {
     || evidence.build.compiler.target !== `${evidence.build.arch}-${evidence.build.platform}`
   ) fail('invalid build evidence');
   if (typeof evidence.source.clean !== 'boolean') fail('invalid source clean state');
-  if ((evidence.purpose === 'candidate' || evidence.purpose === 'deployment-check') && !evidence.source.clean) fail('clean source is required for this purpose');
+  if ((evidence.purpose === 'bootstrap' || evidence.purpose === 'candidate' || evidence.purpose === 'deployment-check') && !evidence.source.clean) fail('clean source is required for this purpose');
   if (!isRecord(evidence.legal)) fail('invalid legal evidence');
   for (const file of ['LICENSE', 'THIRD_PARTY_NOTICES.md']) requiredHash(evidence.legal[file], `legal ${file}`);
   if (!isRecord(evidence.native) || !isRecord(evidence.native.source) || evidence.native.source.path !== 'src/native/directory-exchange.cc') fail('invalid native evidence');
@@ -216,7 +255,7 @@ function readEvidence(path) {
   if (evidence.support.configured) requiredHash(evidence.support.originSha256, 'support origin SHA-256');
   else if (Object.hasOwn(evidence.support, 'originSha256')) fail('unconfigured support must not retain an origin fingerprint');
   if (evidence.build.configured !== evidence.support.configured) fail('build and support configuration disagree');
-  if ((evidence.purpose === 'candidate' || evidence.purpose === 'deployment-check') && !evidence.support.configured) fail('configured support is required for this purpose');
+  if ((evidence.purpose === 'bootstrap' || evidence.purpose === 'candidate' || evidence.purpose === 'deployment-check') && !evidence.support.configured) fail('configured support is required for this purpose');
   return { evidence, archiveFiles, distFiles };
 }
 
@@ -275,7 +314,7 @@ function scanContent(path, bytes, support) {
   return occurrences;
 }
 
-function assertManifest(bytes, evidence) {
+function assertManifest(bytes, evidence, profile) {
   let manifest;
   try {
     manifest = JSON.parse(bytes.toString('utf8'));
@@ -285,13 +324,28 @@ function assertManifest(bytes, evidence) {
   if (
     !isRecord(manifest)
     || manifest.name !== '@shipwithai/cumpa'
-    || manifest.version !== '1.5.0'
+    || manifest.version !== profiles[profile].version
     || manifest.engines?.node !== '>=24'
     || manifest.bin?.cumpa !== 'dist/bin/cumpa.mjs'
     || Object.hasOwn(manifest, 'private')
     || !Array.isArray(manifest.files)
     || JSON.stringify(manifest.files) !== JSON.stringify(['dist/', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'])
   ) fail('packaged manifest does not satisfy the runtime contract');
+  if (profile === 'bootstrap') {
+    const sourceBytes = readFileSync(join(root, 'package.json'));
+    let sourceManifest;
+    try {
+      sourceManifest = JSON.parse(sourceBytes);
+    } catch {
+      fail('reviewed source manifest must be valid JSON');
+    }
+    if (
+      sourceManifest.version !== profiles.stable.version
+      || sha256(sourceBytes) !== evidence.package.manifestProjection.sourceSha256
+      || sha256(bytes) !== evidence.package.manifestProjection.packedOutputSha256
+      || !sameValue(sourceManifest, { ...manifest, version: profiles.stable.version })
+    ) fail('bootstrap manifest projection does not preserve source semantics');
+  }
   const dependencies = exactDependencies(manifest.dependencies ?? {}, 'packaged runtime dependencies');
   if (JSON.stringify(dependencies) !== JSON.stringify(evidence.package.runtimeDependencies)) fail('packaged runtime dependencies do not match evidence');
   return manifest;
@@ -350,7 +404,7 @@ function assertWebGraph(files) {
 }
 
 function verify(options) {
-  const { evidence, archiveFiles, distFiles } = readEvidence(options.evidencePath);
+  const { evidence, archiveFiles, distFiles } = readEvidence(options.evidencePath, options.profile);
   if (basename(options.archivePath) !== evidence.archive.basename) fail('archive basename does not match evidence');
   const custodyEntries = readdirSync(dirname(options.archivePath));
   if (custodyEntries.length !== 1 || custodyEntries[0] !== evidence.archive.basename) fail('archive custody directory must contain only the supplied archive');
@@ -437,7 +491,7 @@ function verify(options) {
       if (!files.get(path).bytes.equals(reviewed)) fail(`reviewed legal file mismatch: ${path}`);
     }
     if (sha256(files.get('LICENSE').bytes) !== evidence.legal.LICENSE || sha256(files.get('THIRD_PARTY_NOTICES.md').bytes) !== evidence.legal['THIRD_PARTY_NOTICES.md']) fail('legal evidence mismatch');
-    assertManifest(files.get('package.json').bytes, evidence);
+    assertManifest(files.get('package.json').bytes, evidence, options.profile);
     const web = assertWebGraph(new Map([...files.entries()].filter(([path]) => path.startsWith('dist/'))));
     const nativePath = 'dist/native/directory_exchange.node';
     const nativeRequired = evidence.build.platform === 'darwin' && evidence.build.arch === 'arm64';
@@ -459,6 +513,7 @@ function verify(options) {
       kind: 'cumpa.runtime-artifact-verification/v1',
       status: 'passed',
       purpose: evidence.purpose,
+      ...(options.profile === 'bootstrap' ? { profile: 'bootstrap' } : {}),
       archive: { basename: evidence.archive.basename, ...archiveBefore },
       inventory: { sha256: evidence.contents.dist.sha256, count: files.size, bytes: totalBytes },
       legal: { README: sha256(files.get('README.md').bytes), LICENSE: evidence.legal.LICENSE, THIRD_PARTY_NOTICES: evidence.legal['THIRD_PARTY_NOTICES.md'] },

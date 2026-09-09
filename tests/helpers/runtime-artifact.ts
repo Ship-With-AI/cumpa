@@ -22,7 +22,11 @@ import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { z } from 'zod';
 
 const packageName = '@shipwithai/cumpa';
-const packageVersion = '1.5.0';
+const runtimeProfiles = {
+  stable: { version: '1.5.0', purpose: undefined },
+  bootstrap: { version: '1.5.0-bootstrap.0', purpose: 'bootstrap' },
+} as const;
+type RuntimeProfile = keyof typeof runtimeProfiles;
 const publicRegistry = 'https://registry.npmjs.org/';
 const sha256Pattern = /^[a-f0-9]{64}$/u;
 const sha1Pattern = /^[a-f0-9]{40}$/u;
@@ -31,9 +35,17 @@ const archiveBasenamePattern = /^[A-Za-z0-9][A-Za-z0-9._-]*\.tgz$/u;
 const exactVersionPattern = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u;
 
 const RuntimeDependenciesSchema = z.record(z.string(), z.string());
+const ManifestProjectionSchema = z.strictObject({
+  field: z.literal('version'),
+  sourceVersion: z.literal(runtimeProfiles.stable.version),
+  packedVersion: z.literal(runtimeProfiles.bootstrap.version),
+  sourceSha256: z.string().regex(sha256Pattern),
+  projectedInputSha256: z.string().regex(sha256Pattern),
+  packedOutputSha256: z.string().regex(sha256Pattern),
+});
 const ProducerEvidenceSchema = z.object({
-  status: z.enum(['candidate', 'verified', 'accepted-local', 'development-check', 'deployment-check']),
-  purpose: z.enum(['candidate', 'development-check', 'deployment-check']),
+  status: z.enum(['bootstrap', 'candidate', 'verified', 'accepted-local', 'development-check', 'deployment-check']),
+  purpose: z.enum(['bootstrap', 'candidate', 'development-check', 'deployment-check']),
   kind: z.literal('cumpa.runtime-artifact-evidence/v1'),
   archive: z.object({
     basename: z.string(),
@@ -44,8 +56,9 @@ const ProducerEvidenceSchema = z.object({
   }).passthrough(),
   package: z.object({
     name: z.literal(packageName),
-    version: z.literal(packageVersion),
+    version: z.enum([runtimeProfiles.stable.version, runtimeProfiles.bootstrap.version]),
     runtimeDependencies: RuntimeDependenciesSchema,
+    manifestProjection: ManifestProjectionSchema.optional(),
   }).passthrough(),
   source: z.object({ packageJsonSha256: z.string().regex(sha256Pattern) }).passthrough(),
   legal: z.object({ LICENSE: z.string().regex(sha256Pattern), 'THIRD_PARTY_NOTICES.md': z.string().regex(sha256Pattern) }),
@@ -78,13 +91,15 @@ const NpmTreeSchema = z.object({
   problems: z.array(z.string()).optional(),
 }).passthrough();
 
-const InstalledManifestSchema = z.object({
-  name: z.literal(packageName),
-  version: z.literal(packageVersion),
-  license: z.literal('MIT'),
-  engines: z.object({ node: z.literal('>=24') }),
-  bin: z.object({ cumpa: z.literal('dist/bin/cumpa.mjs') }),
-});
+function installedManifestSchema(version: string) {
+  return z.object({
+    name: z.literal(packageName),
+    version: z.literal(version),
+    license: z.literal('MIT'),
+    engines: z.object({ node: z.literal('>=24') }),
+    bin: z.object({ cumpa: z.literal('dist/bin/cumpa.mjs') }),
+  });
+}
 
 export interface RuntimeArchiveIdentity {
   readonly basename: string;
@@ -96,11 +111,12 @@ export interface RuntimeArchiveIdentity {
 
 export interface RuntimePackageIdentity {
   readonly name: typeof packageName;
-  readonly version: typeof packageVersion;
+  readonly version: (typeof runtimeProfiles)[RuntimeProfile]['version'];
   readonly runtimeDependencies: Readonly<Record<string, string>>;
 }
 
 export interface RuntimeArtifact {
+  readonly profile: RuntimeProfile;
   readonly archivePath: string;
   readonly evidence: ProducerEvidence;
   readonly archive: RuntimeArchiveIdentity;
@@ -108,7 +124,7 @@ export interface RuntimeArtifact {
 }
 
 export interface RuntimeInstallProof {
-  readonly packageLabel: '@shipwithai/cumpa@1.5.0';
+  readonly packageLabel: `${typeof packageName}@${RuntimePackageIdentity['version']}`;
   readonly binLabel: 'cumpa';
   readonly manifestSha256: string;
   readonly dependencyCount: number;
@@ -154,6 +170,17 @@ function requiredDigest(value: unknown, label: string, pattern: RegExp): string 
   return value;
 }
 
+function runtimeProfile(environment: NodeJS.ProcessEnv): RuntimeProfile {
+  const value = environment.CUMPA_RUNTIME_PROFILE;
+  if (value === undefined) return 'stable';
+  if (value === 'bootstrap') return value;
+  fail('CUMPA_RUNTIME_PROFILE must be bootstrap when set');
+}
+
+function manifestProjection(evidence: ProducerEvidence): void {
+  const projection = evidence.package.manifestProjection;
+  if (projection === undefined || projection.sourceSha256 !== evidence.source.packageJsonSha256) fail('bootstrap manifest projection is invalid');
+}
 function safeArchivePath(custody: string, archiveBasename: string): string {
   if (basename(archiveBasename) !== archiveBasename || !archiveBasenamePattern.test(archiveBasename)) {
     fail('CUMPA_RUNTIME_ARCHIVE_BASENAME must be a safe .tgz basename');
@@ -203,7 +230,7 @@ function sameIdentity(left: RuntimeArchiveIdentity, right: RuntimeArchiveIdentit
   ) fail(`${label} does not match the supplied archive`);
 }
 
-function producerEvidence(path: string): ProducerEvidence {
+function producerEvidence(path: string, profile: RuntimeProfile): ProducerEvidence {
   const evidencePath = resolve(path);
   const evidenceStat = lstatSync(evidencePath);
   if (!evidenceStat.isFile() || evidenceStat.isSymbolicLink()) fail('CUMPA_RUNTIME_EVIDENCE must name a regular file');
@@ -215,17 +242,26 @@ function producerEvidence(path: string): ProducerEvidence {
   }
   const parsed = ProducerEvidenceSchema.safeParse(raw);
   if (!parsed.success) fail('unexpected producer evidence shape');
-  if (parsed.data.purpose === 'candidate'
-    ? !['candidate', 'verified', 'accepted-local'].includes(parsed.data.status)
-    : parsed.data.status !== parsed.data.purpose) fail('producer purpose and status disagree');
-  return parsed.data;
+  const evidence = parsed.data;
+  if (evidence.package.version !== runtimeProfiles[profile].version) fail('producer evidence package identity does not match runtime profile');
+  if (profile === 'bootstrap') {
+    if (evidence.purpose !== 'bootstrap' || evidence.status !== 'bootstrap') fail('bootstrap runtime profile requires bootstrap evidence');
+    manifestProjection(evidence);
+  } else {
+    if (evidence.package.manifestProjection !== undefined) fail('stable runtime profile forbids manifest projections');
+    if (evidence.purpose === 'candidate'
+      ? !['candidate', 'verified', 'accepted-local'].includes(evidence.status)
+      : evidence.status !== evidence.purpose) fail('producer purpose and status disagree');
+  }
+  return evidence;
 }
 export function readRuntimeArtifact(environment: NodeJS.ProcessEnv = process.env): RuntimeArtifact {
   scenarioBridge(environment);
+  const profile = runtimeProfile(environment);
   const custody = requiredEnvironment(environment, 'CUMPA_RUNTIME_CUSTODY_DIR');
   const archiveBasename = requiredEnvironment(environment, 'CUMPA_RUNTIME_ARCHIVE_BASENAME');
   const expectedSha256 = requiredDigest(requiredEnvironment(environment, 'CUMPA_RUNTIME_ARCHIVE_SHA256'), 'CUMPA_RUNTIME_ARCHIVE_SHA256', sha256Pattern);
-  const evidence = producerEvidence(requiredEnvironment(environment, 'CUMPA_RUNTIME_EVIDENCE'));
+  const evidence = producerEvidence(requiredEnvironment(environment, 'CUMPA_RUNTIME_EVIDENCE'), profile);
   const archivePath = safeArchivePath(custody, archiveBasename);
   const archive = readIdentity(archivePath, archiveBasename);
   if (archive.sha256 !== expectedSha256) fail('archive SHA-256 does not match CUMPA_RUNTIME_ARCHIVE_SHA256');
@@ -238,12 +274,13 @@ export function readRuntimeArtifact(environment: NodeJS.ProcessEnv = process.env
   };
   sameIdentity(archive, evidenceArchive, 'producer evidence archive identity');
   return Object.freeze({
+    profile,
     archivePath,
     evidence,
     archive,
     package: Object.freeze({
       name: packageName,
-      version: packageVersion,
+      version: runtimeProfiles[profile].version,
       runtimeDependencies: exactDependencies(evidence.package.runtimeDependencies),
     }),
   });
@@ -311,7 +348,7 @@ function collectDependencyInventory(tree: z.infer<typeof NpmTreeSchema>): readon
 
 function assertDirectDependencies(tree: z.infer<typeof NpmTreeSchema>, artifact: RuntimeArtifact): void {
   const installed = tree.dependencies[packageName];
-  if (installed === undefined || installed.version !== packageVersion) fail('npm ls installed package identity is invalid');
+  if (installed === undefined || installed.version !== artifact.package.version) fail('npm ls installed package identity is invalid');
   const actual = Object.entries(installed.dependencies ?? {})
     .map(([name, node]) => [name, node.version] as const)
     .sort(([left], [right]) => left.localeCompare(right));
@@ -379,7 +416,7 @@ export function installRuntimeArtifact(artifact: RuntimeArtifact): InstalledRunt
     const executablePath = process.platform === 'win32' ? join(prefix, 'cumpa.cmd') : join(prefix, 'bin', 'cumpa');
     if (!existsSync(packageRoot) || !existsSync(executablePath) || lstatSync(packageRoot).isSymbolicLink()) fail('npm did not create the scoped package and generated bin');
     const manifestBytes = readFileSync(join(packageRoot, 'package.json'));
-    const manifest = InstalledManifestSchema.safeParse(JSON.parse(manifestBytes.toString('utf8')));
+    const manifest = installedManifestSchema(artifact.package.version).safeParse(JSON.parse(manifestBytes.toString('utf8')));
     if (!manifest.success) fail('installed package manifest does not match the runtime contract');
     const env = inheritedEnvironment(process.env);
     env.HOME = npmEnv.HOME;
@@ -408,7 +445,7 @@ export function installRuntimeArtifact(artifact: RuntimeArtifact): InstalledRunt
       blockedFetchesPath,
       env: Object.freeze(env),
       proof: Object.freeze({
-        packageLabel: '@shipwithai/cumpa@1.5.0',
+        packageLabel: `${artifact.package.name}@${artifact.package.version}`,
         binLabel: 'cumpa',
         manifestSha256: createHash('sha256').update(new Uint8Array(manifestBytes.buffer, manifestBytes.byteOffset, manifestBytes.byteLength)).digest('hex'),
         dependencyCount: inventory.length,
@@ -437,6 +474,7 @@ export function writeRuntimeScenario(
 ): void {
   const bridge = scenarioBridge(environment);
   if (bridge === undefined) return;
+  const profile = runtimeProfile(environment);
   if (record.archive === undefined || record.package === undefined || record.install === undefined || record.target === undefined || record.cleanup === undefined) {
     fail('runtime scenario record is incomplete');
   }
@@ -449,7 +487,7 @@ export function writeRuntimeScenario(
   mkdirSync(dirname(destination), { recursive: true, mode: 0o700 });
   const temporary = join(dirname(destination), `.${basename(destination)}.${process.pid}.${randomBytes(8).toString('hex')}.tmp`);
   try {
-    writeFileSync(temporary, `${JSON.stringify({ ...record, kind: 'cumpa.runtime-artifact-scenario/v1', status: 'passed', runId: bridge.runId, scenario })}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    writeFileSync(temporary, `${JSON.stringify({ ...record, kind: 'cumpa.runtime-artifact-scenario/v1', status: 'passed', runId: bridge.runId, scenario, profile })}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
     linkSync(temporary, destination);
   } finally {
     if (existsSync(temporary)) unlinkSync(temporary);
