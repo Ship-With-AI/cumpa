@@ -177,7 +177,7 @@ function validateProducer(value, archive) {
   validatePackage(value.package, 'producer package');
   same(validateArchive(value.archive, 'producer archive'), archive, 'producer archive');
   const source = allowedObject(value.source, ['repository', 'head', 'tree', 'clean', 'trackedDiffSha256', 'packageJsonSha256', 'inputsSha256', 'packageLockSha256'], 'producer source');
-  if (source.repository !== 'git+https://github.com/Ship-With-AI/cumpa.git' || source.clean !== true || source.trackedDiffSha256 !== hash('sha256', '')) fail('invalid producer source');
+  if (source.repository !== 'git+https://github.com/Ship-With-AI/cumpa.git' || source.clean !== true || source.trackedDiffSha256 !== hash('sha256', JSON.stringify(['', '']))) fail('invalid producer source');
   for (const field of ['head', 'tree', 'trackedDiffSha256', 'packageJsonSha256', 'inputsSha256', 'packageLockSha256']) requirePattern(source[field], `producer source ${field}`, field === 'head' || field === 'tree' ? gitShaPattern : sha256Pattern);
   const build = allowedObject(value.build, ['configured', 'platform', 'arch', 'node', 'npm', 'git', 'os', 'napi', 'compiler'], 'producer build');
   const compiler = allowedObject(build.compiler, ['command', 'version', 'target'], 'producer compiler');
@@ -246,9 +246,9 @@ function validateScanner(value, producer) {
 }
 
 function validateAcceptance(value, producer, scanner) {
-  allowedObject(value, ['kind', 'status', 'purpose', 'archive', 'package', 'install', 'scanner', 'browser', 'review', 'support', 'exactPatch', 'native', 'cleanup', 'sourceControl', 'checks', 'limitations'], 'acceptance report', ['sha256']);
+  allowedObject(value, ['kind', 'status', 'profile', 'purpose', 'archive', 'package', 'install', 'scanner', 'browser', 'review', 'support', 'exactPatch', 'native', 'cleanup', 'sourceControl', 'checks', 'limitations'], 'acceptance report', ['sha256']);
   boundedEvidence(value, 'acceptance report');
-  if (!isRecord(value) || value.kind !== 'cumpa.runtime-artifact-acceptance/v1' || value.status !== 'passed' || value.purpose !== 'candidate') fail('invalid acceptance report');
+  if (value.kind !== 'cumpa.runtime-artifact-acceptance/v1' || value.status !== 'passed' || value.profile !== 'stable' || value.purpose !== 'candidate') fail('invalid acceptance report');
   const archive = validateArchive(value.archive, 'acceptance archive');
   const packageInfo = validatePackage(value.package, 'acceptance package');
   same(archive, validateArchive(producer.archive, 'producer archive'), 'acceptance archive');
@@ -271,7 +271,7 @@ function validateAcceptance(value, producer, scanner) {
   if (!Array.isArray(value.checks) || JSON.stringify([...value.checks].sort()) !== JSON.stringify([...expectedChecks].sort())) fail('incomplete acceptance checks');
   if (!Array.isArray(value.limitations) || value.limitations.some((entry) => typeof entry !== 'string')) fail('invalid acceptance limitations');
   return {
-    kind: value.kind, status: value.status, purpose: value.purpose, archive, package: packageInfo,
+    kind: value.kind, status: value.status, profile: value.profile, purpose: value.purpose, archive, package: packageInfo,
     install, scanner, browser, review, support: value.support, exactPatch, native: value.native,
     cleanup: value.cleanup, sourceControl: value.sourceControl, checks: value.checks, limitations: value.limitations,
   };

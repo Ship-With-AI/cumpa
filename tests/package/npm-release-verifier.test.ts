@@ -74,7 +74,7 @@ function candidateReports(archive: Archive): Pick<Fixture, 'producer' | 'scanner
   const files = [...distFiles.map(({ path, mode, byteLength }) => ({ path, mode, size: byteLength })), ...['package.json', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'].map((path) => ({ path, mode: 0o644, size: 1 }))];
   const producer = {
     kind: 'cumpa.runtime-artifact-evidence/v1', status: 'candidate', purpose: 'candidate', package: packageIdentity, archive: { ...archive, files },
-    source: { repository: 'git+https://github.com/Ship-With-AI/cumpa.git', head: 'a'.repeat(40), tree: 'c'.repeat(40), clean: true, trackedDiffSha256: sha256(''), packageJsonSha256: hash, inputsSha256: hash, packageLockSha256: hash },
+    source: { repository: 'git+https://github.com/Ship-With-AI/cumpa.git', head: 'a'.repeat(40), tree: 'c'.repeat(40), clean: true, trackedDiffSha256: sha256(JSON.stringify(['', ''])), packageJsonSha256: hash, inputsSha256: hash, packageLockSha256: hash },
     build: { configured: true, platform: 'darwin', arch: 'arm64', node: 'v24.15.0', npm: '11.19.1', git: 'git version 2.50.1', os: 'fixture', napi: '10', compiler: { command: '/usr/bin/c++', version: 'Apple clang fixture', target: 'arm64-darwin' } },
     contents: { dist: { sha256: distSha256, files: distFiles } },
     legal: { LICENSE: 'c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d', 'THIRD_PARTY_NOTICES.md': '44ac7b248ca311016ec0e10cd2446dd5d34df53a666af3dc5f74da18ed3e9ced' },
@@ -91,7 +91,7 @@ function candidateReports(archive: Archive): Pick<Fixture, 'producer' | 'scanner
     limitations: ['Bounded source disclosure scan.'],
   };
   const acceptance = {
-    kind: 'cumpa.runtime-artifact-acceptance/v1', status: 'passed', purpose: 'candidate', archive, package: packageIdentity,
+    kind: 'cumpa.runtime-artifact-acceptance/v1', status: 'passed', profile: 'stable', purpose: 'candidate', archive, package: packageIdentity,
     install: { packageLabel: '@shipwithai/cumpa@1.5.0', binLabel: 'cumpa', manifestSha256: hash, dependencyCount: 3, dependencyInventorySha256: hash },
     scanner, browser: { assets: true, workers: true, codicon: true }, review: { relaunch: true, canonicalV2: true, isolatedDrafts: true, reExport: 'exported' },
     support: { unavailable: true, dismissed: true, unrestricted: true, configured: true, originSha256: producer.support.originSha256 },
@@ -313,6 +313,7 @@ describe('npm release verifier', () => {
       ['missing native re-export', ({ acceptance }) => { ((acceptance.native as Record<string, unknown>).observedReExport) = false; }],
       ['failed scanner check', ({ scanner }) => { ((scanner.checks as Record<string, unknown>).inventoryParity) = false; }],
       ['incomplete acceptance checks', ({ acceptance }) => { acceptance.checks = ['PKG-03']; }],
+      ['wrong acceptance profile', ({ acceptance }) => { acceptance.profile = 'bootstrap'; }],
       ['installed manifest identity', ({ acceptance }) => { (acceptance.install as Record<string, unknown>).manifestSha256 = 'd'.repeat(64); }],
       ['unknown private producer metadata', ({ producer }) => { (producer.build as Record<string, unknown>).privatePath = '/private/fixture/custody'; }],
       ['unbounded private report text', ({ scanner }) => { scanner.limitations = ['https://abcdefghijklmnopqrst.supabase.co']; }],
