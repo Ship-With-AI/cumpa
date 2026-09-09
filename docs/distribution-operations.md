@@ -22,7 +22,7 @@ After the authorized conversion, verify repository identity, actual public state
 
 The Phase 4 manifest is publishable and includes only `dist/`, `README.md`, `LICENSE`, and `THIRD_PARTY_NOTICES.md` alongside npm's mandatory package metadata. The marketplace skill is excluded. Metadata eligibility is not artifact acceptance or permission to publish.
 
-Build and review one immutable tarball. Record its exact digest and contents; bind the approved license/notices and source inputs to that actual artifact. A prepack inventory, old build, source-tree notice file or planning assertion is not final package acceptance. Preserve the approved tarball for Phase 5 rather than rebuilding a replacement with the same version label.
+Build and review one immutable tarball. Record its exact digest and contents; bind the approved license/notices and source inputs to that actual artifact. A prepack inventory, old build, source-tree notice file or planning assertion is not final package acceptance. Preserve the accepted tarball as immutable Phase 4 history; its future publication designation follows the new CI-candidate policy below.
 
 Create bytes explicitly with `npm run pack:runtime-artifact -- --purpose development-check --custody-dir <new-absolute-directory> --evidence <new-absolute-json-path>`. The parent directories must exist. Each invocation performs one build and one scripts-disabled pack; it never overwrites evidence or deletes an emitted archive after failure. The ordinary `prepack` hook is developer convenience, not release authority.
 
@@ -36,20 +36,61 @@ Each suite installs the supplied tarball under a fresh npm prefix, HOME, cache a
 
 Passing fixture tests are not approval. The final archive must use the already-approved real origin, pass its own unchanged-byte acceptance, become read-only in durable outside-checkout custody, and receive attributable approval repeating its actual SHA-256 and byte length. No synthetic-origin test archive can satisfy that gate.
 
-## Phase 5 — registry publication and actual provenance
+## Phase 5 — New CI-built stable candidate
 
-Only Phase 5 performs the approved registry bootstrap and stable OIDC trusted-publishing flow. Do not introduce long-lived publication credentials. Publish the exact Phase 4 tarball; neither a rebuild nor a different archive with the same name/version is an acceptable substitution.
+Phase 5 uses a fresh CI build, actual byte-bound inspection and approval, then unchanged-byte publication from the **same workflow run and attempt**. It never publishes a local rebuild or the historical Phase 4 archive as fallback.
 
-Preserve automatic npm provenance when the then-current public repository/package, workflow, runner and trusted-publisher conditions are eligible. Do not disable an eligible mechanism to match the obsolete private-source premise. OIDC authentication success or a UI badge alone is not evidence that provenance was emitted.
+The accepted Phase 4 archive remains unchanged and read-only: SHA-256 `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca`, 3513998 bytes. Its sealed evidence and attributable approval remain historical records. Supersede only its future publication designation, and only after actual approval of the new CI candidate. A deterministic new build may happen to have the same digest; the fresh build/source/run binding and new approval remain mandatory.
 
-For the actual `@shipwithai/cumpa@1.5.0` publication, retain and verify:
+### Separate authority for each operation
 
-- Exact registry name/version and integrity, with the downloaded registry artifact matching the approved Phase 4 digest.
-- Source repository `Ship-With-AI/cumpa`, full source commit, and the actual publishing workflow and run identity.
-- The emitted attestation itself, its exact package subject digest and source claims, and their agreement with the artifact, repository, commit, workflow and run above.
-- The real result of consumer availability and artifact checks, rather than an intended command or authentication result.
+Local implementation and successful checks do not authorize source publication, npm authentication, hosted configuration, CI dispatch/upload, artifact approval or stable publication. Each operating plan obtains attributable authority for its exact resource, source or actual artifact identity. Previous Phase 3/4 approvals, bootstrap approval and CI artifact approval are not stable publication authority.
 
-If no attestation is emitted or any verification mismatches, record that actual outcome and make no provenance claim. Follow the Phase 5 failure gate rather than relabeling the result as successful provenance. Do not expose temporary credentials in evidence; confirm their cleanup/revocation and any temporary evidence cleanup as required by the approved procedure.
+Keep all source work on `main`. Complete bookkeeping before selecting clean reviewed source P, create/select P with the explicitly reviewed `[skip ci]` boundary, and review its actual commit metadata, parents, signature and reachable history. Prepare the configured bootstrap from P before writing later canonical review/evidence records. Later bookkeeping may advance local main: never reset or check out P to recover cleanliness, and push only literal authorized P rather than whatever HEAD subsequently becomes.
+
+Every push to main normally triggers Supabase deployment. The separately authorized source push must use the reviewed one-off suppression and verify no collateral deployment occurred. If actual protection rules prevent that route, stop for an owner decision; do not disable or weaken the deployment workflow or unrelated protection.
+
+### Distinct usable bootstrap and credential cleanup
+
+Use a complete configured `@shipwithai/cumpa@1.5.0-bootstrap.0` release under tag `bootstrap`, never an empty reservation or `1.5.0` under another tag. Produce it through `--purpose bootstrap`, inspect it through the scanner's explicit `--profile bootstrap`, and run the existing argument-free acceptance command with `CUMPA_RUNTIME_PROFILE=bootstrap`. Source package/lock stay at 1.5.0; only the new private packing tree projects the fixed prerelease. Never read, unpack or repack the historical stable tarball as an input.
+
+Obtain new actual-digest/byte-length/limitations approval and separate bootstrap publication authority. Any required npm login belongs to one isolated, bounded, live guarded operation armed before authentication and kept active across human waits. Record safe ownership/recovery metadata privately; never persist credentials or live login URLs as planning evidence. Preserve pre-existing GitHub authentication.
+
+The sole bootstrap mutation publishes the exact approved absolute archive with `--tag bootstrap --access public --ignore-scripts --fetch-retries=0 --registry https://registry.npmjs.org/`. A nonzero or ambiguous result triggers only read-only reconciliation, never a publish retry. Revoke the temporary npm authorization and remove its owned local files before stable work. Distinguish operator-confirmed revocation from independently observed server proof. Machine death, SIGKILL or provider loss leaves unresolved cleanup that must be recovered first; it is not proof of automatic revocation.
+
+### Temporary configuration and CI admission
+
+GitHub `production/SUPABASE_PROJECT_REF` remains authoritative. Derive the canonical origin only in process memory; do not create a local `.env`, print the raw value, or make another permanent configuration source. The approved origin SHA-256 remains `89485617b2d50d4778542ebedc3817a3e3fcddb6520a4a9c3a66e37c3a9c6cdf`; a change requires a separate configuration decision.
+
+Under explicit setup authority, use a private one-operation ownership receipt. Require no unresolved operation and no nonterminal competing release run. Acquire the absent `production/CUMPA_RELEASE_SOURCE_SHA` variable with native create semantics, bind it to P, and recheck absence before setting the transient masked `production/CUMPA_RELEASE_BUILD_ORIGIN` secret through stdin. Do not overwrite unknown resources or treat uncertain ownership as permission to delete them. This secret is temporary transport, not a second permanent source.
+
+The input-free `.github/workflows/publish-npm.yml` uses noncanceling concurrency group `cumpa-npm-stable-1.5.0`. Its candidate job's first executable step checks the authorized source variable against `GITHUB_SHA` before checkout, installation or origin use. Only producer/scanner/acceptance steps receive the masked origin. The Darwin ARM64 GitHub-hosted candidate job uses `production`, contents-read permission, Node 24, npm 11.19.1 and a 45-minute execution limit.
+
+Dispatch/build/upload needs its own authority. If production review is required, approve only the exact candidate-build job, never a Supabase deployment or the publication environment under that authority. Monitor the candidate job independently; watching the entire run would wait on the deliberately blocked publisher.
+
+Persist ownership intent and response metadata around setup effects. Partial setup with no possible job cleans immediately; active jobs retain the origin until terminal. During abort, removal of the owned source guard can fence later admissions. Monitor competing runs until transports are gone, do not cancel unrelated runs, and never approve publication during contention. Remove and verify only owned temporary resources; uncertain cleanup blocks further work.
+
+### Same-run candidate approval and publication
+
+The candidate sequence is pinned-source checkout, tool setup, `npm ci`, Chromium provisioning, one configured producer invocation, real scanner, full installed browser/support/V2/V3/native acceptance, evidence sealing, independent hashes/read-only files and one artifact upload. No extra build or pack occurs. Sealed evidence preserves the producer core and adds validated scanner, acceptance and CI observations; upload artifact ID/digest are recorded afterward, not injected into the already sealed bytes.
+
+Download and inspect that exact artifact ID and actual payload. Local inspection uses observed GitHub metadata and hashes; never spoof CI identity variables to make a CI-only verifier approve a local inspection. Record the new candidate's actual SHA-256, byte length, evidence seal, source, workflow, run, attempt, transport identity and limitations separately from Phase 4. New human artifact approval does not release the protected publisher.
+
+Record run creation, artifact expiry, a conservative approval bound at creation plus 30 days and workflow bound plus 35 days, reserving the 15-minute publication window. Expiry requires a newly authorized cycle, not a rerun or reused approval.
+
+Configure the exact trusted-publisher relationship for `Ship-With-AI/cumpa`, `.github/workflows/publish-npm.yml` and protected `npm-release`; explicitly enable direct publishing rather than relying on npm's staging default. After separate actual stable publication authority, approve only the same run's protected `npm-release` job. It alone has `id-token: write`, uses Ubuntu 24.04 and has a 15-minute execution limit.
+
+The publisher downloads the exact artifact ID, independently checks archive SHA-256/length against build outputs, and runs the standalone stdlib `verify-candidate` against the evidence seal and current source/run/attempt. It does not install project dependencies, use the protected origin, invoke the full scanner, build, pack or repack. Its one `npm publish` consumes the absolute unchanged archive with `--tag latest --access public --ignore-scripts --fetch-retries=0 --registry https://registry.npmjs.org/`, from fresh outside-checkout HOME/cache/config state. Strip static npm authentication/configuration while preserving real GitHub OIDC context. No long-lived npm credential or `npm whoami` capability test is used.
+
+### Public proof and failure handling
+
+Preserve eligible automatic provenance, but do not infer it from authentication, an exit code or a UI badge. Independently fetch exact public registry metadata and archive bytes and compare length, SHA-256, npm SHA-1 and SHA-512 with the approved CI candidate.
+
+Use supported npm 11.19.1 to create a fresh private exact-version audit installation with both its actual installed node and matching lockfile. Only then run `npm audit signatures --json --include-attestations`. An empty or lock-only tree, missing target bundle or failed audit proves nothing. Inspect npm's actual cryptographically verified Cumpa SLSA bundle, allowing its separate verified registry publish attestation, and require exact subject, repository, source commit, workflow, ref, event, hosted runner, run and attempt agreement. Record bounded expected/observed/pass comparisons. Do not claim a SLSA level, exhaustive input capture or an unobserved native platform matrix.
+
+Prove a separate clean global install exposes the generated `cumpa --version`, then run literal `npx --yes @shipwithai/cumpa@1.5.0 --version` under another empty cache/prefix. Neither path may fall back to a local archive, checkout dist or shared cache. Write the successful public verification receipt only after scratch cleanup succeeds.
+
+A timeout, failed/absent/mismatched attestation, version collision, byte mismatch, consumer failure or ambiguous publication result stops the success path. Reconcile read-only and retain the actual bounded outcome; do not retry publication, rebuild, rerun, unpublish or substitute the old artifact. Canonical evidence excludes credentials, raw origin/project reference, private custody locations and unbounded provider payloads.
 
 ## Unchanged product and licensing boundaries
 
