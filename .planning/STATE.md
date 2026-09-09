@@ -4,15 +4,15 @@ milestone: v1.5
 milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
-status: planning
-stopped_at: "Phase 04 complete: 4/4 plans, 4/4 goal criteria, zero open/HIGH security blockers; immutable artifact accepted-local. Phase 5 is ready to plan; no remote mutation authorized."
-last_updated: "2026-09-09T07:42:38.987Z"
+status: ready_to_execute
+stopped_at: "Phase 5 planning complete: six plans in five waves; both independent round-2 rechecks passed, all four requirements and nine decisions covered. Ready for explicit execute-phase 5; no build, source push, workflow dispatch, credential/configuration mutation or publication authorized by planning."
+last_updated: "2026-09-09T11:02:39.848Z"
 last_activity: 2026-09-09
-last_activity_desc: Phase 04 complete, transitioned to Phase 5
+last_activity_desc: Phase 5 planned — six plans in five waves; independent checks passed, execution not started
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 7
+  total_plans: 13
   completed_plans: 7
   percent: 40
 ---
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-09-09 — Phase 04 complete, transitioned to Phase 5
+Plan: 0 of 6 executed — six verified plans ready
+Status: Ready to execute
+Last activity: 2026-09-09 — Phase 5 planning complete; 6 plans, 5 waves, 4/4 requirements and 9/9 decisions covered, no execution started
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -83,7 +83,7 @@ None yet.
 - [Phase 5] Re-check then-current trusted-publisher/provenance eligibility and actual attestation evidence; public source or OIDC authentication alone is not a provenance claim.
 - [Phase 5] Confirm npm scope/package ownership and protected workflow identity before the bootstrap release.
 - [Phase 3 accepted risk] Retain artifacts 9907668126 and 9928300866 and their private backups under the owner's exact disposition despite the unremediated notice finding; do not claim third-party permission/compliance or change retention settings.
-- [Phase 5 immutable handoff] The approved read-only archive is SHA-256 e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca, 3513998 bytes; sealed evidence is 3bf27f13de08b85527240c76ddc1e4df6c37dc06a5e1bbf006ab9d45f94fb379. Locate and independently rehash the accepted-candidate before separately authorized actions; never rebuild it. Artifact approval grants no source push, publication or transport authority.
+- [Phase 5 owner decision] Plan a fresh CI-built stable candidate, actual new digest-bound approval and unchanged-byte publication in the same workflow run/attempt, per 05-CONTEXT.md. The old Phase 4 archive (SHA-256 e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca, 3513998 bytes) and sealed evidence (3bf27f13de08b85527240c76ddc1e4df6c37dc06a5e1bbf006ab9d45f94fb379) remain immutable history. Do not publish that old artifact as a fallback or mutate any remote state under planning approval.
 - [Publication boundary] Phase 3 published commit ff72519969da8d2c0761c9533ccb27b809cd17bb. Later local evidence and completion commits are not automatically authorized for pushing.
 
 ### Roadmap Evolution
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-09T07:42:38.978Z
-Stopped at: Phase 04 complete: 4/4 plans, 4/4 goal criteria, zero open/HIGH security blockers; immutable artifact accepted-local. Phase 5 is ready to plan; no remote mutation authorized.
+Last session: 2026-09-09T11:02:39.843Z
+Stopped at: Phase 5 planning complete: six plans in five waves; both independent round-2 rechecks passed, all four requirements and nine decisions covered. Ready for explicit execute-phase 5; no build, source push, workflow dispatch, credential/configuration mutation or publication authorized by planning.
 Resume file: .planning/ROADMAP.md

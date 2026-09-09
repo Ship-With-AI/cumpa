@@ -16,7 +16,7 @@ Cumpa now offers an optional one-time USD $49.99 support flow in configured rele
 
 **v1.5 progress:** Phase 03 — Distribution Contract & Legal Boundary completed on 2026-09-08. The existing `Ship-With-AI/cumpa` repository is public under the approved MIT terms at reviewed publication commit `ff72519969da8d2c0761c9533ccb27b809cd17bb`; anonymous source/LICENSE/Issues access and approved public controls were verified. Temporary publication tokens were revoked per operator confirmation and local copies removed. Public npm availability and provenance are not yet claimed.
 
-**Phase 04 — Exact Runtime Tarball completed on 2026-09-09.** One production-configured `@shipwithai/cumpa@1.5.0` archive passed scanner and installed acceptance, remains read-only, and received direct digest-bound approval. Its SHA-256 is `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca` and length is `3513998` bytes. Phase 5 — Bootstrap & Trusted Stable Publication is next; it must reuse those exact bytes and obtain its own remote-action authorization.
+**Phase 04 — Exact Runtime Tarball completed on 2026-09-09.** One production-configured `@shipwithai/cumpa@1.5.0` archive passed scanner and installed acceptance, remains read-only, and received direct digest-bound approval: SHA-256 `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca`, length `3513998` bytes. During Phase 5 planning, the owner selected a fresh CI-built candidate with new exact-byte approval and publication in the same workflow run/attempt for truthful CI-build provenance. The old archive/evidence remain immutable history; they are not a publication fallback. No Phase 5 execution or remote mutation is authorized by that planning choice.
 
 ## Current Milestone: v1.5 MIT Distribution
 
@@ -141,7 +141,7 @@ Validated in v1.5 Phase 04: Exact Runtime Tarball:
 - [x] The installed candidate reports exactly `1.5.0` and retains Node.js 24+/Git prerequisite guidance.
 - [x] The approved runtime/legal-only archive includes required compiled Node/browser assets and excludes development/source/map/local-state/Git/skill material under the declared bounded scanner controls.
 - [x] The same exact bytes passed installed review/relaunch, support-unavailable dismissal and canonical V2/V3 Finish, then received attributable SHA-256/length approval in read-only outside-checkout custody.
-- [x] Sealed accepted-local evidence and approval require Phase 5 to independently rehash and use the same archive without rebuilding; no publication or transport authority is implied.
+- [x] Sealed accepted-local evidence and attributable approval established the initial exact-byte handoff without publication authority. The owner's subsequent Phase 5 CI-build decision supersedes only that publication designation; the Phase 4 artifact and records remain unchanged.
 
 ### Active
 
@@ -240,7 +240,8 @@ Accepted v1.4 debt is bounded to a stale deleted-suite filename in the deploymen
 | Require both Alessandro Magionami and Manuel Salvatore Martone to approve the exact MIT text before publication | Keep publication of the mutually licensed work under both named licensors' authority without conditioning downstream MIT grants | Good — exact MIT assent is recorded as Alessandro's direct approval and his witnessed report of Manuel's own approval; independent verification of Manuel is not claimed |
 | Preserve eligible automatic npm provenance from the public repository | Replace the superseded private-source prohibition with truthful, evidence-backed release claims | Policy validated in Phase 03 and public source established; actual registry publication and attestation evidence remain Phase 05 |
 | Reuse existing GitHub production configuration in memory | Avoid a duplicate local configuration source while retaining canonical validation and fingerprint-only evidence | Good — the actual release candidate used the existing production variable; no local configuration file was created |
-| Approve one immutable runtime archive rather than a reproducible recipe | Bind inspection, installation, human assent and later publication to the same bytes | Good — Phase 04 verified and approved the read-only candidate; Phase 5 must rehash it and obtain separate publication/transport authority |
+| Approve one immutable runtime archive rather than a reproducible recipe | Bind inspection, installation, human assent and publication to the same bytes | Good — Phase 04 verified and approved its read-only candidate; the later owner-selected CI cycle changes the publication designation, not that historical artifact or approval |
+| Build and approve the stable publication candidate in its attested CI workflow run | Avoid representing the earlier local build as a later CI build while preserving exact inspected/installed/published bytes | Selected by owner during Phase 5 planning; requires a fresh actual-digest approval, same-run/attempt publication, and immutable retention of the Phase 4 artifact/history |
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -259,4 +260,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-09-09 after Phase 04 completion and transition to Phase 5 — Bootstrap & Trusted Stable Publication*
+*Last updated: 2026-09-09 after verified Phase 5 planning and the owner-selected same-run CI-build publication decision; execution not started*
