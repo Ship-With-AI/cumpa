@@ -4,7 +4,7 @@
 **Source:** Direct plan-phase owner decision after source-backed provenance research. The owner selected **“New CI-built candidate”** rather than retaining the locally built tarball as the publication input.
 
 <domain>
-Deliver PKG-01, PKG-02, REL-01 and REL-02: a usable separate non-latest bootstrap with revoked temporary publication authorization, then exact `@shipwithai/cumpa@1.5.0` public npm availability through a fixed GitHub OIDC workflow with truthful verified provenance. This is planning only; no execution, source push, workflow dispatch, artifact upload, credential mutation or npm publication is authorized now.
+Deliver PKG-01, PKG-02, REL-01 and REL-02: a usable separate non-latest bootstrap with revoked temporary publication authorization, then exact `@shipwithai/cumpa@1.5.0` public npm availability through a fixed GitHub OIDC workflow with truthful verified provenance. Planning is complete. The owner subsequently selected **Execute Phase 5**, authorizing the planned local implementation, tests and bounded local preparation. Source push, workflow dispatch/upload, credential or hosted-configuration mutation and npm publication still require their distinct actual execution-time authorizations.
 </domain>
 
 <decisions>
