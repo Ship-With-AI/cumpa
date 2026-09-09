@@ -1,0 +1,220 @@
+name: Publish stable npm release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cumpa-npm-stable-1.5.0
+  cancel-in-progress: false
+
+jobs:
+  build-candidate:
+    runs-on: macos-15
+    environment: production
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    outputs:
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
+      artifact-digest: ${{ steps.upload.outputs.artifact-digest }}
+      evidence-sha256: ${{ steps.identity.outputs.evidence-sha256 }}
+      archive-sha256: ${{ steps.identity.outputs.archive-sha256 }}
+      archive-byte-length: ${{ steps.identity.outputs.archive-byte-length }}
+    steps:
+      - name: Require the separately authorized source before checkout
+        env:
+          CUMPA_RELEASE_SOURCE_SHA: ${{ vars.CUMPA_RELEASE_SOURCE_SHA }}
+        run: |
+          node --input-type=module <<'NODE'
+          const authorized = process.env.CUMPA_RELEASE_SOURCE_SHA;
+          if (!/^[a-f0-9]{40}$/.test(authorized ?? '') || authorized !== process.env.GITHUB_SHA) {
+            throw new Error('Release source is not authorized');
+          }
+          NODE
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Require the pinned source and supported Darwin ARM64 tools
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          npm install --global npm@11.19.1 --ignore-scripts --no-audit --no-fund --registry https://registry.npmjs.org/
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          if (process.versions.node.split('.')[0] !== '24' || process.platform !== 'darwin' || process.arch !== 'arm64' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted') {
+            throw new Error('Unsupported release producer');
+          }
+          if (execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim() !== '11.19.1') throw new Error('Unsupported npm version');
+          NODE
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Produce one configured stable candidate
+        env:
+          CUMPA_RELEASE_SUPPORT_SERVICE_URL: ${{ secrets.CUMPA_RELEASE_BUILD_ORIGIN }}
+        run: |
+          umask 077
+          preparation="$RUNNER_TEMP/cumpa-stable-preparation"
+          payload="$RUNNER_TEMP/cumpa-stable-payload"
+          mkdir -m 700 "$preparation"
+          node scripts/pack-runtime.mjs --purpose candidate --custody-dir "$payload" --evidence "$preparation/producer.json"
+      - name: Inspect the unchanged candidate archive
+        env:
+          CUMPA_RELEASE_SUPPORT_SERVICE_URL: ${{ secrets.CUMPA_RELEASE_BUILD_ORIGIN }}
+        run: |
+          umask 077
+          set -C
+          preparation="$RUNNER_TEMP/cumpa-stable-preparation"
+          payload="$RUNNER_TEMP/cumpa-stable-payload"
+          expected_sha256="$(node -e 'process.stdout.write(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).archive.sha256)' "$preparation/producer.json")"
+          node scripts/verify-production-artifacts.mjs --archive "$payload/shipwithai-cumpa-1.5.0.tgz" --expected-sha256 "$expected_sha256" --evidence "$preparation/producer.json" > "$preparation/scanner.json"
+      - name: Prove installed browser and native acceptance
+        env:
+          CUMPA_RELEASE_SUPPORT_SERVICE_URL: ${{ secrets.CUMPA_RELEASE_BUILD_ORIGIN }}
+        run: |
+          umask 077
+          preparation="$RUNNER_TEMP/cumpa-stable-preparation"
+          export CUMPA_RUNTIME_CUSTODY_DIR="$RUNNER_TEMP/cumpa-stable-payload"
+          export CUMPA_RUNTIME_ARCHIVE_BASENAME=shipwithai-cumpa-1.5.0.tgz
+          export CUMPA_RUNTIME_ARCHIVE_SHA256="$(node -e 'process.stdout.write(JSON.parse(require("node:fs").readFileSync(process.argv[1], "utf8")).archive.sha256)' "$preparation/producer.json")"
+          export CUMPA_RUNTIME_EVIDENCE="$preparation/producer.json"
+          export CUMPA_RUNTIME_ACCEPTANCE_REPORT="$preparation/acceptance.json"
+          npm run accept:runtime-artifact
+      - name: Seal the verified same-run candidate
+        run: |
+          preparation="$RUNNER_TEMP/cumpa-stable-preparation"
+          payload="$RUNNER_TEMP/cumpa-stable-payload"
+          node scripts/verify-npm-release.mjs seal-candidate --archive "$payload/shipwithai-cumpa-1.5.0.tgz" --producer-evidence "$preparation/producer.json" --scanner-report "$preparation/scanner.json" --acceptance-report "$preparation/acceptance.json" --output "$payload/evidence.json" > /dev/null
+      - name: Independently hash and make the sealed payload read-only
+        id: identity
+        run: |
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto';
+          import { appendFileSync, chmodSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
+          import { join } from 'node:path';
+          const payload = join(process.env.RUNNER_TEMP, 'cumpa-stable-payload');
+          const names = ['evidence.json', 'shipwithai-cumpa-1.5.0.tgz'];
+          if (JSON.stringify(readdirSync(payload).sort()) !== JSON.stringify(names)) throw new Error('Unexpected release payload');
+          const identities = new Map();
+          for (const name of names) {
+            const path = join(payload, name);
+            const before = lstatSync(path);
+            if (!before.isFile() || before.isSymbolicLink()) throw new Error('Unsafe release payload');
+            const digest = createHash('sha256').update(readFileSync(path)).digest('hex');
+            chmodSync(path, 0o444);
+            const after = lstatSync(path);
+            const actual = createHash('sha256').update(readFileSync(path)).digest('hex');
+            if (digest !== actual || before.size !== after.size || (after.mode & 0o222) !== 0) throw new Error('Release payload changed while sealing');
+            identities.set(name, { digest: actual, bytes: after.size });
+          }
+          const archive = identities.get('shipwithai-cumpa-1.5.0.tgz');
+          const evidence = identities.get('evidence.json');
+          appendFileSync(process.env.GITHUB_OUTPUT, `archive-sha256=${archive.digest}\narchive-byte-length=${archive.bytes}\nevidence-sha256=${evidence.digest}\n`);
+          NODE
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        id: upload
+        with:
+          name: cumpa-stable-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cumpa-stable-payload/
+          if-no-files-found: error
+
+  publish:
+    needs: build-candidate
+    runs-on: ubuntu-24.04
+    environment: npm-release
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Require the pinned publishing tools and source
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          npm install --global npm@11.19.1 --ignore-scripts --no-audit --no-fund --registry https://registry.npmjs.org/
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          if (process.versions.node.split('.')[0] !== '24' || process.platform !== 'linux' || process.env.RUNNER_ENVIRONMENT !== 'github-hosted') throw new Error('Unsupported release publisher');
+          if (execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim() !== '11.19.1') throw new Error('Unsupported npm version');
+          NODE
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          artifact-ids: ${{ needs.build-candidate.outputs.artifact-id }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/cumpa-stable-download
+      - name: Check the independently recorded archive hash and length
+        env:
+          EXPECTED_ARCHIVE_SHA256: ${{ needs.build-candidate.outputs.archive-sha256 }}
+          EXPECTED_ARCHIVE_BYTE_LENGTH: ${{ needs.build-candidate.outputs.archive-byte-length }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto';
+          import { chmodSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
+          import { join } from 'node:path';
+          const directory = join(process.env.RUNNER_TEMP, 'cumpa-stable-download');
+          const names = ['evidence.json', 'shipwithai-cumpa-1.5.0.tgz'];
+          if (JSON.stringify(readdirSync(directory).sort()) !== JSON.stringify(names)) throw new Error('Unexpected downloaded payload');
+          for (const name of names) {
+            const path = join(directory, name);
+            const stat = lstatSync(path);
+            if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe downloaded payload');
+            chmodSync(path, 0o444);
+          }
+          const bytes = readFileSync(join(directory, 'shipwithai-cumpa-1.5.0.tgz'));
+          if (!/^[a-f0-9]{64}$/.test(process.env.EXPECTED_ARCHIVE_SHA256 ?? '') || createHash('sha256').update(bytes).digest('hex') !== process.env.EXPECTED_ARCHIVE_SHA256 || !/^[1-9]\d*$/.test(process.env.EXPECTED_ARCHIVE_BYTE_LENGTH ?? '') || String(bytes.byteLength) !== process.env.EXPECTED_ARCHIVE_BYTE_LENGTH) {
+            throw new Error('Downloaded archive identity mismatch');
+          }
+          NODE
+      - name: Verify the sealed evidence in this exact workflow run and attempt
+        env:
+          EXPECTED_EVIDENCE_SHA256: ${{ needs.build-candidate.outputs.evidence-sha256 }}
+          ARTIFACT_ID: ${{ needs.build-candidate.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ needs.build-candidate.outputs.artifact-digest }}
+        run: |
+          payload="$RUNNER_TEMP/cumpa-stable-download"
+          node scripts/verify-npm-release.mjs verify-candidate --archive "$payload/shipwithai-cumpa-1.5.0.tgz" --evidence "$payload/evidence.json" --expected-evidence-sha256 "$EXPECTED_EVIDENCE_SHA256" --artifact-id "$ARTIFACT_ID" --artifact-digest "$ARTIFACT_DIGEST"
+      - name: Run npm publish once on the unchanged approved archive
+        run: |
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          const archive = join(process.env.RUNNER_TEMP, 'cumpa-stable-download', 'shipwithai-cumpa-1.5.0.tgz');
+          const root = mkdtempSync(join(process.env.RUNNER_TEMP, 'cumpa-npm-publish-'));
+          try {
+            chmodSync(root, 0o700);
+            const environment = { ...process.env };
+            for (const name of Object.keys(environment)) {
+              if (/^(?:npm_|node_auth_token$|node_options$|bash_env$|env$)/i.test(name)) delete environment[name];
+            }
+            for (const name of ['home', 'cache', 'prefix']) mkdirSync(join(root, name), { mode: 0o700 });
+            const userconfig = join(root, 'npmrc');
+            const globalconfig = join(root, 'npmrc-global');
+            writeFileSync(userconfig, '', { flag: 'wx', mode: 0o600 });
+            writeFileSync(globalconfig, '', { flag: 'wx', mode: 0o600 });
+            Object.assign(environment, {
+              HOME: join(root, 'home'), USERPROFILE: join(root, 'home'),
+              npm_config_cache: join(root, 'cache'), npm_config_prefix: join(root, 'prefix'),
+              npm_config_userconfig: userconfig, npm_config_globalconfig: globalconfig,
+              npm_config_registry: 'https://registry.npmjs.org/',
+            });
+            execFileSync('npm', ['publish', archive, '--tag', 'latest', '--access', 'public', '--ignore-scripts', '--fetch-retries=0', '--registry', 'https://registry.npmjs.org/'], {
+              cwd: root, env: environment, stdio: 'inherit', timeout: 780_000,
+            });
+          } finally {
+            rmSync(root, { recursive: true, force: true });
+          }
+          NODE
