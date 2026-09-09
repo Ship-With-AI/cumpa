@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 Task 4: source publication verified at 72c9bb499538a2c542d5165148e2d45096f7da56; await exact bootstrap artifact approval for sha256 4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f bytes 3514006 evidence 54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4. No npm/login/configuration/CI authority."
-last_updated: "2026-09-09T20:00:42.422Z"
+stopped_at: "05-04 Task 6: bootstrap artifact approval c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec sealed; live cumpa-bootstrap-auth-guard prepared on Node24.15/npm11.12.1 after 15 harmless lifecycle checks. No authentication/publication authorized. Inspect current owned receipt, guard and deadlines first; cleanup-first recovery for any attempted/unknown session."
+last_updated: "2026-09-09T21:11:52.130Z"
 last_activity: 2026-09-09
-last_activity_desc: Public source/tree and all 757 entries matched; zero target Actions/deployment records observed twice; private bootstrap identities remain unchanged
+last_activity_desc: Approval c91450bd… sealed; 15 guard stand-ins passed; live guarded status and empty configs verified, with no authentication or publication attempt
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 Tasks 1–3 complete; Task 4 waiting for exact bootstrap artifact approval
+Plan: 3 of 6 complete — 05-04 Tasks 1–5 complete; Task 6 waiting for isolated interactive npm authentication authorization
 Status: executing
-Checkpoint: Source-only authorization was consumed by the verified push. No bootstrap artifact approval, npm login, hosted configuration, CI dispatch/upload or registry publication is authorized.
-Last activity: 2026-09-09 — Public source/tree and all 757 entries matched; zero target Actions/deployment records observed twice; private bootstrap identities remain unchanged
+Checkpoint: Approved bootstrap bytes do not authorize npm authentication or publication. Guard readiness is timestamped; inspect the current private receipt and resolve expired/lost/attempted sessions before any new login.
+Last activity: 2026-09-09 — Approval c91450bd… sealed; 15 guard stand-ins passed; live guarded status and empty configs verified, with no authentication or publication attempt
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-09T20:00:42.418Z
-Stopped at: 05-04 Task 4: source publication verified at 72c9bb499538a2c542d5165148e2d45096f7da56; await exact bootstrap artifact approval for sha256 4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f bytes 3514006 evidence 54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4. No npm/login/configuration/CI authority.
+Last session: 2026-09-09T21:11:52.126Z
+Stopped at: 05-04 Task 6: bootstrap artifact approval c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec sealed; live cumpa-bootstrap-auth-guard prepared on Node24.15/npm11.12.1 after 15 harmless lifecycle checks. No authentication/publication authorized. Inspect current owned receipt, guard and deadlines first; cleanup-first recovery for any attempted/unknown session.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md

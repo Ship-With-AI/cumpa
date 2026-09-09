@@ -1,0 +1,75 @@
+{
+  "kind": "cumpa.bootstrap-publication/v1",
+  "status": "awaiting-isolated-authentication-authorization",
+  "package": "@shipwithai/cumpa",
+  "version": "1.5.0-bootstrap.0",
+  "tag": "bootstrap",
+  "access": "public",
+  "archiveSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+  "archiveByteLength": 3514006,
+  "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+  "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+  "publicSourceSha": "72c9bb499538a2c542d5165148e2d45096f7da56",
+  "sourceTreeSha": "cee68f305f818383364edc1a9595800970dac580",
+  "artifactApproval": {
+    "received": true,
+    "capturedAt": "2026-09-09T20:13:04Z",
+    "additionalConfiguredOriginFingerprintMatched": true
+  },
+  "guard": {
+    "observedAt": "2026-09-09T21:08:51Z",
+    "serviceName": "cumpa-bootstrap-auth-guard",
+    "readyObserved": true,
+    "safeStatusControlObserved": true,
+    "codeSha256": "1b521a7b26a5ad8a2601c99abab67396d3986cf5013ad57dfddb5429b11502ab",
+    "privateOwnershipReceiptPersisted": true,
+    "fixedRelativeOwnedPathsOnly": true,
+    "nativePtyForNpm": true,
+    "rawNpmOutputRemainsPrivate": true,
+    "nodeVersion": "v24.15.0",
+    "npmVersion": "11.12.1",
+    "idleLimitSeconds": 900,
+    "absoluteLimitSeconds": 3600,
+    "observedIdleDeadline": "2026-09-09T21:18:14Z",
+    "absoluteDeadline": "2026-09-09T21:51:30Z",
+    "standinChecksPassed": [
+      "cancelled-login",
+      "failed-login",
+      "authority-failure",
+      "publication-rejection",
+      "normal-stdin-exit",
+      "SIGINT",
+      "SIGTERM",
+      "SIGHUP",
+      "idle-timeout",
+      "publication-terminal-cleanup",
+      "absolute-deadline",
+      "SIGKILL-then-cleanup-first-recovery",
+      "pre-auth-abort-creates-no-session",
+      "pre-auth-publish-creates-no-session",
+      "provider-loss-retains-recovery-route"
+    ],
+    "standinChecksUsedRealCredentials": false,
+    "recoveryRule": "Inspect the actual private receipt and live guard first. Resolve any attempted/unknown session before another login. Closed no-session preparation can be replaced with a fresh empty context."
+  },
+  "authentication": {
+    "authorized": false,
+    "attempted": false,
+    "publicAccount": null,
+    "authorityAnd2faVerified": false
+  },
+  "publication": {
+    "authorized": false,
+    "attempted": false
+  },
+  "revocation": {
+    "sessionExists": false,
+    "providerRevocationClaim": null
+  },
+  "limits": [
+    "Readiness is a timestamped observation, not a promise the guard remains alive after idle/deadline or process loss.",
+    "Native browser web authentication is supported; unexpected legacy password/classic-code prompts stop without relaying credentials to chat.",
+    "SIGKILL, machine loss and unreachable provider are unresolved until cleanup-first recovery proves the real outcome.",
+    "Artifact approval does not authorize authentication or publication."
+  ]
+}
