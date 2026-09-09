@@ -1,8 +1,8 @@
-# Phase 5 Source Publication Review — SOURCE PUSH NOT AUTHORIZED
+# Phase 5 Source Publication Review — EXACT SOURCE PUSH AUTHORIZED, NOT YET APPLIED
 
 **Record kind:** `cumpa.source-publication-review/v1`  
 **Current observations:** `2026-09-09T16:51:27Z`  
-**Status:** Bounded source review and real private bootstrap preparation complete; waiting for the exact source-push authorization. No source push, npm login, CI dispatch/upload, hosted configuration change or registry publication has occurred.
+**Status:** The exact source-only authorization below was received and matched at `2026-09-09T19:49:19Z`; the source push has not yet been applied. The originally reviewed snapshot remains immutable at local commit `4a68f98`, blob `fdefcb76c1853a2510a020769498d6bbfd00af3d`, SHA-256 `ca228e33383d75ab97d28da9133952302515a93e9e0ac6f735e71b3d724bd455`. Earlier unapproved-state wording below describes that reviewed snapshot. No artifact approval, npm login, CI dispatch/upload, hosted configuration change or registry publication is authorized.
 
 ## Exact proposed source action
 
@@ -170,3 +170,20 @@ At the current readback, public npm returns canonical 404 Not Found responses fo
 | A | `tests/package/runtime-producer.test.ts` |
 | M | `vitest.config.ts` |
 | A | `vitest.runtime-artifact.config.ts` |
+
+## Exact Source-Only Authorization Received
+
+- **Authorizer:** Alessandro Magionami, direct custom user input.
+- **Captured:** `2026-09-09T19:49:19Z`.
+- **Approved review snapshot:** SHA-256 `ca228e33383d75ab97d28da9133952302515a93e9e0ac6f735e71b3d724bd455`; immutable local Git blob `fdefcb76c1853a2510a020769498d6bbfd00af3d` in bookkeeping commit `4a68f98`, not part of the proposed source push.
+- **Verification:** Only whitespace wrapping was normalized for exact comparison. Source/tree, public-main precondition and review digest matched. Current public repository/ref/protection/hooks, selected SSH destination, existing capability and fast-forward relation were rechecked and matched before this receipt was recorded.
+- **Scope:** One non-force, no-implicit-tags source push of the displayed P to main; no broader ref, artifact approval, npm, hosted configuration, CI dispatch/upload or publication authority.
+- **Actual returned statement** (wrapped whitespace is insignificant):
+
+```text
+SOURCE PUBLICATION AUTHORIZED: Ship-With-AI/cumpa source 72c9bb499538a2c542d5165148e2d45096f7da56 tree cee68f305f818383364edc1a9595800970dac580
+observed-main ff72519969da8d2c0761c9533ccb27b809cd17bb review ca228e33383d75ab97d28da9133952302515a93e9e0ac6f735e71b3d724bd455; reviewed exposure
+acknowledged; source push only
+```
+
+**Execution result:** Pending. The source authorization is recorded; it is not a claim that the remote ref changed or that collateral-deployment verification passed.
