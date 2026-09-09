@@ -81,7 +81,6 @@ function safeAbsoluteFile(path, label) {
 
 function parseArguments(argv) {
   if (argv.length !== 6 && argv.length !== 8) fail('expected --archive, --expected-sha256, --evidence, and optional --profile bootstrap');
-  if (argv.length === 8 && (argv[6] !== '--profile' || argv[7] !== 'bootstrap')) fail('bootstrap profile must be appended exactly as --profile bootstrap');
   const options = new Map();
   for (let index = 0; index < argv.length; index += 2) {
     const name = argv[index];
