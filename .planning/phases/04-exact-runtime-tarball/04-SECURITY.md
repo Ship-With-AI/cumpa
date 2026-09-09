@@ -2,11 +2,12 @@
 phase: "04"
 slug: exact-runtime-tarball
 status: blocked
-threats_open: 9
-high_blockers: 8
+threats_open: 3
+high_blockers: 3
 implementation_gaps: 0
 asvs_level: 1
 created: 2026-09-08
+updated: 2026-09-09
 ---
 
 # Phase 04 Security Audit
@@ -19,13 +20,13 @@ created: 2026-09-08
 ## Verdict
 
 - **Declared threats:** 33
-- **Closed by implemented control:** 23
+- **Closed by implemented control or actual final-candidate verification:** 29
 - **Declared bounded limitation:** 1 (`T-04-02-NE`; the plan's `accept` disposition, recorded without granting any new acceptance)
-- **Pending final-candidate / approval lifecycle gates:** 9
+- **Pending approval-related lifecycle gates:** 3
 - **Implementation control gaps found:** 0
-- **Unresolved HIGH blockers:** 8
+- **Unresolved HIGH blockers:** 3
 
-The 9 pending items are not code defects. `04-ARTIFACT-EVIDENCE.json` and `04-ARTIFACT-APPROVAL.md` do not exist, and `04-01-SUMMARY.md:64-68` records that the protected support origin is unavailable. Therefore no configured final candidate, immutable final evidence, read-only custody record, or attributable actual-digest approval exists. Synthetic/disposable fixture evidence is not a final candidate and is not used to close any final-candidate obligation.
+The real production-configured archive now exists, passed scanner and installed acceptance, and is read-only. `04-ARTIFACT-EVIDENCE.json` is `verified`, not `accepted-local`. Human SHA-256/length assent, its subsequent rehash, and the bounded approval record remain pending. The existing GitHub production variable was reused in memory; no duplicate local configuration file was created.
 
 This audit preserves the stated verifier boundary: extraction protections apply only after trusted locally produced, hash-bound evidence is accepted; they do **not** claim arbitrary hostile-tar safety or exhaustive credential detection.
 
@@ -57,31 +58,29 @@ This audit preserves the stated verifier boundary: extraction protections apply 
 | T-04-03-SP | HIGH | mitigate | CLOSED | Node global `fetch` is denied for non-loopback requests by the disposable installed-test guard (`tests/helpers/runtime-artifact.ts:362-376`); browser routing aborts non-loopback requests and observes unavailable/dismissed support while Finish succeeds (`tests/e2e/agent-ready-export.spec.ts:712-765`). This is test-only egress observation, not a final-candidate attestation. |
 | T-04-03-NT | MEDIUM | mitigate | CLOSED | Scenario schema binds actual-target native observation to either `exported` or `reExportUnsupported` (`tests/package/agent-ready-export.test.ts:75-100`); unsupported fallback retains bytes (`tests/e2e/agent-ready-export.spec.ts:387-410`). |
 | T-04-03-ER | HIGH | mitigate | CLOSED | Scenario records reject durable private-data keys/paths and use non-overwrite temporary-to-link writes (`tests/helpers/runtime-artifact.ts:407-431`); aggregator redacts origin/path values, cleans bridge state, and atomically writes the bounded report (`tests/package/agent-ready-export.test.ts:156-189`). |
-| T-04-04-SO | HIGH | mitigate | PENDING FINAL GATE | Source control exists (`scripts/pack-runtime.mjs:100-117,351-360`), but no protected origin is available and no configured final candidate/evidence exists (`04-01-SUMMARY.md:64-68`). |
-| T-04-04-AS | HIGH | mitigate | PENDING FINAL GATE | Multi-algorithm rehash controls exist (`scripts/verify-production-artifacts.mjs:98-128,352-358,456-457`; `tests/helpers/runtime-artifact.ts:173-255`), but there are no final bytes or final evidence to bind through every stage. |
-| T-04-04-RP | HIGH | mitigate | PENDING FINAL GATE | Producer prevents destination reuse and accepts exactly one pack result (`scripts/pack-runtime.mjs:58-87,376-385`), but no unique final candidate cycle has been executed. |
-| T-04-04-LG | HIGH | mitigate | PENDING FINAL GATE | Scanner enforces exact reviewed legal bytes/digests (`scripts/verify-production-artifacts.mjs:435-440`), but final lock/emitted-material reconciliation has no final artifact evidence. |
-| T-04-04-CU | HIGH | mitigate | PENDING FINAL GATE | The required read-only custody observation is an explicit final-cycle operation (`04-04-PLAN.md:145-149`); no durable outside-checkout candidate or `readOnly: true` custody record exists. |
-| T-04-04-AP | HIGH | mitigate | PENDING FINAL GATE | Plan 04-04 requires attributable actual SHA-256/byte-length assent and rejects placeholders (`04-04-PLAN.md:157-183`); no human approval record exists. |
-| T-04-04-PV | HIGH | mitigate | PENDING FINAL GATE | Report template limitations disclaim registry/publication/provenance/alignment (`tests/package/agent-ready-export.test.ts:157-177`) and operations policy reserves publication to Phase 5 (`docs/distribution-operations.md:33-46`); no final evidence/approval/handoff exists to verify. |
-| T-04-04-NT | MEDIUM | mitigate | PENDING FINAL GATE | Runtime behavior supports actual-target observation plus explicit fallback (`tests/package/agent-ready-export.test.ts:75-100`; `tests/e2e/agent-ready-export.spec.ts:387-410`), but no final candidate has the required native observation record. |
-| T-04-04-ED | HIGH | mitigate | PENDING FINAL GATE | Candidate acceptance report is bounded and checks for private values (`tests/package/agent-ready-export.test.ts:157-189`), but final durable evidence and approval records do not exist for inspection. |
+| T-04-04-SO | HIGH | mitigate | CLOSED | Final evidence `configurationSource` records the existing GitHub production variable; its fingerprint matched the prior review. The build/scanner received the origin only through process environment; evidence stores only configured state/fingerprint. |
+| T-04-04-AS | HIGH | mitigate | PENDING HUMAN BINDING | All three hashes and byte length matched before/after scanner, installed acceptance and read-only mode. The actual human statement and post-assent rehash are still required. |
+| T-04-04-RP | HIGH | mitigate | CLOSED | One fresh final producer invocation performed one build/pack. No archive repair, replacement or repack occurred. The preserved identity is recorded in final evidence. |
+| T-04-04-LG | HIGH | mitigate | CLOSED | Final `legalReconciliation` binds unchanged approved MIT text, preserved prior grants and Monaco notices, unchanged reviewed dependency locations, additive build-helper attributions, actual legal digests and emitted inventories. |
+| T-04-04-CU | HIGH | mitigate | CLOSED | The one outside-checkout candidate is mode 0444 and all archive identities were recomputed unchanged. `custody.readOnly` is true; no backup was required or created. |
+| T-04-04-AP | HIGH | mitigate | PENDING HUMAN BINDING | No attributable actual-digest approval has been received. `04-ARTIFACT-APPROVAL.md` is absent and evidence remains `verified`. |
+| T-04-04-PV | HIGH | mitigate | CLOSED | Final evidence limitations disclaim upload, publication, registry equality/availability, public-source alignment, provenance, source push and transport authorization. No remote mutation occurred. |
+| T-04-04-NT | MEDIUM | mitigate | CLOSED | The final archive's installed acceptance observed actual Darwin ARM64 native re-export and records the fallback limitation for other targets. |
+| T-04-04-ED | HIGH | mitigate | PENDING APPROVAL RECORD | Final evidence passed bounded-data checks and contains no origin, project reference, private custody path or raw logs. The eventual approval record must also be checked after actual assent. |
 
 ## HIGH Blocking Gates
 
-These are unresolved **lifecycle gates**, not source implementation gaps. They block candidate use under the configured HIGH threshold:
+These are unresolved **approval lifecycle gates**, not source implementation gaps:
 
-1. Recover authorized protected `CUMPA_RELEASE_SUPPORT_SERVICE_URL` input without putting it in argv, evidence, logs, or a synthetic fixture.
-2. Produce exactly one clean configured candidate into new outside-checkout custody and create `04-ARTIFACT-EVIDENCE.json` with the actual identity.
-3. Rehash and scan those unchanged bytes; run the supplied-archive, isolated-install, browser, support, Finish/export, dependency, cleanup, and native/fallback acceptance on that candidate only.
-4. Make that exact archive read-only, rehash all required identities, and record bounded custody evidence.
-5. Obtain the required attributable human statement repeating the actual SHA-256 and byte length with limitations acknowledgement; only then write `04-ARTIFACT-APPROVAL.md` and advance candidate status.
+1. Receive the attributable statement repeating actual SHA-256 `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca`, byte length `3513998`, and limitations acknowledgement.
+2. Independently rehash the same read-only archive after assent and reject any mismatch.
+3. Write and inspect the bounded approval record, then advance evidence to `accepted-local`.
 
-No upload, publication, registry equality, provenance, public-source alignment, remote action, or approval was inferred from disposable development checks.
+These steps gate local artifact acceptance and phase completion only. They do not authorize publication, upload, source push or transport.
 
 ## Threat Flags
 
-`04-01-SUMMARY.md` contains no `## Threat Flags` section. `04-02-SUMMARY.md` and `04-03-SUMMARY.md` are absent during active integration. No unregistered threat flag is asserted from missing summaries.
+Implementation summaries 04-01 through 04-03 are present. The added/deleted-patch canonicalization defect discovered by installed tests is fixed and regression-covered. No unresolved implementation threat flag is asserted.
 
 ## Accepted-risk log
 
@@ -91,4 +90,4 @@ No new acceptance was made by this audit. The only declared `accept` disposition
 
 The complete offline fixture acceptance subsequently passed: isolated installation, all seven browser scenarios, V2/V3 Finish, support transport denial/dismissal, real Darwin ARM64 re-export, cleanup, and source-control checks. A discovered V3 add/delete canonicalization failure was fixed at changed-file construction and covered by a RED-to-GREEN API regression; strict canonical validation remains intact. These are fixture/source checks only.
 
-The final real-origin archive, final evidence, read-only custody and attributable digest-bound approval still do not exist. All nine final lifecycle gates above remain open, including eight HIGH blockers. No new risk acceptance, publication authority or provenance claim is granted.
+On 2026-09-09, the real origin was derived from the existing GitHub production variable without a local configuration copy. The final archive passed all seven installed scenarios, retained all independent hashes/length through read-only custody, and has bounded final evidence. The three approval-related gates above remain open; no human assent, publication authority or provenance claim is inferred.

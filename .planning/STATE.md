@@ -4,11 +4,11 @@ milestone: v1.5
 milestone_name: MIT Distribution
 current_phase: 04
 current_phase_name: exact-runtime-tarball
-status: executing
-stopped_at: Phase 04 final configuration resolved from existing GitHub production variable; preparing one real candidate without a duplicate local configuration file.
-last_updated: "2026-09-09T06:36:17.239Z"
+status: blocked
+stopped_at: Phase 04 final production-configured archive verified and read-only; awaiting 04-04 Task 3 actual SHA-256/byte-length/limitations approval. Existing GitHub configuration reused without a local copy.
+last_updated: "2026-09-09T06:51:36.617Z"
 last_activity: 2026-09-09
-last_activity_desc: Reusing existing GitHub production configuration for final artifact execution
+last_activity_desc: Real GitHub-configured archive verified and read-only; awaiting exact artifact approval
 progress:
   total_phases: 5
   completed_phases: 1
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 
 ## Current Position
 
-Phase: 04 (exact-runtime-tarball) — EXECUTING FINAL CANDIDATE
-Plan: 4 of 4 — Task 1 uses the existing GitHub production configuration
-Status: executing
-Last activity: 2026-09-09 — Existing production variable read in memory; no duplicate local configuration file required
+Phase: 04 (exact-runtime-tarball) — BLOCKED AT ARTIFACT APPROVAL
+Plan: 4 of 4 — Task 3 requires actual SHA-256/byte-length/limitations assent
+Status: blocked
+Last activity: 2026-09-09 — Final scanner and installed acceptance passed; one read-only archive awaits human approval
 
 Progress: [██░░░░░░░░] 20% — 1 of 5 milestone phases complete
 
@@ -83,7 +83,7 @@ None yet.
 - [Phase 5] Re-check then-current trusted-publisher/provenance eligibility and actual attestation evidence; public source or OIDC authentication alone is not a provenance claim.
 - [Phase 5] Confirm npm scope/package ownership and protected workflow identity before the bootstrap release.
 - [Phase 3 accepted risk] Retain artifacts 9907668126 and 9928300866 and their private backups under the owner's exact disposition despite the unremediated notice finding; do not claim third-party permission/compliance or change retention settings.
-- [Phase 4] The configuration gate is resolved through the existing GitHub production variable, with its fingerprint matching the prior review. One real configured candidate is being prepared. Final read-only custody and attributable digest-bound approval remain required; no publication or source push is authorized.
+- [Phase 4] Existing GitHub production configuration was reused without a local copy. The final archive is verified/read-only: SHA-256 e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca, 3513998 bytes. Three approval-related security gates remain; no artifact approval, publication or source push is authorized yet.
 - [Publication boundary] Phase 3 published commit ff72519969da8d2c0761c9533ccb27b809cd17bb. Later local evidence and completion commits are not automatically authorized for pushing.
 
 ### Roadmap Evolution
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-09T06:36:17.234Z
-Stopped at: Phase 04 final configuration resolved from existing GitHub production variable; preparing one real candidate without a duplicate local configuration file.
+Last session: 2026-09-09T06:51:36.613Z
+Stopped at: Phase 04 final production-configured archive verified and read-only; awaiting 04-04 Task 3 actual SHA-256/byte-length/limitations approval. Existing GitHub configuration reused without a local copy.
 Resume file: .planning/phases/04-exact-runtime-tarball/.continue-here.md

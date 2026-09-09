@@ -55,7 +55,7 @@ The Windows command-shim concern identified during review was corrected before t
 
 ## Review Boundary
 
-Plan 04-04's final configured candidate, read-only custody, and digest-bound human approval are deliberately absent. This review does not treat final-candidate creation, final artifact evidence, or approval as implemented, passed, or approved.
+The independent code review preceded Plan 04-04's final cycle. Main subsequently produced and verified the real GitHub-configured archive and read-only custody; final evidence records that work. Digest-bound human approval remains absent and is not inferred from source review or automated acceptance.
 
 ## Verification Limitation
 
@@ -69,4 +69,8 @@ _Reviewer: gsd-code-reviewer_
 
 Installed testing exposed an additional runtime defect after the independent source review: exact-patch added/deleted files carried explicit `undefined` optional path fields into the strict canonical encoder. Main reviewed the grounding/snapshot/export flow and fixed the construction in `src/git/exact-patch.ts` using the existing conditional-property pattern. Canonical validation was not relaxed.
 
-`tests/api/exact-patch.test.ts` now reproduces the actual 500 before the fix and 201/canonical V3 delivery afterward. The related 29-test suite, strict acceptance-harness TypeScript check, and full seven-scenario installed acceptance passed. These two files are Main's additional integration scope, not an assertion that the independent reviewer examined them originally. No known code finding remains; Plan 04-04's real configuration and human approval gates remain open.
+`tests/api/exact-patch.test.ts` reproduces the actual 500 before the fix and 201/canonical V3 delivery afterward. The related 29-test suite, strict acceptance-harness TypeScript check, and full seven-scenario installed acceptance passed. These two files are Main's additional integration scope, not an assertion that the independent reviewer examined them originally. Existing GitHub configuration has since resolved the input gate; attributable artifact approval remains open.
+
+## Final artifact notice reconciliation — Main
+
+Before the final build, Main retained four build-generated helper attributions from the installed Vite/Rolldown MIT licenses and Rolldown 1.1.5's upstream Rollup/esbuild notices. Existing grant text and Monaco's complete upstream notice were preserved; the approved Cumpa MIT LICENSE did not change. The real archive passed its scanner and full installed acceptance after this additive notice update. `04-ARTIFACT-EVIDENCE.json` records the exact legal/source/archive identities; this is not a new independent legal certification.
