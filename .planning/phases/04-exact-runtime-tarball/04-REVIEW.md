@@ -55,7 +55,7 @@ The Windows command-shim concern identified during review was corrected before t
 
 ## Review Boundary
 
-The independent code review preceded Plan 04-04's final cycle. Main subsequently produced and verified the real GitHub-configured archive and read-only custody; final evidence records that work. Digest-bound human approval remains absent and is not inferred from source review or automated acceptance.
+The independent code review preceded Plan 04-04's final cycle. Main subsequently produced and verified the real GitHub-configured archive and read-only custody. Actual digest-bound human approval is now recorded separately in `04-ARTIFACT-APPROVAL.md` and commit `30e60bc`; it is not inferred from source review or automated acceptance.
 
 ## Verification Limitation
 
@@ -69,7 +69,7 @@ _Reviewer: gsd-code-reviewer_
 
 Installed testing exposed an additional runtime defect after the independent source review: exact-patch added/deleted files carried explicit `undefined` optional path fields into the strict canonical encoder. Main reviewed the grounding/snapshot/export flow and fixed the construction in `src/git/exact-patch.ts` using the existing conditional-property pattern. Canonical validation was not relaxed.
 
-`tests/api/exact-patch.test.ts` reproduces the actual 500 before the fix and 201/canonical V3 delivery afterward. The related 29-test suite, strict acceptance-harness TypeScript check, and full seven-scenario installed acceptance passed. These two files are Main's additional integration scope, not an assertion that the independent reviewer examined them originally. Existing GitHub configuration has since resolved the input gate; attributable artifact approval remains open.
+`tests/api/exact-patch.test.ts` reproduces the actual 500 before the fix and 201/canonical V3 delivery afterward. The related 29-test suite, strict acceptance-harness TypeScript check, and full seven-scenario installed acceptance passed. These two files are Main's additional integration scope, not an assertion that the independent reviewer examined them originally. Existing GitHub configuration resolved the input gate; actual artifact approval and post-assent rehashing are recorded separately.
 
 ## Final artifact notice reconciliation — Main
 

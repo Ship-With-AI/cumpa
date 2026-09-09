@@ -14,7 +14,9 @@ A developer can accurately review repository-grounded changes chosen by a develo
 
 Cumpa now offers an optional one-time USD $49.99 support flow in configured release packages without gating review behavior. The local app hands Support or Restore actions to a canonical Supabase-hosted GitHub OAuth flow; only a signature-verified Stripe webhook can establish paid status. Verified status persists installation-wide and a paid GitHub account can restore suppression on unlimited installations. Ordinary unconfigured local builds contain no hosted capability, provider credential, or support route.
 
-**v1.5 progress:** Phase 03 — Distribution Contract & Legal Boundary completed on 2026-09-08. The existing `Ship-With-AI/cumpa` repository is public under the approved MIT terms at reviewed publication commit `ff72519969da8d2c0761c9533ccb27b809cd17bb`; anonymous source/LICENSE/Issues access and the approved public controls were verified. Temporary publication tokens are revoked per operator confirmation and their local copies were removed. Public npm availability and provenance are not yet claimed; Phase 04 — Exact Runtime Tarball is next.
+**v1.5 progress:** Phase 03 — Distribution Contract & Legal Boundary completed on 2026-09-08. The existing `Ship-With-AI/cumpa` repository is public under the approved MIT terms at reviewed publication commit `ff72519969da8d2c0761c9533ccb27b809cd17bb`; anonymous source/LICENSE/Issues access and approved public controls were verified. Temporary publication tokens were revoked per operator confirmation and local copies removed. Public npm availability and provenance are not yet claimed.
+
+**Phase 04 — Exact Runtime Tarball completed on 2026-09-09.** One production-configured `@shipwithai/cumpa@1.5.0` archive passed scanner and installed acceptance, remains read-only, and received direct digest-bound approval. Its SHA-256 is `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca` and length is `3513998` bytes. Phase 5 — Bootstrap & Trusted Stable Publication is next; it must reuse those exact bytes and obtain its own remote-action authorization.
 
 ## Current Milestone: v1.5 MIT Distribution
 
@@ -134,11 +136,17 @@ Validated in v1.5 Phase 03: Distribution Contract & Legal Boundary:
 - [x] Coherent prepared package metadata and verified public source/Issues links without claiming npm availability.
 - [x] An evidence-backed provenance policy that assigns actual artifact, registry and attestation verification to the later release phases.
 
+Validated in v1.5 Phase 04: Exact Runtime Tarball:
+
+- [x] The installed candidate reports exactly `1.5.0` and retains Node.js 24+/Git prerequisite guidance.
+- [x] The approved runtime/legal-only archive includes required compiled Node/browser assets and excludes development/source/map/local-state/Git/skill material under the declared bounded scanner controls.
+- [x] The same exact bytes passed installed review/relaunch, support-unavailable dismissal and canonical V2/V3 Finish, then received attributable SHA-256/length approval in read-only outside-checkout custody.
+- [x] Sealed accepted-local evidence and approval require Phase 5 to independently rehash and use the same archive without rebuilding; no publication or transport authority is implied.
+
 ### Active
 
 - [ ] Users can install MIT-licensed `@shipwithai/cumpa@1.5.0` globally to obtain the `cumpa` command or run it through `npx @shipwithai/cumpa@1.5.0`.
 - [ ] Maintainers can publish approved releases from the public repository through npm trusted publishing without a long-lived token, retaining eligible automatic provenance and verifying any attestation claims.
-- [ ] Public npm packages contain only required compiled runtime and browser assets plus accurate MIT license and package metadata, excluding TypeScript source, source maps, tests, planning files, and Git data.
 - [ ] Coding-agent users can install the existing public MIT-licensed Cumpa skill through ShipWithAI and follow its declared CLI prerequisite.
 - [ ] Clean global, npx, and marketplace installation paths complete the existing browser-review workflow against released artifacts.
 
@@ -231,6 +239,8 @@ Accepted v1.4 debt is bounded to a stale deleted-suite filename in the deploymen
 | Keep marketplace skill public under MIT | Preserve ShipWithAI's thin permissive installation and delegation layer while the separately installed Cumpa CLI remains the review authority | Pending — marketplace skill delegates all review authority to a compatible released CLI |
 | Require both Alessandro Magionami and Manuel Salvatore Martone to approve the exact MIT text before publication | Keep publication of the mutually licensed work under both named licensors' authority without conditioning downstream MIT grants | Good — exact MIT assent is recorded as Alessandro's direct approval and his witnessed report of Manuel's own approval; independent verification of Manuel is not claimed |
 | Preserve eligible automatic npm provenance from the public repository | Replace the superseded private-source prohibition with truthful, evidence-backed release claims | Policy validated in Phase 03 and public source established; actual registry publication and attestation evidence remain Phase 05 |
+| Reuse existing GitHub production configuration in memory | Avoid a duplicate local configuration source while retaining canonical validation and fingerprint-only evidence | Good — the actual release candidate used the existing production variable; no local configuration file was created |
+| Approve one immutable runtime archive rather than a reproducible recipe | Bind inspection, installation, human assent and later publication to the same bytes | Good — Phase 04 verified and approved the read-only candidate; Phase 5 must rehash it and obtain separate publication/transport authority |
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -249,4 +259,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-09-08 after Phase 03 completion and transition to Phase 04 — Exact Runtime Tarball*
+*Last updated: 2026-09-09 after Phase 04 completion and transition to Phase 5 — Bootstrap & Trusted Stable Publication*

@@ -1,10 +1,11 @@
 ---
 phase: "04"
 slug: exact-runtime-tarball
-status: blocked
-threats_open: 3
-high_blockers: 3
+status: passed
+threats_open: 0
+high_blockers: 0
 implementation_gaps: 0
+register_authored_at_plan_time: true
 asvs_level: 1
 created: 2026-09-08
 updated: 2026-09-09
@@ -20,13 +21,13 @@ updated: 2026-09-09
 ## Verdict
 
 - **Declared threats:** 33
-- **Closed by implemented control or actual final-candidate verification:** 29
+- **Closed by implemented control or actual final-candidate verification:** 32
 - **Declared bounded limitation:** 1 (`T-04-02-NE`; the plan's `accept` disposition, recorded without granting any new acceptance)
-- **Pending approval-related lifecycle gates:** 3
+- **Pending approval-related lifecycle gates:** 0
 - **Implementation control gaps found:** 0
-- **Unresolved HIGH blockers:** 3
+- **Unresolved HIGH blockers:** 0
 
-The real production-configured archive now exists, passed scanner and installed acceptance, and is read-only. `04-ARTIFACT-EVIDENCE.json` is `verified`, not `accepted-local`. Human SHA-256/length assent, its subsequent rehash, and the bounded approval record remain pending. The existing GitHub production variable was reused in memory; no duplicate local configuration file was created.
+The real production-configured archive passed scanner and installed acceptance and remains read-only. Alessandro Magionami supplied the actual SHA-256/length/limitations assent. Post-assent rehashing matched all algorithms and length; the bounded approval record seals `04-ARTIFACT-EVIDENCE.json` as `accepted-local`. Existing GitHub production configuration was reused without a local copy. No remote mutation authority is granted.
 
 This audit preserves the stated verifier boundary: extraction protections apply only after trusted locally produced, hash-bound evidence is accepted; they do **not** claim arbitrary hostile-tar safety or exhaustive credential detection.
 
@@ -59,22 +60,22 @@ This audit preserves the stated verifier boundary: extraction protections apply 
 | T-04-03-NT | MEDIUM | mitigate | CLOSED | Scenario schema binds actual-target native observation to either `exported` or `reExportUnsupported` (`tests/package/agent-ready-export.test.ts:75-100`); unsupported fallback retains bytes (`tests/e2e/agent-ready-export.spec.ts:387-410`). |
 | T-04-03-ER | HIGH | mitigate | CLOSED | Scenario records reject durable private-data keys/paths and use non-overwrite temporary-to-link writes (`tests/helpers/runtime-artifact.ts:407-431`); aggregator redacts origin/path values, cleans bridge state, and atomically writes the bounded report (`tests/package/agent-ready-export.test.ts:156-189`). |
 | T-04-04-SO | HIGH | mitigate | CLOSED | Final evidence `configurationSource` records the existing GitHub production variable; its fingerprint matched the prior review. The build/scanner received the origin only through process environment; evidence stores only configured state/fingerprint. |
-| T-04-04-AS | HIGH | mitigate | PENDING HUMAN BINDING | All three hashes and byte length matched before/after scanner, installed acceptance and read-only mode. The actual human statement and post-assent rehash are still required. |
+| T-04-04-AS | HIGH | mitigate | CLOSED | After actual user assent, Main independently rehashed SHA-256, SHA-1, SHA-512 SRI and length; all matched producer/scanner/acceptance/custody evidence. Stable file identity, outside-checkout placement and mode 0444 were checked; bytes still matched after acceptance was recorded. |
 | T-04-04-RP | HIGH | mitigate | CLOSED | One fresh final producer invocation performed one build/pack. No archive repair, replacement or repack occurred. The preserved identity is recorded in final evidence. |
 | T-04-04-LG | HIGH | mitigate | CLOSED | Final `legalReconciliation` binds unchanged approved MIT text, preserved prior grants and Monaco notices, unchanged reviewed dependency locations, additive build-helper attributions, actual legal digests and emitted inventories. |
 | T-04-04-CU | HIGH | mitigate | CLOSED | The one outside-checkout candidate is mode 0444 and all archive identities were recomputed unchanged. `custody.readOnly` is true; no backup was required or created. |
-| T-04-04-AP | HIGH | mitigate | PENDING HUMAN BINDING | No attributable actual-digest approval has been received. `04-ARTIFACT-APPROVAL.md` is absent and evidence remains `verified`. |
+| T-04-04-AP | HIGH | mitigate | CLOSED | Alessandro Magionami's direct actual-digest/length/limitations statement is preserved verbatim in `04-ARTIFACT-APPROVAL.md`; only its line wrap was normalized for matching. Evidence contains the actual identity/time and is `accepted-local`; no generic or agent-authored assent was accepted. |
 | T-04-04-PV | HIGH | mitigate | CLOSED | Final evidence limitations disclaim upload, publication, registry equality/availability, public-source alignment, provenance, source push and transport authorization. No remote mutation occurred. |
 | T-04-04-NT | MEDIUM | mitigate | CLOSED | The final archive's installed acceptance observed actual Darwin ARM64 native re-export and records the fallback limitation for other targets. |
-| T-04-04-ED | HIGH | mitigate | PENDING APPROVAL RECORD | Final evidence passed bounded-data checks and contains no origin, project reference, private custody path or raw logs. The eventual approval record must also be checked after actual assent. |
+| T-04-04-ED | HIGH | mitigate | CLOSED | Final evidence and approval record passed bounded-data checks: no canonical origin, matching cleartext project reference, private custody/checkout path or raw logs. The approval record binds sealed evidence SHA-256 `3bf27f13de08b85527240c76ddc1e4df6c37dc06a5e1bbf006ab9d45f94fb379`. |
 
 ## HIGH Blocking Gates
 
-These are unresolved **approval lifecycle gates**, not source implementation gaps:
+All three approval lifecycle gates are now closed:
 
-1. Receive the attributable statement repeating actual SHA-256 `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca`, byte length `3513998`, and limitations acknowledgement.
-2. Independently rehash the same read-only archive after assent and reject any mismatch.
-3. Write and inspect the bounded approval record, then advance evidence to `accepted-local`.
+1. The attributable user statement binds SHA-256 `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca`, byte length `3513998`, and acknowledged limitations.
+2. Independent post-assent rehashing confirmed the same read-only archive.
+3. The bounded approval record binds the sealed `accepted-local` evidence, committed in `30e60bc`.
 
 These steps gate local artifact acceptance and phase completion only. They do not authorize publication, upload, source push or transport.
 
@@ -90,4 +91,4 @@ No new acceptance was made by this audit. The only declared `accept` disposition
 
 The complete offline fixture acceptance subsequently passed: isolated installation, all seven browser scenarios, V2/V3 Finish, support transport denial/dismissal, real Darwin ARM64 re-export, cleanup, and source-control checks. A discovered V3 add/delete canonicalization failure was fixed at changed-file construction and covered by a RED-to-GREEN API regression; strict canonical validation remains intact. These are fixture/source checks only.
 
-On 2026-09-09, the real origin was derived from the existing GitHub production variable without a local configuration copy. The final archive passed all seven installed scenarios, retained all independent hashes/length through read-only custody, and has bounded final evidence. The three approval-related gates above remain open; no human assent, publication authority or provenance claim is inferred.
+On 2026-09-09, the real origin was derived from existing GitHub production configuration without a local copy. The final archive passed all seven installed scenarios and retained all independent hashes/length through read-only custody and actual human approval. Main checked that all 33 unique plan-time threat IDs remain represented: 32 controls/lifecycle gates closed and one declared bounded limitation. No additional risk acceptance, publication authority or provenance claim is inferred.

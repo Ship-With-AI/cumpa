@@ -2,44 +2,44 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: MIT Distribution
-current_phase: 04
-current_phase_name: exact-runtime-tarball
-status: blocked
-stopped_at: Phase 04 final production-configured archive verified and read-only; awaiting 04-04 Task 3 actual SHA-256/byte-length/limitations approval. Existing GitHub configuration reused without a local copy.
-last_updated: "2026-09-09T06:51:36.617Z"
+current_phase: 5
+current_phase_name: Bootstrap & Trusted Stable Publication
+status: planning
+stopped_at: "Phase 04 complete: 4/4 plans, 4/4 goal criteria, zero open/HIGH security blockers; immutable artifact accepted-local. Phase 5 is ready to plan; no remote mutation authorized."
+last_updated: "2026-09-09T07:42:38.987Z"
 last_activity: 2026-09-09
-last_activity_desc: Real GitHub-configured archive verified and read-only; awaiting exact artifact approval
+last_activity_desc: Phase 04 complete, transitioned to Phase 5
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 7
-  completed_plans: 6
-  percent: 20
+  completed_plans: 7
+  percent: 40
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-08)
+See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 04 — exact-runtime-tarball
+**Current focus:** Phase 5 — Bootstrap & Trusted Stable Publication
 
 ## Current Position
 
-Phase: 04 (exact-runtime-tarball) — BLOCKED AT ARTIFACT APPROVAL
-Plan: 4 of 4 — Task 3 requires actual SHA-256/byte-length/limitations assent
-Status: blocked
-Last activity: 2026-09-09 — Final scanner and installed acceptance passed; one read-only archive awaits human approval
+Phase: 5 — Bootstrap & Trusted Stable Publication
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-09 — Phase 04 complete, transitioned to Phase 5
 
-Progress: [██░░░░░░░░] 20% — 1 of 5 milestone phases complete
+Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 99
+- Total plans completed: 103
 - Average duration: 23 min
 - Total execution time: 4.7 hours
 
@@ -83,7 +83,7 @@ None yet.
 - [Phase 5] Re-check then-current trusted-publisher/provenance eligibility and actual attestation evidence; public source or OIDC authentication alone is not a provenance claim.
 - [Phase 5] Confirm npm scope/package ownership and protected workflow identity before the bootstrap release.
 - [Phase 3 accepted risk] Retain artifacts 9907668126 and 9928300866 and their private backups under the owner's exact disposition despite the unremediated notice finding; do not claim third-party permission/compliance or change retention settings.
-- [Phase 4] Existing GitHub production configuration was reused without a local copy. The final archive is verified/read-only: SHA-256 e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca, 3513998 bytes. Three approval-related security gates remain; no artifact approval, publication or source push is authorized yet.
+- [Phase 5 immutable handoff] The approved read-only archive is SHA-256 e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca, 3513998 bytes; sealed evidence is 3bf27f13de08b85527240c76ddc1e4df6c37dc06a5e1bbf006ab9d45f94fb379. Locate and independently rehash the accepted-candidate before separately authorized actions; never rebuild it. Artifact approval grants no source push, publication or transport authority.
 - [Publication boundary] Phase 3 published commit ff72519969da8d2c0761c9533ccb27b809cd17bb. Later local evidence and completion commits are not automatically authorized for pushing.
 
 ### Roadmap Evolution
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-09T06:51:36.613Z
-Stopped at: Phase 04 final production-configured archive verified and read-only; awaiting 04-04 Task 3 actual SHA-256/byte-length/limitations approval. Existing GitHub configuration reused without a local copy.
-Resume file: .planning/phases/04-exact-runtime-tarball/.continue-here.md
+Last session: 2026-09-09T07:42:38.978Z
+Stopped at: Phase 04 complete: 4/4 plans, 4/4 goal criteria, zero open/HIGH security blockers; immutable artifact accepted-local. Phase 5 is ready to plan; no remote mutation authorized.
+Resume file: .planning/ROADMAP.md

@@ -16,7 +16,7 @@ The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary sou
 ## Phases
 
 - [x] **Phase 3: Distribution Contract & Legal Boundary** — Establish standard MIT terms, refreshed dual-licensor exact-text assent, safe publication of the existing repository and reviewed history, and truthful package links and provenance policy. (completed 2026-09-08)
-- [ ] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release.
+- [x] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release. (completed 2026-09-09)
 - [ ] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable non-`latest` bootstrap, revoke temporary authorization, and publish stable `1.5.0` through OIDC.
 - [ ] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite.
 - [ ] **Phase 7: Clean Public-Artifact Acceptance** - Prove global, npx, and marketplace workflows from clean environments using only released public artifacts.
@@ -78,7 +78,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 04-04-PLAN.md
+- [x] 04-04-PLAN.md
 
 ### Phase 5: Bootstrap & Trusted Stable Publication
 
@@ -127,7 +127,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
-| 4. Exact Runtime Tarball | 3/4 | In Progress|  |
+| 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
 | 5. Bootstrap & Trusted Stable Publication | 0/TBD | Not started | - |
 | 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
 | 7. Clean Public-Artifact Acceptance | 0/TBD | Not started | - |

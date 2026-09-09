@@ -11,7 +11,7 @@ provides:
   - One real production-configured read-only approved runtime archive
   - Sealed accepted-local artifact evidence and attributable human approval
   - Unchanged-byte Phase 5 handoff without publication or transport authority
-affects: [05-trusted-publication]
+affects: ["Phase 5: Bootstrap & Trusted Stable Publication"]
 tech-stack:
   added: []
   patterns: [Single-source GitHub configuration, digest-bound human assent, immutable custody]
@@ -64,7 +64,7 @@ After the user response, Main independently recomputed SHA-256, SHA-1, SHA-512 S
 - The final producer performed exactly one configured build and one scripts-disabled pack in a unique custody leaf.
 - Static verification passed **144 packaged files** and **95 reachable browser assets**, including all five Monaco worker roles and codicon.
 - The exact archive passed isolated scripts-disabled global installation and **167 resolved dependency relationships**.
-- The complete acceptance command passed its two Vitest tests, including all **seven installed Chromium scenarios**: assets/version/help, review/relaunch, unsaved composer protection, V2 Finish, equivalent-range isolation, grounded V3 Finish and unavailable support/dismissal with unrestricted completion.
+- The complete acceptance command passed all **seven installed Chromium scenarios**, with recorded assertions for browser assets/workers/codicon, review/relaunch, isolated drafts, canonical V2 and grounded V3 Finish, and unavailable support/dismissal without restricting completion.
 - The real installed Darwin ARM64 addon completed the second export. No native observation on other targets is claimed.
 - Cleanup and source-control preservation passed. The acceptance harness blocked both server-side and browser non-loopback support access; no hosted-support mutation occurred.
 - All algorithm-specific identities agreed before/after scanner, installed acceptance, read-only mode and the actual human assent.
