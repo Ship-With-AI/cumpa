@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 first private bootstrap attempt closed after documented scanner option-order failure; repair verified in 38d5834. Preparing a fresh source boundary and new build; all remote gates remain closed."
-last_updated: "2026-09-09T15:59:16.255Z"
+stopped_at: "05-04 Task 2: await exact source-only authorization for 72c9bb499538a2c542d5165148e2d45096f7da56 tree cee68f305f818383364edc1a9595800970dac580 observed-main ff72519969da8d2c0761c9533ccb27b809cd17bb review ca228e33383d75ab97d28da9133952302515a93e9e0ac6f735e71b3d724bd455. Real private bootstrap passed; no remote mutation or artifact approval."
+last_updated: "2026-09-09T17:06:31.733Z"
 last_activity: 2026-09-09
-last_activity_desc: Repaired documented bootstrap scanner option order; first unapproved private attempt retained, fresh source/build required
+last_activity_desc: Final bootstrap 4405580b… (3514006 bytes) passed actual scanner/installed/native checks; evidence 54fc66c7… and source review ca228e33… sealed, private scratch removed
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,9 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 local source review and bootstrap preparation before authorization
+Plan: 3 of 6 complete — 05-04 Task 1 complete; Task 2 waiting for exact source-only authorization
 Status: executing
-Last activity: 2026-09-09 — First real bootstrap build succeeded; documented scanner invocation failed, RED captured, one-line parser repair passed all 8 verifier cases
+Checkpoint: No source push, artifact approval, npm login, hosted configuration, CI dispatch/upload or registry publication is authorized.
+Last activity: 2026-09-09 — Final bootstrap 4405580b… (3514006 bytes) passed actual scanner/installed/native checks; evidence 54fc66c7… and source review ca228e33… sealed, private scratch removed
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -108,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-09T15:59:16.249Z
-Stopped at: Phase 5 local plans 05-01/02/03 verified; starting 05-04 local review/bootstrap preparation. All remote execution gates remain closed.
+Last session: 2026-09-09T17:06:31.728Z
+Stopped at: 05-04 Task 2: await exact source-only authorization for 72c9bb499538a2c542d5165148e2d45096f7da56 tree cee68f305f818383364edc1a9595800970dac580 observed-main ff72519969da8d2c0761c9533ccb27b809cd17bb review ca228e33383d75ab97d28da9133952302515a93e9e0ac6f735e71b3d724bd455. Real private bootstrap passed; no remote mutation or artifact approval.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md
