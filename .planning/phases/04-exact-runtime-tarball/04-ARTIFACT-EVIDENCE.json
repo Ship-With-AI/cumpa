@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.runtime-artifact-evidence/v1",
-  "status": "candidate",
+  "status": "verified",
   "purpose": "candidate",
   "package": {
     "name": "@shipwithai/cumpa",
@@ -1735,7 +1735,175 @@
     "viteInstalledLicenseSha256": "b1d741c26b53de1bbc0d4d7d3365b79888f9fe511527544a8a7b8e24dec43147",
     "rolldownInstalledLicenseSha256": "23ecfff35a5a2e80d92142f75228912c3b1abc4b5a8337a821ff4397e2f9f734",
     "rolldownThirdPartyNoticeSource": "https://github.com/rolldown/rolldown/blob/v1.1.5/THIRD-PARTY-LICENSE",
-    "archiveInventorySha256": "4c3c97166cdd496175d8f66a325dec8937d82ddd01991e14752cb71db2f7e2c0",
-    "limitation": "Reconciliation binds reviewed grants, source/lock continuity and observed emitted bytes; not legal certification or a new warranty."
+    "limitation": "Reconciliation binds reviewed grants, source/lock continuity and observed emitted bytes; not legal certification or a new warranty.",
+    "distInventorySha256": "4c3c97166cdd496175d8f66a325dec8937d82ddd01991e14752cb71db2f7e2c0",
+    "npmFileInventorySha256": "24bacda852e8478fc8f15663a8d282036724fbe34bbd61648108314062dad6b4"
+  },
+  "acceptance": {
+    "kind": "cumpa.runtime-artifact-acceptance/v1",
+    "status": "passed",
+    "purpose": "candidate",
+    "archive": {
+      "basename": "shipwithai-cumpa-1.5.0.tgz",
+      "byteLength": 3513998,
+      "sha256": "e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca",
+      "npmShasumSha1": "53d3ae3d58548558ff2dcdb7947c27e5ad3ec902",
+      "npmIntegritySha512": "sha512-HplL30C2B6SvORJt4EqpfZ2tEV49SJH6lAa4XVq966fBoDhAfIAvMoimByF2g9/RIGsvfcM0yuB7kwQcqIEORA=="
+    },
+    "package": {
+      "name": "@shipwithai/cumpa",
+      "version": "1.5.0",
+      "runtimeDependencies": {
+        "@fastify/static": "9.3.0",
+        "@inquirer/search": "4.2.1",
+        "commander": "15.0.0",
+        "fastify": "5.10.0",
+        "markdown-it": "14.3.0",
+        "monaco-editor": "0.55.1",
+        "open": "11.0.0",
+        "vue": "3.5.39",
+        "zod": "4.4.3"
+      }
+    },
+    "install": {
+      "packageLabel": "@shipwithai/cumpa@1.5.0",
+      "binLabel": "cumpa",
+      "manifestSha256": "4bad666e56748bb1c7c9ed6b12043c43d28ac15383a569626f50ea5179480a54",
+      "dependencyCount": 167,
+      "dependencyInventorySha256": "6da35694fe0fdeafdd36351a62db3a6d7f0fd70c8d66d5766ade632f278b5329"
+    },
+    "scanner": {
+      "kind": "cumpa.runtime-artifact-verification/v1",
+      "status": "passed",
+      "purpose": "candidate",
+      "archive": {
+        "basename": "shipwithai-cumpa-1.5.0.tgz",
+        "byteLength": 3513998,
+        "sha256": "e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca",
+        "npmShasumSha1": "53d3ae3d58548558ff2dcdb7947c27e5ad3ec902",
+        "npmIntegritySha512": "sha512-HplL30C2B6SvORJt4EqpfZ2tEV49SJH6lAa4XVq966fBoDhAfIAvMoimByF2g9/RIGsvfcM0yuB7kwQcqIEORA=="
+      },
+      "inventory": {
+        "sha256": "4c3c97166cdd496175d8f66a325dec8937d82ddd01991e14752cb71db2f7e2c0",
+        "count": 144,
+        "bytes": 14749115
+      },
+      "legal": {
+        "README": "7eba4475ecf0d610ee57afb555c2afc328dcd8c604ae41e56b4ab1cfd1f0e065",
+        "LICENSE": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+        "THIRD_PARTY_NOTICES": "44ac7b248ca311016ec0e10cd2446dd5d34df53a666af3dc5f74da18ed3e9ced"
+      },
+      "package": {
+        "name": "@shipwithai/cumpa",
+        "version": "1.5.0",
+        "runtimeDependencies": {
+          "@fastify/static": "9.3.0",
+          "@inquirer/search": "4.2.1",
+          "commander": "15.0.0",
+          "fastify": "5.10.0",
+          "markdown-it": "14.3.0",
+          "monaco-editor": "0.55.1",
+          "open": "11.0.0",
+          "vue": "3.5.39",
+          "zod": "4.4.3"
+        }
+      },
+      "web": {
+        "entry": "dist/web/index.html",
+        "reachableFiles": 95,
+        "workerRoles": [
+          "editor",
+          "css",
+          "html",
+          "json",
+          "ts"
+        ],
+        "codicon": true
+      },
+      "native": {
+        "target": "arm64-darwin",
+        "binary": true,
+        "fallback": "reExportUnsupported"
+      },
+      "support": {
+        "configured": true,
+        "originSha256": "89485617b2d50d4778542ebedc3817a3e3fcddb6520a4a9c3a66e37c3a9c6cdf"
+      },
+      "checks": {
+        "archiveIdentity": true,
+        "protectedExtraction": true,
+        "inventoryParity": true,
+        "legalParity": true,
+        "completeDistParity": true,
+        "boundedContentScan": true
+      },
+      "limitations": [
+        "Eligible only for trusted local producer evidence and source preflight; this is not an arbitrary hostile-tar safety service.",
+        "Bounded signatures do not prove every possible credential or legal obligation absent."
+      ]
+    },
+    "browser": {
+      "assets": true,
+      "workers": true,
+      "codicon": true
+    },
+    "review": {
+      "relaunch": true,
+      "canonicalV2": true,
+      "isolatedDrafts": true,
+      "reExport": "exported"
+    },
+    "support": {
+      "unavailable": true,
+      "dismissed": true,
+      "unrestricted": true,
+      "configured": true,
+      "originSha256": "89485617b2d50d4778542ebedc3817a3e3fcddb6520a4a9c3a66e37c3a9c6cdf"
+    },
+    "exactPatch": {
+      "canonicalV3": true,
+      "grounded": true
+    },
+    "native": {
+      "observedReExport": true,
+      "fallback": "reExportUnsupported",
+      "target": {
+        "platform": "darwin",
+        "arch": "arm64"
+      }
+    },
+    "cleanup": {
+      "complete": true
+    },
+    "sourceControl": {
+      "unchanged": true
+    },
+    "checks": [
+      "PKG-03",
+      "PKG-04",
+      "PKG-05",
+      "REL-03"
+    ],
+    "limitations": [
+      "Local installed archive only; no registry, publication, provenance or public-source alignment claim.",
+      "Native re-export observation is limited to the actual target; other targets retain reExportUnsupported.",
+      "Dependency resolution is observed at installation time; transitive dependencies are not inside the tarball.",
+      "Static disclosure scanning is bounded and assumes trusted local producer output."
+    ]
+  },
+  "limitations": [
+    "Local artifact acceptance only; no Cumpa registry availability or equality claim.",
+    "Bounded disclosure scan of trusted local producer output; not proof that every unknown secret is absent.",
+    "Native re-export observed only on Darwin ARM64; other targets retain the explicit reExportUnsupported fallback.",
+    "No artifact upload, staging, publication, source push, support deployment, retention change or transport authorization occurred.",
+    "No public-source alignment or npm provenance/attestation claim.",
+    "The exact same archive must be independently located and rehashed before any separately authorized Phase 5 action; never rebuild it."
+  ],
+  "custody": {
+    "label": "accepted-candidate",
+    "archiveBasename": "shipwithai-cumpa-1.5.0.tgz",
+    "sha256": "e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca",
+    "byteLength": 3513998,
+    "readOnly": true
   }
 }
