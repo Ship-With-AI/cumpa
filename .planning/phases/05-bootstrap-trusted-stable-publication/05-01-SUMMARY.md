@@ -64,3 +64,7 @@ The first RED run contained a missing test-fixture initialization in the pack-fa
 ## Operational boundary
 
 This completes the local code prerequisite only. REL-01 is not marked globally complete: the actual configured bootstrap artifact, its full installed browser/native acceptance, human approval, publication and credential revocation remain 05-04 gates. No remote source/configuration/CI/npm mutation, actual operational bootstrap production, or historical artifact replacement occurred in this plan.
+
+## Documented CLI Order — 05-04 Integration Repair
+
+The first real private bootstrap production succeeded, but the documented prefix form `--profile bootstrap --archive ...` exposed an unnecessary appended-only profile restriction. The preparation attempt was closed without installed acceptance, approval, authentication or remote mutation; its bytes and producer evidence remain read-only private history, never fallback publication input. RED commit `6fd586b` reproduced the documented invocation; `38d5834` removed only the order restriction, retaining exact profile values, arity and duplicate/unknown-option checks. All eight verifier cases passed. A new source boundary and fresh production cycle are required before continuing 05-04.

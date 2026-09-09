@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: Phase 5 local plans 05-01/02/03 verified; starting 05-04 local review/bootstrap preparation. All remote execution gates remain closed.
+stopped_at: "05-04 first private bootstrap attempt closed after documented scanner option-order failure; repair verified in 38d5834. Preparing a fresh source boundary and new build; all remote gates remain closed."
 last_updated: "2026-09-09T15:59:16.255Z"
 last_activity: 2026-09-09
-last_activity_desc: Build, web typecheck, 463 ordinary tests and workflow smoke passed; real evidence handoff repairs passed 21 targeted tests and strict typechecking
+last_activity_desc: Repaired documented bootstrap scanner option order; first unapproved private attempt retained, fresh source/build required
 progress:
   total_phases: 5
   completed_phases: 2
@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 5 — Bootstrap & Trusted Stable Publication
 Plan: 3 of 6 complete — 05-04 local source review and bootstrap preparation before authorization
 Status: executing
-Last activity: 2026-09-09 — Build, web typecheck, 463 ordinary tests and workflow smoke passed; real evidence handoff repairs passed 21 targeted tests and strict typechecking
+Last activity: 2026-09-09 — First real bootstrap build succeeded; documented scanner invocation failed, RED captured, one-line parser repair passed all 8 verifier cases
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
