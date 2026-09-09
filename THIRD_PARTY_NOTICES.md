@@ -564,6 +564,17 @@ The full MIT grant in the Markdown-It section immediately above applies to the f
 - **punycode.js 2.3.1** — Copyright Mathias Bynens <https://mathiasbynens.be/>.
 - **uc.micro 2.1.0** — Copyright Mathias Bynens <https://mathiasbynens.be/>.
 
+### Build-generated runtime helper attributions
+
+The MIT grant above also applies to the following independently attributed build-tool material. These notices cover generated runtime helpers, including module-preload code, without asserting that entire build tools or all of their build-time dependencies are shipped.
+
+- **Vite 8.1.4** — Copyright (c) 2019-present, VoidZero Inc. and Vite contributors.
+- **Rolldown 1.1.5** — Copyright (c) 2024-present VoidZero Inc. & Contributors.
+- **Rolldown's Rollup-derived material** — Copyright (c) 2017 [these people](https://github.com/rollup/rollup/graphs/contributors).
+- **Rolldown's esbuild-derived material** — Copyright (c) 2020 Evan Wallace.
+
+The last two attributions are retained from Rolldown 1.1.5's [upstream third-party license notice](https://github.com/rolldown/rolldown/blob/v1.1.5/THIRD-PARTY-LICENSE).
+
 ## Scope of this snapshot
 
-These evidence-backed notices correspond to source imports and generated, untracked working-tree `dist/web` output, not an audited final npm artifact. Phase 4 must determine the actual final bundle and package inventory, retain every applicable direct and transitive notice, and include this file where required.
+These notices identify source-reachable third-party material and build-generated runtime helpers. Release evidence separately binds the final archive and dependency inventory; this file does not substitute for exact-artifact inspection. Dependencies installed separately by npm retain their own notices.

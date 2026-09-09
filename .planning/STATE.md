@@ -4,11 +4,11 @@ milestone: v1.5
 milestone_name: MIT Distribution
 current_phase: 04
 current_phase_name: exact-runtime-tarball
-status: blocked
-stopped_at: Phase 04 plans 01-03 complete and verified; blocked at 04-04 Task 1 pending approved protected support origin. No final candidate or approval exists.
-last_updated: "2026-09-08T21:11:48.147Z"
-last_activity: 2026-09-08
-last_activity_desc: Phase 04 plans 01-03 verified; final artifact blocked on protected configuration
+status: executing
+stopped_at: Phase 04 final configuration resolved from existing GitHub production variable; preparing one real candidate without a duplicate local configuration file.
+last_updated: "2026-09-09T06:36:17.239Z"
+last_activity: 2026-09-09
+last_activity_desc: Reusing existing GitHub production configuration for final artifact execution
 progress:
   total_phases: 5
   completed_phases: 1
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-09-08)
 
 ## Current Position
 
-Phase: 04 (exact-runtime-tarball) — BLOCKED AT HUMAN INPUT GATE
-Plan: 4 of 4 — Task 1 requires the approved protected support origin
-Status: blocked
-Last activity: 2026-09-08 — Plans 04-01 through 04-03 complete; full installed fixture and regression checks pass
+Phase: 04 (exact-runtime-tarball) — EXECUTING FINAL CANDIDATE
+Plan: 4 of 4 — Task 1 uses the existing GitHub production configuration
+Status: executing
+Last activity: 2026-09-09 — Existing production variable read in memory; no duplicate local configuration file required
 
 Progress: [██░░░░░░░░] 20% — 1 of 5 milestone phases complete
 
@@ -83,7 +83,7 @@ None yet.
 - [Phase 5] Re-check then-current trusted-publisher/provenance eligibility and actual attestation evidence; public source or OIDC authentication alone is not a provenance claim.
 - [Phase 5] Confirm npm scope/package ownership and protected workflow identity before the bootstrap release.
 - [Phase 3 accepted risk] Retain artifacts 9907668126 and 9928300866 and their private backups under the owner's exact disposition despite the unremediated notice finding; do not claim third-party permission/compliance or change retention settings.
-- [Phase 4] Runtime-only packaging and exact-byte installed acceptance are implemented and verified. The approved support origin is unavailable; 04-04 Task 1 is blocked. No final archive, read-only custody, final evidence or human approval exists. Synthetic fixture archives were removed; nine final lifecycle security gates remain open.
+- [Phase 4] The configuration gate is resolved through the existing GitHub production variable, with its fingerprint matching the prior review. One real configured candidate is being prepared. Final read-only custody and attributable digest-bound approval remain required; no publication or source push is authorized.
 - [Publication boundary] Phase 3 published commit ff72519969da8d2c0761c9533ccb27b809cd17bb. Later local evidence and completion commits are not automatically authorized for pushing.
 
 ### Roadmap Evolution
@@ -108,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-08T21:11:48.143Z
-Stopped at: Phase 04 plans 01-03 complete and verified; blocked at 04-04 Task 1 pending approved protected support origin. No final candidate or approval exists.
+Last session: 2026-09-09T06:36:17.234Z
+Stopped at: Phase 04 final configuration resolved from existing GitHub production variable; preparing one real candidate without a duplicate local configuration file.
 Resume file: .planning/phases/04-exact-runtime-tarball/.continue-here.md
