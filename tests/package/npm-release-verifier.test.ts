@@ -7,11 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import * as verifier from '../../scripts/verify-npm-release.mjs';
 
 const execFileAsync = promisify(execFile);
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const verifierPath = join(projectRoot, 'scripts/verify-npm-release.mjs');
-// Dynamic loading keeps this RED suite collectible before the planned verifier exists.
+// Child probes load this URL in their isolated CI fixture process.
 const verifierUrl = new URL('../../scripts/verify-npm-release.mjs', import.meta.url).href;
 const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 const sha1 = (value: string | Buffer) => createHash('sha1').update(value).digest('hex');
@@ -36,7 +37,6 @@ type Fixture = {
   readonly scanner: Record<string, unknown>;
   readonly acceptance: Record<string, unknown>;
 };
-type ReleaseVerifier = Record<string, unknown>;
 
 let fixture: Fixture;
 
@@ -128,10 +128,10 @@ function verifiedAudit(statement = provenanceStatement()) {
     verified: [{
       name: '@shipwithai/cumpa', version: '1.5.0', location: 'node_modules/@shipwithai/cumpa', registry: 'https://registry.npmjs.org/',
       attestations: { url: 'https://registry.npmjs.org/-/npm/v1/attestations/@shipwithai%2fcumpa@1.5.0' },
-      attestationBundles: [{
-        predicateType: statement.predicateType,
-        bundle: { dsseEnvelope: { payloadType: 'application/vnd.in-toto+json', payload: Buffer.from(JSON.stringify(statement)).toString('base64'), signatures: [{ keyid: '', sig: 'fixture-only' }] } },
-      }],
+      attestationBundles: [statement, { ...statement, predicateType: 'https://docs.npmjs.com/attestations/publish/v0.1' }].map((value) => ({
+        predicateType: value.predicateType,
+        bundle: { dsseEnvelope: { payloadType: 'application/vnd.in-toto+json', payload: Buffer.from(JSON.stringify(value)).toString('base64'), signatures: [{ keyid: '', sig: 'fixture-only' }] } },
+      })),
     }],
   };
 }
@@ -150,10 +150,10 @@ import { join, basename } from 'node:path';
 const args = process.argv.slice(2), env = process.env;
 const option = (name) => args.includes('--' + name) ? args[args.indexOf('--' + name) + 1] : env['npm_config_' + name] ?? env['NPM_CONFIG_' + name.toUpperCase()];
 if (env.NODE_AUTH_TOKEN || env.NPM_TOKEN || env.NODE_OPTIONS) process.exit(41);
-if (args.length === 1 && args[0] === '--version') { console.log('11.19.1'); process.exit(0); }
 const cache = option('cache');
 if (!cache || !env.HOME || !option('userconfig') || !option('globalconfig')) process.exit(42);
 for (const path of [option('userconfig'), option('globalconfig')]) if (readFileSync(path, 'utf8').trim()) process.exit(43);
+if (args.length === 1 && args[0] === '--version') { console.log('11.19.1'); process.exit(0); }
 mkdirSync(cache, { recursive: true });
 if (basename(process.argv[1]).startsWith('npx')) {
   if (existsSync(join(cache, 'consumer-used')) || JSON.stringify(args) !== JSON.stringify(['--yes', '@shipwithai/cumpa@1.5.0', '--version'])) process.exit(44);
@@ -223,18 +223,17 @@ async function commandFailure(command: string, args: readonly string[], environm
   throw new Error(`${command} unexpectedly accepted the fixture`);
 }
 
-async function importedVerifier(): Promise<ReleaseVerifier> {
-  return await import(verifierUrl) as ReleaseVerifier;
-}
 
 async function seal(environment: NodeJS.ProcessEnv = {}): Promise<Record<string, unknown>> {
-  const { stdout } = await invoke('seal-candidate', [
-    '--archive', fixture.archivePath,
-    '--producer-evidence', fixture.producerPath,
-    '--scanner-report', fixture.scannerPath,
-    '--acceptance-report', fixture.acceptancePath,
-    '--output', fixture.sealedPath,
-  ], currentCi(environment));
+  const input = {
+    archivePath: fixture.archivePath, producerEvidencePath: fixture.producerPath,
+    scannerReportPath: fixture.scannerPath, acceptanceReportPath: fixture.acceptancePath, outputPath: fixture.sealedPath,
+  };
+  const { stdout } = await execFileAsync(process.execPath, [
+    '--input-type=module', '-e',
+    'const {sealCiCandidateEvidence}=await import(process.argv[1]); console.log(JSON.stringify(await sealCiCandidateEvidence(JSON.parse(process.argv[2]))));',
+    verifierUrl, JSON.stringify(input),
+  ], { cwd: fixture.root, env: { PATH: process.env.PATH, ...currentCi(environment) }, maxBuffer: 256 * 1024 });
   return JSON.parse(stdout) as Record<string, unknown>;
 }
 
@@ -266,6 +265,10 @@ describe('npm release verifier', () => {
     const result = await seal();
     const sealed = JSON.parse(await readFile(fixture.sealedPath, 'utf8')) as Record<string, unknown>;
     const after = await stat(fixture.archivePath);
+    const producerCore = structuredClone(sealed);
+    for (const enrichment of ['scanner', 'acceptance', 'ci']) delete producerCore[enrichment];
+    producerCore.status = 'candidate';
+    expect(sha256(JSON.stringify(producerCore))).toBe(sha256(JSON.stringify(fixture.producer)));
 
     expect(result).toMatchObject({ kind: 'cumpa.runtime-artifact-evidence/v1', status: 'verified', purpose: 'candidate' });
     expect(sealed).toMatchObject({
@@ -310,6 +313,9 @@ describe('npm release verifier', () => {
       ['missing native re-export', ({ acceptance }) => { ((acceptance.native as Record<string, unknown>).observedReExport) = false; }],
       ['failed scanner check', ({ scanner }) => { ((scanner.checks as Record<string, unknown>).inventoryParity) = false; }],
       ['incomplete acceptance checks', ({ acceptance }) => { acceptance.checks = ['PKG-03']; }],
+      ['installed manifest identity', ({ acceptance }) => { (acceptance.install as Record<string, unknown>).manifestSha256 = 'd'.repeat(64); }],
+      ['unknown private producer metadata', ({ producer }) => { (producer.build as Record<string, unknown>).privatePath = '/private/fixture/custody'; }],
+      ['unbounded private report text', ({ scanner }) => { scanner.limitations = ['https://abcdefghijklmnopqrst.supabase.co']; }],
     ];
     for (const [, mutate] of substitutions) {
       const reports = structuredClone(candidateReports(fixture.archive));
@@ -368,8 +374,7 @@ describe('npm release verifier', () => {
   test('accepts npm-verified exact claims and rejects independently mismatched claims', async () => {
     await seal();
     const evidence = JSON.parse(await readFile(fixture.sealedPath, 'utf8'));
-    const verifier = await importedVerifier();
-    const inspect = verifier.inspectNpmProvenance as (input: { evidence: unknown; audit: unknown }) => unknown;
+    const inspect = verifier.inspectNpmProvenance;
     expect(await inspect({ evidence, audit: verifiedAudit() })).toMatchObject({ status: 'passed' });
     const baseline = provenanceStatement();
     const changes: Array<(statement: typeof baseline) => void> = [
@@ -396,8 +401,7 @@ describe('npm release verifier', () => {
   test.for(['passed', 'missing-installed-target', 'missing-attestation', 'wrong-download', 'wrong-npx'])('public verification enforces real consumer observations: %s', async (mode) => {
     await seal();
     await publicNpmFixture(mode);
-    const verifier = await importedVerifier();
-    const verifyPublic = verifier.verifyPublicNpmRelease as (input: Record<string, unknown>) => Promise<unknown>;
+    const verifyPublic = verifier.verifyPublicNpmRelease;
     const operation = verifyPublic({
       evidencePath: fixture.sealedPath,
       expectedEvidenceSha256: sha256(await readFile(fixture.sealedPath)),
@@ -415,6 +419,19 @@ describe('npm release verifier', () => {
     }
   });
 
+
+  test('seals a fixture through the standalone symlinked CLI without project dependencies', async () => {
+    const standalone = join(fixture.root, 'standalone.mjs');
+    const launcher = join(fixture.root, 'entry.mjs');
+    await writeFile(standalone, await readFile(verifierPath));
+    await symlink(standalone, launcher);
+    const result = await execFileAsync(process.execPath, [
+      launcher, 'seal-candidate', '--archive', fixture.archivePath, '--producer-evidence', fixture.producerPath,
+      '--scanner-report', fixture.scannerPath, '--acceptance-report', fixture.acceptancePath, '--output', fixture.sealedPath,
+    ], { cwd: fixture.root, env: { PATH: process.env.PATH, ...currentCi() }, maxBuffer: 256 * 1024 });
+    expect(JSON.parse(result.stdout)).toMatchObject({ status: 'verified', archive: fixture.archive });
+    expect(JSON.parse(await readFile(fixture.sealedPath, 'utf8'))).toMatchObject({ status: 'verified', archive: fixture.archive });
+  });
 
   test('emits bounded failure data without custody, origin, auth, or raw provider payloads', async () => {
     const privateOrigin = 'https://abcdefghijklmnopqrst.supabase.co';
