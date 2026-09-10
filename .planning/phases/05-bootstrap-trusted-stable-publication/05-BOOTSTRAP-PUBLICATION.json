@@ -72,6 +72,12 @@
       "providerRevocation": "unresolved",
       "recoveryStateRetained": true,
       "publicationAttempted": false
+    },
+    "latestProviderSuccessReport": {
+      "recordedAt": "2026-09-10T06:54:56Z",
+      "source": "Direct user selection at latest-attempt outcome gate",
+      "response": "CLI authorization succeeded",
+      "meaning": "User confirms latest provider-side CLI authorization succeeded; this is accepted, not re-tested."
     }
   },
   "publication": {
@@ -123,7 +129,17 @@
     "ownedLocalCredentialFound": false,
     "ownedCleanupComplete": false,
     "state": "recovery-required",
-    "recoveryReceiptPreserved": true
+    "recoveryReceiptPreserved": true,
+    "providerCliAuthorizationSucceededPerOperator": true,
+    "providerSessionRequiresTargetedRevocation": true,
+    "operatorActionRequired": {
+      "action": "Use the native npm account token/security interface to identify and revoke only the session belonging to the latest CLI authorization; leave unrelated credentials untouched.",
+      "expectedAccount": "alemagio",
+      "requestStartedAroundUtc": "2026-09-10T06:37Z",
+      "browserAutomationAvailable": false,
+      "supportedInstructions": "https://docs.npmjs.com/revoking-access-tokens/",
+      "noMatchingEntryPolicy": "Do not delete or revoke unrelated entries; retain recovery state and report the unresolved identification."
+    }
   },
   "limits": [
     "Readiness is a timestamped observation, not a promise the guard remains alive after idle/deadline or process loss.",

@@ -5,8 +5,8 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 Task 9: exact bootstrap publication authority 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 unused; zero publish requests. Latest renewed login stopped on unsupported-non-browser-credential-prompt, exit -15; no owned token saved and provider revocation unresolved. Guard exited recovery-required and retained owned state. Need latest native CLI authorization outcome before any further login; do not approve the stopped request. Prior successful login was already logged out and cleaned."
-last_updated: "2026-09-10T06:49:28.633Z"
+stopped_at: "05-04 Task 9: operator confirms latest CLI authorization succeeded. Guard had stopped at non-browser credential prompt without saving its token. No publication attempted; exact authority 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 remains unused. Authenticated browser tooling unavailable. Operator must identify/revoke only latest CLI session (request started ~2026-09-10T06:37Z, expected account alemagio); do not touch unrelated credentials. Keep owned recovery state until scoped provider outcome is confirmed."
+last_updated: "2026-09-10T07:22:24.520Z"
 last_activity: 2026-09-10
 last_activity_desc: "At 06:45:24Z recorded the prompt-triggered renewal stop, no saved owned token, unresolved provider revocation, retained recovery receipt and zero publication attempts. npm 11.12.1 source confirms web-login fallback can enter legacy credential prompts; no fallback credentials were collected."
 progress:
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T06:49:28.627Z
-Stopped at: 05-04 Task 9: exact bootstrap publication authority 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 unused; zero publish requests. Latest renewed login stopped on unsupported-non-browser-credential-prompt, exit -15; no owned token saved and provider revocation unresolved. Guard exited recovery-required and retained owned state. Need latest native CLI authorization outcome before any further login; do not approve the stopped request. Prior successful login was already logged out and cleaned.
+Last session: 2026-09-10T07:22:24.515Z
+Stopped at: 05-04 Task 9: operator confirms latest CLI authorization succeeded. Guard had stopped at non-browser credential prompt without saving its token. No publication attempted; exact authority 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 remains unused. Authenticated browser tooling unavailable. Operator must identify/revoke only latest CLI session (request started ~2026-09-10T06:37Z, expected account alemagio); do not touch unrelated credentials. Keep owned recovery state until scoped provider outcome is confirmed.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md
