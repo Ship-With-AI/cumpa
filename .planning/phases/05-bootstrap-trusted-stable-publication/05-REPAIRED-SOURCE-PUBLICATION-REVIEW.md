@@ -1,8 +1,8 @@
-# Phase 5 Repaired Acceptance Source Publication Review
+# Phase 5 Repaired Acceptance Source Publication Review — PUBLIC SOURCE VERIFIED
 
 **Record kind:** `cumpa.source-publication-review/v1`
-**Observed at:** `2026-09-10T14:03:39Z`
-**Status:** reviewed; prospective-source amendment and source-only push both await explicit owner authority. No push, new CI dispatch, candidate approval or stable publication is authorized by this record.
+**Observed at:** `2026-09-10T14:27:53Z`
+**Status:** the exact source-only push succeeded and was independently verified. The approved review snapshot is commit `7b39a1382e7d2331d12e7be1eba98065fb86d3fa`, blob `2a4eabb491d0b6162c5a4a7841450ea38f42828e`, SHA-256 `583814da018bed16c613b1c8a39ba2c334c0f965de7fd901e7e28ebd1c6b4e08`. Pre-authorization wording below is retained as reviewed history; the actual decisions and outcome are recorded at the end. No new CI dispatch, candidate approval or stable publication follows.
 
 ## Exact proposed source action
 
@@ -118,6 +118,20 @@ Plan-amendment and source-result bookkeeping made after P is frozen is not impli
 | M | `tests/e2e/package-assets.spec.ts` |
 | A | `tests/helpers/open-runtime-session.ts` |
 
-## Authority boundary
+## Pre-authorization boundary — reviewed history
 
 No authority has been received for either proposed D-11 or the source push. Actual attributable decisions must bind R, P, T and the SHA-256 of this closed review, acknowledge the reviewed history/exposure, and retain every separate CI, artifact and stable-publication gate. A mismatch stops rather than changing the target.
+
+## Authorized source-only result
+
+At `2026-09-10T14:18:57Z`, Alessandro Magionami selected **“Approve exact amendment”** and separately **“Authorize exact source push”** for the displayed bindings and reviewed exposure.
+
+- D-11 amendment SHA-256: `ce70d14bd7eecb0bdb6be014e137c781537458e97655c97207abec46610733d4`.
+- Source-only authorization SHA-256: `e07f23c8c5a9956db1fc3f8b2191127e1f4ee05b2cabc009f65e8d787618c632`.
+- The active local context/05-05 plan was amended in `04ab9e1e3f95405af0f6dbe15e8898aed4d01791` before the push, resolving the Spec finding without broadening the source selector.
+- One no-force/no-follow-tags push started at `2026-09-10T14:24:02Z` and exited 0. It named only `fcc12be291623c37211291681420fe0203df6cb0`; later review/plan bookkeeping was not pushed.
+- Credential-free GitHub reads verified public repository `1327753770`, main P, tree T and every one of the 764 recursive entries against native Git.
+- Post-push observations at `2026-09-10T14:26:00Z` and `2026-09-10T14:27:53Z` each found zero workflow runs and zero deployments for P. No target Supabase execution was observed.
+- No repository setting, npm setting/tag, temporary production transport, candidate approval or protected deployment was changed by this source action.
+
+The next private guard is bound to this published P; all 34 lifecycle checks, the complete live read-only preflight and actual unarmed CLI refusal passed. A fresh candidate-run authorization is still required before any new temporary transport, build/upload or artifact download. Both failed runs and all historical/bootstrap artifacts remain unchanged.

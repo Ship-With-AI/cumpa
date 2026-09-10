@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-05 runs 34476480752 and 34481083655, each attempt 1, failed acceptance and were cleaned; publishers were skipped and no artifacts uploaded. Second-run logs identified support-dialog-backdrop intercepting an asset click. A deterministic delayed-refresh reproduction failed before the shared startup-wait fix and passed afterward. Full installed acceptance and strict affected-file typecheck pass. The fix changes tests only; replacement source publication and a new CI run require separate authority."
-last_updated: "2026-09-10T13:46:19Z"
+stopped_at: "05-05 repaired source fcc12be291623c37211291681420fe0203df6cb0/tree23f87114ad2ddbc18c51f95e2611ef5b4f1e9f9c was pushed under exact source-only authority after D-11. Credential-free reads matched all764 recursive entries; two observations found no target Actions runs or deployments. New-source private guard passes34 lifecycle checks, full live read-only preflight and unarmed refusal. Await separate candidate-run authority; no candidate or stable approval exists."
+last_updated: "2026-09-10T14:27:53Z"
 last_activity: 2026-09-10
-last_activity_desc: Fixed the confirmed installed-acceptance startup race without changing application behavior, timeouts or acceptance requirements. Preserved both failed runs and immutable bootstrap inputs; preparing the repaired-source publication review.
+last_activity_desc: Published only the reviewed repaired source and verified its complete public tree and no collateral deployment. Local amendment/review bookkeeping remains unpushed. Preparing the separately authorized next candidate cycle.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 4 of 6 complete — 05-05 Task 1 complete; prior Task 2 cycles failed and cleaned; verified acceptance fix awaits replacement-source review
+Plan: 4 of 6 complete — 05-05 Task 1 complete; D-11 repaired source published and verified; Task 2 awaits fresh exact-source CI authority
 Status: executing
-Checkpoint: Both earlier candidate authorizations are consumed; no stable authority exists. The accepted public source remains 72c9bb499538a2c542d5165148e2d45096f7da56. The local repair shares session opening across installed acceptance tests and waits for the actual startup support result and optional invitation dismissal. Review and separately authorize an exact replacement public source before requesting one new source-bound candidate cycle. Do not rerun either failed workflow, substitute historical bytes, or alter sealed bootstrap records.
-Last activity: 2026-09-10 — The asset regression holds support refresh past the editor's first paint: old one-shot visibility logic failed on the visible backdrop; the fixed shared opener passes. All installed browser/native acceptance scenarios pass locally against unchanged published bootstrap bytes, and strict TypeScript checking passes for the three affected files. This verifies the harness fix, not a new CI candidate. No production code, timeout, forced click or acceptance bypass was added.
+Checkpoint: The sole approved public candidate source is fcc12be291623c37211291681420fe0203df6cb0 under D-11. The active local plan is amended; original source/bootstraps and failed runs remain historical. The source-only authority is consumed and grants no CI execution. Require a new explicit authorization for the two absent-only production transports, one input-free build/upload, exact owned-artifact inspection and targeted cleanup. Candidate acceptance and stable publication remain separate later gates.
+Last activity: 2026-09-10 — Public source/tree and all764 recursive entries matched through credential-free reads. Observations at14:26:00Z and14:27:53Z found no target workflows or deployments. The fixed acceptance opener and delayed-refresh regression passed locally; the private guard is now source-bound to the repaired public commit and passes34 stand-ins plus complete native read-only preflight. No new CI run was started.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T13:46:19Z
-Stopped at: Repaired acceptance source-publication review. The private journal preserves both failed native run outcomes, consumed authorizations, cleanup and deterministic RED/GREEN/full-acceptance proof. Both temporary production names are absent. No source push, new CI dispatch, candidate approval or stable publication is authorized.
+Last session: 2026-09-10T14:27:53Z
+Stopped at: 05-05 Task 2 fresh candidate-run authority. Source-only publication is complete; next source is fcc12be291623c37211291681420fe0203df6cb0. Resume the existing private CI journal, preserve earlier consumed authorizations/failed runs/frozen guards, and freeze/execute the verified new-source guard only after actual new CI authority. No candidate or stable publication approval exists.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-05-PLAN.md
