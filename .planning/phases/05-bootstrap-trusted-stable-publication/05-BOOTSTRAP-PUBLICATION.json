@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "published-and-usable-tag-repair-authentication-recovery-required",
+  "status": "bootstrap-published-registry-latest-constraint-owner-exception-pending",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -645,7 +645,29 @@
         "cleanupComplete": true
       }
     ],
-    "normalUserCredentialsAccessedOrRemoved": false
+    "normalUserCredentialsAccessedOrRemoved": false,
+    "tagRepair": {
+      "operationCount": 2,
+      "removalAttempts": 1,
+      "allLocalContextsRemoved": true,
+      "outcomes": [
+        {
+          "authAttempted": true,
+          "tagRemovalAttempted": false,
+          "tagRemovalExitCode": null,
+          "revocation": "operator-reported-cli-not-authorized-no-server-revocation-claim",
+          "cleanupComplete": true
+        },
+        {
+          "authAttempted": true,
+          "tagRemovalAttempted": true,
+          "tagRemovalExitCode": 1,
+          "revocation": "supported-npm-logout-server-response",
+          "cleanupComplete": true
+        }
+      ]
+    },
+    "totalOperationCount": 8
   },
   "previousPublicationAttempts": [
     {
@@ -849,12 +871,23 @@
     "explicitCommandTag": "bootstrap",
     "bootstrapTagCorrect": true,
     "publishedBytesAndBinVerified": true,
-    "tagRepairAttempted": false,
+    "tagRepairAttempted": true,
     "unpublishAttempted": false,
     "ownerDecisionRequired": true,
     "ownerDecision": "Remove only latest",
     "repairAuthorized": true,
-    "policyExceptionAccepted": false
+    "policyExceptionAccepted": false,
+    "repairOutcome": "E400; tag state unchanged",
+    "registryConstraintEvidence": {
+      "source": "https://github.com/npm/cli/issues/8490",
+      "maintainerConfirmsFirstPublishCreatesLatestAlongsideCustomTag": true,
+      "upstreamReportAlsoShows400RemovingLatest": true,
+      "thisOperationAuthenticatedRemovalResult": "E400; tags unchanged",
+      "noSupportedRemovalAchieved": true,
+      "proposedOwnerException": "Retain bootstrap as temporary latest until separately approved stable CI publication replaces it.",
+      "exceptionApproved": false
+    },
+    "repairAuthorizationConsumed": true
   },
   "latestTagRepair": {
     "authorization": {
@@ -879,7 +912,7 @@
     },
     "authorizationSha256": "71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142",
     "guardSha256": "bb01dc9ef894040e53ab2ac873051a8b14784852e4654593f6e4343af9db5b59",
-    "status": "authentication-recovery-required",
+    "status": "removal-rejected-e400-owned-session-cleaned",
     "before": {
       "name": "@shipwithai/cumpa",
       "version": "1.5.0-bootstrap.0",
@@ -892,19 +925,75 @@
       "publishedAt": "2026-09-10T08:31:35.088Z"
     },
     "authenticationAttempted": true,
-    "removalAttempted": false,
+    "removalAttempted": true,
     "harmlessChecksPassed": 19,
     "publicationCapabilityPresent": false,
     "nativeTagJsonReadVerified": true,
     "guardRunning": false,
-    "idleDeadlineEpoch": 1789032408.0002441,
-    "absoluteDeadlineEpoch": 1789035107.112753,
-    "removalAuthorizationUnconsumed": true,
-    "guardReason": "unsupported-non-browser-credential-prompt",
-    "unsupportedPrompt": "username",
+    "idleDeadlineEpoch": 1789033066.2291207,
+    "absoluteDeadlineEpoch": 1789035765.8830311,
+    "removalAuthorizationUnconsumed": false,
+    "guardReason": "tag-removal-failed-or-ambiguous",
     "ownedTokenPresent": false,
-    "providerRevocation": "unresolved",
-    "ownedCleanupComplete": false,
-    "recoveryStateRetained": true
+    "providerRevocation": "supported-npm-logout-server-response",
+    "ownedCleanupComplete": true,
+    "recoveryStateRetained": true,
+    "previousLoginOperatorOutcome": {
+      "at": "2026-09-10T09:22:44Z",
+      "source": "Direct user selection",
+      "response": "Not approved; retry login now",
+      "meaning": "No completed CLI authorization for the previous tag-repair request; one fresh isolated login authorized for the already-approved tag removal.",
+      "assurance": "Operator-reported no completed CLI authorization; no independent server revocation claimed."
+    },
+    "loginRenewalAuthorization": {
+      "kind": "cumpa.bootstrap-tag-login-authorization/v1",
+      "authorizer": "Alessandro Magionami",
+      "at": "2026-09-10T09:22:44Z",
+      "source": "Direct user selection",
+      "response": "Not approved; retry login now",
+      "account": "alemagio",
+      "package": "@shipwithai/cumpa",
+      "scope": "One fresh isolated CLI login to execute the existing latest-only removal authorization, then owned-session revocation. No publication or unpublish.",
+      "existingTagAuthorizationSha256": "71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec"
+    },
+    "loginRenewalAuthorizationSha256": "3db912b37c33ba1006c79bd8afff21233976ffbe5235d2e1e1d5d06523675d75",
+    "previousLoginContextCleaned": true,
+    "verifiedAccount": "alemagio",
+    "verifiedOrganizationRole": "owner",
+    "twoFactorMode": "auth-only",
+    "removalRequested": true,
+    "removalExitCode": 1,
+    "boundedNpmErrorCode": "E400",
+    "after": {
+      "name": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "tags": {
+        "bootstrap": "1.5.0-bootstrap.0",
+        "latest": "1.5.0-bootstrap.0"
+      },
+      "integrity": "sha512-911RewXQwTbNLlrqprXf9elM89Pcz41WYhAHSzQ6YZjo9Ka9zJPwcpR1uHoP11dnYYLQEpoCagReM8kXb933hw==",
+      "shasum": "c34bee6983580de9f0fbbcce3bbb6759fc9933f2",
+      "publishedAt": "2026-09-10T08:31:35.088Z"
+    },
+    "tagsUnchanged": true,
+    "versionIntegrityUnchanged": true,
+    "retryAuthorized": false,
+    "operatorConfirmationOfTagSessionLogout": "pending",
+    "previousLoginFailure": {
+      "guardReason": "unsupported-non-browser-credential-prompt",
+      "unsupportedPrompt": "username",
+      "operatorOutcome": {
+        "at": "2026-09-10T09:22:44Z",
+        "source": "Direct user selection",
+        "response": "Not approved; retry login now",
+        "meaning": "No completed CLI authorization for the previous tag-repair request; one fresh isolated login authorized for the already-approved tag removal.",
+        "assurance": "Operator-reported no completed CLI authorization; no independent server revocation claimed."
+      },
+      "contextClosed": true
+    },
+    "authenticated": true
   }
 }

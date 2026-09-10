@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04: bootstrap remains published and public-byte/global-bin verified. Owner authorized removing only latest under 71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142 and confirmed publishing-session revocation. Separate tag-only guard bb01dc9ef894040e53ab2ac873051a8b14784852e4654593f6e4343af9db5b59 passed 19 stand-ins and real read-only npm view dist-tags JSON proof. Its login reached a username fallback after ~5 minutes and stopped; tagRemovalAttempted=false, no owned token saved, provider revocation unresolved. Preserve tag-repair receipt/state and resolve that latest CLI authorization outcome before another login. Tag-removal authority remains unused; no republish, unpublish or CI action allowed."
-last_updated: "2026-09-10T09:19:54.136Z"
+stopped_at: "05-04 bootstrap is publicly published and exact-byte/global-bin verified. Latest-only removal authority 71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142 was used once; npm returned E400, and tags/version/integrity remain unchanged. Supported logout succeeded and all eight owned local contexts are closed at recorded assurance levels. npm/cli#8490 confirms first publication creates latest alongside custom tag and reports matching removal rejection. No further tag mutation, republish, unpublish or bypass is authorized. Await explicit owner acceptance of bootstrap as temporary latest until separately approved stable CI replaces it, and operator confirmation of final tag-session logout. No CI configuration/dispatch/stable publication authority yet."
+last_updated: "2026-09-10T09:38:37.085Z"
 last_activity: 2026-09-10
-last_activity_desc: "Registry publication time 08:31:35.088Z; public archive exactly matches approved hashes/3514006 bytes. A normal fresh global registry install and generated cumpa --version passed. All owned auth/consumer state cleaned. Registry also assigns latest to the bootstrap, contrary to the original unchanged-latest condition."
+last_activity_desc: "The latest-only command returned E400 after browser authentication; public tags and immutable version stayed unchanged. Native logout succeeded and all eight owned local contexts are cleaned at recorded assurance levels. Upstream npm/cli#8490 matches this first-release behavior; no further mutation is authorized."
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 publication and public usability verified; latest-tag decision and final revocation confirmation pending
+Plan: 3 of 6 complete — 05-04 public release verified; npm latest constraint and final tag-session confirmation block closure
 Status: executing
-Checkpoint: Preserve the immutable published bootstrap and its correct bootstrap tag. Do not republish, unpublish or silently alter latest. Either remove only latest if still pointing to this bootstrap under fresh scoped authority, or record an explicit owner policy exception accepting it temporarily. Final successful-session logout confirmation and separate CI setup gates remain.
-Last activity: 2026-09-10 — Registry publication time 08:31:35.088Z; public archive exactly matches approved hashes/3514006 bytes. A normal fresh global registry install and generated cumpa --version passed. All owned auth/consumer state cleaned. Registry also assigns latest to the bootstrap, contrary to the original unchanged-latest condition.
+Checkpoint: Do not retry latest deletion, republish, unpublish or bypass the registry. Preserve the verified bootstrap and current tags. The original unchanged-latest condition requires explicit owner amendment because the authenticated supported removal failed. Record final tag-session revocation confirmation separately; stable CI still requires its own setup/run/artifact/publication gates.
+Last activity: 2026-09-10 — The latest-only command returned E400 after browser authentication; public tags and immutable version stayed unchanged. Native logout succeeded and all eight owned local contexts are cleaned at recorded assurance levels. Upstream npm/cli#8490 matches this first-release behavior; no further mutation is authorized.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T09:19:54.132Z
-Stopped at: 05-04: bootstrap remains published and public-byte/global-bin verified. Owner authorized removing only latest under 71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142 and confirmed publishing-session revocation. Separate tag-only guard bb01dc9ef894040e53ab2ac873051a8b14784852e4654593f6e4343af9db5b59 passed 19 stand-ins and real read-only npm view dist-tags JSON proof. Its login reached a username fallback after ~5 minutes and stopped; tagRemovalAttempted=false, no owned token saved, provider revocation unresolved. Preserve tag-repair receipt/state and resolve that latest CLI authorization outcome before another login. Tag-removal authority remains unused; no republish, unpublish or CI action allowed.
+Last session: 2026-09-10T09:38:37.081Z
+Stopped at: 05-04 bootstrap is publicly published and exact-byte/global-bin verified. Latest-only removal authority 71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142 was used once; npm returned E400, and tags/version/integrity remain unchanged. Supported logout succeeded and all eight owned local contexts are closed at recorded assurance levels. npm/cli#8490 confirms first publication creates latest alongside custom tag and reports matching removal rejection. No further tag mutation, republish, unpublish or bypass is authorized. Await explicit owner acceptance of bootstrap as temporary latest until separately approved stable CI replaces it, and operator confirmation of final tag-session logout. No CI configuration/dispatch/stable publication authority yet.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md
