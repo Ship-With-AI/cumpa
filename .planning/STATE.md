@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-05 Task 1: setup authority 9a227dabff0930494f45f38d031c5e2022a82315fe7f1f723cd247fec20df29b recorded in private CI journal. GitHub npm-release 21638471478 verified with reviewer alemagio/21338507, self-review allowed, admin bypass disabled, main-only branch policy 59602014 and zero secrets. No production change or CI dispatch. Await owner saved/reloaded npm GitHub publisher Ship-With-AI/cumpa + publish-npm.yml + npm-release with direct npm publish enabled; user reported no prior publisher. Authenticated npm UI action only; no token, CI run, artifact approval or stable publication authority."
-last_updated: "2026-09-10T10:34:13.991Z"
+stopped_at: "05-05 Task 1 complete: GitHub npm-release protection independently verified; owner confirmed the saved/reloaded exact npm GitHub trusted publisher and direct publication permission at 2026-09-10T10:46:44Z. Task 2 is preparing and validating the private source-bound CI candidate driver. No temporary production values, CI dispatch/upload, candidate approval, protected publisher approval or stable publication is authorized."
+last_updated: "2026-09-10T11:21:20Z"
 last_activity: 2026-09-10
-last_activity_desc: Created npm-release with reviewer alemagio, self-review allowed, administrator bypass disabled, main-only branch policy and zero environment secrets. Permanent setup resource IDs and verified responses are persisted in the private CI operation journal.
+last_activity_desc: Recorded completed npm publisher inspection in the existing private CI journal; integrating disposable ownership, failure, signal and recovery checks before requesting separate CI candidate-run authority.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 4 of 6 complete — 05-05 Task 1 GitHub setup complete; npm trusted-publisher UI confirmation pending
+Plan: 4 of 6 complete — 05-05 Task 1 complete; Task 2 private CI candidate safeguards under validation
 Status: executing
-Checkpoint: Existing setup authority covers only the exact protected GitHub environment and npm publisher relation. GitHub settings are verified and must not be recreated. Complete only the authorized npm UI connection, preserve unrelated entries, and inspect saved values after reload. No temporary production transports, CI dispatch/upload, stable artifact approval or publication are authorized.
-Last activity: 2026-09-10 — Created npm-release with reviewer alemagio, self-review allowed, administrator bypass disabled, main-only branch policy and zero environment secrets. Permanent setup resource IDs and verified responses are persisted in the private CI operation journal.
+Checkpoint: The owner confirmed saved/reloaded npm publisher values for Ship-With-AI/cumpa, publish-npm.yml and npm-release, with direct npm publication enabled. GitHub protection remains independently verified; npm configuration assurance is the owner's UI inspection, not an authenticated API observation. Do not repeat setup. Validate the private recoverable driver, then request separate authority for the exact source, two absent-only production transports, one input-free candidate build/upload and targeted cleanup. No CI run, candidate approval or stable publication authority exists.
+Last activity: 2026-09-10 — Both setup confirmations are recorded in the current private CI operation. Initial stand-in integration exposed policy/fixture and journal-resumption defects; corrections are in progress without remote mutations. Bootstrap records and the D-10 latest exception remain sealed and unchanged.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T10:34:13.987Z
-Stopped at: 05-05 Task 1: setup authority 9a227dabff0930494f45f38d031c5e2022a82315fe7f1f723cd247fec20df29b recorded in private CI journal. GitHub npm-release 21638471478 verified with reviewer alemagio/21338507, self-review allowed, admin bypass disabled, main-only branch policy 59602014 and zero secrets. No production change or CI dispatch. Await owner saved/reloaded npm GitHub publisher Ship-With-AI/cumpa + publish-npm.yml + npm-release with direct npm publish enabled; user reported no prior publisher. Authenticated npm UI action only; no token, CI run, artifact approval or stable publication authority.
+Last session: 2026-09-10T11:21:20Z
+Stopped at: 05-05 Task 2 preparation. Setup complete and operator npm confirmation recorded; private CI driver and harmless recovery checks are being integrated. Both reserved production names remain absent, source remains the reviewed public P, and dispatch/publication authority remains absent. Finish driver validation before the separate candidate-run checkpoint.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-05-PLAN.md
