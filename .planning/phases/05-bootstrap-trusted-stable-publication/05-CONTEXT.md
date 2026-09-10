@@ -67,6 +67,13 @@ After publication, independently download exact registry bytes and compare lengt
 This supersedes only REL-01/05-04's unchanged-`latest` outcome requirement; it does not rewrite the earlier failed criteria or authorize another tag mutation, publication, CI configuration, dispatch or stable artifact. Keep the immutable verified bootstrap, its existing byte approval and all historical artifacts unchanged. The bootstrap is a local interactive publication, not a CI-built/provenance-backed stable release. D-01 through D-09 otherwise remain in force.
 
 The attributable exception and final tag-session revocation confirmation are recorded in `05-BOOTSTRAP-PUBLICATION.json`. Exception SHA-256: `fdf592eef8725d7e5c5d2e6a59a94d9351b8bbca9884ebe4ae85ad9a1021fd19`. Current temporary authorization is revoked at the documented native-client/operator assurance levels, and all eight owned local contexts are cleaned.
+
+### D-11 — Exact repaired source for the next candidate cycle
+- **D-11 (2026-09-10T14:18:57Z):** The owner selected **“Approve exact amendment”** for prospective source `fcc12be291623c37211291681420fe0203df6cb0`, tree `23f87114ad2ddbc18c51f95e2611ef5b4f1e9f9c`, bound to repaired-source review SHA-256 `583814da018bed16c613b1c8a39ba2c334c0f965de7fd901e7e28ebd1c6b4e08`. This replaces only 05-05's prospective source binding, conditional on a separately authorized source-only push and verified public-main equality.
+
+The owner separately selected **“Authorize exact source push”** for that same commit/tree/review while public main remains `72c9bb499538a2c542d5165148e2d45096f7da56`. Amendment SHA-256: `ce70d14bd7eecb0bdb6be014e137c781537458e97655c97207abec46610733d4`; source-push authorization SHA-256: `e07f23c8c5a9956db1fc3f8b2191127e1f4ee05b2cabc009f65e8d787618c632`.
+
+The original source, bootstrap records, failed runs `34476480752` and `34481083655`, and all Phase 4 history remain unchanged. No current-main substitution, reuse of consumed CI authority, automatic rerun, candidate-byte approval or stable publication is granted. Later plan/result bookkeeping is not included in the authorized source push. A new candidate run still requires its own exact-source transport/build/upload/download/cleanup authority.
 </decisions>
 
 <canonical_refs>
@@ -74,6 +81,7 @@ The attributable exception and final tag-session revocation confirmation are rec
 - `.planning/REQUIREMENTS.md` PKG-01, PKG-02, REL-01, REL-02; carry forward REL-03's exact inspected/installed/published byte invariant.
 - `.planning/phases/04-exact-runtime-tarball/04-ARTIFACT-APPROVAL.md` and sealed `04-ARTIFACT-EVIDENCE.json` — immutable historical input and limits, never rewritten.
 - `.planning/phases/05-bootstrap-trusted-stable-publication/05-RESEARCH.md` — current npm/GitHub semantics. Its earlier local-tar/draft-Release proposal is superseded by D-01; factual protocol/credential/identity findings remain applicable.
+- `.planning/phases/05-bootstrap-trusted-stable-publication/05-REPAIRED-SOURCE-PUBLICATION-REVIEW.md` — exact D-11 replacement-source exposure review and separate source-only authority boundary.
 - `.planning/phases/05-bootstrap-trusted-stable-publication/05-PATTERNS.md` — producer/verifier/helper and workflow analogs.
 - `docs/distribution-operations.md` — operative policy must be updated during execution to reflect D-01 without rewriting historical Phase 3/4 approvals.
 - `.github/workflows/deploy-supabase-production.yml` — collateral push-triggered deployment and existing production-variable source.
