@@ -5,15 +5,15 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-06 stable-publication gate ready: exact candidate approval is recorded. At 2026-09-10T15:11:56Z, archive/evidence/transport rehashes, source/run/attempt/artifact, current actor approval permission, native protections, clean production transports, stable vacancy and remaining validity all passed. Publisher job 102915021477 remains waiting with no started steps. Require the exact AUTHORIZE STABLE PUBLICATION phrase; no stable authority or deployment approval exists."
-last_updated: "2026-09-10T15:11:56Z"
+stopped_at: "All six Phase 5 plans executed. One authorized publish in run34490078365 attempt1/job102915021477 succeeded; public bytes match approved archive dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141. npm11.19.1 verified attestation cryptography and all12 exact claims; normal global install and literal fresh-context npx returned1.5.0. Canonical release evidence95863383e21642a05e7666fb675c10da6315beaf43a52b2b720b473bdac3225d is committed. Final phase source/security/goal verification remains; no further publication is authorized."
+last_updated: "2026-09-10T15:47:52Z"
 last_activity: 2026-09-10
-last_activity_desc: Completed final read-only publication preflight and prepared the exact stable authority request. Pinned credential-free npm/npx verification tooling is ready; no irreversible operation has begun.
+last_activity_desc: Recorded verified trusted stable publication, exact public byte/provenance/global/npx proof and owned cleanup. Ordinary regression suite passed 58 files/463 tests; TDD closure gate passed with zero violations. Final audit reports are pending.
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 12
+  completed_plans: 13
   percent: 40
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 5 of 6 complete — 05-05 candidate approval complete; 05-06 awaits separate stable-publication authority
+Plan: 6 of 6 executed — public release verified; final code/security/goal gates pending
 Status: executing
-Checkpoint: Candidate-only approval document SHA-256 is 866598a581710953d75b90b8e60fcc321defb5317c31e0f8cbb05a6aef714f13. Recheck its exact read-only archive/evidence/source/run/attempt/artifact, native pending publisher job 102915021477, protected environment, stable vacancy, cleanup and validity before requesting the complete AUTHORIZE STABLE PUBLICATION phrase. Candidate assent does not authorize deployment approval, registry/transparency mutation or retries.
-Last activity: 2026-09-10 — At 15:11:56Z, all exact-byte and native drift checks passed, including current reviewer ability and absence of competing nonterminal release runs. Stable 1.5.0 remains absent. About 29 days 23 hours of conservative validity remain, exceeding the 15-minute publish window. The fixed verifier's scripts-disabled global check will be supplemented by the required normal scripts-enabled global install; no approved source or candidate will change.
+Checkpoint: Stable publication authority98ba4c9427acbd07a7fe6804107dde2ec16e020db7dc96a023860be453b0eecf is consumed by one successful workflow-owned publish. Release evidence95863383e21642a05e7666fb675c10da6315beaf43a52b2b720b473bdac3225d records matching public bytes, npm-verified provenance and exact claims, normal global and literal npx consumers, and cleanup. Never republish, rerun or mutate tags. Complete final phase reviews before marking Phase5 complete.
+Last activity: 2026-09-10 — Registry initially returned404 after the successful CLI response, then exposed the exact version without another publication or account action. Backend cause remains unconfirmed. `latest` now points to1.5.0 and `bootstrap` remains1.5.0-bootstrap.0. Temporary production values and all owned public-verification consumers/tooling are removed; immutable custody and historical records remain.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T15:07:17Z
-Stopped at: 05-06 stable-publication authorization checkpoint. The approved candidate is in operation-owned read-only custody, bound to run 34490078365 attempt 1 and artifact 10157421286. Conservative approval deadline remains 2026-10-10T14:35:39Z. Resume the existing private journal; preserve prior attempts, guards and sealed history. No stable authorization, npm-release approval, registry publication or provenance claim exists.
-Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-06-PLAN.md
+Last session: 2026-09-10T15:47:52Z
+Stopped at: Final Phase5 review and verification gates after all six plans executed. Public release is verified, not merely inferred from CI success. Preserve source/artifact/authorization history and do not perform any new remote mutation. After passed code/security/goal gates, close phase tracking and offer Phase6 without automatic advancement.
+Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-06-SUMMARY.md

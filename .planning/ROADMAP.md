@@ -91,7 +91,7 @@ Plans:
 2. A fixed release workflow in the approved public `Ship-With-AI/cumpa` repository publishes the reviewed MIT-licensed `@shipwithai/cumpa@1.5.0` tarball through GitHub OIDC trusted publishing without long-lived publication credentials, preserves eligible automatic provenance, and records verified attestation results under the Phase 3 release policy.
   3. Public npm resolves exact `1.5.0` for both `npm install --global @shipwithai/cumpa@1.5.0` and `npx --yes @shipwithai/cumpa@1.5.0`, with the global install exposing the `cumpa` command.
 
-**Plans**: 6 plans in 5 waves — 05-01 through 05-05 complete. The bootstrap is accepted under D-10, repaired source is public under D-11, and the exact successful CI candidate is approved. 05-06 awaits separate stable-publication authority, then registry/provenance/global/npx proof.
+**Plans**: All 6 plans executed. The approved CI archive is publicly verified as `@shipwithai/cumpa@1.5.0`, with npm-verified provenance and normal global/literal npx proof. Final code/security/goal verification remains before phase closure.
 **Wave 1**
 
 - [x] 05-01-PLAN.md — Closed configured bootstrap artifact profile
@@ -109,9 +109,9 @@ Plans:
 
 - [x] 05-05-PLAN.md — Protected publisher setup and actual CI candidate approval
 
-**Wave 5** *(next; stable publication requires separate exact-value authority)*
+**Wave 5** *(complete; one authorized stable publication and public verification passed)*
 
-- [ ] 05-06-PLAN.md — Exact stable publication and public artifact/provenance proof
+- [x] 05-06-PLAN.md — Exact stable publication and public artifact/provenance proof
 
 ### Phase 6: Independent MIT Marketplace Skill
 
@@ -148,6 +148,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
-| 5. Bootstrap & Trusted Stable Publication | 5/6 | Awaiting exact stable-publication authority | - |
+| 5. Bootstrap & Trusted Stable Publication | 6/6 | Final verification in progress | - |
 | 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
 | 7. Clean Public-Artifact Acceptance | 0/TBD | Not started | - |
