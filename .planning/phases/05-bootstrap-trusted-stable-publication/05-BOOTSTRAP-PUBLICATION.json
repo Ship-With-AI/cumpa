@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "authentication-failed-recovery-required",
+  "status": "authentication-incomplete-owned-context-cleaned",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -52,15 +52,16 @@
     "standinChecksUsedRealCredentials": false,
     "recoveryRule": "Inspect the actual private receipt and live guard first. Resolve any attempted/unknown session before another login. Closed no-session preparation can be replaced with a fresh empty context.",
     "previousPreloginPreparationClosedWithoutSession": true,
-    "freshPreparationReadyForAuthorizedLogin": true,
+    "freshPreparationReadyForAuthorizedLogin": false,
     "absoluteDeadlineEpoch": 1789019737.0,
     "idleDeadlineEpoch": 1789017037.6838763,
-    "currentState": "recovery-required",
+    "currentState": "closed",
     "running": false,
-    "cleanupComplete": false,
-    "reason": "login-failed-or-cancelled",
+    "cleanupComplete": true,
+    "reason": "operator-reported-website-login-only-without-cli-authorization",
     "ownedRecoveryStatePreserved": true,
-    "lastHeartbeatEpoch": 1789016209.4129128
+    "lastHeartbeatEpoch": 1789018619.8309839,
+    "failedAttemptLastHeartbeatEpoch": 1789016209.4129128
   },
   "authentication": {
     "authorized": true,
@@ -88,8 +89,20 @@
     },
     "authorizationSha256": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b",
     "authenticated": false,
-    "outcome": "Guarded CLI login ended without a usable owned token; precise private CLI error was not retained.",
-    "failureObservedAt": "2026-09-10T05:12:50Z"
+    "outcome": "Guarded CLI login did not establish an owned token. Operator subsequently clarified that only website login completed, without CLI authorization.",
+    "failureObservedAt": "2026-09-10T05:12:50Z",
+    "operatorLoginReport": {
+      "reportedAt": "2026-09-10T05:30:55Z",
+      "statement": "I just logged in",
+      "interpretation": "User reports successful login; whether the isolated CLI session completed remains unresolved."
+    },
+    "operatorLoginClarification": {
+      "reportedAt": "2026-09-10T05:36:59Z",
+      "source": "Direct user selection",
+      "response": "Website login only",
+      "selectedMeaning": "Signed into npm in the browser, but did not complete an approval for CLI access.",
+      "assurance": "Operator-reported absence of completed CLI authorization; not an independently observed server revocation."
+    }
   },
   "publication": {
     "authorized": false,
@@ -97,10 +110,21 @@
   },
   "revocation": {
     "sessionExists": null,
-    "providerRevocationClaim": "unresolved",
+    "providerRevocationClaim": null,
     "ownedLocalCredentialFound": false,
-    "providerOutcomeRequiresConfirmation": true,
-    "automaticRetryProhibited": true
+    "providerOutcomeRequiresConfirmation": false,
+    "automaticRetryProhibited": true,
+    "automaticLogoutOutcome": "unresolved",
+    "operatorObservation": {
+      "reportedAt": "2026-09-10T05:36:59Z",
+      "source": "Direct user selection",
+      "response": "Website login only",
+      "selectedMeaning": "Signed into npm in the browser, but did not complete an approval for CLI access.",
+      "assurance": "Operator-reported absence of completed CLI authorization; not an independently observed server revocation."
+    },
+    "closureBasis": "Operator reports no completed CLI authorization; owned empty local context removed. No independent server invalidation claim.",
+    "ownedCleanupComplete": true,
+    "recoveryReceiptPreserved": true
   },
   "limits": [
     "Readiness is a timestamped observation, not a promise the guard remains alive after idle/deadline or process loss.",

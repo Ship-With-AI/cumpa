@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 Task 6: authorized isolated login around 2026-09-10T04:55Z failed; guard recovery-required, no owned local credential, provider outcome/revocation unresolved. Preserve receipt/state; no new login or publication. Need native provider/operator outcome before cleanup-first recovery can close."
-last_updated: "2026-09-10T05:14:57.402Z"
+stopped_at: "05-04 Task 6: operator reports Website login only, without CLI authorization. Owned empty context removed; operation closed at operator-reported assurance, receipt retained, no independent server-revocation claim. Browser/normal npm login preserved. Fresh isolated CLI login needs new authority; no publication."
+last_updated: "2026-09-10T05:38:19.086Z"
 last_activity: 2026-09-10
-last_activity_desc: Guard attempted revocation then retained recovery state; all owned credential locations were checked, no debug log exists, native-browser relay read unavailable; no publication attempted
+last_activity_desc: Owned empty authentication state removed using the existing cleanup boundary; operator clarification and its assurance limits recorded, with no retry or publication
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 Tasks 1–5 complete; Task 6 attempted and blocked on provider-outcome recovery
+Plan: 3 of 6 complete — 05-04 Tasks 1–5 complete; Task 6's first attempt closed without completed CLI authorization
 Status: executing
-Checkpoint: The login authority was used for one attempt. No publication or new login is authorized. Owned configs contain no credentials, but that is not proof no provider session was issued; preserve the recovery receipt and obtain a correctly labeled provider/operator outcome.
-Last activity: 2026-09-10 — Guard attempted revocation then retained recovery state; all owned credential locations were checked, no debug log exists, native-browser relay read unavailable; no publication attempted
+Checkpoint: The first login authority is consumed. Operator reports website sign-in only, not completed CLI authorization; local cleanup is verified and server revocation is not claimed. Preserve the browser login and retained receipt. Obtain fresh isolated-login authority before another attempt; publication remains a separate gate.
+Last activity: 2026-09-10 — Owned empty authentication state removed using the existing cleanup boundary; operator clarification and its assurance limits recorded, with no retry or publication
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T05:14:57.398Z
-Stopped at: 05-04 Task 6: authorized isolated login around 2026-09-10T04:55Z failed; guard recovery-required, no owned local credential, provider outcome/revocation unresolved. Preserve receipt/state; no new login or publication. Need native provider/operator outcome before cleanup-first recovery can close.
+Last session: 2026-09-10T05:38:19.081Z
+Stopped at: 05-04 Task 6: operator reports Website login only, without CLI authorization. Owned empty context removed; operation closed at operator-reported assurance, receipt retained, no independent server-revocation claim. Browser/normal npm login preserved. Fresh isolated CLI login needs new authority; no publication.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md
