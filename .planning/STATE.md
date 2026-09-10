@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-05 candidate run 34476480752 attempt 1 failed the installed relaunch acceptance test at 120000ms; publish was skipped. Both owned production transports are independently absent and the authoritative fingerprint is unchanged. Exact CI Node/npm local full acceptance and five repeated relaunches passed using immutable published bootstrap bytes for diagnosis only. No CI artifact exists, root cause is unconfirmed, and no new dispatch or stable publication is authorized."
-last_updated: "2026-09-10T13:04:39Z"
+stopped_at: "05-05 runs 34476480752 and 34481083655, each attempt 1, failed acceptance and were cleaned; publishers were skipped and no artifacts uploaded. Second-run logs identified support-dialog-backdrop intercepting an asset click. A deterministic delayed-refresh reproduction failed before the shared startup-wait fix and passed afterward. Full installed acceptance and strict affected-file typecheck pass. The fix changes tests only; replacement source publication and a new CI run require separate authority."
+last_updated: "2026-09-10T13:46:19Z"
 last_activity: 2026-09-10
-last_activity_desc: Diagnosed the failed CI acceptance without source changes or remote retries. Removed owned diagnostic toolchains/reports and preserved sealed bootstrap inputs. Await owner choice between one fresh same-source candidate cycle and source instrumentation with separate publication/run gates.
+last_activity_desc: Fixed the confirmed installed-acceptance startup race without changing application behavior, timeouts or acceptance requirements. Preserved both failed runs and immutable bootstrap inputs; preparing the repaired-source publication review.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 4 of 6 complete — 05-05 Task 1 complete; Task 2 candidate failed and cleaned; no candidate exists for Task 3 approval
+Plan: 4 of 6 complete — 05-05 Task 1 complete; prior Task 2 cycles failed and cleaned; verified acceptance fix awaits replacement-source review
 Status: executing
-Checkpoint: Run 34476480752 at approved public P, attempt 1, passed source admission and producer/scanner stages but timed out in installed relaunch acceptance. The publisher was skipped and no artifact was uploaded. The candidate-run authorization is consumed. A fresh input-free candidate cycle at the same P requires a new explicit source/transport/build/upload/download/cleanup authorization; a diagnostic source change additionally requires separate source-publication authority. Do not rerun the old workflow or substitute historical bytes.
-Last activity: 2026-09-10 — Both reserved production names are absent; authoritative configuration is unchanged. Local diagnosis with Node v24.20.0/npm 11.19.1 passed direct and synchronous-parent relaunch, five repeated relaunches, and full installed acceptance against the immutable published bootstrap. This is not CI candidate proof. The failed CI logs lack the awaited operation and no failed-run artifact exists; shutdown/request and macOS-native/filesystem stalls remain hypotheses, not established causes.
+Checkpoint: Both earlier candidate authorizations are consumed; no stable authority exists. The accepted public source remains 72c9bb499538a2c542d5165148e2d45096f7da56. The local repair shares session opening across installed acceptance tests and waits for the actual startup support result and optional invitation dismissal. Review and separately authorize an exact replacement public source before requesting one new source-bound candidate cycle. Do not rerun either failed workflow, substitute historical bytes, or alter sealed bootstrap records.
+Last activity: 2026-09-10 — The asset regression holds support refresh past the editor's first paint: old one-shot visibility logic failed on the visible backdrop; the fixed shared opener passes. All installed browser/native acceptance scenarios pass locally against unchanged published bootstrap bytes, and strict TypeScript checking passes for the three affected files. This verifies the harness fix, not a new CI candidate. No production code, timeout, forced click or acceptance bypass was added.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T13:04:39Z
-Stopped at: 05-05 post-failure owner decision. Private journal preserves original/repaired guard bindings, actual authorizations, consumed run identity, verified cleanup and bounded local diagnostic results. No product/workflow source was changed, no automatic rerun occurred, and no candidate or stable publication approval exists.
+Last session: 2026-09-10T13:46:19Z
+Stopped at: Repaired acceptance source-publication review. The private journal preserves both failed native run outcomes, consumed authorizations, cleanup and deterministic RED/GREEN/full-acceptance proof. Both temporary production names are absent. No source push, new CI dispatch, candidate approval or stable publication is authorized.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-05-PLAN.md

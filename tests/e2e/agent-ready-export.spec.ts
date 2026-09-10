@@ -25,6 +25,7 @@ import { ExportReviewResultSchema } from '../../src/contracts/api.js';
 import { createDirtyGitFixture, type DirtyGitFixture } from '../helpers/git-fixture.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
 import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.js';
+import { openRuntimeSession } from '../helpers/open-runtime-session.js';
 import {
   installRuntimeArtifact,
   readRuntimeArtifact,
@@ -210,12 +211,6 @@ async function stopGeneratedCli(running: RunningCli): Promise<void> {
   closeSync(running.outputDescriptor);
 }
 
-async function openSession(page: Page, url: string): Promise<void> {
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('.monaco-diff-editor')).toBeVisible();
-  const notNow = page.getByRole('button', { name: 'Not now', exact: true });
-  if (await notNow.isVisible()) await notNow.click();
-}
 
 async function ensureReviewOpen(page: Page): Promise<void> {
   const review = page.getByRole('button', { name: 'Review', exact: true });
@@ -332,7 +327,7 @@ test('installed resume after relaunch preserves accepted review state, completes
     let reExportStablePairSha256: StablePairSha256 | undefined;
     let reExportKind: 'exported' | 'reExportUnsupported' | undefined;
   try {
-    await openSession(page, await waitForLoopbackUrl(running));
+    await openRuntimeSession(page, await waitForLoopbackUrl(running));
     await addHeadComment(page, body);
     await saveSummary(page, summary);
   } finally {
@@ -348,7 +343,7 @@ test('installed resume after relaunch preserves accepted review state, completes
   const resumedPage = await browser.newPage();
   running = startGeneratedCli(fixture, original);
   try {
-    await openSession(resumedPage, await waitForLoopbackUrl(running));
+    await openRuntimeSession(resumedPage, await waitForLoopbackUrl(running));
     await ensureReviewOpen(resumedPage);
     await expect(resumedPage.locator('.review-summary__preview')).toContainText(summary);
     await expect(resumedPage.locator('.comments-rail__comment')).toContainText(body);
@@ -423,7 +418,7 @@ test('installed resume after relaunch preserves accepted review state, completes
   const differentPage = await browser.newPage();
   running = startGeneratedCli(fixture, different);
   try {
-    await openSession(differentPage, await waitForLoopbackUrl(running));
+    await openRuntimeSession(differentPage, await waitForLoopbackUrl(running));
     await ensureReviewOpen(differentPage);
     await expect(differentPage.getByText(summary, { exact: true })).toHaveCount(0);
     await expect(differentPage.locator('.comments-rail__comment', { hasText: body })).toHaveCount(0);
@@ -468,7 +463,7 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
   const running = startAttachedCli(fixture, { base: fixture.baseRef, head: fixture.headRef });
 
   try {
-    await openSession(page, await waitForAttachedLoopbackUrl(running));
+    await openRuntimeSession(page, await waitForAttachedLoopbackUrl(running));
     const review = page.getByRole('button', { name: 'Review', exact: true });
     if (await review.getAttribute('aria-expanded') === 'true') await review.click();
     await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
@@ -527,7 +522,7 @@ test('attached range review stays silent until Finish then emits one canonical V
   try {
     const url = await waitForAttachedLoopbackUrl(running);
     expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
-    await openSession(page, url);
+    await openRuntimeSession(page, url);
     await ensureReviewOpen(page);
     await expect(page.getByRole('button', { name: 'Finish review', exact: true })).toBeVisible();
 
@@ -572,8 +567,8 @@ test('equivalent installed attached ranges retain canonical provenance while own
 
   try {
     await Promise.all([
-      openSession(page, await waitForAttachedLoopbackUrl(first)),
-      openSession(secondPage, await waitForAttachedLoopbackUrl(second)),
+      openRuntimeSession(page, await waitForAttachedLoopbackUrl(first)),
+      openRuntimeSession(secondPage, await waitForAttachedLoopbackUrl(second)),
     ]);
     await Promise.all([ensureReviewOpen(page), ensureReviewOpen(secondPage)]);
     await saveSummary(page, 'First equivalent attached review.');
@@ -645,7 +640,7 @@ test('installed exact-patch review grounds the submitted patch and emits canonic
   try {
     const url = await waitForAttachedLoopbackUrl(running);
     expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
-    await openSession(page, url);
+    await openRuntimeSession(page, url);
     await addHeadComment(page, 'Grounded exact-patch feedback.', 9, 'export const changed = "head value";');
     const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
     await page.getByRole('button', { name: 'Finish review', exact: true }).click();
@@ -729,7 +724,7 @@ test('installed configured support remains unavailable without outbound access a
   });
 
   try {
-    await openSession(page, await waitForAttachedLoopbackUrl(running));
+    await openRuntimeSession(page, await waitForAttachedLoopbackUrl(running));
     const support = page.getByRole('button', { name: 'Support Cumpa', exact: true });
     await expect(support).toBeVisible();
     await support.click();

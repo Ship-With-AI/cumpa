@@ -18,7 +18,9 @@ import { once } from 'node:events';
 
 import { expect, test } from '@playwright/test';
 
+import { SessionResponseSchema } from '../../src/contracts/api.js';
 import { createDirtyGitFixture } from '../helpers/git-fixture.js';
+import { openRuntimeSession } from '../helpers/open-runtime-session.js';
 import {
   installRuntimeArtifact,
   readRuntimeArtifact,
@@ -144,18 +146,35 @@ test('supplied archive installs globally and serves its complete browser asset g
   child.stdout?.pipe(output, { end: false });
   child.stderr?.pipe(output, { end: false });
 
+  // Keep support startup pending beyond the editor's first paint.
+  const supportRefreshRelease = Promise.withResolvers<void>();
   try {
     await page.route('**/*', (route) => {
       const host = new URL(route.request().url()).hostname;
       return ['127.0.0.1', '[::1]', 'localhost'].includes(host) ? route.continue() : route.abort();
     });
+    await page.route('**/api/support/refresh', async (route) => {
+      await supportRefreshRelease.promise;
+      await route.continue();
+    });
     const url = await loopbackUrl(outputPath, browserMarker, child);
     const responseFailures: string[] = [];
     page.on('requestfailed', (request) => responseFailures.push(request.url()));
-    await page.goto(url);
+    const sessionResponse = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/session');
+    const opening = openRuntimeSession(page, url);
     await expect(page.locator('.monaco-diff-editor')).toBeVisible();
-    const notNow = page.getByRole('button', { name: 'Not now', exact: true });
-    if (await notNow.isVisible()) await notNow.click();
+    const session = SessionResponseSchema.parse(await (await sessionResponse).json());
+    const supportResponse = session.support?.enabled === true
+      ? page.waitForResponse((response) => new URL(response.url()).pathname === '/api/support/refresh')
+      : undefined;
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+    supportRefreshRelease.resolve();
+    await opening;
+    if (supportResponse !== undefined) {
+      await (await supportResponse).finished();
+      await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+      await expect(page.locator('.support-dialog-backdrop')).toBeHidden();
+    }
     await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
     const assets = installedAssets(installed);
     const responses = await page.evaluate(async (paths) => await Promise.all(paths.map(async (path) => {
@@ -169,6 +188,7 @@ test('supplied archive installs globally and serves its complete browser asset g
     }
     expect(assets.some((path) => /codicon.*\.(?:ttf|woff2?)/u.test(path))).toBe(true);
   } finally {
+    supportRefreshRelease.resolve();
     await page.close();
     if (child.exitCode === null && child.signalCode === null) {
       const exited = once(child, 'exit');
