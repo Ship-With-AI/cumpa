@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-05 Task 1: read-only preflight complete. GitHub alemagio (21338507) has repo admin; public Ship-With-AI/cumpa (1327753770, owner 224984099), main P=72c9bb499538a2c542d5165148e2d45096f7da56. Workflow 354343281 publish-npm.yml active, zero runs; npm-release absent. Stable 1.5.0 absent in packument and exact endpoint. Last scoped npm actor alemagio/shipwithai owner with 2FA auth-only; existing npm trust configuration requires authenticated UI (GET 401). Await owner inspection plus setup-only authorization: npm-release reviewer alemagio, self-review allowed, main branch only, admin bypass disabled, no npm/support secrets; npm GitHub publisher Ship-With-AI/cumpa + publish-npm.yml + npm-release with direct publish. No CI dispatch/upload/artifact approval/stable publication yet."
-last_updated: "2026-09-10T10:13:50.976Z"
+stopped_at: "05-05 Task 1: setup authority 9a227dabff0930494f45f38d031c5e2022a82315fe7f1f723cd247fec20df29b recorded in private CI journal. GitHub npm-release 21638471478 verified with reviewer alemagio/21338507, self-review allowed, admin bypass disabled, main-only branch policy 59602014 and zero secrets. No production change or CI dispatch. Await owner saved/reloaded npm GitHub publisher Ship-With-AI/cumpa + publish-npm.yml + npm-release with direct npm publish enabled; user reported no prior publisher. Authenticated npm UI action only; no token, CI run, artifact approval or stable publication authority."
+last_updated: "2026-09-10T10:34:13.991Z"
 last_activity: 2026-09-10
-last_activity_desc: Verified GitHub admin identity, exact public source, absent npm-release environment, active manual release workflow with no runs, and stable-version absence. Confirmed native reviewer/main-branch/admin-bypass controls and the authenticated npm trust endpoint.
+last_activity_desc: Created npm-release with reviewer alemagio, self-review allowed, administrator bypass disabled, main-only branch policy and zero environment secrets. Permanent setup resource IDs and verified responses are persisted in the private CI operation journal.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 4 of 6 complete — 05-05 Task 1 awaits protected release-setup authorization
+Plan: 4 of 6 complete — 05-05 Task 1 GitHub setup complete; npm trusted-publisher UI confirmation pending
 Status: executing
-Checkpoint: Create/configure only the proposed protected npm-release environment and exact npm trusted-publisher relation after explicit setup authority. Preserve unrelated environments/publishers and the authoritative production configuration. Npm configuration is not observable anonymously; use the authenticated owner interface without collecting a token. Setup does not authorize CI dispatch/upload, stable artifact approval or publication.
-Last activity: 2026-09-10 — Verified GitHub admin identity, exact public source, absent npm-release environment, active manual release workflow with no runs, and stable-version absence. Confirmed native reviewer/main-branch/admin-bypass controls and the authenticated npm trust endpoint.
+Checkpoint: Existing setup authority covers only the exact protected GitHub environment and npm publisher relation. GitHub settings are verified and must not be recreated. Complete only the authorized npm UI connection, preserve unrelated entries, and inspect saved values after reload. No temporary production transports, CI dispatch/upload, stable artifact approval or publication are authorized.
+Last activity: 2026-09-10 — Created npm-release with reviewer alemagio, self-review allowed, administrator bypass disabled, main-only branch policy and zero environment secrets. Permanent setup resource IDs and verified responses are persisted in the private CI operation journal.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T10:13:50.972Z
-Stopped at: 05-05 Task 1: read-only preflight complete. GitHub alemagio (21338507) has repo admin; public Ship-With-AI/cumpa (1327753770, owner 224984099), main P=72c9bb499538a2c542d5165148e2d45096f7da56. Workflow 354343281 publish-npm.yml active, zero runs; npm-release absent. Stable 1.5.0 absent in packument and exact endpoint. Last scoped npm actor alemagio/shipwithai owner with 2FA auth-only; existing npm trust configuration requires authenticated UI (GET 401). Await owner inspection plus setup-only authorization: npm-release reviewer alemagio, self-review allowed, main branch only, admin bypass disabled, no npm/support secrets; npm GitHub publisher Ship-With-AI/cumpa + publish-npm.yml + npm-release with direct publish. No CI dispatch/upload/artifact approval/stable publication yet.
+Last session: 2026-09-10T10:34:13.987Z
+Stopped at: 05-05 Task 1: setup authority 9a227dabff0930494f45f38d031c5e2022a82315fe7f1f723cd247fec20df29b recorded in private CI journal. GitHub npm-release 21638471478 verified with reviewer alemagio/21338507, self-review allowed, admin bypass disabled, main-only branch policy 59602014 and zero secrets. No production change or CI dispatch. Await owner saved/reloaded npm GitHub publisher Ship-With-AI/cumpa + publish-npm.yml + npm-release with direct npm publish enabled; user reported no prior publisher. Authenticated npm UI action only; no token, CI run, artifact approval or stable publication authority.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-05-PLAN.md
