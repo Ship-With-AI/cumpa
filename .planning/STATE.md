@@ -5,8 +5,8 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 second authorized publication succeeded: @shipwithai/cumpa@1.5.0-bootstrap.0, sha256 4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f, 3514006 bytes. Public registry hashes and normal isolated global install/generated bin verified; registry publisher alemagio, published 2026-09-10T08:31:35.088Z. Supported logout succeeded; all six owned auth contexts and public consumer scratch removed. Unexpected registry latest=1.5.0-bootstrap.0 alongside correct bootstrap tag despite explicit --tag bootstrap. No tag repair/unpublish/republish authorized. Await owner latest-tag choice and latest successful-session logout confirmation; stable/CI gates remain separate."
-last_updated: "2026-09-10T08:50:03.561Z"
+stopped_at: "05-04: bootstrap remains published and public-byte/global-bin verified. Owner authorized removing only latest under 71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142 and confirmed publishing-session revocation. Separate tag-only guard bb01dc9ef894040e53ab2ac873051a8b14784852e4654593f6e4343af9db5b59 passed 19 stand-ins and real read-only npm view dist-tags JSON proof. Its login reached a username fallback after ~5 minutes and stopped; tagRemovalAttempted=false, no owned token saved, provider revocation unresolved. Preserve tag-repair receipt/state and resolve that latest CLI authorization outcome before another login. Tag-removal authority remains unused; no republish, unpublish or CI action allowed."
+last_updated: "2026-09-10T09:19:54.136Z"
 last_activity: 2026-09-10
 last_activity_desc: "Registry publication time 08:31:35.088Z; public archive exactly matches approved hashes/3514006 bytes. A normal fresh global registry install and generated cumpa --version passed. All owned auth/consumer state cleaned. Registry also assigns latest to the bootstrap, contrary to the original unchanged-latest condition."
 progress:
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T08:50:03.556Z
-Stopped at: 05-04 second authorized publication succeeded: @shipwithai/cumpa@1.5.0-bootstrap.0, sha256 4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f, 3514006 bytes. Public registry hashes and normal isolated global install/generated bin verified; registry publisher alemagio, published 2026-09-10T08:31:35.088Z. Supported logout succeeded; all six owned auth contexts and public consumer scratch removed. Unexpected registry latest=1.5.0-bootstrap.0 alongside correct bootstrap tag despite explicit --tag bootstrap. No tag repair/unpublish/republish authorized. Await owner latest-tag choice and latest successful-session logout confirmation; stable/CI gates remain separate.
+Last session: 2026-09-10T09:19:54.132Z
+Stopped at: 05-04: bootstrap remains published and public-byte/global-bin verified. Owner authorized removing only latest under 71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142 and confirmed publishing-session revocation. Separate tag-only guard bb01dc9ef894040e53ab2ac873051a8b14784852e4654593f6e4343af9db5b59 passed 19 stand-ins and real read-only npm view dist-tags JSON proof. Its login reached a username fallback after ~5 minutes and stopped; tagRemovalAttempted=false, no owned token saved, provider revocation unresolved. Preserve tag-repair receipt/state and resolve that latest CLI authorization outcome before another login. Tag-removal authority remains unused; no republish, unpublish or CI action allowed.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md

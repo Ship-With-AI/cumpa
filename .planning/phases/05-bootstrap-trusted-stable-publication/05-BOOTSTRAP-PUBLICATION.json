@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "published-and-usable-latest-tag-discrepancy-requires-owner-decision",
+  "status": "published-and-usable-tag-repair-authentication-recovery-required",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -112,7 +112,12 @@
     "state": "complete",
     "ownedLocalCredentialFound": false,
     "independentTokenRejectionObserved": false,
-    "operatorConfirmationOfLatestLogout": "pending"
+    "operatorConfirmationOfLatestLogout": {
+      "at": "2026-09-10T09:06:19Z",
+      "source": "Direct user selection",
+      "response": "Revocation confirmed",
+      "assurance": "Operator confirmation in addition to the supported npm logout; independent token rejection not claimed."
+    }
   },
   "limits": [
     "Readiness is a timestamped observation, not a promise the guard remains alive after idle/deadline or process loss.",
@@ -846,6 +851,60 @@
     "publishedBytesAndBinVerified": true,
     "tagRepairAttempted": false,
     "unpublishAttempted": false,
-    "ownerDecisionRequired": true
+    "ownerDecisionRequired": true,
+    "ownerDecision": "Remove only latest",
+    "repairAuthorized": true,
+    "policyExceptionAccepted": false
+  },
+  "latestTagRepair": {
+    "authorization": {
+      "kind": "cumpa.bootstrap-latest-removal-authorization/v1",
+      "authorizer": "Alessandro Magionami",
+      "capturedAt": "2026-09-10T09:06:19Z",
+      "source": "Direct user selection at registry-metadata decision",
+      "verbatimResponse": "Remove only latest",
+      "selectedMeaning": "Authorize one fresh isolated npm login as alemagio and removal of only latest if it still points to 1.5.0-bootstrap.0; preserve the immutable version, bootstrap and all other tags; revoke the new session afterward; no republish or unpublish.",
+      "package": "@shipwithai/cumpa",
+      "tag": "latest",
+      "expectedVersion": "1.5.0-bootstrap.0",
+      "preserveBootstrapTag": "1.5.0-bootstrap.0",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+      "account": "alemagio",
+      "attemptLimit": 1,
+      "freshIsolatedLoginAuthorized": true,
+      "publishOrUnpublishAuthorized": false,
+      "stableOrCiAuthorized": false
+    },
+    "authorizationSha256": "71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142",
+    "guardSha256": "bb01dc9ef894040e53ab2ac873051a8b14784852e4654593f6e4343af9db5b59",
+    "status": "authentication-recovery-required",
+    "before": {
+      "name": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "tags": {
+        "bootstrap": "1.5.0-bootstrap.0",
+        "latest": "1.5.0-bootstrap.0"
+      },
+      "integrity": "sha512-911RewXQwTbNLlrqprXf9elM89Pcz41WYhAHSzQ6YZjo9Ka9zJPwcpR1uHoP11dnYYLQEpoCagReM8kXb933hw==",
+      "shasum": "c34bee6983580de9f0fbbcce3bbb6759fc9933f2",
+      "publishedAt": "2026-09-10T08:31:35.088Z"
+    },
+    "authenticationAttempted": true,
+    "removalAttempted": false,
+    "harmlessChecksPassed": 19,
+    "publicationCapabilityPresent": false,
+    "nativeTagJsonReadVerified": true,
+    "guardRunning": false,
+    "idleDeadlineEpoch": 1789032408.0002441,
+    "absoluteDeadlineEpoch": 1789035107.112753,
+    "removalAuthorizationUnconsumed": true,
+    "guardReason": "unsupported-non-browser-credential-prompt",
+    "unsupportedPrompt": "username",
+    "ownedTokenPresent": false,
+    "providerRevocation": "unresolved",
+    "ownedCleanupComplete": false,
+    "recoveryStateRetained": true
   }
 }
