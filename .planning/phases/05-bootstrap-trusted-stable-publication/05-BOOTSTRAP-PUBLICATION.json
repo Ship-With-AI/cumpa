@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "local-bootstrap-selected-preparing-fresh-guard",
+  "status": "awaiting-exact-bootstrap-publication-authorization",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -19,16 +19,21 @@
   "guard": {
     "serviceName": "cumpa-bootstrap-auth-guard",
     "codeSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
-    "readyObserved": false,
-    "running": false,
-    "currentState": "preparing",
+    "readyObserved": true,
+    "running": true,
+    "currentState": "authenticated-awaiting-separate-authority",
     "idleLimitSeconds": 900,
     "absoluteLimitSeconds": 3600,
     "standinChecksPassed": 15,
     "standinChecksUsedRealCredentials": false,
     "nativePtyForNpm": true,
     "rawNpmOutputRemainsPrivate": true,
-    "recoveryRule": "Inspect the owned receipt; cleanup-first for any attempted or unknown session before another login."
+    "recoveryRule": "Inspect the owned receipt; cleanup-first for any attempted or unknown session before another login.",
+    "nodeVersion": "v24.15.0",
+    "npmVersion": "11.12.1",
+    "absoluteDeadlineEpoch": 1789024168.943604,
+    "idleDeadlineEpoch": 1789021493.689931,
+    "privateOwnershipReceiptPersisted": true
   },
   "authentication": {
     "authorized": true,
@@ -53,22 +58,23 @@
       "hostedConfigurationOrCiAuthorized": false
     },
     "authorizationSha256": "8a5a6e0e2073810602eb911a6d18a019eee9ed4bb39457ed35eb3ac7ae4f98e8",
-    "attempted": false,
-    "authenticated": false,
-    "publicAccount": null,
-    "authorityAnd2faVerified": false,
-    "previousAuthorizationConsumed": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b"
+    "attempted": true,
+    "authenticated": true,
+    "publicAccount": "alemagio",
+    "authorityAnd2faVerified": true,
+    "previousAuthorizationConsumed": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b",
+    "attemptRequested": true
   },
   "publication": {
     "authorized": false,
     "attempted": false
   },
   "revocation": {
-    "sessionExists": false,
+    "sessionExists": true,
     "providerRevocationClaim": null,
-    "ownedLocalCredentialFound": false,
+    "ownedLocalCredentialFound": true,
     "ownedCleanupComplete": false,
-    "state": "not-started"
+    "state": "pending-terminal-outcome"
   },
   "limits": [
     "Readiness is a timestamped observation, not a promise the guard remains alive after idle/deadline or process loss.",
@@ -248,5 +254,22 @@
         "rawLoginOrProfileOutputDisclosed": false
       }
     }
-  ]
+  ],
+  "authorityObservation": {
+    "observedAt": "2026-09-10T06:14:18Z",
+    "publicAccount": "alemagio",
+    "scope": "@shipwithai",
+    "organizationRole": "owner",
+    "scopePackageCreationAuthority": true,
+    "twoFactorMode": "auth-only",
+    "twoFactorPending": false,
+    "authenticatedPackageAbsent": true,
+    "publicBootstrapVersionAbsent": true,
+    "publicStableVersionAbsent": true,
+    "priorLatest": null,
+    "priorLatestBasis": "Public and authenticated package absence",
+    "approvedArchiveEvidenceAndApprovalUnchanged": true,
+    "publicSourceSha": "72c9bb499538a2c542d5165148e2d45096f7da56",
+    "authenticationGuardRemainingSeconds": 634
+  }
 }

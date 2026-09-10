@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04: owner selected first local publication after route explanation; one fresh isolated CLI login authorized, final exact publication gate pending account/2FA checks. Private guard a2c35e5f… passed diagnostic RED/GREEN and all 15 fake-npm lifecycle checks. Inspect actual private receipt before any action. No CI bootstrap token."
-last_updated: "2026-09-10T06:07:54.918Z"
+stopped_at: "05-04 Task 8: isolated CLI session authenticated as alemagio, owner of shipwithai; 2FA auth-only pending=false; authenticated/public package absence and approved bytes/source bindings verified at 2026-09-10T06:14:18Z. Await exact one-attempt bootstrap/public publication authorization. Live guard owns bounded cleanup; inspect current private receipt/deadlines before any action. No publish request sent."
+last_updated: "2026-09-10T06:16:14.790Z"
 last_activity: 2026-09-10
-last_activity_desc: Local-first route restored after owner explanation; fixed missing bounded private-guard failure diagnostics with observed RED and 15 passing fake-npm lifecycle scenarios. No new authentication or publication has started yet.
+last_activity_desc: "At 06:14:18Z observed alemagio/owner, 2FA auth-only pending=false, authenticated/public absence and unchanged approved identities. No publication attempted; the private guard owns cleanup while awaiting the exact decision."
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 local bootstrap resumed; fresh isolated authentication precedes the final exact publication gate
+Plan: 3 of 6 complete — 05-04 Tasks 1–7 complete; Task 8 awaiting exact bootstrap publication authority
 Status: executing
-Checkpoint: Use one fresh temporary isolated CLI login for the selected local-bootstrap route. Do not create a CI granular token or reuse normal npm credentials. Account/scope/2FA and current vacancy must be observed before final exact publication confirmation. Inspect the live private receipt for the actual authentication and cleanup state.
-Last activity: 2026-09-10 — Local-first route restored after owner explanation; fixed missing bounded private-guard failure diagnostics with observed RED and 15 passing fake-npm lifecycle scenarios. No new authentication or publication has started yet.
+Checkpoint: Only the approved 1.5.0-bootstrap.0 archive may be published once under bootstrap/public as alemagio (shipwithai owner). No latest assignment, retry, rebuild or stable/CI authority is implied. Stop/rejection/failure/expiry must revoke the isolated session; preserve the normal browser/npm state.
+Last activity: 2026-09-10 — At 06:14:18Z observed alemagio/owner, 2FA auth-only pending=false, authenticated/public absence and unchanged approved identities. No publication attempted; the private guard owns cleanup while awaiting the exact decision.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T06:07:54.748Z
-Stopped at: 05-04: owner selected first local publication after route explanation; one fresh isolated CLI login authorized, final exact publication gate pending account/2FA checks. Private guard a2c35e5f… passed diagnostic RED/GREEN and all 15 fake-npm lifecycle checks. Inspect actual private receipt before any action. No CI bootstrap token.
+Last session: 2026-09-10T06:16:14.782Z
+Stopped at: 05-04 Task 8: isolated CLI session authenticated as alemagio, owner of shipwithai; 2FA auth-only pending=false; authenticated/public package absence and approved bytes/source bindings verified at 2026-09-10T06:14:18Z. Await exact one-attempt bootstrap/public publication authorization. Live guard owns bounded cleanup; inspect current private receipt/deadlines before any action. No publish request sent.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md
