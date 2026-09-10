@@ -4,10 +4,9 @@ plan: 04
 subsystem: distribution
 tags: [npm, bootstrap, immutable-artifact, guarded-authentication, revocation]
 requires:
-  - phase: 05-01
-    provides: Configured bootstrap producer and installed acceptance profile
-  - phase: 05-03
-    provides: Reviewed release workflow and operative publication policy
+  - phase: 04-exact-runtime-tarball
+    provides: Immutable runtime artifact custody and acceptance contracts
+depends_on: [05-01, 05-03]
 provides:
   - Public usable MIT bootstrap with exact approved bytes and generated-bin proof
   - Exact reviewed public source and no collateral deployment observations
