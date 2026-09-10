@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 Task 6: bootstrap artifact approval c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec sealed; live cumpa-bootstrap-auth-guard prepared on Node24.15/npm11.12.1 after 15 harmless lifecycle checks. No authentication/publication authorized. Inspect current owned receipt, guard and deadlines first; cleanup-first recovery for any attempted/unknown session."
-last_updated: "2026-09-09T21:11:52.130Z"
-last_activity: 2026-09-09
-last_activity_desc: Approval c91450bd… sealed; 15 guard stand-ins passed; live guarded status and empty configs verified, with no authentication or publication attempt
+stopped_at: "05-04 Task 6: authorized isolated login around 2026-09-10T04:55Z failed; guard recovery-required, no owned local credential, provider outcome/revocation unresolved. Preserve receipt/state; no new login or publication. Need native provider/operator outcome before cleanup-first recovery can close."
+last_updated: "2026-09-10T05:14:57.402Z"
+last_activity: 2026-09-10
+last_activity_desc: Guard attempted revocation then retained recovery state; all owned credential locations were checked, no debug log exists, native-browser relay read unavailable; no publication attempted
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 Tasks 1–5 complete; Task 6 waiting for isolated interactive npm authentication authorization
+Plan: 3 of 6 complete — 05-04 Tasks 1–5 complete; Task 6 attempted and blocked on provider-outcome recovery
 Status: executing
-Checkpoint: Approved bootstrap bytes do not authorize npm authentication or publication. Guard readiness is timestamped; inspect the current private receipt and resolve expired/lost/attempted sessions before any new login.
-Last activity: 2026-09-09 — Approval c91450bd… sealed; 15 guard stand-ins passed; live guarded status and empty configs verified, with no authentication or publication attempt
+Checkpoint: The login authority was used for one attempt. No publication or new login is authorized. Owned configs contain no credentials, but that is not proof no provider session was issued; preserve the recovery receipt and obtain a correctly labeled provider/operator outcome.
+Last activity: 2026-09-10 — Guard attempted revocation then retained recovery state; all owned credential locations were checked, no debug log exists, native-browser relay read unavailable; no publication attempted
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-09T21:11:52.126Z
-Stopped at: 05-04 Task 6: bootstrap artifact approval c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec sealed; live cumpa-bootstrap-auth-guard prepared on Node24.15/npm11.12.1 after 15 harmless lifecycle checks. No authentication/publication authorized. Inspect current owned receipt, guard and deadlines first; cleanup-first recovery for any attempted/unknown session.
+Last session: 2026-09-10T05:14:57.398Z
+Stopped at: 05-04 Task 6: authorized isolated login around 2026-09-10T04:55Z failed; guard recovery-required, no owned local credential, provider outcome/revocation unresolved. Preserve receipt/state; no new login or publication. Need native provider/operator outcome before cleanup-first recovery can close.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md

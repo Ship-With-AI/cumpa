@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "awaiting-isolated-authentication-authorization",
+  "status": "authentication-failed-recovery-required",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -50,26 +50,73 @@
       "provider-loss-retains-recovery-route"
     ],
     "standinChecksUsedRealCredentials": false,
-    "recoveryRule": "Inspect the actual private receipt and live guard first. Resolve any attempted/unknown session before another login. Closed no-session preparation can be replaced with a fresh empty context."
+    "recoveryRule": "Inspect the actual private receipt and live guard first. Resolve any attempted/unknown session before another login. Closed no-session preparation can be replaced with a fresh empty context.",
+    "previousPreloginPreparationClosedWithoutSession": true,
+    "freshPreparationReadyForAuthorizedLogin": true,
+    "absoluteDeadlineEpoch": 1789019737.0,
+    "idleDeadlineEpoch": 1789017037.6838763,
+    "currentState": "recovery-required",
+    "running": false,
+    "cleanupComplete": false,
+    "reason": "login-failed-or-cancelled",
+    "ownedRecoveryStatePreserved": true,
+    "lastHeartbeatEpoch": 1789016209.4129128
   },
   "authentication": {
-    "authorized": false,
-    "attempted": false,
+    "authorized": true,
+    "attempted": true,
     "publicAccount": null,
-    "authorityAnd2faVerified": false
+    "authorityAnd2faVerified": false,
+    "authorization": {
+      "kind": "cumpa.bootstrap-authentication-authorization/v1",
+      "authorizer": "Alessandro Magionami",
+      "source": "Direct user selection: Authorize isolated npm login",
+      "capturedAt": "2026-09-10T04:54:36Z",
+      "package": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+      "scope": [
+        "one isolated native-browser npm login",
+        "read-only account/scope-write/2FA checks",
+        "owned-session revocation and cleanup"
+      ],
+      "publicationAuthorized": false,
+      "hostedConfigurationOrCiAuthorized": false,
+      "expiredPreloginGuard": "closed with no session created; fresh empty context permitted before login"
+    },
+    "authorizationSha256": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b",
+    "authenticated": false,
+    "outcome": "Guarded CLI login ended without a usable owned token; precise private CLI error was not retained.",
+    "failureObservedAt": "2026-09-10T05:12:50Z"
   },
   "publication": {
     "authorized": false,
     "attempted": false
   },
   "revocation": {
-    "sessionExists": false,
-    "providerRevocationClaim": null
+    "sessionExists": null,
+    "providerRevocationClaim": "unresolved",
+    "ownedLocalCredentialFound": false,
+    "providerOutcomeRequiresConfirmation": true,
+    "automaticRetryProhibited": true
   },
   "limits": [
     "Readiness is a timestamped observation, not a promise the guard remains alive after idle/deadline or process loss.",
     "Native browser web authentication is supported; unexpected legacy password/classic-code prompts stop without relaying credentials to chat.",
     "SIGKILL, machine loss and unreachable provider are unresolved until cleanup-first recovery proves the real outcome.",
     "Artifact approval does not authorize authentication or publication."
-  ]
+  ],
+  "diagnostics": {
+    "ownedAuthenticationLocationsChecked": [
+      "user.npmrc",
+      "global.npmrc",
+      "home/.npmrc"
+    ],
+    "ownedCredentialFound": false,
+    "ownedDebugLogCount": 0,
+    "nativeBrowserReadAvailable": false,
+    "rawLoginOrProfileOutputDisclosed": false
+  }
 }
