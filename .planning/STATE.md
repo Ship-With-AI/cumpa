@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-05 Task 1 complete: GitHub npm-release protection independently verified; owner confirmed the saved/reloaded exact npm GitHub trusted publisher and direct publication permission at 2026-09-10T10:46:44Z. Task 2 is preparing and validating the private source-bound CI candidate driver. No temporary production values, CI dispatch/upload, candidate approval, protected publisher approval or stable publication is authorized."
-last_updated: "2026-09-10T11:21:20Z"
+stopped_at: "05-05 Task 2 ready for its separate CI candidate-run authority. Private driver passed 34 lifecycle checks and real unarmed CLI refusal with unchanged receipt. Fresh native source, reviewer/main-only/no-bypass protection, zero publisher secrets, zero release runs, reserved-name absence, origin fingerprint and exact stable vacancy passed. No temporary production values, CI dispatch/upload/download, candidate approval, npm-release approval or stable publication is authorized."
+last_updated: "2026-09-10T11:56:41Z"
 last_activity: 2026-09-10
-last_activity_desc: Recorded completed npm publisher inspection in the existing private CI journal; integrating disposable ownership, failure, signal and recovery checks before requesting separate CI candidate-run authority.
+last_activity_desc: Sealed private driver preparation proof and fresh native preflight in the existing CI journal. Await one source-bound candidate build/upload, exact owned-artifact inspection and targeted-cleanup authorization; no remote mutation occurred.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 4 of 6 complete — 05-05 Task 1 complete; Task 2 private CI candidate safeguards under validation
+Plan: 4 of 6 complete — 05-05 Task 1 complete; Task 2 validated and awaiting separate CI candidate-run authority
 Status: executing
-Checkpoint: The owner confirmed saved/reloaded npm publisher values for Ship-With-AI/cumpa, publish-npm.yml and npm-release, with direct npm publication enabled. GitHub protection remains independently verified; npm configuration assurance is the owner's UI inspection, not an authenticated API observation. Do not repeat setup. Validate the private recoverable driver, then request separate authority for the exact source, two absent-only production transports, one input-free candidate build/upload and targeted cleanup. No CI run, candidate approval or stable publication authority exists.
-Last activity: 2026-09-10 — Both setup confirmations are recorded in the current private CI operation. Initial stand-in integration exposed policy/fixture and journal-resumption defects; corrections are in progress without remote mutations. Bootstrap records and the D-10 latest exception remain sealed and unchanged.
+Checkpoint: The exact trusted-publisher setup is complete. The private source-bound driver passed all 34 lifecycle checks, including ownership uncertainty, exclusive execution, no replay, signal recovery, late competitors and unstarted publisher enforcement. The real CLI refused the unarmed operation without changing its receipt. Authorize only reviewed public P, the two absent-only production transports, one input-free candidate build/upload, download of only that run's exact artifact for inspection, and mandatory owned cleanup. Candidate acceptance and stable publication remain separate later gates.
+Last activity: 2026-09-10 — At 11:56:41Z, native actor/repository/source/workflow/protection checks passed; both reserved production entries were absent, no release runs existed, the authoritative fingerprint matched, and stable 1.5.0 was absent in both its endpoint and the valid packument. The missing-version endpoint returns a JSON string. Bootstrap and latest remain at the D-10-authorized bootstrap version. Preparation proof is private; sealed bootstrap records are unchanged.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T11:21:20Z
-Stopped at: 05-05 Task 2 preparation. Setup complete and operator npm confirmation recorded; private CI driver and harmless recovery checks are being integrated. Both reserved production names remain absent, source remains the reviewed public P, and dispatch/publication authority remains absent. Finish driver validation before the separate candidate-run checkpoint.
+Last session: 2026-09-10T11:56:41Z
+Stopped at: 05-05 Task 2 authorization checkpoint. Driver and recovery checks are complete; 34 checks and actual unarmed CLI refusal passed. Resume the existing private operation only after exact source/transport/run/upload/download/cleanup authority, then freeze the verified driver and supervise one dispatch. No candidate or stable publication approval exists.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-05-PLAN.md
