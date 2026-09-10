@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 Task 6: operator reports Website login only, without CLI authorization. Owned empty context removed; operation closed at operator-reported assurance, receipt retained, no independent server-revocation claim. Browser/normal npm login preserved. Fresh isolated CLI login needs new authority; no publication."
-last_updated: "2026-09-10T05:38:19.086Z"
+stopped_at: "05-04: owner requests CI publication rather than fresh local npm login. Public package/bootstrap/stable endpoints are absent; npm trust requires existing package. Await explicit one-operation CI bootstrap granular-token + target-scope write + publishing-2FA-bypass exception. No token, source push, CI setup/run or exact publication action authorized. Preserve approved bytes and stable same-run approval gates."
+last_updated: "2026-09-10T05:49:34.972Z"
 last_activity: 2026-09-10
-last_activity_desc: Owned empty authentication state removed using the existing cleanup boundary; operator clarification and its assurance limits recorded, with no retry or publication
+last_activity_desc: Public npm returned 404 for the package and both release identities; npm trust prerequisites and open initial-OIDC issue corroborate the first-publication blocker. Proposed protected CI bootstrap followed by token revocation and tokenless stable CI.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 Tasks 1–5 complete; Task 6's first attempt closed without completed CLI authorization
+Plan: 3 of 6 complete — 05-04 paused for a CI-bootstrap route amendment; first local authentication attempt is closed
 Status: executing
-Checkpoint: The first login authority is consumed. Operator reports website sign-in only, not completed CLI authorization; local cleanup is verified and server revocation is not claimed. Preserve the browser login and retained receipt. Obtain fresh isolated-login authority before another attempt; publication remains a separate gate.
-Last activity: 2026-09-10 — Owned empty authentication state removed using the existing cleanup boundary; operator clarification and its assurance limits recorded, with no retry or publication
+Checkpoint: No further local npm login. The owner requested CI publication, but the temporary scope-wide granular-token/2FA-bypass exception has not been approved. Preserve approved bootstrap bytes and stable same-run/digest-approval requirements; exact source/setup/run/publication gates remain binding.
+Last activity: 2026-09-10 — Public npm returned 404 for the package and both release identities; npm trust prerequisites and open initial-OIDC issue corroborate the first-publication blocker. Proposed protected CI bootstrap followed by token revocation and tokenless stable CI.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T05:38:19.081Z
-Stopped at: 05-04 Task 6: operator reports Website login only, without CLI authorization. Owned empty context removed; operation closed at operator-reported assurance, receipt retained, no independent server-revocation claim. Browser/normal npm login preserved. Fresh isolated CLI login needs new authority; no publication.
+Last session: 2026-09-10T05:49:34.964Z
+Stopped at: 05-04: owner requests CI publication rather than fresh local npm login. Public package/bootstrap/stable endpoints are absent; npm trust requires existing package. Await explicit one-operation CI bootstrap granular-token + target-scope write + publishing-2FA-bypass exception. No token, source push, CI setup/run or exact publication action authorized. Preserve approved bytes and stable same-run approval gates.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md

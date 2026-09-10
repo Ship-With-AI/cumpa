@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "authentication-incomplete-owned-context-cleaned",
+  "status": "ci-publication-requested-credential-decision-required",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -142,5 +142,40 @@
     "ownedDebugLogCount": 0,
     "nativeBrowserReadAvailable": false,
     "rawLoginOrProfileOutputDisclosed": false
+  },
+  "publicationRouteRequest": {
+    "requestedAt": "2026-09-10T05:48:15Z",
+    "source": "Direct user custom response at fresh CLI-login gate",
+    "statement": "I want to authorize pubblication via CI",
+    "publicationChannel": "GitHub Actions",
+    "furtherLocalLoginAuthorized": false,
+    "bootstrapArchiveIdentityUnchanged": true,
+    "observedPublicRegistry": [
+      {
+        "target": "%40shipwithai%2Fcumpa",
+        "status": 404,
+        "authoritativeNotFound": true
+      },
+      {
+        "target": "%40shipwithai%2Fcumpa/1.5.0-bootstrap.0",
+        "status": 404,
+        "authoritativeNotFound": true
+      },
+      {
+        "target": "%40shipwithai%2Fcumpa/1.5.0",
+        "status": 404,
+        "authoritativeNotFound": true
+      }
+    ],
+    "trustedPublisherPrerequisite": "npm trust requires the package already to exist; initial-version OIDC support remains an open npm issue.",
+    "sources": [
+      "https://docs.npmjs.com/cli/v11/commands/npm-trust/#prerequisites",
+      "https://github.com/npm/cli/issues/8544",
+      "https://docs.npmjs.com/creating-and-viewing-access-tokens/"
+    ],
+    "proposedBootstrapAuthentication": "One-operation granular npm token with target-scope package-write access and publishing 2FA bypass, protected GitHub environment secret, immediate revocation/deletion after the attempt.",
+    "credentialExceptionAuthorized": false,
+    "exactCiSetupRunAndPublicationAuthorization": null,
+    "stableCandidateApprovalUnchanged": "Still requires a fresh CI build and actual digest-bound approval."
   }
 }

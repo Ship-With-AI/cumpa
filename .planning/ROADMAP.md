@@ -91,7 +91,7 @@ Plans:
 2. A fixed release workflow in the approved public `Ship-With-AI/cumpa` repository publishes the reviewed MIT-licensed `@shipwithai/cumpa@1.5.0` tarball through GitHub OIDC trusted publishing without long-lived publication credentials, preserves eligible automatic provenance, and records verified attestation results under the Phase 3 release policy.
   3. Public npm resolves exact `1.5.0` for both `npm install --global @shipwithai/cumpa@1.5.0` and `npx --yes @shipwithai/cumpa@1.5.0`, with the global install exposing the `cumpa` command.
 
-**Plans**: 6 plans in 5 waves — local Waves 1 and 2, source publication and bootstrap byte approval are complete; the first login attempt was closed after operator-confirmed website-only login and owned local cleanup. Fresh isolated CLI-login authority is required.
+**Plans**: 6 plans in 5 waves — local Waves 1 and 2, source publication and bootstrap byte approval are complete. The owner now requests CI publication; 05-04 awaits the one-operation CI-bootstrap credential decision before its operational plan is amended.
 **Wave 1**
 
 - [x] 05-01-PLAN.md — Closed configured bootstrap artifact profile
@@ -148,6 +148,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
-| 5. Bootstrap & Trusted Stable Publication | 3/6 | Awaiting fresh isolated CLI login | - |
+| 5. Bootstrap & Trusted Stable Publication | 3/6 | CI bootstrap credential decision | - |
 | 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
 | 7. Clean Public-Artifact Acceptance | 0/TBD | Not started | - |
