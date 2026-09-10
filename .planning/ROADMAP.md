@@ -17,7 +17,7 @@ The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary sou
 
 - [x] **Phase 3: Distribution Contract & Legal Boundary** — Establish standard MIT terms, refreshed dual-licensor exact-text assent, safe publication of the existing repository and reviewed history, and truthful package links and provenance policy. (completed 2026-09-08)
 - [x] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release. (completed 2026-09-09)
-- [ ] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable bootstrap tagged `bootstrap` (D-10 first-release `latest` exception), revoke temporary authorization, and publish stable `1.5.0` through OIDC.
+- [x] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable bootstrap tagged `bootstrap` (D-10 first-release `latest` exception), revoke temporary authorization, and publish stable `1.5.0` through OIDC. (completed 2026-09-10)
 - [ ] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite.
 - [ ] **Phase 7: Clean Public-Artifact Acceptance** - Prove global, npx, and marketplace workflows from clean environments using only released public artifacts.
 
@@ -91,7 +91,7 @@ Plans:
 2. A fixed release workflow in the approved public `Ship-With-AI/cumpa` repository publishes the reviewed MIT-licensed `@shipwithai/cumpa@1.5.0` tarball through GitHub OIDC trusted publishing without long-lived publication credentials, preserves eligible automatic provenance, and records verified attestation results under the Phase 3 release policy.
   3. Public npm resolves exact `1.5.0` for both `npm install --global @shipwithai/cumpa@1.5.0` and `npx --yes @shipwithai/cumpa@1.5.0`, with the global install exposing the `cumpa` command.
 
-**Plans**: All 6 plans executed. The approved CI archive is publicly verified as `@shipwithai/cumpa@1.5.0`, with npm-verified provenance and normal global/literal npx proof. Final code/security/goal verification remains before phase closure.
+**Plans**: All 6 plans complete. The approved CI archive is publicly verified as `@shipwithai/cumpa@1.5.0`, with npm-verified provenance and normal global/literal npx proof. Final gates passed: clean 13-file source review, 59/59 authored threats closed, 39/39 must-haves verified, 58 files/463 regression tests passed, and two TDD plans with no violations. UI review is not applicable because no production frontend surface changed.
 **Wave 1**
 
 - [x] 05-01-PLAN.md — Closed configured bootstrap artifact profile
@@ -148,6 +148,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
-| 5. Bootstrap & Trusted Stable Publication | 6/6 | Final verification in progress | - |
+| 5. Bootstrap & Trusted Stable Publication | 6/6 | Complete    | 2026-09-10 |
 | 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
 | 7. Clean Public-Artifact Acceptance | 0/TBD | Not started | - |

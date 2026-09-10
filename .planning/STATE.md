@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: MIT Distribution
-current_phase: 5
-current_phase_name: Bootstrap & Trusted Stable Publication
-status: executing
-stopped_at: "All six Phase 5 plans executed. One authorized publish in run34490078365 attempt1/job102915021477 succeeded; public bytes match approved archive dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141. npm11.19.1 verified attestation cryptography and all12 exact claims; normal global install and literal fresh-context npx returned1.5.0. Canonical release evidence95863383e21642a05e7666fb675c10da6315beaf43a52b2b720b473bdac3225d is committed. Final phase source/security/goal verification remains; no further publication is authorized."
-last_updated: "2026-09-10T15:47:52Z"
+current_phase: 6
+current_phase_name: Independent MIT Marketplace Skill
+status: ready_to_plan
+stopped_at: "Phase 5 complete: all six plans and final gates passed. Phase 6 has not started; automatic advancement is disabled. Public stable publication authority is consumed. No further publication, workflow action or source push is authorized."
+last_updated: "2026-09-10T16:13:13Z"
 last_activity: 2026-09-10
-last_activity_desc: Recorded verified trusted stable publication, exact public byte/provenance/global/npx proof and owned cleanup. Ordinary regression suite passed 58 files/463 tests; TDD closure gate passed with zero violations. Final audit reports are pending.
+last_activity_desc: Phase 5 completed with verified public release, 39/39 must-haves, 59/59 authored threats closed, clean source review and passing regression/TDD gates. Phase 6 awaits a new instruction.
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 13
   completed_plans: 13
-  percent: 40
+  percent: 60
 ---
 
 # Project State
@@ -24,23 +24,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 5 — Bootstrap & Trusted Stable Publication
+**Current focus:** Phase 6 — Independent MIT Marketplace Skill (not started)
 
 ## Current Position
 
-Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 6 of 6 executed — public release verified; final code/security/goal gates pending
-Status: executing
-Checkpoint: Stable publication authority98ba4c9427acbd07a7fe6804107dde2ec16e020db7dc96a023860be453b0eecf is consumed by one successful workflow-owned publish. Release evidence95863383e21642a05e7666fb675c10da6315beaf43a52b2b720b473bdac3225d records matching public bytes, npm-verified provenance and exact claims, normal global and literal npx consumers, and cleanup. Never republish, rerun or mutate tags. Complete final phase reviews before marking Phase5 complete.
-Last activity: 2026-09-10 — Registry initially returned404 after the successful CLI response, then exposed the exact version without another publication or account action. Backend cause remains unconfirmed. `latest` now points to1.5.0 and `bootstrap` remains1.5.0-bootstrap.0. Temporary production values and all owned public-verification consumers/tooling are removed; immutable custody and historical records remain.
+Phase: 6 — Independent MIT Marketplace Skill
+Plan: Not started
+Status: Ready to plan
+Checkpoint: Phase 5 is complete. Release evidence `95863383e21642a05e7666fb675c10da6315beaf43a52b2b720b473bdac3225d` binds the one authorized stable publication to exact public bytes, npm-verified provenance, normal global and literal npx consumers, and cleanup. Final source review is clean; all 59 authored threats and all 39 must-haves are verified. No further publication, rerun, approval, tag mutation or source push is authorized.
+Last activity: 2026-09-10 — Closed all six Phase 5 plans and final gates. Phase 6 remains unstarted; automatic advancement is disabled.
 
-Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
+Progress: [██████░░░░] 60% — 3 of 5 milestone phases complete
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 103
+- Total plans completed: 109
 - Average duration: 23 min
 - Total execution time: 4.7 hours
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T15:47:52Z
-Stopped at: Final Phase5 review and verification gates after all six plans executed. Public release is verified, not merely inferred from CI success. Preserve source/artifact/authorization history and do not perform any new remote mutation. After passed code/security/goal gates, close phase tracking and offer Phase6 without automatic advancement.
-Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-06-SUMMARY.md
+Last session: 2026-09-10T16:13:13Z
+Stopped at: Phase 5 complete; Phase 6 ready to discuss and plan, not started. Preserve immutable release/history records, private custody and existing user authentication. Public main remains the approved published source; later bookkeeping is local only.
+Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-VERIFICATION.md
