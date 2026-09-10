@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-05 complete: exact CI candidate approval was received and revalidated. Approved archive dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141 / 3514800 bytes, evidence b7fe676a35c40cbd03a8d73bbb7bc83c5a4893d6aa7d01d1ab60799af3ff1091, source fcc12be291623c37211291681420fe0203df6cb0, run 34490078365 attempt 1 and artifact 10157421286 remain bound. Publisher job 102915021477 is waiting. 05-06 requires separate actual-value stable-publication authority; none is granted."
-last_updated: "2026-09-10T15:07:17Z"
+stopped_at: "05-06 stable-publication gate ready: exact candidate approval is recorded. At 2026-09-10T15:11:56Z, archive/evidence/transport rehashes, source/run/attempt/artifact, current actor approval permission, native protections, clean production transports, stable vacancy and remaining validity all passed. Publisher job 102915021477 remains waiting with no started steps. Require the exact AUTHORIZE STABLE PUBLICATION phrase; no stable authority or deployment approval exists."
+last_updated: "2026-09-10T15:11:56Z"
 last_activity: 2026-09-10
-last_activity_desc: Recorded verbatim candidate-only assent, completed 05-05, and prepared isolated npm/npx 11.19.1 verification tooling. No protected deployment approval or npm publication occurred; REL-02 and Phase 5 remain incomplete.
+last_activity_desc: Completed final read-only publication preflight and prepared the exact stable authority request. Pinned credential-free npm/npx verification tooling is ready; no irreversible operation has begun.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -32,7 +32,7 @@ Phase: 5 — Bootstrap & Trusted Stable Publication
 Plan: 5 of 6 complete — 05-05 candidate approval complete; 05-06 awaits separate stable-publication authority
 Status: executing
 Checkpoint: Candidate-only approval document SHA-256 is 866598a581710953d75b90b8e60fcc321defb5317c31e0f8cbb05a6aef714f13. Recheck its exact read-only archive/evidence/source/run/attempt/artifact, native pending publisher job 102915021477, protected environment, stable vacancy, cleanup and validity before requesting the complete AUTHORIZE STABLE PUBLICATION phrase. Candidate assent does not authorize deployment approval, registry/transparency mutation or retries.
-Last activity: 2026-09-10 — All candidate assent bindings and current native state passed revalidation. The publisher remains unstarted, both production transports absent, and stable 1.5.0 vacant. Credential-free npm/npx 11.19.1 tooling is ready. The fixed verifier's scripts-disabled global check will be supplemented with the required normal scripts-enabled global consumer proof after publication; no approved source or artifact will be changed.
+Last activity: 2026-09-10 — At 15:11:56Z, all exact-byte and native drift checks passed, including current reviewer ability and absence of competing nonterminal release runs. Stable 1.5.0 remains absent. About 29 days 23 hours of conservative validity remain, exceeding the 15-minute publish window. The fixed verifier's scripts-disabled global check will be supplemented by the required normal scripts-enabled global install; no approved source or candidate will change.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
