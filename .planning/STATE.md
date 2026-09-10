@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-05 repaired source fcc12be291623c37211291681420fe0203df6cb0/tree23f87114ad2ddbc18c51f95e2611ef5b4f1e9f9c was pushed under exact source-only authority after D-11. Credential-free reads matched all764 recursive entries; two observations found no target Actions runs or deployments. New-source private guard passes34 lifecycle checks, full live read-only preflight and unarmed refusal. Await separate candidate-run authority; no candidate or stable approval exists."
-last_updated: "2026-09-10T14:27:53Z"
+stopped_at: "05-05 Task 3: run 34490078365 attempt 1 at source fcc12be291623c37211291681420fe0203df6cb0 produced and uploaded a successful stable candidate. Both transports are absent. Artifact 10157421286, transport b6af207adbe4a0f1b1873a0e284986d0e4dc86ee163dbb388a3f6685578ea2d9, evidence b7fe676a35c40cbd03a8d73bbb7bc83c5a4893d6aa7d01d1ab60799af3ff1091, archive dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141 / 3514800 bytes are independently inspected and read-only. Await exact candidate-only assent; publisher job 102915021477 remains waiting and stable publication is unauthorized."
+last_updated: "2026-09-10T14:48:50Z"
 last_activity: 2026-09-10
-last_activity_desc: Published only the reviewed repaired source and verified its complete public tree and no collateral deployment. Local amendment/review bookkeeping remains unpushed. Preparing the separately authorized next candidate cycle.
+last_activity_desc: Verified successful repaired-source CI production, exact native artifact download, every tar/dist hash, sealed scanner/acceptance/source/native claims, read-only rehash, transport cleanup, stable vacancy and the unstarted protected publisher.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 4 of 6 complete — 05-05 Task 1 complete; D-11 repaired source published and verified; Task 2 awaits fresh exact-source CI authority
+Plan: 4 of 6 complete — 05-05 Tasks 1 and 2 complete; Task 3 inspected candidate awaits actual digest-bound human approval
 Status: executing
-Checkpoint: The sole approved public candidate source is fcc12be291623c37211291681420fe0203df6cb0 under D-11. The active local plan is amended; original source/bootstraps and failed runs remain historical. The source-only authority is consumed and grants no CI execution. Require a new explicit authorization for the two absent-only production transports, one input-free build/upload, exact owned-artifact inspection and targeted cleanup. Candidate acceptance and stable publication remain separate later gates.
-Last activity: 2026-09-10 — Public source/tree and all764 recursive entries matched through credential-free reads. Observations at14:26:00Z and14:27:53Z found no target workflows or deployments. The fixed acceptance opener and delayed-refresh regression passed locally; the private guard is now source-bound to the repaired public commit and passes34 stand-ins plus complete native read-only preflight. No new CI run was started.
+Checkpoint: The exact successful candidate exists in private read-only custody and is bound to run 34490078365 attempt 1, source fcc12be291623c37211291681420fe0203df6cb0 and native artifact 10157421286. Require the complete actual-value CI CANDIDATE APPROVED phrase before creating 05-CI-ARTIFACT-APPROVAL.md or completing 05-05. This approves bytes only; the separate stable-publication phrase and approval of waiting npm-release job 102915021477 remain later gates. REL-02 and Phase 5 are not complete.
+Last activity: 2026-09-10 — Independent inspection verified 144 archive files, 140 dist hashes, 95 reachable web assets, 167 installed dependency relationships, legal/manifest/support parity, all installed review/Finish/V2/V3 checks and actual Darwin ARM64 native re-export. Both temporary production values remain absent and stable 1.5.0 remains vacant. Conservative candidate approval deadline is 2026-10-10T14:35:39Z; artifact expiry is 2026-12-09T14:35:41Z. The bound is derived, not an API-provided pending-review expiry.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T14:27:53Z
-Stopped at: 05-05 Task 2 fresh candidate-run authority. Source-only publication is complete; next source is fcc12be291623c37211291681420fe0203df6cb0. Resume the existing private CI journal, preserve earlier consumed authorizations/failed runs/frozen guards, and freeze/execute the verified new-source guard only after actual new CI authority. No candidate or stable publication approval exists.
+Last session: 2026-09-10T14:48:50Z
+Stopped at: Exact candidate-only approval checkpoint. Resume the existing private operation and its operation-owned candidate custody; rehash and recheck run/attempt/source/artifact/pending-job/cleanup/vacancy/validity before accepting assent. No candidate approval file, 05-05 summary, protected deployment approval or stable publication exists yet. Preserve both earlier failed runs, all frozen guards and sealed historical/bootstrap artifacts.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-05-PLAN.md
