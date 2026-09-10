@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 Task 9: operator confirms latest CLI authorization succeeded. Guard had stopped at non-browser credential prompt without saving its token. No publication attempted; exact authority 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 remains unused. Authenticated browser tooling unavailable. Operator must identify/revoke only latest CLI session (request started ~2026-09-10T06:37Z, expected account alemagio); do not touch unrelated credentials. Keep owned recovery state until scoped provider outcome is confirmed."
-last_updated: "2026-09-10T07:22:24.520Z"
+stopped_at: "05-04: first exact publication attempt under 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 exited 1; approval consumed and no retry authorized. Supported npm logout succeeded; all five owned local contexts removed at recorded assurance levels. Fresh no-cache npm responses 2026-09-10T08:08:27–28Z remain 404 for package/bootstrap/stable. Original exact provider error unavailable. Real credential-free native-PTY RED/GREEN and 16 stand-ins verify future diagnostic guard b11ad8729363e95b3e297a82b76d9ef6c6ec31c3fd6e9c8ef1b3c314d6d0f800; browser-request notifications now explicit. Await operator publishing-browser outcome, latest logout confirmation and any new exact attempt authority. Preserve unchanged approved bytes; do not start authentication or publication yet."
+last_updated: "2026-09-10T08:18:13.285Z"
 last_activity: 2026-09-10
-last_activity_desc: "At 06:45:24Z recorded the prompt-triggered renewal stop, no saved owned token, unresolved provider revocation, retained recovery receipt and zero publication attempts. npm 11.12.1 source confirms web-login fallback can enter legacy credential prompts; no fallback credentials were collected."
+last_activity_desc: One npm publish exited 1 with an unclassified provider error; fresh registry requests still return 404. All owned local authentication contexts are removed, latest native logout succeeded, and required revocation/failure evidence is recorded. Real read-only npm terminal output now yields its bounded error code; 16 lifecycle simulations passed.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 Tasks 1–8 complete; Task 9 authorized publication blocked on renewal recovery
+Plan: 3 of 6 complete — 05-04 first publication attempt failed safely; REL-01 unmet and further publication requires new authority
 Status: executing
-Checkpoint: Existing exact publication authority is still unused. Latest renewal requires provider/operator recovery before another login; absent local token is not revocation proof. Earlier authenticated session was successfully logged out and cleaned, but this new attempted-login outcome remains distinct and unresolved. Preserve normal browser/npm credentials.
-Last activity: 2026-09-10 — At 06:45:24Z recorded the prompt-triggered renewal stop, no saved owned token, unresolved provider revocation, retained recovery receipt and zero publication attempts. npm 11.12.1 source confirms web-login fallback can enter legacy credential prompts; no fallback credentials were collected.
+Checkpoint: No active owned CLI session and no automatic retry. The first publication approval is consumed. Preserve approved archive/evidence/approval; determine the publishing-browser outcome and record operator confirmation of latest supported logout. Any second real attempt requires fresh isolated authentication and a new exact publication authorization; stable/CI remains blocked.
+Last activity: 2026-09-10 — One npm publish exited 1 with an unclassified provider error; fresh registry requests still return 404. All owned local authentication contexts are removed, latest native logout succeeded, and required revocation/failure evidence is recorded. Real read-only npm terminal output now yields its bounded error code; 16 lifecycle simulations passed.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T07:22:24.515Z
-Stopped at: 05-04 Task 9: operator confirms latest CLI authorization succeeded. Guard had stopped at non-browser credential prompt without saving its token. No publication attempted; exact authority 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 remains unused. Authenticated browser tooling unavailable. Operator must identify/revoke only latest CLI session (request started ~2026-09-10T06:37Z, expected account alemagio); do not touch unrelated credentials. Keep owned recovery state until scoped provider outcome is confirmed.
+Last session: 2026-09-10T08:18:13.280Z
+Stopped at: 05-04: first exact publication attempt under 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 exited 1; approval consumed and no retry authorized. Supported npm logout succeeded; all five owned local contexts removed at recorded assurance levels. Fresh no-cache npm responses 2026-09-10T08:08:27–28Z remain 404 for package/bootstrap/stable. Original exact provider error unavailable. Real credential-free native-PTY RED/GREEN and 16 stand-ins verify future diagnostic guard b11ad8729363e95b3e297a82b76d9ef6c6ec31c3fd6e9c8ef1b3c314d6d0f800; browser-request notifications now explicit. Await operator publishing-browser outcome, latest logout confirmation and any new exact attempt authority. Preserve unchanged approved bytes; do not start authentication or publication yet.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md
