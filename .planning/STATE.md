@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 Task 9: exact publication authorization 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 is unused; zero publish requests. Supported npm logout succeeded and owned context removed after overstrict agent preflight. Guard code a2c35e5f… unchanged; 16 stand-ins prove active commands ignore idle expiry. Renew one isolated CLI login, recheck actor/rights/2FA/bytes/vacancy, then apply existing publication authority without asking again. No CI token or stable/CI authority."
-last_updated: "2026-09-10T06:34:32.007Z"
+stopped_at: "05-04 Task 9: exact bootstrap publication authority 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 unused; zero publish requests. Latest renewed login stopped on unsupported-non-browser-credential-prompt, exit -15; no owned token saved and provider revocation unresolved. Guard exited recovery-required and retained owned state. Need latest native CLI authorization outcome before any further login; do not approve the stopped request. Prior successful login was already logged out and cleaned."
+last_updated: "2026-09-10T06:49:28.633Z"
 last_activity: 2026-09-10
-last_activity_desc: Published nothing; the nearly expired session was revoked through supported npm logout and its owned files removed. Simulation disproved a guard idle-timer defect; the agent preflight was corrected instead, and all 16 fake-npm lifecycle checks passed.
+last_activity_desc: "At 06:45:24Z recorded the prompt-triggered renewal stop, no saved owned token, unresolved provider revocation, retained recovery receipt and zero publication attempts. npm 11.12.1 source confirms web-login fallback can enter legacy credential prompts; no fallback credentials were collected."
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 Tasks 1–8 complete; Task 9 authorized publication awaits renewed isolated authentication
+Plan: 3 of 6 complete — 05-04 Tasks 1–8 complete; Task 9 authorized publication blocked on renewal recovery
 Status: executing
-Checkpoint: Publication authority 2d57c562… covers exactly one approved 1.5.0-bootstrap.0/bootstrap/public attempt as alemagio (shipwithai owner); no attempt occurred. Renew login separately, then reuse this authority if actor, bytes and required preconditions match. Do not ask for identical publication approval again or create a CI token.
-Last activity: 2026-09-10 — Published nothing; the nearly expired session was revoked through supported npm logout and its owned files removed. Simulation disproved a guard idle-timer defect; the agent preflight was corrected instead, and all 16 fake-npm lifecycle checks passed.
+Checkpoint: Existing exact publication authority is still unused. Latest renewal requires provider/operator recovery before another login; absent local token is not revocation proof. Earlier authenticated session was successfully logged out and cleaned, but this new attempted-login outcome remains distinct and unresolved. Preserve normal browser/npm credentials.
+Last activity: 2026-09-10 — At 06:45:24Z recorded the prompt-triggered renewal stop, no saved owned token, unresolved provider revocation, retained recovery receipt and zero publication attempts. npm 11.12.1 source confirms web-login fallback can enter legacy credential prompts; no fallback credentials were collected.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T06:34:32.002Z
-Stopped at: 05-04 Task 9: exact publication authorization 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 is unused; zero publish requests. Supported npm logout succeeded and owned context removed after overstrict agent preflight. Guard code a2c35e5f… unchanged; 16 stand-ins prove active commands ignore idle expiry. Renew one isolated CLI login, recheck actor/rights/2FA/bytes/vacancy, then apply existing publication authority without asking again. No CI token or stable/CI authority.
+Last session: 2026-09-10T06:49:28.627Z
+Stopped at: 05-04 Task 9: exact bootstrap publication authority 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 unused; zero publish requests. Latest renewed login stopped on unsupported-non-browser-credential-prompt, exit -15; no owned token saved and provider revocation unresolved. Guard exited recovery-required and retained owned state. Need latest native CLI authorization outcome before any further login; do not approve the stopped request. Prior successful login was already logged out and cleaned.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md

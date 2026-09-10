@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "bootstrap-publication-authorized-authentication-renewal-required",
+  "status": "authentication-renewal-blocked-on-non-browser-prompt-recovery",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -19,54 +19,60 @@
   "guard": {
     "serviceName": "cumpa-bootstrap-auth-guard",
     "codeSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+    "currentState": "recovery-required",
     "readyObserved": true,
     "running": false,
-    "currentState": "closed",
     "idleLimitSeconds": 900,
     "absoluteLimitSeconds": 3600,
-    "standinChecksPassed": 15,
+    "standinChecksPassed": 16,
     "standinChecksUsedRealCredentials": false,
     "nativePtyForNpm": true,
     "rawNpmOutputRemainsPrivate": true,
-    "recoveryRule": "Inspect the owned receipt; cleanup-first for any attempted or unknown session before another login.",
+    "idleDeadlineEpoch": 1789023128.4647164,
+    "absoluteDeadlineEpoch": 1789025828.081739,
     "nodeVersion": "v24.15.0",
     "npmVersion": "11.12.1",
-    "absoluteDeadlineEpoch": 1789024168.943604,
-    "idleDeadlineEpoch": 1789021493.689931,
-    "privateOwnershipReceiptPersisted": true,
-    "cleanupComplete": true,
-    "reason": "operator-stop",
-    "lastHeartbeatEpoch": 1789021480.1640918
+    "cleanupComplete": false,
+    "reason": "unsupported-non-browser-credential-prompt"
   },
   "authentication": {
     "authorized": true,
     "authorization": {
       "kind": "cumpa.bootstrap-authentication-authorization/v1",
       "authorizer": "Alessandro Magionami",
-      "source": "Direct user selection of local first publication at the authentication-route decision",
-      "verbatimResponse": "ok, now I get it, let's go with the first local publication",
-      "capturedAt": "2026-09-10T06:05:14Z",
+      "capturedAt": "2026-09-10T06:37:08Z",
+      "source": "Direct user selection at authentication-renewal gate",
+      "verbatimResponse": "Renew login and proceed",
+      "scope": [
+        "one renewed isolated native-browser npm CLI login as alemagio",
+        "read-only matching account/scope/2FA/vacancy checks",
+        "apply the existing one-attempt publication authorization if its bindings still match",
+        "owned-session revocation and cleanup"
+      ],
       "package": "@shipwithai/cumpa",
       "version": "1.5.0-bootstrap.0",
       "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
       "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
       "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
-      "scope": [
-        "one fresh isolated native-browser npm CLI login for the local bootstrap",
-        "read-only account/scope-write/2FA checks",
-        "owned-session revocation and cleanup"
-      ],
-      "exactPublicationGateStillPending": true,
-      "ciBootstrapTokenAuthorized": false,
-      "hostedConfigurationOrCiAuthorized": false
+      "existingPublicationAuthorizationSha256": "2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930",
+      "stableOrCiAuthorized": false
     },
-    "authorizationSha256": "8a5a6e0e2073810602eb911a6d18a019eee9ed4bb39457ed35eb3ac7ae4f98e8",
+    "authorizationSha256": "30acf0ecf947e4d3352969232f3f76cfb67125365969287dc84b7e6940d1f673",
     "attempted": true,
-    "authenticated": true,
-    "publicAccount": "alemagio",
-    "authorityAnd2faVerified": true,
-    "previousAuthorizationConsumed": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b",
-    "attemptRequested": true
+    "authenticated": false,
+    "publicAccount": null,
+    "authorityAnd2faVerified": false,
+    "renewalFailure": {
+      "observedAt": "2026-09-10T06:45:24Z",
+      "reason": "unsupported-non-browser-credential-prompt",
+      "loginExitCode": -15,
+      "guardInitiatedStop": true,
+      "detectedPromptCategory": "One of the disallowed username/password/classic-OTP prompts; specific matched prompt was not retained.",
+      "ownedTokenPresent": false,
+      "providerRevocation": "unresolved",
+      "recoveryStateRetained": true,
+      "publicationAttempted": false
+    }
   },
   "publication": {
     "authorized": true,
@@ -112,12 +118,11 @@
     }
   },
   "revocation": {
-    "sessionExists": false,
-    "providerRevocationClaim": "supported-npm-logout-server-response",
+    "sessionExists": null,
+    "providerRevocationClaim": "unresolved",
     "ownedLocalCredentialFound": false,
-    "ownedCleanupComplete": true,
-    "state": "complete",
-    "independentTokenRejectionObserved": false,
+    "ownedCleanupComplete": false,
+    "state": "recovery-required",
     "recoveryReceiptPreserved": true
   },
   "limits": [
@@ -296,6 +301,69 @@
         "ownedDebugLogCount": 0,
         "nativeBrowserReadAvailable": false,
         "rawLoginOrProfileOutputDisclosed": false
+      }
+    },
+    {
+      "authentication": {
+        "authorized": true,
+        "authorization": {
+          "kind": "cumpa.bootstrap-authentication-authorization/v1",
+          "authorizer": "Alessandro Magionami",
+          "source": "Direct user selection of local first publication at the authentication-route decision",
+          "verbatimResponse": "ok, now I get it, let's go with the first local publication",
+          "capturedAt": "2026-09-10T06:05:14Z",
+          "package": "@shipwithai/cumpa",
+          "version": "1.5.0-bootstrap.0",
+          "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+          "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+          "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+          "scope": [
+            "one fresh isolated native-browser npm CLI login for the local bootstrap",
+            "read-only account/scope-write/2FA checks",
+            "owned-session revocation and cleanup"
+          ],
+          "exactPublicationGateStillPending": true,
+          "ciBootstrapTokenAuthorized": false,
+          "hostedConfigurationOrCiAuthorized": false
+        },
+        "authorizationSha256": "8a5a6e0e2073810602eb911a6d18a019eee9ed4bb39457ed35eb3ac7ae4f98e8",
+        "attempted": true,
+        "authenticated": true,
+        "publicAccount": "alemagio",
+        "authorityAnd2faVerified": true,
+        "previousAuthorizationConsumed": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b",
+        "attemptRequested": true
+      },
+      "guard": {
+        "serviceName": "cumpa-bootstrap-auth-guard",
+        "codeSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+        "readyObserved": true,
+        "running": false,
+        "currentState": "closed",
+        "idleLimitSeconds": 900,
+        "absoluteLimitSeconds": 3600,
+        "standinChecksPassed": 15,
+        "standinChecksUsedRealCredentials": false,
+        "nativePtyForNpm": true,
+        "rawNpmOutputRemainsPrivate": true,
+        "recoveryRule": "Inspect the owned receipt; cleanup-first for any attempted or unknown session before another login.",
+        "nodeVersion": "v24.15.0",
+        "npmVersion": "11.12.1",
+        "absoluteDeadlineEpoch": 1789024168.943604,
+        "idleDeadlineEpoch": 1789021493.689931,
+        "privateOwnershipReceiptPersisted": true,
+        "cleanupComplete": true,
+        "reason": "operator-stop",
+        "lastHeartbeatEpoch": 1789021480.1640918
+      },
+      "revocation": {
+        "sessionExists": false,
+        "providerRevocationClaim": "supported-npm-logout-server-response",
+        "ownedLocalCredentialFound": false,
+        "ownedCleanupComplete": true,
+        "state": "complete",
+        "independentTokenRejectionObserved": false,
+        "recoveryReceiptPreserved": true
       }
     }
   ],
