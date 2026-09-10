@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "bootstrap-published-registry-latest-constraint-owner-exception-pending",
+  "status": "complete-under-owner-approved-first-release-latest-exception",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -873,10 +873,10 @@
     "publishedBytesAndBinVerified": true,
     "tagRepairAttempted": true,
     "unpublishAttempted": false,
-    "ownerDecisionRequired": true,
-    "ownerDecision": "Remove only latest",
+    "ownerDecisionRequired": false,
+    "ownerDecision": "Accept until stable CI",
     "repairAuthorized": true,
-    "policyExceptionAccepted": false,
+    "policyExceptionAccepted": true,
     "repairOutcome": "E400; tag state unchanged",
     "registryConstraintEvidence": {
       "source": "https://github.com/npm/cli/issues/8490",
@@ -885,9 +885,35 @@
       "thisOperationAuthenticatedRemovalResult": "E400; tags unchanged",
       "noSupportedRemovalAchieved": true,
       "proposedOwnerException": "Retain bootstrap as temporary latest until separately approved stable CI publication replaces it.",
-      "exceptionApproved": false
+      "exceptionApproved": true
     },
-    "repairAuthorizationConsumed": true
+    "repairAuthorizationConsumed": true,
+    "exceptionApproved": true,
+    "ownerException": {
+      "kind": "cumpa.bootstrap-first-release-latest-exception/v1",
+      "authorizer": "Alessandro Magionami",
+      "capturedAt": "2026-09-10T09:44:36Z",
+      "source": "Direct user selection",
+      "verbatimResponse": "Accept until stable CI",
+      "package": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "acceptedTags": {
+        "bootstrap": "1.5.0-bootstrap.0",
+        "latest": "1.5.0-bootstrap.0"
+      },
+      "scope": "One-time amendment of the unchanged-latest bootstrap condition only, until separately approved stable CI publication replaces latest.",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "byteLength": 3514006,
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+      "preserveImmutableBootstrap": true,
+      "ciBuildProvenanceClaimed": false,
+      "ciConfigurationDispatchOrStablePublicationAuthorized": false,
+      "basis": "Observed first-release registry behavior and rejected latest removal, corroborated by npm/cli#8490."
+    },
+    "ownerExceptionSha256": "fdf592eef8725d7e5c5d2e6a59a94d9351b8bbca9884ebe4ae85ad9a1021fd19",
+    "resolution": "Owner accepted this first-release latest pointer until the separately authorized stable CI publication replaces it.",
+    "initialOwnerDecision": "Remove only latest"
   },
   "latestTagRepair": {
     "authorization": {
@@ -981,7 +1007,13 @@
     "tagsUnchanged": true,
     "versionIntegrityUnchanged": true,
     "retryAuthorized": false,
-    "operatorConfirmationOfTagSessionLogout": "pending",
+    "operatorConfirmationOfTagSessionLogout": {
+      "capturedAt": "2026-09-10T09:44:36Z",
+      "source": "Direct user selection",
+      "verbatimResponse": "Revocation confirmed",
+      "scope": "Final tag-repair CLI session",
+      "assurance": "Operator confirmation alongside supported npm logout and verified owned-file cleanup; no independent rejected-token probe claimed."
+    },
     "previousLoginFailure": {
       "guardReason": "unsupported-non-browser-credential-prompt",
       "unsupportedPrompt": "username",
@@ -995,5 +1027,6 @@
       "contextClosed": true
     },
     "authenticated": true
-  }
+  },
+  "completedAt": "2026-09-10T09:44:36Z"
 }

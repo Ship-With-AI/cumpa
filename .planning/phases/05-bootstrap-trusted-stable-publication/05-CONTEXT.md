@@ -60,6 +60,13 @@ Use GitHub OIDC trusted publishing without a long-lived npm credential. Configur
 - **D-09:** Verify real downloaded public registry bytes and actual attestation cryptography/claims, then prove separate clean global and exact-version npx consumption without local/cache fallbacks.
 
 After publication, independently download exact registry bytes and compare length/SHA-256/SHA-1/SHA-512 with the newly approved CI candidate. Verify actual attestation cryptography with supported npm tooling and separately inspect claims. Prove exact global install exposes `cumpa` and exact-version `npx` resolves `1.5.0` in separate clean, credential-free environments. Do not fall back to a local tarball/cache or infer availability from metadata alone.
+
+### D-10 — Accepted first-release `latest` behavior
+- **D-10 (2026-09-10):** The owner selected **“Accept until stable CI”** after the verified bootstrap publication also acquired `latest` and an explicitly authorized, authenticated removal was rejected with `E400`. For this first release only, `@shipwithai/cumpa@1.5.0-bootstrap.0` may retain both `bootstrap` and `latest` until a separately approved stable CI publication replaces the latter.
+
+This supersedes only REL-01/05-04's unchanged-`latest` outcome requirement; it does not rewrite the earlier failed criteria or authorize another tag mutation, publication, CI configuration, dispatch or stable artifact. Keep the immutable verified bootstrap, its existing byte approval and all historical artifacts unchanged. The bootstrap is a local interactive publication, not a CI-built/provenance-backed stable release. D-01 through D-09 otherwise remain in force.
+
+The attributable exception and final tag-session revocation confirmation are recorded in `05-BOOTSTRAP-PUBLICATION.json`. Exception SHA-256: `fdf592eef8725d7e5c5d2e6a59a94d9351b8bbca9884ebe4ae85ad9a1021fd19`. Current temporary authorization is revoked at the documented native-client/operator assurance levels, and all eight owned local contexts are cleaned.
 </decisions>
 
 <canonical_refs>

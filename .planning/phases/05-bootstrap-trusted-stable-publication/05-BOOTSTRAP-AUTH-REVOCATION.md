@@ -2,7 +2,7 @@
 
 ## Status
 
-The separately authorized second publication succeeded. Its public bytes and fresh global installation are verified, and the publishing session was logged out and operator-confirmed revoked. A separately authorized attempt to remove only the unexpected `latest` pointer was rejected by npm with `E400`; tags and the immutable version remained unchanged. The tag-repair session was also logged out and cleaned. Acceptance of the temporary `latest` designation and operator confirmation of that last tag-session logout remain pending. No further mutation is authorized.
+The separately authorized second publication succeeded. Public bytes and a fresh global installation are verified. Publishing and final tag-repair sessions were logged out, their owned local files were removed, and the operator confirmed both revocations at the recorded assurance levels. The authenticated latest-only removal was rejected with E400. On 2026-09-10 the owner selected **“Accept until stable CI”**, explicitly accepting this verified bootstrap as temporary `latest` until separately approved stable CI publication replaces it. Bootstrap closure is complete under that one-time amendment; no further registry or CI mutation is authorized.
 
 ## First attempt (failed): exact identity
 
@@ -54,7 +54,7 @@ The private diagnostic parser was repaired and verified against that actual read
 
 The approved archive, evidence and artifact approval remain unchanged and read-only where required. No public tarball was available after the first attempt. The second attempt used new exact authorization, fresh isolated authentication and fresh matching preconditions; it was not an automatic retry.
 
-## Second attempt (published): public proof and remaining tag decision
+## Second attempt (published): public proof and accepted tag outcome
 
 - Publication authorization SHA-256: `056cd80371e2f202b2449b2fa2241652e9083591b9e8b45d586f63d26b4a203a`.
 - Registry publication time: `2026-09-10T08:31:35.088Z`; registry publisher: `alemagio`.
@@ -69,7 +69,7 @@ The approved archive, evidence and artifact approval remain unchanged and read-o
 - Successful publishing-session observation level: supported npm logout response, independently checked owned-file absence and subsequent explicit operator revocation confirmation. No independent rejected-token probe is claimed.
 - No trusted-publisher or CI-build provenance is claimed for this local interactive bootstrap.
 
-Observed registry tags: `bootstrap = 1.5.0-bootstrap.0`, **`latest = 1.5.0-bootstrap.0`**. Before publication, the package and `latest` tag were absent. This fails the original unchanged-`latest` condition even though `--tag bootstrap` was used. The owner authorized removing only that pointer, but the supported authenticated removal was rejected. The immutable version and correct `bootstrap` tag remain intact. The remaining route is an explicit owner exception accepting bootstrap as temporary `latest` until a separately approved stable CI publication replaces that pointer; no such exception has yet been granted.
+Observed registry tags remain `bootstrap = 1.5.0-bootstrap.0` and `latest = 1.5.0-bootstrap.0`. The original unchanged-latest criterion failed; the immutable version and correct bootstrap tag were never changed. The owner subsequently accepted only this first-release exception, captured at `2026-09-10T09:44:36Z`, SHA-256 `fdf592eef8725d7e5c5d2e6a59a94d9351b8bbca9884ebe4ae85ad9a1021fd19`. This permits the current pointer until the separately authorized stable CI release; it neither claims the earlier criterion passed nor grants CI setup, dispatch, artifact approval or stable publication.
 
 ## Authorized latest-only repair: rejected by the registry
 
@@ -81,10 +81,10 @@ Observed registry tags: `bootstrap = 1.5.0-bootstrap.0`, **`latest = 1.5.0-boots
 - The guard independently reread tags immediately before running exactly `npm dist-tag rm @shipwithai/cumpa latest --fetch-retries=0 --registry https://registry.npmjs.org/` in its isolated context.
 - One removal command was attempted; npm returned exit `1`, code **`E400`**. Public tags, bootstrap version, SHA-1 and SHA-512 integrity remained unchanged.
 - Supported npm logout then succeeded; all owned tag-session files were checked absent before public reconciliation. The two tag-operation receipts are retained. All **eight** owned local contexts are now removed, at their individually recorded assurance levels.
-- Final tag-session observation level: supported npm logout response plus verified local cleanup; separate operator confirmation is pending. No independent rejected-token probe is claimed.
+- Final tag-session observation level: supported npm logout response plus verified local cleanup and explicit operator **“Revocation confirmed”** response captured at `2026-09-10T09:44:36Z`. No independent rejected-token probe is claimed.
 - No tag-removal retry, republish, unpublish or unrelated credential operation occurred.
 
-[npm/cli#8490](https://github.com/npm/cli/issues/8490) documents the same first-publication dual-tag behavior and `400` removal result. An npm maintainer confirms that first publication with a custom tag also creates `latest`; the demonstrated supported adjustment is to move `latest` to another published version. The original no-`latest` bootstrap condition therefore needs an explicit owner decision rather than repeated authenticated deletion attempts or an unsupported registry workaround.
+[npm/cli#8490](https://github.com/npm/cli/issues/8490) documents the same first-publication dual-tag behavior and 400 removal result. An npm maintainer confirms first publication with a custom tag also creates latest; the demonstrated supported adjustment is moving latest to another published version. The owner's D-10 amendment accepts this first-release outcome instead of retrying deletion or using an unsupported registry workaround. Published bytes, metadata identities, consumer proof, cleanup and separate stable CI gates remain required and unchanged.
 
 ## Sources and detailed evidence
 
