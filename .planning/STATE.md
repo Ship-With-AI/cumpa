@@ -5,15 +5,15 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 bootstrap is publicly published and exact-byte/global-bin verified. Latest-only removal authority 71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142 was used once; npm returned E400, and tags/version/integrity remain unchanged. Supported logout succeeded and all eight owned local contexts are closed at recorded assurance levels. npm/cli#8490 confirms first publication creates latest alongside custom tag and reports matching removal rejection. No further tag mutation, republish, unpublish or bypass is authorized. Await explicit owner acceptance of bootstrap as temporary latest until separately approved stable CI replaces it, and operator confirmation of final tag-session logout. No CI configuration/dispatch/stable publication authority yet."
-last_updated: "2026-09-10T09:38:37.085Z"
+stopped_at: "05-04 complete: verified public @shipwithai/cumpa@1.5.0-bootstrap.0 and all owned cleanup, accepted first-release latest exception D-10, final operator revocation confirmed. Summary committed. REL-01 complete; Phase 5 has 4/6 plans complete. Next 05-05 Task 1: read-only npm/GitHub protected release-setup preflight, then exact setup authorization. Public source remains 72c9bb499538a2c542d5165148e2d45096f7da56; no later bookkeeping push, CI configuration/dispatch, stable artifact approval or stable publication is authorized."
+last_updated: "2026-09-10T09:56:30.871Z"
 last_activity: 2026-09-10
-last_activity_desc: "The latest-only command returned E400 after browser authentication; public tags and immutable version stayed unchanged. Native logout succeeded and all eight owned local contexts are cleaned at recorded assurance levels. Upstream npm/cli#8490 matches this first-release behavior; no further mutation is authorized."
+last_activity_desc: Sealed bootstrap records and committed 05-04 summary; marked REL-01 complete while preserving the first-release exception and separate stable CI gates.
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 13
-  completed_plans: 10
+  completed_plans: 11
   percent: 40
 ---
 
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 public release verified; npm latest constraint and final tag-session confirmation block closure
+Plan: 4 of 6 complete — 05-05 Task 1 protected trusted-publisher setup is next
 Status: executing
-Checkpoint: Do not retry latest deletion, republish, unpublish or bypass the registry. Preserve the verified bootstrap and current tags. The original unchanged-latest condition requires explicit owner amendment because the authenticated supported removal failed. Record final tag-session revocation confirmation separately; stable CI still requires its own setup/run/artifact/publication gates.
-Last activity: 2026-09-10 — The latest-only command returned E400 after browser authentication; public tags and immutable version stayed unchanged. Native logout succeeded and all eight owned local contexts are cleaned at recorded assurance levels. Upstream npm/cli#8490 matches this first-release behavior; no further mutation is authorized.
+Checkpoint: Bootstrap closure is complete; latest may temporarily point to verified 1.5.0-bootstrap.0 under D-10. No temporary CLI session remains at the recorded provider/operator assurance levels. Observe current npm/GitHub authority and exact environment/publisher state, then request separately scoped setup authority. No CI dispatch or stable publication is implied.
+Last activity: 2026-09-10 — Sealed bootstrap records and committed 05-04 summary; marked REL-01 complete while preserving the first-release exception and separate stable CI gates.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T09:38:37.081Z
-Stopped at: 05-04 bootstrap is publicly published and exact-byte/global-bin verified. Latest-only removal authority 71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142 was used once; npm returned E400, and tags/version/integrity remain unchanged. Supported logout succeeded and all eight owned local contexts are closed at recorded assurance levels. npm/cli#8490 confirms first publication creates latest alongside custom tag and reports matching removal rejection. No further tag mutation, republish, unpublish or bypass is authorized. Await explicit owner acceptance of bootstrap as temporary latest until separately approved stable CI replaces it, and operator confirmation of final tag-session logout. No CI configuration/dispatch/stable publication authority yet.
-Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md
+Last session: 2026-09-10T09:56:30.866Z
+Stopped at: 05-04 complete: verified public @shipwithai/cumpa@1.5.0-bootstrap.0 and all owned cleanup, accepted first-release latest exception D-10, final operator revocation confirmed. Summary committed. REL-01 complete; Phase 5 has 4/6 plans complete. Next 05-05 Task 1: read-only npm/GitHub protected release-setup preflight, then exact setup authorization. Public source remains 72c9bb499538a2c542d5165148e2d45096f7da56; no later bookkeeping push, CI configuration/dispatch, stable artifact approval or stable publication is authorized.
+Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-05-PLAN.md

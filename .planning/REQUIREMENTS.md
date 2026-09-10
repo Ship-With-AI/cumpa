@@ -19,7 +19,7 @@
 
 ### Trusted Publication
 
-- [ ] **REL-01**: Maintainers can create the npm package through one usable, MIT-licensed, non-`latest` bootstrap release using short-lived interactive authorization, then revoke that authorization before stable publication.
+- [x] **REL-01**: Maintainers can create the npm package through one usable, MIT-licensed bootstrap tagged `bootstrap` using short-lived interactive authorization, then revoke that authorization before stable publication. For this first release only, the owner-approved D-10 exception permits npm-created `latest` to point to verified `1.5.0-bootstrap.0` until separately approved stable CI publication replaces it.
 - [ ] **REL-02**: Maintainers can publish `@shipwithai/cumpa@1.5.0` from the exact approved public `Ship-With-AI/cumpa` repository and fixed release workflow through npm trusted publishing without an npm automation token or another long-lived publication credential.
 - [x] **REL-03**: Maintainers inspect, install, and publish the same immutable `.tgz` bytes so publication cannot rebuild or substitute an unreviewed archive.
 - [x] **REL-04**: Public npm metadata accurately identifies the scoped package, version, executable, Node requirement, MIT license file, and exact `Ship-With-AI/cumpa` repository identity; the self-contained user README links to its verified public Issues page and omits a separate homepage or invented contact channel.
@@ -71,7 +71,7 @@ Each active requirement maps to exactly one roadmap phase.
 | PKG-05 | Phase 4 | Complete |
 | PKG-06 | Phase 3 | Complete |
 | PKG-07 | Phase 3 | Complete |
-| REL-01 | Phase 5 | Pending |
+| REL-01 | Phase 5 | Complete — D-10 first-release latest exception |
 | REL-02 | Phase 5 | Pending |
 | REL-03 | Phase 4 | Complete |
 | REL-04 | Phase 3 | Complete |
@@ -92,4 +92,4 @@ Each active requirement maps to exactly one roadmap phase.
 
 ---
 *Requirements defined: 2026-09-06*
-*Last updated: 2026-09-08 after quick task 260908-d25 superseded the 2026-09-07 proprietary source-available distribution direction with MIT Distribution; 19 active requirement IDs and phase assignments preserved*
+*Last updated: 2026-09-10 after verified bootstrap publication, credential cleanup and explicit owner acceptance of D-10; 19 active requirement IDs and phase assignments preserved*

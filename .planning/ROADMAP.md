@@ -17,7 +17,7 @@ The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary sou
 
 - [x] **Phase 3: Distribution Contract & Legal Boundary** — Establish standard MIT terms, refreshed dual-licensor exact-text assent, safe publication of the existing repository and reviewed history, and truthful package links and provenance policy. (completed 2026-09-08)
 - [x] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release. (completed 2026-09-09)
-- [ ] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable non-`latest` bootstrap, revoke temporary authorization, and publish stable `1.5.0` through OIDC.
+- [ ] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable bootstrap tagged `bootstrap` (D-10 first-release `latest` exception), revoke temporary authorization, and publish stable `1.5.0` through OIDC.
 - [ ] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite.
 - [ ] **Phase 7: Clean Public-Artifact Acceptance** - Prove global, npx, and marketplace workflows from clean environments using only released public artifacts.
 
@@ -87,11 +87,11 @@ Plans:
 **Requirements**: PKG-01, PKG-02, REL-01, REL-02
 **Success Criteria** (what must be TRUE):
 
-1. One complete, usable MIT-licensed bootstrap release exists under a non-`latest` tag through short-lived interactive authorization, and that authorization is revoked before stable publication.
+1. One complete, usable MIT-licensed bootstrap release exists under `bootstrap` through short-lived interactive authorization, and that authorization is revoked before stable publication. D-10 explicitly permits this first release also to remain `latest` until the separately approved stable CI release replaces that pointer.
 2. A fixed release workflow in the approved public `Ship-With-AI/cumpa` repository publishes the reviewed MIT-licensed `@shipwithai/cumpa@1.5.0` tarball through GitHub OIDC trusted publishing without long-lived publication credentials, preserves eligible automatic provenance, and records verified attestation results under the Phase 3 release policy.
   3. Public npm resolves exact `1.5.0` for both `npm install --global @shipwithai/cumpa@1.5.0` and `npx --yes @shipwithai/cumpa@1.5.0`, with the global install exposing the `cumpa` command.
 
-**Plans**: 6 plans in 5 waves — local Waves 1 and 2, source publication and verified public bootstrap are complete. The authorized latest-only removal was rejected by npm with E400. 05-04 awaits an explicit first-release latest-policy exception and final tag-session revocation confirmation; no further registry or CI mutation is authorized.
+**Plans**: 6 plans in 5 waves — 05-01 through 05-04 complete. The public bootstrap, byte/global-bin proof and all owned cleanup are accepted under D-10. 05-05 is next: protected trusted-publisher setup, followed by separately authorized CI candidate execution and actual artifact approval.
 **Wave 1**
 
 - [x] 05-01-PLAN.md — Closed configured bootstrap artifact profile
@@ -103,9 +103,9 @@ Plans:
 
 **Wave 3**
 
-- [ ] 05-04-PLAN.md — Reviewed source, usable bootstrap and authorization revocation
+- [x] 05-04-PLAN.md — Reviewed source, usable bootstrap and authorization revocation
 
-**Wave 4** *(blocked on Wave 3 completion)*
+**Wave 4** *(next; remote setup requires separate authority)*
 
 - [ ] 05-05-PLAN.md — Protected publisher setup and actual CI candidate approval
 
@@ -148,6 +148,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
-| 5. Bootstrap & Trusted Stable Publication | 3/6 | Bootstrap verified; npm latest constraint | - |
+| 5. Bootstrap & Trusted Stable Publication | 4/6 | Awaiting protected CI release setup | - |
 | 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
 | 7. Clean Public-Artifact Acceptance | 0/TBD | Not started | - |
