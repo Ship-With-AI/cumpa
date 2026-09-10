@@ -1,10 +1,10 @@
-# Bootstrap authentication revocation and failed publication
+# Bootstrap authentication revocation and publication outcomes
 
 ## Status
 
-One real publication command was attempted. It exited with code **1**. Public npm still reported the package, bootstrap version and stable version absent in fresh credential-free requests at **2026-09-10T08:08:27–28Z**. No publication retry was performed. REL-01 is not complete; stable setup and publication remain blocked.
+The separately authorized second publication succeeded. The public archive exactly matches the approved bytes, and a fresh credential-free global install exercised the generated `cumpa --version` as `1.5.0-bootstrap.0`. Its isolated publishing session was logged out and cleaned before verification. Both `bootstrap` and `latest` now point to this version, although the command explicitly requested `bootstrap`; the unexpected `latest` pointer and final operator logout confirmation remain decision gates. No tag repair or unpublish has been attempted.
 
-## Exact attempted identity
+## First attempt (failed): exact identity
 
 - Package: `@shipwithai/cumpa@1.5.0-bootstrap.0`
 - Tag/access: `bootstrap` / `public`; no `latest` assignment was requested.
@@ -18,7 +18,7 @@ One real publication command was attempted. It exited with code **1**. Public np
 - Final prepublication observations: `2026-09-10T07:42:42Z`.
 - Actual command used the approved absolute read-only archive with `--tag bootstrap --access public --ignore-scripts --fetch-retries=0 --registry https://registry.npmjs.org/`. No directory publication, rebuild or repack occurred.
 
-## Actual latest-session revocation
+## First attempted publication: session revocation
 
 After the publication command ended, the credential-owning guard ran supported `npm logout` against the isolated `@shipwithai`/public-registry configuration **before** public reconciliation.
 
@@ -28,31 +28,48 @@ After the publication command ended, the credential-owning guard ran supported `
 - The private ownership receipt, guard copy and approved artifacts were retained.
 - No inherited npm credential was used for publication. Existing GitHub authentication was used only for authorized source reads. Existing npm/GitHub credentials and browser login were not removed or logged out.
 
-This is evidence of a successful supported npm logout and verified local cleanup. No independent rejected-token probe was performed or claimed. Local file absence alone is not offered as server revocation proof. The final operator confirmation of this latest logout has not yet been recorded.
+This is evidence of a successful supported npm logout and verified local cleanup. No independent rejected-token probe was performed or claimed. Local file absence alone is not offered as server revocation proof. The operator subsequently confirmed this logout before authorizing the second attempt.
 
-## Earlier operation outcomes
+## Operation inventory before the second attempt
 
-The local inventory contains **five** owned operation receipts, all closed with their local authentication contexts removed:
+At the first-attempt checkpoint, the local inventory contained **five** owned operation receipts, all closed with their local authentication contexts removed:
 
 - One pre-login preparation expired without creating a session.
 - One failed login was closed after the operator clarified website sign-in only, without completed CLI authorization. Its assurance remains operator-reported, not independent server revocation.
 - One successful isolated login was revoked by supported npm logout after an overstrict agent preflight deferred publication. No publish request was sent from that operation.
 - One renewal reached a disallowed non-browser credential prompt. The operator confirmed provider-side CLI authorization, then explicitly confirmed revoking only that session. It was closed at operator-confirmed native-provider-revocation assurance.
-- The final operation made the single publication attempt described above, then completed supported npm logout and local cleanup.
+- The fifth operation made the first publication attempt described above, then completed supported npm logout and local cleanup.
 
 These observation levels remain distinct in `05-BOOTSTRAP-PUBLICATION.json`; no earlier operator report is reused as confirmation of the latest logout.
 
 ## Failure diagnosis and limits
 
-The original publication's precise npm/provider error is unknown: the private raw output was discarded and the old bounded parser recorded `unclassified`. A credential-free native-PTY `npm view` reproduction proved that whole-line matching missed a real `E404`.
+The first publication's precise npm/provider error remains unknown: the private raw output was discarded and the old bounded parser recorded `unclassified`. The operator subsequently reported that the publishing-browser session was not completed in time. A credential-free native-PTY `npm view` reproduction proved that whole-line matching missed a real `E404`.
 
 The private diagnostic parser was repaired and verified against that actual read-only output, known web/fetch failures, secret-like unsupported codes, and **16** harmless lifecycle scenarios. Browser authorization requests and unsupported prompt categories now produce bounded notifications without URLs or credentials. No new login or publication was performed during diagnosis; npm was not upgraded.
 
-- Guard used for the actual attempt: `a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e`.
-- Verified diagnostic guard for a possible future authorized attempt: `b11ad8729363e95b3e297a82b76d9ef6c6ec31c3fd6e9c8ef1b3c314d6d0f800`.
+- Guard used for the first attempted publication: `a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e`.
+- Verified diagnostic guard used for the second attempt: `b11ad8729363e95b3e297a82b76d9ef6c6ec31c3fd6e9c8ef1b3c314d6d0f800`.
 - npm status reported all systems operational and no unresolved incidents when checked. This does not rule out a transient or account-specific failure.
 
-The approved archive, evidence and artifact approval remain unchanged and read-only where required. No public tarball could be downloaded or globally installed because the public version was absent. A further real publication needs a new exact one-attempt authorization, a fresh isolated login and fresh matching preconditions; it is not an automatic retry.
+The approved archive, evidence and artifact approval remain unchanged and read-only where required. No public tarball was available after the first attempt. The second attempt used new exact authorization, fresh isolated authentication and fresh matching preconditions; it was not an automatic retry.
+
+## Second attempt (published): public proof and remaining tag decision
+
+- Publication authorization SHA-256: `056cd80371e2f202b2449b2fa2241652e9083591b9e8b45d586f63d26b4a203a`.
+- Registry publication time: `2026-09-10T08:31:35.088Z`; registry publisher: `alemagio`.
+- Same approved package/version, archive SHA-256, byte length, source, evidence and artifact approval as above.
+- Actual npm publication exit code: `0`; one command under this new authorization, two total publication attempts.
+- The guard announced separate browser requests for login and publication.
+- Supported npm logout succeeded immediately after the publication command; its owned HOME/cache/prefix/configs were removed before public consumer verification.
+- Credential-free registry download: SHA-256, SHA-1, SHA-512 integrity and byte length all equal the approved archive.
+- Normal exact global registry install: succeeded with install scripts enabled, fresh isolated HOME/cache/prefix/configs and no local-tarball fallback.
+- Installed generated binary resolved inside that package and returned `1.5.0-bootstrap.0` with exit `0`, on Node `v24.15.0` / npm `11.12.1`, Darwin ARM64.
+- Created download/consumer state was removed. All **six** owned authentication-operation contexts are now locally cleaned and closed at their recorded assurance levels.
+- Latest successful-session observation level: supported npm logout response plus independently checked owned-file absence. Separate operator confirmation is pending; no independent rejected-token probe is claimed.
+- No trusted-publisher or CI-build provenance is claimed for this local interactive bootstrap.
+
+Observed registry tags: `bootstrap = 1.5.0-bootstrap.0`, **`latest = 1.5.0-bootstrap.0`**. Before publication, the package and `latest` tag were absent. This fails the original unchanged-`latest` condition even though `--tag bootstrap` was used. Owner authorization is required either to remove only that `latest` pointer or to accept its temporary bootstrap designation. The immutable version and correct `bootstrap` tag must remain intact. No further publication, unpublish, tag repair or CI action is authorized by the consumed publication approvals.
 
 ## Sources and detailed evidence
 

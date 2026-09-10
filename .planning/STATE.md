@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04: first exact publication attempt under 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 exited 1; approval consumed and no retry authorized. Supported npm logout succeeded; all five owned local contexts removed at recorded assurance levels. Fresh no-cache npm responses 2026-09-10T08:08:27–28Z remain 404 for package/bootstrap/stable. Original exact provider error unavailable. Real credential-free native-PTY RED/GREEN and 16 stand-ins verify future diagnostic guard b11ad8729363e95b3e297a82b76d9ef6c6ec31c3fd6e9c8ef1b3c314d6d0f800; browser-request notifications now explicit. Await operator publishing-browser outcome, latest logout confirmation and any new exact attempt authority. Preserve unchanged approved bytes; do not start authentication or publication yet."
-last_updated: "2026-09-10T08:18:13.285Z"
+stopped_at: "05-04 second authorized publication succeeded: @shipwithai/cumpa@1.5.0-bootstrap.0, sha256 4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f, 3514006 bytes. Public registry hashes and normal isolated global install/generated bin verified; registry publisher alemagio, published 2026-09-10T08:31:35.088Z. Supported logout succeeded; all six owned auth contexts and public consumer scratch removed. Unexpected registry latest=1.5.0-bootstrap.0 alongside correct bootstrap tag despite explicit --tag bootstrap. No tag repair/unpublish/republish authorized. Await owner latest-tag choice and latest successful-session logout confirmation; stable/CI gates remain separate."
+last_updated: "2026-09-10T08:50:03.561Z"
 last_activity: 2026-09-10
-last_activity_desc: One npm publish exited 1 with an unclassified provider error; fresh registry requests still return 404. All owned local authentication contexts are removed, latest native logout succeeded, and required revocation/failure evidence is recorded. Real read-only npm terminal output now yields its bounded error code; 16 lifecycle simulations passed.
+last_activity_desc: "Registry publication time 08:31:35.088Z; public archive exactly matches approved hashes/3514006 bytes. A normal fresh global registry install and generated cumpa --version passed. All owned auth/consumer state cleaned. Registry also assigns latest to the bootstrap, contrary to the original unchanged-latest condition."
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 first publication attempt failed safely; REL-01 unmet and further publication requires new authority
+Plan: 3 of 6 complete — 05-04 publication and public usability verified; latest-tag decision and final revocation confirmation pending
 Status: executing
-Checkpoint: No active owned CLI session and no automatic retry. The first publication approval is consumed. Preserve approved archive/evidence/approval; determine the publishing-browser outcome and record operator confirmation of latest supported logout. Any second real attempt requires fresh isolated authentication and a new exact publication authorization; stable/CI remains blocked.
-Last activity: 2026-09-10 — One npm publish exited 1 with an unclassified provider error; fresh registry requests still return 404. All owned local authentication contexts are removed, latest native logout succeeded, and required revocation/failure evidence is recorded. Real read-only npm terminal output now yields its bounded error code; 16 lifecycle simulations passed.
+Checkpoint: Preserve the immutable published bootstrap and its correct bootstrap tag. Do not republish, unpublish or silently alter latest. Either remove only latest if still pointing to this bootstrap under fresh scoped authority, or record an explicit owner policy exception accepting it temporarily. Final successful-session logout confirmation and separate CI setup gates remain.
+Last activity: 2026-09-10 — Registry publication time 08:31:35.088Z; public archive exactly matches approved hashes/3514006 bytes. A normal fresh global registry install and generated cumpa --version passed. All owned auth/consumer state cleaned. Registry also assigns latest to the bootstrap, contrary to the original unchanged-latest condition.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T08:18:13.280Z
-Stopped at: 05-04: first exact publication attempt under 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 exited 1; approval consumed and no retry authorized. Supported npm logout succeeded; all five owned local contexts removed at recorded assurance levels. Fresh no-cache npm responses 2026-09-10T08:08:27–28Z remain 404 for package/bootstrap/stable. Original exact provider error unavailable. Real credential-free native-PTY RED/GREEN and 16 stand-ins verify future diagnostic guard b11ad8729363e95b3e297a82b76d9ef6c6ec31c3fd6e9c8ef1b3c314d6d0f800; browser-request notifications now explicit. Await operator publishing-browser outcome, latest logout confirmation and any new exact attempt authority. Preserve unchanged approved bytes; do not start authentication or publication yet.
+Last session: 2026-09-10T08:50:03.556Z
+Stopped at: 05-04 second authorized publication succeeded: @shipwithai/cumpa@1.5.0-bootstrap.0, sha256 4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f, 3514006 bytes. Public registry hashes and normal isolated global install/generated bin verified; registry publisher alemagio, published 2026-09-10T08:31:35.088Z. Supported logout succeeded; all six owned auth contexts and public consumer scratch removed. Unexpected registry latest=1.5.0-bootstrap.0 alongside correct bootstrap tag despite explicit --tag bootstrap. No tag repair/unpublish/republish authorized. Await owner latest-tag choice and latest successful-session logout confirmation; stable/CI gates remain separate.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md
