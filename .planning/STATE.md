@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 Task 8: isolated CLI session authenticated as alemagio, owner of shipwithai; 2FA auth-only pending=false; authenticated/public package absence and approved bytes/source bindings verified at 2026-09-10T06:14:18Z. Await exact one-attempt bootstrap/public publication authorization. Live guard owns bounded cleanup; inspect current private receipt/deadlines before any action. No publish request sent."
-last_updated: "2026-09-10T06:16:14.790Z"
+stopped_at: "05-04 Task 9: exact publication authorization 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 is unused; zero publish requests. Supported npm logout succeeded and owned context removed after overstrict agent preflight. Guard code a2c35e5f… unchanged; 16 stand-ins prove active commands ignore idle expiry. Renew one isolated CLI login, recheck actor/rights/2FA/bytes/vacancy, then apply existing publication authority without asking again. No CI token or stable/CI authority."
+last_updated: "2026-09-10T06:34:32.007Z"
 last_activity: 2026-09-10
-last_activity_desc: "At 06:14:18Z observed alemagio/owner, 2FA auth-only pending=false, authenticated/public absence and unchanged approved identities. No publication attempted; the private guard owns cleanup while awaiting the exact decision."
+last_activity_desc: Published nothing; the nearly expired session was revoked through supported npm logout and its owned files removed. Simulation disproved a guard idle-timer defect; the agent preflight was corrected instead, and all 16 fake-npm lifecycle checks passed.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 Tasks 1–7 complete; Task 8 awaiting exact bootstrap publication authority
+Plan: 3 of 6 complete — 05-04 Tasks 1–8 complete; Task 9 authorized publication awaits renewed isolated authentication
 Status: executing
-Checkpoint: Only the approved 1.5.0-bootstrap.0 archive may be published once under bootstrap/public as alemagio (shipwithai owner). No latest assignment, retry, rebuild or stable/CI authority is implied. Stop/rejection/failure/expiry must revoke the isolated session; preserve the normal browser/npm state.
-Last activity: 2026-09-10 — At 06:14:18Z observed alemagio/owner, 2FA auth-only pending=false, authenticated/public absence and unchanged approved identities. No publication attempted; the private guard owns cleanup while awaiting the exact decision.
+Checkpoint: Publication authority 2d57c562… covers exactly one approved 1.5.0-bootstrap.0/bootstrap/public attempt as alemagio (shipwithai owner); no attempt occurred. Renew login separately, then reuse this authority if actor, bytes and required preconditions match. Do not ask for identical publication approval again or create a CI token.
+Last activity: 2026-09-10 — Published nothing; the nearly expired session was revoked through supported npm logout and its owned files removed. Simulation disproved a guard idle-timer defect; the agent preflight was corrected instead, and all 16 fake-npm lifecycle checks passed.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T06:16:14.782Z
-Stopped at: 05-04 Task 8: isolated CLI session authenticated as alemagio, owner of shipwithai; 2FA auth-only pending=false; authenticated/public package absence and approved bytes/source bindings verified at 2026-09-10T06:14:18Z. Await exact one-attempt bootstrap/public publication authorization. Live guard owns bounded cleanup; inspect current private receipt/deadlines before any action. No publish request sent.
+Last session: 2026-09-10T06:34:32.002Z
+Stopped at: 05-04 Task 9: exact publication authorization 2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930 is unused; zero publish requests. Supported npm logout succeeded and owned context removed after overstrict agent preflight. Guard code a2c35e5f… unchanged; 16 stand-ins prove active commands ignore idle expiry. Renew one isolated CLI login, recheck actor/rights/2FA/bytes/vacancy, then apply existing publication authority without asking again. No CI token or stable/CI authority.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md

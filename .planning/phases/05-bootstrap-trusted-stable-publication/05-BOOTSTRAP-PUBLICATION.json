@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "awaiting-exact-bootstrap-publication-authorization",
+  "status": "bootstrap-publication-authorized-authentication-renewal-required",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -20,8 +20,8 @@
     "serviceName": "cumpa-bootstrap-auth-guard",
     "codeSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
     "readyObserved": true,
-    "running": true,
-    "currentState": "authenticated-awaiting-separate-authority",
+    "running": false,
+    "currentState": "closed",
     "idleLimitSeconds": 900,
     "absoluteLimitSeconds": 3600,
     "standinChecksPassed": 15,
@@ -33,7 +33,10 @@
     "npmVersion": "11.12.1",
     "absoluteDeadlineEpoch": 1789024168.943604,
     "idleDeadlineEpoch": 1789021493.689931,
-    "privateOwnershipReceiptPersisted": true
+    "privateOwnershipReceiptPersisted": true,
+    "cleanupComplete": true,
+    "reason": "operator-stop",
+    "lastHeartbeatEpoch": 1789021480.1640918
   },
   "authentication": {
     "authorized": true,
@@ -66,15 +69,56 @@
     "attemptRequested": true
   },
   "publication": {
-    "authorized": false,
-    "attempted": false
+    "authorized": true,
+    "attempted": false,
+    "authorization": {
+      "kind": "cumpa.bootstrap-publication-authorization/v1",
+      "authorizer": "Alessandro Magionami",
+      "capturedAt": "2026-09-10T06:22:58Z",
+      "source": "Direct user selection at the exact bootstrap publication gate",
+      "verbatimResponse": "Publish this exact bootstrap",
+      "selectedAuthorizationText": "BOOTSTRAP PUBLICATION AUTHORIZED: @shipwithai/cumpa@1.5.0-bootstrap.0 sha256 4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f bytes 3514006 tag bootstrap access public account alemagio organizationRole owner; one attempt then owned-session revocation.",
+      "package": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "byteLength": 3514006,
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+      "sourceSha": "72c9bb499538a2c542d5165148e2d45096f7da56",
+      "account": "alemagio",
+      "organization": "shipwithai",
+      "organizationRole": "owner",
+      "tag": "bootstrap",
+      "access": "public",
+      "registry": "https://registry.npmjs.org/",
+      "ignoreScripts": true,
+      "fetchRetries": 0,
+      "attemptLimit": 1,
+      "revokeOwnedSessionImmediatelyAfterAttempt": true,
+      "latestAssignmentAuthorized": false,
+      "rebuildOrRetryAuthorized": false,
+      "stableOrCiAuthorized": false
+    },
+    "authorizationSha256": "2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930",
+    "attemptRequested": false,
+    "deferralReason": "Prepublication idle margin was 115 seconds, below the 120-second local preflight threshold; no publish control was sent.",
+    "authorizationRemainsUnused": true,
+    "deferralDiagnosis": {
+      "cause": "Agent-side 120-second idle-margin threshold was stricter than the actual guard.",
+      "guardBehavior": "Idle expiry is ignored while a command is running; absolute and command deadlines remain enforced.",
+      "preflightCorrection": "Require unexpired idle admission and more than the configured command limit before the absolute deadline; recheck immediately before sending publish.",
+      "guardCodeChanged": false,
+      "harmlessChecksPassed": 16
+    }
   },
   "revocation": {
-    "sessionExists": true,
-    "providerRevocationClaim": null,
-    "ownedLocalCredentialFound": true,
-    "ownedCleanupComplete": false,
-    "state": "pending-terminal-outcome"
+    "sessionExists": false,
+    "providerRevocationClaim": "supported-npm-logout-server-response",
+    "ownedLocalCredentialFound": false,
+    "ownedCleanupComplete": true,
+    "state": "complete",
+    "independentTokenRejectionObserved": false,
+    "recoveryReceiptPreserved": true
   },
   "limits": [
     "Readiness is a timestamped observation, not a promise the guard remains alive after idle/deadline or process loss.",
