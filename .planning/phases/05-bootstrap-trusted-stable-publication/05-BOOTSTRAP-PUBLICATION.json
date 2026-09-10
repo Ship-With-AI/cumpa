@@ -1,6 +1,6 @@
 {
   "kind": "cumpa.bootstrap-publication/v1",
-  "status": "ci-publication-requested-credential-decision-required",
+  "status": "local-bootstrap-selected-preparing-fresh-guard",
   "package": "@shipwithai/cumpa",
   "version": "1.5.0-bootstrap.0",
   "tag": "bootstrap",
@@ -17,114 +17,58 @@
     "additionalConfiguredOriginFingerprintMatched": true
   },
   "guard": {
-    "observedAt": "2026-09-09T21:08:51Z",
     "serviceName": "cumpa-bootstrap-auth-guard",
-    "readyObserved": true,
-    "safeStatusControlObserved": true,
-    "codeSha256": "1b521a7b26a5ad8a2601c99abab67396d3986cf5013ad57dfddb5429b11502ab",
-    "privateOwnershipReceiptPersisted": true,
-    "fixedRelativeOwnedPathsOnly": true,
-    "nativePtyForNpm": true,
-    "rawNpmOutputRemainsPrivate": true,
-    "nodeVersion": "v24.15.0",
-    "npmVersion": "11.12.1",
+    "codeSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+    "readyObserved": false,
+    "running": false,
+    "currentState": "preparing",
     "idleLimitSeconds": 900,
     "absoluteLimitSeconds": 3600,
-    "observedIdleDeadline": "2026-09-09T21:18:14Z",
-    "absoluteDeadline": "2026-09-09T21:51:30Z",
-    "standinChecksPassed": [
-      "cancelled-login",
-      "failed-login",
-      "authority-failure",
-      "publication-rejection",
-      "normal-stdin-exit",
-      "SIGINT",
-      "SIGTERM",
-      "SIGHUP",
-      "idle-timeout",
-      "publication-terminal-cleanup",
-      "absolute-deadline",
-      "SIGKILL-then-cleanup-first-recovery",
-      "pre-auth-abort-creates-no-session",
-      "pre-auth-publish-creates-no-session",
-      "provider-loss-retains-recovery-route"
-    ],
+    "standinChecksPassed": 15,
     "standinChecksUsedRealCredentials": false,
-    "recoveryRule": "Inspect the actual private receipt and live guard first. Resolve any attempted/unknown session before another login. Closed no-session preparation can be replaced with a fresh empty context.",
-    "previousPreloginPreparationClosedWithoutSession": true,
-    "freshPreparationReadyForAuthorizedLogin": false,
-    "absoluteDeadlineEpoch": 1789019737.0,
-    "idleDeadlineEpoch": 1789017037.6838763,
-    "currentState": "closed",
-    "running": false,
-    "cleanupComplete": true,
-    "reason": "operator-reported-website-login-only-without-cli-authorization",
-    "ownedRecoveryStatePreserved": true,
-    "lastHeartbeatEpoch": 1789018619.8309839,
-    "failedAttemptLastHeartbeatEpoch": 1789016209.4129128
+    "nativePtyForNpm": true,
+    "rawNpmOutputRemainsPrivate": true,
+    "recoveryRule": "Inspect the owned receipt; cleanup-first for any attempted or unknown session before another login."
   },
   "authentication": {
     "authorized": true,
-    "attempted": true,
-    "publicAccount": null,
-    "authorityAnd2faVerified": false,
     "authorization": {
       "kind": "cumpa.bootstrap-authentication-authorization/v1",
       "authorizer": "Alessandro Magionami",
-      "source": "Direct user selection: Authorize isolated npm login",
-      "capturedAt": "2026-09-10T04:54:36Z",
+      "source": "Direct user selection of local first publication at the authentication-route decision",
+      "verbatimResponse": "ok, now I get it, let's go with the first local publication",
+      "capturedAt": "2026-09-10T06:05:14Z",
       "package": "@shipwithai/cumpa",
       "version": "1.5.0-bootstrap.0",
       "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
       "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
       "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
       "scope": [
-        "one isolated native-browser npm login",
+        "one fresh isolated native-browser npm CLI login for the local bootstrap",
         "read-only account/scope-write/2FA checks",
         "owned-session revocation and cleanup"
       ],
-      "publicationAuthorized": false,
-      "hostedConfigurationOrCiAuthorized": false,
-      "expiredPreloginGuard": "closed with no session created; fresh empty context permitted before login"
+      "exactPublicationGateStillPending": true,
+      "ciBootstrapTokenAuthorized": false,
+      "hostedConfigurationOrCiAuthorized": false
     },
-    "authorizationSha256": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b",
+    "authorizationSha256": "8a5a6e0e2073810602eb911a6d18a019eee9ed4bb39457ed35eb3ac7ae4f98e8",
+    "attempted": false,
     "authenticated": false,
-    "outcome": "Guarded CLI login did not establish an owned token. Operator subsequently clarified that only website login completed, without CLI authorization.",
-    "failureObservedAt": "2026-09-10T05:12:50Z",
-    "operatorLoginReport": {
-      "reportedAt": "2026-09-10T05:30:55Z",
-      "statement": "I just logged in",
-      "interpretation": "User reports successful login; whether the isolated CLI session completed remains unresolved."
-    },
-    "operatorLoginClarification": {
-      "reportedAt": "2026-09-10T05:36:59Z",
-      "source": "Direct user selection",
-      "response": "Website login only",
-      "selectedMeaning": "Signed into npm in the browser, but did not complete an approval for CLI access.",
-      "assurance": "Operator-reported absence of completed CLI authorization; not an independently observed server revocation."
-    }
+    "publicAccount": null,
+    "authorityAnd2faVerified": false,
+    "previousAuthorizationConsumed": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b"
   },
   "publication": {
     "authorized": false,
     "attempted": false
   },
   "revocation": {
-    "sessionExists": null,
+    "sessionExists": false,
     "providerRevocationClaim": null,
     "ownedLocalCredentialFound": false,
-    "providerOutcomeRequiresConfirmation": false,
-    "automaticRetryProhibited": true,
-    "automaticLogoutOutcome": "unresolved",
-    "operatorObservation": {
-      "reportedAt": "2026-09-10T05:36:59Z",
-      "source": "Direct user selection",
-      "response": "Website login only",
-      "selectedMeaning": "Signed into npm in the browser, but did not complete an approval for CLI access.",
-      "assurance": "Operator-reported absence of completed CLI authorization; not an independently observed server revocation."
-    },
-    "closureBasis": "Operator reports no completed CLI authorization; owned empty local context removed. No independent server invalidation claim.",
-    "ownedCleanupComplete": true,
-    "recoveryReceiptPreserved": true
+    "ownedCleanupComplete": false,
+    "state": "not-started"
   },
   "limits": [
     "Readiness is a timestamped observation, not a promise the guard remains alive after idle/deadline or process loss.",
@@ -132,17 +76,6 @@
     "SIGKILL, machine loss and unreachable provider are unresolved until cleanup-first recovery proves the real outcome.",
     "Artifact approval does not authorize authentication or publication."
   ],
-  "diagnostics": {
-    "ownedAuthenticationLocationsChecked": [
-      "user.npmrc",
-      "global.npmrc",
-      "home/.npmrc"
-    ],
-    "ownedCredentialFound": false,
-    "ownedDebugLogCount": 0,
-    "nativeBrowserReadAvailable": false,
-    "rawLoginOrProfileOutputDisclosed": false
-  },
   "publicationRouteRequest": {
     "requestedAt": "2026-09-10T05:48:15Z",
     "source": "Direct user custom response at fresh CLI-login gate",
@@ -176,6 +109,144 @@
     "proposedBootstrapAuthentication": "One-operation granular npm token with target-scope package-write access and publishing 2FA bypass, protected GitHub environment secret, immediate revocation/deletion after the attempt.",
     "credentialExceptionAuthorized": false,
     "exactCiSetupRunAndPublicationAuthorization": null,
-    "stableCandidateApprovalUnchanged": "Still requires a fresh CI build and actual digest-bound approval."
-  }
+    "stableCandidateApprovalUnchanged": "Still requires a fresh CI build and actual digest-bound approval.",
+    "status": "superseded-by-local-bootstrap-decision"
+  },
+  "localBootstrapDecision": {
+    "recordedAt": "2026-09-10T06:05:14Z",
+    "source": "Direct user message after route explanation",
+    "statement": "ok, now I get it, let's go with the first local publication",
+    "route": "Approved bootstrap published locally first, then fresh stable CI build and OIDC publication",
+    "ciBootstrapGranularTokenExceptionApproved": false,
+    "exactPublicationConfirmation": "Pending observed npm identity, permissions, 2FA and actual exact-value publication gate"
+  },
+  "safeGuardDiagnostics": {
+    "sha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+    "failedCommandExitStatusAndAllowlistedErrorCodeOnly": true,
+    "privateUrlsAndTokensExcluded": true,
+    "harmlessLifecycleChecksPassed": 15,
+    "missingSafeDiagnosticObservedBeforeChange": true,
+    "realAuthenticationOrPublicationUsedForChecks": false
+  },
+  "previousAuthenticationAttempts": [
+    {
+      "authentication": {
+        "authorized": true,
+        "attempted": true,
+        "publicAccount": null,
+        "authorityAnd2faVerified": false,
+        "authorization": {
+          "kind": "cumpa.bootstrap-authentication-authorization/v1",
+          "authorizer": "Alessandro Magionami",
+          "source": "Direct user selection: Authorize isolated npm login",
+          "capturedAt": "2026-09-10T04:54:36Z",
+          "package": "@shipwithai/cumpa",
+          "version": "1.5.0-bootstrap.0",
+          "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+          "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+          "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+          "scope": [
+            "one isolated native-browser npm login",
+            "read-only account/scope-write/2FA checks",
+            "owned-session revocation and cleanup"
+          ],
+          "publicationAuthorized": false,
+          "hostedConfigurationOrCiAuthorized": false,
+          "expiredPreloginGuard": "closed with no session created; fresh empty context permitted before login"
+        },
+        "authorizationSha256": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b",
+        "authenticated": false,
+        "outcome": "Guarded CLI login did not establish an owned token. Operator subsequently clarified that only website login completed, without CLI authorization.",
+        "failureObservedAt": "2026-09-10T05:12:50Z",
+        "operatorLoginReport": {
+          "reportedAt": "2026-09-10T05:30:55Z",
+          "statement": "I just logged in",
+          "interpretation": "User reports successful login; whether the isolated CLI session completed remains unresolved."
+        },
+        "operatorLoginClarification": {
+          "reportedAt": "2026-09-10T05:36:59Z",
+          "source": "Direct user selection",
+          "response": "Website login only",
+          "selectedMeaning": "Signed into npm in the browser, but did not complete an approval for CLI access.",
+          "assurance": "Operator-reported absence of completed CLI authorization; not an independently observed server revocation."
+        }
+      },
+      "guard": {
+        "observedAt": "2026-09-09T21:08:51Z",
+        "serviceName": "cumpa-bootstrap-auth-guard",
+        "readyObserved": true,
+        "safeStatusControlObserved": true,
+        "codeSha256": "1b521a7b26a5ad8a2601c99abab67396d3986cf5013ad57dfddb5429b11502ab",
+        "privateOwnershipReceiptPersisted": true,
+        "fixedRelativeOwnedPathsOnly": true,
+        "nativePtyForNpm": true,
+        "rawNpmOutputRemainsPrivate": true,
+        "nodeVersion": "v24.15.0",
+        "npmVersion": "11.12.1",
+        "idleLimitSeconds": 900,
+        "absoluteLimitSeconds": 3600,
+        "observedIdleDeadline": "2026-09-09T21:18:14Z",
+        "absoluteDeadline": "2026-09-09T21:51:30Z",
+        "standinChecksPassed": [
+          "cancelled-login",
+          "failed-login",
+          "authority-failure",
+          "publication-rejection",
+          "normal-stdin-exit",
+          "SIGINT",
+          "SIGTERM",
+          "SIGHUP",
+          "idle-timeout",
+          "publication-terminal-cleanup",
+          "absolute-deadline",
+          "SIGKILL-then-cleanup-first-recovery",
+          "pre-auth-abort-creates-no-session",
+          "pre-auth-publish-creates-no-session",
+          "provider-loss-retains-recovery-route"
+        ],
+        "standinChecksUsedRealCredentials": false,
+        "recoveryRule": "Inspect the actual private receipt and live guard first. Resolve any attempted/unknown session before another login. Closed no-session preparation can be replaced with a fresh empty context.",
+        "previousPreloginPreparationClosedWithoutSession": true,
+        "freshPreparationReadyForAuthorizedLogin": false,
+        "absoluteDeadlineEpoch": 1789019737.0,
+        "idleDeadlineEpoch": 1789017037.6838763,
+        "currentState": "closed",
+        "running": false,
+        "cleanupComplete": true,
+        "reason": "operator-reported-website-login-only-without-cli-authorization",
+        "ownedRecoveryStatePreserved": true,
+        "lastHeartbeatEpoch": 1789018619.8309839,
+        "failedAttemptLastHeartbeatEpoch": 1789016209.4129128
+      },
+      "revocation": {
+        "sessionExists": null,
+        "providerRevocationClaim": null,
+        "ownedLocalCredentialFound": false,
+        "providerOutcomeRequiresConfirmation": false,
+        "automaticRetryProhibited": true,
+        "automaticLogoutOutcome": "unresolved",
+        "operatorObservation": {
+          "reportedAt": "2026-09-10T05:36:59Z",
+          "source": "Direct user selection",
+          "response": "Website login only",
+          "selectedMeaning": "Signed into npm in the browser, but did not complete an approval for CLI access.",
+          "assurance": "Operator-reported absence of completed CLI authorization; not an independently observed server revocation."
+        },
+        "closureBasis": "Operator reports no completed CLI authorization; owned empty local context removed. No independent server invalidation claim.",
+        "ownedCleanupComplete": true,
+        "recoveryReceiptPreserved": true
+      },
+      "diagnostics": {
+        "ownedAuthenticationLocationsChecked": [
+          "user.npmrc",
+          "global.npmrc",
+          "home/.npmrc"
+        ],
+        "ownedCredentialFound": false,
+        "ownedDebugLogCount": 0,
+        "nativeBrowserReadAvailable": false,
+        "rawLoginOrProfileOutputDisclosed": false
+      }
+    }
+  ]
 }

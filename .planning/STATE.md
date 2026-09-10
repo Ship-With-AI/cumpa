@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04: owner requests CI publication rather than fresh local npm login. Public package/bootstrap/stable endpoints are absent; npm trust requires existing package. Await explicit one-operation CI bootstrap granular-token + target-scope write + publishing-2FA-bypass exception. No token, source push, CI setup/run or exact publication action authorized. Preserve approved bytes and stable same-run approval gates."
-last_updated: "2026-09-10T05:49:34.972Z"
+stopped_at: "05-04: owner selected first local publication after route explanation; one fresh isolated CLI login authorized, final exact publication gate pending account/2FA checks. Private guard a2c35e5f… passed diagnostic RED/GREEN and all 15 fake-npm lifecycle checks. Inspect actual private receipt before any action. No CI bootstrap token."
+last_updated: "2026-09-10T06:07:54.918Z"
 last_activity: 2026-09-10
-last_activity_desc: Public npm returned 404 for the package and both release identities; npm trust prerequisites and open initial-OIDC issue corroborate the first-publication blocker. Proposed protected CI bootstrap followed by token revocation and tokenless stable CI.
+last_activity_desc: Local-first route restored after owner explanation; fixed missing bounded private-guard failure diagnostics with observed RED and 15 passing fake-npm lifecycle scenarios. No new authentication or publication has started yet.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 3 of 6 complete — 05-04 paused for a CI-bootstrap route amendment; first local authentication attempt is closed
+Plan: 3 of 6 complete — 05-04 local bootstrap resumed; fresh isolated authentication precedes the final exact publication gate
 Status: executing
-Checkpoint: No further local npm login. The owner requested CI publication, but the temporary scope-wide granular-token/2FA-bypass exception has not been approved. Preserve approved bootstrap bytes and stable same-run/digest-approval requirements; exact source/setup/run/publication gates remain binding.
-Last activity: 2026-09-10 — Public npm returned 404 for the package and both release identities; npm trust prerequisites and open initial-OIDC issue corroborate the first-publication blocker. Proposed protected CI bootstrap followed by token revocation and tokenless stable CI.
+Checkpoint: Use one fresh temporary isolated CLI login for the selected local-bootstrap route. Do not create a CI granular token or reuse normal npm credentials. Account/scope/2FA and current vacancy must be observed before final exact publication confirmation. Inspect the live private receipt for the actual authentication and cleanup state.
+Last activity: 2026-09-10 — Local-first route restored after owner explanation; fixed missing bounded private-guard failure diagnostics with observed RED and 15 passing fake-npm lifecycle scenarios. No new authentication or publication has started yet.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T05:49:34.964Z
-Stopped at: 05-04: owner requests CI publication rather than fresh local npm login. Public package/bootstrap/stable endpoints are absent; npm trust requires existing package. Await explicit one-operation CI bootstrap granular-token + target-scope write + publishing-2FA-bypass exception. No token, source push, CI setup/run or exact publication action authorized. Preserve approved bytes and stable same-run approval gates.
+Last session: 2026-09-10T06:07:54.748Z
+Stopped at: 05-04: owner selected first local publication after route explanation; one fresh isolated CLI login authorized, final exact publication gate pending account/2FA checks. Private guard a2c35e5f… passed diagnostic RED/GREEN and all 15 fake-npm lifecycle checks. Inspect actual private receipt before any action. No CI bootstrap token.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-04-PLAN.md
