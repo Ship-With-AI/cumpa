@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-04 complete: verified public @shipwithai/cumpa@1.5.0-bootstrap.0 and all owned cleanup, accepted first-release latest exception D-10, final operator revocation confirmed. Summary committed. REL-01 complete; Phase 5 has 4/6 plans complete. Next 05-05 Task 1: read-only npm/GitHub protected release-setup preflight, then exact setup authorization. Public source remains 72c9bb499538a2c542d5165148e2d45096f7da56; no later bookkeeping push, CI configuration/dispatch, stable artifact approval or stable publication is authorized."
-last_updated: "2026-09-10T09:56:30.871Z"
+stopped_at: "05-05 Task 1: read-only preflight complete. GitHub alemagio (21338507) has repo admin; public Ship-With-AI/cumpa (1327753770, owner 224984099), main P=72c9bb499538a2c542d5165148e2d45096f7da56. Workflow 354343281 publish-npm.yml active, zero runs; npm-release absent. Stable 1.5.0 absent in packument and exact endpoint. Last scoped npm actor alemagio/shipwithai owner with 2FA auth-only; existing npm trust configuration requires authenticated UI (GET 401). Await owner inspection plus setup-only authorization: npm-release reviewer alemagio, self-review allowed, main branch only, admin bypass disabled, no npm/support secrets; npm GitHub publisher Ship-With-AI/cumpa + publish-npm.yml + npm-release with direct publish. No CI dispatch/upload/artifact approval/stable publication yet."
+last_updated: "2026-09-10T10:13:50.976Z"
 last_activity: 2026-09-10
-last_activity_desc: Sealed bootstrap records and committed 05-04 summary; marked REL-01 complete while preserving the first-release exception and separate stable CI gates.
+last_activity_desc: Verified GitHub admin identity, exact public source, absent npm-release environment, active manual release workflow with no runs, and stable-version absence. Confirmed native reviewer/main-branch/admin-bypass controls and the authenticated npm trust endpoint.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 4 of 6 complete — 05-05 Task 1 protected trusted-publisher setup is next
+Plan: 4 of 6 complete — 05-05 Task 1 awaits protected release-setup authorization
 Status: executing
-Checkpoint: Bootstrap closure is complete; latest may temporarily point to verified 1.5.0-bootstrap.0 under D-10. No temporary CLI session remains at the recorded provider/operator assurance levels. Observe current npm/GitHub authority and exact environment/publisher state, then request separately scoped setup authority. No CI dispatch or stable publication is implied.
-Last activity: 2026-09-10 — Sealed bootstrap records and committed 05-04 summary; marked REL-01 complete while preserving the first-release exception and separate stable CI gates.
+Checkpoint: Create/configure only the proposed protected npm-release environment and exact npm trusted-publisher relation after explicit setup authority. Preserve unrelated environments/publishers and the authoritative production configuration. Npm configuration is not observable anonymously; use the authenticated owner interface without collecting a token. Setup does not authorize CI dispatch/upload, stable artifact approval or publication.
+Last activity: 2026-09-10 — Verified GitHub admin identity, exact public source, absent npm-release environment, active manual release workflow with no runs, and stable-version absence. Confirmed native reviewer/main-branch/admin-bypass controls and the authenticated npm trust endpoint.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T09:56:30.866Z
-Stopped at: 05-04 complete: verified public @shipwithai/cumpa@1.5.0-bootstrap.0 and all owned cleanup, accepted first-release latest exception D-10, final operator revocation confirmed. Summary committed. REL-01 complete; Phase 5 has 4/6 plans complete. Next 05-05 Task 1: read-only npm/GitHub protected release-setup preflight, then exact setup authorization. Public source remains 72c9bb499538a2c542d5165148e2d45096f7da56; no later bookkeeping push, CI configuration/dispatch, stable artifact approval or stable publication is authorized.
+Last session: 2026-09-10T10:13:50.972Z
+Stopped at: 05-05 Task 1: read-only preflight complete. GitHub alemagio (21338507) has repo admin; public Ship-With-AI/cumpa (1327753770, owner 224984099), main P=72c9bb499538a2c542d5165148e2d45096f7da56. Workflow 354343281 publish-npm.yml active, zero runs; npm-release absent. Stable 1.5.0 absent in packument and exact endpoint. Last scoped npm actor alemagio/shipwithai owner with 2FA auth-only; existing npm trust configuration requires authenticated UI (GET 401). Await owner inspection plus setup-only authorization: npm-release reviewer alemagio, self-review allowed, main branch only, admin bypass disabled, no npm/support secrets; npm GitHub publisher Ship-With-AI/cumpa + publish-npm.yml + npm-release with direct publish. No CI dispatch/upload/artifact approval/stable publication yet.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-05-PLAN.md
