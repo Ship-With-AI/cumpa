@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 5
 current_phase_name: Bootstrap & Trusted Stable Publication
 status: executing
-stopped_at: "05-05 Task 2 ready for its separate CI candidate-run authority. Private driver passed 34 lifecycle checks and real unarmed CLI refusal with unchanged receipt. Fresh native source, reviewer/main-only/no-bypass protection, zero publisher secrets, zero release runs, reserved-name absence, origin fingerprint and exact stable vacancy passed. No temporary production values, CI dispatch/upload/download, candidate approval, npm-release approval or stable publication is authorized."
-last_updated: "2026-09-10T11:56:41Z"
+stopped_at: "05-05 candidate run 34476480752 attempt 1 failed the installed relaunch acceptance test at 120000ms; publish was skipped. Both owned production transports are independently absent and the authoritative fingerprint is unchanged. Exact CI Node/npm local full acceptance and five repeated relaunches passed using immutable published bootstrap bytes for diagnosis only. No CI artifact exists, root cause is unconfirmed, and no new dispatch or stable publication is authorized."
+last_updated: "2026-09-10T13:04:39Z"
 last_activity: 2026-09-10
-last_activity_desc: Sealed private driver preparation proof and fresh native preflight in the existing CI journal. Await one source-bound candidate build/upload, exact owned-artifact inspection and targeted-cleanup authorization; no remote mutation occurred.
+last_activity_desc: Diagnosed the failed CI acceptance without source changes or remote retries. Removed owned diagnostic toolchains/reports and preserved sealed bootstrap inputs. Await owner choice between one fresh same-source candidate cycle and source instrumentation with separate publication/run gates.
 progress:
   total_phases: 5
   completed_phases: 2
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 5 — Bootstrap & Trusted Stable Publication
-Plan: 4 of 6 complete — 05-05 Task 1 complete; Task 2 validated and awaiting separate CI candidate-run authority
+Plan: 4 of 6 complete — 05-05 Task 1 complete; Task 2 candidate failed and cleaned; no candidate exists for Task 3 approval
 Status: executing
-Checkpoint: The exact trusted-publisher setup is complete. The private source-bound driver passed all 34 lifecycle checks, including ownership uncertainty, exclusive execution, no replay, signal recovery, late competitors and unstarted publisher enforcement. The real CLI refused the unarmed operation without changing its receipt. Authorize only reviewed public P, the two absent-only production transports, one input-free candidate build/upload, download of only that run's exact artifact for inspection, and mandatory owned cleanup. Candidate acceptance and stable publication remain separate later gates.
-Last activity: 2026-09-10 — At 11:56:41Z, native actor/repository/source/workflow/protection checks passed; both reserved production entries were absent, no release runs existed, the authoritative fingerprint matched, and stable 1.5.0 was absent in both its endpoint and the valid packument. The missing-version endpoint returns a JSON string. Bootstrap and latest remain at the D-10-authorized bootstrap version. Preparation proof is private; sealed bootstrap records are unchanged.
+Checkpoint: Run 34476480752 at approved public P, attempt 1, passed source admission and producer/scanner stages but timed out in installed relaunch acceptance. The publisher was skipped and no artifact was uploaded. The candidate-run authorization is consumed. A fresh input-free candidate cycle at the same P requires a new explicit source/transport/build/upload/download/cleanup authorization; a diagnostic source change additionally requires separate source-publication authority. Do not rerun the old workflow or substitute historical bytes.
+Last activity: 2026-09-10 — Both reserved production names are absent; authoritative configuration is unchanged. Local diagnosis with Node v24.20.0/npm 11.19.1 passed direct and synchronous-parent relaunch, five repeated relaunches, and full installed acceptance against the immutable published bootstrap. This is not CI candidate proof. The failed CI logs lack the awaited operation and no failed-run artifact exists; shutdown/request and macOS-native/filesystem stalls remain hypotheses, not established causes.
 
 Progress: [████░░░░░░] 40% — 2 of 5 milestone phases complete
 
@@ -109,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-10T11:56:41Z
-Stopped at: 05-05 Task 2 authorization checkpoint. Driver and recovery checks are complete; 34 checks and actual unarmed CLI refusal passed. Resume the existing private operation only after exact source/transport/run/upload/download/cleanup authority, then freeze the verified driver and supervise one dispatch. No candidate or stable publication approval exists.
+Last session: 2026-09-10T13:04:39Z
+Stopped at: 05-05 post-failure owner decision. Private journal preserves original/repaired guard bindings, actual authorizations, consumed run identity, verified cleanup and bounded local diagnostic results. No product/workflow source was changed, no automatic rerun occurred, and no candidate or stable publication approval exists.
 Resume file: .planning/phases/05-bootstrap-trusted-stable-publication/05-05-PLAN.md
