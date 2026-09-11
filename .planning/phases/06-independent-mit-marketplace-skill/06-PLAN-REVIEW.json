@@ -2,6 +2,39 @@
   "phase": "06-independent-mit-marketplace-skill",
   "status": "passed",
   "recordedAt": "2026-09-11T09:14:31Z",
+  "executionCorrections": {
+    "duringPlan": "06-02",
+    "recordedAt": "2026-09-11T10:45:52Z",
+    "classification": "execution-discovered verifier defects; no candidate payload change",
+    "corrections": [
+      "Use existing JCS equality for JSON maps while preserving ordered arrays",
+      "Restrict private-path checks to validated journal.paths mappings and JSON-escaped paths; public slash commands are not private data",
+      "Pass validator JavaScript through a quoted heredoc so shell expansion cannot replace logical tokens",
+      "Require remote main to equal the recorded baseline instead of requiring the existing main branch to be absent"
+    ],
+    "verification": {
+      "unchangedRealCandidateGateExit": 0,
+      "candidateOid": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+      "predicateRegression": {
+        "semanticObjectComparisons": 4,
+        "oldOrderSensitiveComparisons": 2,
+        "arrayOrderingPreserved": true,
+        "privacyPredicates": 2,
+        "publicSlashCommandsAllowed": true,
+        "privatePathsIncludingEscapesRejected": true,
+        "missingPrivateMappingsRejected": true,
+        "realProviderOrPublicationCalls": false
+      },
+      "planStructuresValid": true
+    },
+    "executionPlanDigests": {
+      "06-02-PLAN.md": "aec206e2a62ccd279c92c16b056c98c98eef4b858a266ee110a5eff14915b091",
+      "06-03-PLAN.md": "ccba889373fdc1ce052e3a628bbf2e2974a84719d98ff433d813f879781c69a4"
+    },
+    "authorityConsumed": false,
+    "remoteMutationPerformed": false,
+    "note": "Original planning-review hashes and verdict remain historical; these are Main-verified execution corrections, not a claim that earlier reviewers inspected the revised commands."
+  },
   "plans": 3,
   "tasks": 7,
   "waves": 3,

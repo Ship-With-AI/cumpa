@@ -1,0 +1,147 @@
+{
+  "kind": "cumpa.marketplace-candidate/v1",
+  "status": "prepared",
+  "repository": "https://github.com/Ship-With-AI/skills.git",
+  "repositoryId": 1178350399,
+  "baselineOid": "7be01dca277a53f4144620be6cc9657a9371571c",
+  "candidateOid": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+  "sourceCommit": "7cfa0c7c0367377932263e8bec7a1aa0b9485dc6",
+  "reviewedPaths": [
+    ".claude-plugin/plugin.json",
+    "README.md",
+    "skills/cumpa/LICENSE",
+    "skills/cumpa/SKILL.md",
+    "skills/cumpa/scripts/check-cumpa.mjs"
+  ],
+  "reviewedFileHashes": {
+    ".claude-plugin/plugin.json": "14715bbad051a7aa871067c0c509b0b226a57c5dfdc998066ae46872d453fbf1",
+    "README.md": "6662b01fed29049489aa76b1ec7b92c7c2d2d945d65770f3d9fe5bbe60fc9975",
+    "skills/cumpa/LICENSE": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+    "skills/cumpa/SKILL.md": "8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220",
+    "skills/cumpa/scripts/check-cumpa.mjs": "9b45ae3be81908cf7b57798ed8be8df5f1e46727624965151a6e44aaf1325c2c"
+  },
+  "skillFileHashes": {
+    "skills/cumpa/LICENSE": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+    "skills/cumpa/SKILL.md": "8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220",
+    "skills/cumpa/scripts/check-cumpa.mjs": "9b45ae3be81908cf7b57798ed8be8df5f1e46727624965151a6e44aaf1325c2c"
+  },
+  "collectionVersion": {
+    "from": "0.2.0",
+    "to": "0.3.0"
+  },
+  "installer": {
+    "package": "skills",
+    "version": "1.5.25",
+    "integrity": "sha512-E4iBTLaeih3uwzajrlvXd55dWw9/ihxxaIPePB5OoN5GOQ0HrDF2CXhwYM+LpJQ/8Zbk/IA69A0B9C27/sMCbw=="
+  },
+  "commandMatrix": {
+    "claude-code": {
+      "agentVersion": "2.1.160",
+      "authRoute": "temporary:CLAUDE_CONFIG_DIR",
+      "local": {
+        "installActions": [
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/claude/home\" CLAUDE_CONFIG_DIR=\"$TARGET_ROOT/claude/config\" XDG_CONFIG_HOME=\"$TARGET_ROOT/claude/xdg-config\" XDG_DATA_HOME=\"$TARGET_ROOT/claude/xdg-data\" XDG_STATE_HOME=\"$TARGET_ROOT/claude/xdg-state\" XDG_CACHE_HOME=\"$TARGET_ROOT/claude/xdg-cache\" claude",
+          "/plugin marketplace add <MARKETPLACE_CHECKOUT>",
+          "/plugin install ship-with-ai@ship-with-ai-skills"
+        ],
+        "discoveryPath": "ship-with-ai/skills/cumpa",
+        "invocationIdentity": "/ship-with-ai:cumpa"
+      },
+      "public": {
+        "installActions": [
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/claude/home\" CLAUDE_CONFIG_DIR=\"$TARGET_ROOT/claude/config\" XDG_CONFIG_HOME=\"$TARGET_ROOT/claude/xdg-config\" XDG_DATA_HOME=\"$TARGET_ROOT/claude/xdg-data\" XDG_STATE_HOME=\"$TARGET_ROOT/claude/xdg-state\" XDG_CACHE_HOME=\"$TARGET_ROOT/claude/xdg-cache\" claude",
+          "/plugin marketplace add Ship-With-AI/skills",
+          "/plugin install ship-with-ai@ship-with-ai-skills"
+        ],
+        "discoveryPath": "ship-with-ai/skills/cumpa",
+        "invocationIdentity": "/ship-with-ai:cumpa"
+      }
+    },
+    "codex": {
+      "agentVersion": "0.135.0",
+      "authRoute": "temporary:CODEX_HOME",
+      "local": {
+        "installActions": [
+          "env HOME=\"$TARGET_ROOT/codex/user-home\" CODEX_HOME=\"$TARGET_ROOT/codex/home\" npm_config_cache=\"$TARGET_ROOT/codex/npm-cache\" npm_config_userconfig=\"$TARGET_ROOT/codex/empty.npmrc\" npm_config_globalconfig=\"$TARGET_ROOT/codex/empty-global.npmrc\" npx --yes skills@1.5.25 add \"$MARKETPLACE_CHECKOUT\" --skill cumpa -a codex",
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/codex/user-home\" CODEX_HOME=\"$TARGET_ROOT/codex/home\" codex"
+        ],
+        "discoveryPath": "$TARGET_PROJECT/.agents/skills/cumpa",
+        "invocationIdentity": "$cumpa"
+      },
+      "public": {
+        "installActions": [
+          "env HOME=\"$TARGET_ROOT/codex/user-home\" CODEX_HOME=\"$TARGET_ROOT/codex/home\" npm_config_cache=\"$TARGET_ROOT/codex/npm-cache\" npm_config_userconfig=\"$TARGET_ROOT/codex/empty.npmrc\" npm_config_globalconfig=\"$TARGET_ROOT/codex/empty-global.npmrc\" npx --yes skills@1.5.25 add Ship-With-AI/skills --skill cumpa -a codex",
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/codex/user-home\" CODEX_HOME=\"$TARGET_ROOT/codex/home\" codex"
+        ],
+        "discoveryPath": "$TARGET_PROJECT/.agents/skills/cumpa",
+        "invocationIdentity": "$cumpa"
+      }
+    },
+    "pi": {
+      "agentVersion": "0.80.2",
+      "authRoute": "temporary:HOME",
+      "local": {
+        "installActions": [
+          "env HOME=\"$TARGET_ROOT/pi/home\" npm_config_cache=\"$TARGET_ROOT/pi/npm-cache\" npm_config_userconfig=\"$TARGET_ROOT/pi/empty.npmrc\" npm_config_globalconfig=\"$TARGET_ROOT/pi/empty-global.npmrc\" npx --yes skills@1.5.25 add \"$MARKETPLACE_CHECKOUT\" --skill cumpa -a pi",
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/pi/home\" PI_CODING_AGENT_SESSION_DIR=\"$TARGET_ROOT/pi/sessions\" pi"
+        ],
+        "discoveryPath": "$TARGET_PROJECT/.pi/skills/cumpa",
+        "invocationIdentity": "/skill:cumpa"
+      },
+      "public": {
+        "installActions": [
+          "env HOME=\"$TARGET_ROOT/pi/home\" npm_config_cache=\"$TARGET_ROOT/pi/npm-cache\" npm_config_userconfig=\"$TARGET_ROOT/pi/empty.npmrc\" npm_config_globalconfig=\"$TARGET_ROOT/pi/empty-global.npmrc\" npx --yes skills@1.5.25 add Ship-With-AI/skills --skill cumpa -a pi",
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/pi/home\" PI_CODING_AGENT_SESSION_DIR=\"$TARGET_ROOT/pi/sessions\" pi"
+        ],
+        "discoveryPath": "$TARGET_PROJECT/.pi/skills/cumpa",
+        "invocationIdentity": "/skill:cumpa"
+      }
+    },
+    "omp": {
+      "agentVersion": "18.1.16",
+      "authRoute": "temporary:PI_CODING_AGENT_DIR",
+      "local": {
+        "installActions": [
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/omp/home\" PI_CODING_AGENT_DIR=\"$TARGET_ROOT/omp/agent\" XDG_CONFIG_HOME=\"$TARGET_ROOT/omp/xdg-config\" XDG_DATA_HOME=\"$TARGET_ROOT/omp/xdg-data\" XDG_STATE_HOME=\"$TARGET_ROOT/omp/xdg-state\" XDG_CACHE_HOME=\"$TARGET_ROOT/omp/xdg-cache\" omp plugin marketplace add \"$MARKETPLACE_CHECKOUT\"",
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/omp/home\" PI_CODING_AGENT_DIR=\"$TARGET_ROOT/omp/agent\" XDG_CONFIG_HOME=\"$TARGET_ROOT/omp/xdg-config\" XDG_DATA_HOME=\"$TARGET_ROOT/omp/xdg-data\" XDG_STATE_HOME=\"$TARGET_ROOT/omp/xdg-state\" XDG_CACHE_HOME=\"$TARGET_ROOT/omp/xdg-cache\" omp plugin install --scope project ship-with-ai@ship-with-ai-skills",
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/omp/home\" PI_CODING_AGENT_DIR=\"$TARGET_ROOT/omp/agent\" XDG_CONFIG_HOME=\"$TARGET_ROOT/omp/xdg-config\" XDG_DATA_HOME=\"$TARGET_ROOT/omp/xdg-data\" XDG_STATE_HOME=\"$TARGET_ROOT/omp/xdg-state\" XDG_CACHE_HOME=\"$TARGET_ROOT/omp/xdg-cache\" omp"
+        ],
+        "discoveryPath": "ship-with-ai/skills/cumpa",
+        "invocationIdentity": "/skill:cumpa"
+      },
+      "public": {
+        "installActions": [
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/omp/home\" PI_CODING_AGENT_DIR=\"$TARGET_ROOT/omp/agent\" XDG_CONFIG_HOME=\"$TARGET_ROOT/omp/xdg-config\" XDG_DATA_HOME=\"$TARGET_ROOT/omp/xdg-data\" XDG_STATE_HOME=\"$TARGET_ROOT/omp/xdg-state\" XDG_CACHE_HOME=\"$TARGET_ROOT/omp/xdg-cache\" omp plugin marketplace add Ship-With-AI/skills",
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/omp/home\" PI_CODING_AGENT_DIR=\"$TARGET_ROOT/omp/agent\" XDG_CONFIG_HOME=\"$TARGET_ROOT/omp/xdg-config\" XDG_DATA_HOME=\"$TARGET_ROOT/omp/xdg-data\" XDG_STATE_HOME=\"$TARGET_ROOT/omp/xdg-state\" XDG_CACHE_HOME=\"$TARGET_ROOT/omp/xdg-cache\" omp plugin install --scope project ship-with-ai@ship-with-ai-skills",
+          "env -u ANTHROPIC_API_KEY -u ANTHROPIC_OAUTH_TOKEN -u CLAUDE_CODE_OAUTH_TOKEN -u OPENAI_API_KEY -u OPENAI_CODEX_OAUTH_TOKEN HOME=\"$TARGET_ROOT/omp/home\" PI_CODING_AGENT_DIR=\"$TARGET_ROOT/omp/agent\" XDG_CONFIG_HOME=\"$TARGET_ROOT/omp/xdg-config\" XDG_DATA_HOME=\"$TARGET_ROOT/omp/xdg-data\" XDG_STATE_HOME=\"$TARGET_ROOT/omp/xdg-state\" XDG_CACHE_HOME=\"$TARGET_ROOT/omp/xdg-cache\" omp"
+        ],
+        "discoveryPath": "ship-with-ai/skills/cumpa",
+        "invocationIdentity": "/skill:cumpa"
+      }
+    }
+  },
+  "commandScopeSha256": "2051af2f850db6ed794f722c10aa1028be9830dcb268be594e18b4ccd352a02a",
+  "fixtureResultSha256": "b43058f39676b0ee2a11ca1aef4617e5ab73363da62e187a883d695a7f719350",
+  "logicalRoots": {
+    "marketplaceCheckout": "$MARKETPLACE_CHECKOUT",
+    "targetProfiles": "$TARGET_ROOT",
+    "targetProject": "$TARGET_PROJECT"
+  },
+  "targetProofAuthority": {
+    "publicProofAttempts": []
+  },
+  "preparation": {
+    "sourcePayloadValidated": true,
+    "skillFormatValidated": true,
+    "focusedPreflightTests": 24,
+    "licenseSha256": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+    "localHooksReviewed": true,
+    "baselineWorkflowFiles": [],
+    "catalogEntryUnchanged": true,
+    "authPrerequisitesReady": false,
+    "installerExecuted": false,
+    "providerInvoked": false,
+    "remotePushPerformed": false,
+    "fixtureIsReleaseProof": false
+  }
+}
