@@ -27,9 +27,9 @@
 
 ### Public Marketplace Skill
 
-- [ ] **SKL-01**: Coding-agent users can install the existing Cumpa skill from the public ShipWithAI marketplace as an independently MIT-licensed plugin.
-- [ ] **SKL-02**: The installed skill checks for the separately installed `cumpa` executable and, when absent, stops with the exact npm installation command and Node.js/Git prerequisites.
-- [ ] **SKL-03**: The installed skill delegates Git grounding, diff generation, browser review, persistence, Finish semantics, and canonical review output to the released Cumpa CLI without duplicating application behavior.
+- [x] **SKL-01**: Coding-agent users can install the existing Cumpa skill from the public ShipWithAI marketplace as an independently MIT-licensed plugin.
+- [x] **SKL-02**: The installed skill checks for the separately installed `cumpa` executable and, when absent, stops with the exact npm installation command and Node.js/Git prerequisites.
+- [x] **SKL-03**: The installed skill delegates Git grounding, diff generation, browser review, persistence, Finish semantics, and canonical review output to the released Cumpa CLI without duplicating application behavior.
 
 ### Released-Artifact Acceptance
 
@@ -76,9 +76,9 @@ Each active requirement maps to exactly one roadmap phase.
 | REL-03 | Phase 4 | Complete |
 | REL-04 | Phase 3 | Complete |
 | REL-05 | Phase 3 | Complete |
-| SKL-01 | Phase 6 | Pending |
-| SKL-02 | Phase 6 | Pending |
-| SKL-03 | Phase 6 | Pending |
+| SKL-01 | Phase 6 | Complete |
+| SKL-02 | Phase 6 | Complete |
+| SKL-03 | Phase 6 | Complete |
 | ACC-01 | Phase 7 | Pending |
 | ACC-02 | Phase 7 | Pending |
 | ACC-03 | Phase 7 | Pending |

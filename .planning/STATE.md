@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: MIT Distribution
-current_phase: 6
-current_phase_name: Independent MIT Marketplace Skill
-status: Blocked — awaiting separate marketplace publication approval; four-agent tests waived
-stopped_at: "06-03 Task2: separate exact marketplace publication checkpoint; four-agent tests explicitly waived"
-last_updated: "2026-09-11T12:22:13.070Z"
+current_phase: 7
+current_phase_name: Clean Public-Artifact Acceptance
+status: planning
+stopped_at: "Phase 6 complete: skill published and public bytes verified; Phase 7 not started"
+last_updated: "2026-09-11T13:07:22.475Z"
 last_activity: 2026-09-11
-last_activity_desc: Recorded explicit four-agent test waiver and closed 06-02 in 76d4de0; removed 22 empty owned authentication directories. No credentials, installers, model calls or remote mutations.
+last_activity_desc: Published exact marketplace candidate 984e28c in collection 0.3.0 once; anonymous five-file readback passed. Evidence commit 908f989, summary/verification commit 2abdbef. Phase 6 complete; Phase 7 remains separate.
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 16
-  completed_plans: 15
-  percent: 60
+  completed_plans: 16
+  percent: 80
 ---
 
 # Project State
@@ -24,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 6 — four-agent tests waived; exact marketplace publication remains separate
+**Current focus:** Phase 6 complete — Cumpa skill published in ship-with-ai 0.3.0; Phase 7 not started
 
 ## Current Position
 
-Phase: 6 (Independent MIT Marketplace Skill) — EXECUTING
-Plan: 2 of 3 executed — 06-02 complete with user-waived Task 3; 06-03 publication checkpoint pending
-Status: Blocked — awaiting separate marketplace publication approval; four-agent tests waived
-Checkpoint: 06-03 Task2. User instruction: ignore this test part. Authentication and four-agent local/public tests are waived, not passed. Source/candidate unchanged; candidate 984e28c5838176ec15d2af8b996d0307e45b28d5, baseline 7be01dca277a53f4144620be6cc9657a9371571c. No push authority. GitHub read-only checks show no branch rules, workflows, repository webhooks, Pages or deployment records; organization push-subscribed apps exist and downstream effects still require bounding before publication assent.
-Last activity: 2026-09-11 — Recorded explicit four-agent test waiver and closed 06-02 in 76d4de0; removed 22 empty owned authentication directories. No credentials, installers, model calls or remote mutations.
+Phase: 7 — Clean Public-Artifact Acceptance
+Plan: Phase 6: 3 of 3 complete for amended scope; Phase 7 planning pending
+Status: Ready to plan Phase 7 — Phase 6 published with explicit runtime-test waiver
+Checkpoint: None. Marketplace candidate 984e28c5838176ec15d2af8b996d0307e45b28d5 is public and all five hashes match an anonymous fresh Git fetch. One push authority consumed. Four-agent runtime/install tests are user-waived, not passed. Existing automatic actions were expressly authorized; no manual integration changes. One low-severity provenance-disclosure documentation gap remains nonblocking. Do not replay publication or start Phase 7 without a new request.
+Last activity: 2026-09-11 — Published exact marketplace candidate 984e28c in collection 0.3.0 once; anonymous five-file readback passed. Evidence commit 908f989, summary/verification commit 2abdbef. Phase 6 complete; Phase 7 remains separate.
 
 Progress: [██████░░░░] 60% — 3 of 5 milestone phases complete
 
@@ -40,7 +40,7 @@ Progress: [██████░░░░] 60% — 3 of 5 milestone phases compl
 
 **Velocity:**
 
-- Total plans completed: 109
+- Total plans completed: 112
 - Average duration: 23 min
 - Total execution time: 4.7 hours
 
@@ -110,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-11T12:22:13.066Z
-Stopped at: 06-03 Task2: separate exact marketplace publication checkpoint; four-agent tests explicitly waived
-Resume file: .planning/phases/06-independent-mit-marketplace-skill/06-MARKETPLACE-CANDIDATE.json
+Last session: 2026-09-11T13:07:22.471Z
+Stopped at: Phase 6 complete: skill published and public bytes verified; Phase 7 not started
+Resume file: .planning/ROADMAP.md

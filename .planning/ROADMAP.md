@@ -18,7 +18,7 @@ The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary sou
 - [x] **Phase 3: Distribution Contract & Legal Boundary** — Establish standard MIT terms, refreshed dual-licensor exact-text assent, safe publication of the existing repository and reviewed history, and truthful package links and provenance policy. (completed 2026-09-08)
 - [x] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release. (completed 2026-09-09)
 - [x] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable bootstrap tagged `bootstrap` (D-10 first-release `latest` exception), revoke temporary authorization, and publish stable `1.5.0` through OIDC. (completed 2026-09-10)
-- [ ] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite.
+- [x] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite. (completed 2026-09-11)
 - [ ] **Phase 7: Clean Public-Artifact Acceptance** - Prove global, npx, and marketplace workflows from clean environments using only released public artifacts.
 
 ## Phase Details
@@ -124,7 +124,7 @@ Plans:
   2. When `cumpa` is absent, the installed skill stops with the exact npm installation command and the Node.js 24+ and Git prerequisites instead of bundling or silently installing the CLI.
   3. With `@shipwithai/cumpa@1.5.0` installed separately, the skill delegates Git grounding, diff generation, browser review, persistence, Finish semantics, and canonical output to that CLI without duplicating application behavior.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans complete
 **Wave 1**
 
 - [x] 06-01-PLAN.md
@@ -135,7 +135,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 06-03-PLAN.md
+- [x] 06-03-PLAN.md
 
 ### Phase 7: Clean Public-Artifact Acceptance
 
@@ -160,5 +160,5 @@ Plans:
 | 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
 | 5. Bootstrap & Trusted Stable Publication | 6/6 | Complete    | 2026-09-10 |
-| 6. Independent MIT Marketplace Skill | 2/3 | In Progress|  |
+| 6. Independent MIT Marketplace Skill | 3/3 | Complete    | 2026-09-11 |
 | 7. Clean Public-Artifact Acceptance | 0/TBD | Not started | - |
