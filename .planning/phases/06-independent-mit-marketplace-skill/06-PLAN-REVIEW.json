@@ -1,0 +1,94 @@
+{
+  "phase": "06-independent-mit-marketplace-skill",
+  "status": "passed",
+  "recordedAt": "2026-09-11T09:14:31Z",
+  "plans": 3,
+  "tasks": 7,
+  "waves": 3,
+  "requirementsCovered": [
+    "SKL-01",
+    "SKL-02",
+    "SKL-03"
+  ],
+  "decisionsCovered": [
+    "D-01",
+    "D-02",
+    "D-03",
+    "D-04",
+    "D-05",
+    "D-06",
+    "D-07",
+    "D-08",
+    "D-09",
+    "D-10"
+  ],
+  "reviewHistory": {
+    "initial": {
+      "blockers": 13,
+      "warnings": 1,
+      "info": 1
+    },
+    "second": {
+      "blockers": 5,
+      "warnings": 2
+    },
+    "third": {
+      "blockers": 2,
+      "warnings": 0
+    },
+    "focusedExtension": {
+      "userSelection": "Fix both and recheck",
+      "scope": [
+        "closed command-matrix shape",
+        "fresh single-use public-proof recovery assent"
+      ],
+      "qualityVerdict": "VERIFICATION PASSED",
+      "authorityVerdict": "correct",
+      "remainingFindings": 0
+    }
+  },
+  "validation": {
+    "allPlanStructuresPassed": true,
+    "automatedCommandCount": 7,
+    "shellAndInlineNodeSyntaxPassed": true,
+    "futureAutomatedCommandsExecuted": false,
+    "actualExtractedPredicateProof": {
+      "source": "actual AST-extracted plan predicates",
+      "closedShapePredicates": 3,
+      "preFixDefectsReproduced": true,
+      "extraFieldsRejected": true,
+      "laterOriginalAssentRejected": true,
+      "immediateFreshConsumedRecoveryRequired": true,
+      "duplicateRecoveryRejected": true,
+      "realOperationsExecuted": false
+    },
+    "decisionCoverage": {
+      "covered": 10,
+      "total": 10
+    },
+    "postPlanningCoverage": {
+      "covered": 13,
+      "total": 13
+    }
+  },
+  "files": {
+    "06-CONTEXT.md": "6ce9289b3cf0fa41dbd2dedc162752f847fc436a6ffac9287b605f6f6d763c2d",
+    "06-RESEARCH.md": "3e5b348e9ac167b097e64121fe60bf4d4daf7eeeb6dc84d5b24f3a86a34c6f9d",
+    "06-PATTERNS.md": "2e2ec0e4175c7b674714d347e6a2cc42cc4180477d01dc5f79cbfa373718712c",
+    "06-01-PLAN.md": "dea63d02a760b1d73e12b6af7a6bc16cf0583e94eb290badd9ad873da1cc2cb4",
+    "06-02-PLAN.md": "8b1c43959c77780ab6559a05fa47c053b2918e28c6194856b617c6371487c50b",
+    "06-03-PLAN.md": "578ac1fd6146682107c805e97a9064b7b62d40d2be71af853113a9b0d2d9a21e"
+  },
+  "boundaries": {
+    "implementationStarted": false,
+    "agentInstallationsOrProviderCallsPerformed": false,
+    "remoteMutationsPerformed": false,
+    "phase5AuthorityReused": false,
+    "phase7BrowserAcceptancePerformed": false,
+    "autoAdvance": false
+  },
+  "limitations": [
+    "This is planning verification and a focused pure-predicate regression proof, not executed skill, installer, authentication, marketplace publication, or browser acceptance evidence.",
+    "Future scoped installer/provider/authentication and marketplace publication gates remain unconsumed."
+  ]
+}

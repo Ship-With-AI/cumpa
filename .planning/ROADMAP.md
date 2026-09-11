@@ -124,7 +124,18 @@ Plans:
   2. When `cumpa` is absent, the installed skill stops with the exact npm installation command and the Node.js 24+ and Git prerequisites instead of bundling or silently installing the CLI.
   3. With `@shipwithai/cumpa@1.5.0` installed separately, the skill delegates Git grounding, diff generation, browser review, persistence, Finish semantics, and canonical output to that CLI without duplicating application behavior.
 
-**Plans**: TBD
+**Plans**: 0/3 plans executed
+**Wave 1**
+
+- [ ] 06-01-PLAN.md
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 06-02-PLAN.md
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 06-03-PLAN.md
 
 ### Phase 7: Clean Public-Artifact Acceptance
 
@@ -149,5 +160,5 @@ Plans:
 | 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
 | 5. Bootstrap & Trusted Stable Publication | 6/6 | Complete    | 2026-09-10 |
-| 6. Independent MIT Marketplace Skill | 0/TBD | Not started | - |
+| 6. Independent MIT Marketplace Skill | 0/3 | Planned    |  |
 | 7. Clean Public-Artifact Acceptance | 0/TBD | Not started | - |
