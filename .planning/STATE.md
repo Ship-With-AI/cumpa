@@ -4,16 +4,16 @@ milestone: v1.5
 milestone_name: MIT Distribution
 current_phase: 6
 current_phase_name: Independent MIT Marketplace Skill
-status: Blocked — awaiting authentication prerequisites and exact proof authority
-stopped_at: "06-02 Task3: waiting for operator native sign-in in isolated profiles and TEMP AUTH READY; proof authority absent"
-last_updated: "2026-09-11T11:54:05.735Z"
+status: Blocked — awaiting separate marketplace publication approval; four-agent tests waived
+stopped_at: "06-03 Task2: separate exact marketplace publication checkpoint; four-agent tests explicitly waived"
+last_updated: "2026-09-11T12:22:13.070Z"
 last_activity: 2026-09-11
-last_activity_desc: Isolated native sign-in directories and instructions prepared. Waiting for operator TEMP AUTH READY; no installer/model proof calls or marketplace push authorized.
+last_activity_desc: Recorded explicit four-agent test waiver and closed 06-02 in 76d4de0; removed 22 empty owned authentication directories. No credentials, installers, model calls or remote mutations.
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 60
 ---
 
@@ -24,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 6 — unpublished marketplace candidate prepared; proof authority pending
+**Current focus:** Phase 6 — four-agent tests waived; exact marketplace publication remains separate
 
 ## Current Position
 
 Phase: 6 (Independent MIT Marketplace Skill) — EXECUTING
-Plan: 1 of 3 executed — 06-02 tasks1–2 complete; task3 is a blocking human-action gate
-Status: Blocked — awaiting authentication prerequisites and exact proof authority
-Checkpoint: 06-02 Task3 human-action gate. Source skill commit7cfa0c7; candidate record commitb2dd485; external candidate984e28c5838176ec15d2af8b996d0307e45b28d5 from baseline7be01dca277a53f4144620be6cc9657a9371571c, collection0.2.0→0.3.0. Exact candidate gate passes. No installer/provider/push authority exists. Recover the owned private operation using the logical roots in06-02; do not recreate or replay it.
-Last activity: 2026-09-11 — Isolated native sign-in directories and instructions prepared. Waiting for operator TEMP AUTH READY; no installer/model proof calls or marketplace push authorized.
+Plan: 2 of 3 executed — 06-02 complete with user-waived Task 3; 06-03 publication checkpoint pending
+Status: Blocked — awaiting separate marketplace publication approval; four-agent tests waived
+Checkpoint: 06-03 Task2. User instruction: ignore this test part. Authentication and four-agent local/public tests are waived, not passed. Source/candidate unchanged; candidate 984e28c5838176ec15d2af8b996d0307e45b28d5, baseline 7be01dca277a53f4144620be6cc9657a9371571c. No push authority. GitHub read-only checks show no branch rules, workflows, repository webhooks, Pages or deployment records; organization push-subscribed apps exist and downstream effects still require bounding before publication assent.
+Last activity: 2026-09-11 — Recorded explicit four-agent test waiver and closed 06-02 in 76d4de0; removed 22 empty owned authentication directories. No credentials, installers, model calls or remote mutations.
 
 Progress: [██████░░░░] 60% — 3 of 5 milestone phases complete
 
@@ -110,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-11T11:54:05.731Z
-Stopped at: 06-02 Task3: waiting for operator native sign-in in isolated profiles and TEMP AUTH READY; proof authority absent
+Last session: 2026-09-11T12:22:13.066Z
+Stopped at: 06-03 Task2: separate exact marketplace publication checkpoint; four-agent tests explicitly waived
 Resume file: .planning/phases/06-independent-mit-marketplace-skill/06-MARKETPLACE-CANDIDATE.json
