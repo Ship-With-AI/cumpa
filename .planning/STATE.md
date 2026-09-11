@@ -4,11 +4,11 @@ milestone: v1.5
 milestone_name: MIT Distribution
 current_phase: 6
 current_phase_name: Independent MIT Marketplace Skill
-status: executing
-stopped_at: Completed06-01; wave gates before06-02
-last_updated: "2026-09-11T09:38:36.827Z"
+status: Blocked — awaiting authentication prerequisites and exact proof authority
+stopped_at: 06-02 Task3 blocking authentication/proof authority checkpoint; tasks1–2 committed
+last_updated: "2026-09-11T10:50:19.433Z"
 last_activity: 2026-09-11
-last_activity_desc: Completed06-01 compatibility gate with RED7cba717, GREENec8e559 and summaryc66c0f5. No installation, provider call, external candidate, push or publication occurred.
+last_activity_desc: Prepared exact unpublished marketplace candidate and fixed execution-discovered validator defects before any approval. Waiting for operator authentication readiness, then separate exact four-target proof assent.
 progress:
   total_phases: 5
   completed_phases: 3
@@ -24,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 6 — Independent MIT Marketplace Skill (compatibility gate complete)
+**Current focus:** Phase 6 — unpublished marketplace candidate prepared; proof authority pending
 
 ## Current Position
 
 Phase: 6 (Independent MIT Marketplace Skill) — EXECUTING
-Plan: 1 of 3 executed — 06-01 complete; 06-02 next
-Status: In progress
-Checkpoint: 06-01 is complete and committed: 24 executable tests passed after RED, the direct preflight returned1.5.0, and TDD tracking passed. Continue06-02 skill/candidate preparation only after wave gates. Installer/provider use and marketplace publication remain separately gated; no Phase5 authority may be reused.
-Last activity: 2026-09-11 — Completed06-01 compatibility gate with RED7cba717, GREENec8e559 and summaryc66c0f5. No installation, provider call, external candidate, push or publication occurred.
+Plan: 1 of 3 executed — 06-02 tasks1–2 complete; task3 is a blocking human-action gate
+Status: Blocked — awaiting authentication prerequisites and exact proof authority
+Checkpoint: 06-02 Task3 human-action gate. Source skill commit7cfa0c7; candidate record commitb2dd485; external candidate984e28c5838176ec15d2af8b996d0307e45b28d5 from baseline7be01dca277a53f4144620be6cc9657a9371571c, collection0.2.0→0.3.0. Exact candidate gate passes. No installer/provider/push authority exists. Recover the owned private operation using the logical roots in06-02; do not recreate or replay it.
+Last activity: 2026-09-11 — Prepared exact unpublished marketplace candidate and fixed execution-discovered validator defects before any approval. Waiting for operator authentication readiness, then separate exact four-target proof assent.
 
 Progress: [██████░░░░] 60% — 3 of 5 milestone phases complete
 
@@ -110,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-11T09:38:36.823Z
-Stopped at: Completed06-01; wave gates before06-02
-Resume file: .planning/phases/06-independent-mit-marketplace-skill/06-02-PLAN.md
+Last session: 2026-09-11T10:50:19.429Z
+Stopped at: 06-02 Task3 blocking authentication/proof authority checkpoint; tasks1–2 committed
+Resume file: .planning/phases/06-independent-mit-marketplace-skill/06-MARKETPLACE-CANDIDATE.json
