@@ -5,8 +5,8 @@ milestone_name: MIT Distribution
 current_phase: 7
 current_phase_name: Clean Public-Artifact Acceptance
 status: planning
-stopped_at: "Phase 6 complete: skill published and public bytes verified; Phase 7 not started"
-last_updated: "2026-09-11T13:07:22.475Z"
+stopped_at: Phase 7 context gathered
+last_updated: "2026-09-11T13:54:19.845Z"
 last_activity: 2026-09-11
 last_activity_desc: Published exact marketplace candidate 984e28c in collection 0.3.0 once; anonymous five-file readback passed. Evidence commit 908f989, summary/verification commit 2abdbef. Phase 6 complete; Phase 7 remains separate.
 progress:
@@ -14,7 +14,6 @@ progress:
   completed_phases: 4
   total_plans: 16
   completed_plans: 16
-  percent: 80
 ---
 
 # Project State
@@ -110,6 +109,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-11T13:07:22.471Z
-Stopped at: Phase 6 complete: skill published and public bytes verified; Phase 7 not started
-Resume file: .planning/ROADMAP.md
+Last session: 2026-09-11T13:54:19.840Z
+Stopped at: Phase 7 context gathered
+Resume file: .planning/phases/07-clean-public-artifact-acceptance/07-CONTEXT.md
