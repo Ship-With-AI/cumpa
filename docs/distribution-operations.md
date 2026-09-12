@@ -92,6 +92,20 @@ Prove a separate clean global install exposes the generated `cumpa --version`, t
 
 A timeout, failed/absent/mismatched attestation, version collision, byte mismatch, consumer failure or ambiguous publication result stops the success path. Reconcile read-only and retain the actual bounded outcome; do not retry publication, rebuild, rerun, unpublish or substitute the old artifact. Canonical evidence excludes credentials, raw origin/project reference, private custody locations and unbounded provider payloads.
 
+## Phase 7 — public-artifact acceptance boundary
+
+The durable, bounded outcome is `.planning/phases/07-clean-public-artifact-acceptance/07-ACCEPTANCE-EVIDENCE.json`. It covers the identity-pinned public package on the global, empty-cache `npx`, and isolated marketplace/OMP installation paths. The public paths run through `npm run accept:public-artifact`; the marketplace/OMP path runs through `npm run accept:marketplace-profile`; `npm run evidence:public-acceptance` merges their bounded reports without overwriting the durable record.
+
+Support observations run in pre-Restore then post-Restore windows against one shared voluntary-support identity: pre-Restore records unverified and dismissed behavior before the single protected sign-in attempt, while post-Restore records verified behavior. The record is partially blocked because the verified row could not obtain a live entitlement; it is not substituted. All paths retained unrestricted review and export for their observed unverified and dismissed rows.
+
+Execution requires public registry reachability, installed Chromium, a disposable Git fixture, a paid GitHub account plus human sign-in for a verified-support attempt, reachable hosted support, and for the marketplace path an available OMP executable, reachable public marketplace collection, and model access in the isolated OMP profile. Absence of any prerequisite is an honestly blocked row, never a substitute success.
+
+This is local process isolation, not fresh-machine proof: one macOS host and one browser were exercised, without an OS/browser compatibility matrix. OMP is the only exercised agent runtime; Claude Code, Codex, and Pi remain unexercised and the Phase 6 four-agent waiver remains intact. The Phase 4/5 local-archive acceptance record is separate and unchanged; its full execution still requires operator-held custody inputs and the protected support-service configuration.
+
+One operator-confirmed shared support HOME/install identity was used across all three paths because three distinct identities would require three protected sign-ins. This narrows only the support identity: npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH remained isolated per path. The isolated OMP profile also used a temporary read-only operator provider-credential copy and was not independently authenticated.
+
+The acceptance installs only the identity-pinned public package—never a source build, workspace link, or local tarball—and creates no permanent configuration. The support origin remains baked into the published launcher and is never re-supplied through arguments or a local environment file. These runs do not publish, push, or deploy; Phase 5 and Phase 6 publication authority has already been consumed.
+
 ## Unchanged product and licensing boundaries
 
 This licensing change does not expand the maintainer release plan to include a source-inclusive tarball, application protocol change, AI/API/schema/UI work, new release framework or approval engine. Do not add activation, DRM, a license server or payment gating. Voluntary support remains feature-neutral and buys no service commitment.
