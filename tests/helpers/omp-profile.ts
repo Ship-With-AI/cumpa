@@ -38,7 +38,17 @@ const providerAuthenticationVariables = [
 const requiredIsolationVariables = ['HOME', 'PI_CODING_AGENT_DIR'] as const;
 
 type RealOmpProfileDigest = Readonly<Record<
-  'agentDatabase' | 'agents' | 'marketplaces' | 'plugins' | 'xdgConfig' | 'xdgData' | 'xdgState' | 'xdgCache',
+  | 'agentConfiguration'
+  | 'modelConfiguration'
+  | 'brokerCredential'
+  | 'agents'
+  | 'managedSkills'
+  | 'marketplaces'
+  | 'plugins'
+  | 'xdgConfig'
+  | 'xdgData'
+  | 'xdgState'
+  | 'xdgCache',
   Digest
 >>;
 
@@ -282,10 +292,14 @@ export function discoverOmpIsolationCapability(): OmpIsolationCapability {
 }
 
 export function captureOmpProfileDigest(home = homedir()): RealOmpProfileDigest {
-  const agentRoot = join(home, '.omp', 'agent');
+  const ompRoot = join(home, '.omp');
+  const agentRoot = join(ompRoot, 'agent');
   return Object.freeze({
-    agentDatabase: digest(join(agentRoot, 'agent.db')),
+    agentConfiguration: digest(join(agentRoot, 'config.yml')),
+    modelConfiguration: digest(join(agentRoot, 'models.yml')),
+    brokerCredential: digest(join(ompRoot, 'auth-broker.token')),
     agents: digest(join(agentRoot, 'agents')),
+    managedSkills: digest(join(agentRoot, 'managed-skills')),
     marketplaces: digest(join(agentRoot, 'marketplaces')),
     plugins: digest(join(agentRoot, 'plugins')),
     xdgConfig: digest(join(home, '.config', 'omp')),

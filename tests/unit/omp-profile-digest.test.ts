@@ -30,6 +30,36 @@ describe('real OMP profile digest', () => {
     expect(captureOmpProfileDigest(home)).toEqual(before);
   });
 
+it('ignores volatile live-agent databases and sessions', () => {
+  const home = temporaryHome();
+  const agent = join(home, '.omp', 'agent');
+  mkdirSync(join(agent, 'sessions'), { recursive: true });
+  writeFileSync(join(agent, 'agent.db'), 'before');
+  writeFileSync(join(agent, 'history.db'), 'before');
+  writeFileSync(join(agent, 'models.db'), 'before');
+  writeFileSync(join(agent, 'sessions', 'live.json'), 'before');
+  const before = captureOmpProfileDigest(home);
+
+  writeFileSync(join(agent, 'agent.db'), 'after');
+  writeFileSync(join(agent, 'agent.db-wal'), 'after');
+  writeFileSync(join(agent, 'history.db'), 'after');
+  writeFileSync(join(agent, 'models.db-shm'), 'after');
+  writeFileSync(join(agent, 'sessions', 'live.json'), 'after');
+
+  expect(captureOmpProfileDigest(home)).toEqual(before);
+});
+
+it('detects an OMP agent configuration change', () => {
+  const home = temporaryHome();
+  const configuration = join(home, '.omp', 'agent', 'config.yml');
+  mkdirSync(join(configuration, '..'), { recursive: true });
+  writeFileSync(configuration, 'before');
+  const before = captureOmpProfileDigest(home);
+  writeFileSync(configuration, 'after');
+
+  expect(changedOmpProfileEntries(before, captureOmpProfileDigest(home))).toEqual(['agentConfiguration:.']);
+});
+
   it('detects a change to an OMP-owned XDG directory', () => {
     const home = temporaryHome();
     const state = join(home, '.local', 'state', 'omp', 'state.json');

@@ -159,12 +159,12 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
       '/skill:cumpa',
       'Use the installed marketplace Cumpa skill you discovered. First run that installed skill\'s bundled check-cumpa.mjs and stop if it fails.',
       `Review this repository only: base ${base}, head ${head}.`,
-      `Start the native hub-supervised Cumpa process with hub.start env explicitly containing BROWSER=${opener}, CUMPA_MARKETPLACE_URL_MARKER=${marker}, and PATH inherited from this process; do not rely on the hub daemon inheriting them.`,
       `After zero exit and canonical validation, write untouched canonical stdout bytes to ${join(profile.root, 'cumpa-result.json')} for the acceptance driver. Do not create this file before exit.`,
       'Do not install, upgrade, use npx, use a source checkout or local tarball, apply feedback, or author feedback yourself.',
     ].join('\n');
     const environment: NodeJS.ProcessEnv = {
       ...profile.env,
+      BROWSER: opener,
       PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH ?? join(homedir(), 'Library', 'Caches', 'ms-playwright'),
       CUMPA_MARKETPLACE_URL_MARKER: marker,
       CUMPA_AGENT_READY_EVIDENCE_REPORT: bridge,
@@ -235,11 +235,7 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
       cleanup: { removedOwnedRoots: true },
     };
   } finally {
-    if (process.env.CUMPA_MARKETPLACE_KEEP_PROFILE === '1' && profile !== undefined) {
-      console.log(`[marketplace-profile] retained OMP profile root: ${profile.root}`);
-    } else {
-      profile?.cleanup();
-    }
+    profile?.cleanup();
     runtime.cleanup();
     supportHome.cleanup();
     rmSync(root, { recursive: true, force: true });
