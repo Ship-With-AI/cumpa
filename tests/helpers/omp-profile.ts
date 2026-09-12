@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { buildIsolatedPath, isContainedPath } from './public-artifact-identity.js';
@@ -65,17 +65,37 @@ function sha256(path: string): string {
 
 function digest(path: string): Digest {
   if (!existsSync(path)) return Object.freeze({ present: false });
-  const entry = lstatSync(path);
-  if (entry.isSymbolicLink()) fail(`real OMP profile state contains a symbolic link: ${path}`);
-  if (entry.isFile()) return Object.freeze({ present: true, sha256: sha256(path) });
-  if (!entry.isDirectory()) fail(`real OMP profile state is not a regular file or directory: ${path}`);
   const digest_ = createHash('sha256');
-  for (const entry_ of readdirSync(path, { recursive: true, withFileTypes: true }).sort((left, right) => left.parentPath.localeCompare(right.parentPath) || left.name.localeCompare(right.name))) {
-    const candidate = join(entry_.parentPath, entry_.name);
-    if (entry_.isSymbolicLink()) fail(`real OMP profile state contains a symbolic link: ${candidate}`);
-    digest_.update(candidate.slice(path.length));
-    if (entry_.isFile()) digest_.update(readFileSync(candidate));
-  }
+  const visited = new Set<string>();
+  const update = (candidate: string, name: string): void => {
+    const entry = lstatSync(candidate);
+    digest_.update(name);
+    if (entry.isSymbolicLink()) {
+      const link = readlinkSync(candidate);
+      if (!existsSync(candidate)) {
+        digest_.update(`broken-symlink:${link}`);
+        return;
+      }
+      const target = realpathSync(candidate);
+      digest_.update(`symlink:${link}:${target}`);
+      if (visited.has(target)) return;
+      visited.add(target);
+      update(target, 'target');
+      return;
+    }
+    if (entry.isFile()) {
+      digest_.update(readFileSync(candidate));
+      return;
+    }
+    if (!entry.isDirectory()) {
+      digest_.update(`special:${entry.mode}:${entry.size}:${entry.mtimeMs}`);
+      return;
+    }
+    for (const child of readdirSync(candidate, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
+      update(join(candidate, child.name), child.name);
+    }
+  };
+  update(path, '');
   return Object.freeze({ present: true, sha256: digest_.digest('hex') });
 }
 
