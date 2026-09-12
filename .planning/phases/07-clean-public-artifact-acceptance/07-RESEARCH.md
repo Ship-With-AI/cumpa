@@ -46,7 +46,7 @@
 | ID | Description (`.planning/REQUIREMENTS.md:36-39`) | Research Support |
 |----|-------------|------------------|
 | ACC-01 | A clean environment can install `@shipwithai/cumpa@1.5.0` globally and complete the existing browser-review workflow without using a source checkout, a workspace link, or a local tarball. | Public-install adapter replacing `readRuntimeArtifact()`/tarball input in `tests/helpers/runtime-artifact.ts:258-287,384-460`; PATH/prefix realpath guard; existing browser walkthrough in `tests/e2e/package-assets.spec.ts` + `tests/e2e/agent-ready-export.spec.ts` |
-| ACC-02 | A clean environment with an empty npm cache can run `npx --yes @shipwithai/cumpa@1.5.0` and complete the existing browser-review workflow without a prior or local installation. | Empty-`npm_config_cache` + sanitized-PATH launch descriptor; `npx-cli.js` invocation pattern proven at `scripts/verify-npm-release.mjs:534,582-584`; `_cacache`/`_npx` post-run observation |
+| ACC-02 | A clean environment with an empty npm cache can run `npx --yes @shipwithai/cumpa@1.5.0` and complete the existing browser-review workflow without a prior or local installation. | Empty-`npm_config_cache` + sanitized-PATH launch descriptor; `npx-cli.js` resolution proven at `scripts/verify-npm-release.mjs:543-545` and its `--yes` invocation at `scripts/verify-npm-release.mjs:584`; `_cacache`/`_npx` post-run observation |
 | ACC-03 | A clean agent profile can install the public marketplace skill, invoke the separately installed `@shipwithai/cumpa@1.5.0` CLI, finish a browser review, and receive its validated canonical result. | Frozen OMP public install actions at `.planning/phases/06-independent-mit-marketplace-skill/06-MARKETPLACE-CANDIDATE.json:100-120`; skill lifecycle contract `.kimi-code/skills/cumpa/SKILL.md:37-60,101-106`; `hub`-supervised attached-CLI Finish → canonical stdout |
 | ACC-04 | All released installation paths preserve unrestricted review and export behavior regardless of voluntary-support payment state. | Live hosted status/start/refresh flow in `src/server/support-client.ts:66-80`, `src/server/capabilities.ts:147-168`, `src/server/routes.ts:132-144`; per-HOME store in `src/server/support-store.ts:59-66`; dialog modes in `src/web/components/SupportDialog.vue:20-82` |
 </phase_requirements>
@@ -693,32 +693,32 @@ Phase-inherited constraints: MIT distribution boundary and separate CLI/skill in
 | A6 | A headed Chromium context is acceptable for the single verified-support test so the human can sign into GitHub inside the ephemeral profile | Support-State Proof | If headed runs are unavailable, the human must sign in via their real browser, which weakens the "fresh browser profile state" claim for that one step; record that deviation honestly |
 | A7 | `.claude-plugin/marketplace.json` still exists at the published commit with catalog `ship-with-ai-skills` and plugin entry `ship-with-ai` — sourced from Phase 6 records (`06-02-SUMMARY.md:52`, `06-RESEARCH.md:96-97`), not re-fetched in this session | OMP Marketplace Path | `omp plugin marketplace add Ship-With-AI/skills` would fail catalog classification. Plan should re-verify the catalog before the ACC-03 install |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should ACC-01 install with scripts enabled or disabled?**
    - Known: the harness uses `--ignore-scripts` (`runtime-artifact.ts:406`); Phase 5 separately proved a scripts-**enabled** global install (`05-RELEASE-EVIDENCE.json` `consumers.global.installScripts: "enabled"`); the package declares no install scripts.
    - Unclear: which one ACC-01's "clean environment can install… globally" means.
-   - Recommendation: run the user-realistic scripts-enabled install for the ACC-01 row and record `installScripts: "enabled"` explicitly per row, so the record never implies a policy it did not exercise.
+   - **RESOLVED:** Run the user-realistic scripts-**enabled** install for the ACC-01 row and record `installScripts: "enabled"` explicitly per row, so the record never implies a policy it did not exercise. The disabled mode stays available as an adapter option but is not the default acceptance row. Carried by plan `07-02` Task 1 (`installScripts` option, `proof.installScripts`) and plan `07-06` Task 2 (per-path report field).
 
 2. **Can one shared support HOME be reconciled with "clean environment" per path?**
-   - Known: support state is per-HOME with a random `installationId` (`support-store.ts:59-66,110`); ACC-01/ACC-02 cleanliness is defined in terms of install source and npm cache, not machine state.
+   - Known: support state is per-HOME with a random `installationId` (`support-store.ts:56-62`, `support-store.ts:110`); ACC-01/ACC-02 cleanliness is defined in terms of install source and npm cache, not machine state.
    - Unclear: whether the operator reads "clean environment" as also requiring a distinct support identity per path.
-   - Recommendation: share one support HOME, state it explicitly in `isolationBoundary.sharedSupportHome`, and note that three separate identities would require three protected sign-ins. Confirm with the operator before execution; do **not** silently fake the other two.
+   - **RESOLVED:** Share one support HOME across all three installation paths, because three distinct support identities would require three separate protected sign-ins and D-07 authorises exactly one Restore with an already-paid account. This is a recorded deviation from D-02's per-path HOME separation, limited to the support identity: every path keeps its own npm cache, npm configuration, install prefix, and browser profile state. The deviation is **not** silent — it is gated by the operator-confirmation checkpoint in plan `07-02` Task 3, flagged per report by plan `07-06` Task 2, and stated in the consolidated record's `limitations` by plan `07-07` Task 2. Faking the other two identities remains forbidden.
 
 3. **Does the verified state need to be observed on all three paths in the same run?**
    - Known: ACC-04 says "all released installation paths"; D-09 says the proof source does not narrow ACC-04.
    - Unclear: sequencing — one Restore then all three paths, or per-path re-observation.
-   - Recommendation: one Restore against the shared HOME, then observe `verified` + unrestricted review/export on each of the three paths in the same run, recording three `supportStates` rows.
+   - **RESOLVED:** Yes — all three states on all three paths, using **one** Restore and a two-window execution order, because a hosted installation that has been restored never reports `unverified` again and therefore the pre-restore states are unobservable afterwards. Window 1 (`CUMPA_SUPPORT_STATE_WINDOW=pre-restore`, shared HOME not yet restored) observes the `unverified` and `dismissed` rows on the global, npx, and marketplace paths. The single real Restore is performed at the end of window 1 by the global path's support-state spec. Window 2 (`CUMPA_SUPPORT_STATE_WINDOW=post-restore`) observes the `verified` row on all three paths against the same shared HOME, with no second sign-in: the npx and marketplace paths assert the already-verified hosted status and re-run the unrestricted review/export checks. The consolidated writer merges the windows per path and demands three rows per path; any state that was not observed becomes a `blocked` row with a named reason and `substituted: false`. Carried by plan `07-04` Task 1/Task 3 (window selector), plan `07-05` `requirements: ACC-04` and Task 3 (marketplace rows), plan `07-06` must-haves and Task 2 (two-window orchestration), and plan `07-07` Task 2 acceptance criteria (three rows per path).
 
 4. **How is "the installed skill, not the checkout copy" asserted inside a live OMP session?**
    - Known: the user-invocation preamble appends `[Skill directory: <baseDir>]` (`omp://skills.md` §user-invocation); discovery is realpath/symlink-safe.
    - Unclear: the most reliable programmatic capture of `baseDir` from outside the session.
-   - Recommendation: have the agent report the resolved skill directory and its `SKILL.md` SHA-256 as part of its output, and independently assert from the harness that no `cumpa` skill exists in the isolated project's `.omp`/`.claude`/`.agents`/`.pi` skill roots other than the installed plugin tree.
+   - **RESOLVED:** Have the agent report the resolved skill directory and its `SKILL.md` SHA-256 as part of its output, and independently assert from the harness that no `cumpa` skill exists in the isolated project's `.omp`/`.claude`/`.agents`/`.pi` skill roots other than the installed plugin tree. Both assertions are required; neither alone distinguishes an installed skill from a copied one. Carried by plan `07-05` Task 1 (three discovery assertions) and Task 3 (skill-discovery evidence block).
 
 5. **Is `1.5.0` still the `latest` dist-tag?**
    - Known: `05-RELEASE-EVIDENCE.json` recorded `dist-tags: {bootstrap: "1.5.0-bootstrap.0", latest: "1.5.0"}`.
    - Unclear: current registry state (not queried; D-12 authorizes planning records only).
-   - Recommendation: irrelevant to correctness because every command pins the exact version, but record the observed `latest` tag alongside the pinned resolution for honesty.
+   - **RESOLVED:** Irrelevant to correctness because every command pins the exact version, and no plan reads or depends on the `latest` tag. Record the observed `latest` tag alongside the pinned resolution for honesty. Carried by plan `07-07` Task 2 (`read_first` on the Phase 5 tags block).
 
 ## Sources
 

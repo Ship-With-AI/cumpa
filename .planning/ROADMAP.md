@@ -154,11 +154,11 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 07-01-PLAN.md — Pinned public artifact identity, isolation guard primitives, runtime-artifact reuse seams
+- [ ] 07-01-PLAN.md — Pinned public artifact identity, isolation guard primitives, runtime-artifact reuse seams, status-parameterized scenario publisher
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 07-02-PLAN.md — Public global and empty-cache npx install adapters with the executed resolution guard
+- [ ] 07-02-PLAN.md — Public global and empty-cache npx install adapters with the executed resolution guard; operator confirmation of the shared-support-identity narrowing of D-02
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -167,11 +167,11 @@ Plans:
 **Wave 4** *(blocked on Wave 3 completion; runs in parallel)*
 
 - [ ] 07-04-PLAN.md — Live support-state matrix with the human-gated verified Restore checkpoint
-- [ ] 07-05-PLAN.md — Isolated OMP profile marketplace end-to-end proof
+- [ ] 07-05-PLAN.md — Isolated OMP profile marketplace end-to-end proof against the shared support identity, with the marketplace path's own ACC-04 rows
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 07-06-PLAN.md — Public-artifact acceptance driver, acceptance configuration, and phase entry points
+- [ ] 07-06-PLAN.md — Public-artifact acceptance driver, two-window support-state orchestration, acceptance configuration widening with the local-archive collection narrowed
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
