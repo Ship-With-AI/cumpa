@@ -67,6 +67,18 @@ The writer was therefore not invoked against these incompatible reports, and the
 
 The phase remains **partially blocked**: ACC-01 and ACC-02 passed; the established ACC-03 run passed; ACC-04 has passed live-unverified and dismissed rows and an unsubstituted verified block `live-entitlement-unavailable`. The status cannot be regenerated until the hardened runner can observe that same real Restore outcome without a second protected sign-in and OMP honors all required isolation redirections.
 
+## Regression Gate
+
+```text
+$ npm run test:unit       24 files, 152 tests passed
+$ npm run test:git         9 files,  69 tests passed
+$ npm run test:api        19 files, 142 tests passed
+$ npx tsc --noEmit --project tsconfig.json
+(exit 0; no diagnostics)
+$ npm run typecheck:web
+(exit 0; no diagnostics)
+```
+
 ## User Setup Required
 
 None. No publication, push, payment, deployment, provider configuration, database mutation, or second Restore sign-in was performed.
