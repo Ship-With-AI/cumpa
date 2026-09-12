@@ -32,7 +32,7 @@ patterns-established:
 
 requirements-completed: [ACC-01, ACC-02]
 
-duration: 12min
+duration: 15min
 completed: 2026-09-12
 status: complete
 ---
