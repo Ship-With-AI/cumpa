@@ -5,16 +5,16 @@ milestone_name: MIT Distribution
 current_phase: 07
 current_phase_name: clean-public-artifact-acceptance
 status: executing
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-09-12T10:20:42.656Z"
+stopped_at: Completed 07-05-PLAN.md
+last_updated: "2026-09-12T17:05:00.000Z"
 last_activity: 2026-09-12
-last_activity_desc: Phase 07 execution started
+last_activity_desc: Completed 07-05 isolated OMP marketplace acceptance
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 23
-  completed_plans: 19
-  percent: 80
+  completed_plans: 20
+  percent: 87
 ---
 
 # Project State
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (clean-public-artifact-acceptance) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 Status: In progress
-Checkpoint: 07-04 passed its live unverified and dismissed global-launcher rows. The verified ACC-04 row is blocked as `live-entitlement-unavailable`: Restore reported completion but no LIVE-mode entitlement binding was created, live status remained unverified, and no substitute evidence or shared verified identity exists.
-Last activity: 2026-09-12 — Completed 07-04-PLAN.md; Plan 5 of 7 is next.
+Checkpoint: 07-05 passed the actual OMP marketplace browser flow. Its live unverified and dismissed rows passed; verified is bound blocked as `live-entitlement-unavailable`, with `restoreReportedCompleteWithoutLinkage: true` and `substituted: false`.
+Last activity: 2026-09-12 — Completed 07-05-PLAN.md; Plan 6 of 7 next.
 
-Progress: [██████░░░░] 60% — 3 of 5 milestone phases complete
+Progress: [███████░░░] 87% — 20 of 23 milestone plans complete
 
 ## Performance Metrics
 
@@ -80,6 +80,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Pinned public distribution equality checks to immutable Phase 5 evidence. — Exact URL, SHA-1, and SHA-512 checks reject substituted or rebuilt archives.
 - [Phase 07]: Operator selected shared-support-home. — One shared support HOME, installation identity, and voluntary-support status serve global, npx, and marketplace paths; exactly one real Restore sign-in will occur in Plan 07-04. Per-path npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH remain isolated. Paths observing the shared verified identity record restoreCompleted: false and restoreObservedFromSharedIdentity: true; no second protected sign-in or copied row is allowed.
 - [Phase 07]: Keep local-archive evidence structurally unchanged while public paths publish separate scenario records.
+- [Phase 07]: Marketplace OMP auth narrowing. — The temporary OMP profile reused the operator-authorized provider credential copy; every other isolation dimension remains per-path. This is not independent authentication and must be carried into consolidated evidence.
 - [Phase 07]: Use expectedVersion for source-independent CLI and manifest assertions.
 
 ### Pending Todos
