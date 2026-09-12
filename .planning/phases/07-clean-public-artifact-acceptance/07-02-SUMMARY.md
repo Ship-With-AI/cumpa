@@ -135,3 +135,25 @@ Error: [public-runtime] PATH leakage resolved a pre-existing cumpa executable be
 ```
 
 The temporary smoke file was removed. The adapter reported the PATH-leakage error rather than a cleanup failure, which confirms its owned-root cleanup completed on the catch path.
+
+## Remediation
+
+The original isolated PATH included the host Node-bin directory, which also exposed the operator's globally linked `cumpa`. `assertNoResolvableCumpa` correctly rejected that leak. The adapters now create an owned `tool-bin` under each temporary root with symlinks only for `node`, `npm`, and `npx`; PATH contains that directory, the isolated prefix bin, and explicit system directories, never the host Node-bin directory. The adapters also read npm's offline cached package record when npm does not emit global/npx lock resolution metadata.
+
+```text
+$ npx vitest run tests/unit/.public-runtime-remediation.test.ts
+Test Files  1 passed (1)
+
+global: version=1.5.0
+  resolution=https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz
+  integrity=sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==
+  packageRootIsSymlink=false executableContainedInPrefix=true rootRemoved=true
+npx: cacheEntriesBefore=0 cachePopulated=true version=1.5.0 rootRemoved=true
+  resolution=https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz
+  integrity=sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==
+
+$ npx tsc --noEmit --project tsconfig.json
+tsc: exit 0 (no diagnostics)
+```
+
+The throwaway proof test was removed. Before and after, `command -v cumpa` remained `/Users/alessandro/.local/share/fnm/node-versions/v24.15.0/installation/bin/cumpa`, npm's prefix remained `/Users/alessandro/.local/share/fnm/node-versions/v24.15.0/installation`, `~/.npm` remained present, and `npm ls -g --depth=0` was unchanged (including the operator's `compare` and `diff-review` links).
