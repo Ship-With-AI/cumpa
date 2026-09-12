@@ -77,7 +77,7 @@ function exactIdentity(identity) {
   });
 }
 
-function limitationText(paths, restoreDefect, localArchivePrerequisite) {
+function limitationText(paths, restoreDefect) {
   const limitations = [
     'Local process isolation is not fresh-machine proof.',
     'One macOS host platform and one browser were exercised; no operating-system or browser compatibility matrix is claimed.',
@@ -85,14 +85,11 @@ function limitationText(paths, restoreDefect, localArchivePrerequisite) {
     'The Phase 4 and Phase 5 local-archive acceptance record is separate and unchanged.',
     'The local-archive path requires operator-held custody inputs and the protected CUMPA_RELEASE_SUPPORT_SERVICE_URL; its full execution was not available.',
   ];
-  if (paths.some((path) => path.sharedSupportIdentity)) {
-    limitations.push('One shared voluntary-support identity was used across all three installation paths; three distinct identities would have required three protected sign-ins. This operator-confirmed narrowing left npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH isolated per path.');
-  }
-  if (paths.some((path) => path.providerAuthenticationReused)) {
-    limitations.push('The isolated OMP profile reused a temporary read-only copy of the operator provider credential and was not independently authenticated.');
-  }
+  if (paths.some((path) => path.sharedSupportIdentity)) limitations.push('One shared voluntary-support identity was used across all three installation paths; three distinct identities would have required three protected sign-ins. This operator-confirmed narrowing left npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH isolated per path.');
+  if (paths.some((path) => path.providerAuthenticationReused)) limitations.push('The isolated OMP profile reused a temporary read-only copy of the operator provider credential and was not independently authenticated.');
   if (restoreDefect) limitations.push('restoreReportedCompleteWithoutLinkage was observed and remains a product defect outside Phase 7 scope under D-09.');
-  return [...limitations, ...(localArchivePrerequisite ? [] : [])];
+  for (const reason of new Set(paths.flatMap((path) => supportRows(path).filter((state) => state.status === 'blocked').map((state) => state.reason)).filter(Boolean))) limitations.push(`Blocked support-state reason: ${reason}.`);
+  return limitations;
 }
 
 export function buildAcceptanceEvidence(inputs) {
@@ -170,19 +167,20 @@ function mergeReports(reports, source, requirement, identity) {
   const sharedSupportIdentity = Boolean(first.sharedSupportIdentity?.supportHomeShared ?? first.isolation?.sharedSupportHome);
   const supportStates = reports.flatMap((report) => report.supportStates ?? []).map((state) => ({ ...state, installSource: source }));
   const deduplicatedStates = requiredStates.map((state) => supportStates.find((entry) => entry.state === state)).filter(Boolean);
-  const blocked = reports.find((report) => report.status === 'blocked') ?? deduplicatedStates.find((state) => state.status === 'blocked');
+  const pathBlocked = reports.find((report) => report.status === 'blocked');
   return {
     installSource: source,
     requirement,
-    status: blocked ? 'blocked' : (source === 'marketplace' ? (first.acc03?.status ?? first.status) : first.status),
-    ...(blocked ? { reason: blocked.reason, substituted: false } : {}),
+    status: pathBlocked ? 'blocked' : (source === 'marketplace' ? (first.acc03?.status ?? first.status) : first.status),
+    ...(pathBlocked ? { reason: pathBlocked.reason, substituted: false } : {}),
     installProof,
     supportStates: deduplicatedStates,
     sharedSupportIdentity,
     ...(first.isolation?.providerCredentialReused === true ? { providerAuthenticationReused: true } : {}),
+    restoreReportedCompleteWithoutLinkage: first.restoreReportedCompleteWithoutLinkage === true || first.support?.restoreReportedCompleteWithoutLinkage === true,
     evidence: source === 'marketplace'
       ? { collection: first.marketplace?.collection, lifecycle: first.lifecycle, canonical: first.canonical }
-      : { launchCommand: first.launchCommand, assetGraph: first.assetGraph, reviewExport: first.reviewExport, finish: first.finish },
+      : { assetGraph: first.assetGraph, reviewExport: first.reviewExport, finish: first.finish },
   };
 }
 
@@ -211,14 +209,17 @@ function readMarketplaceIdentity() {
   };
 }
 
-export function writeAcceptanceEvidence({ publicReportPaths = [], marketplaceReportPaths = [], outputPath, host, acceptedAt, extraForbiddenValues = [] }) {
+export function writeAcceptanceEvidence({ publicReportPaths = [], marketplaceReportPaths = [], outputPath, acceptedAt, extraForbiddenValues = [] }) {
   if (!isAbsolute(outputPath)) fail('output path must be absolute');
   if (existsSync(outputPath)) fail('output path already exists');
   const identity = readPinnedIdentity();
   const publicReports = publicReportPaths.map(readJson);
   const marketplaceReports = marketplaceReportPaths.map(readJson);
+  const allReports = [...publicReports, ...marketplaceReports];
+  const observedHost = allReports.find((report) => report.host)?.host;
+  if (!observedHost) fail('reports must contain observed host facts');
   const bySource = new Map(requiredSources.map((source) => [source, []]));
-  for (const report of [...publicReports, ...marketplaceReports]) {
+  for (const report of allReports) {
     const source = normalizedSource(report.installSource ?? 'marketplace');
     if (!bySource.has(source)) fail('report has an unsupported installation path');
     bySource.get(source).push(report);
@@ -230,11 +231,11 @@ export function writeAcceptanceEvidence({ publicReportPaths = [], marketplaceRep
   ];
   const record = buildAcceptanceEvidence({
     acceptedAt,
-    host,
+    host: observedHost,
     artifactIdentity: identity,
     marketplaceIdentity: readMarketplaceIdentity(),
     paths,
-    restoreReportedCompleteWithoutLinkage: false,
+    restoreReportedCompleteWithoutLinkage: paths.some((path) => path.restoreReportedCompleteWithoutLinkage === true),
     localArchivePrerequisite: true,
     extraForbiddenValues,
   });
@@ -257,11 +258,10 @@ function parseArguments(argv) {
     if (name === '--public-report') options.publicReportPaths.push(value);
     else if (name === '--marketplace-report') options.marketplaceReportPaths.push(value);
     else if (name === '--output') options.outputPath = value;
-    else if (name === '--host') options.host = readJson(value);
     else if (name === '--accepted-at') options.acceptedAt = value;
     else fail('invalid writer arguments');
   }
-  if (!options.outputPath || !options.host || !options.acceptedAt) fail('output, host, and accepted-at are required');
+  if (!options.outputPath || !options.acceptedAt) fail('output and accepted-at are required');
   return options;
 }
 
