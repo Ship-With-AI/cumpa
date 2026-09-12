@@ -183,7 +183,7 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
     if (browserResult.code !== 0) {
       agent.stop();
       const agentResult = await agent.completion;
-      throw new Error(`[marketplace-profile] agent did not reach loopback readiness: ${redactAgentOutput(agentResult.output).slice(-400)}`);
+      throw new Error(`[marketplace-profile] browser flow failed before completion: ${redactAgentOutput(browserResult.output).slice(-400)}; agent: ${redactAgentOutput(agentResult.output).slice(-400)}`);
     }
     const readiness = statSync(marker).mtime.toISOString();
     const agentResult = await agent.completion;
