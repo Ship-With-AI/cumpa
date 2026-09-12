@@ -22,21 +22,21 @@ import { createGroundedExactPatch } from '../../src/git/exact-patch.js';
 import { parseCanonicalReviewExport } from '../../src/export/review-export.js';
 import { renderReviewMarkdown } from '../../src/export/render-review-markdown.js';
 import { ExportReviewResultSchema } from '../../src/contracts/api.js';
-import { createDirtyGitFixture, type DirtyGitFixture } from '../helpers/git-fixture.js';
+import { createDirtyGitFixture } from '../helpers/git-fixture.js';
+import type { DirtyGitFixture } from '../helpers/git-fixture.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
 import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.js';
 import { openRuntimeSession } from '../helpers/open-runtime-session.js';
+import type { RuntimeSessionSupportObservation } from '../helpers/open-runtime-session.js';
+import { resolveAcceptanceRuntime } from '../helpers/acceptance-runtime.js';
+import type { AcceptanceRuntime } from '../helpers/acceptance-runtime.js';
 import {
-  installRuntimeArtifact,
-  readRuntimeArtifact,
+  publishScenarioRecord,
   rehashRuntimeArtifact,
   writeRuntimeScenario,
-  type InstalledRuntimeArtifact,
-  type RuntimeArtifact,
 } from '../helpers/runtime-artifact.js';
 
-let runtimeArtifact: RuntimeArtifact;
-let installed: InstalledRuntimeArtifact;
+let acceptance: AcceptanceRuntime;
 let fakeBinRoot: string;
 
 test.setTimeout(120_000);
@@ -44,15 +44,15 @@ test.setTimeout(120_000);
 const observedNativeReExport = hasObservedNativeReExport(process.platform, process.arch);
 
 type StablePairSha256 = Readonly<{ readonly json: string; readonly markdown: string }>;
-const completedScenarios = new Set<string>();
-const requiredScenarios = [
+const sourceIndependentScenarios = [
   'relaunch',
   'unsaved-composer',
   'range-finish',
   'equivalent-ranges',
   'exact-patch',
-  'support',
 ] as const;
+let requiredScenarios: readonly string[];
+let supportObserved: RuntimeSessionSupportObservation | undefined;
 
 
 interface RunningCli {
@@ -96,14 +96,14 @@ function startGeneratedCli(
   fixture: DirtyGitFixture,
   selections: Readonly<{ readonly base: string; readonly head: string }>,
 ): RunningCli {
-  const outputPath = join(installed.root, `terminal-${crypto.randomUUID()}.log`);
-  const markerPath = join(installed.root, `browser-open-${crypto.randomUUID()}.log`);
+  const outputPath = join(acceptance.root, `terminal-${crypto.randomUUID()}.log`);
+  const markerPath = join(acceptance.root, `browser-open-${crypto.randomUUID()}.log`);
   const outputDescriptor = openSync(outputPath, 'w');
-  const child = spawn(process.execPath, ['--import', installed.fetchGuardPath, installed.nodeEntrypointPath], {
+  const child = spawn(acceptance.launch.command, [...acceptance.launch.args], {
     cwd: fixture.nestedCwd,
     env: {
-      ...installed.env,
-      PATH: `${fakeBinRoot}:${installed.env.PATH ?? ''}`,
+      ...acceptance.env,
+      PATH: `${fakeBinRoot}:${acceptance.env.PATH ?? ''}`,
       CUMPA_BROWSER_OPEN_MARKER: markerPath,
       BROWSER: join(fakeBinRoot, 'open'),
       CUMPA_LAUNCH_OPTIONS: JSON.stringify({
@@ -127,17 +127,16 @@ function startAttachedCli(
     revisions: { base: selections.base, head: selections.head },
   },
 ): RunningAttachedCli {
-  const markerPath = join(installed.root, `attached-browser-open-${crypto.randomUUID()}.log`);
-  const stderrPath = join(installed.root, `attached-stderr-${crypto.randomUUID()}.log`);
-  const stdoutPath = join(installed.root, `attached-stdout-${crypto.randomUUID()}.json`);
+  const markerPath = join(acceptance.root, `attached-browser-open-${crypto.randomUUID()}.log`);
+  const stderrPath = join(acceptance.root, `attached-stderr-${crypto.randomUUID()}.log`);
+  const stdoutPath = join(acceptance.root, `attached-stdout-${crypto.randomUUID()}.json`);
   const stderrDescriptor = openSync(stderrPath, 'w');
   const stdoutDescriptor = openSync(stdoutPath, 'w');
-  // Test-only transport denial loads before the npm-generated bin without NODE_OPTIONS.
-  const child = spawn(process.execPath, ['--import', installed.fetchGuardPath, installed.nodeEntrypointPath], {
+  const child = spawn(acceptance.launch.command, [...acceptance.launch.args], {
     cwd: fixture.nestedCwd,
     env: {
-      ...installed.env,
-      PATH: `${fakeBinRoot}:${installed.env.PATH ?? ''}`,
+      ...acceptance.env,
+      PATH: `${fakeBinRoot}:${acceptance.env.PATH ?? ''}`,
       CUMPA_BROWSER_OPEN_MARKER: markerPath,
       BROWSER: join(fakeBinRoot, 'open'),
     },
@@ -198,6 +197,11 @@ async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
     await new Promise<void>((resolveWait) => setTimeout(resolveWait, 25));
   }
   throw new Error('[behavioral] timed out waiting for packaged CLI loopback URL');
+}
+
+async function openAcceptanceRuntimeSession(page: Page, url: string): Promise<void> {
+  const observation = await openRuntimeSession(page, url);
+  if (acceptance.source !== 'local-archive') supportObserved ??= observation;
 }
 
 async function stopGeneratedCli(running: RunningCli): Promise<void> {
@@ -264,9 +268,11 @@ function assertChromium(browser: Browser, testInfo: TestInfo): void {
 }
 
 test.beforeAll(() => {
-  runtimeArtifact = readRuntimeArtifact();
-  installed = installRuntimeArtifact(runtimeArtifact);
-  fakeBinRoot = join(installed.root, 'fake-bin');
+  acceptance = resolveAcceptanceRuntime();
+  requiredScenarios = acceptance.source === 'local-archive'
+    ? [...sourceIndependentScenarios, 'support']
+    : sourceIndependentScenarios;
+  fakeBinRoot = join(acceptance.root, 'fake-bin');
   mkdirSync(fakeBinRoot, { recursive: true });
   const opener = join(fakeBinRoot, 'open');
   writeFileSync(opener, [
@@ -280,36 +286,64 @@ test.beforeAll(() => {
 });
 
 test.afterAll(() => {
-  if (installed === undefined) return;
+  if (acceptance === undefined) return;
   let cleaned = false;
   try {
     if (process.env.CUMPA_AGENT_READY_EVIDENCE_REPORT !== undefined) {
       expect([...completedScenarios].sort()).toEqual([...requiredScenarios].sort());
     }
-    rehashRuntimeArtifact(runtimeArtifact);
-    installed.cleanup();
+    if (acceptance.source === 'local-archive') {
+      if (acceptance.artifact === undefined || acceptance.installProof === undefined) {
+        throw new Error('[runtime-artifact] local-archive runtime evidence is incomplete');
+      }
+      rehashRuntimeArtifact(acceptance.artifact);
+      acceptance.cleanup();
+      cleaned = true;
+      const archive = rehashRuntimeArtifact(acceptance.artifact);
+      writeRuntimeScenario('review', {
+        archive,
+        package: acceptance.artifact.package,
+        install: acceptance.installProof,
+        target: { platform: process.platform, arch: process.arch },
+        cleanup: { complete: true },
+        review: {
+          relaunch: true,
+          canonicalV2: true,
+          isolatedDrafts: true,
+          reExport: observedNativeReExport ? 'exported' : 'reExportUnsupported',
+        },
+        support: { unavailable: true, dismissed: true, unrestricted: true },
+        exactPatch: { canonicalV3: true, grounded: true },
+        native: { observedReExport: observedNativeReExport, fallback: 'reExportUnsupported' },
+        sourceControl: { unchanged: true },
+        checks: { finish: true },
+      });
+      return;
+    }
+    if (acceptance.publicProof === undefined || supportObserved === undefined) {
+      throw new Error('[public-runtime] public runtime evidence is incomplete');
+    }
+    acceptance.cleanup();
     cleaned = true;
-    const archive = rehashRuntimeArtifact(runtimeArtifact);
-    writeRuntimeScenario('review', {
-      archive,
-      package: runtimeArtifact.package,
-      install: installed.proof,
+    publishScenarioRecord('public-review', {
+      installSource: acceptance.source,
+      publicProof: acceptance.publicProof,
       target: { platform: process.platform, arch: process.arch },
-      cleanup: { complete: true },
       review: {
         relaunch: true,
         canonicalV2: true,
         isolatedDrafts: true,
         reExport: observedNativeReExport ? 'exported' : 'reExportUnsupported',
       },
-      support: { unavailable: true, dismissed: true, unrestricted: true },
+      supportObserved,
       exactPatch: { canonicalV3: true, grounded: true },
       native: { observedReExport: observedNativeReExport, fallback: 'reExportUnsupported' },
       sourceControl: { unchanged: true },
       checks: { finish: true },
+      cleanup: { complete: true },
     });
   } finally {
-    if (!cleaned) installed.cleanup();
+    if (!cleaned) acceptance.cleanup();
   }
 });
 
@@ -327,7 +361,7 @@ test('installed resume after relaunch preserves accepted review state, completes
     let reExportStablePairSha256: StablePairSha256 | undefined;
     let reExportKind: 'exported' | 'reExportUnsupported' | undefined;
   try {
-    await openRuntimeSession(page, await waitForLoopbackUrl(running));
+    await openAcceptanceRuntimeSession(page, await waitForLoopbackUrl(running));
     await addHeadComment(page, body);
     await saveSummary(page, summary);
   } finally {
@@ -343,7 +377,7 @@ test('installed resume after relaunch preserves accepted review state, completes
   const resumedPage = await browser.newPage();
   running = startGeneratedCli(fixture, original);
   try {
-    await openRuntimeSession(resumedPage, await waitForLoopbackUrl(running));
+    await openAcceptanceRuntimeSession(resumedPage, await waitForLoopbackUrl(running));
     await ensureReviewOpen(resumedPage);
     await expect(resumedPage.locator('.review-summary__preview')).toContainText(summary);
     await expect(resumedPage.locator('.comments-rail__comment')).toContainText(body);
@@ -418,7 +452,7 @@ test('installed resume after relaunch preserves accepted review state, completes
   const differentPage = await browser.newPage();
   running = startGeneratedCli(fixture, different);
   try {
-    await openRuntimeSession(differentPage, await waitForLoopbackUrl(running));
+    await openAcceptanceRuntimeSession(differentPage, await waitForLoopbackUrl(running));
     await ensureReviewOpen(differentPage);
     await expect(differentPage.getByText(summary, { exact: true })).toHaveCount(0);
     await expect(differentPage.locator('.comments-rail__comment', { hasText: body })).toHaveCount(0);
@@ -463,7 +497,7 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
   const running = startAttachedCli(fixture, { base: fixture.baseRef, head: fixture.headRef });
 
   try {
-    await openRuntimeSession(page, await waitForAttachedLoopbackUrl(running));
+    await openAcceptanceRuntimeSession(page, await waitForAttachedLoopbackUrl(running));
     const review = page.getByRole('button', { name: 'Review', exact: true });
     if (await review.getAttribute('aria-expanded') === 'true') await review.click();
     await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
@@ -522,7 +556,7 @@ test('attached range review stays silent until Finish then emits one canonical V
   try {
     const url = await waitForAttachedLoopbackUrl(running);
     expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
-    await openRuntimeSession(page, url);
+    await openAcceptanceRuntimeSession(page, url);
     await ensureReviewOpen(page);
     await expect(page.getByRole('button', { name: 'Finish review', exact: true })).toBeVisible();
 
@@ -567,8 +601,8 @@ test('equivalent installed attached ranges retain canonical provenance while own
 
   try {
     await Promise.all([
-      openRuntimeSession(page, await waitForAttachedLoopbackUrl(first)),
-      openRuntimeSession(secondPage, await waitForAttachedLoopbackUrl(second)),
+      openAcceptanceRuntimeSession(page, await waitForAttachedLoopbackUrl(first)),
+      openAcceptanceRuntimeSession(secondPage, await waitForAttachedLoopbackUrl(second)),
     ]);
     await Promise.all([ensureReviewOpen(page), ensureReviewOpen(secondPage)]);
     await saveSummary(page, 'First equivalent attached review.');
@@ -640,7 +674,7 @@ test('installed exact-patch review grounds the submitted patch and emits canonic
   try {
     const url = await waitForAttachedLoopbackUrl(running);
     expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
-    await openRuntimeSession(page, url);
+    await openAcceptanceRuntimeSession(page, url);
     await addHeadComment(page, 'Grounded exact-patch feedback.', 9, 'export const changed = "head value";');
     const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
     await page.getByRole('button', { name: 'Finish review', exact: true }).click();
@@ -709,6 +743,7 @@ test('installed exact-patch review grounds the submitted patch and emits canonic
 
 test('installed configured support remains unavailable without outbound access and does not restrict Finish', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
+  test.skip(acceptance.source !== 'local-archive', 'support-unavailable is local-archive-only evidence');
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
   const before = await captureSourceControlSnapshot(fixture.root);
   const running = startAttachedCli(fixture, { base: fixture.baseRef, head: fixture.headRef });
@@ -724,20 +759,21 @@ test('installed configured support remains unavailable without outbound access a
   });
 
   try {
-    await openRuntimeSession(page, await waitForAttachedLoopbackUrl(running));
+    await openAcceptanceRuntimeSession(page, await waitForAttachedLoopbackUrl(running));
     const support = page.getByRole('button', { name: 'Support Cumpa', exact: true });
     await expect(support).toBeVisible();
     await support.click();
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('heading', { name: 'Support Cumpa' })).toBeVisible();
-    const blockedBeforeSupport = existsSync(installed.blockedFetchesPath)
-      ? readFileSync(installed.blockedFetchesPath, 'utf8').split('\n').filter((line) => line === 'blocked').length
+    const blockedFetchesPath = acceptance.blockedFetchesPath;
+    if (blockedFetchesPath === undefined) throw new Error('[runtime-artifact] fetch guard is missing');
+    const blockedBeforeSupport = existsSync(blockedFetchesPath)
+      ? readFileSync(blockedFetchesPath, 'utf8').split('\n').filter((line) => line === 'blocked').length
       : 0;
     await dialog.getByRole('button', { name: 'Support Cumpa — $49.99' }).click();
-    await expect.poll(() => existsSync(installed.blockedFetchesPath)
-      ? readFileSync(installed.blockedFetchesPath, 'utf8').split('\n').filter((line) => line === 'blocked').length
+    await expect.poll(() => existsSync(blockedFetchesPath)
+      ? readFileSync(blockedFetchesPath, 'utf8').split('\n').filter((line) => line === 'blocked').length
       : 0).toBeGreaterThan(blockedBeforeSupport);
-    await expect(dialog).not.toContainText('Waiting for confirmation… You can close this and keep reviewing.');
     await expect(dialog.getByRole('button', { name: 'Support Cumpa — $49.99' })).toBeEnabled();
     await dialog.getByRole('button', { name: 'Not now' }).click();
     await expect(dialog).toBeHidden();

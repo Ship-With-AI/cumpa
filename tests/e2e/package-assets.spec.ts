@@ -6,35 +6,36 @@ import {
   createWriteStream,
   existsSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   readdirSync,
-  rmSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { once } from 'node:events';
 
+import type { Page } from '@playwright/test';
+
 import { expect, test } from '@playwright/test';
 
 import { SessionResponseSchema } from '../../src/contracts/api.js';
 import { createDirtyGitFixture } from '../helpers/git-fixture.js';
 import { openRuntimeSession } from '../helpers/open-runtime-session.js';
+import type { RuntimeSessionSupportObservation } from '../helpers/open-runtime-session.js';
+import { resolveAcceptanceRuntime } from '../helpers/acceptance-runtime.js';
+import type { AcceptanceRuntime } from '../helpers/acceptance-runtime.js';
 import {
-  installRuntimeArtifact,
-  readRuntimeArtifact,
-  runRuntimeCommand,
+  publishScenarioRecord,
   rehashRuntimeArtifact,
+  runRuntimeCommand,
   writeRuntimeScenario,
-  type InstalledRuntimeArtifact,
 } from '../helpers/runtime-artifact.js';
 
-const artifact = readRuntimeArtifact();
-let installed: InstalledRuntimeArtifact | undefined;
+let acceptance: AcceptanceRuntime;
 let temporaryRoot: string | undefined;
 let assetChecksPassed = false;
 let cleaned = false;
+let supportObserved: RuntimeSessionSupportObservation | undefined;
 
 function commandOutput(executablePath: string, args: readonly string[], environment: NodeJS.ProcessEnv): string {
   return runRuntimeCommand(executablePath, args, { cwd: tmpdir(), env: environment });
@@ -52,8 +53,8 @@ async function loopbackUrl(outputPath: string, markerPath: string, child: ChildP
   throw new Error('[runtime-artifact] timed out waiting for installed CLI loopback URL');
 }
 
-function installedAssets(runtime: InstalledRuntimeArtifact): readonly string[] {
-  const root = join(runtime.packageRoot, 'dist', 'web', 'assets');
+function installedAssets(packageRoot: string): readonly string[] {
+  const root = join(packageRoot, 'dist', 'web', 'assets');
   const assets: string[] = [];
   const visit = (directory: string, publicPath: string): void => {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -66,51 +67,88 @@ function installedAssets(runtime: InstalledRuntimeArtifact): readonly string[] {
   return assets.sort((left, right) => left.localeCompare(right));
 }
 
+async function loadedBrowserAssets(page: Page): Promise<readonly string[]> {
+  return await page.evaluate(() => performance.getEntriesByType('resource')
+    .map((entry) => new URL(entry.name).pathname)
+    .filter((path) => path.startsWith('/assets/'))
+    .sort((left, right) => left.localeCompare(right)));
+}
+
 test.beforeAll(() => {
-  installed = installRuntimeArtifact(artifact);
-  temporaryRoot = mkdtempSync(join(tmpdir(), 'cumpa-runtime-assets-'));
+  acceptance = resolveAcceptanceRuntime();
+  temporaryRoot = acceptance.root;
 });
 
 test.afterAll(() => {
-  if (installed !== undefined) installed.cleanup();
-  if (temporaryRoot !== undefined) rmSync(temporaryRoot, { recursive: true, force: true });
-  cleaned = true;
-  rehashRuntimeArtifact(artifact);
-  if (assetChecksPassed && installed !== undefined) {
-    writeRuntimeScenario('package-assets', {
-      archive: artifact.archive,
-      package: artifact.package,
-      install: installed.proof,
-      target: { platform: process.platform, arch: process.arch },
-      cleanup: { complete: cleaned },
-      browser: { assets: true, workers: true, codicon: true },
-      checks: { version: true, help: true, isolatedInstall: true, dependencyTree: true },
-    });
+  if (acceptance === undefined) return;
+  try {
+    if (acceptance.source === 'local-archive') {
+      if (acceptance.artifact === undefined || acceptance.installProof === undefined) {
+        throw new Error('[runtime-artifact] local-archive runtime evidence is incomplete');
+      }
+      acceptance.cleanup();
+      cleaned = true;
+      rehashRuntimeArtifact(acceptance.artifact);
+      if (assetChecksPassed) {
+        writeRuntimeScenario('package-assets', {
+          archive: acceptance.artifact.archive,
+          package: acceptance.artifact.package,
+          install: acceptance.installProof,
+          target: { platform: process.platform, arch: process.arch },
+          cleanup: { complete: cleaned },
+          browser: { assets: true, workers: true, codicon: true },
+          checks: { version: true, help: true, isolatedInstall: true, dependencyTree: true },
+        });
+      }
+      return;
+    }
+    if (acceptance.publicProof === undefined || supportObserved === undefined) {
+      throw new Error('[public-runtime] public runtime evidence is incomplete');
+    }
+    acceptance.cleanup();
+    cleaned = true;
+    if (assetChecksPassed) {
+      publishScenarioRecord('public-package-assets', {
+        installSource: acceptance.source,
+        publicProof: acceptance.publicProof,
+        target: { platform: process.platform, arch: process.arch },
+        supportObserved,
+        browser: { assets: true, workers: true, codicon: true },
+        checks: { version: true, help: true, isolatedInstall: true, dependencyTree: true },
+        cleanup: { complete: true },
+      });
+    }
+  } finally {
+    if (!cleaned) acceptance.cleanup();
   }
 });
 
-test('supplied archive installs globally and serves its complete browser asset graph', async ({ page }) => {
-  if (installed === undefined || temporaryRoot === undefined) throw new Error('[runtime-artifact] isolated installation was not initialized');
-  expect(commandOutput(installed.executablePath, ['--version'], installed.env)).toBe(`${artifact.package.version}\n`);
-  expect(commandOutput(installed.executablePath, ['--help'], installed.env)).toMatch(/--version\b/u);
+test('resolved runtime serves its complete browser asset graph', async ({ page }) => {
+  if (temporaryRoot === undefined) throw new Error('[runtime-artifact] isolated installation was not initialized');
+  expect(commandOutput(acceptance.launch.command, [...acceptance.launch.args, '--version'], acceptance.env)).toBe(`${acceptance.expectedVersion}\n`);
+  expect(commandOutput(acceptance.launch.command, [...acceptance.launch.args, '--help'], acceptance.env)).toMatch(/--version\b/u);
 
-  const packageManifest = JSON.parse(readFileSync(join(installed.packageRoot, 'package.json'), 'utf8')) as {
-    readonly name: string;
-    readonly version: string;
-    readonly engines: { readonly node: string };
-    readonly bin: { readonly cumpa: string };
-  };
-  expect(packageManifest).toEqual(expect.objectContaining({
-    name: '@shipwithai/cumpa',
-    version: artifact.package.version,
-    engines: { node: '>=24' },
-    bin: { cumpa: 'dist/bin/cumpa.mjs' },
-  }));
-  for (const legalFile of ['LICENSE', 'THIRD_PARTY_NOTICES.md'] as const) {
-    expect(createHash('sha256').update(readFileSync(join(installed.packageRoot, legalFile))).digest('hex')).toBe(artifact.evidence.legal[legalFile]);
+  if (acceptance.packageRoot !== undefined) {
+    const packageManifest = JSON.parse(readFileSync(join(acceptance.packageRoot, 'package.json'), 'utf8')) as {
+      readonly name: string;
+      readonly version: string;
+      readonly engines: { readonly node: string };
+      readonly bin: { readonly cumpa: string };
+    };
+    expect(packageManifest).toEqual(expect.objectContaining({
+      name: '@shipwithai/cumpa',
+      version: acceptance.expectedVersion,
+      engines: { node: '>=24' },
+      bin: { cumpa: 'dist/bin/cumpa.mjs' },
+    }));
+    for (const forbidden of ['src', 'tests', '.planning', '.cumpa', '.github', '.git', '.kimi-code']) {
+      expect(existsSync(join(acceptance.packageRoot, forbidden))).toBe(false);
+    }
   }
-  for (const forbidden of ['src', 'tests', '.planning', '.cumpa', '.github', '.git', '.kimi-code']) {
-    expect(existsSync(join(installed.packageRoot, forbidden))).toBe(false);
+  if (acceptance.artifact !== undefined && acceptance.packageRoot !== undefined) {
+    for (const legalFile of ['LICENSE', 'THIRD_PARTY_NOTICES.md'] as const) {
+      expect(createHash('sha256').update(readFileSync(join(acceptance.packageRoot, legalFile))).digest('hex')).toBe(acceptance.artifact.evidence.legal[legalFile]);
+    }
   }
 
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
@@ -127,11 +165,11 @@ test('supplied archive installs globally and serves its complete browser asset g
   ].join('\n'), { mode: 0o700 });
   chmodSync(opener, 0o700);
 
-  const child = spawn(process.execPath, ['--import', installed.fetchGuardPath, installed.nodeEntrypointPath], {
+  const child = spawn(acceptance.launch.command, [...acceptance.launch.args], {
     cwd: fixture.nestedCwd,
     env: {
-      ...installed.env,
-      PATH: `${fakeBin}:${installed.env.PATH}`,
+      ...acceptance.env,
+      PATH: `${fakeBin}:${acceptance.env.PATH}`,
       BROWSER: opener,
       CUMPA_BROWSER_OPEN_MARKER: browserMarker,
       CUMPA_LAUNCH_OPTIONS: JSON.stringify({
@@ -169,14 +207,17 @@ test('supplied archive installs globally and serves its complete browser asset g
       : undefined;
     await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
     supportRefreshRelease.resolve();
-    await opening;
+    supportObserved = await opening;
     if (supportResponse !== undefined) {
       await (await supportResponse).finished();
       await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
       await expect(page.locator('.support-dialog-backdrop')).toBeHidden();
     }
     await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
-    const assets = installedAssets(installed);
+    const assets = acceptance.packageRoot === undefined
+      ? await loadedBrowserAssets(page)
+      : installedAssets(acceptance.packageRoot);
+    expect(assets).not.toHaveLength(0);
     const responses = await page.evaluate(async (paths) => await Promise.all(paths.map(async (path) => {
       const response = await fetch(path);
       return { path, ok: response.ok };
