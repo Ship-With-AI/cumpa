@@ -51,6 +51,7 @@ const sourceIndependentScenarios = [
   'equivalent-ranges',
   'exact-patch',
 ] as const;
+const completedScenarios = new Set<string>();
 let requiredScenarios: readonly string[];
 let supportObserved: RuntimeSessionSupportObservation | undefined;
 
