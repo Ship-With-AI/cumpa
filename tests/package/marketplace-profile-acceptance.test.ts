@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { chmodSync, existsSync, linkSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, linkSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir, release, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -28,18 +28,22 @@ function startChild(command: string, args: readonly string[], environment: NodeJ
   child.on('exit', (code: number | null) => settle({ code, output: Buffer.concat(chunks).toString('utf8') }));
   return Object.freeze({ completion: promise, stop: () => child.kill('SIGTERM') });
 }
-function extractToolCallTrace(output: string): string {
-  const content = new Map<number, string>();
-  for (const line of output.split('\n')) {
-    try {
-      const event = JSON.parse(line) as { assistantMessageEvent?: { type?: string; contentIndex?: number; delta?: string } };
-      const update = event.assistantMessageEvent;
-      if (update?.type === 'toolcall_delta' && typeof update.contentIndex === 'number' && typeof update.delta === 'string') content.set(update.contentIndex, `${content.get(update.contentIndex) ?? ''}${update.delta}`);
-    } catch {
-      continue;
+function extractToolCallTrace(agentDir: string): string {
+  const commands: string[] = [];
+  for (const entry of readdirSync(agentDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.jsonl')) continue;
+    for (const line of readFileSync(join(entry.parentPath, entry.name), 'utf8').split('\n')) {
+      try {
+        const event = JSON.parse(line) as { message?: { content?: Array<{ type?: string; name?: string; arguments?: { command?: string } }> } };
+        for (const content of event.message?.content ?? []) {
+          if (content.type === 'toolCall') commands.push(`${content.name ?? ''} ${content.arguments?.command ?? ''}`);
+        }
+      } catch {
+        continue;
+      }
     }
   }
-  return [...content.values()].join('\n');
+  return commands.join('\n');
 }
 
 function redactAgentOutput(output: string): string {
@@ -187,7 +191,7 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
     expect(agentResult.code).toBe(0);
     expect(completion > readinessStarted).toBe(true);
     expect(completion > readiness).toBe(true);
-    const commandTrace = extractToolCallTrace(redactAgentOutput(agentResult.output));
+    const commandTrace = extractToolCallTrace(profile.agentDir);
     const checker = commandTrace.indexOf('check-cumpa.mjs');
     const launch = commandTrace.indexOf('cumpa', checker + 'check-cumpa.mjs'.length);
     expect(checker).toBeGreaterThanOrEqual(0);
