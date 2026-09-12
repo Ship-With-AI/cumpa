@@ -4,14 +4,16 @@ import {
   chmodSync,
   existsSync,
   lstatSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
   realpathSync,
   rmSync,
+  symlinkSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join } from 'node:path';
 
 import {
   PINNED_PUBLIC_ARTIFACT,
@@ -24,6 +26,10 @@ import { protectedEnvironment, runRuntimeCommand } from './runtime-artifact.js';
 type InstallScripts = 'enabled' | 'disabled';
 type Resolution = Readonly<{ version: string; resolved: string; integrity: string }>;
 type RecordValue = Record<string, unknown>;
+const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+const nodeCommand = process.platform === 'win32' ? 'node.exe' : 'node';
+
 
 export interface InstalledPublicRuntime {
   readonly source: 'public-global' | 'public-npx';
@@ -80,36 +86,40 @@ function asRecord(value: unknown): RecordValue | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value) ? value as RecordValue : undefined;
 }
 
-function npmCommand(): string {
-  return process.platform === 'win32' ? 'npm.cmd' : 'npm';
-}
-
-function packageDirectory(prefix: string): string {
-  return process.platform === 'win32' ? join(prefix, 'node_modules') : join(prefix, 'lib', 'node_modules');
-}
-
-function globalExecutable(prefix: string): string {
-  return process.platform === 'win32' ? join(prefix, 'cumpa.cmd') : join(prefix, 'bin', 'cumpa');
-}
-
-function npmExecutable(): string {
-  const candidate = join(dirname(realpathSync(process.execPath)), npmCommand());
-  if (!existsSync(candidate)) fail('npm executable is not colocated with Node');
+function bundledExecutable(command: string): string {
+  const candidate = join(dirname(realpathSync(process.execPath)), command);
+  if (!existsSync(candidate)) fail(`${command} executable is not colocated with Node`);
   return realpathSync(candidate);
+}
+
+function createToolBin(root: string): string {
+  const toolBin = join(root, 'tool-bin');
+  mkdirSync(toolBin, { mode: 0o700 });
+  for (const [name, target] of [
+    [nodeCommand, realpathSync(process.execPath)],
+    [npmCommand, bundledExecutable(npmCommand)],
+    [npxCommand, bundledExecutable(npxCommand)],
+  ] as const) {
+    symlinkSync(target, join(toolBin, name));
+  }
+  return toolBin;
 }
 
 function isolatedEnvironment(root: string, supportHome: SharedSupportHome): NodeJS.ProcessEnv {
   const env = protectedEnvironment(root, process.env);
   const prefix = env.npm_config_prefix;
   if (prefix === undefined) fail('isolated npm prefix is missing');
+  const systemDirectories = process.platform === 'win32'
+    ? (() => {
+      const systemRoot = env.SystemRoot;
+      if (systemRoot === undefined || !isAbsolute(systemRoot)) fail('SystemRoot must be an absolute directory');
+      return [join(systemRoot, 'System32'), systemRoot];
+    })()
+    : ['/usr/bin', '/bin', '/usr/sbin', '/sbin'];
   env.PATH = buildIsolatedPath([
     join(prefix, 'bin'),
-    dirname(realpathSync(process.execPath)),
-    dirname(npmExecutable()),
-    '/usr/bin',
-    '/bin',
-    '/usr/sbin',
-    '/sbin',
+    createToolBin(root),
+    ...systemDirectories,
   ]);
   supportHome.applyTo(env);
   return env;
@@ -129,6 +139,15 @@ function resolutionFrom(value: unknown): Resolution | undefined {
   return { version: record.version, resolved: record.resolved, integrity: record.integrity };
 }
 
+function resolutionFromNpmView(value: unknown): Resolution | undefined {
+  const record = asRecord(value);
+  if (
+    record === undefined || typeof record.version !== 'string'
+    || typeof record['dist.tarball'] !== 'string' || typeof record['dist.integrity'] !== 'string'
+  ) return undefined;
+  return { version: record.version, resolved: record['dist.tarball'], integrity: record['dist.integrity'] };
+}
+
 function resolutionFromLock(lockPath: string): Resolution | undefined {
   if (!existsSync(lockPath)) return undefined;
   let parsed: unknown;
@@ -141,12 +160,26 @@ function resolutionFromLock(lockPath: string): Resolution | undefined {
   return resolutionFrom(packages?.[`node_modules/${PINNED_PUBLIC_ARTIFACT.name}`]);
 }
 
-function assertRecordedResolution(tree: unknown, metadataPaths: readonly string[]): Resolution {
+function cachedNpmResolution(root: string, env: NodeJS.ProcessEnv): Resolution {
+  let view: unknown;
+  try {
+    view = JSON.parse(runRuntimeCommand(npmCommand, [
+      'view', PINNED_PUBLIC_ARTIFACT.packageLabel, 'version', 'dist.tarball', 'dist.integrity', '--json', '--offline',
+    ], { cwd: root, env }));
+  } catch {
+    fail('npm did not record the installed package resolution');
+  }
+  const resolution = resolutionFromNpmView(view);
+  if (resolution === undefined) fail('npm did not record the installed package resolution');
+  return resolution;
+}
+
+function assertRecordedResolution(tree: unknown, metadataPaths: readonly string[], fallback?: Resolution): Resolution {
   const dependencies = asRecord(asRecord(tree)?.dependencies);
   const installed = dependencies?.[PINNED_PUBLIC_ARTIFACT.name];
   const resolution = resolutionFrom(installed) ?? metadataPaths
     .map(resolutionFromLock)
-    .find((candidate): candidate is Resolution => candidate !== undefined);
+    .find((candidate): candidate is Resolution => candidate !== undefined) ?? fallback;
   if (resolution === undefined) fail('npm did not record the installed package resolution');
   assertPinnedInstalledResolution(resolution);
   return resolution;
@@ -238,10 +271,10 @@ export function installPublicGlobalRuntime(options: Readonly<{
       PINNED_PUBLIC_ARTIFACT.packageLabel,
     ];
     if (options.installScripts === 'disabled') installArgs.splice(4, 0, '--ignore-scripts');
-    runRuntimeCommand(npmCommand(), installArgs, { cwd: temporary.root, env });
+    runRuntimeCommand(npmCommand, installArgs, { cwd: temporary.root, env });
     let tree: unknown;
     try {
-      tree = JSON.parse(runRuntimeCommand(npmCommand(), [
+      tree = JSON.parse(runRuntimeCommand(npmCommand, [
         'ls', '--global', '--prefix', prefix, '--omit=dev', '--json', '--all', '--long',
       ], { cwd: temporary.root, env }));
     } catch (error) {
@@ -249,9 +282,14 @@ export function installPublicGlobalRuntime(options: Readonly<{
     }
     const problems = asRecord(tree)?.problems;
     if (Array.isArray(problems) && problems.length > 0) fail('npm ls reported dependency problems');
-    const packageRoot = join(packageDirectory(prefix), '@shipwithai', 'cumpa');
-    const executablePath = globalExecutable(prefix);
-    const resolution = assertRecordedResolution(tree, [join(packageDirectory(prefix), '.package-lock.json')]);
+    const packageDirectory = process.platform === 'win32' ? join(prefix, 'node_modules') : join(prefix, 'lib', 'node_modules');
+    const packageRoot = join(packageDirectory, '@shipwithai', 'cumpa');
+    const executablePath = process.platform === 'win32' ? join(prefix, 'cumpa.cmd') : join(prefix, 'bin', 'cumpa');
+    const resolution = assertRecordedResolution(
+      tree,
+      [join(packageDirectory, '.package-lock.json')],
+      cachedNpmResolution(temporary.root, env),
+    );
     assertContainedPackage(packageRoot, executablePath, prefix);
     const manifest = validateManifest(packageRoot);
     if (runRuntimeCommand(executablePath, ['--version'], { cwd: temporary.root, env }) !== `${PINNED_PUBLIC_ARTIFACT.version}\n`) {
@@ -281,7 +319,7 @@ export function installPublicGlobalRuntime(options: Readonly<{
 }
 
 function npxEntryPoint(): string {
-  const entryPoint = join(dirname(dirname(npmExecutable())), 'bin', 'npx-cli.js');
+  const entryPoint = join(dirname(dirname(bundledExecutable(npmCommand))), 'bin', 'npx-cli.js');
   if (!existsSync(entryPoint)) fail('npx-cli.js is not bundled with npm');
   return entryPoint;
 }
@@ -328,7 +366,11 @@ export function preparePublicNpxRuntime(options: Readonly<{
       fail('npx did not populate the isolated _cacache');
     }
     assertContainedPackage(installed.packageRoot, join(installed.packageRoot, 'dist', 'bin', 'cumpa.mjs'), cache);
-    const resolution = assertRecordedResolution(undefined, [installed.lockPath]);
+    const resolution = assertRecordedResolution(
+      undefined,
+      [installed.lockPath],
+      cachedNpmResolution(temporary.root, env),
+    );
     validateManifest(installed.packageRoot);
     return Object.freeze({
       source: 'public-npx',
