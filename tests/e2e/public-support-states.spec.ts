@@ -10,7 +10,7 @@ import {
   readFileSync,
   writeFileSync,
 } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 import type { Browser, Page } from '@playwright/test';
@@ -42,7 +42,7 @@ type Row = Readonly<{
   readonly finishUnrestricted: boolean;
   readonly modalPromptBlocksInteractiveActions: boolean;
   readonly interactiveReviewExportPerformed: boolean;
-  readonly reason?: 'support-not-configured' | 'hosted-support-unreachable' | 'paid-account-unavailable' | 'human-sign-in-unavailable' | 'live-entitlement-unavailable';
+  readonly reason?: 'support-not-configured' | 'hosted-support-unreachable' | 'paid-account-unavailable' | 'human-sign-in-unavailable' | 'live-entitlement-unavailable' | 'state-not-observed';
   readonly substituted: false;
 }>;
 type RestoreDefectObservation = Readonly<{
@@ -240,6 +240,29 @@ function readSupportState() {
   return SupportStateV1Schema.parse(JSON.parse(readFileSync(resolveSupportStatePath({ home: supportHome }), 'utf8')));
 }
 
+function restoreAttemptPath(): string {
+  return join(dirname(resolveSupportStatePath({ home: supportHome })), 'restore-attempt.json');
+}
+
+function wasRestoreAttemptedForCurrentIdentity(): boolean {
+  try {
+    const attempt = JSON.parse(readFileSync(restoreAttemptPath(), 'utf8')) as { installationId?: unknown };
+    return attempt.installationId === readSupportState().installationId;
+  } catch {
+    return false;
+  }
+}
+
+function recordRestoreAttempt(): void {
+  writeFileSync(restoreAttemptPath(), `${JSON.stringify({ installationId: readSupportState().installationId })}\n`, { encoding: 'utf8', mode: 0o600 });
+}
+
+function deriveVerifiedBlockedReason(restoredForIdentity: boolean, liveStatusUnverified: boolean): NonNullable<Row['reason']> {
+  if (stateWindow === 'pre-restore') return 'state-not-observed';
+  if (!restoredForIdentity) return 'human-sign-in-unavailable';
+  return liveStatusUnverified ? 'live-entitlement-unavailable' : 'hosted-support-unreachable';
+}
+
 async function withFixture<T>(index: number, action: (fixture: DirtyGitFixture) => Promise<T>): Promise<T> {
   const fixture = await createDirtyGitFixture('branch-to-worktree', index);
   const before = await captureSourceControlSnapshot(fixture.root);
@@ -391,7 +414,7 @@ test('records verified support with its own unrestricted review, export, and Fin
   }
 
   let restoring = false;
-  let blockedReason: Row['reason'] = 'hosted-support-unreachable';
+  let blockedReason: Row['reason'];
   let verified = false;
   await withFixture(403, async (fixture) => {
     const page = await browser.newPage();
@@ -399,8 +422,12 @@ test('records verified support with its own unrestricted review, export, and Fin
     try {
       await openRuntimeSession(page, await waitForLoopbackUrl(running), { dismissUnverified: false });
       restoring = readSupportState().status === 'unverified';
+      if (restoring && wasRestoreAttemptedForCurrentIdentity()) {
+        blockedReason = deriveVerifiedBlockedReason(true, true);
+        return;
+      }
       if (restoring && process.env.CUMPA_SUPPORT_RESTORE_HEADED !== '1') {
-        blockedReason = 'human-sign-in-unavailable';
+        blockedReason = deriveVerifiedBlockedReason(false, true);
         return;
       }
       const dialog = page.getByRole('dialog');
@@ -415,6 +442,7 @@ test('records verified support with its own unrestricted review, export, and Fin
         let reportedComplete: Promise<boolean> | undefined;
         try {
           await dialog.getByRole('button', { name: 'Restore support', exact: true }).click();
+          recordRestoreAttempt();
           expect(JSON.parse((await started).postData() ?? '')).toEqual({ action: 'restore' });
           const start = await startResponse;
           const hosted = await popup;
@@ -439,20 +467,23 @@ test('records verified support with its own unrestricted review, export, and Fin
         try {
           await Promise.all([refreshed, page.waitForTimeout(15 * 60_000)]);
         } catch {
+          const stillUnverified = readSupportState().status === 'unverified';
           if (
             await reportedComplete === true
-            && readSupportState().status === 'unverified'
+            && stillUnverified
             && !await dialog.getByText('Support is verified on this machine.').isVisible()
           ) {
-            restoreDefectObservation = {
-              restoreReportedCompleteWithoutLinkage: true,
-              installationStatusRemainedUnverified: true,
-              verificationModalReachedTerminalState: false,
-            };
-            blockedReason = 'live-entitlement-unavailable';
+            if (acceptance.source === 'public-global') {
+              restoreDefectObservation = {
+                restoreReportedCompleteWithoutLinkage: true,
+                installationStatusRemainedUnverified: true,
+                verificationModalReachedTerminalState: false,
+              };
+            }
+            blockedReason = deriveVerifiedBlockedReason(wasRestoreAttemptedForCurrentIdentity(), stillUnverified);
             return;
           }
-          blockedReason = 'human-sign-in-unavailable';
+          blockedReason = deriveVerifiedBlockedReason(wasRestoreAttemptedForCurrentIdentity(), stillUnverified);
           return;
         }
       } else {
@@ -481,6 +512,7 @@ test('records verified support with its own unrestricted review, export, and Fin
     }
   });
   if (!verified) {
+    if (blockedReason === undefined) throw new Error('[public-support-states] verified state was not observed without a derived reason');
     blockVerifiedRow(blockedReason);
     return;
   }
