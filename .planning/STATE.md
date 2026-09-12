@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (clean-public-artifact-acceptance) — EXECUTING
-Plan: 4 of 7
-Status: Ready to execute
-Checkpoint: None. Marketplace candidate 984e28c5838176ec15d2af8b996d0307e45b28d5 is public and all five hashes match an anonymous fresh Git fetch. One push authority consumed. Four-agent runtime/install tests are user-waived, not passed. Existing automatic actions were expressly authorized; no manual integration changes. One low-severity provenance-disclosure documentation gap remains nonblocking. Do not replay publication or start Phase 7 without a new request.
-Last activity: 2026-09-12 — Completed 07-03-PLAN.md; Plan 4 of 7 is ready.
+Plan: 5 of 7
+Status: In progress
+Checkpoint: 07-04 recorded live unverified and dismissed global-launcher rows. Its single headed Restore attempt remained unverified through the bounded live refresh deadline, so the verified row is blocked without substituted evidence; no shared verified identity was retained.
+Last activity: 2026-09-12 — Completed 07-04-PLAN.md; Plan 5 of 7 is next.
 
 Progress: [██████░░░░] 60% — 3 of 5 milestone phases complete
 
