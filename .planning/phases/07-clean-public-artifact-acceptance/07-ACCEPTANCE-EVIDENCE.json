@@ -1,7 +1,7 @@
 {
   "kind": "cumpa.public-artifact-acceptance/v1",
   "status": "partially-blocked",
-  "acceptedAt": "2026-09-12T19:58:01Z",
+  "acceptedAt": "2026-09-12T20:14:22Z",
   "host": {
     "platform": "darwin",
     "arch": "arm64",
@@ -40,13 +40,181 @@
     "skillDigest": "8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220",
     "repository": "https://github.com/Ship-With-AI/skills.git"
   },
+  "requirements": [
+    {
+      "requirement": "ACC-01",
+      "status": "passed",
+      "installSource": "global"
+    },
+    {
+      "requirement": "ACC-02",
+      "status": "passed",
+      "installSource": "npx"
+    },
+    {
+      "requirement": "ACC-03",
+      "status": "passed",
+      "installSource": "marketplace"
+    },
+    {
+      "requirement": "ACC-04",
+      "status": "partially-blocked",
+      "supportStates": [
+        {
+          "state": "unverified",
+          "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "global"
+        },
+        {
+          "state": "dismissed",
+          "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "global"
+        },
+        {
+          "state": "verified",
+          "status": "blocked",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": false,
+          "exportUnrestricted": false,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": false,
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "window": "post-restore",
+          "observed": true,
+          "installSource": "global"
+        },
+        {
+          "state": "unverified",
+          "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "npx"
+        },
+        {
+          "state": "dismissed",
+          "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "npx"
+        },
+        {
+          "state": "verified",
+          "status": "blocked",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": false,
+          "exportUnrestricted": false,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": false,
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "window": "post-restore",
+          "observed": true,
+          "installSource": "npx"
+        },
+        {
+          "state": "unverified",
+          "window": "pre-restore",
+          "observed": true,
+          "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
+          "substituted": false,
+          "installSource": "marketplace"
+        },
+        {
+          "state": "dismissed",
+          "window": "pre-restore",
+          "observed": true,
+          "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "substituted": false,
+          "installSource": "marketplace"
+        },
+        {
+          "state": "verified",
+          "window": "post-restore",
+          "observed": true,
+          "status": "blocked",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "installSource": "marketplace"
+        }
+      ]
+    }
+  ],
   "installations": [
     {
       "installSource": "global",
       "requirement": "ACC-01",
-      "status": "blocked",
-      "reason": "live-entitlement-unavailable",
-      "substituted": false,
+      "status": "passed",
       "installProof": {
         "packageLabel": "@shipwithai/cumpa@1.5.0",
         "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
@@ -144,9 +312,7 @@
     {
       "installSource": "npx",
       "requirement": "ACC-02",
-      "status": "blocked",
-      "reason": "live-entitlement-unavailable",
-      "substituted": false,
+      "status": "passed",
       "installProof": {
         "packageLabel": "@shipwithai/cumpa@1.5.0",
         "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
@@ -250,9 +416,7 @@
     {
       "installSource": "marketplace",
       "requirement": "ACC-03",
-      "status": "blocked",
-      "reason": "live-entitlement-unavailable",
-      "substituted": false,
+      "status": "passed",
       "installProof": {
         "packageLabel": "@shipwithai/cumpa@1.5.0",
         "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
@@ -341,7 +505,13 @@
       }
     }
   ],
-  "restoreReportedCompleteWithoutLinkage": false,
+  "restoreReportedCompleteWithoutLinkage": {
+    "observed": true,
+    "path": "public-global",
+    "window": "post-restore",
+    "description": "The hosted flow reported a successful Restore while installation status remained unverified and the in-product modal reached no terminal state.",
+    "regenerationNote": "The report-only regeneration did not reproduce this observation because the single authorized Restore sign-in was already consumed."
+  },
   "localArchivePrerequisite": true,
   "limitations": [
     "Local process isolation is not fresh-machine proof.",
@@ -350,6 +520,7 @@
     "The Phase 4 and Phase 5 local-archive acceptance record is separate and unchanged.",
     "The local-archive path requires operator-held custody inputs and the protected CUMPA_RELEASE_SUPPORT_SERVICE_URL; its full execution was not available.",
     "One shared voluntary-support identity was used across all three installation paths; three distinct identities would have required three protected sign-ins. This operator-confirmed narrowing left npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH isolated per path.",
+    "The public-global Restore linkage finding was observed and remains a product defect outside Phase 7 scope under D-09.",
     "Blocked support-state reason: live-entitlement-unavailable."
   ]
 }
