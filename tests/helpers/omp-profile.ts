@@ -20,6 +20,8 @@ type ProfilePaths = Readonly<{
   readonly xdgStateDir: string;
   readonly xdgCacheDir: string;
 }>;
+
+type Digest = Readonly<{ readonly present: false } | { readonly present: true; readonly sha256: string }>;
 const projectRoot = resolve(import.meta.dirname, '../..');
 const publishedSkillSha256 = '8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220';
 const credentialVariables = [
