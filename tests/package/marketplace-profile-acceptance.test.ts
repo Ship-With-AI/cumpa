@@ -112,10 +112,10 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
   if (!report || !supportHomePath || existsSync(report)) throw new Error('[marketplace-profile] a new report path and shared support HOME are required');
   if (window !== 'pre-restore' && window !== 'post-restore') throw new Error('[marketplace-profile] CUMPA_SUPPORT_STATE_WINDOW must be pre-restore or post-restore');
 
-  const beforeOmp = captureRealOmpProfileDigest();
-  const beforeSource = await captureSourceControlSnapshot(projectRoot);
   const capability = discoverOmpIsolationCapability();
   const browser = await observedBrowserVersion();
+  const beforeOmp = captureRealOmpProfileDigest();
+  const beforeSource = await captureSourceControlSnapshot(projectRoot);
   const isolationBlocked = !canUseOmpIsolation(capability);
   if (isolationBlocked || process.env.CUMPA_OMP_PROFILE_AUTH_READY !== '1') {
     const reason = isolationBlocked ? 'omp-isolation-unavailable' : 'omp-authentication-unavailable';
