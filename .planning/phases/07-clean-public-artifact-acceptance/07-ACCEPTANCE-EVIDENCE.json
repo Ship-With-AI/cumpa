@@ -1,0 +1,210 @@
+{
+  "kind": "cumpa.public-artifact-acceptance/v1",
+  "status": "partially-blocked",
+  "acceptedAt": "2026-09-12T16:05:28Z",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "25.6.0",
+    "node": "24.11.0",
+    "npm": "11.6.2",
+    "git": "2.50.1",
+    "playwright": "1.55.0",
+    "browser": "Chromium 140"
+  },
+  "isolationBoundary": {
+    "type": "isolated-local-environments",
+    "freshMachine": false,
+    "ranOutsideCheckout": true,
+    "preservedUserState": true,
+    "isolatedDimensions": [
+      "npm-cache",
+      "npm-configuration",
+      "install-prefix",
+      "browser-profile-state",
+      "checkout-separation",
+      "sanitized-path"
+    ],
+    "sharedSupportHome": true
+  },
+  "artifactIdentity": {
+    "tarballUrl": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
+    "byteLength": 3514800,
+    "sha256": "dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141",
+    "npmShasumSha1": "2d58866c862283f2c41b3f4f7d51282b2ca96472",
+    "npmIntegritySha512": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g=="
+  },
+  "marketplaceIdentity": {
+    "collectionVersion": "0.3.0",
+    "commit": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+    "skillDigest": "8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220",
+    "repository": "https://github.com/Ship-With-AI/skills.git"
+  },
+  "installations": [
+    {
+      "installSource": "global",
+      "requirement": "ACC-01",
+      "status": "passed",
+      "installProof": {
+        "packageLabel": "@shipwithai/cumpa@1.5.0",
+        "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
+        "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==",
+        "resolvedVersion": "1.5.0",
+        "npmInstallAttempts": 1
+      },
+      "supportStates": [
+        {
+          "state": "unverified",
+          "status": "passed",
+          "substituted": false,
+          "installSource": "global"
+        },
+        {
+          "state": "dismissed",
+          "status": "passed",
+          "substituted": false,
+          "installSource": "global"
+        },
+        {
+          "state": "verified",
+          "status": "blocked",
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "installSource": "global"
+        }
+      ],
+      "sharedSupportIdentity": true,
+      "restoreReportedCompleteWithoutLinkage": false,
+      "evidence": {
+        "assetGraph": {
+          "assets": true,
+          "workers": true,
+          "codicon": true
+        },
+        "reviewExport": {
+          "lineComment": true,
+          "acceptedSummary": true,
+          "resumeByteEqualDraft": true,
+          "markdownAndCanonicalJson": true,
+          "isolatedDrafts": true,
+          "exactPatchCanonicalOutput": true
+        },
+        "finish": {
+          "attached": true
+        }
+      }
+    },
+    {
+      "installSource": "npx",
+      "requirement": "ACC-02",
+      "status": "passed",
+      "installProof": {
+        "packageLabel": "@shipwithai/cumpa@1.5.0",
+        "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
+        "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==",
+        "resolvedVersion": "1.5.0",
+        "npmCacheEntryCountBefore": 0,
+        "npmInstallAttempts": 1
+      },
+      "supportStates": [
+        {
+          "state": "unverified",
+          "status": "passed",
+          "substituted": false,
+          "installSource": "npx"
+        },
+        {
+          "state": "dismissed",
+          "status": "passed",
+          "substituted": false,
+          "installSource": "npx"
+        },
+        {
+          "state": "verified",
+          "status": "blocked",
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "installSource": "npx"
+        }
+      ],
+      "sharedSupportIdentity": true,
+      "restoreReportedCompleteWithoutLinkage": false,
+      "evidence": {
+        "assetGraph": {
+          "assets": true,
+          "workers": true,
+          "codicon": true
+        },
+        "reviewExport": {
+          "lineComment": true,
+          "acceptedSummary": true,
+          "resumeByteEqualDraft": true,
+          "markdownAndCanonicalJson": true,
+          "isolatedDrafts": true,
+          "exactPatchCanonicalOutput": true
+        },
+        "finish": {
+          "attached": true
+        }
+      }
+    },
+    {
+      "installSource": "marketplace",
+      "requirement": "ACC-03",
+      "status": "passed",
+      "installProof": {
+        "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g=="
+      },
+      "supportStates": [
+        {
+          "state": "unverified",
+          "status": "passed",
+          "substituted": false,
+          "installSource": "marketplace"
+        },
+        {
+          "state": "dismissed",
+          "status": "passed",
+          "substituted": false,
+          "installSource": "marketplace"
+        },
+        {
+          "state": "verified",
+          "status": "blocked",
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "installSource": "marketplace"
+        }
+      ],
+      "sharedSupportIdentity": true,
+      "providerAuthenticationReused": true,
+      "restoreReportedCompleteWithoutLinkage": true,
+      "evidence": {
+        "collection": "ship-with-ai@ship-with-ai-skills",
+        "lifecycle": {
+          "readinessBeforeCompletion": true,
+          "terminalExit": 0
+        },
+        "canonical": {
+          "nonEmpty": true,
+          "parseable": true,
+          "summaryMatchesBrowser": true,
+          "commentMatchesBrowser": true
+        }
+      }
+    }
+  ],
+  "restoreReportedCompleteWithoutLinkage": true,
+  "localArchivePrerequisite": true,
+  "limitations": [
+    "Local process isolation is not fresh-machine proof.",
+    "One macOS host platform and one browser were exercised; no operating-system or browser compatibility matrix is claimed.",
+    "OMP is the only agent runtime exercised; Claude Code, Codex, and Pi remain unexercised and the Phase 6 four-agent waiver remains intact.",
+    "The Phase 4 and Phase 5 local-archive acceptance record is separate and unchanged.",
+    "The local-archive path requires operator-held custody inputs and the protected CUMPA_RELEASE_SUPPORT_SERVICE_URL; its full execution was not available.",
+    "One shared voluntary-support identity was used across all three installation paths; three distinct identities would have required three protected sign-ins. This operator-confirmed narrowing left npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH isolated per path.",
+    "The isolated OMP profile reused a temporary read-only copy of the operator provider credential and was not independently authenticated.",
+    "restoreReportedCompleteWithoutLinkage was observed and remains a product defect outside Phase 7 scope under D-09.",
+    "Blocked support-state reason: live-entitlement-unavailable."
+  ]
+}
