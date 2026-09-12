@@ -2,18 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: MIT Distribution
-current_phase: 7
-current_phase_name: Clean Public-Artifact Acceptance
-status: planning
-stopped_at: Phase 7 context gathered
-last_updated: "2026-09-11T13:54:19.845Z"
-last_activity: 2026-09-11
-last_activity_desc: Published exact marketplace candidate 984e28c in collection 0.3.0 once; anonymous five-file readback passed. Evidence commit 908f989, summary/verification commit 2abdbef. Phase 6 complete; Phase 7 remains separate.
+current_phase: 07
+current_phase_name: clean-public-artifact-acceptance
+status: executing
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-09-12T09:08:51.209Z"
+last_activity: 2026-09-12
+last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 23
+  completed_plans: 17
+  percent: 74
 ---
 
 # Project State
@@ -23,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 6 complete — Cumpa skill published in ship-with-ai 0.3.0; Phase 7 not started
+**Current focus:** Phase 07 — clean-public-artifact-acceptance
 
 ## Current Position
 
-Phase: 7 — Clean Public-Artifact Acceptance
-Plan: Phase 6: 3 of 3 complete for amended scope; Phase 7 planning pending
-Status: Ready to plan Phase 7 — Phase 6 published with explicit runtime-test waiver
+Phase: 07 (clean-public-artifact-acceptance) — EXECUTING
+Plan: 2 of 7
+Status: Ready to execute
 Checkpoint: None. Marketplace candidate 984e28c5838176ec15d2af8b996d0307e45b28d5 is public and all five hashes match an anonymous fresh Git fetch. One push authority consumed. Four-agent runtime/install tests are user-waived, not passed. Existing automatic actions were expressly authorized; no manual integration changes. One low-severity provenance-disclosure documentation gap remains nonblocking. Do not replay publication or start Phase 7 without a new request.
-Last activity: 2026-09-11 — Published exact marketplace candidate 984e28c in collection 0.3.0 once; anonymous five-file readback passed. Evidence commit 908f989, summary/verification commit 2abdbef. Phase 6 complete; Phase 7 remains separate.
+Last activity: 2026-09-12 — Phase 07 execution started
 
 Progress: [██████░░░░] 60% — 3 of 5 milestone phases complete
 
@@ -62,6 +63,7 @@ Progress: [██████░░░░] 60% — 3 of 5 milestone phases compl
 | Phase 03 P01 | not separately timed | 3 tasks | 4 files |
 | Phase 03 P02 | 12min | 2 tasks | 4 files |
 | Phase 6 P01 | 14min | 1 tasks | 2 files |
+| Phase 07 P07-01 | 113m | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -74,6 +76,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [v1.5]: Verify one exact runtime-only tarball before registry mutation, then bootstrap with one usable non-`latest` release before stable OIDC publication.
 - [v1.5]: Publish the public MIT skill only after its separately installed CLI prerequisite exists; the CLI retains all review authority.
 - [v1.5]: Preserve existing review, export, and voluntary-support behavior across every released installation path.
+- [Phase 07]: Pinned public distribution equality checks to immutable Phase 5 evidence. — Exact URL, SHA-1, and SHA-512 checks reject substituted or rebuilt archives.
 
 ### Pending Todos
 
@@ -109,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-11T13:54:19.840Z
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-clean-public-artifact-acceptance/07-CONTEXT.md
+Last session: 2026-09-12T09:08:51.206Z
+Stopped at: Completed 07-01-PLAN.md
+Resume file: None
