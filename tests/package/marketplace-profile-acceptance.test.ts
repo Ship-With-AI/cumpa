@@ -235,7 +235,11 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
       cleanup: { removedOwnedRoots: true },
     };
   } finally {
-    profile?.cleanup();
+    if (process.env.CUMPA_MARKETPLACE_KEEP_PROFILE === '1' && profile !== undefined) {
+      console.log(`[marketplace-profile] retained OMP profile root: ${profile.root}`);
+    } else {
+      profile?.cleanup();
+    }
     runtime.cleanup();
     supportHome.cleanup();
     rmSync(root, { recursive: true, force: true });
