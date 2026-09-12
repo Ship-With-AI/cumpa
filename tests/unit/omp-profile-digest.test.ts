@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { captureOmpProfileDigest } from '../helpers/omp-profile.js';
+import { captureOmpProfileDigest, changedOmpProfileEntries } from '../helpers/omp-profile.js';
 
 const homes: string[] = [];
 
@@ -39,5 +39,16 @@ describe('real OMP profile digest', () => {
     writeFileSync(state, 'after');
 
     expect(captureOmpProfileDigest(home)).not.toEqual(before);
+  });
+
+  it('attributes changed OMP state to its guarded path', () => {
+    const home = temporaryHome();
+    const state = join(home, '.local', 'state', 'omp', 'state.json');
+    mkdirSync(join(state, '..'), { recursive: true });
+    writeFileSync(state, 'before');
+    const before = captureOmpProfileDigest(home);
+    writeFileSync(state, 'after');
+
+    expect(changedOmpProfileEntries(before, captureOmpProfileDigest(home))).toEqual(['xdgState:state.json']);
   });
 });

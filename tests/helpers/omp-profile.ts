@@ -22,7 +22,10 @@ type ProfilePaths = Readonly<{
   readonly xdgCacheDir: string;
 }>;
 
-type Digest = Readonly<{ readonly present: false } | { readonly present: true; readonly sha256: string }>;
+type Digest = Readonly<
+  | { readonly present: false }
+  | { readonly present: true; readonly sha256: string; readonly entries: Readonly<Record<string, string>> }
+>;
 const projectRoot = resolve(import.meta.dirname, '../..');
 const publishedSkillSha256 = '8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220';
 const providerAuthenticationVariables = [
@@ -78,37 +81,51 @@ function sha256(path: string): string {
 function digest(path: string): Digest {
   if (!existsSync(path)) return Object.freeze({ present: false });
   const digest_ = createHash('sha256');
+  const entries: Record<string, string> = {};
   const visited = new Set<string>();
-  const update = (candidate: string, name: string): void => {
+  const update = (candidate: string, name: string, relativePath: string): void => {
     const entry = lstatSync(candidate);
     digest_.update(name);
     if (entry.isSymbolicLink()) {
       const link = readlinkSync(candidate);
       if (!existsSync(candidate)) {
-        digest_.update(`broken-symlink:${link}`);
+        const value = `broken-symlink:${link}`;
+        digest_.update(value);
+        entries[relativePath] = value;
         return;
       }
       const target = realpathSync(candidate);
-      digest_.update(`symlink:${link}:${target}`);
+      const value = `symlink:${link}:${target}`;
+      digest_.update(value);
+      entries[relativePath] = value;
       if (visited.has(target)) return;
       visited.add(target);
-      update(target, 'target');
+      update(target, 'target', `${relativePath}->${target}`);
       return;
     }
     if (entry.isFile()) {
-      digest_.update(readFileSync(candidate));
+      const contents = readFileSync(candidate);
+      digest_.update(contents);
+      entries[relativePath] = `file:${createHash('sha256').update(contents).digest('hex')}`;
       return;
     }
     if (!entry.isDirectory()) {
-      digest_.update(`special:${entry.mode}:${entry.size}:${entry.mtimeMs}`);
+      const value = `special:${entry.mode}:${entry.size}:${entry.mtimeMs}`;
+      digest_.update(value);
+      entries[relativePath] = value;
       return;
     }
+    entries[relativePath] = 'directory';
     for (const child of readdirSync(candidate, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
-      update(join(candidate, child.name), child.name);
+      update(join(candidate, child.name), child.name, join(relativePath, child.name));
     }
   };
-  update(path, '');
-  return Object.freeze({ present: true, sha256: digest_.digest('hex') });
+  update(path, '', '.');
+  return Object.freeze({
+    present: true,
+    sha256: digest_.digest('hex'),
+    entries: Object.freeze(entries),
+  });
 }
 
 export function assessOmpIsolation(
@@ -282,9 +299,20 @@ export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
   return captureOmpProfileDigest();
 }
 
+export function changedOmpProfileEntries(before: RealOmpProfileDigest, after: RealOmpProfileDigest): readonly string[] {
+  return Object.entries(after).flatMap(([root, digest_]) => {
+    const previous = before[root as keyof RealOmpProfileDigest];
+    if (!previous.present || !digest_.present) return JSON.stringify(previous) === JSON.stringify(digest_) ? [] : [root];
+    return [...new Set([...Object.keys(previous.entries), ...Object.keys(digest_.entries)])]
+      .filter((path) => previous.entries[path] !== digest_.entries[path])
+      .map((path) => `${root}:${path}`);
+  });
+}
+
 export function assertRealOmpProfileUnchanged(before: RealOmpProfileDigest): void {
   const after = captureRealOmpProfileDigest();
-  if (JSON.stringify(before) !== JSON.stringify(after)) fail('operator real OMP or XDG configuration, data, state, or cache changed');
+  const changed = changedOmpProfileEntries(before, after);
+  if (changed.length > 0) fail(`operator real OMP or XDG configuration, data, state, or cache changed: ${changed.join(', ')}`);
 }
 
 /**
