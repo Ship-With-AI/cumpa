@@ -24,10 +24,9 @@ function rows(verified: 'passed' | 'blocked' = 'passed') {
     { requirement: 'ACC-01', status: 'passed', installSource: 'global' },
     { requirement: 'ACC-02', status: 'passed', installSource: 'npx' },
     { requirement: 'ACC-03', status: 'passed', installSource: 'marketplace' },
-    { requirement: 'ACC-04', status: verified, supportStates: [...supportStates('global', verified), ...supportStates('npx', verified), ...supportStates('marketplace', verified)] },
+    { requirement: 'ACC-04', status: verified, ...(verified === 'blocked' ? { reason: 'live-entitlement-unavailable', substituted: false } : {}), supportStates: [...supportStates('global', verified), ...supportStates('npx', verified), ...supportStates('marketplace', verified)] },
   ];
 }
-
 function inputs(sharedSupportIdentity = false) {
   return {
     acceptedAt: '2026-09-12T16:05:28.000Z',
