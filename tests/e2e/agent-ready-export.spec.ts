@@ -25,6 +25,7 @@ import { ExportReviewResultSchema } from '../../src/contracts/api.js';
 import { createDirtyGitFixture } from '../helpers/git-fixture.js';
 import type { DirtyGitFixture } from '../helpers/git-fixture.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
+import type { SourceControlSnapshot } from '../helpers/source-control-snapshot.js';
 import { hasObservedNativeReExport } from '../helpers/agent-ready-export-target.js';
 import { openRuntimeSession } from '../helpers/open-runtime-session.js';
 import type { RuntimeSessionSupportObservation } from '../helpers/open-runtime-session.js';
@@ -54,6 +55,30 @@ const sourceIndependentScenarios = [
 const completedScenarios = new Set<string>();
 let requiredScenarios: readonly string[];
 let supportObserved: RuntimeSessionSupportObservation | undefined;
+const sourceControlAssertions = new Set<string>();
+let observedBrowserVersion: string | undefined;
+
+async function registerSourceControlAssertion(
+  scenario: string,
+  before: SourceControlSnapshot,
+  fixture: DirtyGitFixture,
+): Promise<true> {
+  await assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root));
+  sourceControlAssertions.add(scenario);
+  return true;
+}
+
+function sourceControlEvidence(): Readonly<{
+  readonly unchanged: true;
+  readonly scenarios: readonly Readonly<{ readonly name: string; readonly unchanged: true }>[];
+}> {
+  expect([...sourceControlAssertions].sort()).toEqual([...requiredScenarios].sort());
+  return Object.freeze({
+    unchanged: true,
+    scenarios: Object.freeze([...requiredScenarios].sort().map((name) => Object.freeze({ name, unchanged: true as const }))),
+  });
+}
+
 
 
 interface RunningCli {
@@ -266,6 +291,7 @@ function readOnlyDraft(fixture: DirtyGitFixture): Readonly<{ readonly bytes: Buf
 function assertChromium(browser: Browser, testInfo: TestInfo): void {
   expect(testInfo.project.name).toBe('chromium');
   expect(browser.browserType().name()).toBe('chromium');
+  observedBrowserVersion ??= browser.version();
 }
 
 test.beforeAll(() => {
@@ -292,6 +318,7 @@ test.afterAll(() => {
   try {
     if (process.env.CUMPA_AGENT_READY_EVIDENCE_REPORT !== undefined) {
       expect([...completedScenarios].sort()).toEqual([...requiredScenarios].sort());
+      sourceControlEvidence();
     }
     if (acceptance.source === 'local-archive') {
       if (acceptance.artifact === undefined || acceptance.installProof === undefined) {
@@ -316,7 +343,7 @@ test.afterAll(() => {
         support: { unavailable: true, dismissed: true, unrestricted: true },
         exactPatch: { canonicalV3: true, grounded: true },
         native: { observedReExport: observedNativeReExport, fallback: 'reExportUnsupported' },
-        sourceControl: { unchanged: true },
+        sourceControl: sourceControlEvidence(),
         checks: { finish: true },
       });
       return;
@@ -324,6 +351,7 @@ test.afterAll(() => {
     if (acceptance.publicProof === undefined || supportObserved === undefined) {
       throw new Error('[public-runtime] public runtime evidence is incomplete');
     }
+    if (observedBrowserVersion === undefined) throw new Error('[public-runtime] Chromium version was not observed');
     acceptance.cleanup();
     cleaned = true;
     publishScenarioRecord('public-review', {
@@ -339,7 +367,8 @@ test.afterAll(() => {
       supportObserved,
       exactPatch: { canonicalV3: true, grounded: true },
       native: { observedReExport: observedNativeReExport, fallback: 'reExportUnsupported' },
-      sourceControl: { unchanged: true },
+      host: { browser: observedBrowserVersion },
+      sourceControl: sourceControlEvidence(),
       checks: { finish: true },
       cleanup: { complete: true },
     });
@@ -481,7 +510,7 @@ test('installed resume after relaunch preserves accepted review state, completes
   const markdownSha256 = createHash('sha256').update(markdown).digest('hex');
   expect(jsonSha256).toMatch(/^[a-f0-9]{64}$/);
   expect(markdownSha256).toMatch(/^[a-f0-9]{64}$/);
-  await expect(assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root))).resolves.toBeUndefined();
+  await registerSourceControlAssertion('relaunch', before, fixture);
 
   if (firstStablePairSha256 === undefined || reExportStablePairSha256 === undefined || reExportKind === undefined) {
     throw new Error('[behavioral] installed re-export outcome was not observed.');
@@ -495,6 +524,7 @@ test('installed resume after relaunch preserves accepted review state, completes
 test('attached review blocks Finish while an inline composer has unsaved text', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
+  const before = await captureSourceControlSnapshot(fixture.root);
   const running = startAttachedCli(fixture, { base: fixture.baseRef, head: fixture.headRef });
 
   try {
@@ -538,6 +568,7 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
     await restoredComposer.fill('');
     await ensureReviewOpen(page);
     await expect(finish).toBeEnabled();
+    await registerSourceControlAssertion('unsaved-composer', before, fixture);
     completedScenarios.add('unsaved-composer');
   } finally {
     if (running.child.exitCode === null && running.child.signalCode === null) running.child.kill('SIGINT');
@@ -550,6 +581,7 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
 test('attached range review stays silent until Finish then emits one canonical V2 document', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
+  const before = await captureSourceControlSnapshot(fixture.root);
   const selections = { base: fixture.baseRef, head: fixture.headRef };
   const running = startAttachedCli(fixture, selections);
   let closed = false;
@@ -579,6 +611,7 @@ test('attached range review stays silent until Finish then emits one canonical V
     });
     expect(readFileSync(running.stderrPath, 'utf8')).toContain(url);
     expect(existsSync(join(fixture.root, '.cumpa', 'drafts'))).toBe(false);
+    await registerSourceControlAssertion('range-finish', before, fixture);
     completedScenarios.add('range-finish');
     closeAttachedCliFiles(running);
     closed = true;
@@ -595,6 +628,7 @@ test('attached range review stays silent until Finish then emits one canonical V
 test('equivalent installed attached ranges retain canonical provenance while owning isolated drafts and delivery', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createDirtyGitFixture('branch-to-worktree', 8);
+  const before = await captureSourceControlSnapshot(fixture.root);
   const selections = { base: fixture.baseRef, head: fixture.headRef };
   const first = startAttachedCli(fixture, selections);
   const second = startAttachedCli(fixture, selections);
@@ -638,6 +672,7 @@ test('equivalent installed attached ranges retain canonical provenance while own
     expect(secondExport).toMatchObject({ schemaVersion: 2, summary: { markdown: 'Second equivalent attached review.' } });
     if (firstExport.schemaVersion !== 2 || secondExport.schemaVersion !== 2) throw new Error('Attached ranges must emit canonical V2');
     expect(firstExport.range?.reviewKey).toBe(secondExport.range?.reviewKey);
+    await registerSourceControlAssertion('equivalent-ranges', before, fixture);
     completedScenarios.add('equivalent-ranges');
   } finally {
     for (const running of [first, second]) {
@@ -726,7 +761,7 @@ test('installed exact-patch review grounds the submitted patch and emits canonic
       },
     });
     expect(readFileSync(running.stderrPath, 'utf8')).toContain(url);
-    await expect(assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root))).resolves.toBeUndefined();
+    await registerSourceControlAssertion('exact-patch', before, fixture);
     completedScenarios.add('exact-patch');
     closeAttachedCliFiles(running);
     closed = true;
@@ -785,7 +820,7 @@ test('installed configured support remains unavailable without outbound access a
     expect((await finished).status()).toBe(201);
     expect(await waitForAttachedExit(running)).toBe(0);
     expect(parseCanonicalReviewExport(readFileSync(running.stdoutPath))).toMatchObject({ schemaVersion: 2 });
-    await expect(assertSourceControlUnchanged(before, await captureSourceControlSnapshot(fixture.root))).resolves.toBeUndefined();
+    await registerSourceControlAssertion('support', before, fixture);
     completedScenarios.add('support');
     closeAttachedCliFiles(running);
     closed = true;
