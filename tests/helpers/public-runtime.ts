@@ -83,7 +83,7 @@ function fail(message: string): never {
   throw new Error(`[public-runtime] ${message}`);
 }
 
-export function isTransientNpmNetworkFailure(error: unknown): boolean {
+export function isTransientNpmNetworkFailure(error: unknown): error is Error {
   return error instanceof Error
     && /\b(?:ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|network aborted)\b/iu.test(error.message);
 }
@@ -152,7 +152,8 @@ function isolatedEnvironment(root: string, supportHome: SharedSupportHome): Node
 
 function assertNoResolvableCumpa(root: string, env: NodeJS.ProcessEnv): void {
   const probe = spawnSync('cumpa', ['--version'], { cwd: root, env, shell: false, encoding: 'utf8' });
-  if (probe.error?.code !== 'ENOENT') fail('PATH leakage resolved a pre-existing cumpa executable before install');
+  const errorCode = probe.error !== undefined && 'code' in probe.error ? probe.error.code : undefined;
+  if (errorCode !== 'ENOENT') fail('PATH leakage resolved a pre-existing cumpa executable before install');
 }
 
 function resolutionFrom(value: unknown): Resolution | undefined {
