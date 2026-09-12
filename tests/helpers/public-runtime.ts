@@ -51,6 +51,27 @@ type SharedSupportHome = Readonly<{
   cleanup(): void;
 }>;
 
+export const D02_SUPPORT_IDENTITY_POLICY = Object.freeze({
+  option: 'shared-support-home',
+  operatorConfirmed: true,
+  restoreSignInCount: 1,
+  supportHome: 'shared',
+  installationIdentity: 'shared',
+  voluntarySupportStatus: 'shared',
+  perPathIsolation: Object.freeze({
+    npmCache: true,
+    npmConfiguration: true,
+    installPrefix: true,
+    browserProfileState: true,
+    checkout: true,
+    sanitizedPath: true,
+  }),
+  sharedIdentityObservation: Object.freeze({
+    restoreCompleted: false,
+    restoreObservedFromSharedIdentity: true,
+  }),
+});
+
 function fail(message: string): never {
   throw new Error(`[public-runtime] ${message}`);
 }
