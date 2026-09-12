@@ -45,7 +45,7 @@ status: complete
 
 - **Tasks:** 3/3
 - **Files modified:** 2
-- **Adapter execution:** Not run in this plan after the decision checkpoint; Task 3 required the operator's recorded decision, not a public-registry execution.
+- **Adapter execution:** A post-decision isolated smoke invoked the global adapter. Its pre-install PATH guard aborted before npm ran because an existing `cumpa` was resolvable; the failure proves the guard rejects the user's installation rather than accepting it as public-artifact evidence.
 
 ## Accomplishments
 
@@ -58,6 +58,7 @@ status: complete
 1. **Task 1: Global public install adapter with the executed resolution guard** — `635d7ee` (`feat`)
 2. **Task 2: Empty-cache npx adapter** — `8940cc3` (`feat`)
 3. **Task 3: Confirm the shared-support-identity narrowing of D-02** — `953be42` (`feat`)
+4. **Rule 1 fix: Resolve the npx cache payload** — `f1e400a` (`fix`)
 
 ## Files Created/Modified
 
@@ -90,11 +91,21 @@ This is **not** full per-path HOME isolation: the three paths are not independen
 
 ## Deviations from Plan
 
-None - plan executed exactly as written after the operator answered its decision checkpoint.
+### Auto-fixed Issues
+
+**1. [Rule 1 - Bug] Captured the npx cache payload before using it**
+- **Found during:** post-decision isolated adapter smoke preparation
+- **Issue:** `preparePublicNpxRuntime` used `installed` without assigning `npxPackage(cache)`, which would throw after a successful npx fetch.
+- **Fix:** Assigned the cache payload immediately after the warm-up invocation and before containment, resolution, and manifest validation.
+- **Files modified:** `tests/helpers/public-runtime.ts`
+- **Verification:** `npx tsc --noEmit --project tsconfig.json` exited 0.
+- **Committed in:** `f1e400a`
+
+**Impact:** Required correctness fix; no scope expansion.
 
 ## Issues Encountered
 
-None.
+The real pre-install guard correctly rejected the host's pre-existing `cumpa` executable. No public npm installation was attempted, so the user's npm prefix, configuration, cache, HOME, and existing installation were not mutated.
 
 ## User Setup Required
 
@@ -113,4 +124,14 @@ FOUND: 07-02-SUMMARY.md
 FOUND: 635d7ee
 FOUND: 8940cc3
 FOUND: 953be42
+FOUND: f1e400a
 ```
+
+### Guard Smoke Output
+
+```text
+$ npx vitest run tests/unit/.public-runtime-smoke.test.ts
+Error: [public-runtime] PATH leakage resolved a pre-existing cumpa executable before install
+```
+
+The temporary smoke file was removed. The adapter reported the PATH-leakage error rather than a cleanup failure, which confirms its owned-root cleanup completed on the catch path.
