@@ -401,17 +401,22 @@ test('records verified support with its own unrestricted review, export, and Fin
       const dialog = page.getByRole('dialog');
       if (restoring) {
         await expect(dialog.getByRole('button', { name: 'Restore support', exact: true })).toBeVisible();
-        const started = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/support/start')
+        const started = page.waitForRequest((request) => new URL(request.url()).pathname === '/api/support/start');
+        const startResponse = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/support/start')
           .then(async (response) => SupportStartResultSchema.parse(await response.json()))
           .catch(() => undefined);
+        const popup = page.waitForEvent('popup').catch(() => undefined);
         console.log('OPERATOR: headed Restore window opening now — complete the GitHub sign-in in it and leave the window alone.');
         try {
           await dialog.getByRole('button', { name: 'Restore support', exact: true }).click();
-          const start = await started;
-          if (start?.kind !== 'ready') {
+          expect(JSON.parse((await started).postData() ?? '')).toEqual({ action: 'restore' });
+          const start = await startResponse;
+          const hosted = await popup;
+          if (start?.kind !== 'ready' || hosted === undefined) {
             blockedReason = 'hosted-support-unreachable';
             return;
           }
+          expect(new URL(hosted.url()).origin).toBe(new URL(start.flowUrl).origin);
         } catch {
           blockedReason = 'hosted-support-unreachable';
           return;
