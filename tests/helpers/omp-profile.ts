@@ -311,8 +311,9 @@ export function changedOmpProfileEntries(before: RealOmpProfileDigest, after: Re
 
 export function assertRealOmpProfileUnchanged(before: RealOmpProfileDigest): void {
   const after = captureRealOmpProfileDigest();
+  if (JSON.stringify(before) === JSON.stringify(after)) return;
   const changed = changedOmpProfileEntries(before, after);
-  if (changed.length > 0) fail(`operator real OMP or XDG configuration, data, state, or cache changed: ${changed.join(', ')}`);
+  fail(`operator real OMP or XDG configuration, data, state, or cache changed: ${changed.length === 0 ? 'digest' : changed.join(', ')}`);
 }
 
 /**
