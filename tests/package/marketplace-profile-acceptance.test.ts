@@ -174,7 +174,7 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
     };
     const readinessStarted = new Date().toISOString();
     const browserChild = startChild(process.execPath, [join(projectRoot, 'node_modules/@playwright/test/cli.js'), 'test', '--config', playwrightConfig, 'tests/e2e/marketplace-review.spec.ts'], environment);
-    const agent = startChild('omp', ['--profile', profile.ompProfile, '--no-prewalk', '--model', 'openai-codex/gpt-5.6-terra:high', '--mode', 'json', '--cwd', fixture.nestedCwd, prompt], environment);
+    const agent = startChild('omp', ['--no-prewalk', '--model', 'openai-codex/gpt-5.6-terra:high', '--mode', 'json', '--cwd', fixture.nestedCwd, prompt], environment);
     const browserResult = await browserChild.completion;
     if (browserResult.code !== 0) {
       agent.stop();
