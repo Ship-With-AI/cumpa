@@ -82,30 +82,30 @@ Each active requirement maps to exactly one roadmap phase. Populated during road
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| VIS-01 | TBD | Pending |
-| VIS-02 | TBD | Pending |
-| VIS-03 | TBD | Pending |
-| SHELL-01 | TBD | Pending |
-| SHELL-02 | TBD | Pending |
-| SHELL-03 | TBD | Pending |
-| SHELL-04 | TBD | Pending |
-| SHELL-05 | TBD | Pending |
-| TREE-01 | TBD | Pending |
-| TREE-02 | TBD | Pending |
-| TREE-03 | TBD | Pending |
-| TREE-04 | TBD | Pending |
-| TREE-05 | TBD | Pending |
-| DIFF-01 | TBD | Pending |
-| DIFF-02 | TBD | Pending |
-| DIFF-03 | TBD | Pending |
-| REV-01 | TBD | Pending |
-| REV-02 | TBD | Pending |
-| REV-03 | TBD | Pending |
-| REV-04 | TBD | Pending |
-| REV-05 | TBD | Pending |
-| CON-01 | TBD | Pending |
-| CON-02 | TBD | Pending |
-| CON-03 | TBD | Pending |
+| VIS-01 | Phase 08 | Pending |
+| VIS-02 | Phase 08 | Pending |
+| VIS-03 | Phase 08 | Pending |
+| SHELL-01 | Phase 11 | Pending |
+| SHELL-02 | Phase 11 | Pending |
+| SHELL-03 | Phase 11 | Pending |
+| SHELL-04 | Phase 11 | Pending |
+| SHELL-05 | Phase 11 | Pending |
+| TREE-01 | Phase 09 | Pending |
+| TREE-02 | Phase 09 | Pending |
+| TREE-03 | Phase 09 | Pending |
+| TREE-04 | Phase 09 | Pending |
+| TREE-05 | Phase 09 | Pending |
+| DIFF-01 | Phase 10 | Pending |
+| DIFF-02 | Phase 10 | Pending |
+| DIFF-03 | Phase 10 | Pending |
+| REV-01 | Phase 11 | Pending |
+| REV-02 | Phase 11 | Pending |
+| REV-03 | Phase 11 | Pending |
+| REV-04 | Phase 11 | Pending |
+| REV-05 | Phase 11 | Pending |
+| CON-01 | Phase 12 | Pending |
+| CON-02 | Phase 12 | Pending |
+| CON-03 | Phase 12 | Pending |
 
 ---
-*Last updated: 2026-09-12 at v1.6 definition; 24 active requirement IDs awaiting phase assignment. v1.5 requirements archived to .planning/milestones/v1.5-REQUIREMENTS.md.*
+*Last updated: 2026-09-12 at v1.6 roadmap creation; 24/24 active requirement IDs assigned once across Phases 08–12. v1.5 requirements archived to .planning/milestones/v1.5-REQUIREMENTS.md.*

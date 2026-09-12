@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Workspace Restyle
 status: planning
-last_updated: "2026-09-12T18:51:25.914Z"
+last_updated: "2026-09-12T19:12:31.000Z"
 last_activity: 2026-09-12
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-12)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** v1.6 Workspace Restyle — defining requirements
+**Current focus:** Phase 08 — Semantic Visual Foundation
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-09-12 — Milestone v1.6 started
+Phase: 08 of 12 (1 of 5 for v1.6) — Semantic Visual Foundation
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-09-12 — v1.6 roadmap created with 24/24 requirements assigned
 
 ## Performance Metrics
 
@@ -47,6 +47,7 @@ Last activity: 2026-09-12 — Milestone v1.6 started
 | v1.3 Agent Review Handoff | 4 | 14 | Complete |
 | v1.4 Voluntary Support | 2 | 22 | Complete |
 | v1.5 MIT Distribution | 5 | TBD | In progress |
+| v1.6 Workspace Restyle | 5 | TBD | Planned |
 
 *Updated after each plan completion.*
 **Per-Plan Metrics:**
@@ -94,6 +95,7 @@ None yet.
 
 - Phase 3 edited: Reconciled v1.5 Proprietary Distribution with approved public source and reviewed history; preserved all phase numbers, dependencies, and 19 requirement assignments
 - 2026-09-08: Reconciled v1.5 MIT Distribution after the user explicitly abandoned proprietary restrictions. Phase order, all 19 requirement assignments, runtime-only packaging and unrelated publication safety gates remain unchanged.
+- 2026-09-12: Defined v1.6 Workspace Restyle as Phases 08–12 with 24/24 requirements assigned once across semantic foundation, changed-file tree, diff surface, shell/review surfaces, and behavior continuity.
 
 ### Quick Tasks Completed
 

@@ -7,184 +7,133 @@
 - **[v1.2 Fast Source Discovery](./milestones/v1.2-ROADMAP.md)** — Phases 09–11, 4 plans, 5/5 requirements, shipped 2026-07-30.
 - **[v1.3 Agent Review Handoff](./milestones/v1.3-ROADMAP.md)** — Phases 12–15, 14 plans, 42 tasks, 17/17 requirements, shipped 2026-08-06.
 - **[v1.4 Voluntary Support](./milestones/v1.4-ROADMAP.md)** — Phases 01–02, 22 plans, 30 tasks, 12/12 requirements, shipped 2026-09-04.
-- **v1.5 MIT Distribution** — Phases 03–07, 19 requirements, planned.
+- **[v1.5 MIT Distribution](./milestones/v1.5-ROADMAP.md)** — Phases 03–07, 19 requirements.
+- **v1.6 Workspace Restyle** — Phases 08–12, 24 requirements, planned.
 
 ## Overview
 
-The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary source-available direction. MIT distribution proceeds through five dependency-ordered outcomes: Cumpa establishes standard MIT terms, refreshed dual-licensor exact-text assent, rights and sensitive-history review, and safe publication of the existing repository and reviewed history. Standard MIT permits commercial use, modification, redistribution, sublicensing, and resale; third-party rights remain. Maintainers then verify one complete runtime-only tarball before registry mutation, perform a usable non-`latest` bootstrap, revoke its temporary authorization, and publish stable `1.5.0` through OIDC trusted publishing from the approved public repository without long-lived credentials. Preserve eligible automatic npm provenance and substantiate release claims with verified evidence. The independently MIT-licensed ShipWithAI skill follows with a separately installed CLI prerequisite. Clean global, npx, and marketplace acceptance closes the milestone without changing review or voluntary-support behavior.
+Cumpa restyles the existing browser review workspace to the approved visual contract in `mockups/01b-quiet-workspace-tree.html`, `mockups/01b-desktop.png`, `mockups/01b-desktop-full.png`, and `mockups/01b-mobile.png`. The work proceeds through five dependency-ordered outcomes: establish one mockup-derived semantic visual system shared exactly with Monaco; deliver the dense, filterable changed-file tree; quiet the Monaco-authoritative diff reading surface; compose the responsive shell, metadata and review dialogs, inline comments, and comments rail; then prove the unchanged review-to-export and attached-session workflow. Session, draft, persistence, export, agent-handoff, and voluntary-support mechanics remain unchanged. Selector drift, stale and orphaned anchors, patch drift, and draft recovery remain visible in the workspace shell rather than only in dialogs.
 
 ## Phases
 
-- [x] **Phase 3: Distribution Contract & Legal Boundary** — Establish standard MIT terms, refreshed dual-licensor exact-text assent, safe publication of the existing repository and reviewed history, and truthful package links and provenance policy. (completed 2026-09-08)
-- [x] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release. (completed 2026-09-09)
-- [x] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable bootstrap tagged `bootstrap` (D-10 first-release `latest` exception), revoke temporary authorization, and publish stable `1.5.0` through OIDC. (completed 2026-09-10)
-- [x] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite. (completed 2026-09-11)
-- [~] **Phase 7: Clean Public-Artifact Acceptance** - Hardened regeneration is partially blocked: fresh public pre-restore runs passed, while post-restore would require the already-consumed protected sign-in and marketplace redirection is unhonored. The stale pre-review record remains untouched.
+- [ ] **Phase 08: Semantic Visual Foundation** — Establish the mockup-derived token root, Monaco parity, and shared typography, spacing, density, and radius language.
+- [ ] **Phase 09: Changed-File Tree** — Deliver the mockup's dense, filterable, keyboard-operable changed-file navigation without losing existing tree semantics.
+- [ ] **Phase 10: Diff Reading Surface** — Restyle the Monaco-authoritative diff into the mockup's quieter, explicit Base/Head reading surface while preserving geometry and context behavior.
+- [ ] **Phase 11: Workspace Shell & Review Surfaces** — Compose the responsive shell, dialogs, inline comments, and comments rail while keeping critical warnings continuously visible.
+- [ ] **Phase 12: Behavior Continuity** — Prove the complete restyled workflow preserves review contracts, packaged behavior, and structural accessibility.
 
 ## Phase Details
 
-### Phase 3: Distribution Contract & Legal Boundary
+### Phase 08: Semantic Visual Foundation
 
-**Goal**: Maintainers establish standard MIT terms, refreshed dual-licensor exact-text assent, rights- and sensitive-material-reviewed public repository/history, accurate user-facing metadata, and an evidence-backed provenance policy that permits safe runtime-only package preparation.
-**Depends on**: Phase 2 (v1.4 complete)
-**Requirements**: PKG-06, PKG-07, REL-04, REL-05
-**UI hint**: no
+**Goal**: Reviewers see one mockup-derived visual system shared exactly by the workspace and Monaco before any surface-specific restyling consumes it.
+**Depends on**: Phase 07 implementation baseline
+**Requirements**: VIS-01, VIS-02, VIS-03
+**UI hint**: yes
 **Success Criteria** (what must be TRUE):
 
-1. Standard MIT for Cumpa source and compiled releases is assented to in its exact text by both Alessandro Magionami and Manuel Salvatore Martone before publication, permits commercial use, modification, redistribution, sublicensing, and resale, preserves third-party rights and notices, and adds no downstream conditions.
-2. Approved npm metadata names `@shipwithai/cumpa@1.5.0`, `cumpa`, Node.js 24+, an MIT license file, and the exact `Ship-With-AI/cumpa` repository; the self-contained user guide links to the verified public Issues page and omits a separate homepage.
-3. The existing `Ship-With-AI/cumpa` repository and reviewed history are public under standard MIT only after both licensors give refreshed exact-text MIT assent and rights/sensitive-material review is resolved; no credentials or confidential operational material are exposed, and destructive remediation or history rewriting requires separate approval.
-  4. The documented release policy preserves eligible automatic npm provenance, defines the public-source/attestation evidence Phase 5 must verify, and forbids unsupported claims; OIDC authentication alone is not attestation proof.
+1. One canonical semantic token root supplies the mockup's surfaces, borders, text hierarchy, accent, status colors, diff fills, typography, spacing, density, and radii to shell, tree, diff, dialog, and control styles.
+2. Monaco canvas, gutters, widgets, syntax, selections, and diff fills resolve to byte-identical values from that canonical root rather than maintaining a second palette.
+3. Component styles contain no independent hard-coded color palette, and an automated parity check rejects future CSS/Monaco color drift.
+4. A representative workspace at the reference desktop and mobile viewports visibly adopts the contract's dark surfaces, compact scale, and quiet control treatment without changing interaction behavior.
 
-**Plans**: 3/3 complete. MIT assent and authorized public source are verified; code review is clean, all 23 declared threats are closed/accepted, goal verification is 10/10, and the token-cleanup UAT passed 1/1. Phase 3 completed 2026-09-08.
+**Expected test impact**:
 
-Plans:
-**Wave 1**
+- Update the palette and presentation expectations in `tests/unit/monaco-theme.test.ts` and the semantic-style assertions in `tests/e2e/responsive-session.spec.ts` to the canonical root.
+- Keep `tests/unit/monaco-diff-semantics.test.ts`, `tests/unit/monaco-diff-adapter.test.ts`, `tests/unit/workspace-state.test.ts`, and the API, Git, draft, persistence, and export contract suites passing unchanged.
 
-- [x] 03-01-PLAN.md — Historical proprietary rights, notices, and dual-licensor approval record
+**Plans**: TBD
 
-**Wave 2** *(historical proprietary work)*
+### Phase 09: Changed-File Tree
 
-- [x] 03-02-PLAN.md — Historical proprietary package metadata and truthful user/release documentation record
-
-**Wave 3** *(MIT assent and authorized public source verified)*
-
-- [x] 03-03-PLAN.md — Reviewed MIT preparation and authorized public-source transition
-
-### Phase 4: Exact Runtime Tarball
-
-**Goal**: Maintainers hold one reviewed, immutable `.tgz` containing every required compiled runtime asset and no development-only or sensitive material, regardless of public source availability.
-**Depends on**: Phase 3
-**Requirements**: PKG-03, PKG-04, PKG-05, REL-03
+**Goal**: Reviewers can scan, filter, and keyboard-navigate the mockup's dense changed-file tree without losing existing tree semantics or selection.
+**Depends on**: Phase 08
+**Requirements**: TREE-01, TREE-02, TREE-03, TREE-04, TREE-05
+**UI hint**: yes
 **Success Criteria** (what must be TRUE):
 
-  1. Installing the candidate tarball outside any source checkout exposes `cumpa --version` as exactly `1.5.0` and preserves the existing Node.js 24+ and Git prerequisite guidance.
-  2. The packed archive contains every compiled Node runtime and browser asset required to launch and complete the existing browser-review workflow.
-  3. Archive inspection finds no TypeScript source, source maps or embedded source content, tests, fixtures, planning files, workflows, credentials, local review state, marketplace-skill files, Git data, or repository history.
-  4. Maintainers record and approve one tarball digest, install and inspect those exact bytes, and designate the same immutable archive for publication without a later rebuild or substitution.
+1. Each dense file row shows status, filename, signed addition/deletion counts, and a clear unsupported or unavailable identity; each directory row shows its descendant changed-file count.
+2. Nested directories, single-child path compaction, exact path ordering, all-expanded default, collapse/expand, selection, and roving-tabindex operation for Up, Down, Left, Right, Home, End, Enter, and Space remain observable.
+3. Typing in the tree filter shows only matching files with their ancestor directories visible and force-expanded.
+4. A no-match filter state explains how to restore the full tree, and clearing the filter restores the tree with the open file still selected.
+5. The desktop sidebar and narrow changed-files presentation match the reference tree density and hierarchy at their contract viewports.
 
-**Plans**: 3/4 plans executed
-**Wave 1**
+**Expected test impact**:
 
-- [x] 04-01-PLAN.md
+- Extend `tests/unit/file-tree.test.ts` for filter reconciliation and ancestor expansion while preserving its existing ordering, selection, expansion, and keyboard expectations.
+- Update the presentation and accessible-name assertions in `tests/e2e/file-tree.spec.ts` and the changed-files portions of `tests/e2e/responsive-session.spec.ts`; keep existing file-selection and content-loading flows in `tests/e2e/pinned-session.spec.ts` unchanged.
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Plans**: TBD
 
-- [x] 04-02-PLAN.md
+### Phase 10: Diff Reading Surface
 
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 04-03-PLAN.md
-
-**Wave 4** *(blocked on Wave 3 completion)*
-
-- [x] 04-04-PLAN.md
-
-### Phase 5: Bootstrap & Trusted Stable Publication
-
-**Goal**: Users can obtain the MIT-licensed Cumpa CLI from public npm while maintainers publish stable releases from the approved public repository without long-lived npm credentials and record verified provenance outcomes.
-**Depends on**: Phase 4
-**Requirements**: PKG-01, PKG-02, REL-01, REL-02
+**Goal**: Reviewers read the same Monaco-authoritative comparison through the mockup's quieter, explicit Base/Head diff treatment.
+**Depends on**: Phase 09
+**Requirements**: DIFF-01, DIFF-02, DIFF-03
+**UI hint**: yes
 **Success Criteria** (what must be TRUE):
 
-1. One complete, usable MIT-licensed bootstrap release exists under `bootstrap` through short-lived interactive authorization, and that authorization is revoked before stable publication. D-10 explicitly permits this first release also to remain `latest` until the separately approved stable CI release replaces that pointer.
-2. A fixed release workflow in the approved public `Ship-With-AI/cumpa` repository publishes the reviewed MIT-licensed `@shipwithai/cumpa@1.5.0` tarball through GitHub OIDC trusted publishing without long-lived publication credentials, preserves eligible automatic provenance, and records verified attestation results under the Phase 3 release policy.
-  3. Public npm resolves exact `1.5.0` for both `npm install --global @shipwithai/cumpa@1.5.0` and `npx --yes @shipwithai/cumpa@1.5.0`, with the global install exposing the `cumpa` command.
+1. Production diffs remain rendered and mapped by Monaco as the sole diff authority, including comment anchor placement and syntax highlighting.
+2. Base/Head or preimage/postimage side labels, removed/added text, gutter bars and signs, line and intraline fills, hunk separation, and hidden-region affordances match the quiet reference and communicate meaning without color alone.
+3. Existing expandable context, side-by-side geometry, paired comment-card alignment, and the 640px diff canvas with localized horizontal overflow remain intact.
+4. Desktop, full-desktop, and mobile views keep the diff readable without introducing document-level horizontal overflow.
 
-**Plans**: All 6 plans complete. The approved CI archive is publicly verified as `@shipwithai/cumpa@1.5.0`, with npm-verified provenance and normal global/literal npx proof. Final gates passed: clean 13-file source review, 59/59 authored threats closed, 39/39 must-haves verified, 58 files/463 regression tests passed, and two TDD plans with no violations. UI review is not applicable because no production frontend surface changed.
-**Wave 1**
+**Expected test impact**:
 
-- [x] 05-01-PLAN.md — Closed configured bootstrap artifact profile
-- [x] 05-02-PLAN.md — CI candidate and public release evidence verifier
+- Update diff presentation assertions in `tests/e2e/responsive-session.spec.ts` and side-label assertions in `tests/e2e/anchored-review.spec.ts` and `tests/e2e/complete-review-draft.spec.ts`.
+- Keep `tests/unit/line-mapping.test.ts`, `tests/unit/monaco-diff-semantics.test.ts`, `tests/unit/monaco-diff-adapter.test.ts`, and the anchoring behavior in `tests/integration/monaco-anchor.spec.ts` passing unchanged.
 
-**Wave 2**
+**Plans**: TBD
 
-- [x] 05-03-PLAN.md — Gated same-run CI build and publication workflow
+### Phase 11: Workspace Shell & Review Surfaces
 
-**Wave 3**
-
-- [x] 05-04-PLAN.md — Reviewed source, usable bootstrap and authorization revocation
-
-**Wave 4** *(complete; exact candidate approved without publication authority)*
-
-- [x] 05-05-PLAN.md — Protected publisher setup and actual CI candidate approval
-
-**Wave 5** *(complete; one authorized stable publication and public verification passed)*
-
-- [x] 05-06-PLAN.md — Exact stable publication and public artifact/provenance proof
-
-### Phase 6: Independent MIT Marketplace Skill
-
-**Goal**: Coding-agent users can install the public Cumpa skill as an independent MIT-licensed delegate to the separately installed released CLI.
-**Depends on**: Phase 5
-**Requirements**: SKL-01, SKL-02, SKL-03
+**Goal**: Reviewers use the mockup-equivalent shell, dialogs, inline comment surfaces, comments rail, and mobile files flow while critical warnings remain continuously visible.
+**Depends on**: Phase 10
+**Requirements**: SHELL-01, SHELL-02, SHELL-03, SHELL-04, SHELL-05, REV-01, REV-02, REV-03, REV-04, REV-05
+**UI hint**: yes
 **Success Criteria** (what must be TRUE):
 
-1. Coding-agent users can install the existing Cumpa skill from the public ShipWithAI marketplace; the skill carries its own MIT license and delegates to the separately installed MIT Cumpa CLI.
-  2. When `cumpa` is absent, the installed skill stops with the exact npm installation command and the Node.js 24+ and Git prerequisites instead of bundling or silently installing the CLI.
-  3. With `@shipwithai/cumpa@1.5.0` installed separately, the skill delegates Git grounding, diff generation, browser review, persistence, Finish semantics, and canonical output to that CLI without duplicating application behavior.
+1. Desktop and full-desktop references show the product identity header, ordered comparison strip, active-file toolbar, optional files sidebar, full-width diff, Review notes entry, and footer in the mockup composition; exact-patch sessions show preimage/postimage identity, and all three reference captures remain visually equivalent except for documented production-data differences.
+2. Reviewers can hide and restore the desktop files sidebar with hidden content removed from tab order; narrow viewports use the changed-files dialog and preserve file → Base → Head reading order.
+3. A Details dialog exposes comparison identities, commit and merge-base data, file metadata, and keyboard help, while a Review-notes dialog exposes summary, export readiness, progress, receipts, drift acknowledgement, and attached-session completion without narrowing the diff.
+4. Inline comments and the comments rail retain create, edit, delete, resolve, reopen, show, navigate, announce, and paired Base/Head card-containment behavior in the new visual language.
+5. Selector drift, stale or orphaned anchors, patch drift, and draft recovery remain visible in the workspace shell with their existing actions and single-owner live announcements, never solely inside a dialog.
 
-**Plans**: 3/3 plans complete
-**Wave 1**
+**Expected test impact**:
 
-- [x] 06-01-PLAN.md
+- Update shell, dialog, and presentation selectors in `tests/e2e/responsive-session.spec.ts`, `tests/integration/complete-review-panel.spec.ts`, `tests/integration/export-receipt-ui.spec.ts`, and `tests/integration/anchored-workspace.spec.ts` for the new composition.
+- Keep warning behavior in `tests/integration/selector-drift-ui.spec.ts` and `tests/integration/draft-recovery-ui.spec.ts`, comment mechanics in `tests/e2e/anchored-review.spec.ts`, and all selector-drift, draft, persistence, export, attached-completion, and support contract tests passing unchanged.
 
-**Wave 2** *(blocked on Wave 1 completion)*
+**Plans**: TBD
 
-- [x] 06-02-PLAN.md
+### Phase 12: Behavior Continuity
 
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 06-03-PLAN.md
-
-### Phase 7: Clean Public-Artifact Acceptance
-
-**Goal**: Every supported public installation path completes the existing browser-review workflow from a clean environment without a source checkout or local release inputs.
-**Depends on**: Phase 6
-**Requirements**: ACC-01, ACC-02, ACC-03, ACC-04
+**Goal**: Reviewers complete the unchanged review-to-export and attached-session workflow while maintainers have packaged and accessibility evidence for the integrated restyle.
+**Depends on**: Phase 11
+**Requirements**: CON-01, CON-02, CON-03
+**UI hint**: yes
 **Success Criteria** (what must be TRUE):
 
-  1. A clean environment globally installs exact public `@shipwithai/cumpa@1.5.0` and completes the existing browser-review workflow without a source checkout, workspace link, or local tarball.
-  2. A clean environment with an empty npm cache runs exact `npx --yes @shipwithai/cumpa@1.5.0` and completes the browser-review workflow without a prior or local installation.
-  3. A clean agent profile installs the public marketplace skill, invokes the separately installed exact CLI, finishes a browser review, and receives the validated canonical result.
-  4. Global, npx, and marketplace-installed paths retain unrestricted review and export behavior whether voluntary support is unpaid, dismissed, or verified.
+1. A human reviewer completes launch → file selection → line comment → resolve → summary → export → recovery → attached Finish through the restyled workspace with unchanged session, draft, persistence, export, agent-handoff, and voluntary-support mechanics.
+2. The packaged Playwright review/export suite and existing Vitest contract suites pass against the restyled UI; assertions tied only to removed presentation are updated rather than skipped.
+3. Structurally changed tree rows, filter, toolbar, files dialog, Details dialog, and Review-notes dialog retain focus reachability, appropriate roles and names, and keyboard operation.
+4. Desktop, full-desktop, and mobile captures are visually equivalent to the approved contract except for documented production-data differences.
 
-**Plans**: 7/7 plans complete
+**Expected test impact**:
 
-Plans:
-**Wave 1**
+- Reconcile only remaining presentation-dependent selectors in `tests/e2e/file-tree.spec.ts`, `tests/e2e/pinned-session.spec.ts`, `tests/e2e/anchored-review.spec.ts`, `tests/e2e/complete-review-draft.spec.ts`, `tests/e2e/agent-ready-export.spec.ts`, and `tests/e2e/responsive-session.spec.ts`; do not skip covered flows.
+- Keep the existing Vitest session, draft, persistence, export, agent-ready handoff, exact-patch, selector-drift, and voluntary-support contract suites passing unchanged.
 
-- [x] 07-01-PLAN.md — Pinned public artifact identity, isolation guard primitives, runtime-artifact reuse seams, status-parameterized scenario publisher
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 07-02-PLAN.md — Public global and empty-cache npx install adapters with the executed resolution guard; operator confirmation of the shared-support-identity narrowing of D-02
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 07-03-PLAN.md — Install-source selection threaded through the existing review suites; observed support state
-
-**Wave 4** *(blocked on Wave 3 completion; runs in parallel)*
-
-- [x] 07-04-PLAN.md — Live support-state matrix with the human-gated verified Restore checkpoint
-- [x] 07-05-PLAN.md — Isolated OMP profile marketplace end-to-end proof against the shared support identity, with the marketplace path's own ACC-04 rows
-
-**Wave 5** *(blocked on Wave 4 completion)*
-
-- [x] 07-06-PLAN.md — Public-artifact acceptance driver, two-window support-state orchestration, acceptance configuration widening with the local-archive collection narrowed
-
-**Wave 6** *(blocked on Wave 5 completion)*
-
-- [x] 07-07-PLAN.md — Consolidated bounded acceptance evidence record and distribution-operations documentation
+**Plans**: TBD
 
 ## Progress
 
-**Execution Order:** Phase 3 → Phase 4 → Phase 5 → Phase 6 → Phase 7
+**Execution Order:** Phase 08 → Phase 09 → Phase 10 → Phase 11 → Phase 12
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 3. Distribution Contract & Legal Boundary | 3/3 | Complete    | 2026-09-08 |
-| 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
-| 5. Bootstrap & Trusted Stable Publication | 6/6 | Complete    | 2026-09-10 |
-| 6. Independent MIT Marketplace Skill | 3/3 | Complete    | 2026-09-11 |
-| 7. Clean Public-Artifact Acceptance | 7/7 | Partially blocked | 2026-09-12 |
+| 08. Semantic Visual Foundation | 0/TBD | Not started | — |
+| 09. Changed-File Tree | 0/TBD | Not started | — |
+| 10. Diff Reading Surface | 0/TBD | Not started | — |
+| 11. Workspace Shell & Review Surfaces | 0/TBD | Not started | — |
+| 12. Behavior Continuity | 0/TBD | Not started | — |
