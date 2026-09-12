@@ -73,21 +73,23 @@ function rows(verified: 'passed' | 'blocked' = 'passed'): AcceptanceRow[] {
   ];
 }
 
-function inputs(shared = false) {
-  const reviewEvidence = {
+function reviewEvidence() {
+  return {
     assetGraph: { assets: true, workers: true, codicon: true },
     reviewExport: { relaunch: true, canonicalV2: true, isolatedDrafts: true, reExport: 'exported', exactPatch: { canonicalV3: true, grounded: true } },
     finish: { finish: true },
   };
+}
+function inputs(shared = false) {
   return {
     acceptedAt: '2026-09-12T16:05:28.000Z',
     host,
     artifactIdentity: { tarballUrl, byteLength: 3514800, sha256: 'dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141', npmShasumSha1: '2d58866c862283f2c41b3f4f7d51282b2ca96472', npmIntegritySha512: integrity },
     marketplaceIdentity: { collectionVersion: '0.3.0', commit: '984e28c5838176ec15d2af8b996d0307e45b28d5', skillDigest: '8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220', repository: marketplaceRepository },
     paths: [
-      { installSource: 'global', requirement: 'ACC-01', status: 'passed', installProof: { packageLabel: '@shipwithai/cumpa@1.5.0', resolvedTarball: tarballUrl, resolvedIntegrity: integrity, resolvedVersion: '1.5.0', binaryContainedInIsolatedPrefix: true, npmInstallAttempts: 1 }, supportStates: supportStates('global'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true }, evidence: reviewEvidence },
-      { installSource: 'npx', requirement: 'ACC-02', status: 'passed', installProof: { packageLabel: '@shipwithai/cumpa@1.5.0', resolvedTarball: tarballUrl, resolvedIntegrity: integrity, resolvedVersion: '1.5.0', binaryContainedInIsolatedPrefix: true, npmInstallAttempts: 1 }, supportStates: supportStates('npx'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true }, evidence: reviewEvidence },
-      { installSource: 'marketplace', requirement: 'ACC-03', status: 'passed', installProof: { packageLabel: '@shipwithai/cumpa@1.5.0', resolvedTarball: tarballUrl, resolvedIntegrity: integrity, resolvedVersion: '1.5.0', binaryContainedInIsolatedPrefix: true, npmInstallAttempts: 1 }, supportStates: supportStates('marketplace'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true }, evidence: reviewEvidence },
+      { installSource: 'global', requirement: 'ACC-01', status: 'passed', installProof: { packageLabel: '@shipwithai/cumpa@1.5.0', resolvedTarball: tarballUrl, resolvedIntegrity: integrity, resolvedVersion: '1.5.0', binaryContainedInIsolatedPrefix: true, npmInstallAttempts: 1 }, supportStates: supportStates('global'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true }, evidence: reviewEvidence() },
+      { installSource: 'npx', requirement: 'ACC-02', status: 'passed', installProof: { packageLabel: '@shipwithai/cumpa@1.5.0', resolvedTarball: tarballUrl, resolvedIntegrity: integrity, resolvedVersion: '1.5.0', binaryContainedInIsolatedPrefix: true, npmInstallAttempts: 1 }, supportStates: supportStates('npx'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true }, evidence: reviewEvidence() },
+      { installSource: 'marketplace', requirement: 'ACC-03', status: 'passed', installProof: { packageLabel: '@shipwithai/cumpa@1.5.0', resolvedTarball: tarballUrl, resolvedIntegrity: integrity, resolvedVersion: '1.5.0', binaryContainedInIsolatedPrefix: true, npmInstallAttempts: 1 }, supportStates: supportStates('marketplace'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true }, evidence: reviewEvidence() },
     ],
   };
 }
