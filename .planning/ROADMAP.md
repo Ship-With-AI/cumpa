@@ -150,6 +150,7 @@ Plans:
   4. Global, npx, and marketplace-installed paths retain unrestricted review and export behavior whether voluntary support is unpaid, dismissed, or verified.
 
 **Plans**: 7/7 plans complete
+**Acceptance state:** Partially blocked. Fresh redacted global, empty-cache npx, and public-marketplace reports cover both support windows and are committed. ACC-01 through ACC-03 passed their browser review, canonical export, Finish, and public-artifact contracts. The hardened writer replaced the never-published pre-review record only from those reports, eliminating BL-01 fabricated marketplace rows, BL-02 order-dependent merging, and BL-03 non-reproducible evidence. ACC-04 remains genuinely blocked: the consumed same-identity Restore has no live entitlement and all verified rows state `live-entitlement-unavailable` with `substituted: false`.
 
 Plans:
 **Wave 1**
@@ -187,4 +188,4 @@ Plans:
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
 | 5. Bootstrap & Trusted Stable Publication | 6/6 | Complete    | 2026-09-10 |
 | 6. Independent MIT Marketplace Skill | 3/3 | Complete    | 2026-09-11 |
-| 7. Clean Public-Artifact Acceptance | 7/7 | Partially blocked | 2026-09-12 |
+| 7. Clean Public-Artifact Acceptance | 7/7 | Complete   | 2026-09-12 |

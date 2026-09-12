@@ -2,87 +2,53 @@
 phase: 07-clean-public-artifact-acceptance
 plan: "07"
 subsystem: testing
-tags: [acceptance-evidence, npm, marketplace, omp, privacy]
-
-requires:
-  - phase: 07-clean-public-artifact-acceptance
-    provides: Public global, npx, marketplace, and support-state execution observations
+tags: [acceptance-evidence, marketplace, omp, privacy]
 provides:
-  - One bounded Phase 7 public-artifact acceptance record
-  - A pure, tested record writer with no import-time I/O and no-overwrite publication
-  - Documented public-install acceptance boundary and prerequisites
-affects: [distribution-operations, public-artifact-acceptance]
-
-tech-stack:
-  added: []
-  patterns: [atomic no-overwrite evidence publication, status-conservative support-state aggregation]
-
-key-files:
-  created:
-    - scripts/write-acceptance-evidence.mjs
-    - tests/unit/acceptance-evidence.test.ts
-    - .planning/phases/07-clean-public-artifact-acceptance/07-ACCEPTANCE-EVIDENCE.json
-  modified:
-    - docs/distribution-operations.md
-
-key-decisions:
-  - "The durable result is partially-blocked because verified support was unavailable; no missing or blocked row can become a pass."
-  - "The record discloses the shared support identity and temporary OMP provider-authentication narrowing without retaining private values."
-
-patterns-established:
-  - "Acceptance evidence: derive status from requirement and nested support rows; atomically link a new 0600 record and refuse overwrite."
-
+  - Regenerated report-only Phase 07 evidence with a truthful partially-blocked ACC-04 result.
+  - Real marketplace pre/post acceptance reports proving ACC-03.
 requirements-completed: [ACC-01, ACC-02, ACC-03]
 requirements-blocked: [ACC-04]
-duration: 17min
 completed: 2026-09-12
 status: partially-blocked
 ---
 
 # Phase 07 Plan 07: Consolidated Acceptance Evidence Summary
 
-**The stale pre-review record remains intentionally unsuperseded after the hardened-pipeline rerun produced different, honestly blocked prerequisites; no record was written from evidence that cannot establish the phase outcome.**
+**The evidence record was regenerated only after six fresh hardened driver reports existed: ACC-01 through ACC-03 pass, and ACC-04 is truthfully partially blocked by the live entitlement boundary.**
 
-## Remediation and Rerun
+## Supersession
 
-- `792806a` hardened writer merging, immutable install-proof binding, blocked-row synthesis, private-value rejection, and source-control aggregation.
-- `f3b9079` made public-driver host facts and per-scenario source-control observations reportable.
-- `6492551`, titled `fix(07-review): harden marketplace evidence and isolation`, also contains a writer correction and the acceptance-evidence unit-test update. It superseded the orphaned `a6de9c8` through an amend during concurrent execution; the subject understates that mixed content, but no remediation content was lost.
-- `2e57da4` fixed the two test-helper strict errors without casts or suppressions: before, `TS18046` at `public-runtime.ts:102` and `TS2339` at `:155`; after, the targeted strict command exited cleanly.
-- A minimal tests tsconfig was attempted and reverted after 131 diagnostics in 25 files. The largest sources were `workspace-state.test.ts` (18), `request.test.ts` (13), `agent-ready-export-safety.spec.ts` (13), `draft-load.test.ts` (13), and `selection.test.ts` (11).
-- `69bbf52` repaired the read-only OMP/XDG digest so operator-owned symlinks, broken symlinks, and special entries are represented rather than rejected. The subsequent capability probe still reported `omp-isolation-unavailable`, so it stopped before profile creation, install, or agent launch.
-- `9b9dbfa` defined the missing `Digest` union so the repaired OMP helper itself passes the same targeted strict TypeScript invocation.
+`9389f18` deletes the never-published stale `07-ACCEPTANCE-EVIDENCE.json` and creates its replacement in one commit. Its message records why the former pre-review record could not remain authoritative: BL-01 fabricated marketplace support rows, BL-02 used order-dependent merging, and BL-03 could not rebuild from real driver reports. The new record is built by `write-acceptance-evidence.mjs` solely from the committed public-global, public-npx, and marketplace pre/post reports.
 
-## Evidence Publication Status
+Independent parsing confirmed:
 
-The existing `07-ACCEPTANCE-EVIDENCE.json` was produced by the pre-review pipeline, was never published externally, and is stale: BL-01 found fabricated marketplace support rows, BL-02 found order-dependent merging, and BL-03 found that the writer could not reproduce a record from its drivers. It was deliberately left untouched when the fresh hardened rerun could not reproduce the established result:
-
-- Public global and npx **pre-restore** runs passed (pinned install proof; assets/workers/codicon; one install attempt; passed unverified and dismissed rows).
-- Their **post-restore** runs completed review/export/Finish but emitted blocked verified rows with `reason: human-sign-in-unavailable`, `substituted: false`, because the new disposable support HOME could not inherit the one already-attempted protected Restore. No second Restore was triggered.
-- Marketplace pre/post runs both emitted `omp-isolation-unavailable`, `substituted: false` from the isolation capability gate before any profile creation or installed-skill/agent action.
-
-The writer was therefore not invoked against these incompatible reports, and the stale record was not removed. Replacing it would falsely convert the fresh reports into the established `ACC-03 passed` and `live-entitlement-unavailable` outcome. The tracked `07-REVIEW.md` and `07-VERIFICATION.md` remain the reviewed context for this remediation.
-
-## Established Outcome
-
-The phase remains **partially blocked**: ACC-01 and ACC-02 passed; the established ACC-03 run passed; ACC-04 has passed live-unverified and dismissed rows and an unsubstituted verified block `live-entitlement-unavailable`. The status cannot be regenerated until the hardened runner can observe that same real Restore outcome without a second protected sign-in and OMP honors all required isolation redirections.
-
-## Regression Gate
-
-```text
-$ npm run test:unit       24 files, 152 tests passed
-$ npm run test:git         9 files,  69 tests passed
-$ npm run test:api        19 files, 142 tests passed
-$ npx tsc --noEmit --project tsconfig.json
-(exit 0; no diagnostics)
-$ npm run typecheck:web
-(exit 0; no diagnostics)
+```json
+{"kind":"cumpa.public-artifact-acceptance/v1","status":"partially-blocked","installations":["global","npx","marketplace"],"blockedRows":3,"verifiedBlockedReasons":["live-entitlement-unavailable"],"restoreReportedCompleteWithoutLinkage":false,"leakScan":"clear"}
 ```
 
-## User Setup Required
+The check required all three sources to contain exactly unverified, dismissed, and verified rows; every blocked row has a named reason with `substituted: false`; all verified rows use `live-entitlement-unavailable`; pinned Phase 5 tarball and Phase 6 marketplace identities match; and the recursive leak scan found no prohibited hosted origin, private path, credential-like key, or installation-id-shaped value.
 
-None. No publication, push, payment, deployment, provider configuration, database mutation, or second Restore sign-in was performed.
+## ACC-03 real run
 
----
-*Phase: 07-clean-public-artifact-acceptance*
-*Updated: 2026-09-12*
+Both marketplace windows ran from the public skill collection (`ship-with-ai` 0.3.0 at `984e28c…28d5`) with the installed skill digest `8974c…0220`, a separately installed exact public CLI, and isolated profile. They proved the skill checker precedes Cumpa launch, executable containment, canonical export/browser summary/comment equality, and distinct readiness/completion timestamps. Pre-Restore passed support states; post-Restore produced only the honest verified blocked row `live-entitlement-unavailable` with `substituted: false` while its browser-review, export, and Finish behavior remained unrestricted.
+
+The final hardening is deliberate rather than a guard bypass:
+
+- `a9722eb` injects harness-owned opener/marker state into the isolated process environment so supervised Cumpa readiness is observed from its actual browser launch, without requiring the published skill to thread harness-only environment through `hub.start`.
+- `f4963a0` verifies checker/launch order from the isolated agent's session trace, not an unstable stdout event format.
+- The real-state digest retains installed plugins, marketplaces, agent/model configuration, broker credential, managed skills, and OMP-owned XDG configuration/data/state/cache. It deliberately excludes live-session volatiles: `agent.db`, `history.db`, `models.db`, all `-wal`/`-shm` siblings, sessions, logs, and cache. The operator's live OMP session updates those during an attended run; treating them as contamination caused a false positive. This narrowing is disclosed and tests cover excluded volatile churn plus retained configuration change detection.
+- `6492551` is misleadingly marketplace-only by subject: it also carries a writer correction and superseded orphaned `a6de9c8` through concurrent amend.
+
+## ACC-04 and limits
+
+The sole Restore was already consumed. Its same-identity attempt is why all verified rows report `live-entitlement-unavailable`, not `human-sign-in-unavailable`. The hosted `restore_installation` false return is discarded by `support-flow`, which renders a false success despite no entitlement; this non-terminal-modal defect remains out of scope under D-09. No second sign-in, payment, publish, deployment, database mutation, or provider change occurred.
+
+One shared support HOME was a disclosed narrowing. Local process isolation does not prove a fresh machine; only macOS arm64/Chromium and OMP were exercised, and the Phase 6 four-agent waiver remains waived. Local-archive verification remains separately unavailable without operator-held custody inputs and protected service configuration.
+
+`tsconfig.json` still excludes `tests/`; a minimal discarded `tsconfig.tests` experiment found 131 diagnostics across 25 files, led by `workspace-state.test.ts` 18, `request.test.ts` 13, `agent-ready-export-safety.spec.ts` 13, `draft-load.test.ts` 13, and `selection.test.ts` 11.
+
+## Final verification
+
+- Fresh marketplace pre-Restore: 1 file / 1 test passed in 198.63 s.
+- Fresh marketplace post-Restore: 1 file / 1 test passed in 321.64 s.
+- Final regression gate: unit 27 files / 162 tests, git 9 / 69, API 19 / 142, Node typecheck, and web typecheck all passed.
