@@ -5,10 +5,10 @@ milestone_name: MIT Distribution
 current_phase: 07
 current_phase_name: clean-public-artifact-acceptance
 status: partially-blocked
-stopped_at: Phase 07 evidence regenerated with ACC-04 partially blocked
-last_updated: "2026-09-12T20:03:00Z"
+stopped_at: Phase 07 requirement-axis evidence corrected; ACC-04 partially blocked
+last_updated: "2026-09-12T20:14:22Z"
 last_activity: 2026-09-12
-last_activity_desc: Regenerated report-only acceptance record after all six hardened runs
+last_activity_desc: Corrected regenerated acceptance record's installation and support axes
 progress:
   total_phases: 5
   completed_phases: 5
@@ -31,8 +31,8 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 07 (clean-public-artifact-acceptance) PARTIALLY BLOCKED
 Plan: 7 7
 Status: Partially blocked
-Checkpoint: Fresh public-global, public-npx, and marketplace reports for pre/post windows are committed. The hardened writer replaced the never-published pre-review record solely from those reports. ACC-01 through ACC-03 passed; ACC-04 remains `live-entitlement-unavailable` with `substituted: false`. The sole Restore remains consumed; no second sign-in, publishing, deployment, or hosted-service change is permitted.
-Last activity: 2026-09-12 — Independently verified regenerated evidence and completed the scoped regression gate.
+Checkpoint: Six committed public-global, public-npx, and marketplace pre/post reports regenerated the hardened record. ACC-01, ACC-02, and ACC-03 passed their installation-plus-review axis; ACC-04 is `partially-blocked` because every verified row remains `live-entitlement-unavailable` with `substituted: false`. The restored public-global post-Restore linkage finding records the observed false successful Restore while status stayed unverified and the modal stayed non-terminal; no second sign-in, publishing, deployment, or hosted-service change is permitted.
+Last activity: 2026-09-12 — Corrected requirement-axis derivation, independently inspected the regenerated evidence, and completed the scoped regression gate.
 
 Progress: [██████████] 100% — 23 23 milestone plans complete
 
@@ -83,7 +83,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Marketplace OMP auth narrowing. — The temporary OMP profile reused the operator-authorized provider credential copy; every other isolation dimension remains per-path. This is not independent authentication and must be carried into consolidated evidence.
 - [Phase 07]: Use expectedVersion for source-independent CLI and manifest assertions.
 - [Phase 07]: Preserve `partially-blocked` through consolidation. — Real global and npx pre-restore runs passed their review/export/Finish and asset contracts, but the verified ACC-04 row remains `live-entitlement-unavailable` with `substituted: false`.
-- [Phase 07]: Hardened evidence regenerated. — `792806a`, `f3b9079`, and `6492551` repaired BL-01 through BL-03; `6492551` also carries a writer correction despite its marketplace-only subject. `a9722eb` made marketplace readiness harness-owned and `f4963a0` made checker/launch proof derive from the isolated session trace. The real-state guard now retains plugins, marketplaces, configuration, broker credential, managed skills, and OMP-owned XDG roots while excluding live databases, WAL/SHM files, sessions, logs, and cache that the operator's active OMP session mutates. All six fresh reports produced `9389f18`; ACC-04 remains genuinely blocked by the live entitlement.
+- [Phase 07]: Hardened evidence regenerated and corrected. — `792806a`, `f3b9079`, and `6492551` repaired BL-01 through BL-03; `6492551` also carries a writer correction despite its marketplace-only subject. `a9722eb` made marketplace readiness harness-owned and `f4963a0` made checker/launch proof derive from the isolated session trace. `48d8570` separates passed ACC-01/02/03 installation-review evidence from partially-blocked ACC-04 support evidence and restores the bounded public-global linkage finding. All six fresh reports remain authoritative; verified rows remain blocked by live entitlement with `substituted: false`.
 
 ### Pending Todos
 

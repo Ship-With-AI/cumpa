@@ -150,7 +150,7 @@ Plans:
   4. Global, npx, and marketplace-installed paths retain unrestricted review and export behavior whether voluntary support is unpaid, dismissed, or verified.
 
 **Plans**: 7/7 plans complete
-**Acceptance state:** Partially blocked. Fresh redacted global, empty-cache npx, and public-marketplace reports cover both support windows and are committed. ACC-01 through ACC-03 passed their browser review, canonical export, Finish, and public-artifact contracts. The hardened writer replaced the never-published pre-review record only from those reports, eliminating BL-01 fabricated marketplace rows, BL-02 order-dependent merging, and BL-03 non-reproducible evidence. ACC-04 remains genuinely blocked: the consumed same-identity Restore has no live entitlement and all verified rows state `live-entitlement-unavailable` with `substituted: false`.
+**Acceptance state:** Partially blocked. Fresh redacted global, empty-cache npx, and public-marketplace reports cover both support windows and are committed. ACC-01, ACC-02, and ACC-03 passed their installation-plus-review axes: public artifact proof, browser review, canonical export, and Finish. ACC-04 is separately and explicitly `partially-blocked`: every verified row states `live-entitlement-unavailable` with `substituted: false`. The corrected writer preserves the public-global observed false-success Restore linkage finding without stamping its support reason on the passed installation requirements.
 
 Plans:
 **Wave 1**

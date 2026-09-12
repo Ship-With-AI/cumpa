@@ -14,19 +14,19 @@ status: partially-blocked
 
 # Phase 07 Plan 07: Consolidated Acceptance Evidence Summary
 
-**The evidence record was regenerated only after six fresh hardened driver reports existed: ACC-01 through ACC-03 pass, and ACC-04 is truthfully partially blocked by the live entitlement boundary.**
+**The report-derived evidence record now separates its requirement axes: ACC-01, ACC-02, and ACC-03 passed; ACC-04 is partially blocked by the live-entitlement boundary; overall status is partially-blocked.**
 
 ## Supersession
 
-`9389f18` deletes the never-published stale `07-ACCEPTANCE-EVIDENCE.json` and creates its replacement in one commit. Its message records why the former pre-review record could not remain authoritative: BL-01 fabricated marketplace support rows, BL-02 used order-dependent merging, and BL-03 could not rebuild from real driver reports. The new record is built by `write-acceptance-evidence.mjs` solely from the committed public-global, public-npx, and marketplace pre/post reports.
+`9389f18` deleted the never-published stale `07-ACCEPTANCE-EVIDENCE.json` and created its replacement because BL-01 fabricated marketplace support rows, BL-02 used order-dependent merging, and BL-03 could not rebuild real driver reports. `48d8570` then regenerated the record from the same six committed public-global, public-npx, and marketplace pre/post reports, corrected support-state leakage into ACC-01 through ACC-03, and restored the bounded public-global linkage observation.
 
 Independent parsing confirmed:
 
 ```json
-{"kind":"cumpa.public-artifact-acceptance/v1","status":"partially-blocked","installations":["global","npx","marketplace"],"blockedRows":3,"verifiedBlockedReasons":["live-entitlement-unavailable"],"restoreReportedCompleteWithoutLinkage":false,"leakScan":"clear"}
+{"kind":"cumpa.public-artifact-acceptance/v1","status":"partially-blocked","requirements":{"ACC-01":"passed","ACC-02":"passed","ACC-03":"passed","ACC-04":"partially-blocked"},"verifiedBlockedReasons":["live-entitlement-unavailable"],"restoreReportedCompleteWithoutLinkage":{"observed":true,"path":"public-global","window":"post-restore"},"leakScan":"clear"}
 ```
 
-The check required all three sources to contain exactly unverified, dismissed, and verified rows; every blocked row has a named reason with `substituted: false`; all verified rows use `live-entitlement-unavailable`; pinned Phase 5 tarball and Phase 6 marketplace identities match; and the recursive leak scan found no prohibited hosted origin, private path, credential-like key, or installation-id-shaped value.
+The check required all three sources to contain exactly unverified, dismissed, and verified rows; every blocked row names its reason with `substituted: false`; all verified rows use `live-entitlement-unavailable`; pinned Phase 5 tarball and Phase 6 marketplace identities match; the recursive leak scan found no prohibited hosted origin, private path, credential-like key, or installation-id-shaped value.
 
 ## ACC-03 real run
 
@@ -41,7 +41,7 @@ The final hardening is deliberate rather than a guard bypass:
 
 ## ACC-04 and limits
 
-The sole Restore was already consumed. Its same-identity attempt is why all verified rows report `live-entitlement-unavailable`, not `human-sign-in-unavailable`. The hosted `restore_installation` false return is discarded by `support-flow`, which renders a false success despite no entitlement; this non-terminal-modal defect remains out of scope under D-09. No second sign-in, payment, publish, deployment, database mutation, or provider change occurred.
+The sole Restore was already consumed. All verified rows therefore report `live-entitlement-unavailable`, not `human-sign-in-unavailable`. During the attended public-global post-Restore window, the hosted flow reported successful Restore while installation status remained unverified and the in-product modal reached no terminal state; report-only regeneration could not reproduce that observation because the one authorized sign-in was consumed. The hosted `restore_installation` false return is discarded by `support-flow`, leaving that product defect outside D-09. No second sign-in, payment, publish, deployment, database mutation, or provider change occurred.
 
 One shared support HOME was a disclosed narrowing. Local process isolation does not prove a fresh machine; only macOS arm64/Chromium and OMP were exercised, and the Phase 6 four-agent waiver remains waived. Local-archive verification remains separately unavailable without operator-held custody inputs and protected service configuration.
 
@@ -49,6 +49,6 @@ One shared support HOME was a disclosed narrowing. Local process isolation does 
 
 ## Final verification
 
-- Fresh marketplace pre-Restore: 1 file / 1 test passed in 198.63 s.
-- Fresh marketplace post-Restore: 1 file / 1 test passed in 321.64 s.
-- Final regression gate: unit 27 files / 162 tests, git 9 / 69, API 19 / 142, Node typecheck, and web typecheck all passed.
+- Focused writer proof: `npx vitest run tests/unit/acceptance-evidence.test.ts` — 1 file, 14 tests passed.
+- Independent evidence inspection: ACC-01/02/03 are passed with no installation reason; ACC-04 is explicitly partially-blocked with three rows per path; each verified row has `live-entitlement-unavailable` and `substituted: false`; the public-global linkage finding is observed; Phase 5 and 6 identities match; all four leak scans returned `No matches found`.
+- Regression gate: unit 27 files / 165 tests, git 9 / 69, API 19 / 142, `npx tsc --noEmit --project tsconfig.json`, and web typecheck all passed.
