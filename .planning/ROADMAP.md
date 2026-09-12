@@ -149,7 +149,33 @@ Plans:
   3. A clean agent profile installs the public marketplace skill, invokes the separately installed exact CLI, finishes a browser review, and receives the validated canonical result.
   4. Global, npx, and marketplace-installed paths retain unrestricted review and export behavior whether voluntary support is unpaid, dismissed, or verified.
 
-**Plans**: TBD
+**Plans**: 7 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 07-01-PLAN.md — Pinned public artifact identity, isolation guard primitives, runtime-artifact reuse seams
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 07-02-PLAN.md — Public global and empty-cache npx install adapters with the executed resolution guard
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 07-03-PLAN.md — Install-source selection threaded through the existing review suites; observed support state
+
+**Wave 4** *(blocked on Wave 3 completion; runs in parallel)*
+
+- [ ] 07-04-PLAN.md — Live support-state matrix with the human-gated verified Restore checkpoint
+- [ ] 07-05-PLAN.md — Isolated OMP profile marketplace end-to-end proof
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 07-06-PLAN.md — Public-artifact acceptance driver, acceptance configuration, and phase entry points
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 07-07-PLAN.md — Consolidated bounded acceptance evidence record and distribution-operations documentation
 
 ## Progress
 
@@ -161,4 +187,4 @@ Plans:
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
 | 5. Bootstrap & Trusted Stable Publication | 6/6 | Complete    | 2026-09-10 |
 | 6. Independent MIT Marketplace Skill | 3/3 | Complete    | 2026-09-11 |
-| 7. Clean Public-Artifact Acceptance | 0/TBD | Not started | - |
+| 7. Clean Public-Artifact Acceptance | 0/7 | Planned | - |
