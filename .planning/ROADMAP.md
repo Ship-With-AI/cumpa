@@ -19,7 +19,7 @@ The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary sou
 - [x] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release. (completed 2026-09-09)
 - [x] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable bootstrap tagged `bootstrap` (D-10 first-release `latest` exception), revoke temporary authorization, and publish stable `1.5.0` through OIDC. (completed 2026-09-10)
 - [x] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite. (completed 2026-09-11)
-- [x] **Phase 7: Clean Public-Artifact Acceptance** - Prove global, npx, and marketplace workflows from clean environments using only released public artifacts. (completed 2026-09-12)
+- [~] **Phase 7: Clean Public-Artifact Acceptance** - Hardened regeneration is partially blocked: fresh public pre-restore runs passed, while post-restore would require the already-consumed protected sign-in and marketplace redirection is unhonored. The stale pre-review record remains untouched.
 
 ## Phase Details
 
@@ -187,4 +187,4 @@ Plans:
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
 | 5. Bootstrap & Trusted Stable Publication | 6/6 | Complete    | 2026-09-10 |
 | 6. Independent MIT Marketplace Skill | 3/3 | Complete    | 2026-09-11 |
-| 7. Clean Public-Artifact Acceptance | 7/7 | Complete   | 2026-09-12 |
+| 7. Clean Public-Artifact Acceptance | 7/7 | Partially blocked | 2026-09-12 |

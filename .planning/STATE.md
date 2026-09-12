@@ -4,11 +4,11 @@ milestone: v1.5
 milestone_name: MIT Distribution
 current_phase: 07
 current_phase_name: clean-public-artifact-acceptance
-status: complete
-stopped_at: Completed 07-07-PLAN.md
-last_updated: "2026-09-12T16:21:57Z"
+status: partially-blocked
+stopped_at: Hardened acceptance rerun blocked before safe record regeneration
+last_updated: "2026-09-12T19:15:00Z"
 last_activity: 2026-09-12
-last_activity_desc: Completed 07-07 consolidated public-artifact acceptance evidence
+last_activity_desc: Preserved stale pre-review record after incompatible hardened rerun reports
 progress:
   total_phases: 5
   completed_phases: 5
@@ -24,15 +24,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 07 — clean-public-artifact-acceptance complete
+**Current focus:** Phase 07 — clean-public-artifact-acceptance partially blocked
 
 ## Current Position
 
-Phase: 07 (clean-public-artifact-acceptance) COMPLETE
+Phase: 07 (clean-public-artifact-acceptance) PARTIALLY BLOCKED
 Plan: 7 7
-Status: Complete
-Checkpoint: 07-07 published bounded public-artifact acceptance evidence. ACC-01, ACC-02, and ACC-03 passed; ACC-04 remains partially blocked as `live-entitlement-unavailable` with `substituted: false`.
-Last activity: 2026-09-12 — Completed 07-07-PLAN.md.
+Status: Partially blocked
+Checkpoint: The existing evidence record is stale and was not replaced. Fresh public pre-restore reports passed, but post-restore requires the already-consumed protected Restore and marketplace is correctly blocked by `omp-isolation-unavailable`. No second sign-in or fabricated row is permitted.
+Last activity: 2026-09-12 — Hardened regeneration attempt stopped without overwriting stale evidence.
 
 Progress: [██████████] 100% — 23 23 milestone plans complete
 
@@ -83,6 +83,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Marketplace OMP auth narrowing. — The temporary OMP profile reused the operator-authorized provider credential copy; every other isolation dimension remains per-path. This is not independent authentication and must be carried into consolidated evidence.
 - [Phase 07]: Use expectedVersion for source-independent CLI and manifest assertions.
 - [Phase 07]: Preserve `partially-blocked` through consolidation. — Real global and npx pre-restore runs passed their review/export/Finish and asset contracts, but the verified ACC-04 row remains `live-entitlement-unavailable` with `substituted: false`.
+- [Phase 07]: Hardened rerun preservation. — `792806a`, `f3b9079`, and `6492551` repaired BL-01 through BL-03; `6492551` also carries a writer correction despite its marketplace-only subject. The fresh reports could not reproduce the established live-entitlement outcome without a second protected sign-in, and the OMP isolation gate reported unhonored redirection. The stale pre-review record remains untouched.
 
 ### Pending Todos
 

@@ -36,84 +36,41 @@ requirements-completed: [ACC-01, ACC-02, ACC-03]
 requirements-blocked: [ACC-04]
 duration: 17min
 completed: 2026-09-12
-status: complete
+status: partially-blocked
 ---
 
 # Phase 07 Plan 07: Consolidated Acceptance Evidence Summary
 
-**A durable public-artifact record binds the Phase 5 package identity and Phase 6 marketplace identity to the executed global, npx, and OMP marketplace review paths, while preserving the verified-support block.**
+**The stale pre-review record remains intentionally unsuperseded after the hardened-pipeline rerun produced different, honestly blocked prerequisites; no record was written from evidence that cannot establish the phase outcome.**
 
-## Performance
+## Remediation and Rerun
 
-- **Duration:** 17 min
-- **Started:** 2026-09-12T16:05:28Z
-- **Completed:** 2026-09-12T16:21:57Z
-- **Tasks:** 3
-- **Files modified:** 5
+- `792806a` hardened writer merging, immutable install-proof binding, blocked-row synthesis, private-value rejection, and source-control aggregation.
+- `f3b9079` made public-driver host facts and per-scenario source-control observations reportable.
+- `6492551`, titled `fix(07-review): harden marketplace evidence and isolation`, also contains a writer correction and the acceptance-evidence unit-test update. It superseded the orphaned `a6de9c8` through an amend during concurrent execution; the subject understates that mixed content, but no remediation content was lost.
+- `2e57da4` fixed the two test-helper strict errors without casts or suppressions: before, `TS18046` at `public-runtime.ts:102` and `TS2339` at `:155`; after, the targeted strict command exited cleanly.
+- A minimal tests tsconfig was attempted and reverted after 131 diagnostics in 25 files. The largest sources were `workspace-state.test.ts` (18), `request.test.ts` (13), `agent-ready-export-safety.spec.ts` (13), `draft-load.test.ts` (13), and `selection.test.ts` (11).
+- `69bbf52` repaired the read-only OMP/XDG digest so operator-owned symlinks, broken symlinks, and special entries are represented rather than rejected. The subsequent capability probe still reported `omp-isolation-unavailable`, so it stopped before profile creation, install, or agent launch.
+- `9b9dbfa` defined the missing `Digest` union so the repaired OMP helper itself passes the same targeted strict TypeScript invocation.
 
-## Accomplishments
+## Evidence Publication Status
 
-- Added a pure, status-conservative acceptance-evidence writer with bounded privacy scanning, immutable identity binding, missing-run blocks, and no-overwrite atomic publication.
-- Published `07-ACCEPTANCE-EVIDENCE.json`: ACC-01 through ACC-03 passed; every verified ACC-04 row is blocked as `live-entitlement-unavailable` with `substituted: false`.
-- Documented entry points, ordering, prerequisites, isolation limits, and the no-source-build/no-permanent-configuration boundary.
+The existing `07-ACCEPTANCE-EVIDENCE.json` was produced by the pre-review pipeline, was never published externally, and is stale: BL-01 found fabricated marketplace support rows, BL-02 found order-dependent merging, and BL-03 found that the writer could not reproduce a record from its drivers. It was deliberately left untouched when the fresh hardened rerun could not reproduce the established result:
 
-## Task Commits
+- Public global and npx **pre-restore** runs passed (pinned install proof; assets/workers/codicon; one install attempt; passed unverified and dismissed rows).
+- Their **post-restore** runs completed review/export/Finish but emitted blocked verified rows with `reason: human-sign-in-unavailable`, `substituted: false`, because the new disposable support HOME could not inherit the one already-attempted protected Restore. No second Restore was triggered.
+- Marketplace pre/post runs both emitted `omp-isolation-unavailable`, `substituted: false` from the isolation capability gate before any profile creation or installed-skill/agent action.
 
-Each task was committed atomically:
+The writer was therefore not invoked against these incompatible reports, and the stale record was not removed. Replacing it would falsely convert the fresh reports into the established `ACC-03 passed` and `live-entitlement-unavailable` outcome. The tracked `07-REVIEW.md` and `07-VERIFICATION.md` remain the reviewed context for this remediation.
 
-1. **Task 1: Implement and test bounded acceptance evidence** — `bd039d3` (RED test), `788a3cd` (feat), `de3c970` (fix)
-2. **Task 2: Publish the consolidated acceptance record** — `b251674` (feat)
-3. **Task 3: Document the acceptance boundary and its prerequisites** — `25a33d2` (docs)
+## Established Outcome
 
-## Files Created/Modified
-
-- `scripts/write-acceptance-evidence.mjs` — validates and atomically writes one bounded acceptance record.
-- `tests/unit/acceptance-evidence.test.ts` — proves status coverage, blocked invariants, privacy filtering, identity binding, and shared-support disclosure.
-- `.planning/phases/07-clean-public-artifact-acceptance/07-ACCEPTANCE-EVIDENCE.json` — durable immutable identity, path, support-state, host, and limitation record.
-- `docs/distribution-operations.md` — public-artifact acceptance entry points, prerequisites, ordering, and limits.
-
-## Decisions Made
-
-- ACC-04 remains partially blocked: live unverified and dismissed rows passed; every verified row is an unsubstituted `live-entitlement-unavailable` block.
-- One shared support HOME/install identity remains an explicit narrowing; all other listed per-path isolation dimensions remained separate.
-- OMP alone was exercised. The temporary OMP profile reused a temporary read-only provider-credential copy and is not independent authentication.
-- The local-archive record remains separate; unavailable custody inputs and protected support configuration were not synthesized.
-
-## Deviations from Plan
-
-None — plan evidence and documentation work completed within the stated boundaries.
-
-## Issues Encountered
-
-- The completed support Restore reported success without live entitlement linkage. This is captured as `restoreReportedCompleteWithoutLinkage: true`; fixing or deploying it remains out of Phase 7 scope under D-09.
-- TypeScript project configurations still omit `tests/`; the focused Vitest execution is the applicable proof. No tsconfig change was made.
-
-## Self-Check
-
-```text
-$ npx vitest run tests/unit/acceptance-evidence.test.ts
-Test Files  1 passed (1)
-Tests  6 passed (6)
-
-$ jq -e '<kind/status/path-support/identity assertions>' 07-ACCEPTANCE-EVIDENCE.json
-true
-
-$ private-value scans
-absolute home paths absent
-installation-id-shaped values absent
-```
-
-TDD gate: RED was proven before implementation with the expected missing-module failure from `tests/unit/acceptance-evidence.test.ts`; GREEN passed with the focused six-test suite above. The record writer refuses an existing output path and publishes only through a temporary sibling hard link.
+The phase remains **partially blocked**: ACC-01 and ACC-02 passed; the established ACC-03 run passed; ACC-04 has passed live-unverified and dismissed rows and an unsubstituted verified block `live-entitlement-unavailable`. The status cannot be regenerated until the hardened runner can observe that same real Restore outcome without a second protected sign-in and OMP honors all required isolation redirections.
 
 ## User Setup Required
 
-None — no provider, deployment, publication, or configuration mutation was made.
-
-## Next Phase Readiness
-
-- Phase 7 now has a durable, bounded acceptance outcome and operations boundary.
-- ACC-04 verified-support remains blocked by unavailable live entitlement linkage; resolving the product defect requires work outside Phase 7.
+None. No publication, push, payment, deployment, provider configuration, database mutation, or second Restore sign-in was performed.
 
 ---
 *Phase: 07-clean-public-artifact-acceptance*
-*Completed: 2026-09-12*
+*Updated: 2026-09-12*
