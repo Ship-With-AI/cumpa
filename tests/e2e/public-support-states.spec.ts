@@ -13,9 +13,10 @@ import {
 import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
-import type { Page } from '@playwright/test';
+import type { Browser, Page } from '@playwright/test';
 
-import { ExportReviewResultSchema } from '../../src/contracts/api.js';
+import { ExportReviewResultSchema, SupportStartResultSchema, SupportStatusSchema } from '../../src/contracts/api.js';
+import { parseCanonicalReviewExport } from '../../src/export/review-export.js';
 import { SupportStateV1Schema, resolveSupportStatePath } from '../../src/server/support-store.js';
 import { resolveAcceptanceRuntime, publicSupportHomeOf } from '../helpers/acceptance-runtime.js';
 import type { AcceptanceRuntime } from '../helpers/acceptance-runtime.js';
@@ -25,7 +26,7 @@ import { openRuntimeSession } from '../helpers/open-runtime-session.js';
 import { publishScenarioRecord } from '../helpers/runtime-artifact.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
 
-test.setTimeout(12 * 60_000);
+test.setTimeout(14 * 60_000);
 test.use({ headless: process.env.CUMPA_SUPPORT_RESTORE_HEADED !== '1' });
 test.describe.configure({ mode: 'serial' });
 
@@ -51,6 +52,15 @@ interface RunningCli {
   readonly markerPath: string;
   readonly outputPath: string;
   readonly outputDescriptor: number;
+}
+
+interface RunningAttachedCli {
+  readonly child: ChildProcess;
+  readonly markerPath: string;
+  readonly stderrPath: string;
+  readonly stdoutPath: string;
+  readonly stderrDescriptor: number;
+  readonly stdoutDescriptor: number;
 }
 
 let acceptance: AcceptanceRuntime;
@@ -90,6 +100,31 @@ function startCli(fixture: DirtyGitFixture): RunningCli {
   return { child, markerPath, outputPath, outputDescriptor };
 }
 
+function startAttachedCli(fixture: DirtyGitFixture): RunningAttachedCli {
+  const markerPath = join(acceptance.root, `support-attached-browser-open-${crypto.randomUUID()}.log`);
+  const stderrPath = join(acceptance.root, `support-attached-stderr-${crypto.randomUUID()}.log`);
+  const stdoutPath = join(acceptance.root, `support-attached-stdout-${crypto.randomUUID()}.json`);
+  const stderrDescriptor = openSync(stderrPath, 'w');
+  const stdoutDescriptor = openSync(stdoutPath, 'w');
+  const child = spawn(acceptance.launch.command, [...acceptance.launch.args], {
+    cwd: fixture.nestedCwd,
+    env: {
+      ...acceptance.env,
+      PATH: `${fakeBinRoot}:${acceptance.env.PATH ?? ''}`,
+      CUMPA_BROWSER_OPEN_MARKER: markerPath,
+      BROWSER: join(fakeBinRoot, 'open'),
+    },
+    stdio: ['pipe', stdoutDescriptor, stderrDescriptor],
+  });
+  child.stdin!.end(JSON.stringify({
+    kind: 'cumpa.review-request',
+    schemaVersion: 1,
+    mode: 'revisions',
+    revisions: { base: fixture.baseRef, head: fixture.headRef },
+  }));
+  return { child, markerPath, stderrPath, stdoutPath, stderrDescriptor, stdoutDescriptor };
+}
+
 async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
   const deadline = Date.now() + 10_000;
   while (Date.now() < deadline) {
@@ -102,6 +137,20 @@ async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
     await new Promise<void>((resolve) => setTimeout(resolve, 25));
   }
   throw new Error('[public-support-states] timed out waiting for public CLI loopback session');
+}
+
+async function waitForAttachedLoopbackUrl(running: RunningAttachedCli): Promise<string> {
+  const deadline = Date.now() + 10_000;
+  while (Date.now() < deadline) {
+    const output = existsSync(running.stderrPath) ? readFileSync(running.stderrPath, 'utf8') : '';
+    const match = output.match(/http:\/\/127\.0\.0\.1:\d+\/#token=[A-Za-z0-9_-]{43,}/);
+    if (match !== null && existsSync(running.markerPath)) return match[0];
+    if (running.child.exitCode !== null || running.child.signalCode !== null) {
+      throw new Error('[public-support-states] public attached CLI exited before publishing its loopback session');
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error('[public-support-states] timed out waiting for public attached CLI loopback session');
 }
 
 async function stopCli(running: RunningCli): Promise<void> {
@@ -121,6 +170,20 @@ async function stopCli(running: RunningCli): Promise<void> {
   } finally {
     closeSync(running.outputDescriptor);
   }
+}
+
+async function waitForAttachedExit(running: RunningAttachedCli): Promise<number | null> {
+  if (running.child.exitCode !== null || running.child.signalCode !== null) return running.child.exitCode;
+  const events = running.child as unknown as EventEmitter;
+  const exited = Promise.withResolvers<number | null>();
+  events.once('error', exited.reject);
+  events.once('exit', exited.resolve);
+  return await exited.promise;
+}
+
+function closeAttachedCli(running: RunningAttachedCli): void {
+  closeSync(running.stderrDescriptor);
+  closeSync(running.stdoutDescriptor);
 }
 
 async function ensureReviewOpen(page: Page): Promise<void> {
@@ -182,11 +245,54 @@ async function withFixture<T>(index: number, action: (fixture: DirtyGitFixture) 
   }
 }
 
+async function completeAttachedFinish(browser: Browser): Promise<void> {
+  await withFixture(404, async (fixture) => {
+    const page = await browser.newPage();
+    const running = startAttachedCli(fixture);
+    let closed = false;
+    try {
+      await openRuntimeSession(page, await waitForAttachedLoopbackUrl(running));
+      await ensureReviewOpen(page);
+      const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
+      await page.getByRole('button', { name: 'Finish review', exact: true }).click();
+      expect((await finished).status()).toBe(201);
+      expect(await waitForAttachedExit(running)).toBe(0);
+      expect(parseCanonicalReviewExport(readFileSync(running.stdoutPath))).toMatchObject({ schemaVersion: 2 });
+      closeAttachedCli(running);
+      closed = true;
+    } finally {
+      await page.close();
+      if (running.child.exitCode === null && running.child.signalCode === null) {
+        running.child.kill('SIGINT');
+        await waitForAttachedExit(running);
+      }
+      if (!closed) closeAttachedCli(running);
+    }
+  });
+}
+
 function blockPreRestoreRows(reason: Row['reason']): void {
   supportStates.push(
     { state: 'unverified', status: 'blocked', promptShown: false, restoreCompleted: false, restoreObservedFromSharedIdentity: false, reviewUnrestricted: false, exportUnrestricted: false, finishUnrestricted: false, modalPromptBlocksInteractiveActions: false, interactiveReviewExportPerformed: false, reason, substituted: false },
     { state: 'dismissed', status: 'blocked', promptShown: false, restoreCompleted: false, restoreObservedFromSharedIdentity: false, reviewUnrestricted: false, exportUnrestricted: false, finishUnrestricted: false, modalPromptBlocksInteractiveActions: false, interactiveReviewExportPerformed: false, reason, substituted: false },
   );
+}
+
+function blockVerifiedRow(reason: Row['reason']): void {
+  supportStates.push({
+    state: 'verified',
+    status: 'blocked',
+    promptShown: false,
+    restoreCompleted: false,
+    restoreObservedFromSharedIdentity: false,
+    reviewUnrestricted: false,
+    exportUnrestricted: false,
+    finishUnrestricted: false,
+    modalPromptBlocksInteractiveActions: false,
+    interactiveReviewExportPerformed: false,
+    reason,
+    substituted: false,
+  });
 }
 
 test.beforeAll(() => {
@@ -263,6 +369,107 @@ test('records live unverified and dismissed support rows with unrestricted revie
       await page.close();
       await stopCli(running);
     }
+  });
+});
+
+test('records verified support with its own unrestricted review, export, and Finish', async ({ browser }) => {
+  test.skip(stateWindow === 'pre-restore', 'pre-restore emits only probe, unverified, and dismissed rows');
+  if (probe === undefined) throw new Error('[public-support-states] probe must complete before the verified row');
+  if (!probe.supportConfigured) {
+    blockVerifiedRow('support-not-configured');
+    return;
+  }
+  if (!probe.hostedReachable) {
+    blockVerifiedRow('hosted-support-unreachable');
+    return;
+  }
+
+  const stored = readSupportState();
+  const restoring = stored.status === 'unverified';
+  if (restoring && process.env.CUMPA_SUPPORT_RESTORE_HEADED !== '1') {
+    blockVerifiedRow('human-sign-in-unavailable');
+    return;
+  }
+
+  let blockedReason: Row['reason'] = restoring ? 'human-sign-in-unavailable' : 'hosted-support-unreachable';
+  let verified = false;
+  await withFixture(403, async (fixture) => {
+    const page = await browser.newPage();
+    const running = startCli(fixture);
+    try {
+      await openRuntimeSession(page, await waitForLoopbackUrl(running), { dismissUnverified: false });
+      const dialog = page.getByRole('dialog');
+      if (restoring) {
+        await expect(dialog.getByRole('button', { name: 'Restore support', exact: true })).toBeVisible();
+        const started = page.waitForResponse((response) => new URL(response.url()).pathname === '/api/support/start')
+          .then(async (response) => SupportStartResultSchema.parse(await response.json()))
+          .catch(() => undefined);
+        console.log('OPERATOR: headed Restore window opening now — complete the GitHub sign-in in it and leave the window alone.');
+        try {
+          await dialog.getByRole('button', { name: 'Restore support', exact: true }).click();
+          const start = await started;
+          if (start?.kind !== 'ready') {
+            blockedReason = 'hosted-support-unreachable';
+            return;
+          }
+        } catch {
+          blockedReason = 'hosted-support-unreachable';
+          return;
+        }
+        const refreshed = page.waitForResponse(async (response) => (
+          new URL(response.url()).pathname === '/api/support/refresh'
+          && response.request().method() === 'POST'
+          && response.ok()
+          && SupportStatusSchema.parse(await response.json()).status === 'verified'
+        ), { timeout: 12 * 60_000 });
+        try {
+          await refreshed;
+        } catch {
+          blockedReason = 'human-sign-in-unavailable';
+          return;
+        }
+      } else {
+        const refreshed = page.waitForResponse(async (response) => (
+          new URL(response.url()).pathname === '/api/support/refresh'
+          && response.request().method() === 'POST'
+          && response.ok()
+          && SupportStatusSchema.parse(await response.json()).status === 'verified'
+        ));
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await refreshed;
+      }
+
+      await expect.poll(() => readSupportState().status).toBe('verified');
+      await expect(page.locator('.support-dialog-backdrop')).toBeHidden();
+      await page.getByRole('button', { name: 'Support Cumpa', exact: true }).click();
+      await expect(dialog.getByText('Support is verified on this machine.')).toBeVisible();
+      await dialog.getByRole('button', { name: 'Close', exact: true }).click();
+      await expect(page.locator('.support-dialog-backdrop')).toBeHidden();
+      await addHeadComment(page, 'Verified support does not restrict review.');
+      await saveSummaryAndExport(page, 'Verified support does not restrict export.');
+      verified = true;
+    } finally {
+      await page.close();
+      await stopCli(running);
+    }
+  });
+  if (!verified) {
+    blockVerifiedRow(blockedReason);
+    return;
+  }
+  await completeAttachedFinish(browser);
+  supportStates.push({
+    state: 'verified',
+    status: 'passed',
+    promptShown: true,
+    restoreCompleted: restoring,
+    restoreObservedFromSharedIdentity: !restoring,
+    reviewUnrestricted: true,
+    exportUnrestricted: true,
+    finishUnrestricted: true,
+    modalPromptBlocksInteractiveActions: false,
+    interactiveReviewExportPerformed: true,
+    substituted: false,
   });
 });
 
