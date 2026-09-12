@@ -46,6 +46,7 @@ export interface InstalledPublicRuntime {
     readonly binaryContainedInIsolatedPrefix: true;
     readonly manifestSha256?: string;
     readonly npmCacheEntryCountBefore?: number;
+    readonly npmInstallAttempts: number;
   }>;
   cleanup(): void;
 }
@@ -80,6 +81,30 @@ export const D02_SUPPORT_IDENTITY_POLICY = Object.freeze({
 
 function fail(message: string): never {
   throw new Error(`[public-runtime] ${message}`);
+}
+
+export function isTransientNpmNetworkFailure(error: unknown): boolean {
+  return error instanceof Error
+    && /\b(?:ECONNRESET|ETIMEDOUT|EAI_AGAIN|socket hang up|network aborted)\b/iu.test(error.message);
+}
+
+function runNetworkedNpmCommand(
+  command: string,
+  args: readonly string[],
+  options: { readonly cwd: string; readonly env: NodeJS.ProcessEnv },
+): Readonly<{ readonly output: string; readonly attempts: number }> {
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      return Object.freeze({ output: runRuntimeCommand(command, args, options), attempts: attempt });
+    } catch (error) {
+      if (!isTransientNpmNetworkFailure(error)) throw error;
+      if (attempt === 3) {
+        throw new Error(`[public-runtime] npm network command failed after ${attempt} attempts: ${error.message}`, { cause: error });
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, attempt * 250);
+    }
+  }
+  throw new Error('[public-runtime] npm network command exhausted without an attempt');
 }
 
 function asRecord(value: unknown): RecordValue | undefined {
@@ -271,7 +296,7 @@ export function installPublicGlobalRuntime(options: Readonly<{
       PINNED_PUBLIC_ARTIFACT.packageLabel,
     ];
     if (options.installScripts === 'disabled') installArgs.splice(4, 0, '--ignore-scripts');
-    runRuntimeCommand(npmCommand, installArgs, { cwd: temporary.root, env });
+    const install = runNetworkedNpmCommand(npmCommand, installArgs, { cwd: temporary.root, env });
     let tree: unknown;
     try {
       tree = JSON.parse(runRuntimeCommand(npmCommand, [
@@ -309,6 +334,7 @@ export function installPublicGlobalRuntime(options: Readonly<{
         installScripts: options.installScripts,
         binaryContainedInIsolatedPrefix: true,
         manifestSha256: manifest.sha256,
+        npmInstallAttempts: install.attempts,
       }),
       cleanup: temporary.cleanup,
     });
@@ -356,10 +382,8 @@ export function preparePublicNpxRuntime(options: Readonly<{
     });
     const npmCacheEntryCountBefore = readdirSync(cache).length;
     if (npmCacheEntryCountBefore !== 0) fail('npx cache-reuse condition: isolated npm cache is not empty');
-    if (
-      runRuntimeCommand(launch.command, [...launch.args, '--version'], { cwd: temporary.root, env }).trim()
-      !== PINNED_PUBLIC_ARTIFACT.version
-    ) fail('npx did not run the pinned public package version');
+    const launchResult = runNetworkedNpmCommand(launch.command, [...launch.args, '--version'], { cwd: temporary.root, env });
+    if (launchResult.output.trim() !== PINNED_PUBLIC_ARTIFACT.version) fail('npx did not run the pinned public package version');
     const installed = npxPackage(cache);
     const cacache = join(cache, '_cacache');
     if (!existsSync(cacache) || !lstatSync(cacache).isDirectory() || readdirSync(cacache).length === 0) {
@@ -371,10 +395,11 @@ export function preparePublicNpxRuntime(options: Readonly<{
       [installed.lockPath],
       cachedNpmResolution(temporary.root, env),
     );
-    validateManifest(installed.packageRoot);
+    const manifest = validateManifest(installed.packageRoot);
     return Object.freeze({
       source: 'public-npx',
       root: temporary.root,
+      packageRoot: installed.packageRoot,
       launch,
       env: Object.freeze(env),
       proof: Object.freeze({
@@ -384,7 +409,9 @@ export function preparePublicNpxRuntime(options: Readonly<{
         resolvedVersion: resolution.version,
         installScripts: 'enabled',
         binaryContainedInIsolatedPrefix: true,
+        manifestSha256: manifest.sha256,
         npmCacheEntryCountBefore,
+        npmInstallAttempts: launchResult.attempts,
       }),
       cleanup: temporary.cleanup,
     });
