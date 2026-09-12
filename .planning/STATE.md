@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 Phase: 07 (clean-public-artifact-acceptance) — EXECUTING
 Plan: 5 of 7
 Status: In progress
-Checkpoint: 07-04 recorded live unverified and dismissed global-launcher rows. Its single headed Restore attempt remained unverified through the bounded live refresh deadline, so the verified row is blocked without substituted evidence; no shared verified identity was retained.
+Checkpoint: 07-04 passed its live unverified and dismissed global-launcher rows. The verified ACC-04 row is blocked as `live-entitlement-unavailable`: Restore reported completion but no LIVE-mode entitlement binding was created, live status remained unverified, and no substitute evidence or shared verified identity exists.
 Last activity: 2026-09-12 — Completed 07-04-PLAN.md; Plan 5 of 7 is next.
 
 Progress: [██████░░░░] 60% — 3 of 5 milestone phases complete
