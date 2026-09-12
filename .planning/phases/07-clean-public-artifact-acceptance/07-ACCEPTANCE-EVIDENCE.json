@@ -1,16 +1,16 @@
 {
   "kind": "cumpa.public-artifact-acceptance/v1",
   "status": "partially-blocked",
-  "acceptedAt": "2026-09-12T16:05:28Z",
+  "acceptedAt": "2026-09-12T19:58:01Z",
   "host": {
     "platform": "darwin",
     "arch": "arm64",
     "osRelease": "25.6.0",
-    "node": "24.11.0",
-    "npm": "11.6.2",
-    "git": "2.50.1",
-    "playwright": "1.55.0",
-    "browser": "Chromium 140"
+    "node": "v24.15.0",
+    "npm": "11.12.1",
+    "git": "git version 2.54.0 (Apple Git-157)",
+    "playwright": "Version 1.61.1",
+    "browser": "149.0.7827.55"
   },
   "isolationBoundary": {
     "type": "isolated-local-environments",
@@ -44,37 +44,78 @@
     {
       "installSource": "global",
       "requirement": "ACC-01",
-      "status": "passed",
+      "status": "blocked",
+      "reason": "live-entitlement-unavailable",
+      "substituted": false,
       "installProof": {
         "packageLabel": "@shipwithai/cumpa@1.5.0",
         "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
         "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==",
+        "installScripts": "enabled",
         "resolvedVersion": "1.5.0",
+        "binaryContainedInIsolatedPrefix": true,
         "npmInstallAttempts": 1
       },
+      "sharedSupportIdentity": {
+        "shared": true,
+        "restoreCompleted": false,
+        "restoreObservedFromSharedIdentity": false
+      },
+      "sourceControlUnchanged": true,
       "supportStates": [
         {
           "state": "unverified",
           "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
           "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
           "installSource": "global"
         },
         {
           "state": "dismissed",
           "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
           "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
           "installSource": "global"
         },
         {
           "state": "verified",
           "status": "blocked",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": false,
+          "exportUnrestricted": false,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": false,
           "reason": "live-entitlement-unavailable",
           "substituted": false,
+          "window": "post-restore",
+          "observed": true,
           "installSource": "global"
         }
       ],
-      "sharedSupportIdentity": true,
-      "restoreReportedCompleteWithoutLinkage": false,
+      "cleanup": {
+        "removedOwnedRoots": true
+      },
       "evidence": {
         "assetGraph": {
           "assets": true,
@@ -82,53 +123,105 @@
           "codicon": true
         },
         "reviewExport": {
-          "lineComment": true,
-          "acceptedSummary": true,
-          "resumeByteEqualDraft": true,
-          "markdownAndCanonicalJson": true,
+          "relaunch": true,
+          "canonicalV2": true,
           "isolatedDrafts": true,
-          "exactPatchCanonicalOutput": true
+          "reExport": "exported",
+          "exactPatch": {
+            "canonicalV3": true,
+            "grounded": true
+          },
+          "native": {
+            "observedReExport": true,
+            "fallback": "reExportUnsupported"
+          }
         },
         "finish": {
-          "attached": true
+          "finish": true
         }
       }
     },
     {
       "installSource": "npx",
       "requirement": "ACC-02",
-      "status": "passed",
+      "status": "blocked",
+      "reason": "live-entitlement-unavailable",
+      "substituted": false,
       "installProof": {
         "packageLabel": "@shipwithai/cumpa@1.5.0",
         "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
         "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==",
+        "installScripts": "enabled",
         "resolvedVersion": "1.5.0",
+        "binaryContainedInIsolatedPrefix": true,
+        "npmInstallAttempts": 1,
+        "npmCacheEmptyBeforeRun": true,
         "npmCacheEntryCountBefore": 0,
-        "npmInstallAttempts": 1
+        "priorGlobalInstallAbsent": true,
+        "localNodeModulesBinAbsent": true,
+        "registryFetchObserved": true,
+        "npxResolvedPackageVersion": "1.5.0"
       },
+      "sharedSupportIdentity": {
+        "shared": true,
+        "restoreCompleted": false,
+        "restoreObservedFromSharedIdentity": false
+      },
+      "sourceControlUnchanged": true,
       "supportStates": [
         {
           "state": "unverified",
           "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
           "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
           "installSource": "npx"
         },
         {
           "state": "dismissed",
           "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
           "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
           "installSource": "npx"
         },
         {
           "state": "verified",
           "status": "blocked",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": false,
+          "exportUnrestricted": false,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": false,
           "reason": "live-entitlement-unavailable",
           "substituted": false,
+          "window": "post-restore",
+          "observed": true,
           "installSource": "npx"
         }
       ],
-      "sharedSupportIdentity": true,
-      "restoreReportedCompleteWithoutLinkage": false,
+      "cleanup": {
+        "removedOwnedRoots": true
+      },
       "evidence": {
         "assetGraph": {
           "assets": true,
@@ -136,65 +229,119 @@
           "codicon": true
         },
         "reviewExport": {
-          "lineComment": true,
-          "acceptedSummary": true,
-          "resumeByteEqualDraft": true,
-          "markdownAndCanonicalJson": true,
+          "relaunch": true,
+          "canonicalV2": true,
           "isolatedDrafts": true,
-          "exactPatchCanonicalOutput": true
+          "reExport": "exported",
+          "exactPatch": {
+            "canonicalV3": true,
+            "grounded": true
+          },
+          "native": {
+            "observedReExport": true,
+            "fallback": "reExportUnsupported"
+          }
         },
         "finish": {
-          "attached": true
+          "finish": true
         }
       }
     },
     {
       "installSource": "marketplace",
       "requirement": "ACC-03",
-      "status": "passed",
+      "status": "blocked",
+      "reason": "live-entitlement-unavailable",
+      "substituted": false,
       "installProof": {
-        "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g=="
+        "packageLabel": "@shipwithai/cumpa@1.5.0",
+        "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
+        "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==",
+        "resolvedVersion": "1.5.0",
+        "installScripts": "enabled",
+        "binaryContainedInIsolatedPrefix": true,
+        "manifestSha256": "4bad666e56748bb1c7c9ed6b12043c43d28ac15383a569626f50ea5179480a54",
+        "npmInstallAttempts": 1
       },
+      "sharedSupportIdentity": {
+        "shared": true,
+        "restoreCompleted": false,
+        "restoreObservedFromSharedIdentity": false
+      },
+      "sourceControlUnchanged": true,
       "supportStates": [
         {
           "state": "unverified",
+          "window": "pre-restore",
+          "observed": true,
           "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
           "substituted": false,
           "installSource": "marketplace"
         },
         {
           "state": "dismissed",
+          "window": "pre-restore",
+          "observed": true,
           "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
           "substituted": false,
           "installSource": "marketplace"
         },
         {
           "state": "verified",
+          "window": "post-restore",
+          "observed": true,
           "status": "blocked",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
           "reason": "live-entitlement-unavailable",
           "substituted": false,
           "installSource": "marketplace"
         }
       ],
-      "sharedSupportIdentity": true,
-      "providerAuthenticationReused": true,
-      "restoreReportedCompleteWithoutLinkage": true,
+      "cleanup": {
+        "removedOwnedRoots": true
+      },
       "evidence": {
-        "collection": "ship-with-ai@ship-with-ai-skills",
+        "collection": "ship-with-ai",
         "lifecycle": {
-          "readinessBeforeCompletion": true,
+          "readinessStarted": "2026-09-12T19:42:02.993Z",
+          "readiness": "2026-09-12T19:43:30.423Z",
+          "completion": "2026-09-12T19:44:52.575Z",
           "terminalExit": 0
         },
         "canonical": {
           "nonEmpty": true,
           "parseable": true,
+          "kind": "cumpa/export",
           "summaryMatchesBrowser": true,
           "commentMatchesBrowser": true
         }
       }
     }
   ],
-  "restoreReportedCompleteWithoutLinkage": true,
+  "restoreReportedCompleteWithoutLinkage": false,
   "localArchivePrerequisite": true,
   "limitations": [
     "Local process isolation is not fresh-machine proof.",
@@ -203,8 +350,6 @@
     "The Phase 4 and Phase 5 local-archive acceptance record is separate and unchanged.",
     "The local-archive path requires operator-held custody inputs and the protected CUMPA_RELEASE_SUPPORT_SERVICE_URL; its full execution was not available.",
     "One shared voluntary-support identity was used across all three installation paths; three distinct identities would have required three protected sign-ins. This operator-confirmed narrowing left npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH isolated per path.",
-    "The isolated OMP profile reused a temporary read-only copy of the operator provider credential and was not independently authenticated.",
-    "restoreReportedCompleteWithoutLinkage was observed and remains a product defect outside Phase 7 scope under D-09.",
     "Blocked support-state reason: live-entitlement-unavailable."
   ]
 }
