@@ -12,8 +12,8 @@ import {
   rmSync,
   symlinkSync,
 } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { dirname, isAbsolute, join } from 'node:path';
+import { homedir, tmpdir } from 'node:os';
+import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 import {
   PINNED_PUBLIC_ARTIFACT,
@@ -29,6 +29,8 @@ type RecordValue = Record<string, unknown>;
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const nodeCommand = process.platform === 'win32' ? 'node.exe' : 'node';
+const projectRoot = resolve(import.meta.dirname, '../..');
+const defaultSharedSupportHome = join(tmpdir(), 'cumpa-phase-07-shared-support-home');
 
 
 export interface InstalledPublicRuntime {
@@ -259,26 +261,26 @@ function ownedRoot(prefix: string): Readonly<{ readonly root: string; cleanup():
 }
 
 export function createSharedSupportHome(existingHome?: string): SharedSupportHome {
-  const owned = existingHome === undefined;
-  const home = existingHome ?? mkdtempSync(join(tmpdir(), 'cumpa-public-support-'));
-  if (owned) chmodSync(home, 0o700);
+  const home = resolve(existingHome ?? process.env.CUMPA_ACCEPTANCE_SUPPORT_HOME ?? defaultSharedSupportHome);
+  const existed = existsSync(home);
+  mkdirSync(home, { recursive: true, mode: 0o700 });
+  if (!existed) chmodSync(home, 0o700);
   const stat = lstatSync(home);
   if (!stat.isDirectory() || stat.isSymbolicLink()) fail('shared support HOME must be a real directory');
-  let cleaned = false;
+  const realHome = realpathSync(home);
+  if (
+    isContainedPath(realHome, realpathSync(homedir()))
+    || isContainedPath(realHome, realpathSync(projectRoot))
+  ) fail('shared support HOME must stay outside the operator HOME and checkout');
   return Object.freeze({
-    home,
-    owned,
+    home: realHome,
+    owned: false,
     applyTo(env) {
-      env.HOME = home;
-      env.USERPROFILE = home;
-      if (process.platform === 'linux') env.XDG_STATE_HOME = join(home, 'state');
+      env.HOME = realHome;
+      env.USERPROFILE = realHome;
+      if (process.platform === 'linux') env.XDG_STATE_HOME = join(realHome, 'state');
     },
-    cleanup() {
-      if (!owned || cleaned) return;
-      rmSync(home, { recursive: true, force: true });
-      if (existsSync(home)) fail('shared support HOME was not removed');
-      cleaned = true;
-    },
+    cleanup() {},
   });
 }
 
