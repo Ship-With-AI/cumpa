@@ -52,3 +52,7 @@ One shared support HOME was a disclosed narrowing. Local process isolation does 
 - Focused writer proof: `npx vitest run tests/unit/acceptance-evidence.test.ts` — 1 file, 14 tests passed.
 - Independent evidence inspection: ACC-01/02/03 are passed with no installation reason; ACC-04 is explicitly partially-blocked with three rows per path; each verified row has `live-entitlement-unavailable` and `substituted: false`; the public-global linkage finding is observed; Phase 5 and 6 identities match; all four leak scans returned `No matches found`.
 - Regression gate: unit 27 files / 165 tests, git 9 / 69, API 19 / 142, `npx tsc --noEmit --project tsconfig.json`, and web typecheck all passed.
+
+## Self-Check: PASSED
+
+- Corrected evidence record and summary exist; `b983f42` is present.
