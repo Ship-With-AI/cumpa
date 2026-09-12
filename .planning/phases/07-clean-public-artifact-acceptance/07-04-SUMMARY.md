@@ -50,7 +50,7 @@ status: complete
 ## Accomplishments
 
 - Added a public-install Playwright matrix that probes hosted capability before every support-state claim and emits only the rows attempted by its selected window.
-- Ran the real headed Restore flow once against the public launcher. The product's bounded live status-refresh wait ran for over 12 minutes without verification, so the verified row is explicitly blocked as `human-sign-in-unavailable` with `substituted: false`.
+- Ran a real headed Restore flow against the public launcher. The product's bounded live status-refresh wait ran for over 12 minutes without verification, so the verified row is explicitly blocked as `human-sign-in-unavailable` with `substituted: false`.
 - Preserved the product boundary: the spec reads the support store only, never writes `support.json`, stubs a hosted endpoint, or intercepts a hosted status response.
 
 ## Real Support-State Outcomes
@@ -61,7 +61,7 @@ status: complete
 | pre-restore | dismissed | passed | prompt hidden; own review and export completed unrestricted |
 | post-restore | verified | blocked | `reason: human-sign-in-unavailable`; `substituted: false`; `restoreCompleted: false`; no copied evidence |
 
-The Restore button opened the headed protected flow once. The product kept polling its own live status refresh for the required bounded period; verified status did not arrive before the deadline. Consequently, this run did not perform a successful Restore sign-in and did not claim verified mode, review, export, or Finish as passed.
+The recorded Restore interaction opened the headed protected flow. The product kept polling its own live status refresh for the required bounded period; verified status did not arrive before the deadline. Consequently, this run did not perform a successful Restore sign-in and did not claim verified mode, review, export, or Finish as passed.
 
 The row shape supports later paths observing the same verified identity only after it exists: those paths use `restoreCompleted: false` and `restoreObservedFromSharedIdentity: true`, and never request another protected sign-in. This run has no verified shared identity to reuse.
 
@@ -80,7 +80,7 @@ Each task was committed atomically:
 
 1. **Task 1: Support-capability probe plus the live unverified and dismissed rows** - `0008213` (test)
 2. **Task 2: Human Restore sign-in with an already-paid GitHub account** - `014584c` (test)
-3. **Task 3: Verified row with honest blocked degradation and the bounded support record** - `da1f17b` (test)
+3. **Task 3: Verified row with honest blocked degradation and the bounded support record** - `da1f17b`, `8843dbc` (test)
 
 ## Files Created/Modified
 
@@ -115,6 +115,7 @@ None - no external service configuration changed.
 
 - `npx tsc --noEmit --project tsconfig.json` exited 0.
 - The redacted pre-restore window passed its two attempted state rows.
+- The final pre-restore matrix check passed: 2 passed, 1 skipped.
 - The headed post-restore window passed with the required non-substituted blocked row after live polling.
 - The spec contains no support-store write, hosted-endpoint stub, or status interception.
 
