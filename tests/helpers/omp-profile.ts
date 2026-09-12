@@ -268,18 +268,22 @@ export function discoverOmpIsolationCapability(): OmpIsolationCapability {
   }
 }
 
-export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
-  const agentRoot = join(homedir(), '.omp', 'agent');
+export function captureOmpProfileDigest(home = homedir()): RealOmpProfileDigest {
+  const agentRoot = join(home, '.omp', 'agent');
   return Object.freeze({
     agentDatabase: digest(join(agentRoot, 'agent.db')),
     agents: digest(join(agentRoot, 'agents')),
     marketplaces: digest(join(agentRoot, 'marketplaces')),
     plugins: digest(join(agentRoot, 'plugins')),
-    xdgConfig: digest(join(homedir(), '.config')),
-    xdgData: digest(join(homedir(), '.local/share')),
-    xdgState: digest(join(homedir(), '.local/state')),
-    xdgCache: digest(join(homedir(), '.cache')),
+    xdgConfig: digest(join(home, '.config', 'omp')),
+    xdgData: digest(join(home, '.local', 'share', 'omp')),
+    xdgState: digest(join(home, '.local', 'state', 'omp')),
+    xdgCache: digest(join(home, '.cache', 'omp')),
   });
+}
+
+export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
+  return captureOmpProfileDigest();
 }
 
 export function assertRealOmpProfileUnchanged(before: RealOmpProfileDigest): void {
