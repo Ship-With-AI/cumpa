@@ -175,7 +175,7 @@ test('accepts one supplied candidate through isolated installed browser and Fini
     if (selected.profile === 'bootstrap') childEnvironment.CUMPA_RUNTIME_PROFILE = 'bootstrap';
     childEnvironment.CUMPA_AGENT_READY_EVIDENCE_REPORT = bridge;
     childEnvironment.CUMPA_AGENT_READY_EVIDENCE_RUN_ID = runId;
-    runChild(process.execPath, [join(projectRoot, 'node_modules/@playwright/test/cli.js'), 'test', '--config', 'playwright.runtime-artifact.config.ts'], childEnvironment, origin);
+    runChild(process.execPath, [join(projectRoot, 'node_modules/@playwright/test/cli.js'), 'test', '--config', 'playwright.runtime-artifact.config.ts', 'tests/e2e/package-assets.spec.ts', 'tests/e2e/agent-ready-export.spec.ts'], childEnvironment, origin);
     const { assets, review } = parseScenarios(
       runId,
       {

@@ -6,6 +6,8 @@ export default defineConfig({
   testMatch: [
     '**/e2e/package-assets.spec.ts',
     '**/e2e/agent-ready-export.spec.ts',
+    '**/e2e/public-support-states.spec.ts',
+    '**/e2e/marketplace-review.spec.ts',
   ],
   fullyParallel: false,
   forbidOnly: true,

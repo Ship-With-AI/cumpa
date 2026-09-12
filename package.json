@@ -42,6 +42,9 @@
     "pack:runtime-artifact": "node scripts/pack-runtime.mjs",
     "test:package-contract": "npm run build && vitest run --no-file-parallelism tests/package/agent-ready-export-safety.test.ts",
     "accept:runtime-artifact": "vitest run --config vitest.runtime-artifact.config.ts --no-file-parallelism",
+    "accept:public-artifact": "vitest run --no-file-parallelism tests/package/public-artifact-acceptance.test.ts",
+    "accept:marketplace-profile": "vitest run --no-file-parallelism tests/package/marketplace-profile-acceptance.test.ts",
+    "evidence:public-acceptance": "node scripts/write-acceptance-evidence.mjs",
     "test:performance": "npm run build:runtime && node tests/performance/production-picker.mjs"
   },
   "dependencies": {
