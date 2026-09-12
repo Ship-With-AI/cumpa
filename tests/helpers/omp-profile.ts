@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { delimiter, dirname, join, resolve } from 'node:path';
 import { buildIsolatedPath, isContainedPath } from './public-artifact-identity.js';
@@ -38,7 +38,7 @@ const redirectedVariables = [
 ] as const;
 
 type Digest = Readonly<{ readonly present: boolean; readonly sha256?: string }>;
-type RealOmpProfileDigest = Readonly<Record<'marketplaces' | 'installedPlugins', Digest>>;
+type RealOmpProfileDigest = Readonly<Record<'agentDatabase' | 'agents' | 'marketplaces' | 'plugins', Digest>>;
 
 export interface IsolatedOmpProfile {
   readonly root: string;
@@ -64,8 +64,17 @@ function sha256(path: string): string {
 function digest(path: string): Digest {
   if (!existsSync(path)) return Object.freeze({ present: false });
   const entry = lstatSync(path);
-  if (!entry.isFile() || entry.isSymbolicLink()) fail(`real OMP profile state is not a regular file: ${path}`);
-  return Object.freeze({ present: true, sha256: sha256(path) });
+  if (entry.isSymbolicLink()) fail(`real OMP profile state contains a symbolic link: ${path}`);
+  if (entry.isFile()) return Object.freeze({ present: true, sha256: sha256(path) });
+  if (!entry.isDirectory()) fail(`real OMP profile state is not a regular file or directory: ${path}`);
+  const digest_ = createHash('sha256');
+  for (const entry_ of readdirSync(path, { recursive: true, withFileTypes: true }).sort((left, right) => left.parentPath.localeCompare(right.parentPath) || left.name.localeCompare(right.name))) {
+    const candidate = join(entry_.parentPath, entry_.name);
+    if (entry_.isSymbolicLink()) fail(`real OMP profile state contains a symbolic link: ${candidate}`);
+    digest_.update(candidate.slice(path.length));
+    if (entry_.isFile()) digest_.update(readFileSync(candidate));
+  }
+  return Object.freeze({ present: true, sha256: digest_.digest('hex') });
 }
 
 function hasContents(path: string): boolean {
@@ -134,9 +143,13 @@ function isolatedEnvironment(
   return env;
 }
 
-function locateInstalledSkill(profile: ProfilePaths): string {
+function locateInstalledSkill(profile: ProfilePaths, installationCwd: string): string {
   const candidates = [
     join(profile.xdgDataDir, 'omp', 'plugins', 'cache'),
+    join(profile.xdgDataDir, 'omp', 'plugins'),
+    join(profile.agentDir, 'plugins'),
+    join(installationCwd, '.omp', 'plugins'),
+    join(dirname(profile.ompRoot), '.omp', 'plugins'),
     join(profile.ompRoot, '.omp', 'plugins', 'cache'),
   ];
   for (const root of candidates) {
@@ -197,22 +210,44 @@ export function discoverOmpIsolationCapability(): {
 }
 
 export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
-  const ompRoot = join(homedir(), '.omp');
+  const agentRoot = join(homedir(), '.omp', 'agent');
   return Object.freeze({
-    marketplaces: digest(join(ompRoot, 'marketplaces.json')),
-    installedPlugins: digest(join(ompRoot, 'plugins', 'installed_plugins.json')),
+    agentDatabase: digest(join(agentRoot, 'agent.db')),
+    agents: digest(join(agentRoot, 'agents')),
+    marketplaces: digest(join(agentRoot, 'marketplaces')),
+    plugins: digest(join(agentRoot, 'plugins')),
   });
 }
 
 export function assertRealOmpProfileUnchanged(before: RealOmpProfileDigest): void {
   const after = captureRealOmpProfileDigest();
-  if (JSON.stringify(before) !== JSON.stringify(after)) fail('operator real OMP marketplaces or installed plugins changed');
+  if (JSON.stringify(before) !== JSON.stringify(after)) fail('operator real OMP credential, agent, marketplace, or plugin state changed');
+}
+/**
+ * Copies only the operator-authorized local OMP credential store and routing
+ * configuration into the owned profile; it never mutates the source profile.
+ */
+export function provisionApprovedOmpModelAccess(profile: IsolatedOmpProfile): void {
+  if (process.env.CUMPA_OMP_PROFILE_AUTH_READY !== '1') fail('operator authorization flag is required before copying provider credentials');
+  const source = join(homedir(), '.omp', 'agent');
+  for (const name of ['agent.db', 'config.yml', 'models.yml']) {
+    const from = join(source, name);
+    if (!existsSync(from)) {
+      if (name === 'agent.db') fail('operator OMP provider credential store is unavailable');
+      continue;
+    }
+    const to = join(profile.agentDir, name);
+    cpSync(from, to, { force: true, preserveTimestamps: true });
+    chmodSync(to, 0o600);
+  }
+  writeFileSync(join(profile.root, '.approved-provider-credential-copy'), 'read-only source credential copy; profile cleanup removes this temporary state\n', { encoding: 'utf8', mode: 0o600, flag: 'wx' });
 }
 
 export function createIsolatedOmpProfile(options: Readonly<{
   readonly cliPrefixBin: string;
   readonly supportHome: SharedSupportHome;
   readonly extraPath?: readonly string[];
+  readonly installationCwd?: string;
 }>): IsolatedOmpProfile {
   const root = mkdtempSync(join(tmpdir(), 'cumpa-omp-profile-'));
   chmodRoot(root);
@@ -224,9 +259,14 @@ export function createIsolatedOmpProfile(options: Readonly<{
     const omp = requireOmp();
     options.supportHome.applyTo(env);
     if (env.HOME !== options.supportHome.home) fail('shared support HOME was not applied last');
-    runRuntimeCommand(omp, ['plugin', 'marketplace', 'add', 'Ship-With-AI/skills'], { cwd: root, env });
-    runRuntimeCommand(omp, ['plugin', 'install', '--scope', 'project', 'ship-with-ai@ship-with-ai-skills'], { cwd: root, env });
-    const skillDirectory = locateInstalledSkill(paths);
+    try {
+      runRuntimeCommand(omp, ['plugin', 'marketplace', 'add', 'Ship-With-AI/skills'], { cwd: root, env });
+    } catch (error) {
+      if (!String(error).includes('Marketplace "ship-with-ai-skills" already exists')) throw error;
+    }
+    const installationCwd = options.installationCwd ?? root;
+    runRuntimeCommand(omp, ['plugin', 'install', '--scope', 'project', 'ship-with-ai@ship-with-ai-skills'], { cwd: installationCwd, env });
+    const skillDirectory = locateInstalledSkill(paths, installationCwd);
     assertInstalledSkill(skillDirectory);
     return Object.freeze({
       root,
