@@ -1,7 +1,6 @@
-
 import { describe, expect, it } from 'vitest';
 
-import { assessOmpIsolation, discoverOmpIsolationCapability } from '../helpers/omp-profile.js';
+import { assessOmpIsolation, canUseOmpIsolation, discoverOmpIsolationCapability } from '../helpers/omp-profile.js';
 
 describe('OMP isolation capability', () => {
   it('accepts empty XDG redirect directories when HOME and PI agent state are redirected', () => {
@@ -18,13 +17,13 @@ describe('OMP isolation capability', () => {
     });
   });
 
-  it('marks real-profile resolution or mutation as contaminated even when redirects are honored', () => {
-    expect(assessOmpIsolation({
+  it('blocks a contaminated profile before the acceptance driver can create a profile or launch OMP', () => {
+    expect(canUseOmpIsolation(assessOmpIsolation({
       homeHasOmpTree: true,
       agentDatabasePresent: true,
       resolvedRealProfilePath: true,
       realProfileChanged: false,
-    }).contaminated).toBe(true);
+    }))).toBe(false);
   });
 
   it('proves this machine redirects HOME and PI agent state', () => {
@@ -38,4 +37,3 @@ describe('OMP isolation capability', () => {
     });
   }, 180_000);
 });
-

@@ -10,7 +10,7 @@ import { expect, test } from 'vitest';
 import { parseCanonicalReviewExport } from '../../src/export/review-export.js';
 import { createSharedSupportHome, installPublicGlobalRuntime } from '../helpers/public-runtime.js';
 import { isContainedPath } from '../helpers/public-artifact-identity.js';
-import { assertRealOmpProfileUnchanged, captureRealOmpProfileDigest, createIsolatedOmpProfile, discoverOmpIsolationCapability, provisionApprovedOmpModelAccess, type IsolatedOmpProfile } from '../helpers/omp-profile.js';
+import { assertRealOmpProfileUnchanged, canUseOmpIsolation, captureRealOmpProfileDigest, createIsolatedOmpProfile, discoverOmpIsolationCapability, provisionApprovedOmpModelAccess, type IsolatedOmpProfile } from '../helpers/omp-profile.js';
 import { createDirtyGitFixture } from '../helpers/git-fixture.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
 
@@ -116,7 +116,7 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
   const beforeSource = await captureSourceControlSnapshot(projectRoot);
   const capability = discoverOmpIsolationCapability();
   const browser = await observedBrowserVersion();
-  const isolationBlocked = !capability.ompAvailable || capability.unhonoredVariables.length > 0 || capability.contaminated;
+  const isolationBlocked = !canUseOmpIsolation(capability);
   if (isolationBlocked || process.env.CUMPA_OMP_PROFILE_AUTH_READY !== '1') {
     const reason = isolationBlocked ? 'omp-isolation-unavailable' : 'omp-authentication-unavailable';
     assertRealOmpProfileUnchanged(beforeOmp);

@@ -131,6 +131,10 @@ export function assessOmpIsolation(
   });
 }
 
+export function canUseOmpIsolation(capability: OmpIsolationCapability): boolean {
+  return capability.ompAvailable && capability.unhonoredVariables.length === 0 && !capability.contaminated;
+}
+
 function ompExecutable(): string | undefined {
   const path = inheritedEnvironment(process.env).PATH;
   if (path === undefined) return undefined;
