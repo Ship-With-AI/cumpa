@@ -1,9 +1,10 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Browser, type Page } from '@playwright/test';
 
 import { openRuntimeSession } from '../helpers/open-runtime-session.js';
+import type { RuntimeSessionSupportObservation } from '../helpers/open-runtime-session.js';
 import { publishScenarioRecord } from '../helpers/runtime-artifact.js';
 
 const summary = 'Marketplace OMP browser review summary.';
@@ -59,36 +60,144 @@ async function saveSummaryAndExport(page: Page): Promise<void> {
   expect((await exported).status()).toBe(201);
 }
 
-test('finishes the agent-supervised marketplace review and records live support observations', async ({ page }) => {
+type SupportWindow = 'pre-restore' | 'post-restore';
+
+function supportWindow(): SupportWindow {
+  const value = process.env.CUMPA_SUPPORT_STATE_WINDOW;
+  if (value === 'pre-restore' || value === 'post-restore') return value;
+  throw new Error('[marketplace-review] CUMPA_SUPPORT_STATE_WINDOW must be pre-restore or post-restore');
+}
+
+function observedSupportMode(
+  window: SupportWindow,
+  observation: RuntimeSessionSupportObservation,
+): 'pre-restore' | 'verified' | 'live-entitlement-unavailable' | 'hosted-support-unreachable' {
+  if (window === 'pre-restore') {
+    if (!observation.enabled || observation.observedStatus !== 'unverified') {
+      throw new Error('[marketplace-review] pre-restore requires a live unverified support observation');
+    }
+    return window;
+  }
+  if (observation.enabled && observation.observedStatus === 'verified') return 'verified';
+  return observation.enabled ? 'live-entitlement-unavailable' : 'hosted-support-unreachable';
+}
+
+test('classifies the pre-restore observation window', () => {
+  expect(observedSupportMode('pre-restore', { enabled: true, observedStatus: 'unverified', dismissed: false })).toBe('pre-restore');
+});
+
+test('classifies the post-restore unavailable observation window', () => {
+  expect(observedSupportMode('post-restore', { enabled: true, observedStatus: 'unverified', dismissed: false })).toBe('live-entitlement-unavailable');
+});
+
+test('classifies a verified post-restore startup', () => {
+  expect(observedSupportMode('post-restore', { enabled: true, observedStatus: 'verified', dismissed: false })).toBe('verified');
+});
+
+test('finishes the agent-supervised marketplace review and records window-scoped live support observations', async ({ page, browser }: { page: Page; browser: Browser }) => {
   const marker = process.env.CUMPA_MARKETPLACE_URL_MARKER;
   if (!marker) throw new Error('[marketplace-review] CUMPA_MARKETPLACE_URL_MARKER is required');
+  const window = supportWindow();
   const observation = await openRuntimeSession(page, await waitForLoopbackUrl(marker), { dismissUnverified: false });
+  const mode = observedSupportMode(window, observation);
   const supportStates: Array<Record<string, unknown>> = [];
-  if (observation.enabled && observation.observedStatus === 'unverified') {
+
+  if (window === 'pre-restore') {
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('button', { name: 'Not now', exact: true })).toBeVisible();
-    supportStates.push({ state: 'unverified', status: 'passed', promptShown: true, restoreCompleted: false, restoreObservedFromSharedIdentity: false, reviewUnrestricted: true, exportUnrestricted: true, finishUnrestricted: false, modalPromptBlocksInteractiveActions: true, interactiveReviewExportPerformed: false, substituted: false });
+    supportStates.push({
+      state: 'unverified',
+      window,
+      observed: true,
+      status: 'passed',
+      promptShown: true,
+      restoreCompleted: false,
+      restoreObservedFromSharedIdentity: false,
+      reviewUnrestricted: true,
+      exportUnrestricted: true,
+      finishUnrestricted: true,
+      modalPromptBlocksInteractiveActions: true,
+      interactiveReviewExportPerformed: false,
+      substituted: false,
+    });
     await dialog.getByRole('button', { name: 'Not now', exact: true }).click();
     await expect(page.locator('.support-dialog-backdrop')).toBeHidden();
+    await addHeadComment(page);
+    await saveSummaryAndExport(page);
+    const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
+    await page.getByRole('button', { name: 'Finish review', exact: true }).click();
+    expect((await finished).status()).toBe(201);
+    supportStates.push({
+      state: 'dismissed',
+      window,
+      observed: true,
+      status: 'passed',
+      promptShown: false,
+      restoreCompleted: false,
+      restoreObservedFromSharedIdentity: false,
+      reviewUnrestricted: true,
+      exportUnrestricted: true,
+      finishUnrestricted: true,
+      modalPromptBlocksInteractiveActions: false,
+      interactiveReviewExportPerformed: true,
+      substituted: false,
+    });
   } else {
-    supportStates.push({ state: 'unverified', status: 'blocked', promptShown: false, restoreCompleted: false, restoreObservedFromSharedIdentity: false, reviewUnrestricted: false, exportUnrestricted: false, finishUnrestricted: false, modalPromptBlocksInteractiveActions: false, interactiveReviewExportPerformed: false, reason: 'hosted-support-unreachable', substituted: false });
+    if (observation.enabled && observation.observedStatus === 'unverified') {
+      const dialog = page.getByRole('dialog');
+      await expect(dialog.getByRole('button', { name: 'Not now', exact: true })).toBeVisible();
+      await dialog.getByRole('button', { name: 'Not now', exact: true }).click();
+      await expect(page.locator('.support-dialog-backdrop')).toBeHidden();
+    }
+    await addHeadComment(page);
+    await saveSummaryAndExport(page);
+    const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
+    await page.getByRole('button', { name: 'Finish review', exact: true }).click();
+    expect((await finished).status()).toBe(201);
+    supportStates.push(mode === 'verified'
+      ? {
+          state: 'verified',
+          window,
+          observed: true,
+          status: 'passed',
+          promptShown: false,
+          restoreCompleted: false,
+          restoreObservedFromSharedIdentity: false,
+          reviewUnrestricted: true,
+          exportUnrestricted: true,
+          finishUnrestricted: true,
+          modalPromptBlocksInteractiveActions: false,
+          interactiveReviewExportPerformed: true,
+          substituted: false,
+        }
+      : {
+          state: 'verified',
+          window,
+          observed: true,
+          status: 'blocked',
+          promptShown: observation.enabled && observation.observedStatus === 'unverified',
+          restoreCompleted: false,
+          restoreObservedFromSharedIdentity: false,
+          reviewUnrestricted: true,
+          exportUnrestricted: true,
+          finishUnrestricted: true,
+          modalPromptBlocksInteractiveActions: false,
+          interactiveReviewExportPerformed: true,
+          reason: mode,
+          substituted: false,
+        });
   }
-  await addHeadComment(page);
-  await saveSummaryAndExport(page);
-  supportStates.push({ state: 'dismissed', status: 'passed', promptShown: false, restoreCompleted: false, restoreObservedFromSharedIdentity: false, reviewUnrestricted: true, exportUnrestricted: true, finishUnrestricted: false, modalPromptBlocksInteractiveActions: false, interactiveReviewExportPerformed: true, substituted: false });
-  const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
-  await page.getByRole('button', { name: 'Finish review', exact: true }).click();
-  expect((await finished).status()).toBe(201);
-  supportStates.push({ state: 'verified', status: 'blocked', promptShown: false, restoreCompleted: false, restoreObservedFromSharedIdentity: true, reviewUnrestricted: false, exportUnrestricted: false, finishUnrestricted: false, modalPromptBlocksInteractiveActions: false, interactiveReviewExportPerformed: false, reason: 'live-entitlement-unavailable', substituted: false, restoreReportedCompleteWithoutLinkage: true });
+
   publishScenarioRecord('marketplace-review', {
-    supportStateWindow: process.env.CUMPA_SUPPORT_STATE_WINDOW ?? 'pre-restore',
+    supportStateWindow: window,
     supportStates,
     browser: {
       summarySha256: createHash('sha256').update(summary).digest('hex'),
       commentSha256: createHash('sha256').update(comment).digest('hex'),
+      version: browser.version(),
       finishClicked: true,
     },
     sourceControl: { unchanged: true },
     cleanup: { complete: true },
-  }, { status: 'partially-blocked' });
+  }, { status: supportStates.some((state) => state.status === 'blocked') ? 'partially-blocked' : 'passed' });
 });

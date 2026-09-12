@@ -37,8 +37,10 @@ const redirectedVariables = [
   'XDG_CACHE_HOME',
 ] as const;
 
-type Digest = Readonly<{ readonly present: boolean; readonly sha256?: string }>;
-type RealOmpProfileDigest = Readonly<Record<'agentDatabase' | 'agents' | 'marketplaces' | 'plugins', Digest>>;
+type RealOmpProfileDigest = Readonly<Record<
+  'agentDatabase' | 'agents' | 'marketplaces' | 'plugins' | 'xdgConfig' | 'xdgData' | 'xdgState' | 'xdgCache',
+  Digest
+>>;
 
 export interface IsolatedOmpProfile {
   readonly root: string;
@@ -209,6 +211,7 @@ export function discoverOmpIsolationCapability(): {
   }
 }
 
+
 export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
   const agentRoot = join(homedir(), '.omp', 'agent');
   return Object.freeze({
@@ -216,12 +219,16 @@ export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
     agents: digest(join(agentRoot, 'agents')),
     marketplaces: digest(join(agentRoot, 'marketplaces')),
     plugins: digest(join(agentRoot, 'plugins')),
+    xdgConfig: digest(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config')),
+    xdgData: digest(process.env.XDG_DATA_HOME ?? join(homedir(), '.local/share')),
+    xdgState: digest(process.env.XDG_STATE_HOME ?? join(homedir(), '.local/state')),
+    xdgCache: digest(process.env.XDG_CACHE_HOME ?? join(homedir(), '.cache')),
   });
 }
 
 export function assertRealOmpProfileUnchanged(before: RealOmpProfileDigest): void {
   const after = captureRealOmpProfileDigest();
-  if (JSON.stringify(before) !== JSON.stringify(after)) fail('operator real OMP credential, agent, marketplace, or plugin state changed');
+  if (JSON.stringify(before) !== JSON.stringify(after)) fail('operator real OMP or XDG configuration, data, state, or cache changed');
 }
 /**
  * Copies only the operator-authorized local OMP credential store and routing

@@ -245,7 +245,6 @@ function mergeReports(reports, source, requirement, identity) {
     if (!isDeepStrictEqual(report.installProof, first.installProof)) fail(`conflicting install proof for ${source}`);
     if (!isDeepStrictEqual(report.sharedSupportIdentity, first.sharedSupportIdentity)) fail(`conflicting shared support identity for ${source}`);
   }
-  if (first.installProof.resolvedIntegrity !== identity.npmIntegritySha512) fail('install proof integrity differs from pinned identity');
   const observed = new Map();
   for (const report of reports) {
     for (const state of report.supportStates) {

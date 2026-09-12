@@ -1,9 +1,10 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { chmodSync, existsSync, linkSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
-import { homedir, tmpdir } from 'node:os';
+import { homedir, release, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
+import { chromium } from '@playwright/test';
 import { expect, test } from 'vitest';
 
 import { parseCanonicalReviewExport } from '../../src/export/review-export.js';
@@ -41,6 +42,40 @@ function extractToolCallTrace(output: string): string {
   return [...content.values()].join('\n');
 }
 
+function redactAgentOutput(output: string): string {
+  return output
+    .replaceAll(/\b(?:token|secret|credential|api[_-]?key|password|authorization)\s*(?:=|:)\s*\S+/giu, '[redacted]')
+    .replaceAll(/\b(?:sk-[A-Za-z0-9_-]+|[A-Za-z0-9_-]{43})\b/gu, '[credential]')
+    .replaceAll(/https?:\/\/[^\s"'<>()[\]]+/gu, '[url]')
+    .replaceAll(/(?:^|[\s"'(])(?:\/(?:[^\s"'()]+\/)*[^\s"'()]+|[A-Za-z]:\\(?:[^\s"'()\\]+\\)*[^\s"'()\\]+)/gu, '$1[path]');
+}
+
+function observedHost(browser: string): Readonly<Record<'platform' | 'arch' | 'osRelease' | 'node' | 'npm' | 'git' | 'playwright' | 'browser', string>> {
+  const npm = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['--version'], { encoding: 'utf8', shell: false });
+  const git = spawnSync('git', ['--version'], { encoding: 'utf8', shell: false });
+  const playwright = spawnSync(process.execPath, [join(projectRoot, 'node_modules/@playwright/test/cli.js'), '--version'], { encoding: 'utf8', shell: false });
+  if (npm.status !== 0 || git.status !== 0 || playwright.status !== 0) throw new Error('[marketplace-profile] unable to observe host tool versions');
+  return Object.freeze({
+    platform: process.platform,
+    arch: process.arch,
+    osRelease: release(),
+    node: process.version,
+    npm: npm.stdout.trim(),
+    git: git.stdout.trim(),
+    playwright: playwright.stdout.trim(),
+    browser,
+  });
+}
+
+async function observedBrowserVersion(): Promise<string> {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    return browser.version();
+  } finally {
+    await browser.close();
+  }
+}
+
 
 function writeOpener(root: string): string {
   const bin = join(root, 'bin');
@@ -73,19 +108,43 @@ function writePlaywrightConfig(root: string): string {
 test('isolated OMP marketplace skill supervises the exact public CLI through Finish', { timeout: 10 * 60_000 }, async () => {
   const report = process.env.CUMPA_MARKETPLACE_ACCEPTANCE_REPORT;
   const supportHomePath = process.env.CUMPA_ACCEPTANCE_SUPPORT_HOME;
+  const window = process.env.CUMPA_SUPPORT_STATE_WINDOW;
   if (!report || !supportHomePath || existsSync(report)) throw new Error('[marketplace-profile] a new report path and shared support HOME are required');
+  if (window !== 'pre-restore' && window !== 'post-restore') throw new Error('[marketplace-profile] CUMPA_SUPPORT_STATE_WINDOW must be pre-restore or post-restore');
+
   const beforeOmp = captureRealOmpProfileDigest();
   const beforeSource = await captureSourceControlSnapshot(projectRoot);
   const capability = discoverOmpIsolationCapability();
-  if (!capability.ompAvailable || process.env.CUMPA_OMP_PROFILE_AUTH_READY !== '1') {
-    publishEvidence(report, { kind: 'cumpa.marketplace-acceptance/v1', status: 'blocked', acc03: { status: 'blocked', reason: 'omp-authentication-unavailable', substituted: false }, capability, cleanup: { complete: true } });
+  const browser = await observedBrowserVersion();
+  const isolationBlocked = !capability.ompAvailable || capability.unhonoredVariables.length > 0;
+  if (isolationBlocked || process.env.CUMPA_OMP_PROFILE_AUTH_READY !== '1') {
+    const reason = isolationBlocked ? 'omp-isolation-unavailable' : 'omp-authentication-unavailable';
+    assertRealOmpProfileUnchanged(beforeOmp);
+    await assertSourceControlUnchanged(beforeSource, await captureSourceControlSnapshot(projectRoot));
+    publishEvidence(report, {
+      kind: 'cumpa.marketplace-acceptance/v2',
+      status: 'blocked',
+      reason,
+      substituted: false,
+      path: 'marketplace',
+      requirement: 'ACC-03',
+      window,
+      host: observedHost(browser),
+      installProof: { status: 'blocked', reason },
+      sharedSupportIdentity: { shared: true, restoreCompleted: false, restoreObservedFromSharedIdentity: false },
+      sourceControlUnchanged: { asserted: true, scenarios: [{ name: 'marketplace-isolation-capability', unchanged: true }] },
+      supportStates: [],
+      cleanup: { removedOwnedRoots: true },
+    });
     return;
   }
+
   const supportHome = createSharedSupportHome(supportHomePath);
   const runtime = installPublicGlobalRuntime({ supportHome, installScripts: 'enabled' });
   const fixture = await createDirtyGitFixture('branch-to-worktree', 705);
   const root = mkdtempSync(join(tmpdir(), 'cumpa-marketplace-driver-'));
   let profile: IsolatedOmpProfile | undefined;
+  let evidence: Record<string, unknown> | undefined;
   try {
     const marker = join(root, 'loopback-marker');
     const bridge = join(root, 'scenario');
@@ -111,16 +170,16 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
       CUMPA_AGENT_READY_EVIDENCE_REPORT: bridge,
       CUMPA_AGENT_READY_EVIDENCE_RUN_ID: randomUUID(),
       CUMPA_ACCEPTANCE_SUPPORT_HOME: supportHome.home,
-      CUMPA_SUPPORT_STATE_WINDOW: process.env.CUMPA_SUPPORT_STATE_WINDOW ?? 'pre-restore',
+      CUMPA_SUPPORT_STATE_WINDOW: window,
     };
     const readinessStarted = new Date().toISOString();
-    const browser = startChild(process.execPath, [join(projectRoot, 'node_modules/@playwright/test/cli.js'), 'test', '--config', playwrightConfig, 'tests/e2e/marketplace-review.spec.ts'], environment);
+    const browserChild = startChild(process.execPath, [join(projectRoot, 'node_modules/@playwright/test/cli.js'), 'test', '--config', playwrightConfig, 'tests/e2e/marketplace-review.spec.ts'], environment);
     const agent = startChild('omp', ['--no-prewalk', '--model', 'openai-codex/gpt-5.6-terra:high', '--mode', 'json', '--cwd', fixture.nestedCwd, prompt], environment);
-    const browserResult = await browser.completion;
+    const browserResult = await browserChild.completion;
     if (browserResult.code !== 0) {
       agent.stop();
       const agentResult = await agent.completion;
-      throw new Error(`[marketplace-profile] agent did not reach loopback readiness: ${agentResult.output.slice(-1000)}`);
+      throw new Error(`[marketplace-profile] agent did not reach loopback readiness: ${redactAgentOutput(agentResult.output).slice(-400)}`);
     }
     const readiness = statSync(marker).mtime.toISOString();
     const agentResult = await agent.completion;
@@ -128,13 +187,16 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
     expect(agentResult.code).toBe(0);
     expect(completion > readinessStarted).toBe(true);
     expect(completion > readiness).toBe(true);
-    const commandTrace = extractToolCallTrace(agentResult.output);
+    const commandTrace = extractToolCallTrace(redactAgentOutput(agentResult.output));
     const checker = commandTrace.indexOf('check-cumpa.mjs');
     const launch = commandTrace.indexOf('cumpa', checker + 'check-cumpa.mjs'.length);
     expect(checker).toBeGreaterThanOrEqual(0);
     expect(launch).toBeGreaterThan(checker);
     expect(commandTrace).not.toMatch(/\b(?:npm\s+(?:install|upgrade)|npx\b|git\s+clone|\.tgz)\b/u);
-    const scenario = JSON.parse(readFileSync(`${bridge}.marketplace-review.json`, 'utf8')) as { browser: { summarySha256: string; commentSha256: string }; supportStates: unknown[] };
+    const scenario = JSON.parse(readFileSync(`${bridge}.marketplace-review.json`, 'utf8')) as {
+      browser: { summarySha256: string; commentSha256: string; version: string };
+      supportStates: Array<{ state: string; window: string; observed: boolean; status: 'passed' | 'blocked'; reason?: string }>;
+    };
     const resultFile = join(profile.root, 'cumpa-result.json');
     const result = parseCanonicalReviewExport(readFileSync(resultFile));
     expect(result.kind).toBe('cumpa/export');
@@ -142,24 +204,36 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
     expect(result.files.flatMap((file) => file.comments).map((entry) => entry.body)).toContain(comment);
     expect(scenario.browser.summarySha256).toBe(createHash('sha256').update(summary).digest('hex'));
     expect(scenario.browser.commentSha256).toBe(createHash('sha256').update(comment).digest('hex'));
+    expect(scenario.browser.version).toBe(browser);
+    expect(scenario.supportStates.map((state) => state.state)).toEqual(window === 'pre-restore' ? ['unverified', 'dismissed'] : ['verified']);
+    for (const state of scenario.supportStates) {
+      expect(state.window).toBe(window);
+      expect(state.observed).toBe(true);
+    }
     const executable = realpathSync(runtime.launch.command);
     const prefix = realpathSync(join(runtime.root, 'prefix'));
     expect(isContainedPath(executable, prefix)).toBe(true);
     expect(isContainedPath(realpathSync(profile.pluginTreeRoot), realpathSync(projectRoot))).toBe(false);
-    publishEvidence(report, {
-      kind: 'cumpa.marketplace-acceptance/v1',
-      status: 'partially-blocked',
+    const blocked = scenario.supportStates.find((state) => state.status === 'blocked');
+    evidence = {
+      kind: 'cumpa.marketplace-acceptance/v2',
+      status: blocked === undefined ? 'passed' : 'blocked',
+      ...(blocked === undefined ? {} : { reason: blocked.reason ?? 'marketplace-review-blocked', substituted: false }),
+      path: 'marketplace',
+      requirement: 'ACC-03',
+      window,
+      host: observedHost(browser),
+      installProof: runtime.proof,
+      sharedSupportIdentity: { shared: true, restoreCompleted: false, restoreObservedFromSharedIdentity: false },
       acc03: { status: 'passed', substituted: false },
-      capability,
-      isolation: { sharedSupportHome: true, providerCredentialReused: true, realProfileUnchanged: true },
-      marketplace: { source: 'public', catalog: 'Ship-With-AI/skills', collection: 'ship-with-ai', collectionVersion: '0.3.0', commit: '984e28c5838176ec15d2af8b996d0307e45b28d5', scope: 'project', commands: ['omp plugin marketplace add Ship-With-AI/skills', 'omp plugin install --scope project ship-with-ai@ship-with-ai-skills'] },
+      marketplace: { source: 'public', catalog: 'Ship-With-AI/skills', collection: 'ship-with-ai', collectionVersion: '0.3.0', commit: '984e28c5838176ec15d2af8b996d0307e45b28d5', scope: 'project' },
       skill: { invocation: '/skill:cumpa', loadedFromInstalledTree: true, loadedFromCheckout: false, sha256: '8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220' },
       separateInstall: { checkerRanFirst: true, executableInsideIsolatedPrefix: true, version: '1.5.0' },
       lifecycle: { readinessStarted, readiness, completion, terminalExit: 0 },
       canonical: { nonEmpty: true, parseable: true, kind: result.kind, summaryMatchesBrowser: true, commentMatchesBrowser: true },
       supportStates: scenario.supportStates,
-      cleanup: { complete: true },
-    });
+      cleanup: { removedOwnedRoots: true },
+    };
   } finally {
     profile?.cleanup();
     runtime.cleanup();
@@ -169,4 +243,9 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
     assertRealOmpProfileUnchanged(beforeOmp);
     await assertSourceControlUnchanged(beforeSource, await captureSourceControlSnapshot(projectRoot));
   }
+  if (evidence === undefined) throw new Error('[marketplace-profile] marketplace evidence was not produced');
+  publishEvidence(report, {
+    ...evidence,
+    sourceControlUnchanged: { asserted: true, scenarios: [{ name: 'marketplace-agent-supervised-review', unchanged: true }] },
+  });
 });

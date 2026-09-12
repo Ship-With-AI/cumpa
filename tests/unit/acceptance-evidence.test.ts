@@ -43,11 +43,14 @@ type ProducerReport = {
   path: 'public-global' | 'public-npx' | 'marketplace';
   window: 'pre-restore' | 'post-restore';
   host: typeof host;
-  installProof: { resolvedIntegrity: string; packageLabel: string };
+  installProof: { resolvedIntegrity?: string; packageLabel?: string; status?: 'blocked'; reason?: string };
   sharedSupportIdentity: { shared: boolean; restoreCompleted: boolean; restoreObservedFromSharedIdentity: boolean };
   sourceControlUnchanged: { asserted: boolean; scenarios: Array<{ name: string; unchanged: boolean }> };
   supportStates: Array<ReportState & { window: 'pre-restore' | 'post-restore'; observed: true; substituted: false }>;
   cleanup: { removedOwnedRoots: boolean };
+  status?: 'passed' | 'blocked';
+  reason?: string;
+  substituted?: false;
 };
 
 
@@ -199,4 +202,16 @@ test('synthesizes only missing states as blocked and derives source-control evid
   expect(global.supportStates).toContainEqual(expect.objectContaining({ state: 'dismissed', status: 'blocked', reason: 'state-not-observed', substituted: false }));
   expect(global.supportStates).toContainEqual(expect.objectContaining({ state: 'verified', status: 'blocked', reason: 'state-not-observed', substituted: false }));
   expect(record.status).toBe('partially-blocked');
+});
+
+test('keeps a blocked pre-install report honest without inventing integrity', () => {
+  const blocked = report('marketplace', 'pre-restore', []);
+  blocked.status = 'blocked';
+  blocked.reason = 'omp-isolation-unavailable';
+  blocked.substituted = false;
+  blocked.installProof = { status: 'blocked', reason: 'omp-isolation-unavailable' };
+  const record = writeRecord([blocked]);
+  const marketplace = record.installations.find((installation: { installSource: string }) => installation.installSource === 'marketplace');
+  expect(marketplace).toMatchObject({ status: 'blocked', reason: 'omp-isolation-unavailable' });
+  expect(marketplace.supportStates).toHaveLength(3);
 });
