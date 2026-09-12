@@ -5,7 +5,6 @@ import {
   existsSync,
   lstatSync,
   mkdtempSync,
-  mkdirSync,
   readFileSync,
   readdirSync,
   realpathSync,
@@ -251,6 +250,77 @@ export function installPublicGlobalRuntime(options: Readonly<{
         installScripts: options.installScripts,
         binaryContainedInIsolatedPrefix: true,
         manifestSha256: manifest.sha256,
+      }),
+      cleanup: temporary.cleanup,
+    });
+  } catch (error) {
+    temporary.cleanup();
+    throw error;
+  }
+}
+
+function npxEntryPoint(): string {
+  const entryPoint = join(dirname(dirname(npmExecutable())), 'bin', 'npx-cli.js');
+  if (!existsSync(entryPoint)) fail('npx-cli.js is not bundled with npm');
+  return entryPoint;
+}
+
+function npxPackage(cache: string): Readonly<{ readonly packageRoot: string; readonly lockPath: string }> {
+  const npxRoot = join(cache, '_npx');
+  if (!existsSync(npxRoot) || !lstatSync(npxRoot).isDirectory()) fail('npx did not create an isolated _npx cache');
+  const candidates = readdirSync(npxRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && !entry.isSymbolicLink())
+    .map((entry) => join(npxRoot, entry.name))
+    .filter((root) => existsSync(join(root, 'node_modules', '@shipwithai', 'cumpa', 'package.json')));
+  if (candidates.length !== 1) fail('npx did not create one isolated package cache entry');
+  return Object.freeze({
+    packageRoot: join(candidates[0], 'node_modules', '@shipwithai', 'cumpa'),
+    lockPath: join(candidates[0], 'node_modules', '.package-lock.json'),
+  });
+}
+
+export function preparePublicNpxRuntime(options: Readonly<{
+  readonly supportHome: SharedSupportHome;
+}>): InstalledPublicRuntime {
+  const temporary = ownedRoot('cumpa-public-npx-');
+  try {
+    const env = isolatedEnvironment(temporary.root, options.supportHome);
+    const cache = env.npm_config_cache;
+    if (cache === undefined) fail('isolated npm cache is missing');
+    assertNoResolvableCumpa(temporary.root, env);
+    if (existsSync(join(temporary.root, 'node_modules', '.bin', 'cumpa'))) {
+      fail('npx local-install condition: a local cumpa executable exists');
+    }
+    const launch = Object.freeze({
+      command: process.execPath,
+      args: Object.freeze([npxEntryPoint(), '--yes', PINNED_PUBLIC_ARTIFACT.packageLabel]),
+    });
+    const npmCacheEntryCountBefore = readdirSync(cache).length;
+    if (npmCacheEntryCountBefore !== 0) fail('npx cache-reuse condition: isolated npm cache is not empty');
+    if (
+      runRuntimeCommand(launch.command, [...launch.args, '--version'], { cwd: temporary.root, env }).trim()
+      !== PINNED_PUBLIC_ARTIFACT.version
+    ) fail('npx did not run the pinned public package version');
+    const cacache = join(cache, '_cacache');
+    if (!existsSync(cacache) || !lstatSync(cacache).isDirectory() || readdirSync(cacache).length === 0) {
+      fail('npx did not populate the isolated _cacache');
+    }
+    assertContainedPackage(installed.packageRoot, join(installed.packageRoot, 'dist', 'bin', 'cumpa.mjs'), cache);
+    const resolution = assertRecordedResolution(undefined, [installed.lockPath]);
+    validateManifest(installed.packageRoot);
+    return Object.freeze({
+      source: 'public-npx',
+      root: temporary.root,
+      launch,
+      env: Object.freeze(env),
+      proof: Object.freeze({
+        packageLabel: PINNED_PUBLIC_ARTIFACT.packageLabel,
+        resolvedTarball: resolution.resolved,
+        resolvedIntegrity: resolution.integrity,
+        resolvedVersion: resolution.version,
+        installScripts: 'enabled',
+        binaryContainedInIsolatedPrefix: true,
+        npmCacheEntryCountBefore,
       }),
       cleanup: temporary.cleanup,
     });
