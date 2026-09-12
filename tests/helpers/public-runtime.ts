@@ -322,6 +322,7 @@ export function preparePublicNpxRuntime(options: Readonly<{
       runRuntimeCommand(launch.command, [...launch.args, '--version'], { cwd: temporary.root, env }).trim()
       !== PINNED_PUBLIC_ARTIFACT.version
     ) fail('npx did not run the pinned public package version');
+    const installed = npxPackage(cache);
     const cacache = join(cache, '_cacache');
     if (!existsSync(cacache) || !lstatSync(cacache).isDirectory() || readdirSync(cacache).length === 0) {
       fail('npx did not populate the isolated _cacache');
