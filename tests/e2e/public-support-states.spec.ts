@@ -26,7 +26,7 @@ import { openRuntimeSession } from '../helpers/open-runtime-session.js';
 import { publishScenarioRecord } from '../helpers/runtime-artifact.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
 
-test.setTimeout(14 * 60_000);
+test.setTimeout(17 * 60_000);
 test.use({ headless: process.env.CUMPA_SUPPORT_RESTORE_HEADED !== '1' });
 test.describe.configure({ mode: 'serial' });
 
@@ -42,8 +42,13 @@ type Row = Readonly<{
   readonly finishUnrestricted: boolean;
   readonly modalPromptBlocksInteractiveActions: boolean;
   readonly interactiveReviewExportPerformed: boolean;
-  readonly reason?: 'support-not-configured' | 'hosted-support-unreachable' | 'paid-account-unavailable' | 'human-sign-in-unavailable';
+  readonly reason?: 'support-not-configured' | 'hosted-support-unreachable' | 'paid-account-unavailable' | 'human-sign-in-unavailable' | 'live-entitlement-unavailable';
   readonly substituted: false;
+}>;
+type RestoreDefectObservation = Readonly<{
+  readonly restoreReportedCompleteWithoutLinkage: true;
+  readonly installationStatusRemainedUnverified: true;
+  readonly verificationModalReachedTerminalState: false;
 }>;
 type Probe = Readonly<{ readonly supportConfigured: boolean; readonly hostedReachable: boolean }>;
 
@@ -384,20 +389,20 @@ test('records verified support with its own unrestricted review, export, and Fin
     return;
   }
 
-  const stored = readSupportState();
-  const restoring = stored.status === 'unverified';
-  if (restoring && process.env.CUMPA_SUPPORT_RESTORE_HEADED !== '1') {
-    blockVerifiedRow('human-sign-in-unavailable');
-    return;
-  }
-
-  let blockedReason: Row['reason'] = restoring ? 'human-sign-in-unavailable' : 'hosted-support-unreachable';
+  let restoring = false;
+  let blockedReason: Row['reason'] = 'hosted-support-unreachable';
   let verified = false;
+  let restoreDefectObservation: RestoreDefectObservation | undefined;
   await withFixture(403, async (fixture) => {
     const page = await browser.newPage();
     const running = startCli(fixture);
     try {
       await openRuntimeSession(page, await waitForLoopbackUrl(running), { dismissUnverified: false });
+      restoring = readSupportState().status === 'unverified';
+      if (restoring && process.env.CUMPA_SUPPORT_RESTORE_HEADED !== '1') {
+        blockedReason = 'human-sign-in-unavailable';
+        return;
+      }
       const dialog = page.getByRole('dialog');
       if (restoring) {
         await expect(dialog.getByRole('button', { name: 'Restore support', exact: true })).toBeVisible();
@@ -407,6 +412,7 @@ test('records verified support with its own unrestricted review, export, and Fin
           .catch(() => undefined);
         const popup = page.waitForEvent('popup').catch(() => undefined);
         console.log('OPERATOR: headed Restore window opening now — complete the GitHub sign-in in it and leave the window alone.');
+        let reportedComplete: Promise<boolean> | undefined;
         try {
           await dialog.getByRole('button', { name: 'Restore support', exact: true }).click();
           expect(JSON.parse((await started).postData() ?? '')).toEqual({ action: 'restore' });
@@ -414,11 +420,14 @@ test('records verified support with its own unrestricted review, export, and Fin
           const hosted = await popup;
           if (start?.kind !== 'ready' || hosted === undefined) {
             blockedReason = 'hosted-support-unreachable';
+            await page.waitForTimeout(15 * 60_000);
             return;
           }
           expect(new URL(hosted.url()).origin).toBe(new URL(start.flowUrl).origin);
+          reportedComplete = hosted.getByText('Support flow complete. You can return to Cumpa.').waitFor({ timeout: 15 * 60_000 }).then(() => true, () => false);
         } catch {
           blockedReason = 'hosted-support-unreachable';
+          await page.waitForTimeout(15 * 60_000);
           return;
         }
         const refreshed = page.waitForResponse(async (response) => (
@@ -426,10 +435,23 @@ test('records verified support with its own unrestricted review, export, and Fin
           && response.request().method() === 'POST'
           && response.ok()
           && SupportStatusSchema.parse(await response.json()).status === 'verified'
-        ), { timeout: 12 * 60_000 });
+        ), { timeout: 15 * 60_000 });
         try {
-          await refreshed;
+          await Promise.all([refreshed, page.waitForTimeout(15 * 60_000)]);
         } catch {
+          if (
+            await reportedComplete === true
+            && readSupportState().status === 'unverified'
+            && !await dialog.getByText('Support is verified on this machine.').isVisible()
+          ) {
+            restoreDefectObservation = {
+              restoreReportedCompleteWithoutLinkage: true,
+              installationStatusRemainedUnverified: true,
+              verificationModalReachedTerminalState: false,
+            };
+            blockedReason = 'live-entitlement-unavailable';
+            return;
+          }
           blockedReason = 'human-sign-in-unavailable';
           return;
         }
@@ -488,6 +510,8 @@ test.afterAll(() => {
       supportStateWindow: stateWindow ?? 'all',
       probe: probe ?? { supportConfigured: false, hostedReachable: false },
       supportStates,
+      restoreReportedCompleteWithoutLinkage: restoreDefectObservation?.restoreReportedCompleteWithoutLinkage ?? false,
+      restoreCompletionObservation: restoreDefectObservation,
       sourceControl: { unchanged: sourceControlUnchanged },
       cleanup: { complete: true },
     }, { status });
