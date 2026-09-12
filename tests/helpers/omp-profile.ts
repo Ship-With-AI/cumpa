@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { chmodSync, cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, readlinkSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { delimiter, dirname, join, resolve } from 'node:path';
+
 import { buildIsolatedPath, isContainedPath } from './public-artifact-identity.js';
 import { inheritedEnvironment, runRuntimeCommand } from './runtime-artifact.js';
 
@@ -13,6 +14,7 @@ type SharedSupportHome = Readonly<{
 
 type ProfilePaths = Readonly<{
   readonly ompRoot: string;
+  readonly ompProfile: string;
   readonly home: string;
   readonly agentDir: string;
   readonly xdgConfigDir: string;
@@ -31,13 +33,7 @@ const credentialVariables = [
   'OPENAI_API_KEY',
   'OPENAI_CODEX_OAUTH_TOKEN',
 ] as const;
-const redirectedVariables = [
-  'PI_CODING_AGENT_DIR',
-  'XDG_CONFIG_HOME',
-  'XDG_DATA_HOME',
-  'XDG_STATE_HOME',
-  'XDG_CACHE_HOME',
-] as const;
+const requiredIsolationVariables = ['HOME', 'PI_CODING_AGENT_DIR'] as const;
 
 type RealOmpProfileDigest = Readonly<Record<
   'agentDatabase' | 'agents' | 'marketplaces' | 'plugins' | 'xdgConfig' | 'xdgData' | 'xdgState' | 'xdgCache',
@@ -52,10 +48,26 @@ export interface IsolatedOmpProfile {
   readonly xdgDataDir: string;
   readonly xdgStateDir: string;
   readonly xdgCacheDir: string;
+  readonly ompProfile: string;
   readonly env: NodeJS.ProcessEnv;
   readonly pluginTreeRoot: string;
   cleanup(): void;
 }
+
+type OmpIsolationObservation = Readonly<{
+  readonly homeHasOmpTree: boolean;
+  readonly agentDatabasePresent: boolean;
+  readonly resolvedRealProfilePath: boolean;
+  readonly realProfileChanged: boolean;
+}>;
+
+export type OmpIsolationCapability = Readonly<{
+  readonly ompAvailable: boolean;
+  readonly ompVersion?: string;
+  readonly honoredVariables: readonly string[];
+  readonly unhonoredVariables: readonly string[];
+  readonly contaminated: boolean;
+}>;
 
 function fail(message: string): never {
   throw new Error(`[omp-profile] ${message}`);
@@ -101,9 +113,24 @@ function digest(path: string): Digest {
   return Object.freeze({ present: true, sha256: digest_.digest('hex') });
 }
 
-function hasContents(path: string): boolean {
-  return readdirSync(path, { recursive: true }).length > 0;
+export function assessOmpIsolation(
+  observation: OmpIsolationObservation,
+  ompAvailable = true,
+  ompVersion?: string,
+): OmpIsolationCapability {
+  const observed = {
+    HOME: observation.homeHasOmpTree,
+    PI_CODING_AGENT_DIR: observation.agentDatabasePresent,
+  };
+  return Object.freeze({
+    ompAvailable,
+    ...(ompVersion === undefined ? {} : { ompVersion }),
+    honoredVariables: Object.freeze(requiredIsolationVariables.filter((variable) => observed[variable])),
+    unhonoredVariables: Object.freeze(requiredIsolationVariables.filter((variable) => !observed[variable])),
+    contaminated: observation.resolvedRealProfilePath || observation.realProfileChanged,
+  });
 }
+
 function ompExecutable(): string | undefined {
   const path = inheritedEnvironment(process.env).PATH;
   if (path === undefined) return undefined;
@@ -118,11 +145,11 @@ function requireOmp(): string {
   return ompExecutable() ?? fail('omp executable is unavailable');
 }
 
-
 function profilePaths(root: string): ProfilePaths {
   const ompRoot = join(root, 'omp');
   return Object.freeze({
     ompRoot,
+    ompProfile: 'cumpa-acceptance',
     home: join(ompRoot, 'home'),
     agentDir: join(ompRoot, 'agent'),
     xdgConfigDir: join(ompRoot, 'xdg-config'),
@@ -133,17 +160,27 @@ function profilePaths(root: string): ProfilePaths {
 }
 
 function createDirectories(paths: ProfilePaths): void {
-  for (const path of Object.values(paths)) mkdirSync(path, { recursive: true, mode: 0o700 });
+  for (const path of [
+    paths.ompRoot,
+    paths.home,
+    paths.agentDir,
+    paths.xdgConfigDir,
+    paths.xdgDataDir,
+    paths.xdgStateDir,
+    paths.xdgCacheDir,
+  ]) mkdirSync(path, { recursive: true, mode: 0o700 });
 }
 
 function isolatedEnvironment(
   paths: ProfilePaths,
   cliPrefixBin?: string,
   extraPath: readonly string[] = [],
+  useOmpProfile = true,
 ): NodeJS.ProcessEnv {
   const omp = requireOmp();
   const env = inheritedEnvironment(process.env);
   for (const variable of credentialVariables) delete env[variable];
+  if (!useOmpProfile) delete env.OMP_PROFILE;
   Object.assign(env, {
     HOME: paths.home,
     USERPROFILE: paths.home,
@@ -152,6 +189,7 @@ function isolatedEnvironment(
     XDG_DATA_HOME: paths.xdgDataDir,
     XDG_STATE_HOME: paths.xdgStateDir,
     XDG_CACHE_HOME: paths.xdgCacheDir,
+    ...(useOmpProfile ? { OMP_PROFILE: paths.ompProfile } : {}),
   });
   const nodeBin = dirname(realpathSync(process.execPath));
   env.PATH = buildIsolatedPath([
@@ -167,8 +205,9 @@ function isolatedEnvironment(
   return env;
 }
 
-function locateInstalledSkill(profile: ProfilePaths, installationCwd: string): string {
+function locateInstalledSkill(profile: ProfilePaths, home: string, installationCwd: string): string {
   const candidates = [
+    join(home, '.omp', 'profiles', profile.ompProfile, 'agent', 'plugins'),
     join(profile.xdgDataDir, 'omp', 'plugins', 'cache'),
     join(profile.xdgDataDir, 'omp', 'plugins'),
     join(profile.agentDir, 'plugins'),
@@ -194,45 +233,36 @@ function assertInstalledSkill(skillDirectory: string): void {
 }
 
 /** Runs only read-only OMP inspection inside a throwaway profile. */
-export function discoverOmpIsolationCapability(): {
-  readonly ompAvailable: boolean;
-  readonly ompVersion?: string;
-  readonly honoredVariables: readonly string[];
-  readonly unhonoredVariables: readonly string[];
-} {
+export function discoverOmpIsolationCapability(): OmpIsolationCapability {
+  const unavailable = () => assessOmpIsolation({
+    homeHasOmpTree: false,
+    agentDatabasePresent: false,
+    resolvedRealProfilePath: false,
+    realProfileChanged: false,
+  }, false);
   const omp = ompExecutable();
-  if (omp === undefined) {
-    return Object.freeze({ ompAvailable: false, honoredVariables: Object.freeze([]), unhonoredVariables: Object.freeze([...redirectedVariables]) });
-  }
+  if (omp === undefined) return unavailable();
   const version = spawnSync(omp, ['--version'], { encoding: 'utf8', shell: false });
-  if (version.error !== undefined || version.status !== 0) {
-    return Object.freeze({ ompAvailable: false, honoredVariables: Object.freeze([]), unhonoredVariables: Object.freeze([...redirectedVariables]) });
-  }
+  if (version.error !== undefined || version.status !== 0) return unavailable();
   const root = mkdtempSync(join(tmpdir(), 'cumpa-omp-probe-'));
+  const before = captureRealOmpProfileDigest();
   try {
     const paths = profilePaths(root);
     createDirectories(paths);
-    const env = isolatedEnvironment(paths);
-    const result = spawnSync(omp, ['plugin', 'list'], { cwd: root, env, encoding: 'utf8', shell: false });
+    const env = isolatedEnvironment(paths, undefined, [], false);
+    const result = spawnSync(omp, ['config', 'list'], { cwd: root, env, encoding: 'utf8', shell: false });
     if (result.error !== undefined || result.status !== 0) fail(`OMP isolation probe failed: ${result.stderr}`);
-    const observations: Readonly<Record<(typeof redirectedVariables)[number], boolean>> = Object.freeze({
-      PI_CODING_AGENT_DIR: hasContents(paths.agentDir),
-      XDG_CONFIG_HOME: hasContents(paths.xdgConfigDir),
-      XDG_DATA_HOME: hasContents(paths.xdgDataDir),
-      XDG_STATE_HOME: hasContents(paths.xdgStateDir),
-      XDG_CACHE_HOME: hasContents(paths.xdgCacheDir),
-    });
-    return Object.freeze({
-      ompAvailable: true,
-      ompVersion: version.stdout.trim(),
-      honoredVariables: Object.freeze(redirectedVariables.filter((variable) => observations[variable])),
-      unhonoredVariables: Object.freeze(redirectedVariables.filter((variable) => !observations[variable])),
-    });
+    const after = captureRealOmpProfileDigest();
+    return assessOmpIsolation({
+      homeHasOmpTree: existsSync(join(paths.home, '.omp')),
+      agentDatabasePresent: existsSync(join(paths.agentDir, 'agent.db')),
+      resolvedRealProfilePath: `${result.stdout}${result.stderr}`.includes(homedir()),
+      realProfileChanged: JSON.stringify(before) !== JSON.stringify(after),
+    }, true, version.stdout.trim());
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 }
-
 
 export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
   const agentRoot = join(homedir(), '.omp', 'agent');
@@ -241,10 +271,10 @@ export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
     agents: digest(join(agentRoot, 'agents')),
     marketplaces: digest(join(agentRoot, 'marketplaces')),
     plugins: digest(join(agentRoot, 'plugins')),
-    xdgConfig: digest(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config')),
-    xdgData: digest(process.env.XDG_DATA_HOME ?? join(homedir(), '.local/share')),
-    xdgState: digest(process.env.XDG_STATE_HOME ?? join(homedir(), '.local/state')),
-    xdgCache: digest(process.env.XDG_CACHE_HOME ?? join(homedir(), '.cache')),
+    xdgConfig: digest(join(homedir(), '.config')),
+    xdgData: digest(join(homedir(), '.local/share')),
+    xdgState: digest(join(homedir(), '.local/state')),
+    xdgCache: digest(join(homedir(), '.cache')),
   });
 }
 
@@ -252,6 +282,7 @@ export function assertRealOmpProfileUnchanged(before: RealOmpProfileDigest): voi
   const after = captureRealOmpProfileDigest();
   if (JSON.stringify(before) !== JSON.stringify(after)) fail('operator real OMP or XDG configuration, data, state, or cache changed');
 }
+
 /**
  * Copies only the operator-authorized local OMP credential store and routing
  * configuration into the owned profile; it never mutates the source profile.
@@ -259,13 +290,15 @@ export function assertRealOmpProfileUnchanged(before: RealOmpProfileDigest): voi
 export function provisionApprovedOmpModelAccess(profile: IsolatedOmpProfile): void {
   if (process.env.CUMPA_OMP_PROFILE_AUTH_READY !== '1') fail('operator authorization flag is required before copying provider credentials');
   const source = join(homedir(), '.omp', 'agent');
+  const destination = join(profile.home, '.omp', 'profiles', profile.ompProfile, 'agent');
+  mkdirSync(destination, { recursive: true, mode: 0o700 });
   for (const name of ['agent.db', 'config.yml', 'models.yml']) {
     const from = join(source, name);
     if (!existsSync(from)) {
       if (name === 'agent.db') fail('operator OMP provider credential store is unavailable');
       continue;
     }
-    const to = join(profile.agentDir, name);
+    const to = join(destination, name);
     cpSync(from, to, { force: true, preserveTimestamps: true });
     chmodSync(to, 0o600);
   }
@@ -288,23 +321,27 @@ export function createIsolatedOmpProfile(options: Readonly<{
     const omp = requireOmp();
     options.supportHome.applyTo(env);
     if (env.HOME !== options.supportHome.home) fail('shared support HOME was not applied last');
+    if (env.OMP_PROFILE !== paths.ompProfile) fail('OMP profile isolation was not configured');
     try {
-      runRuntimeCommand(omp, ['plugin', 'marketplace', 'add', 'Ship-With-AI/skills'], { cwd: root, env });
+      runRuntimeCommand(omp, ['--profile', paths.ompProfile, 'plugin', 'marketplace', 'add', 'Ship-With-AI/skills'], { cwd: root, env });
     } catch (error) {
       if (!String(error).includes('Marketplace "ship-with-ai-skills" already exists')) throw error;
     }
     const installationCwd = options.installationCwd ?? root;
-    runRuntimeCommand(omp, ['plugin', 'install', '--scope', 'project', 'ship-with-ai@ship-with-ai-skills'], { cwd: installationCwd, env });
-    const skillDirectory = locateInstalledSkill(paths, installationCwd);
+    runRuntimeCommand(omp, ['--profile', paths.ompProfile, 'plugin', 'install', '--scope', 'project', 'ship-with-ai@ship-with-ai-skills'], { cwd: installationCwd, env });
+    const home = env.HOME;
+    if (home === undefined) fail('OMP profile HOME is missing');
+    const skillDirectory = locateInstalledSkill(paths, home, installationCwd);
     assertInstalledSkill(skillDirectory);
     return Object.freeze({
       root,
-      home: paths.home,
+      home,
       agentDir: paths.agentDir,
       xdgConfigDir: paths.xdgConfigDir,
       xdgDataDir: paths.xdgDataDir,
       xdgStateDir: paths.xdgStateDir,
       xdgCacheDir: paths.xdgCacheDir,
+      ompProfile: paths.ompProfile,
       env: Object.freeze(env),
       pluginTreeRoot: skillDirectory,
       cleanup() {
