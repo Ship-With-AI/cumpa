@@ -138,6 +138,7 @@ export interface InstalledRuntimeArtifact {
   readonly nodeEntrypointPath: string;
   readonly fetchGuardPath: string;
   readonly blockedFetchesPath: string;
+  readonly launch: Readonly<{ readonly command: string; readonly args: readonly string[] }>;
   readonly env: NodeJS.ProcessEnv;
   readonly proof: RuntimeInstallProof;
   cleanup(): void;
@@ -292,7 +293,7 @@ export function rehashRuntimeArtifact(artifact: RuntimeArtifact): RuntimeArchive
   return identity;
 }
 
-function inheritedEnvironment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+export function inheritedEnvironment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const result: NodeJS.ProcessEnv = {};
   for (const name of ['PATH', 'TMPDIR', 'TMP', 'TEMP', 'LANG', 'LC_ALL', 'TZ']) {
     if (environment[name] !== undefined) result[name] = environment[name];
@@ -306,7 +307,7 @@ function inheritedEnvironment(environment: NodeJS.ProcessEnv): NodeJS.ProcessEnv
   return result;
 }
 
-function protectedEnvironment(root: string, source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+export function protectedEnvironment(root: string, source: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const home = join(root, 'home');
   const cache = join(root, 'cache');
   const prefix = join(root, 'prefix');
@@ -436,13 +437,18 @@ export function installRuntimeArtifact(artifact: RuntimeArtifact): InstalledRunt
       '};',
       '',
     ].join('\n'), { mode: 0o600, flag: 'wx' });
+    const nodeEntrypointPath = process.platform === 'win32' ? join(packageRoot, manifest.data.bin.cumpa) : executablePath;
     return Object.freeze({
       root,
       packageRoot,
       executablePath,
-      nodeEntrypointPath: process.platform === 'win32' ? join(packageRoot, manifest.data.bin.cumpa) : executablePath,
+      nodeEntrypointPath,
       fetchGuardPath,
       blockedFetchesPath,
+      launch: Object.freeze({
+        command: process.execPath,
+        args: Object.freeze(['--import', fetchGuardPath, nodeEntrypointPath]),
+      }),
       env: Object.freeze(env),
       proof: Object.freeze({
         packageLabel: `${artifact.package.name}@${artifact.package.version}`,
@@ -467,18 +473,17 @@ function scenarioBridge(environment: NodeJS.ProcessEnv): Readonly<{ readonly pat
   return Object.freeze({ path: resolve(report), runId });
 }
 
-export function writeRuntimeScenario(
-  scenario: 'package-assets' | 'review',
+export function publishScenarioRecord(
+  scenario: string,
   record: Readonly<Record<string, unknown>>,
-  environment: NodeJS.ProcessEnv = process.env,
+  options: {
+    readonly status?: 'passed' | 'partially-blocked';
+    readonly environment?: NodeJS.ProcessEnv;
+  } = {},
 ): void {
+  const environment = options.environment ?? process.env;
   const bridge = scenarioBridge(environment);
   if (bridge === undefined) return;
-  const profile = runtimeProfile(environment);
-  if (record.archive === undefined || record.package === undefined || record.install === undefined || record.target === undefined || record.cleanup === undefined) {
-    fail('runtime scenario record is incomplete');
-  }
-  if (!z.object({ complete: z.literal(true) }).strict().safeParse(record.cleanup).success) fail('runtime scenario cleanup must be complete');
   const encoded = JSON.stringify(record);
   if (/"[^"]*(?:path|origin|email|credential|token|secret)[^"]*"\s*:|(?:^|[^A-Za-z])(?:\/Users\/|[A-Z]:\\)/iu.test(encoded)) {
     fail('runtime scenario record contains durable private data');
@@ -487,9 +492,29 @@ export function writeRuntimeScenario(
   mkdirSync(dirname(destination), { recursive: true, mode: 0o700 });
   const temporary = join(dirname(destination), `.${basename(destination)}.${process.pid}.${randomBytes(8).toString('hex')}.tmp`);
   try {
-    writeFileSync(temporary, `${JSON.stringify({ ...record, kind: 'cumpa.runtime-artifact-scenario/v1', status: 'passed', runId: bridge.runId, scenario, profile })}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+    writeFileSync(temporary, `${JSON.stringify({
+      ...record,
+      kind: 'cumpa.runtime-artifact-scenario/v1',
+      status: options.status ?? 'passed',
+      runId: bridge.runId,
+      scenario,
+      profile: runtimeProfile(environment),
+    })}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
     linkSync(temporary, destination);
   } finally {
     if (existsSync(temporary)) unlinkSync(temporary);
   }
+}
+
+export function writeRuntimeScenario(
+  scenario: 'package-assets' | 'review',
+  record: Readonly<Record<string, unknown>>,
+  environment: NodeJS.ProcessEnv = process.env,
+): void {
+  if (scenarioBridge(environment) === undefined) return;
+  if (record.archive === undefined || record.package === undefined || record.install === undefined || record.target === undefined || record.cleanup === undefined) {
+    fail('runtime scenario record is incomplete');
+  }
+  if (!z.object({ complete: z.literal(true) }).strict().safeParse(record.cleanup).success) fail('runtime scenario cleanup must be complete');
+  publishScenarioRecord(scenario, record, { environment });
 }
