@@ -1,25 +1,67 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
 import { expect, test } from 'vitest';
 
 import {
   assertNoPrivateValues,
   buildAcceptanceEvidence,
   deriveAcceptanceStatus,
+  writeAcceptanceEvidence,
 } from '../../scripts/write-acceptance-evidence.mjs';
 
 const tarballUrl = 'https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz';
 const integrity = 'sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==';
 const marketplaceRepository = 'https://github.com/Ship-With-AI/skills.git';
+const host = { platform: 'darwin', arch: 'arm64', osRelease: '25.6.0', node: '24.11.0', npm: '11.6.2', git: '2.50.1', playwright: '1.55.0', browser: 'Chromium 140' };
+type SupportState = {
+  installSource?: string;
+  state: string;
+  status: 'passed' | 'blocked';
+  reason?: string;
+  substituted: boolean;
+};
 
-function supportStates(source: string, verified: 'passed' | 'blocked' = 'passed') {
+type AcceptanceRow = {
+  requirement: string;
+  status: 'passed' | 'blocked';
+  installSource?: string;
+  reason?: string;
+  substituted?: boolean;
+  supportStates?: SupportState[];
+};
+
+type ReportState = {
+  state: string;
+  status: 'passed' | 'blocked';
+  reason?: string;
+};
+
+type ProducerReport = {
+  requirement: string;
+  path: 'public-global' | 'public-npx' | 'marketplace';
+  window: 'pre-restore' | 'post-restore';
+  host: typeof host;
+  installProof: { resolvedIntegrity: string; packageLabel: string };
+  sharedSupportIdentity: { shared: boolean; restoreCompleted: boolean; restoreObservedFromSharedIdentity: boolean };
+  sourceControlUnchanged: { asserted: boolean; scenarios: Array<{ name: string; unchanged: boolean }> };
+  supportStates: Array<ReportState & { window: 'pre-restore' | 'post-restore'; observed: true; substituted: false }>;
+  cleanup: { removedOwnedRoots: boolean };
+};
+
+
+function supportStates(source: string, verified: 'passed' | 'blocked' = 'passed'): SupportState[] {
   return ['unverified', 'dismissed', 'verified'].map((state) => ({
     installSource: source,
     state,
     status: state === 'verified' ? verified : 'passed',
-    ...(state === 'verified' && verified === 'blocked' ? { reason: 'live-entitlement-unavailable', substituted: false } : { substituted: false }),
+    ...(state === 'verified' && verified === 'blocked' ? { reason: 'live-entitlement-unavailable' } : {}),
+    substituted: false,
   }));
 }
 
-function rows(verified: 'passed' | 'blocked' = 'passed') {
+function rows(verified: 'passed' | 'blocked' = 'passed'): AcceptanceRow[] {
   return [
     { requirement: 'ACC-01', status: 'passed', installSource: 'global' },
     { requirement: 'ACC-02', status: 'passed', installSource: 'npx' },
@@ -27,18 +69,53 @@ function rows(verified: 'passed' | 'blocked' = 'passed') {
     { requirement: 'ACC-04', status: verified, ...(verified === 'blocked' ? { reason: 'live-entitlement-unavailable', substituted: false } : {}), supportStates: [...supportStates('global', verified), ...supportStates('npx', verified), ...supportStates('marketplace', verified)] },
   ];
 }
-function inputs(sharedSupportIdentity = false) {
+
+function inputs(shared = false) {
   return {
     acceptedAt: '2026-09-12T16:05:28.000Z',
-    host: { platform: 'darwin', arch: 'arm64', osRelease: '25.6.0', node: '24.11.0', npm: '11.6.2', git: '2.50.1', playwright: '1.55.0', browser: 'Chromium 140' },
+    host,
     artifactIdentity: { tarballUrl, byteLength: 3514800, sha256: 'dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141', npmShasumSha1: '2d58866c862283f2c41b3f4f7d51282b2ca96472', npmIntegritySha512: integrity },
     marketplaceIdentity: { collectionVersion: '0.3.0', commit: '984e28c5838176ec15d2af8b996d0307e45b28d5', skillDigest: '8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220', repository: marketplaceRepository },
     paths: [
-      { installSource: 'global', requirement: 'ACC-01', status: 'passed', installProof: { resolvedIntegrity: integrity }, supportStates: supportStates('global'), sharedSupportIdentity },
-      { installSource: 'npx', requirement: 'ACC-02', status: 'passed', installProof: { resolvedIntegrity: integrity }, supportStates: supportStates('npx'), sharedSupportIdentity },
-      { installSource: 'marketplace', requirement: 'ACC-03', status: 'passed', installProof: { resolvedIntegrity: integrity }, supportStates: supportStates('marketplace'), sharedSupportIdentity },
+      { installSource: 'global', requirement: 'ACC-01', status: 'passed', installProof: { resolvedIntegrity: integrity }, supportStates: supportStates('global'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true } },
+      { installSource: 'npx', requirement: 'ACC-02', status: 'passed', installProof: { resolvedIntegrity: integrity }, supportStates: supportStates('npx'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true } },
+      { installSource: 'marketplace', requirement: 'ACC-03', status: 'passed', installProof: { resolvedIntegrity: integrity }, supportStates: supportStates('marketplace'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true } },
     ],
   };
+}
+
+function report(path: 'public-global' | 'public-npx' | 'marketplace', window: 'pre-restore' | 'post-restore', states: ReportState[] = [{ state: 'unverified', status: 'passed' }]): ProducerReport {
+  const requirement = path === 'public-global' ? 'ACC-01' : path === 'public-npx' ? 'ACC-02' : 'ACC-03';
+  return {
+    requirement,
+    path,
+    window,
+    host,
+    installProof: { resolvedIntegrity: integrity, packageLabel: '@shipwithai/cumpa@1.5.0' },
+    sharedSupportIdentity: { shared: true, restoreCompleted: false, restoreObservedFromSharedIdentity: false },
+    sourceControlUnchanged: { asserted: true, scenarios: [{ name: 'driver', unchanged: true }] },
+    supportStates: states.map((state) => ({ ...state, window, observed: true, substituted: false })),
+    cleanup: { removedOwnedRoots: true },
+  };
+}
+
+function writeRecord(reports: ProducerReport[]) {
+  const root = mkdtempSync(join(tmpdir(), 'cumpa-evidence-unit-'));
+  try {
+    const files = reports.map((entry, index) => {
+      const path = join(root, `report-${index}.json`);
+      writeFileSync(path, JSON.stringify(entry));
+      return { path, report: entry };
+    });
+    return writeAcceptanceEvidence({
+      publicReportPaths: files.filter((entry) => entry.report.path !== 'marketplace').map((entry) => entry.path),
+      marketplaceReportPaths: files.filter((entry) => entry.report.path === 'marketplace').map((entry) => entry.path),
+      outputPath: join(root, 'record.json'),
+      acceptedAt: '2026-09-12T16:05:28.000Z',
+    });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 }
 
 test('derives passed only from a complete all-passed matrix', () => {
@@ -68,12 +145,16 @@ test('requires every requirement and every ACC-04 path', () => {
 test('refuses private values without echoing them', () => {
   expect(() => assertNoPrivateValues({ token: 'logical-token' })).toThrow(/private key/u);
   expect(() => assertNoPrivateValues({ location: '/Users/example/private' })).toThrow(/absolute private path/u);
-  expect(() => assertNoPrivateValues({ identifier: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq' })).toThrow(/installation id/u);
+  expect(() => assertNoPrivateValues({ arbitrary: '/private/var/folders/secret' })).toThrow(/absolute private path/u);
+  expect(() => assertNoPrivateValues({ arbitrary: '/var/db/private' })).toThrow(/absolute private path/u);
+  expect(() => assertNoPrivateValues({ arbitrary: 'C:\\Users\\example\\private' })).toThrow(/absolute private path/u);
+  expect(() => assertNoPrivateValues({ arbitrary: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopq' })).toThrow(/installation id/u);
+  expect(() => assertNoPrivateValues({ arbitrary: 'ghp_abcdefghijklmnopqrstuvwxyz12345678901234567890' })).toThrow(/credential/u);
   expect(() => assertNoPrivateValues({ url: 'https://private.example.test/flow' })).toThrow(/https url/u);
   expect(() => assertNoPrivateValues({ tarballUrl, marketplaceRepository, digest: 'abc123' })).not.toThrow();
 });
 
-test('builds a pinned partially-blocked record and records shared support narrowing', () => {
+test('builds a pinned record and records shared support narrowing', () => {
   const record = buildAcceptanceEvidence(inputs(true));
   expect(record.kind).toBe('cumpa.public-artifact-acceptance/v1');
   expect(record.status).toBe('passed');
@@ -82,4 +163,40 @@ test('builds a pinned partially-blocked record and records shared support narrow
   const broken = inputs();
   broken.paths[1].installProof.resolvedIntegrity = 'sha512-wrong';
   expect(() => buildAcceptanceEvidence(broken)).toThrow(/integrity/u);
+});
+
+test.each([
+  ['passed then blocked', [report('public-global', 'pre-restore', [{ state: 'verified', status: 'passed' }]), report('public-global', 'post-restore', [{ state: 'verified', status: 'blocked', reason: 'live-entitlement-unavailable' }])]],
+  ['blocked then passed', [report('public-global', 'post-restore', [{ state: 'verified', status: 'blocked', reason: 'live-entitlement-unavailable' }]), report('public-global', 'pre-restore', [{ state: 'verified', status: 'passed' }])]],
+])('rejects contradictory duplicate support reports in %s order', (_, reports) => {
+  expect(() => writeRecord(reports)).toThrow(/conflicting support-state observation/u);
+});
+
+test('rejects mismatched immutable report facts', () => {
+  const wrongProof = report('public-global', 'post-restore');
+  wrongProof.installProof = { resolvedIntegrity: integrity, packageLabel: 'different' };
+  expect(() => writeRecord([report('public-global', 'pre-restore'), wrongProof])).toThrow(/install proof/u);
+
+  const wrongIdentity = report('public-global', 'post-restore');
+  wrongIdentity.sharedSupportIdentity = { shared: false, restoreCompleted: false, restoreObservedFromSharedIdentity: false };
+  expect(() => writeRecord([report('public-global', 'pre-restore'), wrongIdentity])).toThrow(/shared support identity/u);
+
+  const wrongHost = report('public-npx', 'pre-restore');
+  wrongHost.host = { ...host, node: '24.99.0' };
+  expect(() => writeRecord([report('public-global', 'pre-restore'), wrongHost])).toThrow(/host facts/u);
+});
+
+test('synthesizes only missing states as blocked and derives source-control evidence', () => {
+  const missingScenario = report('public-global', 'pre-restore');
+  missingScenario.sourceControlUnchanged = { asserted: true, scenarios: [] };
+  const unasserted = report('public-npx', 'pre-restore');
+  unasserted.sourceControlUnchanged = { asserted: false, scenarios: [{ name: 'driver', unchanged: true }] };
+  const record = writeRecord([missingScenario, unasserted]);
+  const global = record.installations.find((installation: { installSource: string }) => installation.installSource === 'global');
+  const npx = record.installations.find((installation: { installSource: string }) => installation.installSource === 'npx');
+  expect(global.sourceControlUnchanged).toBe(false);
+  expect(npx.sourceControlUnchanged).toBe(false);
+  expect(global.supportStates).toContainEqual(expect.objectContaining({ state: 'dismissed', status: 'blocked', reason: 'state-not-observed', substituted: false }));
+  expect(global.supportStates).toContainEqual(expect.objectContaining({ state: 'verified', status: 'blocked', reason: 'state-not-observed', substituted: false }));
+  expect(record.status).toBe('partially-blocked');
 });

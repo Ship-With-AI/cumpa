@@ -1,6 +1,7 @@
 import { existsSync, linkSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, join, resolve } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 
 const requiredRequirements = new Set(['ACC-01', 'ACC-02', 'ACC-03', 'ACC-04']);
 const requiredSources = ['global', 'npx', 'marketplace'];
@@ -9,6 +10,7 @@ const allowedHttpsUrls = new Set([
   'https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz',
   'https://github.com/Ship-With-AI/skills.git',
 ]);
+const hostFields = ['platform', 'arch', 'osRelease', 'node', 'npm', 'git', 'playwright', 'browser'];
 
 function fail(message) {
   throw new Error(`acceptance evidence: ${message}`);
@@ -52,14 +54,43 @@ export function deriveAcceptanceStatus(rows) {
     : 'passed';
 }
 
+function isAbsoluteFilesystemPath(value) {
+  return value.startsWith('/') || /^[A-Za-z]:[\\/]/u.test(value) || /^\\\\(?:\?\\)?/u.test(value);
+}
+
+function hasCredentialShape(value) {
+  return /(?:^|[^A-Za-z0-9_-])(?:gh[pousr]_[A-Za-z0-9_-]{20,}|(?:sk|pk|api)[_-][A-Za-z0-9_-]{16,}|AKIA[A-Z0-9]{16})(?:$|[^A-Za-z0-9_-])/u.test(value)
+    || /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/u.test(value);
+}
+
+function hasInstallationIdShape(value) {
+  return /(?:^|[^A-Za-z0-9_-])[A-Za-z0-9_-]{43}(?:$|[^A-Za-z0-9_-])/u.test(value);
+}
+
 export function assertNoPrivateValues(record, extraForbiddenValues = []) {
   const serialized = JSON.stringify(record);
-  if (/"[^"\n]*(?:path|origin|email|credential|token|secret)[^"\n]*"\s*:/iu.test(serialized)) fail('private key name found');
-  if (/(?:^|[^A-Za-z])(?:\/Users\/|\/home\/|[A-Z]:\\)/u.test(serialized)) fail('absolute private path found');
-  if (/(?:^|[^A-Za-z0-9_-])[A-Za-z0-9_-]{43}(?:$|[^A-Za-z0-9_-])/u.test(serialized)) fail('installation id shaped value found');
-  for (const url of serialized.match(/https:\/\/[^"\s]+/gu) ?? []) {
-    if (!allowedHttpsUrls.has(url.replace(/[),.]+$/u, ''))) fail('unapproved https url found');
-  }
+  const inspect = (value) => {
+    if (typeof value === 'string') {
+      if (isAbsoluteFilesystemPath(value)) fail('absolute private path found');
+      if (hasCredentialShape(value)) fail('credential shaped value found');
+      if (hasInstallationIdShape(value)) fail('installation id shaped value found');
+      for (const url of value.match(/https:\/\/[^"\s]+/gu) ?? []) {
+        if (!allowedHttpsUrls.has(url.replace(/[),.]+$/u, ''))) fail('unapproved https url found');
+      }
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(inspect);
+      return;
+    }
+    if (value && typeof value === 'object') {
+      for (const [key, nested] of Object.entries(value)) {
+        if (/(?:credential|token|secret|origin|email)/iu.test(key)) fail('private key name found');
+        inspect(nested);
+      }
+    }
+  };
+  inspect(record);
   for (const value of extraForbiddenValues) {
     if (typeof value === 'string' && value.length > 0 && serialized.includes(value)) fail('supplied forbidden value found');
   }
@@ -77,6 +108,10 @@ function exactIdentity(identity) {
   });
 }
 
+function sharedIdentity(path) {
+  return path.sharedSupportIdentity?.shared === true || path.sharedSupportIdentity === true;
+}
+
 function limitationText(paths, restoreDefect) {
   const limitations = [
     'Local process isolation is not fresh-machine proof.',
@@ -85,7 +120,7 @@ function limitationText(paths, restoreDefect) {
     'The Phase 4 and Phase 5 local-archive acceptance record is separate and unchanged.',
     'The local-archive path requires operator-held custody inputs and the protected CUMPA_RELEASE_SUPPORT_SERVICE_URL; its full execution was not available.',
   ];
-  if (paths.some((path) => path.sharedSupportIdentity)) limitations.push('One shared voluntary-support identity was used across all three installation paths; three distinct identities would have required three protected sign-ins. This operator-confirmed narrowing left npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH isolated per path.');
+  if (paths.some(sharedIdentity)) limitations.push('One shared voluntary-support identity was used across all three installation paths; three distinct identities would have required three protected sign-ins. This operator-confirmed narrowing left npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH isolated per path.');
   if (paths.some((path) => path.providerAuthenticationReused)) limitations.push('The isolated OMP profile reused a temporary read-only copy of the operator provider credential and was not independently authenticated.');
   if (restoreDefect) limitations.push('restoreReportedCompleteWithoutLinkage was observed and remains a product defect outside Phase 7 scope under D-09.');
   for (const reason of new Set(paths.flatMap((path) => supportRows(path).filter((state) => state.status === 'blocked').map((state) => state.reason)).filter(Boolean))) limitations.push(`Blocked support-state reason: ${reason}.`);
@@ -99,18 +134,16 @@ export function buildAcceptanceEvidence(inputs) {
   const sources = new Set(paths.map((path) => path.installSource));
   if (sources.size !== 3 || requiredSources.some((source) => !sources.has(source))) fail('global, npx, and marketplace paths are required');
   for (const path of paths) {
-    if (path?.installProof?.resolvedIntegrity !== identity.npmIntegritySha512) fail('install proof integrity differs from pinned identity');
+    if (path?.installProof?.resolvedIntegrity !== undefined && path.installProof.resolvedIntegrity !== identity.npmIntegritySha512) fail('install proof integrity differs from pinned identity');
     for (const state of supportRows(path)) blockedRow(state);
   }
   const allStates = paths.flatMap((path) => supportRows(path));
   const blockedStates = allStates.filter((state) => state.status === 'blocked');
-  const acc04Blocked = blockedStates.length > 0;
   const rows = [
     ...paths.map((path) => ({ requirement: path.requirement, status: path.status, installSource: path.installSource, ...(path.status === 'blocked' ? { reason: path.reason, substituted: false } : {}) })),
-    { requirement: 'ACC-04', status: acc04Blocked ? 'blocked' : 'passed', ...(acc04Blocked ? { reason: blockedStates[0].reason, substituted: false } : {}), supportStates: allStates },
+    { requirement: 'ACC-04', status: blockedStates.length > 0 ? 'blocked' : 'passed', ...(blockedStates.length > 0 ? { reason: blockedStates[0].reason, substituted: false } : {}), supportStates: allStates },
   ];
-  const uniqueRows = rows.filter((row, index) => row.requirement === 'ACC-04' || index === rows.findIndex((candidate) => candidate.requirement === row.requirement));
-  const status = deriveAcceptanceStatus(uniqueRows);
+  const status = deriveAcceptanceStatus(rows);
   const record = {
     kind: 'cumpa.public-artifact-acceptance/v1',
     status,
@@ -122,34 +155,25 @@ export function buildAcceptanceEvidence(inputs) {
       ranOutsideCheckout: true,
       preservedUserState: true,
       isolatedDimensions: ['npm-cache', 'npm-configuration', 'install-prefix', 'browser-profile-state', 'checkout-separation', 'sanitized-path'],
-      sharedSupportHome: paths.some((path) => path.sharedSupportIdentity),
+      sharedSupportHome: paths.some(sharedIdentity),
     },
     artifactIdentity: identity,
     marketplaceIdentity: inputs.marketplaceIdentity,
     installations: paths,
     restoreReportedCompleteWithoutLinkage: inputs.restoreReportedCompleteWithoutLinkage === true,
     localArchivePrerequisite: inputs.localArchivePrerequisite === true,
-    limitations: limitationText(paths, inputs.restoreReportedCompleteWithoutLinkage === true, inputs.localArchivePrerequisite === true),
+    limitations: limitationText(paths, inputs.restoreReportedCompleteWithoutLinkage === true),
   };
   assertNoPrivateValues(record, inputs.extraForbiddenValues ?? []);
   return record;
 }
 
-function reportPath(source, requirement, reason, identity) {
-  return {
-    installSource: source,
-    requirement,
-    status: 'blocked',
-    reason,
-    substituted: false,
-    installProof: { resolvedIntegrity: identity.npmIntegritySha512 },
-    supportStates: requiredStates.map((state) => ({ installSource: source, state, status: 'blocked', reason, substituted: false })),
-    sharedSupportIdentity: false,
-  };
+function normalizedSource(path) {
+  return path === 'public-global' ? 'global' : path === 'public-npx' ? 'npx' : path;
 }
 
-function normalizedSource(source) {
-  return source === 'public-global' ? 'global' : source === 'public-npx' ? 'npx' : source;
+function expectedRequirement(source) {
+  return source === 'global' ? 'ACC-01' : source === 'npx' ? 'ACC-02' : 'ACC-03';
 }
 
 function readJson(path) {
@@ -160,24 +184,91 @@ function readJson(path) {
   }
 }
 
-function mergeReports(reports, source, requirement, identity) {
-  if (reports.length === 0) return reportPath(source, requirement, source === 'marketplace' ? 'marketplace-run-not-performed' : 'public-run-not-performed', identity);
-  const first = reports[0];
-  const installProof = first.installProof ?? first.publicProof ?? { resolvedIntegrity: identity.npmIntegritySha512 };
-  const sharedSupportIdentity = Boolean(first.sharedSupportIdentity?.supportHomeShared ?? first.isolation?.sharedSupportHome);
-  const supportStates = reports.flatMap((report) => report.supportStates ?? []).map((state) => ({ ...state, installSource: source }));
-  const deduplicatedStates = requiredStates.map((state) => supportStates.find((entry) => entry.state === state)).filter(Boolean);
-  const pathBlocked = reports.find((report) => report.status === 'blocked');
+function validateHost(host) {
+  if (!host || typeof host !== 'object' || hostFields.some((field) => typeof host[field] !== 'string' || host[field].length === 0)) fail('report host facts are incomplete');
+}
+
+function validateReport(report) {
+  if (!report || typeof report !== 'object') fail('input report must be an object');
+  const source = normalizedSource(report.path);
+  if (!requiredSources.includes(source)) fail('report has an unsupported installation path');
+  if (report.requirement !== expectedRequirement(source)) fail('report requirement does not match installation path');
+  if (!['pre-restore', 'post-restore'].includes(report.window)) fail('report has an unsupported support-state window');
+  if (report.host !== undefined) validateHost(report.host);
+  if (!report.installProof || typeof report.installProof !== 'object') fail('report install proof is required');
+  if (!report.sharedSupportIdentity || typeof report.sharedSupportIdentity !== 'object') fail('report shared support identity is required');
+  for (const field of ['shared', 'restoreCompleted', 'restoreObservedFromSharedIdentity']) {
+    if (typeof report.sharedSupportIdentity[field] !== 'boolean') fail('report shared support identity is incomplete');
+  }
+  if (!report.sourceControlUnchanged || typeof report.sourceControlUnchanged !== 'object' || typeof report.sourceControlUnchanged.asserted !== 'boolean' || !Array.isArray(report.sourceControlUnchanged.scenarios)) fail('report source-control observations are required');
+  for (const scenario of report.sourceControlUnchanged.scenarios) {
+    if (!scenario || typeof scenario.name !== 'string' || typeof scenario.unchanged !== 'boolean') fail('report source-control scenario is invalid');
+  }
+  if (!report.cleanup || typeof report.cleanup !== 'object' || typeof report.cleanup.removedOwnedRoots !== 'boolean') fail('report cleanup observations are required');
+  if (!Array.isArray(report.supportStates)) fail('report support-state observations are required');
+  for (const state of report.supportStates) {
+    if (!state || !requiredStates.includes(state.state) || state.window !== report.window || state.observed !== true || !['passed', 'blocked'].includes(state.status)) fail('report support-state observation is invalid');
+    blockedRow(state);
+  }
+  if (report.status !== undefined && !['passed', 'blocked'].includes(report.status)) fail('report status is invalid');
+  if (report.status === 'blocked') blockedRow(report);
+  if (report.restoreReportedCompleteWithoutLinkage === true && source !== 'global') fail('restore linkage observation is only valid for public-global');
+  return source;
+}
+
+function aggregateSourceControl(observation) {
+  return observation.asserted === true && observation.scenarios.length > 0 && observation.scenarios.every((scenario) => scenario.unchanged === true);
+}
+
+function syntheticState(source, state) {
+  return { installSource: source, state, status: 'blocked', reason: 'state-not-observed', substituted: false, observed: false };
+}
+
+function missingPath(source, requirement) {
+  const reason = source === 'marketplace' ? 'marketplace-run-not-performed' : 'public-run-not-performed';
   return {
     installSource: source,
     requirement,
-    status: pathBlocked ? 'blocked' : (source === 'marketplace' ? (first.acc03?.status ?? first.status) : first.status),
-    ...(pathBlocked ? { reason: pathBlocked.reason, substituted: false } : {}),
-    installProof,
-    supportStates: deduplicatedStates,
-    sharedSupportIdentity,
-    ...(first.isolation?.providerCredentialReused === true ? { providerAuthenticationReused: true } : {}),
-    restoreReportedCompleteWithoutLinkage: first.restoreReportedCompleteWithoutLinkage === true || first.support?.restoreReportedCompleteWithoutLinkage === true,
+    status: 'blocked',
+    reason,
+    substituted: false,
+    supportStates: requiredStates.map((state) => syntheticState(source, state)),
+    sourceControlUnchanged: false,
+    cleanup: { removedOwnedRoots: false },
+  };
+}
+
+function mergeReports(reports, source, requirement, identity) {
+  if (reports.length === 0) return missingPath(source, requirement);
+  const [first] = reports;
+  for (const report of reports.slice(1)) {
+    if (!isDeepStrictEqual(report.installProof, first.installProof)) fail(`conflicting install proof for ${source}`);
+    if (!isDeepStrictEqual(report.sharedSupportIdentity, first.sharedSupportIdentity)) fail(`conflicting shared support identity for ${source}`);
+  }
+  if (first.installProof.resolvedIntegrity !== identity.npmIntegritySha512) fail('install proof integrity differs from pinned identity');
+  const observed = new Map();
+  for (const report of reports) {
+    for (const state of report.supportStates) {
+      const existing = observed.get(state.state);
+      if (existing && !isDeepStrictEqual(existing, state)) fail(`conflicting support-state observation for ${source}/${state.state}`);
+      observed.set(state.state, state);
+    }
+  }
+  const blockedReport = reports.find((report) => report.status === 'blocked');
+  const supportStates = requiredStates.map((state) => observed.has(state)
+    ? { ...observed.get(state), installSource: source }
+    : syntheticState(source, state));
+  return {
+    installSource: source,
+    requirement,
+    status: blockedReport ? 'blocked' : 'passed',
+    ...(blockedReport ? { reason: blockedReport.reason, substituted: false } : {}),
+    installProof: first.installProof,
+    sharedSupportIdentity: first.sharedSupportIdentity,
+    sourceControlUnchanged: reports.every((report) => aggregateSourceControl(report.sourceControlUnchanged)),
+    supportStates,
+    cleanup: { removedOwnedRoots: reports.every((report) => report.cleanup?.removedOwnedRoots === true) },
+    ...(source === 'global' && reports.some((report) => report.restoreReportedCompleteWithoutLinkage === true) ? { restoreReportedCompleteWithoutLinkage: true } : {}),
     evidence: source === 'marketplace'
       ? { collection: first.marketplace?.collection, lifecycle: first.lifecycle, canonical: first.canonical }
       : { assetGraph: first.assetGraph, reviewExport: first.reviewExport, finish: first.finish },
@@ -213,15 +304,17 @@ export function writeAcceptanceEvidence({ publicReportPaths = [], marketplaceRep
   if (!isAbsolute(outputPath)) fail('output path must be absolute');
   if (existsSync(outputPath)) fail('output path already exists');
   const identity = readPinnedIdentity();
-  const publicReports = publicReportPaths.map(readJson);
-  const marketplaceReports = marketplaceReportPaths.map(readJson);
-  const allReports = [...publicReports, ...marketplaceReports];
-  const observedHost = allReports.find((report) => report.host)?.host;
-  if (!observedHost) fail('reports must contain observed host facts');
+  const allReports = [...publicReportPaths, ...marketplaceReportPaths].map(readJson);
+  const hosts = allReports.filter((report) => report.host !== undefined).map((report) => report.host);
+  if (hosts.length === 0) fail('reports must contain observed host facts');
+  validateHost(hosts[0]);
+  for (const host of hosts.slice(1)) {
+    validateHost(host);
+    if (!isDeepStrictEqual(host, hosts[0])) fail('reports contain disagreeing host facts');
+  }
   const bySource = new Map(requiredSources.map((source) => [source, []]));
   for (const report of allReports) {
-    const source = normalizedSource(report.installSource ?? 'marketplace');
-    if (!bySource.has(source)) fail('report has an unsupported installation path');
+    const source = validateReport(report);
     bySource.get(source).push(report);
   }
   const paths = [
@@ -231,7 +324,7 @@ export function writeAcceptanceEvidence({ publicReportPaths = [], marketplaceRep
   ];
   const record = buildAcceptanceEvidence({
     acceptedAt,
-    host: observedHost,
+    host: hosts[0],
     artifactIdentity: identity,
     marketplaceIdentity: readMarketplaceIdentity(),
     paths,
