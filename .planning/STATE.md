@@ -6,15 +6,15 @@ current_phase: 07
 current_phase_name: clean-public-artifact-acceptance
 status: executing
 stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-09-12T09:30:19.874Z"
+last_updated: "2026-09-12T10:20:42.656Z"
 last_activity: 2026-09-12
 last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 23
-  completed_plans: 18
-  percent: 78
+  completed_plans: 19
+  percent: 80
 ---
 
 # Project State
@@ -29,10 +29,10 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (clean-public-artifact-acceptance) — EXECUTING
-Plan: 3 of 7
+Plan: 4 of 7
 Status: Ready to execute
 Checkpoint: None. Marketplace candidate 984e28c5838176ec15d2af8b996d0307e45b28d5 is public and all five hashes match an anonymous fresh Git fetch. One push authority consumed. Four-agent runtime/install tests are user-waived, not passed. Existing automatic actions were expressly authorized; no manual integration changes. One low-severity provenance-disclosure documentation gap remains nonblocking. Do not replay publication or start Phase 7 without a new request.
-Last activity: 2026-09-12 — Phase 07 execution started
+Last activity: 2026-09-12 — Completed 07-03-PLAN.md; Plan 4 of 7 is ready.
 
 Progress: [██████░░░░] 60% — 3 of 5 milestone phases complete
 
@@ -79,6 +79,8 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [v1.5]: Preserve existing review, export, and voluntary-support behavior across every released installation path.
 - [Phase 07]: Pinned public distribution equality checks to immutable Phase 5 evidence. — Exact URL, SHA-1, and SHA-512 checks reject substituted or rebuilt archives.
 - [Phase 07]: Operator selected shared-support-home. — One shared support HOME, installation identity, and voluntary-support status serve global, npx, and marketplace paths; exactly one real Restore sign-in will occur in Plan 07-04. Per-path npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH remain isolated. Paths observing the shared verified identity record restoreCompleted: false and restoreObservedFromSharedIdentity: true; no second protected sign-in or copied row is allowed.
+- [Phase 07]: Keep local-archive evidence structurally unchanged while public paths publish separate scenario records.
+- [Phase 07]: Use expectedVersion for source-independent CLI and manifest assertions.
 
 ### Pending Todos
 
@@ -114,6 +116,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-12T09:29:51.672Z
+Last session: 2026-09-12T10:20:03.674Z
 Stopped at: Completed 07-02-PLAN.md
 Resume file: None
