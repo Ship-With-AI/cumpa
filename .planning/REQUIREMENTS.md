@@ -1,95 +1,111 @@
 # Requirements: Cumpa
 
-**Defined:** 2026-09-06
-**Core Value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback an agent can act on.
+**Defined:** 2026-09-12
+**Core Value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
 
-## v1.5 Requirements
+## v1.6 Requirements
 
-**Decision authority:** 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary direction. Historical proprietary approvals do not approve the MIT text. Phase 3 is complete: renewed MIT assent, the authorized public repository and all four assigned requirements are verified; temporary-token revocation is operator-confirmed and local copies were removed.
+**Milestone:** v1.6 Workspace Restyle — restyle the whole browser review workspace to the approved mockup without changing any review, comment, persistence, or export mechanic.
 
-### MIT npm Package
+**Visual contract:** `mockups/01b-quiet-workspace-tree.html` and its captured references `mockups/01b-desktop.png`, `mockups/01b-desktop-full.png`, `mockups/01b-mobile.png`. The running app must be visually equivalent at those viewports; divergence is allowed only where production data (Monaco, inline comments, unsupported or unavailable files, exact-patch sessions) requires it.
 
-- [x] **PKG-01**: Users can globally install public `@shipwithai/cumpa@1.5.0` and run the `cumpa` command.
-- [x] **PKG-02**: Users can run `npx --yes @shipwithai/cumpa@1.5.0` without a prior global installation.
-- [x] **PKG-03**: Users running `cumpa --version` see exactly `1.5.0` and receive the existing Node.js 24+ and Git prerequisite guidance.
-- [x] **PKG-04**: Users receive every compiled Node and browser asset required to complete the existing review workflow from the installed package.
-- [x] **PKG-05**: Public package contents exclude TypeScript source, source maps or embedded source content, tests, fixtures, planning files, workflows, credentials, local review state, marketplace-skill files, and Git repository data or history.
-- [x] **PKG-06**: Package metadata and public documentation identify Cumpa source and compiled releases as standard MIT-licensed, include the exact MIT text with Alessandro Magionami & Manuel Salvatore Martone copyright and required third-party notices, and explain that commercial use, modification, redistribution, sublicensing, and resale are permitted while third-party rights remain.
-- [x] **PKG-07**: The existing `Ship-With-AI/cumpa` repository, source, and reviewed Git history become public only after both licensors give refreshed exact-text MIT assent and rights/sensitive-material review is resolved; credentials and confidential operational material are not exposed, and destructive remediation or history rewriting requires separate approval.
+**Predecessor note:** v1.5 MIT Distribution completed all 23 plans but was never archived; its Phase 07 acceptance-evidence blocker is carried over unchanged and is out of this milestone's scope.
 
-### Trusted Publication
+### Visual System
 
-- [x] **REL-01**: Maintainers can create the npm package through one usable, MIT-licensed bootstrap tagged `bootstrap` using short-lived interactive authorization, then revoke that authorization before stable publication. For this first release only, the owner-approved D-10 exception permits npm-created `latest` to point to verified `1.5.0-bootstrap.0` until separately approved stable CI publication replaces it.
-- [x] **REL-02**: Maintainers can publish `@shipwithai/cumpa@1.5.0` from the exact approved public `Ship-With-AI/cumpa` repository and fixed release workflow through npm trusted publishing without an npm automation token or another long-lived publication credential.
-- [x] **REL-03**: Maintainers inspect, install, and publish the same immutable `.tgz` bytes so publication cannot rebuild or substitute an unreviewed archive.
-- [x] **REL-04**: Public npm metadata accurately identifies the scoped package, version, executable, Node requirement, MIT license file, and exact `Ship-With-AI/cumpa` repository identity; the self-contained user README links to its verified public Issues page and omits a separate homepage or invented contact channel.
-- [x] **REL-05**: Maintainers have a documented public-source provenance policy that preserves eligible automatic npm provenance, defines the release evidence needed to verify actual attestations, and permits only evidence-backed public-source and provenance claims. The publication phase records the actual result rather than treating OIDC authentication as attestation proof.
+- [ ] **VIS-01**: Reviewers see one canonical semantic token root re-derived from the mockup's values — surfaces, borders, muted text, accent, status colors, and diff fills — with no second palette or hard-coded color left in component styles.
+- [ ] **VIS-02**: Reviewers see Monaco colors that match the re-derived root byte-for-byte, so editor content never drifts from the surrounding workspace.
+- [ ] **VIS-03**: Reviewers see the mockup's type scale, row density, spacing, and radius applied consistently across shell, sidebar, diff surface, dialogs, and controls.
 
-### Public Marketplace Skill
+### Workspace Shell
 
-- [x] **SKL-01**: Coding-agent users can install the existing Cumpa skill from the public ShipWithAI marketplace as an independently MIT-licensed plugin.
-- [x] **SKL-02**: The installed skill checks for the separately installed `cumpa` executable and, when absent, stops with the exact npm installation command and Node.js/Git prerequisites.
-- [x] **SKL-03**: The installed skill delegates Git grounding, diff generation, browser review, persistence, Finish semantics, and canonical review output to the released Cumpa CLI without duplicating application behavior.
+- [ ] **SHELL-01**: Reviewers see the mockup's identity header with the product mark and the ordered comparison strip, showing Base and Head labels for pinned sessions and preimage/postimage identity for exact-patch sessions.
+- [ ] **SHELL-02**: Reviewers see the mockup's file toolbar above the diff — active file name, its directory path, and the file/sidebar toggle — instead of a permanently expanded metadata header.
+- [ ] **SHELL-03**: Reviewers can hide and restore the changed-files sidebar, and the hidden sidebar is removed from tab order while hidden.
+- [ ] **SHELL-04**: Reviewers on narrow viewports get the mockup's reflow, including the changed-files dialog in place of the persistent sidebar, with file → Base → Head reading order preserved.
+- [ ] **SHELL-05**: Reviewers see the mockup's footer status line without any claim the product does not support.
 
-### Released-Artifact Acceptance
+### Changed-File Tree
 
-- [ ] **ACC-01**: A clean environment can install `@shipwithai/cumpa@1.5.0` globally and complete the existing browser-review workflow without using a source checkout, a workspace link, or a local tarball.
-- [ ] **ACC-02**: A clean environment with an empty npm cache can run `npx --yes @shipwithai/cumpa@1.5.0` and complete the existing browser-review workflow without a prior or local installation.
-- [ ] **ACC-03**: A clean agent profile can install the public marketplace skill, invoke the separately installed `@shipwithai/cumpa@1.5.0` CLI, finish a browser review, and receive its validated canonical result.
-- [ ] **ACC-04**: All released installation paths preserve unrestricted review and export behavior regardless of voluntary-support payment state.
+- [ ] **TREE-01**: Reviewers read each changed file as one dense row showing its change status, file name, and addition/deletion counts, with unavailable or unsupported files still identified as non-reviewable.
+- [ ] **TREE-02**: Reviewers see directory rows in the mockup's treatment, each showing how many changed files it contains.
+- [ ] **TREE-03**: Reviewers keep the existing tree semantics after the restyle: nested directories, single-child path compaction, exact path ordering, all-expanded default, expand/collapse, selection, and roving-tabindex keyboard navigation (up, down, left, right, home, end, enter, space).
+- [ ] **TREE-04**: Reviewers narrow the tree by typing in a filter field and see only matching files with their ancestor directories expanded.
+- [ ] **TREE-05**: Reviewers who filter to no matches see an explicit empty state that tells them how to return to the full tree, and clearing the filter restores the previous tree with the open file still selected.
 
-## Future Requirements
+### Diff Surface
 
-### Distribution Assurance
+- [ ] **DIFF-01**: Reviewers read diffs on the restyled surface with Monaco still the diff authority — no hand-rolled diff rendering, line mapping, or syntax highlighting is introduced.
+- [ ] **DIFF-02**: Reviewers see the mockup's quieter reading treatment for the diff — side identity labels, gutter and sign presentation, line and intraline fills, hunk separation, and hidden-region affordances — with removed and added meaning still explicit without relying on color alone.
+- [ ] **DIFF-03**: Reviewers keep the existing expandable context, side-by-side geometry, and localized horizontal overflow behavior of the diff canvas.
 
-- **DIST-01**: Superseded by REL-05 after the approved public-source decision; provenance is no longer deferred behind a private-source-only eligibility trigger.
-- **DIST-02**: Users receive independently versioned update and uninstall guidance for both the npm CLI and marketplace plugin.
-- **DIST-03**: Release evidence binds a protected source tag, reviewed package digest, npm integrity, and marketplace version in one immutable release record.
+### Review Surfaces
+
+- [ ] **REV-01**: Reviewers create, edit, delete, resolve, and read line comments with unchanged mechanics, anchoring, and announcements on the restyled surface, including paired Base/Head card containment.
+- [ ] **REV-02**: Reviewers see the comments rail in the restyled visual language with its existing states and navigation intact.
+- [ ] **REV-03**: Reviewers open comparison metadata — identities, commit IDs, merge base, file metadata, keyboard help — from a Details dialog rather than a permanent toolbar.
+- [ ] **REV-04**: Reviewers write the overall review summary and run export, including readiness, progress, receipts, and drift acknowledgement, from a Review-notes dialog that leaves the diff at full width.
+- [ ] **REV-05**: Reviewers always see selector-drift, stale or orphaned anchor, patch-drift, and draft-recovery warnings in the workspace shell itself, never only inside a dialog, and their existing actions and single-owner live announcements remain intact.
+
+### Behavior Continuity
+
+- [ ] **CON-01**: Reviewers complete the existing end-to-end flow — launch, select file, comment, resolve, summarize, export, recover, and finish attached sessions — with no change to session, draft, persistence, export, or support mechanics.
+- [ ] **CON-02**: Maintainers see the packaged Playwright review/export suite and the existing Vitest contract suites pass against the restyled UI, with any test that asserted removed presentation updated rather than skipped.
+- [ ] **CON-03**: Maintainers see accessibility re-checked wherever markup structurally changed — focus reachability, roles, names, and keyboard operability of the new tree rows, filter, toolbar, and dialogs.
+
+## Deferred
+
+Tracked but not in this roadmap.
+
+### Mockup affordances excluded from v1.6
+
+- **DEFER-01**: Per-file viewed tracking with viewed marks, an Unviewed filter, and "N of M viewed" progress — requires a new persisted draft field.
+- **DEFER-02**: Change-to-change (hunk) jump navigation with a position indicator.
+- **DEFER-03**: A wrap-lines toggle for the diff surface.
+- **DEFER-04**: Composited WCAG contrast re-verification of the re-derived palette, and the rest of the v1.1 accessibility gate battery (forced colors, 320px, true 400% zoom).
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| Unreviewed repository/history publication or destructive remediation without approval | Public source is authorized only after both licensors' approval and rights/sensitive-material review; deleting at HEAD does not remove historical exposure. |
-| Unsupported or unverified provenance claims | Preserve eligible automatic provenance, but claim only the attestation and source facts established by actual release evidence. |
-| TypeScript source, source maps, tests, fixtures, planning files, workflows, or Git data in npm artifacts | MIT licensing does not change the compiled-runtime-only npm contract. |
-| Obfuscation, DRM, activation, or license-server enforcement | Public compiled assets remain inspectable; access gating was not requested and would change the product. |
-| Bundling or automatically installing the CLI through the skill | CLI and skill have separate installation lifecycles. |
-| New review behavior or protocol redesign | Existing review and agent handoff behavior is already validated; this milestone distributes it unchanged. |
-| Payment-gated review features | Voluntary support remains feature-neutral. |
+| Viewed tracking, Unviewed filter, viewed progress | Present in the mockup but needs a new persisted draft field; v1.6 is presentation only. |
+| Hunk jump navigation and wrap-lines toggle | Present in the mockup but change review navigation behavior, not presentation. |
+| Replacing Monaco with a custom diff renderer | Would re-implement line mapping, syntax highlighting, and comment anchoring, and breaks the documented diff-authority constraint. |
+| Any change to session, draft, persistence, export, agent-handoff, or voluntary-support mechanics | The restyle must not become a second behavior authority. |
+| Composited contrast re-verification of the new palette | Owner-accepted risk for v1.6; only structurally changed markup is re-checked. |
+| Light theme or theme switching | Not requested; the product remains dark-only. |
+| Closing the v1.5 Phase 07 acceptance-evidence blocker | Distribution acceptance is independent of the restyle and may not be closed with substitute evidence. |
 
 ## Traceability
 
-Each active requirement maps to exactly one roadmap phase.
+Each active requirement maps to exactly one roadmap phase. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PKG-01 | Phase 5 | Complete |
-| PKG-02 | Phase 5 | Complete |
-| PKG-03 | Phase 4 | Complete |
-| PKG-04 | Phase 4 | Complete |
-| PKG-05 | Phase 4 | Complete |
-| PKG-06 | Phase 3 | Complete |
-| PKG-07 | Phase 3 | Complete |
-| REL-01 | Phase 5 | Complete — D-10 first-release latest exception |
-| REL-02 | Phase 5 | Complete |
-| REL-03 | Phase 4 | Complete |
-| REL-04 | Phase 3 | Complete |
-| REL-05 | Phase 3 | Complete |
-| SKL-01 | Phase 6 | Complete |
-| SKL-02 | Phase 6 | Complete |
-| SKL-03 | Phase 6 | Complete |
-| ACC-01 | Phase 7 | Pending |
-| ACC-02 | Phase 7 | Pending |
-| ACC-03 | Phase 7 | Pending |
-| ACC-04 | Phase 7 | Pending |
-
-**Coverage:**
-
-- v1.5 requirements: 19 total
-- Mapped to phases: 19
-- Unmapped: 0
+| VIS-01 | TBD | Pending |
+| VIS-02 | TBD | Pending |
+| VIS-03 | TBD | Pending |
+| SHELL-01 | TBD | Pending |
+| SHELL-02 | TBD | Pending |
+| SHELL-03 | TBD | Pending |
+| SHELL-04 | TBD | Pending |
+| SHELL-05 | TBD | Pending |
+| TREE-01 | TBD | Pending |
+| TREE-02 | TBD | Pending |
+| TREE-03 | TBD | Pending |
+| TREE-04 | TBD | Pending |
+| TREE-05 | TBD | Pending |
+| DIFF-01 | TBD | Pending |
+| DIFF-02 | TBD | Pending |
+| DIFF-03 | TBD | Pending |
+| REV-01 | TBD | Pending |
+| REV-02 | TBD | Pending |
+| REV-03 | TBD | Pending |
+| REV-04 | TBD | Pending |
+| REV-05 | TBD | Pending |
+| CON-01 | TBD | Pending |
+| CON-02 | TBD | Pending |
+| CON-03 | TBD | Pending |
 
 ---
-*Requirements defined: 2026-09-06*
-*Last updated: 2026-09-10 after verified bootstrap publication, credential cleanup and explicit owner acceptance of D-10; 19 active requirement IDs and phase assignments preserved*
+*Last updated: 2026-09-12 at v1.6 definition; 24 active requirement IDs awaiting phase assignment. v1.5 requirements archived to .planning/milestones/v1.5-REQUIREMENTS.md.*
