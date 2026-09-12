@@ -1,40 +1,33 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: MIT Distribution
-current_phase: 07
-current_phase_name: clean-public-artifact-acceptance
-status: partially-blocked
-stopped_at: Hardened acceptance rerun blocked before safe record regeneration
-last_updated: "2026-09-12T19:15:00Z"
+milestone: v1.6
+milestone_name: Workspace Restyle
+status: planning
+last_updated: "2026-09-12T18:51:25.914Z"
 last_activity: 2026-09-12
-last_activity_desc: Preserved stale pre-review record after incompatible hardened rerun reports
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 23
-  completed_plans: 23
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-09)
+See: .planning/PROJECT.md (updated 2026-09-12)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 07 — clean-public-artifact-acceptance partially blocked
+**Current focus:** v1.6 Workspace Restyle — defining requirements
 
 ## Current Position
 
-Phase: 07 (clean-public-artifact-acceptance) PARTIALLY BLOCKED
-Plan: 7 7
-Status: Partially blocked
-Checkpoint: The existing evidence record is stale and was not replaced. Fresh public pre-restore reports passed, but post-restore requires the already-consumed protected Restore and marketplace is correctly blocked by `omp-isolation-unavailable`. No second sign-in or fabricated row is permitted.
-Last activity: 2026-09-12 — Hardened regeneration attempt stopped without overwriting stale evidence.
-
-Progress: [██████████] 100% — 23 23 milestone plans complete
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-09-12 — Milestone v1.6 started
 
 ## Performance Metrics
 

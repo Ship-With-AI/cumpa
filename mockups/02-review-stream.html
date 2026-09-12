@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cumpa · Review stream proposal</title>
+<style>
+  :root { color-scheme: light; --paper:#fbfbf8; --ink:#20252b; --muted:#6b737c; --line:#d8dde1; --panel:#f1f3f4; --blue:#0969da; --focus:#0969da; --add:#e6f5e9; --add-ink:#1a6b37; --del:#fdeaea; --del-ink:#a63d32; --context:#fff; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; scroll-padding-top:8rem; }
+  body { margin:0; background:var(--paper); color:var(--ink); font:14px/1.45 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  button, input, textarea { font:inherit; }
+  button { cursor:pointer; }
+  button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline:3px solid var(--focus); outline-offset:2px; }
+  a { color:var(--blue); }
+ .visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+  .site-header { position:sticky; top:0; z-index:4; border-bottom:1px solid var(--line); background:color-mix(in srgb, var(--paper) 94%, transparent); backdrop-filter:blur(10px); }
+  .topline, .demo-strip { max-width:1280px; margin:auto; padding-inline:24px; }
+  .topline { min-height:49px; display:flex; align-items:center; gap:18px; }
+  .brand { color:var(--ink); font-weight:750; text-decoration:none; letter-spacing:-.02em; }
+  .proposal-nav { display:flex; align-items:center; gap:4px; margin-left:auto; font-size:12px; }
+  .proposal-nav a { padding:5px 7px; border-radius:5px; text-decoration:none; color:var(--muted); }
+  .proposal-nav a[aria-current="page"] { color:var(--ink); background:var(--panel); font-weight:700; }
+  .demo-strip { padding-block:7px; color:var(--muted); font-size:12px; display:flex; justify-content:space-between; gap:16px; border-top:1px solid #e8ebed; }
+  .demo-strip strong { color:var(--ink); }
+  .shell { max-width:1280px; margin:0 auto; display:grid; grid-template-columns:225px minmax(0, 1fr); gap:36px; padding:25px 24px 70px; }
+  .file-index { align-self:start; position:sticky; top:88px; padding-right:16px; border-right:1px solid var(--line); max-height:calc(100vh - 105px); overflow:auto; }
+  .index-head { display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin-bottom:9px; }
+  .index-head h1 { font-size:13px; margin:0; letter-spacing:.01em; }
+  .index-head span { color:var(--muted); font-size:12px; }
+  .file-index input { width:100%; border:1px solid var(--line); border-radius:5px; background:white; padding:7px 8px; margin-bottom:8px; }
+  .filter { width:100%; text-align:left; border:0; background:transparent; padding:5px 0 8px; color:var(--muted); font-size:12px; }
+  .filter[aria-pressed="true"] { color:var(--blue); font-weight:700; }
+  .file-index ul { list-style:none; padding:0; margin:0; }
+  .file-index li { margin:1px 0; }
+  .file-index a { display:block; color:var(--ink); text-decoration:none; padding:6px 7px; border-left:2px solid transparent; border-radius:0 4px 4px 0; }
+  .file-index a:hover { background:var(--panel); }
+  .file-index a[aria-current="true"] { border-left-color:var(--blue); background:#eef6ff; }
+  .file-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:650; }
+  .file-path { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--muted); font-size:11px; }
+  .index-mark { color:var(--add-ink); float:right; margin-left:5px; }
+  main { min-width:0; }
+  .intro { border-bottom:1px solid var(--line); padding:0 0 23px; margin-bottom:16px; }
+  .eyebrow { margin:0 0 8px; color:var(--muted); font-size:12px; }
+  .intro h2 { margin:0; font-size:25px; line-height:1.16; letter-spacing:-.035em; }
+  .intro p { max-width:720px; margin:9px 0 0; color:#48515a; }
+  .intro-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .quiet-button { border:1px solid var(--line); color:var(--ink); background:white; border-radius:5px; padding:6px 9px; }
+  .quiet-button:hover { background:var(--panel); }
+  .file { scroll-margin-top:105px; padding:5px 0 30px; }
+  .file + .file { border-top:1px solid var(--line); padding-top:21px; }
+  .file-heading { position:sticky; top:79px; z-index:2; margin:-5px 0 13px; padding:9px 0; background:color-mix(in srgb, var(--paper) 95%, transparent); backdrop-filter:blur(6px); display:flex; align-items:center; gap:12px; }
+  .file-title { min-width:0; flex:1; }
+  .file-title h3 { margin:0; font:650 16px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing:-.02em; overflow-wrap:anywhere; }
+  .file-title p { margin:2px 0 0; color:var(--muted); font-size:12px; }
+  .counts { white-space:nowrap; font-size:12px; }
+  .add-count { color:var(--add-ink); } .del-count { color:var(--del-ink); }
+  .viewed { white-space:nowrap; border:1px solid var(--line); border-radius:5px; color:var(--ink); background:white; padding:5px 7px; font-size:12px; }
+  .viewed[aria-pressed="true"] { border-color:#9dcdaa; background:var(--add); color:var(--add-ink); }
+  .hunk { margin:0 0 17px; border:1px solid var(--line); border-radius:6px; overflow:hidden; background:white; }
+  .hunk-title { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:7px 10px; border-bottom:1px solid var(--line); background:#f7f8f8; color:#49515a; font-size:12px; }
+  .hunk-title code { color:var(--muted); font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .code { font:14px/24px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; overflow:auto; }
+  .row { display:grid; grid-template-columns:20px 45px 45px minmax(0,1fr); min-width:620px; border-bottom:1px solid #f1f2f3; }
+  .row:last-child { border-bottom:0; }
+  .row > span { min-width:0; }
+  .sign, .number { color:#8a929b; text-align:right; padding-right:7px; user-select:none; }
+  .sign { text-align:center; padding:0; font-weight:700; }
+  .source { white-space:pre; padding-right:12px; color:#24292f; }
+  .syntax-key { color:#8250df; } .syntax-fn { color:#0550ae; } .syntax-string { color:#0a7a38; } .syntax-tag { color:#953800; }
+  .add { background:var(--add); } .add .sign, .add .number { color:var(--add-ink); } .add .source { color:#173f25; }
+  .remove { background:var(--del); } .remove .sign, .remove .number { color:var(--del-ink); } .remove .source { color:#5c211d; }
+  .context-extra { display:none; } .context-extra.show { display:grid; }
+  .collapsed-file { border:1px solid var(--line); border-radius:6px; background:white; }
+  .collapsed-file summary { padding:11px; color:#49515a; cursor:pointer; }
+  .collapsed-file .hunk { margin:0 10px 11px; }
+  .file-controls { display:flex; gap:7px; align-items:center; }
+  dialog { width:min(590px, calc(100% - 32px)); border:1px solid var(--line); border-radius:8px; padding:0; color:var(--ink); box-shadow:0 18px 55px #1f232844; }
+  dialog::backdrop { background:#1f23284d; }
+  .dialog-body { padding:20px; }
+  .dialog-body h2 { margin:0 0 7px; font-size:18px; }
+  .dialog-body p { color:#58616a; margin:0 0 14px; }
+  .dialog-body label { display:block; font-weight:650; margin:12px 0 5px; }
+  .dialog-body textarea { width:100%; min-height:90px; padding:8px; border:1px solid var(--line); border-radius:5px; resize:vertical; }
+  .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+  .notes-list { padding:0; margin:12px 0 0; list-style:none; }
+  .notes-list li { padding:8px; border-top:1px solid var(--line); color:#3f4850; }
+  .mobile-index { display:none; }
+  .no-results { padding:8px 7px; color:var(--muted); font-size:12px; }
+  .nowrap .source { white-space:pre; }
+  @media (max-width:720px) {
+    .topline, .demo-strip { padding-inline:14px; }
+    .topline { gap:8px; min-height:45px; }
+    .proposal-nav { gap:0; font-size:11px; } .proposal-nav a { padding:5px; }
+    .proposal-nav a:first-child { display:none; }
+    .demo-strip { display:block; line-height:1.55; }
+    .shell { display:block; padding:18px 14px 50px; }
+    .file-index { display:none; }
+    .mobile-index { display:block; margin-bottom:17px; border:1px solid var(--line); border-radius:6px; background:white; }
+    .mobile-index summary { padding:10px; cursor:pointer; font-weight:700; }
+    .mobile-index .index-content { padding:0 10px 10px; }
+    .mobile-index ul { list-style:none; margin:8px 0 0; padding:0; }
+    .mobile-index a { display:block; padding:7px 0; color:var(--ink); text-decoration:none; }
+    .intro h2 { font-size:22px; }
+    .file-heading { top:94px; align-items:flex-start; flex-wrap:wrap; }
+    .file-title { flex-basis:100%; }
+    .code { margin:0; }
+    .row { min-width:0; grid-template-columns:18px 34px 34px minmax(0,1fr); }
+    .source { white-space:pre-wrap; overflow-wrap:anywhere; padding-right:8px; }
+    .nowrap .code { overflow-x:auto; } .nowrap .row { min-width:620px; }
+  }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="topline">
+    <a class="brand" href="index.html" aria-label="Cumpa proposal comparison">Cumpa</a>
+    <nav class="proposal-nav" aria-label="Proposal navigation">
+      <a href="01-quiet-workspace.html">A · Workspace</a>
+      <a href="02-review-stream.html" aria-current="page">B · Review stream</a>
+      <a href="03-focus-mode.html">C · Focus mode</a>
+      <a href="index.html">Compare proposals</a>
+    </nav>
+  </div>
+  <div class="demo-strip"><span><strong>Design proposal</strong> · Demo changes · Nothing is saved</span><span>main → improve-review-ui · 6 demo files</span></div>
+</header>
+<div class="shell">
+  <aside class="file-index" aria-label="Changed files">
+    <div class="index-head"><h1>Files</h1><span id="fileCount">6 shown</span></div>
+    <label class="visually-hidden" for="fileSearch">Find file</label>
+    <input id="fileSearch" type="search" placeholder="Find file" autocomplete="off">
+    <button class="filter" id="unviewedFilter" aria-pressed="false">Show unviewed only</button>
+    <ul id="fileList">
+      <li data-file="file-0"><a href="#file-0"><span class="file-name">FileTree.vue</span><span class="file-path">src/web/components</span></a></li>
+      <li data-file="file-1"><a href="#file-1"><span class="file-name">FileRow.vue</span><span class="file-path">src/web/components</span></a></li>
+      <li data-file="file-2"><a href="#file-2"><span class="file-name">DiffWorkspace.vue</span><span class="file-path">src/web/components</span></a></li>
+      <li data-file="file-3"><a href="#file-3"><span class="file-name">ReviewToolbar.vue</span><span class="file-path">src/web/components</span></a></li>
+      <li data-file="file-4"><a href="#file-4"><span class="file-name">IdentityHeader.vue</span><span class="file-path">src/web/components</span></a></li>
+      <li data-file="file-5"><a href="#file-5"><span class="file-name">PathDisplay.vue</span><span class="file-path">src/web/components</span></a></li>
+    </ul>
+    <p class="no-results" id="noResults" hidden>No matching changed files.</p>
+  </aside>
+  <main id="review">
+    <details class="mobile-index">
+      <summary>Choose a file <span id="mobileCount">· 6 shown</span></summary>
+      <div class="index-content"><label class="visually-hidden" for="mobileSearch">Find file</label><input id="mobileSearch" type="search" placeholder="Find file"><ul id="mobileFileList"></ul></div>
+    </details>
+    <section class="intro" aria-labelledby="streamTitle">
+      <p class="eyebrow">Review stream · Sample comparison</p>
+      <h2 id="streamTitle">Read the change as one document.</h2>
+      <p>Files stay secondary; a continuous, native page scroll carries the review forward. Tradeoff: easier cross-file reading, longer document.</p>
+      <div class="intro-actions">
+        <button class="quiet-button" id="wrapToggle" aria-pressed="false">Use code-only scroll</button>
+        <button class="quiet-button" id="comparisonButton">Comparison details</button>
+        <button class="quiet-button" id="notesButton">Review notes <span id="noteCount">0</span></button>
+      </div>
+    </section>
+
+    <article class="file" id="file-0" data-name="FileTree.vue src/web/components" aria-labelledby="file-0-title">
+      <header class="file-heading"><div class="file-title"><h3 id="file-0-title">FileTree.vue</h3><p>src/web/components/FileTree.vue</p></div><span class="counts"><span class="add-count">+19</span> <span class="del-count">−4</span></span><button class="viewed" data-view="file-0" aria-pressed="false">Mark viewed</button></header>
+      <section class="hunk" aria-label="Filter changed files hunk"><div class="hunk-title"><span>Filter changed files</span><code>@@ −22 +22 @@</code></div><div class="code">
+        <div class="row"><span class="sign"> </span><span class="number">22</span><span class="number">22</span><span class="source"><span class="syntax-key">const</span> props = defineProps&lt;{</span></div>
+        <div class="row"><span class="sign"> </span><span class="number">23</span><span class="number">23</span><span class="source">  files: readonly SessionFile[];</span></div>
+        <div class="row"><span class="sign"> </span><span class="number">24</span><span class="number">24</span><span class="source">}&gt;();</span></div>
+        <div class="row"><span class="sign"> </span><span class="number">25</span><span class="number">25</span><span class="source"> </span></div>
+        <div class="row remove"><span class="sign">−</span><span class="number">26</span><span class="number"></span><span class="source"><span class="syntax-key">const</span> visibleFiles = computed(() =&gt; props.files);</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">26</span><span class="source"><span class="syntax-key">const</span> query = ref(<span class="syntax-string">''</span>);</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">27</span><span class="source"><span class="syntax-key">const</span> visibleFiles = computed(() =&gt; {</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">28</span><span class="source">  <span class="syntax-key">const</span> needle = query.value.trim().toLowerCase();</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">29</span><span class="source">  <span class="syntax-key">return</span> props.files.filter((file) =&gt;</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">30</span><span class="source">    displayPath(file).toLowerCase().includes(needle),</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">31</span><span class="source">  );</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">32</span><span class="source">});</span></div>
+      </div></section>
+      <section class="hunk" aria-label="Keep selected file in view hunk"><div class="hunk-title"><span>Keep selected file in view</span><code>@@ −54 +61 @@</code></div><div class="code">
+        <div class="row"><span class="sign"> </span><span class="number">54</span><span class="number">61</span><span class="source"><span class="syntax-key">function</span> <span class="syntax-fn">selectFile</span>(fileId: string): void {</span></div>
+        <div class="row"><span class="sign"> </span><span class="number">55</span><span class="number">62</span><span class="source">  selectedFileId.value = fileId;</span></div>
+        <div class="row"><span class="sign"> </span><span class="number">56</span><span class="number">63</span><span class="source">  emit(<span class="syntax-string">'select'</span>, fileId);</span></div>
+        <div class="row remove"><span class="sign">−</span><span class="number">57</span><span class="number"></span><span class="source">  treeElement.value?.focus();</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">64</span><span class="source">  <span class="syntax-key">void</span> nextTick(() =&gt; {</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">65</span><span class="source">    <span class="syntax-key">const</span> selected = treeElement.value</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">66</span><span class="source">      ?.querySelector(<span class="syntax-string">'[aria-current=&quot;true&quot;]'</span>);</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">67</span><span class="source">    selected?.scrollIntoView({ block: <span class="syntax-string">'nearest'</span> });</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">68</span><span class="source">  });</span></div>
+        <div class="row"><span class="sign"> </span><span class="number">58</span><span class="number">69</span><span class="source">}</span></div>
+        <div class="row"><span class="sign"> </span><span class="number">59</span><span class="number">70</span><span class="source"> </span></div>
+        <div class="row"><span class="sign"> </span><span class="number">60</span><span class="number">71</span><span class="source"><span class="syntax-key">function</span> <span class="syntax-fn">resetFilter</span>(): void {</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">72</span><span class="source">  query.value = <span class="syntax-string">''</span>;</span></div>
+        <div class="row"><span class="sign"> </span><span class="number">61</span><span class="number">73</span><span class="source">}</span></div>
+      </div></section>
+      <section class="hunk" aria-label="Separate navigation file list hunk"><div class="hunk-title"><span>Separate navigation file list</span><code>@@ −160 +172 @@</code></div><div class="code">
+        <div class="row"><span class="sign"> </span><span class="number">160</span><span class="number">172</span><span class="source"><span class="syntax-tag">&lt;template&gt;</span></span></div>
+        <div class="row"><span class="sign"> </span><span class="number">161</span><span class="number">173</span><span class="source">  <span class="syntax-tag">&lt;nav aria-label="Changed files"&gt;</span></span></div>
+        <div class="row remove"><span class="sign">−</span><span class="number">162</span><span class="number"></span><span class="source">    <span class="syntax-tag">&lt;h2&gt;</span>Changed files ({{ files.length }})<span class="syntax-tag">&lt;/h2&gt;</span></span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">174</span><span class="source">    <span class="syntax-tag">&lt;header class="files-header"&gt;</span></span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">175</span><span class="source">      <span class="syntax-tag">&lt;h2&gt;</span>Files <span class="syntax-tag">&lt;span&gt;</span>{{ files.length }}<span class="syntax-tag">&lt;/span&gt;&lt;/h2&gt;</span></span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">176</span><span class="source">      <span class="syntax-tag">&lt;input v-model="query" type="search"</span></span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">177</span><span class="source">        aria-label="Filter files" placeholder="Find file…" /&gt;</span></div>
+        <div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">178</span><span class="source">    <span class="syntax-tag">&lt;/header&gt;</span></span></div>
+        <div class="row"><span class="sign"> </span><span class="number">163</span><span class="number">179</span><span class="source">  <span class="syntax-tag">&lt;/nav&gt;</span></span></div>
+        <div class="row"><span class="sign"> </span><span class="number">164</span><span class="number">180</span><span class="source"><span class="syntax-tag">&lt;/template&gt;</span></span></div>
+      </div><div class="context-extra" id="contextRows"><span class="sign"> </span><span class="number">165</span><span class="number">181</span><span class="source">&lt;!-- unchanged component markup remains below --&gt;</span></div></section>
+      <button class="quiet-button" id="contextToggle" aria-expanded="false">Show unchanged context</button>
+    </article>
+
+    <article class="file" id="file-1" data-name="FileRow.vue src/web/components" aria-labelledby="file-1-title"><header class="file-heading"><div class="file-title"><h3 id="file-1-title">FileRow.vue</h3><p>src/web/components/FileRow.vue</p></div><span class="counts"><span class="add-count">+2</span> <span class="del-count">−1</span></span><button class="viewed" data-view="file-1" aria-pressed="false">Mark viewed</button></header><section class="hunk"><div class="hunk-title"><span>Improve review readability</span><code>@@ −30 +30 @@</code></div><div class="code"><div class="row"><span class="sign"> </span><span class="number">30</span><span class="number">30</span><span class="source"><span class="syntax-key">const</span> viewOptions = {</span></div><div class="row remove"><span class="sign">−</span><span class="number">31</span><span class="number"></span><span class="source">  fontSize: 12,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">31</span><span class="source">  fontSize: 14,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">32</span><span class="source">  lineHeight: 24,</span></div><div class="row"><span class="sign"> </span><span class="number">32</span><span class="number">33</span><span class="source">  readOnly: true,</span></div><div class="row"><span class="sign"> </span><span class="number">33</span><span class="number">34</span><span class="source">};</span></div></div></section></article>
+    <article class="file" id="file-2" data-name="DiffWorkspace.vue src/web/components" aria-labelledby="file-2-title"><header class="file-heading"><div class="file-title"><h3 id="file-2-title">DiffWorkspace.vue</h3><p>src/web/components/DiffWorkspace.vue</p></div><span class="counts"><span class="add-count">+2</span> <span class="del-count">−1</span></span><button class="viewed" data-view="file-2" aria-pressed="false">Mark viewed</button></header><section class="hunk"><div class="hunk-title"><span>Improve review readability</span><code>@@ −32 +32 @@</code></div><div class="code"><div class="row"><span class="sign"> </span><span class="number">32</span><span class="number">32</span><span class="source"><span class="syntax-key">const</span> viewOptions = {</span></div><div class="row remove"><span class="sign">−</span><span class="number">33</span><span class="number"></span><span class="source">  fontSize: 12,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">33</span><span class="source">  fontSize: 14,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">34</span><span class="source">  lineHeight: 24,</span></div><div class="row"><span class="sign"> </span><span class="number">34</span><span class="number">35</span><span class="source">  readOnly: true,</span></div><div class="row"><span class="sign"> </span><span class="number">35</span><span class="number">36</span><span class="source">};</span></div></div></section></article>
+    <article class="file" id="file-3" data-name="ReviewToolbar.vue src/web/components" aria-labelledby="file-3-title"><header class="file-heading"><div class="file-title"><h3 id="file-3-title">ReviewToolbar.vue</h3><p>src/web/components/ReviewToolbar.vue</p></div><span class="counts"><span class="add-count">+2</span> <span class="del-count">−1</span></span><button class="viewed" data-view="file-3" aria-pressed="false">Mark viewed</button></header><section class="hunk"><div class="hunk-title"><span>Improve review readability</span><code>@@ −34 +34 @@</code></div><div class="code"><div class="row"><span class="sign"> </span><span class="number">34</span><span class="number">34</span><span class="source"><span class="syntax-key">const</span> viewOptions = {</span></div><div class="row remove"><span class="sign">−</span><span class="number">35</span><span class="number"></span><span class="source">  fontSize: 12,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">35</span><span class="source">  fontSize: 14,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">36</span><span class="source">  lineHeight: 24,</span></div><div class="row"><span class="sign"> </span><span class="number">36</span><span class="number">37</span><span class="source">  readOnly: true,</span></div><div class="row"><span class="sign"> </span><span class="number">37</span><span class="number">38</span><span class="source">};</span></div></div></section></article>
+    <article class="file" id="file-4" data-name="IdentityHeader.vue src/web/components" aria-labelledby="file-4-title"><header class="file-heading"><div class="file-title"><h3 id="file-4-title">IdentityHeader.vue</h3><p>src/web/components/IdentityHeader.vue</p></div><span class="counts"><span class="add-count">+2</span> <span class="del-count">−1</span></span><button class="viewed" data-view="file-4" aria-pressed="false">Mark viewed</button></header><details class="collapsed-file"><summary>Open 1 changed hunk</summary><section class="hunk"><div class="hunk-title"><span>Improve review readability</span><code>@@ −36 +36 @@</code></div><div class="code"><div class="row"><span class="sign"> </span><span class="number">36</span><span class="number">36</span><span class="source"><span class="syntax-key">const</span> viewOptions = {</span></div><div class="row remove"><span class="sign">−</span><span class="number">37</span><span class="number"></span><span class="source">  fontSize: 12,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">37</span><span class="source">  fontSize: 14,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">38</span><span class="source">  lineHeight: 24,</span></div><div class="row"><span class="sign"> </span><span class="number">38</span><span class="number">39</span><span class="source">  readOnly: true,</span></div><div class="row"><span class="sign"> </span><span class="number">39</span><span class="number">40</span><span class="source">};</span></div></div></section></details></article>
+    <article class="file" id="file-5" data-name="PathDisplay.vue src/web/components" aria-labelledby="file-5-title"><header class="file-heading"><div class="file-title"><h3 id="file-5-title">PathDisplay.vue</h3><p>src/web/components/PathDisplay.vue</p></div><span class="counts"><span class="add-count">+2</span> <span class="del-count">−1</span></span><button class="viewed" data-view="file-5" aria-pressed="false">Mark viewed</button></header><details class="collapsed-file"><summary>Open 1 changed hunk</summary><section class="hunk"><div class="hunk-title"><span>Improve review readability</span><code>@@ −38 +38 @@</code></div><div class="code"><div class="row"><span class="sign"> </span><span class="number">38</span><span class="number">38</span><span class="source"><span class="syntax-key">const</span> viewOptions = {</span></div><div class="row remove"><span class="sign">−</span><span class="number">39</span><span class="number"></span><span class="source">  fontSize: 12,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">39</span><span class="source">  fontSize: 14,</span></div><div class="row add"><span class="sign">+</span><span class="number"></span><span class="number">40</span><span class="source">  lineHeight: 24,</span></div><div class="row"><span class="sign"> </span><span class="number">40</span><span class="number">41</span><span class="source">  readOnly: true,</span></div><div class="row"><span class="sign"> </span><span class="number">41</span><span class="number">42</span><span class="source">};</span></div></div></section></details></article>
+  </main>
+</div>
+<dialog id="comparisonDialog"><div class="dialog-body"><h2>Comparison details</h2><p><strong>Base</strong> main · <strong>Head</strong> improve-review-ui</p><p>This proposal keeps comparison identity compact and moves technical metadata out of the reading surface. Full commit IDs and shortcuts are intentionally absent from this normal-state concept.</p><div class="dialog-actions"><button class="quiet-button" data-close="comparisonDialog">Close</button></div></div></dialog>
+<dialog id="notesDialog"><form class="dialog-body" id="noteForm"><h2>Review notes</h2><p>Notes are an in-memory prototype interaction. Nothing is saved.</p><label for="noteText">New review note</label><textarea id="noteText" required placeholder="Describe a review observation"></textarea><ul class="notes-list" id="notesList" aria-live="polite"></ul><div class="dialog-actions"><button class="quiet-button" type="button" data-close="notesDialog">Close</button><button class="quiet-button" type="submit">Add note</button></div></form></dialog>
+<script>
+  const files = [...document.querySelectorAll('.file')];
+  const fileList = document.getElementById('fileList');
+  const mobileList = document.getElementById('mobileFileList');
+  const search = document.getElementById('fileSearch');
+  const mobileSearch = document.getElementById('mobileSearch');
+  const filterButton = document.getElementById('unviewedFilter');
+  const viewed = new Set();
+  const allItems = [...fileList.children];
+  mobileList.innerHTML = fileList.innerHTML;
+  const updateLists = () => {
+    const term = search.value.trim().toLowerCase();
+    const unviewedOnly = filterButton.getAttribute('aria-pressed') === 'true';
+    let count = 0;
+    allItems.forEach((item, index) => {
+      const id = item.dataset.file;
+      const shown = item.textContent.toLowerCase().includes(term) && (!unviewedOnly || !viewed.has(id));
+      item.hidden = !shown;
+      mobileList.children[index].hidden = !shown;
+      if (shown) count++;
+    });
+    document.getElementById('fileCount').textContent = `${count} shown`;
+    document.getElementById('mobileCount').textContent = `· ${count} shown`;
+    document.getElementById('noResults').hidden = count !== 0;
+  };
+  search.addEventListener('input', () => { mobileSearch.value = search.value; updateLists(); });
+  mobileSearch.addEventListener('input', () => { search.value = mobileSearch.value; updateLists(); });
+  filterButton.addEventListener('click', () => { const on = filterButton.getAttribute('aria-pressed') !== 'true'; filterButton.setAttribute('aria-pressed', on); filterButton.textContent = on ? 'Showing unviewed only' : 'Show unviewed only'; updateLists(); });
+  document.addEventListener('click', event => {
+    const link = event.target.closest('a[href^="#file-"]');
+    if (!link) return;
+    const file = document.querySelector(link.getAttribute('href'));
+    file.querySelector('details')?.setAttribute('open', '');
+    document.querySelector('.mobile-index')?.removeAttribute('open');
+  });
+  document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
+    const id = button.dataset.view;
+    const isViewed = !viewed.has(id);
+    isViewed ? viewed.add(id) : viewed.delete(id);
+    button.setAttribute('aria-pressed', isViewed);
+    button.textContent = isViewed ? 'Viewed' : 'Mark viewed';
+    allItems.find(item => item.dataset.file === id)?.querySelector('.index-mark')?.remove();
+    if (isViewed) allItems.find(item => item.dataset.file === id)?.querySelector('a').insertAdjacentHTML('beforeend', '<span class="index-mark" aria-label="Viewed">✓</span>');
+    updateLists();
+  }));
+  const contextToggle = document.getElementById('contextToggle');
+  contextToggle.addEventListener('click', () => { const shown = document.getElementById('contextRows').classList.toggle('show'); contextToggle.setAttribute('aria-expanded', String(shown)); contextToggle.textContent = shown ? 'Hide unchanged context' : 'Show unchanged context'; });
+  const wrapToggle = document.getElementById('wrapToggle');
+  wrapToggle.addEventListener('click', () => { const nowrap = document.body.classList.toggle('nowrap'); wrapToggle.setAttribute('aria-pressed', String(nowrap)); wrapToggle.textContent = nowrap ? 'Use wrapping' : 'Use code-only scroll'; });
+  const comparison = document.getElementById('comparisonDialog');
+  document.getElementById('comparisonButton').addEventListener('click', () => comparison.showModal());
+  const notes = document.getElementById('notesDialog');
+  document.getElementById('notesButton').addEventListener('click', () => notes.showModal());
+  document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.close).close()));
+  let notesCount = 0;
+  document.getElementById('noteForm').addEventListener('submit', event => { event.preventDefault(); const input = document.getElementById('noteText'); const note = input.value.trim(); if (!note) return; const item = document.createElement('li'); item.textContent = note; document.getElementById('notesList').append(item); input.value = ''; document.getElementById('noteCount').textContent = ++notesCount; });
+  const observer = new IntersectionObserver(entries => entries.forEach(entry => { if (!entry.isIntersecting) return; document.querySelectorAll('.file-index a').forEach(link => link.removeAttribute('aria-current')); document.querySelector(`.file-index a[href="#${entry.target.id}"]`)?.setAttribute('aria-current', 'true'); }), { rootMargin: '-20% 0px -68% 0px', threshold: 0 });
+  files.forEach(file => observer.observe(file));
+</script>
+</body>
+</html>

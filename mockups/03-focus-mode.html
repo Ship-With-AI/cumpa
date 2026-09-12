@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cumpa — Focus mode proposal</title>
+  <style>
+    :root { color-scheme: dark; --canvas:#0d1117; --panel:#161b22; --panel-2:#1c2128; --text:#e6edf3; --secondary:#b1bac4; --muted:#8b949e; --line:#30363d; --blue:#58a6ff; --green:#3fb950; --green-bg:#12261b; --red:#f85149; --red-bg:#301b1f; --focus:#58a6ff; --code:SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace; --ui:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    * { box-sizing:border-box; }
+    html { background:var(--canvas); color:var(--text); font-family:var(--ui); }
+    body { margin:0; min-width:320px; }
+    button, input, textarea { font:inherit; }
+    button { color:var(--text); background:transparent; border:1px solid var(--line); border-radius:6px; min-height:36px; padding:6px 10px; cursor:pointer; }
+    button:hover { border-color:var(--secondary); background:#21262d; }
+    button:focus-visible, input:focus-visible, textarea:focus-visible, summary:focus-visible { outline:2px solid var(--focus); outline-offset:2px; }
+    button[aria-pressed="true"] { color:#fff; border-color:var(--blue); background:#1f6feb; }
+    button.primary { border-color:#2ea043; background:#238636; color:#fff; font-weight:650; }
+    button.primary:hover { background:#2ea043; }
+    .skip { position:absolute; left:12px; top:-48px; z-index:20; padding:8px 12px; background:var(--blue); color:#06121f; border-radius:0 0 6px 6px; font-weight:700; }
+    .skip:focus { top:0; }
+    .app-header { position:sticky; top:0; z-index:4; background:rgba(13,17,23,.98); border-bottom:1px solid var(--line); }
+    .topline, .demo-strip, .workspace, .file-strip, .queue { max-width:1280px; margin:0 auto; }
+    .topline { min-height:54px; padding:8px 22px; display:flex; align-items:center; gap:14px; }
+    .brand { color:#fff; font-weight:750; letter-spacing:-.02em; font-size:17px; text-decoration:none; }
+    .comparison { color:var(--secondary); font-size:13px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .comparison b { color:var(--text); font-weight:600; }
+    .proposal-nav { margin-left:auto; display:flex; align-items:center; gap:3px; font-size:12px; white-space:nowrap; }
+    .proposal-nav a { color:var(--secondary); text-decoration:none; padding:7px 8px; border-radius:5px; }
+    .proposal-nav a:hover { background:var(--panel-2); color:var(--text); }
+    .proposal-nav a[aria-current="page"] { color:#fff; background:#21262d; }
+    .demo-strip { display:flex; gap:12px; align-items:center; padding:8px 22px; color:var(--secondary); font-size:12px; border-top:1px solid rgba(48,54,61,.7); }
+    .demo-strip strong { color:var(--text); font-weight:650; }
+    .demo-strip .memory { margin-left:auto; color:var(--muted); }
+    .workspace { padding:24px 22px 94px; }
+    .file-heading { margin:12px auto 18px; max-width:1080px; }
+    .file-heading-row { display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
+    h1 { margin:0; font-size:24px; line-height:1.2; letter-spacing:-.025em; }
+    .path { margin:5px 0 0; color:var(--muted); font-family:var(--code); font-size:13px; overflow-wrap:anywhere; }
+    .stat { color:var(--secondary); font-size:13px; }
+    .add { color:var(--green); } .del { color:var(--red); }
+    .file-strip { position:sticky; top:54px; z-index:3; display:flex; align-items:center; gap:8px; min-height:54px; padding:9px 22px; background:var(--panel); border:1px solid var(--line); border-radius:7px 7px 0 0; }
+    .file-position { font-size:13px; font-variant-numeric:tabular-nums; }
+    .file-position strong { color:#fff; }
+    .spacer { flex:1; }
+    .segmented { display:flex; border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+    .segmented button { min-height:30px; padding:4px 8px; border:0; border-radius:0; font-size:12px; }
+    .segmented button + button { border-left:1px solid var(--line); }
+    .hunk-tools { display:flex; gap:6px; }
+    .hunk-tools button { min-height:30px; padding:4px 8px; font-size:12px; }
+    .code-panel { max-width:1080px; margin:0 auto; border:1px solid var(--line); border-top:0; background:var(--panel); box-shadow:0 18px 40px rgba(0,0,0,.18); }
+    .code-labels { position:sticky; top:108px; z-index:2; display:grid; grid-template-columns:1fr 1fr; color:var(--secondary); background:#161b22; border-bottom:1px solid var(--line); font-size:12px; }
+    .code-labels span { padding:8px 14px; } .code-labels span + span { border-left:1px solid var(--line); }
+    .hunk { scroll-margin-top:154px; border-bottom:1px solid var(--line); }
+    .hunk:last-child { border-bottom:0; }
+    .hunk-heading { display:flex; align-items:center; gap:9px; min-height:39px; padding:8px 14px; background:#151b23; color:var(--secondary); font-size:12px; }
+    .hunk-heading strong { color:var(--text); font-weight:650; }
+    .hunk-number { color:var(--muted); font-variant-numeric:tabular-nums; }
+    .split-row { display:grid; grid-template-columns:1fr 1fr; min-height:26px; font:14px/26px var(--code); white-space:pre; }
+    .cell { display:grid; grid-template-columns:34px 42px 1fr; min-width:0; }
+    .cell + .cell { border-left:1px solid var(--line); }
+    .symbol { text-align:center; color:var(--muted); user-select:none; }
+    .num { padding-right:9px; color:var(--muted); text-align:right; user-select:none; border-right:1px solid rgba(48,54,61,.45); }
+    .code { padding:0 12px; overflow-x:auto; }
+    .removed { background:var(--red-bg); } .removed .symbol { color:var(--red); } .removed .code { color:#ffdcd7; }
+    .added { background:var(--green-bg); } .added .symbol { color:var(--green); } .added .code { color:#d7f5de; }
+    .empty { background:rgba(13,17,23,.16); } .empty > * { visibility:hidden; }
+    .unified { display:none; }
+    .queue { display:flex; align-items:center; gap:10px; position:fixed; z-index:3; bottom:16px; left:50%; transform:translateX(-50%); width:min(720px,calc(100% - 28px)); padding:10px; border:1px solid var(--line); border-radius:9px; background:rgba(22,27,34,.98); box-shadow:0 12px 30px rgba(0,0,0,.4); }
+    .queue-progress { flex:1; min-width:0; font-size:13px; color:var(--secondary); }
+    .queue-progress strong { color:var(--text); }
+    .queue-progress span { color:var(--muted); font-size:12px; }
+    dialog { width:min(680px,calc(100% - 28px)); max-height:min(760px,calc(100vh - 28px)); color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:0; box-shadow:0 20px 90px #000; }
+    dialog::backdrop { background:rgba(0,0,0,.62); }
+    .dialog-head { display:flex; align-items:center; gap:12px; padding:16px; border-bottom:1px solid var(--line); }
+    .dialog-head h2 { margin:0; font-size:17px; } .dialog-head p { margin:3px 0 0; color:var(--muted); font-size:12px; }
+    .dialog-close { margin-left:auto; min-width:36px; padding:4px 8px; }
+    .chooser-search { display:block; width:calc(100% - 32px); margin:14px 16px 8px; padding:10px 11px; border:1px solid var(--line); border-radius:6px; color:var(--text); background:var(--canvas); }
+    .file-results { padding:0 16px 18px; max-height:540px; overflow:auto; }
+    .dir-label { margin:16px 0 6px; color:var(--muted); font-size:12px; font-family:var(--code); }
+    .file-result { width:100%; min-height:38px; display:flex; gap:10px; align-items:center; text-align:left; border:0; border-radius:5px; padding:7px 9px; font-size:13px; }
+    .file-result small { color:var(--muted); margin-left:auto; font-size:11px; }
+    .file-result[aria-current="true"] { background:#1f6feb; color:#fff; } .file-result[aria-current="true"] small { color:#dbeafe; }
+    .empty-results { padding:28px 8px; color:var(--secondary); text-align:center; }
+    .detail-body, .notes-form { padding:16px; }
+    .detail-list { margin:0; display:grid; grid-template-columns:max-content 1fr; gap:10px 18px; font-size:13px; }
+    .detail-list dt { color:var(--muted); } .detail-list dd { margin:0; color:var(--secondary); overflow-wrap:anywhere; }
+    .notes-form label { display:block; color:var(--secondary); font-size:13px; margin-bottom:7px; }
+    textarea { width:100%; min-height:150px; resize:vertical; padding:10px; color:var(--text); background:var(--canvas); border:1px solid var(--line); border-radius:6px; line-height:1.5; }
+    .notes-actions { display:flex; align-items:center; gap:10px; margin-top:12px; } .notes-status { color:var(--muted); font-size:12px; }
+    details { max-width:1080px; margin:14px auto 0; color:var(--secondary); font-size:13px; } details p { margin:9px 0 0; line-height:1.55; }
+    @media (max-width:700px) {
+      .topline { padding:8px 14px; gap:10px; } .comparison { display:none; } .proposal-nav { overflow:auto; margin-left:0; } .proposal-nav a { padding:7px 6px; }
+      .demo-strip { padding:8px 14px; align-items:flex-start; } .demo-strip .memory { display:none; }
+      .workspace { padding:14px 0 86px; } .file-heading { padding:0 14px; margin:8px auto 14px; } h1 { font-size:20px; }
+      .file-strip { top:54px; padding:8px 10px; border-left:0; border-right:0; border-radius:0; } .file-strip .details-button { display:none; }
+      .file-position { font-size:12px; } .hunk-tools button { padding:4px 7px; } .segmented { display:none; }
+      .code-panel { border-left:0; border-right:0; box-shadow:none; } .code-labels { top:104px; display:block; } .code-labels span:first-child { display:none; } .code-labels span:last-child { display:block; padding:8px 12px; border:0; }
+      .split { display:none; } .unified { display:block; } .unified-row { display:grid; grid-template-columns:28px 38px 38px 1fr; min-height:26px; font:14px/26px var(--code); white-space:pre; } .unified-row .code { padding:0 9px; }
+      .queue { bottom:8px; padding:8px; gap:6px; } .queue button { min-height:38px; padding:5px 8px; font-size:12px; } .queue-progress { font-size:12px; } .queue-progress span { display:none; }
+    }
+    @media (prefers-reduced-motion:reduce) { *, *::before, *::after { scroll-behavior:auto !important; transition:none !important; } }
+    .code { min-width:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#review-canvas">Skip to code review</a>
+  <header class="app-header">
+    <div class="topline">
+      <a class="brand" href="index.html" aria-label="Cumpa proposal comparison">Cumpa</a>
+      <div class="comparison"><b>main</b> <span aria-hidden="true">→</span> <b>improve-review-ui</b></div>
+      <nav class="proposal-nav" aria-label="Prototype proposals">
+        <a href="index.html">Compare proposals</a><a href="01-quiet-workspace.html">Quiet workspace</a><a href="02-review-stream.html">Review stream</a><a href="03-focus-mode.html" aria-current="page">Focus mode</a>
+      </nav>
+    </div>
+    <div class="demo-strip"><strong>Design proposal · Demo changes · Nothing is saved</strong><span>Proposed: serial, single-file review</span><span class="memory">Interactions stay in this tab only.</span></div>
+  </header>
+
+  <main class="workspace" id="review-canvas">
+    <section class="file-heading" aria-labelledby="file-title">
+      <div class="file-heading-row"><h1 id="file-title">FileTree.vue</h1><span class="stat"><span class="add">+19 additions</span> · <span class="del">−4 deletions</span></span></div>
+      <p class="path" id="file-path">src/web/components/FileTree.vue</p>
+    </section>
+
+    <section class="file-strip" aria-label="Current file tools">
+      <button id="open-files" class="file-position" type="button" aria-haspopup="dialog"><strong>Files 18</strong> · <span id="position">1 of 18</span></button>
+      <button id="details" class="details-button" type="button" aria-haspopup="dialog">Details</button>
+      <span class="spacer"></span>
+      <div class="segmented" aria-label="Diff layout">
+        <button id="split-mode" type="button" aria-pressed="true">Split</button><button id="unified-mode" type="button" aria-pressed="false">Unified</button>
+      </div>
+      <div class="hunk-tools" aria-label="Change navigation"><button id="previous-hunk" type="button">Previous change</button><button id="next-hunk" type="button">Next change</button></div>
+      <button id="open-notes" type="button" aria-haspopup="dialog">Review notes</button>
+    </section>
+
+    <section class="code-panel split" aria-label="Split diff for FileTree.vue" id="split-diff">
+      <div class="code-labels"><span>base · main</span><span>head · improve-review-ui</span></div>
+      <div id="split-content"></div>
+    </section>
+    <section class="code-panel unified" aria-label="Unified diff for FileTree.vue" id="unified-diff">
+      <div class="code-labels"><span>head · improve-review-ui</span></div>
+      <div id="unified-content"></div>
+    </section>
+
+    <details>
+      <summary>Why this proposal</summary>
+      <p>The code remains the entire reading surface. File navigation and review details are deliberate interruptions, not permanent competing panels. <strong>Tradeoff:</strong> there is no always-visible file map; this favors a focused serial pass over scanning the full change set.</p>
+    </details>
+  </main>
+
+  <footer class="queue" aria-label="Review queue">
+    <button id="previous-file" type="button">Previous file</button>
+    <div class="queue-progress"><strong id="viewed-count">0 of 18 viewed</strong><span> · proposed review progress, in memory only</span></div>
+    <button id="mark-next" class="primary" type="button">Mark viewed &amp; next</button>
+    <button id="next-file" type="button">Next file</button>
+  </footer>
+
+  <dialog id="files-dialog" aria-labelledby="files-title">
+    <div class="dialog-head"><div><h2 id="files-title">Changed files</h2><p>Choose a file; this demo keeps the selection only in this tab.</p></div><button class="dialog-close" type="button" data-close="files-dialog" aria-label="Close changed files">Close</button></div>
+    <label class="sr-only" for="file-search" style="position:absolute;left:-9999px">Search changed files</label><input class="chooser-search" id="file-search" type="search" placeholder="Search files" autocomplete="off" />
+    <div class="file-results" id="file-results" aria-live="polite"></div>
+  </dialog>
+  <dialog id="details-dialog" aria-labelledby="details-title">
+    <div class="dialog-head"><div><h2 id="details-title">Change details</h2><p>Metadata is available on demand, not beside the code.</p></div><button class="dialog-close" type="button" data-close="details-dialog" aria-label="Close details">Close</button></div>
+    <div class="detail-body"><dl class="detail-list"><dt>Status</dt><dd id="detail-status">Modified</dd><dt>Path</dt><dd id="detail-path">src/web/components/FileTree.vue</dd><dt>Change</dt><dd id="detail-change"><span class="add">+19 additions</span>, <span class="del">−4 deletions</span></dd><dt>Comparison</dt><dd>main → improve-review-ui</dd><dt>Full commit IDs</dt><dd>Proposed on demand: <code>4b6d3cf…</code> → <code>8ca2e74…</code></dd></dl></div>
+  </dialog>
+  <dialog id="notes-dialog" aria-labelledby="notes-title">
+    <div class="dialog-head"><div><h2 id="notes-title">Review notes</h2><p>Type a note if useful. It stays in memory until this tab closes.</p></div><button class="dialog-close" type="button" data-close="notes-dialog" aria-label="Close review notes">Close</button></div>
+    <form class="notes-form" id="notes-form"><label for="notes">Demo review text</label><textarea id="notes" placeholder="Add an overall review note…"></textarea><div class="notes-actions"><button class="primary" type="submit">Keep note in memory</button><span class="notes-status" id="notes-status">No demo note stored.</span></div></form>
+  </dialog>
+
+  <script>
+    const files = [
+      ['src/web/components/FileTree.vue','FileTree.vue',19,4], ['src/web/components/FileRow.vue','FileRow.vue',2,1], ['src/web/components/DiffWorkspace.vue','DiffWorkspace.vue',2,1], ['src/web/components/ReviewToolbar.vue','ReviewToolbar.vue',2,1], ['src/web/components/ReviewSummary.vue','ReviewSummary.vue',2,1], ['src/web/components/PathDisplay.vue','PathDisplay.vue',2,1], ['src/web/components/DirectoryRow.vue','DirectoryRow.vue',2,1], ['src/web/components/EmptyDiff.vue','EmptyDiff.vue',2,1], ['src/web/components/CommentComposer.vue','CommentComposer.vue',2,1], ['src/web/components/ReviewPanel.vue','ReviewPanel.vue',2,1], ['src/web/components/ReviewState.vue','ReviewState.vue',2,1], ['src/web/components/KeyboardHelp.vue','KeyboardHelp.vue',2,1], ['src/web/components/FileMetadataPane.vue','FileMetadataPane.vue',2,1], ['src/web/components/CommitIdentity.vue','CommitIdentity.vue',2,1], ['src/web/components/ChangeCounter.vue','ChangeCounter.vue',2,1], ['src/web/App.vue','App.vue',2,1], ['src/web/styles.css','styles.css',2,1], ['src/web/main.ts','main.ts',2,1]
+    ].map(([path,name,add,del]) => ({path,name,add,del}));
+    const selectedHunks = [
+      { title:'Filter changed files', oldStart:22, newStart:22, rows:[
+        ['context','const props = defineProps<{'],['context','  files: readonly SessionFile[];'],['context','}>();'],['context',''],['remove','const visibleFiles = computed(() => props.files);'],['add',"const query = ref('');"],['add','const visibleFiles = computed(() => {'],['add','  const needle = query.value.trim().toLowerCase();'],['add','  return props.files.filter((file) =>'],['add','    displayPath(file).toLowerCase().includes(needle),'],['add','  );'],['add','});'],['context',''],['context','const selectedFileId = ref<string | null>(null);'],['context','const treeElement = ref<HTMLElement>();'] ] },
+      { title:'Keep the selected file in view', oldStart:54, newStart:61, rows:[
+        ['context','function selectFile(fileId: string): void {'],['context','  selectedFileId.value = fileId;'],['context',"  emit('select', fileId);"],['remove','  treeElement.value?.focus();'],['add','  void nextTick(() => {'],['add','    const selected = treeElement.value'],['add',"      ?.querySelector('[aria-current=\"true\"]');"],['add',"    selected?.scrollIntoView({ block: 'nearest' });"],['add','  });'],['context','}'],['context',''],['context','function resetFilter(): void {'],['add',"  query.value = '';"],['context','}'] ] },
+      { title:'Separate navigation from the file list', oldStart:160, newStart:172, rows:[
+        ['context','<template>'],['context','  <nav aria-label="Changed files">'],['remove','    <h2>Changed files ({{ files.length }})</h2>'],['add','    <header class="files-header">'],['add','      <h2>Files <span>{{ files.length }}</span></h2>'],['add','      <input v-model="query" type="search"'],['add','        aria-label="Filter files" placeholder="Find file…" />'],['add','    </header>'],['context',''],['context','    <ul ref="treeElement" class="file-list">'],['remove','      <FileRow v-for="file in files"'],['add','      <FileRow v-for="file in visibleFiles"'],['context','        :key="file.fileId" :file="file"'],['context','        @select="selectFile" />'],['context','    </ul>'],['context','  </nav>'],['context','</template>'] ] }
+    ];
+    let currentFile = 0, hunkIndex = 0, mode = 'split', returnFocus, note = '';
+    const viewed = new Set();
+    const $ = (selector) => document.querySelector(selector);
+    const escape = (text) => text.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const cell = (number, text, kind, blank=false) => `<div class="cell ${kind} ${blank?'empty':''}"><span class="symbol">${kind==='add'?'+':kind==='remove'?'−':' '}</span><span class="num">${number ?? ''}</span><code class="code">${escape(text || '')}</code></div>`;
+    function rowsFor(hunk, split) {
+      let oldLine = hunk.oldStart, newLine = hunk.newStart;
+      return hunk.rows.map(([kind,text]) => {
+        const oldNo = kind === 'add' ? null : oldLine++; const newNo = kind === 'remove' ? null : newLine++;
+        if (split) return `<div class="split-row">${kind==='add'?cell(null,'','context',true):cell(oldNo,text,kind)}${kind==='remove'?cell(null,'','context',true):cell(newNo,text,kind)}</div>`;
+        return `<div class="unified-row ${kind==='add'?'added':kind==='remove'?'removed':''}"><span class="symbol">${kind==='add'?'+':kind==='remove'?'−':' '}</span><span class="num">${oldNo ?? ''}</span><span class="num">${newNo ?? ''}</span><code class="code">${escape(text || '')}</code></div>`;
+      }).join('');
+    }
+    function renderDiff() {
+      const active = files[currentFile]; const real = currentFile === 0;
+      const hunks = real ? selectedHunks : [{title:'Improve review readability',oldStart:30+currentFile*2,newStart:30+currentFile*2,rows:[['context','const viewOptions = {'],['remove','  fontSize: 12,'],['add','  fontSize: 14,'],['add','  lineHeight: 24,'],['context','  readOnly: true,'],['context','};']]}];
+      hunkIndex = Math.min(hunkIndex,hunks.length-1);
+      const content = hunks.map((h,i) => `<section class="hunk" id="hunk-${i}"><div class="hunk-heading"><span class="hunk-number">${i+1} of ${hunks.length}</span><strong>${escape(h.title)}</strong></div>${rowsFor(h,true)}</section>`).join('');
+      const unified = hunks.map((h,i) => `<section class="hunk" id="unified-hunk-${i}"><div class="hunk-heading"><span class="hunk-number">${i+1} of ${hunks.length}</span><strong>${escape(h.title)}</strong></div>${rowsFor(h,false)}</section>`).join('');
+      $('#split-content').innerHTML = content; $('#unified-content').innerHTML = unified;
+      $('#file-title').textContent = active.name; $('#file-path').textContent = active.path; $('#position').textContent = `${currentFile+1} of ${files.length}`;
+      document.querySelector('.file-heading .stat').innerHTML = `<span class="add">+${active.add} additions</span> · <span class="del">−${active.del} deletions</span>`;
+      $('#detail-path').textContent = active.path; $('#detail-change').innerHTML = `<span class="add">+${active.add} additions</span>, <span class="del">−${active.del} deletions</span>`;
+      $('#detail-status').textContent = 'Modified'; $('#split-diff').setAttribute('aria-label',`Split diff for ${active.name}`); $('#unified-diff').setAttribute('aria-label',`Unified diff for ${active.name}`);
+    }
+    function updateViewed() { $('#viewed-count').textContent = `${viewed.size} of ${files.length} viewed`; }
+    function showDialog(id, trigger) { returnFocus = trigger; const dialog = document.getElementById(id); dialog.showModal(); if(id==='files-dialog') { $('#file-search').value=''; renderFileResults(); $('#file-search').focus(); } if(id==='notes-dialog') { $('#notes').value=note; $('#notes').focus(); } }
+    function closeDialog(id) { document.getElementById(id).close(); if(returnFocus) returnFocus.focus(); }
+    function renderFileResults() {
+      const q = $('#file-search').value.trim().toLowerCase(); const matches = files.map((file,index)=>({file,index})).filter(({file})=>file.path.toLowerCase().includes(q)); const results=$('#file-results');
+      if (!matches.length) { results.innerHTML='<p class="empty-results">No changed files match that search.</p>'; return; }
+      const groups = new Map(); matches.forEach(item=>{ const group=item.file.path.substring(0,item.file.path.lastIndexOf('/')+1); if(!groups.has(group)) groups.set(group,[]); groups.get(group).push(item); });
+      results.innerHTML = [...groups].map(([group,items])=>`<section><p class="dir-label">${escape(group)}</p>${items.map(({file,index})=>`<button class="file-result" type="button" data-file="${index}" aria-current="${index===currentFile}"><span>${escape(file.name)}</span><small>+${file.add} −${file.del}</small></button>`).join('')}</section>`).join('');
+      results.querySelectorAll('[data-file]').forEach(button=>button.addEventListener('click',()=>{ currentFile=Number(button.dataset.file); hunkIndex=0; renderDiff(); closeDialog('files-dialog'); document.getElementById('review-canvas').scrollIntoView({block:'start'}); }));
+    }
+    function setMode(next) { mode=window.matchMedia('(max-width:700px)').matches?'unified':next; const isSplit=mode==='split'; $('#split-diff').style.display=isSplit?'block':'none'; $('#unified-diff').style.display=isSplit?'none':'block'; $('#split-mode').setAttribute('aria-pressed',String(isSplit)); $('#unified-mode').setAttribute('aria-pressed',String(!isSplit)); }
+    function moveHunk(delta) { const hunks=currentFile===0?3:1; hunkIndex=(hunkIndex+delta+hunks)%hunks; document.getElementById((mode==='split'?'hunk-':'unified-hunk-')+hunkIndex).scrollIntoView({behavior:'smooth',block:'start'}); }
+    $('#open-files').addEventListener('click',e=>showDialog('files-dialog',e.currentTarget)); $('#details').addEventListener('click',e=>showDialog('details-dialog',e.currentTarget)); $('#open-notes').addEventListener('click',e=>showDialog('notes-dialog',e.currentTarget));
+    document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>closeDialog(button.dataset.close)));
+    $('#files-dialog').addEventListener('close',()=>returnFocus?.focus()); $('#details-dialog').addEventListener('close',()=>returnFocus?.focus()); $('#notes-dialog').addEventListener('close',()=>returnFocus?.focus());
+    $('#file-search').addEventListener('input',renderFileResults); $('#split-mode').addEventListener('click',()=>setMode('split')); $('#unified-mode').addEventListener('click',()=>setMode('unified'));
+    $('#previous-hunk').addEventListener('click',()=>moveHunk(-1)); $('#next-hunk').addEventListener('click',()=>moveHunk(1));
+    $('#previous-file').addEventListener('click',()=>{currentFile=(currentFile+files.length-1)%files.length; hunkIndex=0; renderDiff(); window.scrollTo({top:0,behavior:'smooth'});}); $('#next-file').addEventListener('click',()=>{currentFile=(currentFile+1)%files.length; hunkIndex=0; renderDiff(); window.scrollTo({top:0,behavior:'smooth'});});
+    $('#mark-next').addEventListener('click',()=>{viewed.add(currentFile); updateViewed(); currentFile=(currentFile+1)%files.length; hunkIndex=0; renderDiff(); window.scrollTo({top:0,behavior:'smooth'});});
+    $('#notes-form').addEventListener('submit',e=>{e.preventDefault(); const value=$('#notes').value.trim(); if(value) { note=value; $('#notes-status').textContent='Demo note kept in memory for this tab.'; } else { note=''; $('#notes-status').textContent='No demo note stored.'; }});
+    renderDiff(); updateViewed(); setMode('split');
+  </script>
+</body>
+</html>

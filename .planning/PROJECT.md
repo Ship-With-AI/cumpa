@@ -18,11 +18,31 @@ Cumpa now offers an optional one-time USD $49.99 support flow in configured rele
 
 **Phase 04 — Exact Runtime Tarball completed on 2026-09-09.** One production-configured `@shipwithai/cumpa@1.5.0` archive passed scanner and installed acceptance, remains read-only, and received direct digest-bound approval: SHA-256 `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca`, length `3513998` bytes. During Phase 5 planning, the owner selected a fresh CI-built candidate with new exact-byte approval and publication in the same workflow run/attempt for truthful CI-build provenance. The old archive/evidence remain immutable history; they are not a publication fallback. No Phase 5 execution or remote mutation is authorized by that planning choice.
 
-## Current Milestone: v1.5 MIT Distribution
+**v1.5 close-out status (2026-09-12):** All 23 v1.5 plans across 5 phases are complete, but Phase 07 — clean-public-artifact-acceptance is `partially-blocked`: the hardened acceptance rerun stopped rather than overwrite the stale pre-review evidence record, because the post-restore path required an already-consumed protected Restore and OMP isolation reported `omp-isolation-unavailable`. No substitute row was fabricated. v1.5 was therefore never archived; v1.6 starts with that blocker carried over unchanged.
+
+## Current Milestone: v1.6 Workspace Restyle
+
+**Goal:** Restyle the whole browser review workspace to the approved `mockups/01b-quiet-workspace-tree.html` composition so changed files and diffs are easier to read and scroll, without changing any review, comment, persistence, or export mechanic.
+
+**Visual contract:** `mockups/01b-quiet-workspace-tree.html` plus its captured `mockups/01b-desktop.png`, `01b-desktop-full.png`, and `01b-mobile.png` references. The running app must be visually equivalent at those viewports; deliberate divergence is allowed only where production data (Monaco, inline comments, unsupported or unavailable files) requires it.
+
+**Target features:**
+- Adopt the mockup's composition across the whole workspace shell: banner-free header identity, BASE → HEAD comparison strip, file toolbar, diff reading surface, dialogs, footer.
+- Replace the changed-files sidebar presentation with the mockup's dense tree rows — status badge, file name, addition/deletion counts, directory rows with changed-file counts — while preserving the existing tree semantics (nesting, single-child path compaction, ordering, roving-tabindex keyboard navigation, selection).
+- Add type-to-filter over the changed-file tree that prunes to matches and force-expands ancestors.
+- Re-derive the canonical semantic tokens from the mockup's values (surfaces, borders, muted text, diff fills, status colors) and re-map the typed Monaco theme byte-for-byte to the new root.
+- Keep Monaco as the diff authority and restyle its editor, gutter, sign, spacing, and hidden-region presentation to the quieter reading surface.
+- Keep inline comment mechanics, accepted cards, anchors, and the comments rail unchanged while adapting them to the new visual language.
+- Move comparison metadata into a Details dialog and the review summary, export controls, export readiness, export progress, and receipts into a Review-notes dialog.
+- Keep selector-drift, stale and orphaned anchor, and draft-recovery warnings visible in the workspace shell — never only inside a dialog.
+- Preserve the mobile files dialog and narrow-viewport reflow of the new composition.
+
+<details>
+<summary>v1.5 MIT Distribution (plans complete; Phase 07 evidence blocked, not archived)</summary>
 
 **Goal:** Let users install and run MIT-licensed Cumpa from public npm and install its public ShipWithAI skill, with the existing Cumpa source repository and reviewed history publicly available under the same standard MIT license.
 
-**Decision authority:** 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary source-available direction. Standard MIT permits commercial use, modification, redistribution, sublicensing, and resale; third-party rights and notices remain unchanged. Phase 03 completed the named exact-text assent, rights/sensitive-history review and separately authorized source-publication gates. Runtime artifact and registry publication remain gated by the later phases.
+**Decision authority:** 2026-09-08 quick task `260908-d25` superseded the 2026-09-07 proprietary source-available direction. Standard MIT permits commercial use, modification, redistribution, sublicensing, and resale; third-party rights and notices remain unchanged.
 
 **Target features:**
 - Publish MIT-licensed `@shipwithai/cumpa@1.5.0` for global installation and exact-version `npx` execution.
@@ -33,6 +53,7 @@ Cumpa now offers an optional one-time USD $49.99 support flow in configured rele
 - Verify clean global, npx, and marketplace-installed browser-review flows against released artifacts.
 - Completed in Phase 03: publish the existing `Ship-With-AI/cumpa` repository and reviewed history after the approval gates, with its verified public Issues page and no separate homepage.
 
+</details>
 
 <details>
 <summary>v1.4 Voluntary Support (shipped)</summary>
@@ -145,6 +166,19 @@ Validated in v1.5 Phase 04: Exact Runtime Tarball:
 
 ### Active
 
+v1.6 Workspace Restyle:
+
+- [ ] Reviewers read the changed-file tree as dense rows showing status, file name, and addition/deletion counts, with directory rows showing changed-file counts, and the existing nesting, path compaction, ordering, selection, and keyboard tree navigation unchanged.
+- [ ] Reviewers narrow the changed-file tree by typing, seeing only matching files with their ancestor directories expanded, and an explicit empty state when nothing matches.
+- [ ] Reviewers read diffs on the restyled Monaco surface, with Monaco still the diff authority and its theme byte-matched to the new semantic root.
+- [ ] Reviewers create, edit, resolve, and read line comments and the comments rail with unchanged mechanics on the new visual surface.
+- [ ] Reviewers open comparison metadata in a Details dialog instead of a permanent toolbar.
+- [ ] Reviewers write the review summary and run export, readiness, progress, and receipt steps from a Review-notes dialog without losing diff width.
+- [ ] Reviewers always see selector-drift, stale or orphaned anchor, and draft-recovery warnings in the workspace shell, never only inside a dialog.
+- [ ] Reviewers get the same composition on narrow viewports, including the files dialog, as the mockup's mobile reference.
+
+Carried over from v1.5 (milestone plans complete, never archived; Phase 07 acceptance evidence blocked):
+
 - [ ] Users can install MIT-licensed `@shipwithai/cumpa@1.5.0` globally to obtain the `cumpa` command or run it through `npx @shipwithai/cumpa@1.5.0`.
 - [ ] Maintainers can publish approved releases from the public repository through npm trusted publishing without a long-lived token, retaining eligible automatic provenance and verifying any attestation claims.
 - [ ] Coding-agent users can install the existing public MIT-licensed Cumpa skill through ShipWithAI and follow its declared CLI prerequisite.
@@ -160,6 +194,10 @@ Validated in v1.5 Phase 04: Exact Runtime Tarball:
 - Full GitHub review mechanics such as replies, suggestion patches, approvals, and pending-review submission — v1 provides line comments, resolution, and an overall summary.
 - Publishing credentials, confidential operational material, or content without publication rights — public-source release requires review of tracked content and history; destructive remediation needs separate approval.
 - Shipping TypeScript source, source maps, tests, planning files, or repository history in npm artifacts — consumers receive the compiled runtime-only distribution.
+- Per-file viewed tracking, an Unviewed filter, and viewed progress — present in the mockup, explicitly excluded from v1.6 because they would add a new persisted draft field.
+- Change-to-change (hunk) jump navigation and a wrap-lines toggle — present in the mockup, explicitly excluded from v1.6; Monaco's existing navigation stays as is.
+- Any change to review, comment, persistence, session, export, or support mechanics — v1.6 is presentation only.
+- Composited WCAG contrast re-verification of the re-derived palette — owner-accepted risk for v1.6; accessibility is re-checked only where markup structurally changed.
 
 ## Context
 
@@ -176,6 +214,9 @@ Coding agents can submit strict range or exact-patch review requests and receive
 v1.4 shipped 12/12 requirements across two phases, 22 plans, and 30 tasks. Its audit verified 8/8 cross-phase connections and 8/8 end-to-end flows. The active hosted implementation is a Supabase private schema plus three Edge Functions; GitHub OAuth binds support or restoration intent, while signature-verified Stripe webhook fulfillment alone establishes paid status.
 
 Accepted v1.4 debt is bounded to a stale deleted-suite filename in the deployment verifier contract and one unused local support-status endpoint/client wrapper. Neither affects the verified release flow.
+
+v1.6 starts from an approved static mockup rather than a written design brief. `mockups/01b-quiet-workspace-tree.html` is a standalone HTML/CSS/JS proposal derived from proposal 01 whose sidebar reproduces the shipped file-tree semantics — nested directories, single-child path compaction, path ordering, all-expanded default, roving-tabindex keyboard navigation, status badges, addition/deletion counts, and directory change counts. Its verified behaviour, the excluded mockup-only affordances, and its desktop/mobile screenshots are the reference for this milestone.
+
 ## Constraints
 
 - **Runtime**: Node.js 24 LTS with TypeScript end to end — one language across CLI, server, shared contracts, and UI, using the current supported LTS baseline.
@@ -190,6 +231,7 @@ Accepted v1.4 debt is bounded to a stale deleted-suite filename in the deploymen
 - **Support**: Voluntary support never gates review features; hosted payment authority is optional, credential-free from the local app, and enabled only in the canonical configured release package.
 - **Distribution**: Publish the existing `Ship-With-AI/cumpa` repository and reviewed history only after approval gates; ship MIT-licensed `@shipwithai/cumpa@1.5.0` as a compiled-runtime-only npm package exposing `cumpa`. Trusted publishing uses GitHub OIDC without a long-lived token and preserves eligible automatic provenance.
 - **Licensing**: Cumpa source and compiled releases use the standard MIT license with copyright retained by Alessandro Magionami & Manuel Salvatore Martone. MIT permits commercial use, modification, redistribution, sublicensing, and resale without bespoke permission conditions; third-party rights and notices remain in force. Both licensors must give refreshed assent to the exact MIT text before publication. Voluntary support remains feature-neutral.
+- **Visual contract**: `mockups/01b-quiet-workspace-tree.html` and its captured screenshots define the v1.6 composition. Semantic tokens are re-derived from that mockup and the typed Monaco theme is re-mapped byte-for-byte to the new root; Monaco remains the diff authority. Drift, stale/orphaned anchor, and draft-recovery warnings must remain visible in the shell rather than only inside a dialog.
 
 ## Key Decisions
 
@@ -242,6 +284,13 @@ Accepted v1.4 debt is bounded to a stale deleted-suite filename in the deploymen
 | Reuse existing GitHub production configuration in memory | Avoid a duplicate local configuration source while retaining canonical validation and fingerprint-only evidence | Good — the actual release candidate used the existing production variable; no local configuration file was created |
 | Approve one immutable runtime archive rather than a reproducible recipe | Bind inspection, installation, human assent and publication to the same bytes | Good — Phase 04 verified and approved its read-only candidate; the later owner-selected CI cycle changes the publication designation, not that historical artifact or approval |
 | Build and approve the stable publication candidate in its attested CI workflow run | Avoid representing the earlier local build as a later CI build while preserving exact inspected/installed/published bytes | Selected by owner during Phase 5 planning; requires a fresh actual-digest approval, same-run/attempt publication, and immutable retention of the Phase 4 artifact/history |
+| Restyle to an approved interactive mockup rather than a written design brief | A runnable mockup already proves the tree semantics, filter behaviour, and reading density the restyle must reach | Pending — `mockups/01b-quiet-workspace-tree.html` plus its screenshots are the v1.6 visual contract |
+| Keep Monaco as diff authority and restyle around it | Replacing it would re-implement line mapping, syntax highlighting, and comment anchoring for presentation gain only | Pending — Monaco theme is re-mapped byte-for-byte to the re-derived semantic root |
+| Re-derive semantic tokens from the mockup values | One canonical palette must stay authoritative for both CSS and the Monaco theme; two palettes would drift | Pending — token re-derivation is in scope; composited contrast re-verification is an owner-accepted risk |
+| Host summary, export controls, readiness, and receipts in a Review-notes dialog while keeping warnings in the shell | Reclaims diff width without letting a drift or recovery warning hide behind a dialog, which a validated v1 requirement forbids | Pending — dialog hosts authoring and export; warnings stay shell-level |
+| Exclude the mockup's viewed tracking, Unviewed filter, hunk navigation, and wrap toggle from v1.6 | Viewed state needs a new persisted draft field and the others change review mechanics; v1.6 is presentation only | Pending — recorded as explicit Out of Scope |
+| Start v1.6 with the v1.5 Phase 07 evidence blocker carried over | The restyle is independent of distribution acceptance, and no substitute acceptance evidence may be fabricated to close v1.5 | Pending — v1.5 remains unarchived with its blocker recorded verbatim |
+
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
@@ -260,4 +309,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-09-09 after verified Phase 5 planning and the owner-selected same-run CI-build publication decision; execution not started*
+*Last updated: 2026-09-12 at the start of v1.6 Workspace Restyle; v1.5 plans complete but unarchived with its Phase 07 acceptance-evidence blocker carried over*
