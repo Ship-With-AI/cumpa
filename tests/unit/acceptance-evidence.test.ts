@@ -25,7 +25,7 @@ type SupportState = {
 
 type AcceptanceRow = {
   requirement: string;
-  status: 'passed' | 'blocked';
+  status: 'passed' | 'blocked' | 'partially-blocked';
   installSource?: string;
   reason?: string;
   substituted?: boolean;
@@ -74,15 +74,20 @@ function rows(verified: 'passed' | 'blocked' = 'passed'): AcceptanceRow[] {
 }
 
 function inputs(shared = false) {
+  const reviewEvidence = {
+    assetGraph: { assets: true, workers: true, codicon: true },
+    reviewExport: { relaunch: true, canonicalV2: true, isolatedDrafts: true, reExport: 'exported', exactPatch: { canonicalV3: true, grounded: true } },
+    finish: { finish: true },
+  };
   return {
     acceptedAt: '2026-09-12T16:05:28.000Z',
     host,
     artifactIdentity: { tarballUrl, byteLength: 3514800, sha256: 'dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141', npmShasumSha1: '2d58866c862283f2c41b3f4f7d51282b2ca96472', npmIntegritySha512: integrity },
     marketplaceIdentity: { collectionVersion: '0.3.0', commit: '984e28c5838176ec15d2af8b996d0307e45b28d5', skillDigest: '8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220', repository: marketplaceRepository },
     paths: [
-      { installSource: 'global', requirement: 'ACC-01', status: 'passed', installProof: { resolvedIntegrity: integrity }, supportStates: supportStates('global'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true } },
-      { installSource: 'npx', requirement: 'ACC-02', status: 'passed', installProof: { resolvedIntegrity: integrity }, supportStates: supportStates('npx'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true } },
-      { installSource: 'marketplace', requirement: 'ACC-03', status: 'passed', installProof: { resolvedIntegrity: integrity }, supportStates: supportStates('marketplace'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true } },
+      { installSource: 'global', requirement: 'ACC-01', status: 'passed', installProof: { packageLabel: '@shipwithai/cumpa@1.5.0', resolvedTarball: tarballUrl, resolvedIntegrity: integrity, resolvedVersion: '1.5.0', binaryContainedInIsolatedPrefix: true, npmInstallAttempts: 1 }, supportStates: supportStates('global'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true }, evidence: reviewEvidence },
+      { installSource: 'npx', requirement: 'ACC-02', status: 'passed', installProof: { packageLabel: '@shipwithai/cumpa@1.5.0', resolvedTarball: tarballUrl, resolvedIntegrity: integrity, resolvedVersion: '1.5.0', binaryContainedInIsolatedPrefix: true, npmInstallAttempts: 1 }, supportStates: supportStates('npx'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true }, evidence: reviewEvidence },
+      { installSource: 'marketplace', requirement: 'ACC-03', status: 'passed', installProof: { packageLabel: '@shipwithai/cumpa@1.5.0', resolvedTarball: tarballUrl, resolvedIntegrity: integrity, resolvedVersion: '1.5.0', binaryContainedInIsolatedPrefix: true, npmInstallAttempts: 1 }, supportStates: supportStates('marketplace'), sharedSupportIdentity: { shared, restoreCompleted: false, restoreObservedFromSharedIdentity: false }, sourceControlUnchanged: true, cleanup: { removedOwnedRoots: true }, evidence: reviewEvidence },
     ],
   };
 }
@@ -166,6 +171,47 @@ test('builds a pinned record and records shared support narrowing', () => {
   const broken = inputs();
   broken.paths[1].installProof.resolvedIntegrity = 'sha512-wrong';
   expect(() => buildAcceptanceEvidence(broken)).toThrow(/integrity/u);
+});
+test('keeps installation outcomes separate from partially blocked support evidence', () => {
+  const evidence = inputs();
+  for (const path of evidence.paths) path.supportStates = supportStates(path.installSource, 'blocked');
+
+  const record = buildAcceptanceEvidence(evidence);
+
+  expect(record.installations).toEqual(expect.arrayContaining([
+    expect.objectContaining({ requirement: 'ACC-01', status: 'passed' }),
+    expect.objectContaining({ requirement: 'ACC-02', status: 'passed' }),
+    expect.objectContaining({ requirement: 'ACC-03', status: 'passed' }),
+  ]));
+  expect(record.requirements).toContainEqual(expect.objectContaining({ requirement: 'ACC-04', status: 'partially-blocked' }));
+  expect(record.status).toBe('partially-blocked');
+});
+
+test('blocks a failed installation-review axis without treating support as its cause', () => {
+  const evidence = inputs();
+  evidence.paths[1].evidence.assetGraph.workers = false;
+
+  const record = buildAcceptanceEvidence(evidence);
+
+  expect(record.installations[1]).toMatchObject({ requirement: 'ACC-02', status: 'blocked', reason: 'install-review-evidence-incomplete', substituted: false });
+});
+
+test('preserves the public-global Restore linkage finding with bounded provenance', () => {
+  const record = buildAcceptanceEvidence({
+    ...inputs(),
+    restoreReportedCompleteWithoutLinkage: {
+      observed: true,
+      path: 'public-global',
+      window: 'post-restore',
+      description: 'The hosted flow reported a successful Restore while installation status remained unverified and the in-product modal reached no terminal state.',
+      regenerationNote: 'The report-only regeneration did not reproduce this observation because the single authorized Restore sign-in was already consumed.',
+    },
+  });
+
+  expect(record.restoreReportedCompleteWithoutLinkage).toMatchObject({ observed: true, path: 'public-global', window: 'post-restore' });
+  expect(record.installations.filter((path: { installSource: string }) => path.installSource !== 'global')).not.toEqual(expect.arrayContaining([
+    expect.objectContaining({ restoreReportedCompleteWithoutLinkage: expect.anything() }),
+  ]));
 });
 
 test.each([
