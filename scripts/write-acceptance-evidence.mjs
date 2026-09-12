@@ -205,7 +205,12 @@ export function buildAcceptanceEvidence(inputs) {
     if (path?.installProof?.resolvedIntegrity !== undefined && path.installProof.resolvedIntegrity !== identity.npmIntegritySha512) fail('install proof integrity differs from pinned identity');
     for (const state of supportRows(path)) blockedRow(state);
   }
-  const installations = paths.map((path) => ({ ...path, ...installationOutcome(path, identity) }));
+  const installations = paths.map((path) => {
+    const outcome = installationOutcome(path, identity);
+    if (outcome.status === 'blocked') return { ...path, ...outcome };
+    const { reason, substituted, ...installation } = path;
+    return { ...installation, ...outcome };
+  });
   const allStates = installations.flatMap((path) => supportRows(path));
   const blockedStates = allStates.filter((state) => state.status === 'blocked');
   const requirements = [

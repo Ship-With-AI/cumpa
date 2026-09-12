@@ -176,7 +176,11 @@ test('builds a pinned record and records shared support narrowing', () => {
 });
 test('keeps installation outcomes separate from partially blocked support evidence', () => {
   const evidence = inputs();
-  for (const path of evidence.paths) path.supportStates = supportStates(path.installSource, 'blocked');
+  for (const path of evidence.paths) {
+    path.supportStates = supportStates(path.installSource, 'blocked');
+    path.reason = 'live-entitlement-unavailable';
+    path.substituted = false;
+  }
 
   const record = buildAcceptanceEvidence(evidence);
 
@@ -187,6 +191,7 @@ test('keeps installation outcomes separate from partially blocked support eviden
   ]));
   expect(record.requirements).toContainEqual(expect.objectContaining({ requirement: 'ACC-04', status: 'partially-blocked' }));
   expect(record.status).toBe('partially-blocked');
+  expect(record.installations.map((path: { reason?: string }) => path.reason)).toEqual([undefined, undefined, undefined]);
 });
 
 test('blocks a failed installation-review axis without treating support as its cause', () => {
