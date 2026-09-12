@@ -75,6 +75,7 @@ let stateWindow: SupportStateWindow;
 let probe: Probe | undefined;
 const supportStates: Row[] = [];
 let sourceControlUnchanged = true;
+let restoreDefectObservation: RestoreDefectObservation | undefined;
 
 function stateWindowFromEnvironment(): SupportStateWindow {
   const value = process.env.CUMPA_SUPPORT_STATE_WINDOW;
@@ -392,7 +393,6 @@ test('records verified support with its own unrestricted review, export, and Fin
   let restoring = false;
   let blockedReason: Row['reason'] = 'hosted-support-unreachable';
   let verified = false;
-  let restoreDefectObservation: RestoreDefectObservation | undefined;
   await withFixture(403, async (fixture) => {
     const page = await browser.newPage();
     const running = startCli(fixture);
