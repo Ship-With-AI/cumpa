@@ -5,16 +5,16 @@ milestone_name: MIT Distribution
 current_phase: 07
 current_phase_name: clean-public-artifact-acceptance
 status: executing
-stopped_at: Completed 07-05-PLAN.md
-last_updated: "2026-09-12T17:05:00.000Z"
+stopped_at: Completed 07-06-PLAN.md
+last_updated: "2026-09-12T15:59:05.000Z"
 last_activity: 2026-09-12
-last_activity_desc: Completed 07-05 isolated OMP marketplace acceptance
+last_activity_desc: Completed 07-06 public global and npx acceptance
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 23
-  completed_plans: 20
-  percent: 87
+  completed_plans: 21
+  percent: 91
 ---
 
 # Project State
@@ -29,12 +29,12 @@ See: .planning/PROJECT.md (updated 2026-09-09)
 ## Current Position
 
 Phase: 07 (clean-public-artifact-acceptance) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Status: In progress
-Checkpoint: 07-05 passed the actual OMP marketplace browser flow. Its live unverified and dismissed rows passed; verified is bound blocked as `live-entitlement-unavailable`, with `restoreReportedCompleteWithoutLinkage: true` and `substituted: false`.
-Last activity: 2026-09-12 — Completed 07-05-PLAN.md; Plan 6 of 7 next.
+Checkpoint: 07-06 ran the global and npx public browser paths. ACC-01 and ACC-02 passed; ACC-04 remains phase-wide partially blocked as `live-entitlement-unavailable` with `substituted: false`.
+Last activity: 2026-09-12 — Completed 07-06-PLAN.md; Plan 7 of 7 next.
 
-Progress: [███████░░░] 87% — 20 of 23 milestone plans complete
+Progress: [█████████░] 91% — 21 of 23 milestone plans complete
 
 ## Performance Metrics
 
@@ -82,6 +82,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Keep local-archive evidence structurally unchanged while public paths publish separate scenario records.
 - [Phase 07]: Marketplace OMP auth narrowing. — The temporary OMP profile reused the operator-authorized provider credential copy; every other isolation dimension remains per-path. This is not independent authentication and must be carried into consolidated evidence.
 - [Phase 07]: Use expectedVersion for source-independent CLI and manifest assertions.
+- [Phase 07]: Preserve `partially-blocked` through consolidation. — Real global and npx pre-restore runs passed their review/export/Finish and asset contracts, but the verified ACC-04 row remains `live-entitlement-unavailable` with `substituted: false`.
 
 ### Pending Todos
 

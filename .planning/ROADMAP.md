@@ -149,7 +149,7 @@ Plans:
   3. A clean agent profile installs the public marketplace skill, invokes the separately installed exact CLI, finishes a browser review, and receives the validated canonical result.
   4. Global, npx, and marketplace-installed paths retain unrestricted review and export behavior whether voluntary support is unpaid, dismissed, or verified.
 
-**Plans**: 5/7 plans executed
+**Plans**: 6/7 plans executed
 
 Plans:
 **Wave 1**
@@ -171,7 +171,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 07-06-PLAN.md — Public-artifact acceptance driver, two-window support-state orchestration, acceptance configuration widening with the local-archive collection narrowed
+- [x] 07-06-PLAN.md — Public-artifact acceptance driver, two-window support-state orchestration, acceptance configuration widening with the local-archive collection narrowed
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
@@ -187,4 +187,4 @@ Plans:
 | 4. Exact Runtime Tarball | 4/4 | Complete    | 2026-09-09 |
 | 5. Bootstrap & Trusted Stable Publication | 6/6 | Complete    | 2026-09-10 |
 | 6. Independent MIT Marketplace Skill | 3/3 | Complete    | 2026-09-11 |
-| 7. Clean Public-Artifact Acceptance | 5/7 | In Progress|  |
+| 7. Clean Public-Artifact Acceptance | 6/7 | In Progress|  |
