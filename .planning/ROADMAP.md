@@ -19,7 +19,7 @@ The 2026-09-08 quick task `260908-d25` supersedes the 2026-09-07 proprietary sou
 - [x] **Phase 4: Exact Runtime Tarball** — Produce one complete compiled-runtime-only tarball and verify its exact bytes before any npm release. (completed 2026-09-09)
 - [x] **Phase 5: Bootstrap & Trusted Stable Publication** — Establish a usable bootstrap tagged `bootstrap` (D-10 first-release `latest` exception), revoke temporary authorization, and publish stable `1.5.0` through OIDC. (completed 2026-09-10)
 - [x] **Phase 6: Independent MIT Marketplace Skill** — Publish the thin MIT skill after the released MIT Cumpa CLI exists as a separate prerequisite. (completed 2026-09-11)
-- [~] **Phase 7: Clean Public-Artifact Acceptance** - Hardened regeneration is partially blocked: fresh public pre-restore runs passed, while post-restore would require the already-consumed protected sign-in and marketplace redirection is unhonored. The stale pre-review record remains untouched.
+- [~] **Phase 7: Clean Public-Artifact Acceptance** — ACC-01 (global public install), ACC-02 (`npx --yes` from an empty cache), and ACC-03 (marketplace skill via an isolated OMP profile) all passed the full browser-review contract against the public `1.5.0` artifact. ACC-04 is partially blocked: live-unverified and dismissed rows passed on every path, while every verified row is blocked as `live-entitlement-unavailable` (`substituted: false`) because the paid entitlement exists only in Stripe test-mode data and D-07 forbids a new purchase. Evidence: `07-ACCEPTANCE-EVIDENCE.json` (status `partially-blocked`), regenerated from six real driver reports after the pre-review record was superseded.
 
 ## Phase Details
 
