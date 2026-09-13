@@ -18,11 +18,29 @@ import {
   runOrdinaryAction,
   type RunCliDependencies,
 } from '../../src/cli/run.js';
-import type { GroundedExactPatch } from '../../src/contracts/comparison.js';
+import type {
+  GroundedExactPatch,
+  PinnedComparison,
+} from '../../src/contracts/comparison.js';
 import type { SessionApp } from '../../src/server/app.js';
 import { ExactPatchGroundingError } from '../../src/git/exact-patch.js';
 import { PatchSnapshotError } from '../../src/server/patch-snapshot.js';
-import type { SourceCandidate } from '../../src/domain/source.js';
+import type {
+  BranchCandidate,
+  SourceCandidate,
+} from '../../src/domain/source.js';
+
+type PromptChoice = {
+  readonly value: string;
+  readonly name: string;
+  readonly disabled?: string;
+};
+
+function isPromptChoice(
+  item: Separator | PromptChoice,
+): item is PromptChoice {
+  return !(item instanceof Separator);
+}
 
 const baseOid = '1'.repeat(40);
 const headOid = '2'.repeat(40);
@@ -291,11 +309,11 @@ describe('staged source discovery', () => {
           });
           expect(
             items
+              .filter(isPromptChoice)
               .filter(
                 (item) =>
-                  !(item instanceof Separator) &&
-                  (item.value.startsWith('branch:') ||
-                    item.value.startsWith('worktree:')),
+                  item.value.startsWith('branch:') ||
+                  item.value.startsWith('worktree:'),
               )
               .map((item) => item.value),
           ).toEqual([
@@ -307,9 +325,8 @@ describe('staged source discovery', () => {
           if (sourceCalls.length === 1) {
             expect(
               items.find(
-                (item) =>
-                  !(item instanceof Separator) &&
-                  item.value === 'worktree:/repo',
+                (item): item is PromptChoice =>
+                  isPromptChoice(item) && item.value === 'worktree:/repo',
               )?.name,
             ).toContain('Checking worktree state…');
           } else {
@@ -329,8 +346,8 @@ describe('staged source discovery', () => {
     });
     expect(
       refreshedItems.find(
-        (item) =>
-          !(item instanceof Separator) && item.value === 'worktree:/repo',
+        (item): item is PromptChoice =>
+          isPromptChoice(item) && item.value === 'worktree:/repo',
       )?.name,
     ).toContain('Dirty — committed HEAD only');
     expect(sourceCalls).toHaveLength(2);
@@ -344,11 +361,13 @@ describe('staged source discovery', () => {
     const selected = await pickOrderedSources(
       {
         candidates: eagerCandidates,
-        searchBranches: async (_term, signal) => {
-          receivedSignals.push(signal!);
+        searchBranches: async (_term: string, signal?: AbortSignal) => {
+          if (signal !== undefined) {
+            receivedSignals.push(signal);
+          }
           return [alphaCandidate, zuluCandidate];
         },
-      } as never,
+      },
       {
         prompt: async (config) => {
           const controller = new AbortController();
@@ -374,7 +393,7 @@ describe('staged source discovery', () => {
         {
           candidates: eagerCandidates,
           searchBranches: async () => [zuluCandidate, alphaCandidate, zuluCandidate],
-        } as never,
+        },
         {
           prompt: async (config) => {
             source = config.source;
@@ -393,11 +412,11 @@ describe('staged source discovery', () => {
     });
     expect(
       items
-        ?.filter(
+        ?.filter(isPromptChoice)
+        .filter(
           (item) =>
-            !(item instanceof Separator) &&
-            (item.value.startsWith('branch:') ||
-              item.value.startsWith('worktree:')),
+            item.value.startsWith('branch:') ||
+            item.value.startsWith('worktree:'),
         )
         .map((item) => item.value),
     ).toEqual([
@@ -412,8 +431,8 @@ describe('staged source discovery', () => {
   });
 
   it('rejects superseded rows while current exact IDs remain selectable for Base and Head', async () => {
-    const oldLookup = Promise.withResolvers<readonly SourceCandidate[]>();
-    const newLookup = Promise.withResolvers<readonly SourceCandidate[]>();
+    const oldLookup = Promise.withResolvers<readonly BranchCandidate[]>();
+    const newLookup = Promise.withResolvers<readonly BranchCandidate[]>();
     let calls = 0;
     let promptCalls = 0;
     const answers = [zuluCandidate.id, zuluCandidate.id];
@@ -425,7 +444,7 @@ describe('staged source discovery', () => {
           calls += 1;
           return calls === 1 ? oldLookup.promise : newLookup.promise;
         },
-      } as never,
+      },
       {
         prompt: async (config) => {
           promptCalls += 1;
@@ -439,11 +458,11 @@ describe('staged source discovery', () => {
             const items = await fresh;
             expect(
               items
+                .filter(isPromptChoice)
                 .filter(
                   (item) =>
-                    !(item instanceof Separator) &&
-                    (item.value.startsWith('branch:') ||
-                      item.value.startsWith('worktree:')),
+                    item.value.startsWith('branch:') ||
+                    item.value.startsWith('worktree:'),
                 )
                 .map((item) => item.value),
             ).toEqual([zuluCandidate.id, candidates[2].id, candidates[3].id]);
@@ -463,13 +482,17 @@ describe('staged source discovery', () => {
     await runCli(
       { cwd: '/repo' },
       {
-        discoverCandidates: (async () => ({
+        discoverCandidates: async () => ({
           initialCandidates: eagerCandidates,
+          candidateEnrichment: Promise.resolve(eagerCandidates),
+          startCandidateEnrichment: () => {
+            events.push('enrich');
+          },
           searchBranches: async () => {
             events.push('search');
             return [alphaCandidate];
           },
-        })) as never,
+        }),
         pickSources: async (options) => {
           events.push('pick');
           expect(options.candidates).toEqual(eagerCandidates);
@@ -480,7 +503,7 @@ describe('staged source discovery', () => {
         launchComparison: async () => {
           events.push('launch');
         },
-      } as RunCliDependencies,
+      } satisfies RunCliDependencies,
     );
 
     expect(events).toEqual(['pick', 'launch']);
@@ -543,6 +566,8 @@ describe('pinned comparison confirmation and CLI integration', () => {
           events.push('discover');
           return {
             initialCandidates: [...candidates],
+            candidateEnrichment: Promise.resolve([...candidates]),
+            startCandidateEnrichment: () => undefined,
             searchBranches: async () => [],
           };
         },
@@ -588,7 +613,7 @@ describe('pinned comparison confirmation and CLI integration', () => {
 
 describe('exact patch CLI dispatch', () => {
   const request = {
-    version: 1 as const,
+    schemaVersion: 1 as const,
     kind: 'cumpa.review-request' as const,
     mode: 'patch' as const,
     patch: {
