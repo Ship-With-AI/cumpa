@@ -532,7 +532,7 @@ In the packaged fixture (`tests/e2e/file-tree.spec.ts:122-156`), byte-ordered ro
 | A3 | Playwright's `getByRole(name:)` substring matching is what makes `{ name: 'Changed files' }` match the `Changed files (N)` accessible name | ARIA contract table | Low — the assertions pass on `main` today with that exact name, which is itself the evidence |
 | A4 | Deleting `FileTree.vue:125-130`'s `defineExpose` is safe | Pitfall 8 | Low — repo-wide grep found no consumer and `App.vue:1174` passes no `ref`; the executor should re-grep before deleting |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **The UI-SPEC's responsive widths (`294px`, `248px`) do not match the shipped host widths.**
    - What we know: `.review-shell` is `grid-template-columns: 288px minmax(0,1fr) 360px` (`src/web/styles.css:1275-1283`), narrowing to `256px` under `max-width: 1439px` (`:2274-2277`) and collapsing to a full-width drawer under `max-width: 1099px` (`:2306-2309`). `09-UI-SPEC.md` cites `248px`/`320px` from the mockup and explicitly assigns `--sidebar-width` to Phase 11.
