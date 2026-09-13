@@ -688,7 +688,7 @@ No package-name, compliance, retention, or security-standard claim in this docum
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Monaco color keys the UI-SPEC does not name.**
    - What we know: `CUMPA_THEME.colors` has 36 keys (`theme.ts:45-86`); the UI-SPEC's normative palette names ~30 tokens. Unnamed keys: `editorWhitespace.foreground`, `editorIndentGuide.background1`, `editorIndentGuide.activeBackground1`, `editor.inactiveSelectionBackground`, `editorOverviewRuler.border`, `scrollbarSlider.hoverBackground`, `scrollbarSlider.activeBackground`.
