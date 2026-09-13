@@ -1567,7 +1567,9 @@ input:-webkit-autofill:focus {
 }
 
 .active-file-toolbar__directory {
+  flex: 1 1 0;
   min-width: 0;
+  max-width: 100%;
   margin: 0;
   overflow: hidden;
   color: var(--text-muted);
