@@ -31,6 +31,7 @@ import { createShutdownController } from '../../src/server/lifecycle.js';
 import type { ComparisonSelection } from '../../src/contracts/comparison.js';
 import type {
   FileContentResponse,
+  FileMetadataResponse,
   SessionFile,
   SessionResponse,
 } from '../../src/contracts/api.js';
@@ -1337,6 +1338,16 @@ test('metadata and availability states', async ({ browser, context, page }, test
       },
     },
   };
+  const metadata: Record<string, FileMetadataResponse> = Object.fromEntries(
+    files.map((file) => [
+      file.fileId,
+      {
+        ...file,
+        oldMode: '100644',
+        newMode: '100644',
+      },
+    ]),
+  );
   const requestEvidence: Array<{
     method: string;
     postData: string | null;
@@ -1363,6 +1374,24 @@ test('metadata and availability states', async ({ browser, context, page }, test
     });
     const response = content[fileId];
     expect(response, `[behavioral] unexpected file content capability ${fileId}`).toBeDefined();
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(response),
+    });
+  });
+
+  await page.route('**/api/files/*', async (route) => {
+    const request = route.request();
+    const requestUrl = new URL(request.url());
+    const fileId = decodeURIComponent(requestUrl.pathname.split('/').at(-1) ?? '');
+    requestEvidence.push({
+      method: request.method(),
+      postData: request.postData(),
+      url: request.url(),
+    });
+    const response = metadata[fileId];
+    expect(response, `[behavioral] unexpected file metadata capability ${fileId}`).toBeDefined();
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -1419,6 +1448,14 @@ test('metadata and availability states', async ({ browser, context, page }, test
     const requestUrl = new URL(requestEvidence[0]!.url);
     expect(requestUrl.search).toBe('');
     expect(requestUrl.pathname).toBe(`/api/files/${ids.supported}/content`);
+    expect(requestEvidence).toHaveLength(files.length + 1);
+    expect(requestEvidence.slice(1)).toEqual(
+      files.map((file) => ({
+        method: 'GET',
+        postData: null,
+        url: expect.stringMatching(new RegExp(`/api/files/${file.fileId}$`)),
+      })),
+    );
 
     const metadataHarness = await startMetadataHarness();
     try {
@@ -1446,6 +1483,7 @@ test('metadata and availability states', async ({ browser, context, page }, test
       await expect(retryErrorNotice.getByRole('alert')).toHaveText('Metadata request failed without exposing a path.');
       await expect(page.locator('#metadata-text .metadata-value')).toContainText('src/safe text.ts');
       await expect(page.getByRole('button', { name: 'Retry file details' })).toBeDisabled();
+      await expect(page.getByRole('main')).toHaveCount(1);
     } finally {
       await metadataHarness.server.close();
     }
