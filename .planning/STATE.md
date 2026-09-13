@@ -110,7 +110,7 @@ None yet.
 | 260908-d25 | Switch Cumpa to standard MIT and reconcile distribution | 2026-09-08 | 2227f78 | [260908-d25-switch-cumpa-to-mit-and-reconcile-active](./quick/260908-d25-switch-cumpa-to-mit-and-reconcile-active/) |
 | 260913-apr | Bounded support wait; hosted Restore result deliberately reverted | 2026-09-13 | 05384c8 | [260913-apr-hosted-restore-linkage-truth](./quick/260913-apr-hosted-restore-linkage-truth/) |
 | 260913-dzc | Verify live deploy authority stability instead of emptiness | 2026-09-13 | a4edcf3 | [260913-dzc-live-deploy-authority](./quick/260913-dzc-live-deploy-authority/) |
-| 260913-nx0 | Bring tests under `tsc` and gate test typechecks in CI | 2026-09-13 | a8dfcf9 | [260913-nx0-test-typecheck-coverage](./quick/260913-nx0-test-typecheck-coverage/) |
+| 260913-nx0 | Bring tests under `tsc` and gate test typechecks in CI | 2026-09-13 | 4ae6d6b | [260913-nx0-test-typecheck-coverage](./quick/260913-nx0-test-typecheck-coverage/) |
 
 ## Deferred Items
 
