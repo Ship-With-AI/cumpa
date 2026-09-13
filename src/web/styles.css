@@ -115,16 +115,19 @@
   --font-weight-semibold: 600;
 
   --radius-control: 6px;
+  --radius-file-row: 5px;
   /* Approved continuity — existing file-tree nesting geometry. */
   --tree-indent: 20px;
   --radius-overlay: 10px;
   /* Approved continuity — D-INFORMATION retains the existing badge radius. */
   --radius-pill: 999px;
+  --radius-scrollbar: 8px;
   --border-width-default: 1px;
   --focus-outline-width: 2px;
   --focus-offset: 3px;
   --selected-rail-width: 3px;
   --control-height-standard: 36px;
+  --file-row-min-height: 34px;
   /* Approved continuity — UI-SPEC:23 icon geometry. */
   --icon-size: 16px;
   /* Approved continuity — styles.css:73 overlay separation. */
@@ -134,6 +137,7 @@
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
   /* Approved continuity — UI-SPEC:61 retained spacing token. */
   --space-8: 32px;
