@@ -88,6 +88,7 @@ const commentsOpen = ref(false);
 const keyboardHelpOpen = ref(false);
 const liveMessage = ref('');
 const liveMessageVersion = ref(0);
+const activeFileToolbar = ref<InstanceType<typeof ActiveFileToolbar>>();
 const diffWorkspace = ref<InstanceType<typeof DiffWorkspace>>();
 const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
 const identityPanel = ref<InstanceType<typeof IdentityPanel>>();
@@ -239,9 +240,12 @@ function openFiles(): void {
 function toggleFiles(): void {
   if (isFilesDrawer.value) {
     openFiles();
-  } else {
-    filesCollapsed.value = !filesCollapsed.value;
+    return;
   }
+  filesCollapsed.value = !filesCollapsed.value;
+  dispatchWorkspace({ type: 'resize' });
+  diffWorkspace.value?.layout();
+  void nextTick(() => activeFileToolbar.value?.focusFilesToggle());
 }
 
 function closeFiles(): void {
@@ -1175,6 +1179,7 @@ onBeforeUnmount(() => {
 
       <main class="review-main" aria-labelledby="cumpa-heading">
         <ActiveFileToolbar
+          ref="activeFileToolbar"
           :files-collapsed="filesCollapsed"
           :files-drawer="isFilesDrawer"
           :files-open="filesOpen"

@@ -30,6 +30,11 @@ const effectivePath = computed(() => {
 });
 const directoryPath = computed(() => effectivePath.value.slice(0, effectivePath.value.lastIndexOf('/') + 1));
 const baseShortOid = computed(() => controlSafeDisplay(pinnedSession.value?.base.oid.slice(0, 7) ?? ''));
+const filesHostVisible = computed(() => !props.filesDrawer && !props.filesCollapsed);
+const filesToggleCopy = computed(() => props.filesDrawer ? 'Files' : props.filesCollapsed ? 'Show files' : 'Hide files');
+const filesToggleLabel = computed(() => props.filesDrawer
+  ? 'Open changed files'
+  : props.filesCollapsed ? 'Show changed files sidebar' : 'Hide changed files sidebar');
 const headShortOid = computed(() => controlSafeDisplay(pinnedSession.value?.head.oid.slice(0, 7) ?? ''));
 
 function focusFilesToggle(): void {
@@ -60,10 +65,11 @@ defineExpose({ focusFilesToggle });
           ref="filesToggle"
           type="button"
           class="ui-button"
-          aria-controls="changed-files"
-          :aria-expanded="filesDrawer ? filesOpen : !filesCollapsed"
+          :aria-label="filesToggleLabel"
+          :aria-controls="filesHostVisible ? 'changed-files' : undefined"
+          :aria-expanded="filesHostVisible ? true : undefined"
           @click="emit('toggleFiles')"
-        >Files</button>
+        >{{ filesToggleCopy }}</button>
       </div>
       <template v-if="isExactPatch">
         <div class="active-file-toolbar__endpoint active-file-toolbar__endpoint--base">

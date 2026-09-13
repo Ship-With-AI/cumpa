@@ -590,7 +590,7 @@ test('Phase 07 header and control states', async ({ page }) => {
         .poll(() => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth))
         .toBe(true);
     }
-    await expect(page.getByRole('button', { name: 'Files', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Open changed files', exact: true })).toBeVisible();
   } finally {
     resetAsyncSettlementFixture();
   }
@@ -990,7 +990,7 @@ test('anchored gap closure', async ({ page }) => {
   await expect(reviewToggle).toBeFocused();
 
   await page.setViewportSize({ width: 760, height: 900 });
-  const filesToggle = page.getByRole('button', { name: 'Files', exact: true });
+  const filesToggle = page.getByRole('button', { name: 'Open changed files', exact: true });
   await filesToggle.click();
   await expect(page.getByRole('button', { name: 'Close files' })).toBeVisible();
   await page.getByRole('button', { name: 'Close files' }).click();

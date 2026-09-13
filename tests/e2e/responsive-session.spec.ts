@@ -545,7 +545,7 @@ async function expectPhase08ReflowAtWidth(page: Page, width: Phase08Width): Prom
 
 async function expectTreeInteriorAtWidth(page: Page, width: number): Promise<void> {
   await page.setViewportSize({ width, height: 640 });
-  const filesButton = page.getByRole('button', { name: 'Files', exact: true });
+  const filesButton = page.getByRole('button', { name: width <= 760 ? 'Open changed files' : 'Hide changed files sidebar', exact: true });
   if (width <= 760) {
     await filesButton.click();
   }
@@ -1097,7 +1097,7 @@ test('responsive keyboard and accessibility contract', async ({
         await expect.poll(() => new URL(page.url()).hash).toBe(`#${destination}`);
       }
 
-      const files = page.getByRole('button', { name: 'Files', exact: true });
+      const files = page.getByRole('button', { name: 'Open changed files', exact: true });
       await files.focus();
       await expectFocusIndicatorUnclipped(files);
       await page.keyboard.press('Enter');
@@ -1138,7 +1138,7 @@ test('responsive keyboard and accessibility contract', async ({
         await closeReview.focus();
         await page.keyboard.press('Enter');
       }
-      const files = page.getByRole('button', { name: 'Files', exact: true });
+      const files = page.getByRole('button', { name: 'Open changed files', exact: true });
       await files.focus();
       await page.keyboard.press('Enter');
       const movedFile = page.locator('.file-tree .file-row').nth(1);
@@ -1189,7 +1189,7 @@ test('responsive keyboard and accessibility contract', async ({
 
     await test.step('achromatopsia preserves real non-color diff and focus cues', async () => {
       const cdp = await page.context().newCDPSession(page);
-      const files = page.getByRole('button', { name: 'Files', exact: true });
+      const files = page.getByRole('button', { name: 'Open changed files', exact: true });
       await cdp.send('Emulation.setEmulatedVisionDeficiency', { type: 'achromatopsia' });
       await files.focus();
       await page.keyboard.press('Enter');
@@ -1204,7 +1204,7 @@ test('responsive keyboard and accessibility contract', async ({
 
     await test.step('forced colors preserve real workspace boundaries, rails, focus, links, and provenance', async () => {
       await page.emulateMedia({ forcedColors: 'active' });
-      const files = page.getByRole('button', { name: 'Files', exact: true });
+      const files = page.getByRole('button', { name: 'Open changed files', exact: true });
       await files.focus();
       await page.keyboard.press('Enter');
       try {
@@ -1283,7 +1283,7 @@ test('responsive keyboard and accessibility contract', async ({
       const overlayShadow = await rootShadow(headerFacts);
       const assertFilesCollapse = async (width: number): Promise<void> => {
         await page.setViewportSize({ width, height: 560 });
-        const filesButton = page.getByRole('button', { name: 'Files', exact: true });
+        const filesButton = page.getByRole('button', { name: 'Hide changed files sidebar', exact: true });
         await expect(filesButton).toHaveAttribute('aria-controls', 'changed-files');
         await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
         const before = await reviewShell.evaluate((shell) => {
@@ -1299,7 +1299,8 @@ test('responsive keyboard and accessibility contract', async ({
         expect(before.files.x + before.files.width).toBeCloseTo(before.main.x, 3);
 
         await filesButton.click();
-        await expect(filesButton).toHaveAttribute('aria-expanded', 'false');
+        const showFilesButton = page.getByRole('button', { name: 'Show changed files sidebar', exact: true });
+        await expect(showFilesButton).not.toHaveAttribute('aria-controls');
         await expect(page.locator('#changed-files')).toHaveCount(0);
         const collapsed = await reviewShell.evaluate((shell) => {
           const main = shell.querySelector<HTMLElement>('.review-main')!;
@@ -1314,7 +1315,7 @@ test('responsive keyboard and accessibility contract', async ({
         expect(collapsed.main.width).toBeGreaterThan(before.main.width);
         await assertNoPageOverflow(page);
 
-        await filesButton.click();
+        await showFilesButton.click();
         await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
         await expect(page.locator('#changed-files')).toBeVisible();
         const restored = await reviewShell.evaluate((shell) => {
@@ -1390,7 +1391,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 1050, height: 560 });
-      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.getByRole('button', { name: 'Hide changed files sidebar', exact: true })).toHaveAttribute('aria-expanded', 'true');
       await expect(sessionHeader).toHaveCSS('flex-wrap', 'wrap');
       await expect(headerFacts).toHaveCSS('flex-wrap', 'wrap');
       await expect(rail).toHaveCSS('box-shadow', 'none');
@@ -1440,7 +1441,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 761, height: 560 });
-      await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveAttribute('aria-expanded', 'true');
+      await expect(page.getByRole('button', { name: 'Hide changed files sidebar', exact: true })).toHaveAttribute('aria-expanded', 'true');
       await expect(sessionHeader).toHaveCSS('flex-wrap', 'wrap');
       await expect(headerFacts).toHaveCSS('flex-wrap', 'wrap');
       const wrappedHeaderGeometry = await sessionHeader.evaluate((header) => {
@@ -1550,22 +1551,22 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 760, height: 560 });
-      const filesButton = page.getByRole('button', { name: 'Files', exact: true });
+      const filesButton = page.getByRole('button', { name: 'Open changed files', exact: true });
       await expect(filesButton).toBeVisible();
-      await expect(filesButton).toHaveAttribute('aria-controls', 'changed-files');
-      await expect(filesButton).toHaveAttribute('aria-expanded', 'false');
+      await expect(filesButton).not.toHaveAttribute('aria-controls');
+      await expect(filesButton).not.toHaveAttribute('aria-expanded');
       await expect(treePane).toHaveCSS('overflow-y', 'auto');
       await expect(treePane).toHaveCSS('box-shadow', 'none');
       await filesButton.focus();
       await page.keyboard.press('Enter');
       await expect(treePane).toHaveClass(/review-files--open/);
-      await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
+      await expect(filesButton).not.toHaveAttribute('aria-expanded');
       await expect(treePane).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
       await expect(page.getByRole('button', { name: 'Close files', exact: true })).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(treePane).not.toHaveClass(/review-files--open/);
-      await expect(filesButton).toHaveAttribute('aria-expanded', 'false');
+      await expect(filesButton).not.toHaveAttribute('aria-expanded');
       await expect(filesButton).toBeFocused();
       await expect(treePane).toHaveCSS('box-shadow', 'none');
 
@@ -1625,8 +1626,8 @@ test('responsive keyboard and accessibility contract', async ({
 
     await test.step('compact viewport preserves accessible review controls', async () => {
       await page.setViewportSize({ width: 320, height: 640 });
-      await expect(page.getByRole('button', { name: 'Files', exact: true })).toBeVisible();
-      await page.getByRole('button', { name: 'Files', exact: true }).click();
+      await expect(page.getByRole('button', { name: 'Open changed files', exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Open changed files', exact: true }).click();
       await expect(page.getByRole('tree', { name: /Changed files/ })).toBeVisible();
       await page.getByRole('button', { name: 'Close files' }).click();
     });

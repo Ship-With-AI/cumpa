@@ -297,7 +297,14 @@ onMounted(() => {
   wideCodeMedia.addEventListener('change', syncCodeDensity);
   compactCodeMedia.addEventListener('change', syncCodeDensity);
   syncSideNames();
-  resizeObserver = new ResizeObserver(() => adapter?.layout());
+  resizeObserver = new ResizeObserver(() => {
+    adapter?.layout();
+    const zone = host.value?.querySelector<HTMLElement>('.monaco-anchor-zone--composer');
+    if (zone === null) return;
+    const contentHeight = zone.firstElementChild?.scrollHeight ?? zone.scrollHeight;
+    const height = Math.max(280, contentHeight + 16);
+    if (Math.abs(zone.clientHeight - height) > 1) resizeAnchorZoneToContent(zone);
+  });
   resizeObserver.observe(host.value);
   void loadContent();
 });
