@@ -23,17 +23,20 @@ type SupportFlowDependencies = Readonly<{
   log?: (value: string) => void;
 }>;
 type ClaimedIntent = Readonly<{ id: string; action: "support" | "restore"; installation_id: string }>;
-type BrowserState = "complete" | "invalid" | "unavailable";
+type BrowserState = "complete" | "invalid" | "unavailable" | "unlinked";
 
 const browserMessages: Record<BrowserState, string> = {
   complete: "Support flow complete. You can return to Cumpa.",
   invalid: "This support link is invalid or expired. Return to Cumpa and try again.",
   unavailable: "Support is temporarily unavailable. Return to Cumpa and try again.",
+  unlinked: "No support to restore for sign-in. Return to Cumpa support.",
 };
 
-function browserResponse(state: BrowserState) {
-  const status = state === "complete" ? 200 : state === "invalid" ? 400 : 503;
-  return new Response(browserMessages[state], { status, headers: { "content-type": "text/plain; charset=utf-8" } });
+function browserResponse(state: BrowserState, cookies: string[] = []) {
+  const status = state === "complete" ? 200 : state === "invalid" ? 400 : state === "unlinked" ? 409 : 503;
+  const headers = new Headers({ "content-type": "text/plain; charset=utf-8" });
+  for (const cookie of cookies) headers.append("set-cookie", cookie);
+  return new Response(browserMessages[state], { status, headers });
 }
 
 function parseCookies(request: Request) {
@@ -126,7 +129,15 @@ export async function handleSupportFlowRequest(request: Request, dependencies = 
     if (!claimed) return browserResponse("invalid");
 
     if (claimed.action === "restore") {
-      await dependencies.service.rpc("restore_installation", { p_user_id: user.data.user.id, p_installation_id: claimed.installation_id });
+      const restored = await dependencies.service.rpc("restore_installation", {
+        p_user_id: user.data.user.id,
+        p_installation_id: claimed.installation_id,
+      });
+      if (restored.error) {
+        dependencies.log?.("support_flow_unavailable");
+        return browserResponse("unavailable", cookies);
+      }
+      if (restored.data !== true) return browserResponse("unlinked", cookies);
       return redirect(new URL(completionPath, dependencies.supabaseUrl).toString(), cookies);
     }
 
