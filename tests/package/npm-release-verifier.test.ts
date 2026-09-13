@@ -98,7 +98,7 @@ function candidateReports(archive: Archive): Pick<Fixture, 'producer' | 'scanner
     scanner, browser: { assets: true, workers: true, codicon: true }, review: { relaunch: true, canonicalV2: true, isolatedDrafts: true, reExport: 'exported' },
     support: { unavailable: true, dismissed: true, unrestricted: true, configured: true, originSha256: producer.support.originSha256 },
     exactPatch: { canonicalV3: true, grounded: true }, native: { observedReExport: true, fallback: 'reExportUnsupported', target: { platform: 'darwin', arch: 'arm64' } },
-    cleanup: { complete: true }, sourceControl: { unchanged: true }, checks: ['PKG-03', 'PKG-04', 'PKG-05', 'REL-03'], limitations: ['Acceptance fixture only.'],
+    cleanup: { complete: true }, sourceControl: { unchanged: true, scenarios: [{ name: 'review', unchanged: true }] }, checks: ['PKG-03', 'PKG-04', 'PKG-05', 'REL-03'], limitations: ['Acceptance fixture only.'],
   };
   return { producer, scanner, acceptance };
 }
@@ -321,6 +321,9 @@ describe('npm release verifier', () => {
       ['installed manifest identity', ({ acceptance }) => { (acceptance.install as Record<string, unknown>).manifestSha256 = 'd'.repeat(64); }],
       ['unknown private producer metadata', ({ producer }) => { (producer.build as Record<string, unknown>).privatePath = '/private/fixture/custody'; }],
       ['unbounded private report text', ({ scanner }) => { scanner.limitations = ['https://abcdefghijklmnopqrst.supabase.co']; }],
+      ['absent source-control scenarios', ({ acceptance }) => { delete (acceptance.sourceControl as Record<string, unknown>).scenarios; }],
+      ['empty source-control scenarios', ({ acceptance }) => { (acceptance.sourceControl as Record<string, unknown>).scenarios = []; }],
+      ['unasserted source-control scenario', ({ acceptance }) => { (acceptance.sourceControl as Record<string, unknown>).scenarios = [{ name: 'review', unchanged: false }]; }],
     ];
     for (const [, mutate] of substitutions) {
       const reports = structuredClone(candidateReports(fixture.archive));

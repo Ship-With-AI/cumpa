@@ -263,10 +263,18 @@ function validateAcceptance(value, producer, scanner) {
   allowedObject(value.native, ['observedReExport', 'fallback', 'target'], 'acceptance native');
   allowedObject(value.native.target, ['platform', 'arch'], 'acceptance target');
   allowedObject(value.cleanup, ['complete'], 'acceptance cleanup');
-  allowedObject(value.sourceControl, ['unchanged'], 'acceptance source control');
+  allowedObject(value.sourceControl, ['unchanged', 'scenarios'], 'acceptance source control');
   if (!isRecord(value.support) || value.support.configured !== true || value.support.originSha256 !== producer.support.originSha256 || value.support.unavailable !== true || value.support.dismissed !== true || value.support.unrestricted !== true) fail('acceptance support mismatch');
   if (!isRecord(value.native) || value.native.observedReExport !== true || value.native.fallback !== 'reExportUnsupported' || !isRecord(value.native.target) || value.native.target.platform !== 'darwin' || value.native.target.arch !== 'arm64') fail('acceptance native mismatch');
   if (!isRecord(value.cleanup) || value.cleanup.complete !== true || !isRecord(value.sourceControl) || value.sourceControl.unchanged !== true) fail('acceptance cleanup mismatch');
+  if (
+    !Array.isArray(value.sourceControl.scenarios) || value.sourceControl.scenarios.length === 0
+    || value.sourceControl.scenarios.some((scenario) => {
+      if (!isRecord(scenario)) return true;
+      allowedObject(scenario, ['name', 'unchanged'], 'acceptance source control scenario');
+      return typeof scenario.name !== 'string' || scenario.name.length === 0 || scenario.unchanged !== true;
+    })
+  ) fail('acceptance source control scenario mismatch');
   if (!Array.isArray(value.checks) || JSON.stringify([...value.checks].sort()) !== JSON.stringify([...expectedChecks].sort())) fail('incomplete acceptance checks');
   if (!Array.isArray(value.limitations) || value.limitations.some((entry) => typeof entry !== 'string')) fail('invalid acceptance limitations');
   return {
