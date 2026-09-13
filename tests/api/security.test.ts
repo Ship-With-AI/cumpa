@@ -1,3 +1,4 @@
+import type { OutgoingHttpHeaders } from 'node:http';
 import type { AddressInfo } from 'node:net';
 
 import { afterEach, describe, expect, test, vi } from 'vitest';
@@ -114,6 +115,12 @@ function expectGenericSecurityDenial(response: {
   expect(response.body).not.toContain('stderr');
 }
 
+function normalizedHeaders(headers: OutgoingHttpHeaders): Record<string, string | string[] | undefined> {
+  return Object.fromEntries(
+    Object.entries(headers).map(([name, value]) => [name, typeof value === 'number' ? value.toString() : value]),
+  );
+}
+
 function expectSecurityHeaders(headers: Record<string, string | string[] | undefined>): void {
   expect(headers['cache-control']).toBe('no-store');
   expect(headers['referrer-policy']).toBe('no-referrer');
@@ -151,7 +158,7 @@ describe('closed loopback request boundary', () => {
     expect(response.statusCode).toBe(status);
     expectGenericSecurityDenial(response);
     expect(onProtectedRoute).not.toHaveBeenCalled();
-    expectSecurityHeaders(response.headers);
+    expectSecurityHeaders(normalizedHeaders(response.headers));
   });
 
   test.each([
@@ -168,7 +175,7 @@ describe('closed loopback request boundary', () => {
       head: comparison.head,
       mergeBaseOid: comparison.mergeBaseOid,
     });
-    expectSecurityHeaders(response.headers);
+    expectSecurityHeaders(normalizedHeaders(response.headers));
   });
 
   test('protects static responses with exact Host and Origin without requiring the fragment bearer', async () => {
@@ -192,7 +199,7 @@ describe('closed loopback request boundary', () => {
 
     expect(allowed.statusCode).toBe(200);
     expect(allowed.body).not.toContain(token);
-    expectSecurityHeaders(allowed.headers);
+    expectSecurityHeaders(normalizedHeaders(allowed.headers));
     expect(hostileHost.statusCode).toBe(403);
     expectGenericSecurityDenial(hostileHost);
     expect(hostileOrigin.statusCode).toBe(403);

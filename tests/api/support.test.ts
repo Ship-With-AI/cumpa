@@ -187,7 +187,7 @@ describe('hosted support contracts', () => {
     const { store, markVerified } = supportStore();
     const client: HostedSupportClient = {
       start: vi.fn(async () => ({ flowUrl: `${serviceUrl}/functions/v1/support-flow?intent=1` })),
-      status: vi.fn(async () => 'unverified'),
+      status: vi.fn<HostedSupportClient['status']>(async () => 'unverified'),
       close: vi.fn(),
     };
     const capability = createSupportCapability(store, client);
@@ -203,7 +203,7 @@ describe('hosted support contracts', () => {
     const { store, markVerified } = supportStore('verified');
     const client: HostedSupportClient = {
       start: vi.fn(async () => ({ flowUrl: `${serviceUrl}/functions/v1/support-flow?intent=1` })),
-      status: vi.fn(async () => 'unverified'),
+      status: vi.fn<HostedSupportClient['status']>(async () => 'unverified'),
       close: vi.fn(),
     };
     const capability = createSupportCapability(store, client);

@@ -2,10 +2,12 @@ import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import type * as Crypto from 'node:crypto';
+
 import { afterEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('node:crypto', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal<typeof Crypto>();
   return { ...actual, randomUUID: () => 'race' };
 });
 
