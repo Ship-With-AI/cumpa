@@ -1,7 +1,7 @@
 export const CANONICAL_TOKENS = [
   '--border-control', '--border-default', '--border-gap', '--border-hunk', '--border-overlay', '--border-width-default',
-  '--control-height-standard', '--destructive-emphasis', '--destructive-foreground',
-  '--diff-addition-background', '--diff-addition-foreground', '--diff-addition-intraline-background',
+  '--control-height-compact', '--control-height-standard', '--destructive-emphasis', '--destructive-foreground',
+  '--dialog-max-height', '--dialog-width', '--diff-addition-background', '--diff-addition-foreground', '--diff-addition-intraline-background',
   '--diff-deletion-background', '--diff-deletion-foreground', '--diff-deletion-intraline-background',
   '--diff-empty-background', '--diff-hunk-background', '--diff-hunk-foreground', '--diff-region-border',
   '--diff-unchanged-background', '--file-row-min-height', '--focus-offset', '--focus-outline-width', '--focus-ring', '--font-mono',
@@ -11,7 +11,7 @@ export const CANONICAL_TOKENS = [
   '--line-height-display', '--line-height-metadata', '--line-height-page-heading', '--monaco-inactive-selection-background',
   '--monaco-scrollbar-active-background', '--monaco-scrollbar-hover-background', '--monaco-whitespace-foreground',
   '--radius-control', '--radius-file-row', '--radius-overlay', '--radius-pill', '--radius-scrollbar', '--scrollbar-thumb', '--selected-rail-width',
-  '--selection-background', '--selection-border', '--shadow-overlay', '--space-1', '--space-2', '--space-3', '--space-4',
+  '--selection-background', '--selection-border', '--shadow-overlay', '--sidebar-width', '--space-1', '--space-2', '--space-3', '--space-4',
   '--space-5', '--space-6', '--space-8', '--status-added-background', '--status-added-border', '--status-added-foreground',
   '--status-deleted-background', '--status-deleted-border', '--status-deleted-foreground', '--status-disabled-background',
   '--status-disabled-foreground', '--status-error-background', '--status-error-foreground', '--status-information-background',

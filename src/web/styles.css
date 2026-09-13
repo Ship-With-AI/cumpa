@@ -126,7 +126,11 @@
   --focus-outline-width: 2px;
   --focus-offset: 3px;
   --selected-rail-width: 3px;
+  --control-height-compact: 30px;
   --control-height-standard: 36px;
+  --dialog-width: min(560px, calc(100% - 24px));
+  --dialog-max-height: 85dvh;
+  --sidebar-width: 294px;
   --file-row-min-height: 34px;
   /* Approved continuity — UI-SPEC:23 icon geometry. */
   --icon-size: 16px;
@@ -692,6 +696,7 @@ input:-webkit-autofill:focus {
   border-radius: var(--radius-overlay);
 }
 
+.modal-dialog-backdrop,
 .support-dialog-backdrop {
   position: fixed;
   z-index: 20;
@@ -700,6 +705,19 @@ input:-webkit-autofill:focus {
   place-items: center;
   padding: var(--space-4);
   background: var(--surface-scrim);
+}
+
+.modal-dialog {
+  display: grid;
+  width: var(--dialog-width);
+  max-height: var(--dialog-max-height);
+  gap: var(--space-4);
+  padding: var(--space-6);
+  overflow-y: auto;
+  border: 1px solid var(--border-overlay);
+  border-radius: var(--radius-overlay);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-overlay);
 }
 
 .support-dialog {
@@ -1440,11 +1458,11 @@ input:-webkit-autofill:focus {
   max-width: 100%;
   min-height: 0;
   contain: paint;
-  grid-template-columns: 288px minmax(0, 1fr) 360px;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
 }
 
 .review-shell--files-collapsed {
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .review-files,
@@ -1595,6 +1613,10 @@ input:-webkit-autofill:focus {
 .review-context-header .ui-button {
   font-size: var(--font-size-metadata);
   line-height: var(--line-height-metadata);
+}
+
+.review-context-header__toolbar .ui-button {
+  min-height: var(--control-height-compact);
 }
 
 .review-toolbar__group {
@@ -2432,9 +2454,15 @@ h3.conversation-card__identity {
   }
 }
 
+@media (min-width: 1650px) {
+  .review-shell {
+    --sidebar-width: 320px;
+  }
+}
+
 @media (max-width: 1439px) {
   .review-shell {
-    grid-template-columns: 256px minmax(0, 1fr);
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   }
 
   .review-shell--files-collapsed {
@@ -2485,7 +2513,7 @@ h3.conversation-card__identity {
     z-index: 7;
     inset-block: 0;
     left: 8px;
-    width: min(288px, calc(100vw - 16px));
+    width: min(var(--sidebar-width), calc(100vw - 16px));
     max-width: calc(100vw - 16px);
     transform: translateX(calc(-100% - 8px));
     transition: transform 120ms ease-out;

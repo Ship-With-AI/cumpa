@@ -229,7 +229,7 @@ function assertAuthorStyle(source, { enforceShadowAllowlist = true } = {}) {
   ]);
   const overlayAllowlist = new Set([
     '.identity-panel', '.keyboard-help', '.ui-tooltip__content', '.diff-workspace__gutter-action::after',
-    '.comments-rail--open', '.review-files--open', '.support-dialog',
+    '.comments-rail--open', '.review-files--open', '.support-dialog', '.modal-dialog',
   ]);
 
   for (const rule of declarationRules(ordinary)) {
