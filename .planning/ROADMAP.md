@@ -132,13 +132,14 @@ Plans:
 - `tests/integration/complete-review-panel.spec.ts` needs no edit — it is a 33-line `createReviewDraftState` model test with zero DOM selectors.
 - Keep draft-recovery behavior in `tests/integration/draft-recovery-ui.spec.ts`, comment mechanics in `tests/e2e/anchored-review.spec.ts`, the Phase 09 tree contract in `tests/e2e/file-tree.spec.ts`, the Phase 10 diff contract in `tests/integration/monaco-anchor.spec.ts`, and all persistence, export, attached-completion, and support contract tests passing unchanged.
 
-**Plans:** 6 plans
+**Plans:** 7 plans
 
 Plans:
 - [ ] 11-01-PLAN.md — Geometry tokens, breakpoint unification, drift-gate realignment, ModalDialog extraction
 - [ ] 11-02-PLAN.md — Shell chrome: identity header, active-file toolbar, footer, sidebar hide/restore
 - [ ] 11-03-PLAN.md — Details dialog: identity, revived file metadata, keyboard help
-- [ ] 11-04-PLAN.md — ReviewPanel split: comments rail and Review-notes dialog
+- [ ] 11-04-PLAN.md — ReviewPanel split, Review-notes dialog, comments-rail restyle
+- [ ] 11-07-PLAN.md — REV-01 inline comment surfaces restyled; two dead components deleted (wave 5)
 - [ ] 11-05-PLAN.md — Narrow reflow and the Changed files dialog
 - [ ] 11-06-PLAN.md — REV-05 shell warning stack and single-owner live behaviour
 
