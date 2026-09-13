@@ -107,6 +107,8 @@ class PublicMonacoDiffAdapter {
     this.diffEditor = monaco.editor.createDiffEditor(host, {
       ariaLabel: 'Immutable base and head side-by-side diff',
       automaticLayout: false,
+      diffAlgorithm: 'advanced',
+      diffWordWrap: 'off',
       fontFamily: CODE_FONT_FAMILY,
       fontSize: CODE_FONT_SIZE,
       lineHeight: CODE_LINE_HEIGHT,
@@ -117,8 +119,11 @@ class PublicMonacoDiffAdapter {
       readOnly: true,
       renderSideBySide: true,
       renderSideBySideInlineBreakpoint: 0,
+      useInlineViewWhenSpaceIsLimited: false,
       hideUnchangedRegions: HIDE_UNCHANGED_REGIONS,
       renderIndicators: false,
+      renderGutterMenu: false,
+      renderMarginRevertIcon: false,
     });
     this.originalEditor = this.diffEditor.getOriginalEditor();
     this.modifiedEditor = this.diffEditor.getModifiedEditor();
