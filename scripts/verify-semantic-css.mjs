@@ -229,7 +229,7 @@ function assertAuthorStyle(source, { enforceShadowAllowlist = true } = {}) {
   ]);
   const overlayAllowlist = new Set([
     '.ui-tooltip__content', '.diff-workspace__gutter-action::after',
-    '.comments-rail--open', '.review-files--open', '.support-dialog', '.modal-dialog',
+    '.comments-rail--open', '.support-dialog', '.modal-dialog',
   ]);
 
   for (const rule of declarationRules(ordinary)) {
@@ -245,9 +245,6 @@ function assertAuthorStyle(source, { enforceShadowAllowlist = true } = {}) {
         if (insetAllowlist.get(selector) !== shadow.value) fail(`inset shadow is not allowlisted for ${selector}`);
       } else if (shadow.value === 'var(--shadow-overlay)') {
         if (!overlayAllowlist.has(selector)) fail(`overlay shadow is not allowlisted for ${selector}`);
-        if (selector === '.review-files--open' && !rule.context.some((item) => item.includes('max-width: 760px'))) {
-          fail(`overlay shadow for ${selector} is outside its permitted responsive query`);
-        }
       } else if (shadow.value !== 'none') {
         fail(`box-shadow value ${shadow.value} is not permitted for ${selector}`);
       }
