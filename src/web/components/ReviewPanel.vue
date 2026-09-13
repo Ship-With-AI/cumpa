@@ -6,6 +6,7 @@ import { projectCommentGroups } from '../model/comment-groups.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
 import ReviewStateBadge from './ui/ReviewStateBadge.vue';
 import PathText from './ui/PathText.vue';
+import UiIcon from './ui/UiIcon.vue';
 
 const props = defineProps<{
   readonly comments: readonly ReviewComment[];
@@ -268,6 +269,23 @@ watch(() => props.comments, () => {
 CUT 654.=817
 
     <section class="review-panel__comments review-panel__section" aria-labelledby="open-comments-heading">
+    <section
+      v-if="conflict !== null"
+      class="inline-notice inline-notice--warning review-panel__conflict"
+      role="alert"
+      aria-labelledby="review-conflict-heading"
+    >
+      <UiIcon name="warning" class="inline-notice__icon" />
+      <div class="inline-notice__content">
+        <h3 id="review-conflict-heading">Review changed in another tab</h3>
+        <dl>
+          <div><dt>Your revision</dt><dd>{{ conflict.expectedRevision }}</dd></div>
+          <div><dt>Latest revision</dt><dd>{{ conflict.actualRevision }}</dd></div>
+        </dl>
+        <p>Nothing from your attempt was written.</p>
+        <p>Unsaved text retained in this tab.</p>
+      </div>
+    </section>
       <h3>
         <button
           id="open-comments-heading"
@@ -515,170 +533,6 @@ CUT 654.=817
           </div>
         </section>
       </div>
-    </section>
-    <section class="review-panel__section review-panel__section--export">
-      <ExportSection
-        :revision="revision"
-        :pinned-endpoints="pinnedEndpoints"
-        :summary="summary"
-        :summary-buffer="summaryBuffer"
-        :comments="comments"
-        :comment-buffers="commentBuffers"
-        :export-state="exportState"
-        :append-ignore-rule="appendIgnoreRule"
-        :refresh-ignore-status="refreshIgnoreStatus"
-        :reveal-export-directory="revealExportDirectory"
-        :attached="attached"
-        :locked="mutationLocked"
-        @cancel="emit('cancelExport')"
-        @export="emit('export')"
-        @reload-latest="emit('reload-latest')"
-        @review-unsaved-text="emit('reviewUnsavedText')"
-      />
-    </section>
-
-    <section v-if="attached" class="review-panel__section attached-completion" aria-labelledby="finish-attached-review-heading">
-      <header class="attached-completion__heading">
-        <h3 id="finish-attached-review-heading">Finish attached review</h3>
-        <ReviewStateBadge
-          :kind="attachedLifecycle === 'completed' ? 'resolved' : 'open'"
-          :label="attachedLifecycle === 'completed' ? 'Completed' : attachedLifecycle === 'finishing' ? 'Finishing' : 'Waiting'"
-        />
-      </header>
-
-      <template v-if="attachedLifecycle === 'completed'">
-        <div class="inline-notice inline-notice--success" role="status">
-          <UiIcon name="success" class="inline-notice__icon" />
-          <div class="inline-notice__content">
-            <h4 ref="completionSuccess" tabindex="-1">Review finished</h4>
-            <p>The accepted review was returned to the requesting agent from revision {{ revision }}. You can close this tab.</p>
-          </div>
-        </div>
-      </template>
-
-      <template v-else-if="attachedLifecycle === 'finishing'">
-        <button ref="completionAction" type="button" class="ui-button ui-button--primary attached-completion__action" disabled aria-busy="true">
-          <span class="ui-spinner" aria-hidden="true" />Finishing review…
-        </button>
-        <p class="attached-completion__progress" role="status" aria-live="polite">Validating accepted revision {{ revision }} and its recorded anchors…</p>
-      </template>
-
-      <template v-else-if="attachedLifecycle === 'waitingDisconnected'">
-        <div class="inline-notice inline-notice--error" role="alert">
-          <UiIcon name="error" class="inline-notice__icon" />
-          <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Attached review disconnected</h4>
-            <p>The browser lost its connection to Cumpa. This review is still unfinished. Reload this page while Cumpa is running, then choose Finish review.</p>
-            <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload page</button>
-          </div>
-        </div>
-      </template>
-
-      <template v-else-if="attachedLifecycle === 'terminalFailure'">
-        <div class="inline-notice inline-notice--error" role="alert">
-          <UiIcon name="error" class="inline-notice__icon" />
-          <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Completion status unavailable</h4>
-            <p>Cumpa disconnected before this tab received confirmation. This tab does not claim the review was finished. Check the invoking terminal. If Cumpa is still running, reload to reconnect.</p>
-            <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload page</button>
-          </div>
-        </div>
-      </template>
-
-      <template v-else-if="attachedLifecycle === 'retryableFailure' && attachedFailure?.kind === 'revisionConflict'">
-        <div class="inline-notice inline-notice--warning" role="alert">
-          <UiIcon name="warning" class="inline-notice__icon" />
-          <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Review changed before finish</h4>
-            <p>Accepted revision {{ attachedFailure.expectedRevision }} is no longer current. Latest revision is {{ attachedFailure.actualRevision }}. No feedback was returned. Reload the latest review, check the comments and summary, then choose Finish review again.</p>
-            <button type="button" class="ui-button" @click="emit('reloadLatest')">Reload latest</button>
-          </div>
-        </div>
-      </template>
-
-      <template v-else-if="attachedLifecycle === 'retryableFailure' && attachedFailure?.kind === 'staleAnchors'">
-        <div class="inline-notice inline-notice--warning" role="alert">
-          <UiIcon name="warning" class="inline-notice__icon" />
-          <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Review can’t be finished</h4>
-            <p>Cumpa found stale or unavailable feedback anchors in the accepted review. Affected comments: {{ attachedFailure.affectedCount }}. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.</p>
-            <button type="button" class="ui-button" @click="focusStaleFeedback">Review stale feedback</button>
-          </div>
-        </div>
-      </template>
-
-      <template v-else-if="attachedLifecycle === 'retryableFailure' && attachedFailure?.kind === 'scopeInvalid'">
-        <div class="inline-notice inline-notice--warning" role="alert">
-          <UiIcon name="warning" class="inline-notice__icon" />
-          <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Reviewed content changed</h4>
-            <p>{{ isExactPatch ? 'The submitted patch content no longer passes completion validation. No feedback was returned. Inspect the recorded patch scope, then relaunch the agent request against valid content.' : 'The submitted review scope no longer passes completion validation. No feedback was returned. Inspect the recorded review scope, then relaunch the agent request against valid content.' }}</p>
-            <button type="button" class="ui-button" @click="emit('viewAttachedScope')">{{ isExactPatch ? 'View patch scope' : 'View review scope' }}</button>
-          </div>
-        </div>
-      </template>
-
-      <template v-else-if="attachedLifecycle === 'retryableFailure' && attachedFailure?.kind === 'draftReadOnly'">
-        <div class="inline-notice inline-notice--warning" role="alert">
-          <UiIcon name="warning" class="inline-notice__icon" />
-          <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Review draft can’t be validated</h4>
-            <p>The accepted local draft is corrupt, incomplete, or read-only. No feedback was returned. Reload the review; if it remains unavailable, relaunch Cumpa.</p>
-            <button type="button" class="ui-button" @click="emit('reloadAttached')">Reload review</button>
-          </div>
-        </div>
-      </template>
-
-      <template v-else-if="attachedLifecycle === 'retryableFailure'">
-        <div class="inline-notice inline-notice--error" role="alert">
-          <UiIcon name="error" class="inline-notice__icon" />
-          <div class="inline-notice__content">
-            <h4 ref="completionFailure" tabindex="-1">Review was not finished</h4>
-            <p>No feedback was returned. Check that Cumpa is still running, then try Finish review again.</p>
-            <button type="button" class="ui-button ui-button--primary" @click="finishAttachedReview">Try Finish review again</button>
-          </div>
-        </div>
-      </template>
-
-      <template v-else>
-        <p class="attached-completion__waiting">The requesting agent is waiting. Only Finish review returns the accepted summary and comments. Exporting, closing, reloading, or disconnecting leaves this review unfinished.</p>
-        <div v-if="attachedNoFeedback" class="inline-notice">
-          <div class="inline-notice__content">
-            <h4>No feedback added</h4>
-            <p>This review has no accepted summary or comments. You can still finish and return an empty review result, or add feedback first.</p>
-          </div>
-        </div>
-        <div v-if="attachedHasUnsavedText" class="inline-notice inline-notice--warning">
-          <div class="inline-notice__content">
-            <h4>Unsaved text must be reviewed</h4>
-            <p>Save or discard unsaved summary or comment text before finishing. The requesting agent only receives the accepted review.</p>
-            <button type="button" class="ui-button" @click="emit('reviewUnsavedText')">Review unsaved text</button>
-          </div>
-        </div>
-        <div
-          v-if="unsavedInlineComposerFile !== undefined"
-          class="inline-notice inline-notice--warning"
-          role="region"
-          aria-labelledby="inline-composer-finish-block-heading"
-        >
-          <div class="inline-notice__content">
-            <h4 id="inline-composer-finish-block-heading">Inline comment draft must be reviewed</h4>
-            <p><PathText :display="unsavedInlineComposerFile.display" /> has unsaved text. Save or discard it before finishing.</p>
-            <button type="button" class="ui-button" @click="emit('reviewInlineComposer', unsavedInlineComposerFile.fileId)">
-              Review draft in <PathText :display="unsavedInlineComposerFile.display" />
-            </button>
-          </div>
-        </div>
-        <p v-if="!attachedBlockedByUnsavedText && attachedBlockedByPending" class="attached-completion__pending" role="status">Saving review changes…</p>
-        <div v-else-if="!attachedBlockedByUnsavedText && attachedBlockedByConflict" class="inline-notice inline-notice--warning">
-          <div class="inline-notice__content">
-            <h4>Review changed before finish</h4>
-            <p>Accepted revision {{ conflict?.expectedRevision }} is no longer current. Latest revision is {{ conflict?.actualRevision }}. No feedback was returned. Reload the latest review, check the comments and summary, then choose Finish review again.</p>
-            <button type="button" class="ui-button" @click="emit('reloadLatest')">Reload latest</button>
-          </div>
-        </div>
-        <button ref="completionAction" type="button" class="ui-button ui-button--primary attached-completion__action" :disabled="attachedReady !== true" @click="finishAttachedReview">Finish review</button>
-      </template>
     </section>
   </section>
 </template>

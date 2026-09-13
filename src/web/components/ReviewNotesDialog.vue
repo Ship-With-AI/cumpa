@@ -67,6 +67,9 @@ const emit = defineEmits<{
   reviewStaleFeedback: [];
 }>();
 
+const reviewFailure = computed(() => props.failure !== null && props.failure.operation !== 'summary');
+const failureAlert = ref<HTMLElement>();
+
 const openCount = computed(() => props.comments.filter((comment) => comment.state === 'open').length);
 const resolvedCount = computed(() => props.comments.filter((comment) => comment.state === 'resolved').length);
 const summaryFailure = computed(() => props.failure?.operation === 'summary');
@@ -96,6 +99,10 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
     void nextTick(() => completionFailure.value?.focus());
   }
 }, { deep: true });
+
+watch(reviewFailure, (failed) => {
+  if (failed) void nextTick(() => failureAlert.value?.focus());
+});
 </script>
 
 <template>
@@ -107,6 +114,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
   >
     <section
       v-if="conflict !== null"
+
       class="inline-notice inline-notice--warning review-panel__conflict"
       role="alert"
       tabindex="-1"
@@ -125,6 +133,21 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
       </div>
     </section>
 
+    <section
+      v-if="reviewFailure"
+      ref="failureAlert"
+      class="inline-notice inline-notice--error review-panel__failure"
+      role="alert"
+      tabindex="-1"
+      aria-labelledby="review-operation-failed-heading"
+    >
+      <UiIcon name="error" class="inline-notice__icon" />
+      <div class="inline-notice__content">
+        <h3 id="review-operation-failed-heading">Review change failed</h3>
+        <p v-if="failure?.operation === 'comment'">Comment wasn’t saved. Your text is still in this tab.</p>
+        <p v-else>The review change wasn’t saved. The accepted local draft is unchanged. Try again after checking Cumpa is running.</p>
+      </div>
+    </section>
     <SummarySection
       :canonical="summary"
       :model-value="summaryBuffer"
@@ -133,6 +156,7 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
       :conflict="conflict !== null"
       :failure="summaryFailure"
       :retained="retainedSummary"
+
       @cancel="emit('cancelSummary')"
       @save="emit('saveSummary')"
       @update:model-value="emit('update:summaryBuffer', $event)"
