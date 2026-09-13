@@ -40,6 +40,8 @@ const host = ref<HTMLElement>();
 const anchorAffordance = ref<AnchorAffordanceTarget>();
 let adapter: MonacoDiffAdapter | undefined;
 let resizeObserver: ResizeObserver | undefined;
+let wideCodeMedia: MediaQueryList | undefined;
+let compactCodeMedia: MediaQueryList | undefined;
 let loadVersion = 0;
 let observedAnchor = '';
 let observedComposerAnchor = '';
@@ -73,6 +75,12 @@ function syncSideNames(): void {
     original: visibleSides.value.originalName,
     modified: visibleSides.value.modifiedName,
   });
+}
+
+function syncCodeDensity(): void {
+  adapter?.setCodeDensity(
+    wideCodeMedia?.matches ? 'wide' : compactCodeMedia?.matches ? 'compact' : 'default',
+  );
 }
 
 function currentComment() {
@@ -283,6 +291,11 @@ onMounted(() => {
   if (host.value === undefined) return;
   configureMonacoWorkers();
   adapter = createMonacoDiffAdapter(host.value, languageForPath, syncAdapterState);
+  wideCodeMedia = window.matchMedia('(min-width: 1650px)');
+  compactCodeMedia = window.matchMedia('(max-width: 760px)');
+  syncCodeDensity();
+  wideCodeMedia.addEventListener('change', syncCodeDensity);
+  compactCodeMedia.addEventListener('change', syncCodeDensity);
   syncSideNames();
   resizeObserver = new ResizeObserver(() => adapter?.layout());
   resizeObserver.observe(host.value);
@@ -291,6 +304,8 @@ onMounted(() => {
 onBeforeUnmount(() => {
   unmountZone();
   resizeObserver?.disconnect();
+  wideCodeMedia?.removeEventListener('change', syncCodeDensity);
+  compactCodeMedia?.removeEventListener('change', syncCodeDensity);
   adapter?.dispose();
 });
 </script>

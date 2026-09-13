@@ -59,6 +59,7 @@ export type MonacoDiffAdapter = Readonly<{
   setAnchorZoneHeight: (heightInPx: number) => void;
   setActiveAnchor: (anchor: Anchor | undefined) => void;
   setSideNames: (names: { readonly original: string; readonly modified: string }) => void;
+  setCodeDensity: (density: 'wide' | 'default' | 'compact') => void;
   setFile: (file: ImmutableDiffFile) => Promise<void>;
 }>;
 
@@ -73,6 +74,20 @@ const TOKENS = parseTokenRoot(TOKEN_ROOT_CSS);
 const CODE_FONT_FAMILY = resolveToken(TOKENS, '--font-mono');
 const CODE_FONT_SIZE = Number.parseInt(resolveToken(TOKENS, '--font-size-code'), 10);
 const CODE_LINE_HEIGHT = Number.parseInt(resolveToken(TOKENS, '--line-height-code'), 10);
+const BODY_FONT_SIZE = Number.parseInt(resolveToken(TOKENS, '--font-size-body'), 10);
+const METADATA_FONT_SIZE = Number.parseInt(resolveToken(TOKENS, '--font-size-metadata'), 10);
+
+const CODE_DENSITIES = {
+  wide: {
+    fontSize: BODY_FONT_SIZE,
+    lineHeight: BODY_FONT_SIZE * 2,
+  },
+  default: { fontSize: CODE_FONT_SIZE, lineHeight: CODE_LINE_HEIGHT },
+  compact: {
+    fontSize: METADATA_FONT_SIZE,
+    lineHeight: METADATA_FONT_SIZE * 2,
+  },
+} as const;
 
 
 class PublicMonacoDiffAdapter {
@@ -169,6 +184,10 @@ class PublicMonacoDiffAdapter {
         run: () => this.activateFocusedAnchor('head'),
       }),
     );
+  }
+
+  setCodeDensity(density: 'wide' | 'default' | 'compact'): void {
+    this.diffEditor.updateOptions(CODE_DENSITIES[density]);
   }
 
   setSideNames({ original, modified }: { readonly original: string; readonly modified: string }): void {
