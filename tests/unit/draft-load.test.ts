@@ -7,6 +7,7 @@ import { afterEach, describe, expect, test } from 'vitest';
 
 import { comparisonKey, rangeReviewKey } from '../../src/domain/comparison-key.js';
 import { createDraftLoader, draftPaths } from '../../src/server/draft-loader.js';
+import type { DraftIssue } from '../../src/server/draft-loader.js';
 
 const comparison = {
   baseCommitOid: '1'.repeat(40),
@@ -80,6 +81,9 @@ describe('raw draft load classification', () => {
     const root = await fixture(bytes);
     const state = await createDraftLoader({ repositoryRoot: root, comparison }).load();
     expect(state).toMatchObject({ kind: 'current', draft: { revision: 0, comments: [] } });
+    if (state.kind !== 'current') {
+      throw new Error('Expected current draft state');
+    }
     expect(state.raw.equals(bytes)).toBe(true);
     expect(state.raw.length).toBe(bytes.length);
     expect(fingerprint(state.raw)).toBe(fingerprint(bytes));
@@ -132,6 +136,9 @@ describe('raw draft load classification', () => {
     const state = await createDraftLoader({ repositoryRoot: root, comparison: expected }).load();
 
     expect(state).toMatchObject({ kind: 'schemaInvalid', fingerprint: fingerprint(bytes) });
+    if (state.kind !== 'schemaInvalid') {
+      throw new Error('Expected schema-invalid draft state');
+    }
     expect(state.raw.equals(bytes)).toBe(true);
   });
 
@@ -139,6 +146,9 @@ describe('raw draft load classification', () => {
     const bytes = Buffer.from('{"schemaVersion":1,\n\xff', 'binary');
     const state = await createDraftLoader({ repositoryRoot: await fixture(bytes), comparison }).load();
     expect(state).toMatchObject({ kind: 'malformed', fingerprint: fingerprint(bytes) });
+    if (state.kind !== 'malformed') {
+      throw new Error('Expected malformed draft state');
+    }
     expect(state.raw.equals(bytes)).toBe(true);
     expect(state.raw.length).toBe(bytes.length);
     expect(state.detail.message.length).toBeLessThanOrEqual(160);
@@ -152,16 +162,22 @@ describe('raw draft load classification', () => {
   ])('classifies %s as schema-invalid without altering bytes', async (_label, bytes) => {
     const state = await createDraftLoader({ repositoryRoot: await fixture(bytes), comparison }).load();
     expect(state).toMatchObject({ kind: 'schemaInvalid', fingerprint: fingerprint(bytes) });
+    if (state.kind !== 'schemaInvalid') {
+      throw new Error('Expected schema-invalid draft state');
+    }
     expect(state.raw.equals(bytes)).toBe(true);
     expect(state.details.length).toBeGreaterThan(0);
     expect(state.details.length).toBeLessThanOrEqual(8);
-    expect(state.details.every((detail) => detail.message.length <= 160 && detail.path.length <= 160)).toBe(true);
+    expect(state.details.every((detail: DraftIssue) => detail.message.length <= 160 && detail.path.length <= 160)).toBe(true);
   });
 
   test('recognizes a greater schema version before strict current parsing and retains raw bytes', async () => {
     const bytes = Buffer.from(JSON.stringify({ schemaVersion: 2, futureOnly: { preserve: ['all', 'unknown', 'fields'] } }), 'utf8');
     const state = await createDraftLoader({ repositoryRoot: await fixture(bytes), comparison }).load();
     expect(state).toMatchObject({ kind: 'newerUnsupported', foundVersion: 2, supportedVersion: 1 });
+    if (state.kind !== 'newerUnsupported') {
+      throw new Error('Expected newer unsupported draft state');
+    }
     expect(state.raw.equals(bytes)).toBe(true);
     expect('fingerprint' in state).toBe(false);
   });
