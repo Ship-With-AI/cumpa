@@ -901,8 +901,8 @@ test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) 
         ).toContainText(laterFile.newPath?.display ?? laterFile.oldPath?.display ?? '');
 
         await page.getByRole('button', { name: 'Details' }).click();
-        const identities = page.getByRole('region', {
-          name: 'Comparison identities',
+        const identities = page.getByRole('dialog', {
+          name: 'Details',
         });
         const identityRows = identities.locator('.identity-row');
         await expect(
@@ -984,7 +984,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
     await disclosure.click();
     await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
-    const panel = page.getByRole('region', { name: 'Comparison identities' });
+    const panel = page.getByRole('dialog', { name: 'Details' });
     await expect(panel).toBeVisible();
 
     const identityRows = panel.locator('.identity-row');
@@ -1158,8 +1158,8 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       ),
     ).toBeAttached();
     await dirtyPage.getByRole('button', { name: 'Details' }).click();
-    const dirtyPanel = dirtyPage.getByRole('region', {
-      name: 'Comparison identities',
+    const dirtyPanel = dirtyPage.getByRole('dialog', {
+      name: 'Details',
     });
     const dirtyHead = dirtyPanel.locator('.identity-row').nth(1);
     await expect(
