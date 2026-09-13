@@ -1,83 +1,152 @@
 :root {
   color-scheme: dark;
-  --surface-canvas: #0D1117;
-  --surface-inset: #010409;
-  --surface-panel: #161B22;
-  --surface-raised: #21262D;
-  --surface-interactive: #21262D;
-  --surface-interactive-hover: #292E36;
-  --surface-interactive-active: #30363D;
-  --text-primary: #E6EDF3;
-  --text-secondary: #B1BAC4;
-  --text-muted: #8B949E;
-  --text-on-emphasis: #FFFFFF;
-  --border-muted: #21262D;
-  --border-default: #30363D;
-  --border-strong: #484F58;
-  --control-boundary: #8B949E;
-  --interactive-accent: #2F81F7;
-  --interactive-accent-emphasis: #1F6FEB;
-  --focus-ring: #58A6FF;
-  --selection-background: rgb(56 139 253 / 35%);
-  --selection-border: #58A6FF;
-  --destructive-foreground: #F85149;
-  --destructive-emphasis: #B62324;
-  --status-success-foreground: #3FB950;
-  --status-success-background: rgb(46 160 67 / 15%);
-  --status-warning-foreground: #D29922;
-  --status-warning-background: rgb(187 128 9 / 15%);
-  --status-error-foreground: #F85149;
-  --status-error-background: rgb(248 81 73 / 15%);
-  --status-information-foreground: #58A6FF;
-  --status-information-background: rgb(56 139 253 / 15%);
-  --status-resolved-foreground: #A371F7;
-  --status-resolved-background: rgb(163 113 247 / 15%);
-  --status-pending-foreground: #B1BAC4;
-  --status-pending-background: #21262D;
-  --status-disabled-foreground: #8B949E;
-  --status-disabled-background: #161B22;
-  --syntax-keyword-foreground: #D2A8FF;
-  --syntax-string-foreground: #A5D6FF;
-  --syntax-number-foreground: #F2CC60;
-  --syntax-type-foreground: #79C0FF;
-  --syntax-invalid-foreground: #FFA198;
-  --diff-addition-foreground: #3FB950;
-  --diff-addition-background: rgb(46 160 67 / 22%);
+  --surface-canvas: #0d1117;
+  --surface-sidebar: #10151c;
+  --surface-panel: #161b22;
+  --surface-raised: #21262d;
+  --surface-empty: #12171e;
+  --surface-gap: #111821;
+  --surface-hunk: #172131;
+  --surface-interactive: var(--surface-raised);
+  /* Approved continuity — control-state surface carried from styles.css:8. */
+  --surface-interactive-hover: #292e36;
+  /* Approved continuity — control-state surface carried from styles.css:9. */
+  --surface-interactive-active: #30363d;
+  /* Approved continuity — scrim replaces the former backdrop literal at styles.css:623. */
+  --surface-scrim: rgb(13 17 23 / 68%);
+
+  --text-primary: #e6edf3;
+  --text-muted: #a7b1bd;
+  --text-line-number: #8794a5;
+  --text-hunk: #adc8e6;
+  --text-on-emphasis: #fff;
+
+  --border-default: #30363d;
+  --border-control: #4e5b6b;
+  --border-overlay: #596678;
+  --border-hunk: #293849;
+  --border-gap: #252d38;
+
+  --interactive-accent: #79b8ff;
+  --interactive-accent-emphasis: #1f6feb;
+  --interactive-accent-emphasis-hover: #2b7afa;
+  --focus-ring: #58a6ff;
+  --selection-background: #1a2b43;
+  --selection-border: #345477;
+  --text-selection-background: #254d79;
+  --scrollbar-thumb: #536174;
+
+  --destructive-foreground: #ffa198;
+  /* Approved continuity — UI-SPEC:166 destructive confirmation emphasis. */
+  --destructive-emphasis: #b62324;
+  --status-success-foreground: #7ee787;
+  --status-success-background: #122b22;
+  /* Approved continuity — UI-SPEC:164 warning foreground. */
+  --status-warning-foreground: #d29922;
+  --status-warning-background: var(--surface-raised);
+  --status-error-foreground: #ffa198;
+  --status-error-background: #321c23;
+  --status-information-foreground: var(--focus-ring);
+  --status-information-background: var(--selection-background);
+  /* Approved continuity — UI-SPEC:165 resolved-history foreground. */
+  --status-resolved-foreground: #a371f7;
+  --status-resolved-background: var(--surface-raised);
+  --status-pending-foreground: var(--text-muted);
+  --status-pending-background: var(--surface-raised);
+  --status-disabled-foreground: var(--text-muted);
+  --status-disabled-background: var(--surface-panel);
+  --status-modified-foreground: #79b8ff;
+  --status-modified-background: #1a2b43;
+  --status-modified-border: #345477;
+  --status-added-foreground: #7ee787;
+  --status-added-background: #122b22;
+  --status-added-border: #30363d;
+  --status-deleted-foreground: #ffa198;
+  --status-deleted-background: #321c23;
+  --status-deleted-border: #30363d;
+
+  --diff-addition-foreground: #7ee787;
+  --diff-addition-background: #122b22;
+  /* Approved continuity — UI-SPEC:162 intraline diff fill. */
   --diff-addition-intraline-background: rgb(46 160 67 / 45%);
-  --diff-deletion-foreground: #F85149;
-  --diff-deletion-background: rgb(248 81 73 / 22%);
+  --diff-deletion-foreground: #ffa198;
+  --diff-deletion-background: #321c23;
+  /* Approved continuity — UI-SPEC:163 intraline diff fill. */
   --diff-deletion-intraline-background: rgb(248 81 73 / 45%);
-  --diff-hunk-foreground: #A371F7;
-  --diff-hunk-background: rgb(163 113 247 / 15%);
-  --diff-empty-background: var(--surface-inset);
-  --diff-unchanged-background: var(--surface-inset);
-  --diff-region-border: var(--border-default);
+  --diff-hunk-foreground: var(--text-hunk);
+  --diff-hunk-background: var(--surface-hunk);
+  --diff-empty-background: var(--surface-empty);
+  --diff-unchanged-background: var(--surface-canvas);
+  --diff-region-border: var(--border-hunk);
+  /* Approved continuity — D-MONACO-ALPHA editor whitespace layer. */
+  --monaco-whitespace-foreground: rgb(78 91 107 / 50%);
+  /* Approved continuity — D-MONACO-ALPHA inactive selection layer. */
+  --monaco-inactive-selection-background: rgb(26 43 67 / 25%);
+  /* Approved continuity — D-MONACO-ALPHA scrollbar hover layer. */
+  --monaco-scrollbar-hover-background: rgb(48 54 61 / 50%);
+  /* Approved continuity — D-MONACO-ALPHA scrollbar active layer. */
+  --monaco-scrollbar-active-background: rgb(78 91 107 / 65%);
+
+  --syntax-default-foreground: var(--text-primary);
+  --syntax-comment-foreground: var(--text-muted);
+  --syntax-keyword-foreground: #ffb5ab;
+  --syntax-string-foreground: #b4d7ff;
+  --syntax-number-foreground: #79b8ff;
+  --syntax-type-foreground: #79b8ff;
+  --syntax-invalid-foreground: #ffa198;
+
   --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --font-size-metadata: 12px;
-  --line-height-metadata: 16px;
+  --line-height-metadata: 18px;
+  --font-size-code: 13px;
+  --line-height-code: 26px;
   --font-size-body: 14px;
-  --line-height-body: 20px;
-  --font-size-section-heading: 16px;
-  --line-height-section-heading: 24px;
+  --line-height-body: 21px;
+  --font-size-page-heading: 21px;
+  --line-height-page-heading: 31.5px;
+  /* Approved continuity — styles.css:63-64 display-state type pair. */
   --font-size-display: clamp(2rem, 8vw, 3.5rem);
+  /* Approved continuity — styles.css:64 display-state line height. */
   --line-height-display: 1.05;
-  --font-size-page-heading: 20px;
-  --line-height-page-heading: 28px;
+  /* Approved continuity — UI-SPEC:92 retained two-weight contract. */
   --font-weight-regular: 400;
+  /* Approved continuity — UI-SPEC:92 retained two-weight contract. */
   --font-weight-semibold: 600;
-  --radius-compact: 4px;
+
+  --radius-file-row: 5px;
   --radius-control: 6px;
-  --radius-overlay: 8px;
+  --radius-overlay: 10px;
+  --radius-scrollbar: 8px;
+  /* Approved continuity — D-INFORMATION retains the existing badge radius. */
   --radius-pill: 999px;
+  --border-width-default: 1px;
+  --focus-outline-width: 2px;
+  --focus-offset: 3px;
+  --selected-rail-width: 3px;
+  --control-height-standard: 36px;
+  --control-height-compact: 30px;
+  --file-row-min-height: 60px;
+  --diff-row-height: 26px;
+  --diff-gutter-width: 42px;
+  --diff-sign-width: 18px;
+  --sidebar-width: 294px;
+  --dialog-width: min(560px, calc(100% - 24px));
+  --dialog-max-height: 85dvh;
+  /* Approved continuity — UI-SPEC:23 icon geometry. */
+  --icon-size: 16px;
+  /* Approved continuity — styles.css:73 overlay separation. */
   --shadow-overlay: 0 8px 24px rgb(0 0 0 / 40%);
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-  --space-2xl: 48px;
-  --space-3xl: 64px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  /* Approved continuity — UI-SPEC:61 retained spacing token. */
+  --space-8: 32px;
+
   color: var(--text-primary);
   background: var(--surface-canvas);
   font-family: var(--font-ui);
