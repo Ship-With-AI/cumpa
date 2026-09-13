@@ -268,6 +268,33 @@ test('11a. omits edit affordances from the immutable two-pane diff', async ({ pa
   await expect(page.locator('.monaco-diff-editor .arrow-revert-change')).toHaveCount(0);
 });
 
+test('11b. paints hidden-region controls from canonical token bytes', async ({ page }) => {
+  await openPrototype(page);
+
+  const hiddenLines = page.locator('.monaco-diff-pane--head .diff-hidden-lines');
+  await expect(hiddenLines).not.toHaveCount(0);
+
+  const band = hiddenLines.first().locator('.center');
+  await expect(band).toContainText(/\d+ hidden lines/);
+  const reveal = band.locator('a[title="Show Unchanged Region"]');
+  await expect(reveal).toHaveAttribute('role', 'button');
+  await expect(reveal).toHaveAttribute('title', 'Show Unchanged Region');
+  await expect(band).toHaveCSS('background-color', toRootRgb('--surface-panel'));
+  await expect(band).toHaveCSS('color', toRootRgb('--diff-hunk-foreground'));
+
+  const edge = hiddenLines.first().locator('.bottom');
+  await expect(edge).toHaveCSS('background-color', toRootRgb('--surface-gap'));
+  await expect(edge).toHaveCSS('border-bottom-color', toRootRgb('--border-gap'));
+
+  await edge.hover();
+  await expect.poll(() => edge.evaluate((element) => getComputedStyle(element).backgroundColor))
+    .toBe(toRootRgb('--diff-hunk-background'));
+
+  await reveal.hover();
+  await expect.poll(() => reveal.locator('.codicon').evaluate((element) => getComputedStyle(element).color))
+    .toBe(toRootRgb('--diff-hunk-foreground'));
+});
+
 test('12. keeps selection contrast, anchor rail, diff meaning, and focus in separate channels', async ({ page }) => {
   await openPrototype(page);
   expect((await readState(page)).listenerCount).toBe(17);

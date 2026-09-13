@@ -19,6 +19,14 @@ const FILES: readonly ImmutableDiffFile[] = [
       path: 'src/review.ts',
       text: `export function renderReview() {
   const title = 'Cumpa';
+  const stable00 = 'zero';
+  const stable00a = 'zero a';
+  const stable00b = 'zero b';
+  const stable00c = 'zero c';
+  const stable00d = 'zero d';
+  const stable00e = 'zero e';
+  const stable00f = 'zero f';
+  const stable00g = 'zero g';
   const stable01 = 'one';
   const stable02 = 'two';
   const stable03 = 'three';
@@ -41,6 +49,14 @@ const FILES: readonly ImmutableDiffFile[] = [
       path: 'src/review.ts',
       text: `export function renderReview() {
   const title = 'Cumpa';
+  const stable00 = 'zero';
+  const stable00a = 'zero a';
+  const stable00b = 'zero b';
+  const stable00c = 'zero c';
+  const stable00d = 'zero d';
+  const stable00e = 'zero e';
+  const stable00f = 'zero f';
+  const stable00g = 'zero g';
   const stable01 = 'one';
   const stable02 = 'two';
   const stable03 = 'three';

@@ -2759,15 +2759,15 @@ h3.conversation-card__identity {
 
 .monaco-editor .diff-hidden-lines .top,
 .monaco-editor .diff-hidden-lines .bottom {
-  background-color: var(--surface-gap);
-  border-color: var(--border-gap);
+  background-color: var(--surface-gap) !important;
+  border-color: var(--border-gap) !important;
 }
 
 .monaco-editor .diff-hidden-lines:not(.dragging) .top:hover,
 .monaco-editor .diff-hidden-lines:not(.dragging) .bottom:hover,
 .monaco-editor .diff-hidden-lines .top.dragging,
 .monaco-editor .diff-hidden-lines .bottom.dragging {
-  background-color: var(--diff-hunk-background);
+  background-color: var(--diff-hunk-background) !important;
   color: var(--diff-hunk-foreground);
 }
 
