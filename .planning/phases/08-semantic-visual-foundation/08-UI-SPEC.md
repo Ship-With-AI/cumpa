@@ -19,67 +19,77 @@ created: 2026-09-13
 |----------|-------|
 | Tool | none |
 | Preset | not applicable |
-| Component library | none; retain the existing Vue components and `src/web/components/ui/` primitives |
-| Icon library | existing local `UiIcon.vue` 16px current-color SVG set; no third-party registry |
-| Font | UI: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`; code: `'SFMono-Regular', Consolas, 'Liberation Mono', monospace` |
+| Component library | none; retain the existing Vue primitives in `src/web/components/ui/` |
+| Icon library | existing local `UiIcon.vue`; its established size is `16px` at `src/web/components/ui/UiIcon.vue:27-33` and is an approved continuity value, not a mockup-derived value |
+| Font | UI: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`; code: `'SFMono-Regular', Consolas, 'Liberation Mono', monospace`, both from `mockups/01-quiet-workspace.html:8-9` |
 
-`mockups/01b-quiet-workspace-tree.html` and its three captures are the visual authority. `01-quiet-workspace.html` confirms the same dark workspace base; `02-review-stream.html` is a rejected light alternative and does not supply production tokens; `03-focus-mode.html` is supporting interaction evidence only. Where `DESIGN.md` or the current v1.1 palette conflicts with 01b, 01b wins for v1.6.
+No shadcn initialization or third-party registry belongs in this Vue phase.
 
-No shadcn setup or registry initialization belongs in this Vue phase.
+### Numeric source authority
+
+`mockups/01-quiet-workspace.html` is the **single normative source for Phase 08 numeric values**. Its palette is declared at line 8, its default desktop geometry and density at line 9, and its wide, compact-desktop, and mobile overrides at lines 10-12.
+
+The milestone still uses `mockups/01b-quiet-workspace-tree.html` and its captures as the eventual tree-surface target, as required by `.planning/REQUIREMENTS.md:8-10`. However, `01b`'s tree-only rules are Phase 09 input, not Phase 08 shared-token authority. Its single-line tree density and badge palette must not be introduced by this phase. Phase 08 records the shared foundation and the normative mockup's two-line file-row density without changing tree markup. Phase 09 may deliberately replace those tree-specific values while implementing its own approved surface contract.
+
+Every value below either cites `mockups/01-quiet-workspace.html:8-12` or is labeled **Approved continuity addition** with its non-mockup source and rationale. No value from a screenshot is treated as a token merely because it appears visually similar.
 
 ---
 
 ## Canonical Token Root
 
-The single authored token root is the first `:root` block in **`src/web/styles.css`**. Keep the established CSS custom-property approach rather than adding a parallel TypeScript palette.
+The first `:root` block in `src/web/styles.css` is the only authored token root. Keep the existing CSS custom-property approach rather than adding a TypeScript palette, theme provider, or wrapper component.
 
-- Name variables `--<category>-<role>[-<state>]`, using semantic categories such as `surface`, `text`, `border`, `interactive`, `status`, `diff`, `syntax`, `font`, `line-height`, `space`, `radius`, and `density`.
-- Do not introduce raw hue names such as `--blue` or component names such as `--sidebar-blue`.
-- Store colors as lowercase six- or eight-digit hex in the root. Alpha is part of an eight-digit token; consumers must not recalculate it independently.
-- Component CSS, Vue style blocks, and Monaco theme data consume semantic tokens. They do not author `#…`, `rgb(…)`, `hsl(…)`, or a second palette.
-- Allowed non-palette CSS values outside the root are `transparent`, `currentColor`, and system color keywords inside `@media (forced-colors: active)`.
-
-### Monaco derivation
-
-`src/web/monaco/theme.ts` must build the theme from the computed values of the canonical `src/web/styles.css :root` block after that stylesheet is present. A small theme builder accepts a token resolver; the browser resolver reads `getComputedStyle(document.documentElement)`, and the unit test resolver reads the same root declarations from disk. Monaco theme source must contain semantic token names and Monaco key mappings, not literal color values.
-
-Monaco color entries receive the root value unchanged. Monaco token rules, whose API requires hex without `#`, remove only that prefix at the API boundary; their parsed RGB bytes must remain identical. No color blending, opacity multiplication, or case conversion may create a separately authored value.
+- Semantic names use `--<category>-<role>[-<state>]` across `surface`, `text`, `border`, `interactive`, `status`, `diff`, `syntax`, `font`, `space`, `radius`, and `density`.
+- Component styles and the Monaco theme consume semantic names; they do not own literal palette values.
+- The Monaco resolver reads the same root declarations from disk. Monaco color entries receive the root value unchanged. Tokenizer APIs may remove the required leading `#`, but parsed color bytes must remain identical.
+- Phase 08 is token-contract-only. It may rename and centralize tokens and wire existing consumers to them, but it must not alter tree markup/density, Monaco layout, shell composition, dialogs, comments, export, or receipt behavior.
 
 ---
 
 ## Spacing Scale
 
-Declared values are all multiples of 4:
+The core scale uses multiples of four. This is the planning system's scale structure; each value is independently evidenced below.
 
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--space-1` | 4px | Icon gaps, status-chip inset, tight inline separation |
-| `--space-2` | 8px | Compact controls, row gaps, paired actions |
-| `--space-3` | 12px | Mobile shell inset, compact toolbar padding |
-| `--space-4` | 16px | Default component padding and dialog field gaps |
-| `--space-5` | 20px | Changed-files pane header padding |
-| `--space-6` | 24px | Desktop shell and dialog padding |
-| `--space-8` | 32px | Major local separation |
-| `--space-12` | 48px | Large state separation only |
-| `--space-16` | 64px | Page-level empty/loading composition only |
+| Token | Value | Usage | Evidence |
+|-------|-------|-------|----------|
+| `--space-1` | `4px` | Tight inline gaps | `mockups/01-quiet-workspace.html:9` (`.filters`, prototype links) |
+| `--space-2` | `8px` | Compact gaps and insets | `mockups/01-quiet-workspace.html:9` (file scroll and row column gap) |
+| `--space-3` | `12px` | Control and mobile shell spacing | `mockups/01-quiet-workspace.html:9,12` |
+| `--space-4` | `16px` | Default local separation | `mockups/01-quiet-workspace.html:9` |
+| `--space-5` | `20px` | Sidebar heading inset | `mockups/01-quiet-workspace.html:9` |
+| `--space-6` | `24px` | Desktop shell and dialog inset | `mockups/01-quiet-workspace.html:9` |
+| `--space-8` | `32px` | Major local separation | **Approved continuity addition** from `src/web/styles.css:78`; retained so the existing public spacing root is not needlessly narrowed |
+| `--space-12` | `48px` | Large state separation only | **Approved continuity addition** from `src/web/styles.css:79`; retained for existing consumers, not inferred from the mockup |
+| `--space-16` | `64px` | Page-level state composition only | **Approved continuity addition** from `src/web/styles.css:80`; retained for existing consumers, not inferred from the mockup |
 
-Exceptions are dimensions, not spacing increments: 1px borders, 2px focus outline/change rails, 3px selected rail, 18px diff-sign column, 26px desktop code-row height, 34px tree-row height, 36px standard control height, 42px line-number gutter, and the responsive widths declared below.
+The normative mockup intentionally uses off-scale component spacing. These values are **exceptions, not additions to the core scale**, and must not be normalized during Phase 08:
+
+| Consumer contract | Required spacing | Evidence |
+|-------------------|------------------|----------|
+| Standard button | `7px` block, `11px` inline | `mockups/01-quiet-workspace.html:9` (`button`) |
+| Sidebar header | `20px` top, `18px` inline, `14px` bottom | `mockups/01-quiet-workspace.html:9` (`.sidebar-top`) |
+| Two-line changed-file row | `10px` block and inline; `5px` row gap and `8px` column gap | `mockups/01-quiet-workspace.html:9` (`.file-button`) |
+| Base/Head labels | `9px` block, `18px` inline | `mockups/01-quiet-workspace.html:9` (`.side-labels div`) |
+| File toolbar | `18px` top, `24px` inline, `14px` bottom | `mockups/01-quiet-workspace.html:9` (`.file-toolbar`) |
+
+These exception tokens describe later consumers only. Phase 08 must not rewrite the changed-file tree or any surface markup to apply them.
 
 ---
 
 ## Typography
 
-Exactly four production sizes and two weights are allowed. Prototype-only off-scale text is normalized to these roles.
+Exactly four authored type sizes and two weights are permitted. The Monaco code role is separate from general UI body typography.
 
-| Role | Size | Weight | Line Height |
-|------|------|--------|-------------|
-| Metadata / compact label | 12px | 400 | 16px |
-| Body / control / code | 14px | 400 | 21px (1.5) |
-| Section heading | 16px | 600 | 24px (1.5) |
-| Page / active-file heading | 20px | 600 | 24px (1.2) |
+| Role | Size | Weight | Line height | Evidence |
+|------|------|--------|-------------|----------|
+| Metadata / compact UI | `12px` | `400` | `18px` | Size and `1.5` ratio at `mockups/01-quiet-workspace.html:9`; `18px` is the exact `12px × 1.5` result |
+| Monaco code — reference desktop | `13px` | `400` | `26px` | `mockups/01-quiet-workspace.html:9` (`.line { font:13px/26px ... }`) |
+| General UI body and controls | `14px` | `400` | `21px` | `mockups/01-quiet-workspace.html:9` (`body { font:14px/1.5 ... }`); `21px` is the UI-body result, not a Monaco row value |
+| Page / dialog heading | `21px` | `600` | `31.5px` | Heading size at `mockups/01-quiet-workspace.html:9`; it inherits the normative `1.5` body line-height, yielding `31.5px` |
 
-- Body and heading line heights are fixed by the table; do not use browser `normal`.
-- Monaco uses the body size with a 26px desktop row box, 24px mobile row box, and 28px only at the mockup's wide `min-width: 1650px` breakpoint.
+- Wide Monaco override: `14px/28px` only at the mockup's `min-width: 1650px` rule, `mockups/01-quiet-workspace.html:10`.
+- Mobile Monaco override: `12px/24px` at the mockup's `max-width: 760px` rule, `mockups/01-quiet-workspace.html:12`.
+- **Approved continuity normalization:** weights are limited to `400` and `600`, sourced from `src/web/styles.css:67-68`. This deliberately replaces the mockup's intermediate and display-only weights so the existing two-weight semantic contract remains coherent; it is not described as mockup-derived.
 - Paths, object IDs, counts, line numbers, diff content, and Base/Head identities use the code stack. All other text uses the UI stack.
 - Long paths may ellipsize only when the full accessible name remains available.
 
@@ -89,185 +99,157 @@ Exactly four production sizes and two weights are allowed. Prototype-only off-sc
 
 ### 60 / 30 / 10 allocation
 
-| Role | Value | Usage |
-|------|-------|-------|
-| Dominant (60%) | `#0d1117` | Page canvas, diff reading canvas, continuous workspace background |
-| Secondary (30%) | `#161b22` | Header/footer bands, dialogs, widgets, grouped panels; the sidebar inset and raised variants remain subordinate |
-| Accent (10%) | `#79b8ff` | Product mark, links, selected rail, modified state, and selected control text only |
-| Destructive | `#ffa198` | Destructive copy, deletion status, and removed-diff meaning only |
+The `60 / 30 / 10` split is the required planning allocation, not a measured mockup percentage.
 
-Accent is reserved for the product mark, text links, the selected-file rail/border, modified-file status, selected control text, and focus/cursor affordances. Filled primary actions use the accent-emphasis token, not the general accent. Addition, deletion, warning, and resolved colors are semantic states and are not alternate accents.
+| Role | Value | Usage | Evidence |
+|------|-------|-------|----------|
+| Dominant (60%) | `#0d1117` | Page and diff reading canvas | `mockups/01-quiet-workspace.html:8-9` (`--bg`) |
+| Secondary (30%) | `#161b22` | Header/footer bands, dialogs, widgets, grouped panels | `mockups/01-quiet-workspace.html:8-9` (`--panel`) |
+| Accent (10%) | `#79b8ff` | Product mark, links, selected rail, modified state, selected-control text | `mockups/01-quiet-workspace.html:8-9` (`--blue`) |
+| Destructive | `#ffa198` | Destructive copy and removed-diff meaning only | `mockups/01-quiet-workspace.html:8-9` (`--red`) |
 
-### Mockup-derived semantic colors
+Accent is reserved for the product mark, text links, selected-file rail/border, modified-file state, selected-control text, focus/cursor affordances, and no other elements. Filled primary actions use the emphasis token. Addition, deletion, warning, and resolved colors are semantic states, not alternate accents.
+
+### Normative mockup palette
+
+All values in this table come from `mockups/01-quiet-workspace.html:8-9`.
 
 | Token | Value | Contract |
 |-------|-------|----------|
-| `--surface-canvas` | `#0d1117` | Mockup `--bg`; dominant workspace and Monaco canvas |
+| `--surface-canvas` | `#0d1117` | Workspace and Monaco canvas |
 | `--surface-sidebar` | `#10151c` | Changed-files inset and scrollbar track |
-| `--surface-panel` | `#161b22` | Header/footer bands, dialogs, Monaco hidden regions |
+| `--surface-panel` | `#161b22` | Header/footer, dialog, widget, hidden region |
 | `--surface-raised` | `#21262d` | Hovered controls and elevated widgets |
-| `--surface-empty` | `#12171e` | Empty half of split diff rows |
+| `--surface-empty` | `#12171e` | Empty split-diff side |
 | `--surface-gap` | `#111821` | Collapsed-context strip |
 | `--surface-hunk` | `#172131` | Hunk heading strip |
 | `--text-primary` | `#e6edf3` | Primary UI and editor text |
 | `--text-muted` | `#a7b1bd` | Metadata, placeholders, directory paths |
-| `--text-line-number` | `#8794a5` | Diff line numbers only |
-| `--text-hunk` | `#adc8e6` | Hunk heading text only |
-| `--text-on-emphasis` | `#ffffff` | Filled primary action and selected text |
-| `--border-default` | `#30363d` | Persistent workspace divisions |
-| `--border-control` | `#4e5b6b` | Search and control boundary |
+| `--text-line-number` | `#8794a5` | Diff line numbers |
+| `--text-hunk` | `#adc8e6` | Hunk heading text |
+| `--text-on-emphasis` | `#fff` | Filled primary action text |
+| `--border-default` | `#30363d` | Persistent workspace divisions and neutral status boundaries |
+| `--border-control` | `#4e5b6b` | Search control boundary |
 | `--border-overlay` | `#596678` | Dialog boundary |
-| `--border-hunk` | `#293849` | Hunk heading boundary |
+| `--border-hunk` | `#293849` | Hunk boundary |
 | `--border-gap` | `#252d38` | Collapsed-context boundary |
 | `--interactive-accent` | `#79b8ff` | Sparse accent ink |
 | `--interactive-accent-emphasis` | `#1f6feb` | Primary CTA fill |
-| `--interactive-accent-emphasis-hover` | `#2b7afa` | Primary CTA hover fill |
+| `--interactive-accent-emphasis-hover` | `#2b7afa` | Primary CTA hover |
 | `--focus-ring` | `#58a6ff` | Keyboard focus and Monaco cursor |
-| `--selection-background` | `#1a2b43` | Selected tree row |
-| `--selection-border` | `#345477` | Selected tree-row/control boundary |
-| `--text-selection-background` | `#254d79` | Selected text and Monaco selection |
+| `--selection-background` | `#1a2b43` | Selected file/control background |
+| `--selection-border` | `#345477` | Selected file/control boundary |
+| `--text-selection-background` | `#254d79` | Text and Monaco selection |
 | `--scrollbar-thumb` | `#536174` | Workspace scrollbar thumb |
 
 ### Status and diff colors
 
-| Token | Value | Contract |
-|-------|-------|----------|
-| `--status-modified-foreground` | `#79b8ff` | Modified status text/icon |
-| `--status-modified-background` | `#12243a` | Modified badge fill |
-| `--status-modified-border` | `#2d4f77` | Modified badge boundary |
-| `--status-added-foreground` | `#7ee787` | Added status/count and plus sign |
-| `--status-added-background` | `#10251a` | Added badge fill |
-| `--status-added-border` | `#245c38` | Added badge and stronger added highlight |
-| `--status-deleted-foreground` | `#ffa198` | Deleted status/count and minus sign |
-| `--status-deleted-background` | `#2a1519` | Deleted badge fill |
-| `--status-deleted-border` | `#6d2b33` | Deleted badge and stronger removed highlight |
-| `--status-warning-foreground` | `#d29922` | Existing stale/drift warning only; continuity token from the current semantic contract |
-| `--status-resolved-foreground` | `#a371f7` | Existing resolved state only; continuity token from the current semantic contract |
-| `--destructive-emphasis` | `#b62324` | Existing destructive-action hover/confirmation only |
-| `--diff-addition-foreground` | `#7ee787` | Added sign, count, solid rail |
-| `--diff-addition-background` | `#122b22` | Added line fill from mockup `--added` |
-| `--diff-addition-intraline-background` | `#245c38` | Stronger added span using the mockup's added boundary value |
-| `--diff-deletion-foreground` | `#ffa198` | Removed sign, count, dashed rail |
-| `--diff-deletion-background` | `#321c23` | Removed line fill from mockup `--removed` |
-| `--diff-deletion-intraline-background` | `#6d2b33` | Stronger removed span using the mockup's deleted boundary value |
-| `--diff-hunk-background` | `#172131` | Hunk/collapsed-region fill |
-| `--diff-hunk-foreground` | `#adc8e6` | Hunk/collapsed-region text |
-| `--diff-empty-background` | `#12171e` | Empty split side |
-| `--diff-region-border` | `#30363d` | Base/Head split and editor boundary |
+| Token | Value | Contract | Evidence |
+|-------|-------|----------|----------|
+| `--status-modified-foreground` | `#79b8ff` | Modified text/icon | Normative `--blue`, `mockups/01-quiet-workspace.html:8-9` |
+| `--status-modified-background` | `#1a2b43` | Existing modified-state background fallback; does not require a badge | Normative selected background, `mockups/01-quiet-workspace.html:9` |
+| `--status-modified-border` | `#345477` | Existing modified-state boundary fallback | Normative selected boundary, `mockups/01-quiet-workspace.html:9` |
+| `--status-added-foreground` | `#7ee787` | Added text/icon and plus sign | Normative `--green`, `mockups/01-quiet-workspace.html:8-9` |
+| `--status-added-background` | `#122b22` | Added state background | Normative `--added`, `mockups/01-quiet-workspace.html:8-9` |
+| `--status-added-border` | `#30363d` | Neutral added-state boundary | Normative `--border`, `mockups/01-quiet-workspace.html:8-9` |
+| `--status-deleted-foreground` | `#ffa198` | Deleted text/icon and minus sign | Normative `--red`, `mockups/01-quiet-workspace.html:8-9` |
+| `--status-deleted-background` | `#321c23` | Deleted state background | Normative `--removed`, `mockups/01-quiet-workspace.html:8-9` |
+| `--status-deleted-border` | `#30363d` | Neutral deleted-state boundary | Normative `--border`, `mockups/01-quiet-workspace.html:8-9` |
+| `--diff-addition-foreground` | `#7ee787` | Added sign/count and solid rail | Normative `--green`, `mockups/01-quiet-workspace.html:8-9` |
+| `--diff-addition-background` | `#122b22` | Added line fill | Normative `--added`, `mockups/01-quiet-workspace.html:8-9` |
+| `--diff-deletion-foreground` | `#ffa198` | Removed sign/count and dashed rail | Normative `--red`, `mockups/01-quiet-workspace.html:8-9` |
+| `--diff-deletion-background` | `#321c23` | Removed line fill | Normative `--removed`, `mockups/01-quiet-workspace.html:8-9` |
+| `--diff-addition-intraline-background` | `rgb(46 160 67 / 45%)` | Stronger Monaco added span only | **Approved continuity addition** from `src/web/styles.css:46`; the normative mockup has no intraline declaration, so this existing contrast layer is retained and is not called mockup-derived |
+| `--diff-deletion-intraline-background` | `rgb(248 81 73 / 45%)` | Stronger Monaco removed span only | **Approved continuity addition** from `src/web/styles.css:49`; the normative mockup has no intraline declaration, so this existing contrast layer is retained and is not called mockup-derived |
+| `--status-warning-foreground` | `#D29922` | Existing stale/drift warning only | **Approved continuity addition** from `src/web/styles.css:27`; required state is absent from the normal-state mockup |
+| `--status-resolved-foreground` | `#A371F7` | Existing resolved-history state only | **Approved continuity addition** from `src/web/styles.css:33`; required state is absent from the normal-state mockup |
+| `--destructive-emphasis` | `#B62324` | Existing destructive confirmation emphasis only | **Approved continuity addition** from `src/web/styles.css:24`; retained for destructive continuity, not general palette use |
 
-The amber, violet, and destructive-emphasis values are explicit continuity exceptions because 01b does not depict those required existing states. They remain narrowly reserved and may not seed a second general palette.
+The Phase 09-only tree badge palette is intentionally absent from the Phase 08 shared root. It must not be described as the normative mockup's added/deleted boundaries or intraline colors.
 
-### Syntax colors
-
-| Token | Value | Monaco scopes |
-|-------|-------|---------------|
-| `--syntax-default-foreground` | `#e6edf3` | source, identifiers, functions, variables, properties |
-| `--syntax-comment-foreground` | `#a7b1bd` | comments and punctuation |
-| `--syntax-keyword-foreground` | `#ffb5ab` | keywords, storage, control, tags |
-| `--syntax-string-foreground` | `#b4d7ff` | strings and attribute names |
-| `--syntax-number-foreground` | `#79b8ff` | numeric/language constants |
-| `--syntax-type-foreground` | `#79b8ff` | types, classes, interfaces, namespaces |
-| `--syntax-invalid-foreground` | `#ffa198` | invalid tokens, with underline |
+Syntax roles reuse only normative palette values from `mockups/01-quiet-workspace.html:8-9`: default `#e6edf3`, comment `#a7b1bd`, keyword `#ffb5ab`, string `#b4d7ff`, number/type `#79b8ff`, and invalid `#ffa198`.
 
 ---
 
 ## Geometry and Density
 
-| Element | Contract |
-|---------|----------|
-| Border | 1px by default; 2px focus outline and diff rails; 3px selected-file rail |
-| Compact status radius | 3px |
-| Tree-row / compact-nav radius | 5px |
-| Control / input radius | 6px |
-| Dialog radius | 10px |
-| Standard control | 36px minimum height; compact toolbar controls 30px; mobile primary and close actions 44px minimum target |
-| Changed-file row | 34px minimum height, 8px inline gap, dense single-line filename with fixed status/count columns |
-| Diff row | 26px desktop, 24px mobile, 28px only at `min-width: 1650px` |
-| Diff columns | 42px line-number gutter, 18px sign column, fluid code column |
-| Desktop sidebar | 294px at the 1440px reference viewport |
-| Compact sidebar | 248px at `max-width: 1050px` |
-| Wide sidebar | 320px at `min-width: 1650px` |
-| Dialog | `min(560px, calc(100% - 24px))`, maximum height `85dvh` |
-| Local diff overflow | Never create document-level horizontal overflow; retain the existing 640px local Monaco canvas contract until Phase 10 applies its final reading treatment |
+Phase 08 authors these density tokens but does not restructure their consumers.
 
-Borders, not shadows or floating cards, separate persistent work areas. Shadow is reserved for an open overlay only. Controls, status chips, selected rows, and overlays receive radii; continuous shell regions remain square.
+| Element | Contract | Evidence |
+|---------|----------|----------|
+| Borders and focus | `1px` default, `2px` focus outline, `3px` selected rail | `mockups/01-quiet-workspace.html:9` |
+| Radii | `5px` file row, `6px` control, `10px` dialog, `8px` scrollbar thumb | `mockups/01-quiet-workspace.html:9` |
+| Standard and mobile controls | `36px` minimum height at every viewport | Default and mobile rules at `mockups/01-quiet-workspace.html:9,12` |
+| Compact toolbar control | `30px` minimum height | `mockups/01-quiet-workspace.html:9` |
+| Changed-file row | Two-line row, `60px` minimum height, with spacing defined above | `mockups/01-quiet-workspace.html:9` (`.file-button`) |
+| Diff row | `26px` reference desktop, `24px` mobile, `28px` wide | `mockups/01-quiet-workspace.html:9,10,12` |
+| Diff columns | `42px` number gutter and `18px` sign column; mobile unified uses `30px`, `30px`, and `16px` | `mockups/01-quiet-workspace.html:9,12` |
+| Sidebar | `294px` reference desktop, `248px` at `max-width: 1050px`, `320px` at `min-width: 1650px` | `mockups/01-quiet-workspace.html:9-11` |
+| Dialog | `min(560px, calc(100% - 24px))`, maximum height `85dvh` | `mockups/01-quiet-workspace.html:9` |
+
+Borders, not shadows or floating cards, separate persistent work areas. Shadow is reserved for an open overlay. Controls, selected rows, and overlays receive radii; continuous shell regions remain square.
+
+The `60px` file-row token records the normative Phase 08 foundation. It does **not** require the Phase 09 tree's markup or single-line density. Phase 09 owns any explicit cutover to the `01b` tree row.
+
+---
+
+## Visual Hierarchy
+
+1. **Context:** the ordered comparison identity establishes Base and Head before the reviewer enters the content.
+2. **Primary focal point:** the selected file's Base/Head diff is the main review surface and receives the largest uninterrupted canvas.
+3. **Supporting hierarchy:** the changed-file ledger supports navigation and progress; the review rail supports comments and summary. Neither competes visually with the selected diff.
+4. Selection uses background, boundary, rail, and accessible selected/current state together; color alone never carries selection.
+
+This hierarchy comes from the structure in `mockups/01-quiet-workspace.html:19-26`; it introduces no new numeric value. `01b` remains supporting evidence for Phase 09's eventual tree structure only.
 
 ---
 
 ## Component Inventory
 
-Phase 08 defines shared visual primitives only. It does not restructure the later surfaces.
+| Primitive / consumer | Phase 08 contract |
+|----------------------|-------------------|
+| Root theme | One `src/web/styles.css :root` containing the semantic color, type, spacing, radius, and density tokens above |
+| Buttons and inputs | Consume neutral, primary, destructive, hover, active, disabled, and focus tokens; no component-local palette |
+| Status badges and notices | Consume semantic status roles; meaning remains in text/icon as well as color; Phase 08 does not add badge markup |
+| Changed-file rows | Expose shared tokens only; Phase 09 owns tree markup, filtering, keyboard behavior, and its explicit density cutover |
+| Monaco diff | Resolve canvas, gutters, line numbers, selection, widgets, syntax, line/intraline fills, hunk regions, scrollbars, and focus from the same root |
+| Shell, dialogs, comments, review rail | Receive tokens only; Phase 11 owns their composition and surface restyle |
+| Export, recovery, receipts | Receive tokens only; behavior and copy remain unchanged |
+| Icons | Reuse `UiIcon.vue`, `currentColor`, decorative SVG hidden from accessibility APIs; visible controls retain text or an accessible name |
 
-| Primitive / consumer | Required token contract |
-|----------------------|-------------------------|
-| Root theme | One `src/web/styles.css :root`; color, typography, spacing, radius, and density declarations above |
-| Buttons and icon buttons | Neutral, primary, destructive, selected, hover, active, disabled, focus-visible; text and icon inherit the same semantic foreground |
-| Inputs and textareas | Canvas fill, control border, primary text, muted placeholder, focus ring; no component-specific colors |
-| Status badges and notices | Modified, added/success, deleted/error, warning/stale, resolved, information, pending, disabled roles; meaning remains in text/icon as well as color |
-| Tree rows | Default, hover, selected, viewed, unsupported, and unavailable token states; Phase 09 owns their markup and behavior |
-| Shell bands and dialogs | Canvas, sidebar, panel, raised, borders, overlay radius; Phase 11 owns composition |
-| Monaco diff | Canvas, gutters, line numbers, selection, widgets, syntax, line/intraline fills, hunk regions, scrollbars, focus, added solid rail, removed dashed rail |
-| Inline comments and comments rail | Reuse panel, border, status, focus, and destructive roles; Phase 11 owns surface styling |
-| Export/recovery/receipt surfaces | Reuse panel, notice, status, code-text, focus, and destructive roles; behavior and copy remain unchanged |
-| Icons | Existing `UiIcon.vue`, 16px, `currentColor`, decorative SVG hidden from accessibility APIs; visible controls retain text or an accessible name |
-
-Do not add a token wrapper component, theme provider, component library, or new icon dependency. The CSS root and Monaco resolver are sufficient.
+Do not add a token wrapper component, theme provider, component library, icon dependency, or third-party registry.
 
 ---
 
-## Interaction State Contract
+## Interaction and Responsive Contract
 
-| State | Visual contract |
-|-------|-----------------|
-| Default | Primary or muted text on the assigned surface with a 1px semantic boundary where needed |
-| Hover | Neutral controls/rows move to `--surface-raised`; primary CTA moves to `--interactive-accent-emphasis-hover` |
-| Active / selected | Selected background plus border and a 3px rail; selection is also announced by `aria-current`, `aria-selected`, or `aria-pressed` as appropriate |
-| Focus visible | 2px `--focus-ring` outline with 3px offset; overlays may use an inset offset only where clipping would hide the ring |
-| Disabled | Preserve readable text, remove hover response, and expose native/ARIA disabled state; opacity alone must not carry meaning |
-| Added / removed | Addition uses `+` and a solid rail; deletion uses `−` and a dashed rail in addition to color |
-| Pending | Keep the initiating label in progress form and expose busy/status semantics; do not swap layout dimensions |
-| Reduced motion | Set nonessential transition and animation duration to zero; no content or state may disappear |
-
-Phase 08 changes presentation tokens only. Selection, focus movement, dialog return focus, comment commands, persistence, export, and completion mechanics remain the existing behavior authority.
-
----
-
-## Responsive Behavior
-
-### Reference viewports
-
-| Reference | Viewport | Contract |
-|-----------|----------|----------|
-| `01b-desktop.png` | 1440 × 1000 | Primary desktop reference: 294px persistent tree, continuous diff canvas, compact 34px tree rows and 26px code rows |
-| `01b-desktop-full.png` | 1440 × 1000 | Same viewport and token values; validates the complete desktop composition, not a second breakpoint |
-| `01b-mobile.png` | 420 × 900 | Primary mobile reference: one-column workspace, files presented in a bounded dialog, no page-level horizontal overflow |
-
-### Breakpoints
-
-- Default through 1649px: 294px files pane and 26px diff rows.
-- `max-width: 1050px`: files pane becomes 248px and desktop padding uses the 12px/16px scale without changing token values.
-- `max-width: 760px`: persistent files pane is removed from layout and tab order while closed; the files dialog uses the overlay geometry above. Shell padding is 12px, standard mobile actions expose at least 44px targets, and only an inner diff viewport may scroll horizontally.
-- `min-width: 1650px`: files pane becomes 320px and diff rows become 28px; colors, radii, and semantic states remain identical.
-- Dark tokens do not change by viewport. Responsive rules may change composition, dimensions, or density only.
+- Default, hover, selected, focus-visible, disabled, pending, success, warning, error, and resolved states consume the semantic roles above.
+- Added and removed meaning retains plus/minus text and solid/dashed rails in addition to color.
+- The `2px` focus outline and `3px` offset come from `mockups/01-quiet-workspace.html:9`; clipping containers may place the same ring inside rather than hide it.
+- At `max-width: 1050px`, only the mockup's compact-desktop dimensions from `mockups/01-quiet-workspace.html:11` apply.
+- At `max-width: 760px`, the workspace becomes one column and the persistent sidebar is hidden per `mockups/01-quiet-workspace.html:12`; controls remain `36px` high, not enlarged by this phase.
+- At `min-width: 1650px`, only the wide sidebar and Monaco type/row overrides from `mockups/01-quiet-workspace.html:10` apply.
+- Dark tokens do not change by viewport. Only dimensions and composition may respond.
+- Phase 08 must not implement the files dialog, tree structure, diff treatment, or shell rearrangement implied by later phases; it only makes the shared tokens available.
 
 ---
 
 ## Accessibility Contract
 
 - Keep `color-scheme: dark`; do not add a light theme.
-- Every keyboard-operable control receives the 2px focus ring. Focus indication cannot rely on background change alone.
-- Status, diff side, and selection meaning must survive grayscale: retain text labels, plus/minus signs, solid/dashed rails, badges, and accessible state attributes.
-- Hidden sidebars/drawers are removed from tab order and accessibility exposure. Dialogs trap focus while open and return focus to their trigger.
-- Preserve the file → Base → Head reading order on mobile even when visual composition changes.
-- Use live regions only through the existing single-owner announcements; restyling must not create duplicate announcements.
-- `prefers-reduced-motion` removes nonessential motion. `forced-colors` continues to use system colors rather than forcing the dark palette.
-- Composited WCAG contrast recertification, 320px, true 400% zoom, and the broader v1.1 accessibility gate battery remain explicitly deferred by `DEFER-04`; this phase must not regress existing structural semantics.
+- Every keyboard-operable control receives the evidenced focus ring. Focus cannot rely on background change alone.
+- Status, diff side, and selection survive grayscale through labels, plus/minus signs, solid/dashed rails, and accessible state attributes.
+- Hidden sidebars and drawers leave the tab order and accessibility tree. Dialogs trap focus while open and return focus to their trigger.
+- Preserve file → Base → Head reading order when composition changes.
+- Use existing single-owner live regions; restyling must not create duplicate announcements.
+- `prefers-reduced-motion` removes nonessential motion. `forced-colors` uses system colors rather than forcing this palette.
+- Broader contrast, zoom, and reflow recertification remains deferred by `DEFER-04`; this phase must not regress existing structural semantics.
 
 ---
 
 ## Copywriting Contract
 
-These strings are the shared visual examples and must not be rewritten by this foundation phase.
+These existing strings are examples for token-state verification and must not be rewritten by this foundation phase.
 
 | Element | Copy |
 |---------|------|
@@ -278,18 +260,19 @@ These strings are the shared visual examples and must not be rewritten by this f
 | Error state | `Cumpa couldn’t load this pinned review. Check that Cumpa is still running, then reload this page.` |
 | Destructive confirmation | `Delete comment?` — `This permanently removes the comment from the local draft. Cumpa has no undo history.` Actions: `Keep comment` and `Delete comment`. |
 
-Voice is direct and operational: name the state, say what remains safe, then give one next action. Do not claim that export, finish, save, or publication succeeded unless the existing workflow has confirmed it.
+Voice is direct and operational: name the state, say what remains safe, then give one next action. Never claim that export, finish, save, or publication succeeded unless the existing workflow confirms it.
 
 ---
 
-## Continuity Constraints
+## Export and Review Continuity
 
-Token application must preserve these existing contracts; Phase 08 does not redesign them:
+Token application must preserve these upstream contracts exactly:
 
-- Export remains an intentional user action. Stale revision, corrupt/read-only draft, and selector-drift states stay explicit.
+- Export remains an intentional user action.
+- Stale-revision, corrupt/read-only draft, and selector-drift states remain explicit.
 - Selector drift may be acknowledged without refreshing the pinned comparison.
 - `.gitignore` is append-only after explicit consent and is never changed automatically.
-- Progress or failure copy never implies that one half of the JSON/Markdown pair was successfully published.
+- Progress and failure copy never imply that one half of the JSON/Markdown pair was successfully published.
 - Receipts retain relative paths, hashes, accepted revision, time, drift details, and copy/reveal actions.
 - Resolved, stale, and orphaned comments remain visible history and non-actionable exactly as the upstream review/export contract requires.
 
@@ -297,24 +280,22 @@ Token application must preserve these existing contracts; Phase 08 does not rede
 
 ## Automated Parity Check
 
-`tests/unit/monaco-theme.test.ts` is the drift gate. The implementation plan must update it to assert all of the following:
+`tests/unit/monaco-theme.test.ts` is the color-drift gate. The implementation plan must make it:
 
-1. Parse the single `src/web/styles.css :root` block and reject a missing or duplicate required semantic token.
-2. Build the Monaco theme using that parsed root as the resolver. Every Monaco color key and token scope must map to an allowlisted semantic token; theme source must contain no literal palette value.
-3. Parse each CSS and Monaco color to an RGBA byte tuple and require exact tuple equality. Eight-digit alpha bytes are compared too. For tokenizer rules, remove the API-required leading `#` before parsing and make no other transformation.
-4. Require the stronger addition/deletion intraline byte values to differ from their line fills and retain the same semantic hue role.
-5. Reject color literals in component styles and in `styles.css` outside the canonical root, excluding `transparent`, `currentColor`, and forced-colors system keywords.
-6. Cover at minimum editor canvas/foreground/gutter/line number/cursor/selection/whitespace/indent guides, widget surfaces and borders, scrollbar states, diff line/intraline/gutter/overview/hunk/empty states, focus border, and every syntax role listed above.
+- parse the single canonical root and reject missing or duplicate required semantic tokens;
+- build Monaco from semantic token names and reject literal palette values in the theme source;
+- compare parsed CSS and Monaco color bytes exactly, including alpha;
+- verify that the approved intraline continuity additions differ from the normative line fills;
+- reject component-local color literals outside the canonical root, except `transparent`, `currentColor`, and forced-colors system keywords;
+- cover canvas, foreground, gutters, line numbers, cursor, selection, whitespace, indent guides, widgets, scrollbars, line/intraline diff states, hunk/empty regions, focus, and syntax roles.
 
-`tests/e2e/responsive-session.spec.ts` remains the rendered-computation gate. At 1440 × 1000 and 420 × 900 it must read the canonical variables from the real workspace, assert the four-size/two-weight typography contract, radii and density, confirm retired palette variables are absent, and confirm representative controls, statuses, diff surfaces, and overlays compute to their assigned tokens. It must not duplicate a separately maintained expected palette: expected values come from the canonical root fixture or one shared contract export.
-
-The visual comparison target is `mockups/01b-desktop.png`, `mockups/01b-desktop-full.png`, and `mockups/01b-mobile.png`. Later phases own surface-specific screenshot equivalence; Phase 08 owns the tokens and parity gate they consume.
+`tests/e2e/responsive-session.spec.ts` remains the computed-style gate at the project's existing reference desktop and mobile captures. Expected values must come from the canonical root or one shared contract export, never a separately maintained palette. Later phases own surface screenshot equivalence; Phase 08 owns only the tokens and parity gate they consume.
 
 ---
 
 ## Registry Safety
 
-| Registry | Blocks Used | Safety Gate |
+| Registry | Blocks used | Safety gate |
 |----------|-------------|-------------|
 | none | none | not applicable — no shadcn or third-party registry |
 
@@ -322,13 +303,12 @@ The visual comparison target is `mockups/01b-desktop.png`, `mockups/01b-desktop-
 
 ## Non-Goals
 
-- No changed-file tree markup, filtering, navigation, or restyling; Phase 09 owns it.
+- No changed-file tree markup, filtering, navigation, badge introduction, or restyling; Phase 09 owns it.
 - No Monaco layout, line mapping, comment anchoring, context expansion, or diff-surface redesign; Phase 10 owns it.
-- No shell, header, toolbar, dialog, inline-comment, comments-rail, review-note, export, or receipt composition change; Phase 11 owns it.
+- No shell, header, toolbar, dialog, inline-comment, review-rail, export, or receipt composition change; Phase 11 owns it.
 - No review, draft, persistence, export, attached-session, or support behavior change; Phase 12 proves continuity.
-- No viewed tracking, Unviewed filter, hunk-jump navigation, or wrap-lines control from the prototype.
+- No viewed tracking, unviewed filter, hunk-jump navigation, or wrap-lines behavior from the prototype.
 - No light theme, theme switching, new component library, webfont, icon package, shadow-heavy card system, or decorative motion.
-- No broad contrast recertification beyond preserving existing structural accessibility behavior.
 
 ---
 
