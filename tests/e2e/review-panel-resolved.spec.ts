@@ -2,6 +2,26 @@ import { expect, test } from '@playwright/test';
 import type { ViteDevServer } from 'vite';
 import { createServer } from 'vite';
 
+type ReviewPanelHarnessState =
+  | Readonly<{ readonly pending: null; readonly retainedSummary: true }>
+  | Readonly<{
+    readonly failure: Readonly<{ readonly operation: 'summary' }>;
+    readonly retainedSummary: false;
+  }>
+  | Readonly<{ readonly failure: null }>
+  | Readonly<{ readonly pending: null; readonly selectedCommentId: string }>
+  | Readonly<{
+    readonly failure: Readonly<{
+      readonly operation: 'comment';
+      readonly commentId: string;
+    }>;
+  }>;
+
+declare global {
+  var __setReviewPanelState: (nextState: ReviewPanelHarnessState) => void;
+}
+
+
 let server: ViteDevServer;
 let serverUrl: string;
 
