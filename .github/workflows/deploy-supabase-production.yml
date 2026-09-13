@@ -24,6 +24,7 @@ jobs:
           deno-version: v2.7.14
       - run: npm ci
       - run: npm run build
+      - run: npm run typecheck:tests
       - run: npx playwright install --with-deps chromium
       - run: npx vitest run --no-file-parallelism
       - run: npx playwright test tests/e2e/support-payment.spec.ts tests/e2e/support-restore.spec.ts
