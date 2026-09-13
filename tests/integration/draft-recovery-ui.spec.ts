@@ -13,7 +13,7 @@ import {
 } from '../../src/contracts/api.js';
 import { createServer, type ViteDevServer } from 'vite';
 import { canonicalRoot } from '../helpers/canonical-root.js';
-import { toCssRgb } from '../../src/web/theme/token-contract.js';
+import { resolveToken, toCssRgb } from '../../src/web/theme/token-contract.js';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
 const canonicalTokens = canonicalRoot(repositoryRoot);
@@ -206,13 +206,13 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   await expect(recovery).toHaveCSS('background-color', toRootRgb('--surface-canvas'));
   await expect(card).toHaveCSS('background-color', toRootRgb('--surface-panel'));
   await expect(card).toHaveCSS('border-color', toRootRgb('--border-default'));
-  await expect(card).toHaveCSS('border-radius', '6px');
+  await expect(card).toHaveCSS('border-radius', resolveToken(canonicalTokens, '--radius-control'));
   await expect(card).toHaveCSS('box-shadow', 'none');
   await expect(badge).toHaveCSS('border-style', 'solid');
   await expect(badge).toHaveCSS('border-width', '1px');
   await recoveryAction.focus();
   await expect(recoveryAction).toHaveCSS('outline-color', toRootRgb('--focus-ring'));
-  await expect(recoveryAction).toHaveCSS('outline-width', '2px');
+  await expect(recoveryAction).toHaveCSS('outline-width', resolveToken(canonicalTokens, '--focus-outline-width'));
   await expect(recoveryAction).toHaveCSS('outline-offset', '2px');
 
   await page.getByRole('button', { name: 'Reveal draft file' }).click();

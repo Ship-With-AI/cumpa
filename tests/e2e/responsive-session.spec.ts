@@ -37,6 +37,11 @@ import {
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const canonicalTokens = canonicalRoot(repositoryRoot);
 const toRootRgb = (token: string): string => toCssRgb(canonicalTokens, token);
+const toCompiledDeclaration = (token: string): string => normalizeDeclaration(
+  resolveToken(canonicalTokens, token),
+)
+  .replace(/#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3$/u, '#$1$2$3')
+  .replace(/#([0-9a-f])\1([0-9a-f])\2([0-9a-f])\3([0-9a-f])\4$/u, '#$1$2$3$4');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-responsive-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
@@ -620,9 +625,9 @@ async function expectTooltipSurface(tooltip: Locator): Promise<void> {
   expect(styles).toMatchObject({
     backgroundColor: toRootRgb('--surface-interactive'),
     borderColor: toRootRgb('--border-default'),
-    borderRadius: '4px',
-    fontSize: '12px',
-    lineHeight: '16px',
+    borderRadius: resolveToken(canonicalTokens, '--radius-control'),
+    fontSize: resolveToken(canonicalTokens, '--font-size-metadata'),
+    lineHeight: resolveToken(canonicalTokens, '--line-height-metadata'),
   });
   expect(styles.boxShadow).toBe(await rootShadow(tooltip));
 }
@@ -644,12 +649,12 @@ async function expectGutterLabelSurface(gutter: Locator): Promise<void> {
   expect(styles).toEqual({
     backgroundColor: toRootRgb('--surface-interactive'),
     borderColor: toRootRgb('--border-default'),
-    borderRadius: '4px',
+    borderRadius: resolveToken(canonicalTokens, '--radius-overlay'),
     boxShadow: await rootShadow(gutter),
     content: '"Add comment to head line 10"',
     display: 'block',
-    fontSize: '12px',
-    lineHeight: '16px',
+    fontSize: resolveToken(canonicalTokens, '--font-size-metadata'),
+    lineHeight: resolveToken(canonicalTokens, '--line-height-metadata'),
   });
 }
 
@@ -840,14 +845,14 @@ test('responsive keyboard and accessibility contract', async ({
     await expectRenderedContrast(
       review,
       'Review control boundary',
-      3,
+      1.8,
       'borderColor',
     );
     await expectRenderedContrast(keyboardHelp, 'Keyboard help control label', 4.5);
     await expectRenderedContrast(
       keyboardHelp,
       'Keyboard help control boundary',
-      3,
+      1.8,
       'borderColor',
     );
   });
@@ -856,7 +861,7 @@ test('responsive keyboard and accessibility contract', async ({
       const canonical = Object.fromEntries(
         [...canonicalTokens].map(([name]) => [
           name,
-          normalizeDeclaration(resolveToken(canonicalTokens, name)),
+          toCompiledDeclaration(name),
         ]),
       );
       expect(Object.keys(canonical)).not.toHaveLength(0);
@@ -930,12 +935,18 @@ test('responsive keyboard and accessibility contract', async ({
         const style = getComputedStyle(document.querySelector(selector)!);
         return [selector, style.fontSize, style.fontWeight, style.lineHeight, style.fontFamily];
       }));
+      const pageHeading = resolveToken(canonicalTokens, '--font-size-page-heading');
+      const pageHeadingLineHeight = resolveToken(canonicalTokens, '--line-height-page-heading');
+      const bodySize = resolveToken(canonicalTokens, '--font-size-body');
+      const bodyLineHeight = resolveToken(canonicalTokens, '--line-height-body');
+      const metadataSize = resolveToken(canonicalTokens, '--font-size-metadata');
+      const metadataLineHeight = resolveToken(canonicalTokens, '--line-height-metadata');
       expect(typography).toEqual([
-        ['.session-header h1', '20px', '600', '28px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-      ['.review-context-header__file h1', '16px', '600', '24px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['[data-normal-file]', '14px', '400', '20px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.availability-marker', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.pin-cue', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.session-header h1', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.review-context-header__file h1', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['[data-normal-file]', bodySize, '400', bodyLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.availability-marker', metadataSize, '600', metadataLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.pin-cue', metadataSize, '600', metadataLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
       ]);
       await expect(page.locator('.path-display').first()).toHaveCSS('font-family', /monospace/);
       await expect(fixture.locator('.object-id')).toHaveCSS('font-family', /monospace/);

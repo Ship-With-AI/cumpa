@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { expect, test, type Page } from '@playwright/test';
 import { createServer, type ViteDevServer } from 'vite';
 import { canonicalRoot } from '../helpers/canonical-root.js';
-import { toCssRgb } from '../../src/web/theme/token-contract.js';
+import { resolveToken, toCssRgb } from '../../src/web/theme/token-contract.js';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
 const canonicalTokens = canonicalRoot(repositoryRoot);
@@ -263,16 +263,16 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
     await page.setViewportSize({ width, height: 720 });
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await expect(receipt).toBeVisible();
-    await expect(receipt.locator('h4')).toHaveCSS('font-size', '16px');
+    await expect(receipt.locator('h4')).toHaveCSS('font-size', resolveToken(canonicalTokens, '--font-size-page-heading'));
     await expect(receipt.locator('h4')).toHaveCSS('font-weight', '600');
-    await expect(receipt.locator('h4')).toHaveCSS('line-height', '24px');
+    await expect(receipt.locator('h4')).toHaveCSS('line-height', resolveToken(canonicalTokens, '--line-height-page-heading'));
     await expect(receipt).toHaveCSS('background-color', toRootRgb('--surface-panel'));
     await expect(receipt).toHaveCSS('border-color', toRootRgb('--border-default'));
-    await expect(receipt).toHaveCSS('border-radius', '6px');
+    await expect(receipt).toHaveCSS('border-radius', resolveToken(canonicalTokens, '--radius-control'));
     await expect(receipt).toHaveCSS('box-shadow', 'none');
     await expect(jsonRow).toHaveCSS('background-color', toRootRgb('--surface-canvas'));
     await expect(jsonRow).toHaveCSS('border-color', toRootRgb('--border-default'));
-    await expect(jsonRow).toHaveCSS('border-radius', '6px');
+    await expect(jsonRow).toHaveCSS('border-radius', resolveToken(canonicalTokens, '--radius-control'));
     await expect(jsonRow).toHaveCSS('box-shadow', 'none');
   }
 
