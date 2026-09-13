@@ -126,10 +126,21 @@ Plans:
 
 **Expected test impact**:
 
-- Update shell, dialog, and presentation selectors in `tests/e2e/responsive-session.spec.ts`, `tests/integration/complete-review-panel.spec.ts`, `tests/integration/export-receipt-ui.spec.ts`, and `tests/integration/anchored-workspace.spec.ts` for the new composition.
-- Keep warning behavior in `tests/integration/selector-drift-ui.spec.ts` and `tests/integration/draft-recovery-ui.spec.ts`, comment mechanics in `tests/e2e/anchored-review.spec.ts`, and all selector-drift, draft, persistence, export, attached-completion, and support contract tests passing unchanged.
+- Update shell, dialog, and presentation selectors in `tests/e2e/responsive-session.spec.ts`, `tests/e2e/pinned-session.spec.ts`, `tests/integration/export-receipt-ui.spec.ts`, and `tests/integration/anchored-workspace.spec.ts` for the new composition.
+- Re-point summary/export/attached-completion assertions that reach those surfaces through the comments rail: `tests/e2e/agent-ready-export-safety.spec.ts` (harness mounts `ReviewPanel.vue` directly at `:18`), `tests/e2e/complete-review-draft.spec.ts:328-329`, and `tests/integration/selector-drift-ui.spec.ts:342-360`.
+- Re-author the REV-05 live-owner assertions: `tests/e2e/review-panel-resolved.spec.ts:331-342` (lines 333 and 342 share one locator built at `:332`; the visual block at `:344-353` stays byte-unchanged) and `tests/integration/selector-drift-ui.spec.ts:336` (locates the notice by the exact `role="status"` REV-05 removes, so it cannot stay unchanged).
+- `tests/integration/complete-review-panel.spec.ts` needs no edit — it is a 33-line `createReviewDraftState` model test with zero DOM selectors.
+- Keep draft-recovery behavior in `tests/integration/draft-recovery-ui.spec.ts`, comment mechanics in `tests/e2e/anchored-review.spec.ts`, the Phase 09 tree contract in `tests/e2e/file-tree.spec.ts`, the Phase 10 diff contract in `tests/integration/monaco-anchor.spec.ts`, and all persistence, export, attached-completion, and support contract tests passing unchanged.
 
-**Plans**: TBD
+**Plans:** 6 plans
+
+Plans:
+- [ ] 11-01-PLAN.md — Geometry tokens, breakpoint unification, drift-gate realignment, ModalDialog extraction
+- [ ] 11-02-PLAN.md — Shell chrome: identity header, active-file toolbar, footer, sidebar hide/restore
+- [ ] 11-03-PLAN.md — Details dialog: identity, revived file metadata, keyboard help
+- [ ] 11-04-PLAN.md — ReviewPanel split: comments rail and Review-notes dialog
+- [ ] 11-05-PLAN.md — Narrow reflow and the Changed files dialog
+- [ ] 11-06-PLAN.md — REV-05 shell warning stack and single-owner live behaviour
 
 ### Phase 12: Behavior Continuity
 
