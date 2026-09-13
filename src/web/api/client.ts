@@ -32,6 +32,7 @@ import {
   type FileMetadataResponse,
   type SupportAction,
   type SupportStartResult,
+  type SupportStatus,
   SelectorDriftResponseSchema,
   type SelectorDriftResponse,
   PatchStatusResponseSchema,
@@ -157,7 +158,7 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
     }
   };
 
-  return Object.freeze({
+  const client: SessionClient = {
     async getSupportStatus() {
       const result = SupportStatusSchema.safeParse(await requestJson('/api/support/status', 'GET', 'session'));
       if (!result.success) throw new SessionClientError('session', SESSION_UNAVAILABLE_MESSAGE);
@@ -324,5 +325,6 @@ export function createSessionClient(environment: SessionClientEnvironment = {}):
       }
       return result.data;
     },
-  });
+  };
+  return Object.freeze(client);
 }
