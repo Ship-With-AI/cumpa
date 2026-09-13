@@ -28,7 +28,7 @@
 
 ### Retained Technical Debt
 
-- Remove the stale deleted `tests/e2e/support-recovery.spec.ts` workflow filter and verifier contract.
+- **TD-1 (closed 2026-09-13 — 260913-dzc):** Removed the stale deleted `tests/e2e/support-recovery.spec.ts` workflow filter and verifier contract.
 - Remove unused local `GET /api/support/status` and `SessionClient.getSupportStatus()` surfaces.
 
 ### Archives
