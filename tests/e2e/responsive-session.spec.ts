@@ -557,7 +557,9 @@ async function expectNonColorStateCues(page: Page): Promise<void> {
   await expect(sideLabels).toHaveText(/BASE− REMOVEDHEAD\+ ADDED/);
   await expect(sideLabels.locator(':scope > span').first()).toHaveCSS('font-weight', '600');
   await expect(selected).toBeVisible();
-  await expect(selected).toHaveCSS('border-left-width', '3px');
+  expect(await selected.evaluate((element) => getComputedStyle(element, '::before').width)).toBe(
+    resolveToken(canonicalTokens, '--selected-rail-width'),
+  );
   await expect(selected.locator('.availability-marker--text')).toHaveClass(/visually-hidden/);
   const [selectedBox, filesBox, countsBox] = await Promise.all([
     selected.boundingBox(),
