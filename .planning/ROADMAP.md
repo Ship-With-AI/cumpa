@@ -42,7 +42,14 @@ Cumpa restyles the existing browser review workspace to the approved visual cont
 - Update the palette and presentation expectations in `tests/unit/monaco-theme.test.ts` and the semantic-style assertions in `tests/e2e/responsive-session.spec.ts` to the canonical root.
 - Keep `tests/unit/monaco-diff-semantics.test.ts`, `tests/unit/monaco-diff-adapter.test.ts`, `tests/unit/workspace-state.test.ts`, and the API, Git, draft, persistence, and export contract suites passing unchanged.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Pure token contract, build-time root injection, and the shared node loader (wave 1)
+- [ ] 08-02-PLAN.md — Re-derive the canonical semantic token root and cut every CSS consumer and DESIGN.md over to it (wave 1)
+- [ ] 08-03-PLAN.md — Derive the Monaco theme from the canonical root and turn the parity mirror into a real gate (wave 2)
+- [ ] 08-04-PLAN.md — Re-derive, harden, and wire the stray-literal and token-structure audit (wave 2)
+- [ ] 08-05-PLAN.md — Derive browser expectations from the root, take the browser suite green, and confirm the contract at the reference viewports (wave 3)
 
 ### Phase 09: Changed-File Tree
 
