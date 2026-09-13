@@ -865,8 +865,8 @@ test('responsive keyboard and accessibility contract', async ({
     await page.setViewportSize({ width: 1440, height: 560 });
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toContainText(
-      'Cumpa: Base responsive fixture',
+    await expect(page.locator('.session-header__comparison')).toContainText(
+      'BASEBase responsive fixture',
     );
 
   await test.step('rendered real workspace contrast contract', async () => {
@@ -1531,7 +1531,7 @@ test('responsive keyboard and accessibility contract', async ({
       expect(wideSidebarWidth).toBeGreaterThan(compactSidebarWidth);
       await page.setViewportSize({ width: 761, height: 560 });
       await assertFilesCollapse(761);
-      const identityDisclosure = page.getByRole('button', { name: 'Comparison identities', exact: true });
+      const identityDisclosure = page.getByRole('button', { name: 'Details', exact: true });
       await identityDisclosure.click();
       await expect(page.locator('.identity-panel--modal')).toHaveCount(0);
       await page.keyboard.press('Escape');
@@ -1598,7 +1598,7 @@ test('responsive keyboard and accessibility contract', async ({
     });
     await test.step('narrow identity sheet traps focus and restores disclosure', async () => {
       const disclosure = page.getByRole('button', {
-        name: 'Comparison identities',
+        name: 'Details',
         exact: true,
       });
       await expectMinimumTarget(disclosure);

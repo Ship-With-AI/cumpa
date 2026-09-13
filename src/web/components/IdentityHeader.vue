@@ -16,6 +16,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   toggle: [];
+  reviewNotes: [];
   support: [];
 }>();
 
@@ -23,12 +24,18 @@ const support = ref<HTMLButtonElement>();
 
 const disclosure = ref<HTMLButtonElement>();
 const isExactPatch = computed(() => 'patch' in props.session);
-const patchSession = computed(() => 'patch' in props.session ? props.session : undefined);
 const pinnedSession = computed(() => 'base' in props.session ? props.session : undefined);
-const heading = computed(() =>
-  isExactPatch.value
-    ? `exact patch · ${patchSession.value!.patch.digest.slice(0, 12)}`
-    : `${controlSafeDisplay(pinnedSession.value!.base.label)} · ${pinnedSession.value!.base.oid.slice(0, 7)} → ${controlSafeDisplay(pinnedSession.value!.head.label)} · ${pinnedSession.value!.head.oid.slice(0, 7)}`,
+const baseLabel = computed(() =>
+  controlSafeDisplay(pinnedSession.value?.base.label ?? 'Repository object'),
+);
+const baseOid = computed(() =>
+  controlSafeDisplay(pinnedSession.value?.base.oid.slice(0, 7) ?? ''),
+);
+const headLabel = computed(() =>
+  controlSafeDisplay(pinnedSession.value?.head.label ?? 'Implemented content'),
+);
+const headOid = computed(() =>
+  controlSafeDisplay(pinnedSession.value?.head.oid.slice(0, 7) ?? ''),
 );
 const isRange = computed(() => pinnedSession.value?.range?.kind === 'revisions');
 const panelId = computed(() =>
@@ -68,9 +75,38 @@ defineExpose({ focusDisclosure, focusSupport });
 
 <template>
   <header class="session-header">
-    <h1><span class="session-header__product">Cumpa:</span> <span class="session-header__comparison">{{ heading }}</span></h1>
+    <div class="session-header__identity">
+      <div class="session-header__brand" role="img" aria-label="Cumpa">
+        <span aria-hidden="true">‹/›</span>
+        <span>Cumpa</span>
+      </div>
+      <div class="session-header__comparison">
+        <template v-if="isExactPatch">
+          <span class="session-header__endpoint">
+            <span class="session-header__endpoint-label">PREIMAGE</span>
+            <span class="session-header__selector" title="Repository object">Repository object</span>
+          </span>
+          <span aria-hidden="true">→</span>
+          <span class="session-header__endpoint">
+            <span class="session-header__endpoint-label">POSTIMAGE</span>
+            <span class="session-header__selector" title="Implemented content">Implemented content</span>
+          </span>
+        </template>
+        <template v-else>
+          <span class="session-header__endpoint">
+            <span class="session-header__endpoint-label">BASE</span>
+            <span class="session-header__selector" :title="baseLabel">{{ baseLabel }} · {{ baseOid }}</span>
+          </span>
+          <span aria-hidden="true">→</span>
+          <span class="session-header__endpoint">
+            <span class="session-header__endpoint-label">HEAD</span>
+            <span class="session-header__selector" :title="headLabel">{{ headLabel }} · {{ headOid }}</span>
+          </span>
+        </template>
+      </div>
+    </div>
     <div class="header-facts">
-      <span class="pin-cue">{{ isExactPatch ? 'Frozen verified patch' : 'Pinned to displayed commits' }}</span>
+      <span class="pin-cue">{{ isExactPatch ? 'Frozen patch' : 'Pinned comparison' }}</span>
       <span
         v-for="endpoint in dirtyEndpoints"
         :key="endpoint.role"
@@ -97,11 +133,20 @@ defineExpose({ focusDisclosure, focusSupport });
         ref="disclosure"
         type="button"
         class="identity-disclosure"
+        aria-haspopup="dialog"
         :aria-controls="panelId"
         :aria-expanded="expanded"
         @click="emit('toggle')"
       >
-        {{ isExactPatch ? 'View patch scope' : isRange ? 'View review scope' : 'Comparison identities' }}
+        Details
+      </button>
+      <button
+        type="button"
+        class="identity-disclosure"
+        aria-haspopup="dialog"
+        @click="emit('reviewNotes')"
+      >
+        Review notes
       </button>
     </div>
   </header>

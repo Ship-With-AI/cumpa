@@ -434,13 +434,14 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
     );
 
     await proveLoadingTransition(page, url);
-  await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-    `Cumpa: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
-  );
-    await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
-    await page
-      .getByRole('button', { name: 'Comparison identities' })
-      .click();
+    await expect(page.getByRole('img', { name: 'Cumpa' })).toBeVisible();
+    await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveCount(0);
+    await expect(page.locator('.session-header__comparison')).toContainText(
+      `BASEBase fixture · ${expectedBase.slice(0, 7)}→HEADHead fixture · ${expectedHead.slice(0, 7)}`,
+    );
+    await expect(page.getByText('Pinned comparison', { exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Details' })).toHaveAttribute('aria-haspopup', 'dialog');
+    await page.getByRole('button', { name: 'Details' }).click();
     await expect(
       page.locator('.identity-row').nth(0).getByText(expectedBase, { exact: true }),
     ).toBeVisible();
@@ -495,7 +496,7 @@ test('generated range request preserves the server-scoped pinned review', async 
     await expect(page.getByRole('tree')).not.toContainText('at-limit.txt');
     await expect(page.getByRole('tree')).not.toContainText('over-limit.txt');
 
-    const disclosure = page.getByRole('button', { name: 'View review scope' });
+    const disclosure = page.getByRole('button', { name: 'Details' });
     await disclosure.click();
     const scope = page.getByRole('region', { name: 'Review scope' });
     await expect(scope.getByRole('heading', { name: 'Review scope' })).toBeVisible();
@@ -550,8 +551,8 @@ test('range empty state exposes all changed paths without changing interactive c
     const url = await waitForLoopbackUrl(running);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'No changes match this review scope' })).toBeVisible();
-    await expect(page.getByText('The pinned commits contain no changed files. View review scope to inspect the commits.')).toBeVisible();
-    await page.getByRole('button', { name: 'View review scope' }).click();
+    await expect(page.getByText('The pinned commits contain no changed files. Details lists the commits.')).toBeVisible();
+    await page.getByRole('button', { name: 'Details' }).click();
     const scope = page.getByRole('region', { name: 'Review scope' });
     await expect(scope.getByText('All changed paths', { exact: true })).toBeVisible();
   } finally {
@@ -600,7 +601,7 @@ test('narrow range scope is a focused modal sheet', async ({ browser }, testInfo
   try {
     const url = await waitForLoopbackUrl(running);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    const disclosure = page.getByRole('button', { name: 'View review scope' });
+    const disclosure = page.getByRole('button', { name: 'Details' });
     await disclosure.click();
     const scope = page.getByRole('dialog', { name: 'Review scope' });
     const close = scope.getByRole('button', { name: 'Close review scope' });
@@ -871,8 +872,8 @@ test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) 
         });
 
         await page.goto(launchUrl, { waitUntil: 'domcontentloaded' });
-        await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-          `Cumpa: ${matrixCase.selections.base.label} · ${expectedBase.slice(0, 7)} → ${matrixCase.selections.head.label} · ${expectedHead.slice(0, 7)}`,
+        await expect(page.locator('.session-header__comparison')).toContainText(
+          `BASE${matrixCase.selections.base.label} · ${expectedBase.slice(0, 7)}→HEAD${matrixCase.selections.head.label} · ${expectedHead.slice(0, 7)}`,
         );
         await expect(
           page.getByRole('heading', { name: 'Changed files (3)' }),
@@ -898,9 +899,7 @@ test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) 
           }),
         ).toContainText(laterFile.newPath?.display ?? laterFile.oldPath?.display ?? '');
 
-        await page
-          .getByRole('button', { name: 'Comparison identities' })
-          .click();
+        await page.getByRole('button', { name: 'Details' }).click();
         const identities = page.getByRole('region', {
           name: 'Comparison identities',
         });
@@ -972,14 +971,14 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       origin: new URL(url).origin,
     });
     await proveLoadingTransition(page, url);
-    await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveCount(1);
-    await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-      `Cumpa: Base fixture · ${expectedBase.slice(0, 7)} → Head fixture · ${expectedHead.slice(0, 7)}`,
+    await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toHaveCount(0);
+    await expect(page.locator('.session-header__comparison')).toContainText(
+      `BASEBase fixture · ${expectedBase.slice(0, 7)}→HEADHead fixture · ${expectedHead.slice(0, 7)}`,
     );
-    await expect(page.getByText('Pinned to displayed commits')).toBeVisible();
+    await expect(page.getByText('Pinned comparison', { exact: true })).toBeVisible();
 
     const disclosure = page.getByRole('button', {
-      name: 'Comparison identities',
+      name: 'Details',
     });
     await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
     await disclosure.click();
@@ -1144,8 +1143,8 @@ test('identity session and empty states', async ({ browser, context, page }, tes
   try {
     const dirtyUrl = await waitForLoopbackUrl(dirtyRunning);
     await dirtyPage.goto(dirtyUrl, { waitUntil: 'domcontentloaded' });
-    await expect(dirtyPage.locator('.session-header').getByRole('heading', { level: 1 })).toContainText(
-      'Head\\nworktree',
+    await expect(dirtyPage.locator('.session-header__comparison')).toContainText(
+      'HEADHead\\nworktree',
     );
     const dirtyBadge = dirtyPage.getByText('Dirty bytes ignored', {
       exact: true,
@@ -1157,9 +1156,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
         { exact: true },
       ),
     ).toBeAttached();
-    await dirtyPage
-      .getByRole('button', { name: 'Comparison identities' })
-      .click();
+    await dirtyPage.getByRole('button', { name: 'Details' }).click();
     const dirtyPanel = dirtyPage.getByRole('region', {
       name: 'Comparison identities',
     });
@@ -1184,8 +1181,8 @@ test('identity session and empty states', async ({ browser, context, page }, tes
   try {
     const emptyUrl = await waitForLoopbackUrl(emptyRunning);
     await emptyPage.goto(emptyUrl, { waitUntil: 'domcontentloaded' });
-    await expect(emptyPage.locator('.session-header').getByRole('heading', { level: 1 })).toHaveText(
-      /Cumpa: Base fixture · [0-9a-f]{7} → Head fixture · [0-9a-f]{7}/,
+    await expect(emptyPage.locator('.session-header__comparison')).toContainText(
+      /BASEBase fixture · [0-9a-f]{7}→HEADHead fixture · [0-9a-f]{7}/,
     );
     await expect(
       emptyPage.getByRole('heading', { level: 2, name: 'No PR-style changes in this pinned comparison' }),
@@ -1198,9 +1195,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     await expect(emptyPage.getByText('Opening pinned comparison…')).toHaveCount(0);
     await expect(emptyPage.locator('.review-main > .empty-state')).toHaveCSS('background-color', toRootRgb('--surface-panel'));
     await expect(emptyPage.locator('.review-main > .empty-state')).toHaveCSS('box-shadow', 'none');
-    await expect(
-      emptyPage.getByRole('button', { name: 'Comparison identities' }),
-    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Details' })).toBeVisible();
   } finally {
     await stopGeneratedCli(emptyRunning);
     await emptyRepository.cleanup();
@@ -1477,9 +1472,7 @@ test('fragment token protects loopback API', async ({ browser, page, request }, 
     const apiRequest = await apiRequestPromise;
     const apiResponse = await apiResponsePromise;
 
-    await expect(page.locator('.session-header').getByRole('heading', { level: 1 })).toContainText(
-      'Cumpa: Base fixture',
-    );
+    await expect(page.locator('.session-header__comparison')).toContainText('BASEBase fixture');
     expect(new URL(page.url()).hash).toBe('');
     expect(apiRequest.url()).not.toContain(token);
     expect(apiRequest.headers().authorization).toBe(`Bearer ${token}`);

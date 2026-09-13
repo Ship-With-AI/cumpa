@@ -833,6 +833,10 @@ function openIdentityScope(): void {
   }
 }
 
+function openReviewNotes(): void {
+  // Plan 04 supplies the dialog; the trigger is intentionally inert until then.
+}
+
 function closeIdentity(): void {
   identityOpen.value = false;
   void nextTick(() => identityHeader.value?.focusDisclosure());
@@ -1128,6 +1132,7 @@ onBeforeUnmount(() => {
       :inert="isExactPatchSession && identityOpen && identityModal"
       @toggle="toggleIdentity"
       @support="openSupportDialog"
+      @review-notes="openReviewNotes"
     />
     <InlineNotice v-if="patchDrifted" tone="error" role="alert">
       <h2>Implemented content changed</h2>
@@ -1233,15 +1238,14 @@ onBeforeUnmount(() => {
         <section v-if="session.files.length === 0" class="empty-state">
           <template v-if="isExactPatchSession">
             <h2>No files in this exact patch</h2>
-            <p>This accepted patch contains no changed file entries. View patch scope to inspect its digest, then relaunch with a non-empty already-applied patch.</p>
+            <p>This accepted patch contains no changed file entries. Details lists the patch digest; relaunch with a non-empty already-applied patch.</p>
           </template>
           <template v-else-if="isRangeSession">
             <h2>No changes match this review scope</h2>
             <p>
-              {{
-                rangeHasPathspecs
-                  ? 'The pinned commits have no changed files selected by this scope. View review scope to inspect the commits and ordered Git pathspecs.'
-                  : 'The pinned commits contain no changed files. View review scope to inspect the commits.'
+              {{ rangeHasPathspecs
+                ? 'The pinned commits contain no changed files selected by this scope. Details lists the commits and ordered Git pathspecs.'
+                : 'The pinned commits contain no changed files. Details lists the commits.'
               }}
             </p>
           </template>
