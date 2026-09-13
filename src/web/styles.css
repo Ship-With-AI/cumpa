@@ -926,7 +926,9 @@ input:-webkit-autofill:focus {
   min-width: 240px;
   max-width: 440px;
   height: 100%;
-  overflow-y: auto;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
   border-right: 1px solid var(--border-default);
   background: var(--surface-sidebar);
 }
@@ -964,9 +966,6 @@ input:-webkit-autofill:focus {
 }
 
 
-.review-files .tree-row:focus-visible {
-  outline-offset: calc(var(--focus-outline-width) * -1);
-}
 
 .tree-row:hover {
   background: var(--surface-raised);
