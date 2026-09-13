@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => {
     onDidScrollChange: vi.fn(disposable),
     onMouseDown: vi.fn(disposable),
     onMouseMove: vi.fn(disposable),
+    updateOptions: vi.fn(),
   });
   const originalEditor = codeEditor();
   const modifiedEditor = codeEditor();
@@ -30,6 +31,8 @@ const mocks = vi.hoisted(() => {
       onDidUpdateDiff: vi.fn(disposable),
       updateOptions: vi.fn(),
     })),
+    originalEditor,
+    modifiedEditor,
     defineTheme: vi.fn(),
     setTheme: vi.fn(),
   };
@@ -79,9 +82,9 @@ describe('PublicMonacoDiffAdapter construction', () => {
 
     adapter.setSideNames({ original: 'preimage', modified: 'postimage' });
 
-    expect(mocks.createDiffEditor.mock.results[0]?.value.updateOptions).toHaveBeenCalledWith({
-      ariaLabel: 'Immutable preimage and postimage side-by-side diff',
-    });
+    const options = { ariaLabel: 'Immutable preimage and postimage side-by-side diff' };
+    expect(mocks.originalEditor.updateOptions).toHaveBeenCalledWith(options);
+    expect(mocks.modifiedEditor.updateOptions).toHaveBeenCalledWith(options);
   });
   it('pins the immutable side-by-side review surface options', () => {
     createMonacoDiffAdapter({} as HTMLElement, () => 'typescript', vi.fn());

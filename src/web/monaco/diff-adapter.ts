@@ -58,6 +58,7 @@ export type MonacoDiffAdapter = Readonly<{
   revealAnchor: (anchor: Anchor) => void;
   setAnchorZoneHeight: (heightInPx: number) => void;
   setActiveAnchor: (anchor: Anchor | undefined) => void;
+  setSideNames: (names: { readonly original: string; readonly modified: string }) => void;
   setFile: (file: ImmutableDiffFile) => Promise<void>;
 }>;
 
@@ -168,6 +169,12 @@ class PublicMonacoDiffAdapter {
         run: () => this.activateFocusedAnchor('head'),
       }),
     );
+  }
+
+  setSideNames({ original, modified }: { readonly original: string; readonly modified: string }): void {
+    const ariaLabel = `Immutable ${original} and ${modified} side-by-side diff`;
+    this.originalEditor.updateOptions({ ariaLabel });
+    this.modifiedEditor.updateOptions({ ariaLabel });
   }
 
   async setFile(file: ImmutableDiffFile): Promise<void> {

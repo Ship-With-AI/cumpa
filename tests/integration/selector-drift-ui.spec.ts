@@ -462,6 +462,9 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
   await expect(page.getByText('− REMOVED', { exact: true })).toBeVisible();
   await expect(page.getByText('+ ADDED', { exact: true })).toBeVisible();
   await expect(page.getByLabel('src/exact.ts: preimage and postimage side-by-side diff')).toBeVisible();
+  await expect(page.locator('.monaco-diff-editor').getByRole('textbox').first()).toHaveAccessibleName(
+    'Immutable preimage and postimage side-by-side diff',
+  );
   expect(patchContentRequests).toEqual([
     `/${patchFileId}/content`,
     `/${patchFileId}/content`,

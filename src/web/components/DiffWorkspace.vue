@@ -68,6 +68,13 @@ function immutableFile() {
   };
 }
 
+function syncSideNames(): void {
+  adapter?.setSideNames({
+    original: visibleSides.value.originalName,
+    modified: visibleSides.value.modifiedName,
+  });
+}
+
 function currentComment() {
   const anchor = adapter?.getActiveAnchor();
   return anchor === undefined
@@ -180,6 +187,7 @@ async function loadContent(): Promise<void> {
   if (adapter === undefined) return;
   const version = ++loadVersion;
   await adapter.setFile(immutableFile());
+  syncSideNames();
   if (version !== loadVersion) return;
 
   const composer = props.composer;
@@ -260,6 +268,8 @@ watch(() => [props.composer, props.comments] as const, () => {
   void nextTick(renderAnnotation);
 }, { deep: true });
 
+watch(visibleSides, syncSideNames);
+
 watch(() => props.content, () => {
   observedAnchor = '';
   observedComposerAnchor = '';
@@ -273,6 +283,7 @@ onMounted(() => {
   if (host.value === undefined) return;
   configureMonacoWorkers();
   adapter = createMonacoDiffAdapter(host.value, languageForPath, syncAdapterState);
+  syncSideNames();
   resizeObserver = new ResizeObserver(() => adapter?.layout());
   resizeObserver.observe(host.value);
   void loadContent();
