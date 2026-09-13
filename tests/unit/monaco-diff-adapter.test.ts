@@ -72,4 +72,21 @@ describe('PublicMonacoDiffAdapter construction', () => {
       }),
     );
   });
+  it('pins the immutable side-by-side review surface options', () => {
+    createMonacoDiffAdapter({} as HTMLElement, () => 'typescript', vi.fn());
+
+    expect(mocks.createDiffEditor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        diffAlgorithm: 'advanced',
+        diffWordWrap: 'off',
+        readOnly: true,
+        renderGutterMenu: false,
+        renderMarginRevertIcon: false,
+        renderSideBySide: true,
+        renderSideBySideInlineBreakpoint: 0,
+        useInlineViewWhenSpaceIsLimited: false,
+      }),
+    );
+  });
 });
