@@ -59,8 +59,18 @@ The core scale uses multiples of four. This is the planning system's scale struc
 | `--space-5` | `20px` | Sidebar heading inset | `mockups/01-quiet-workspace.html:9` |
 | `--space-6` | `24px` | Desktop shell and dialog inset | `mockups/01-quiet-workspace.html:9` |
 | `--space-8` | `32px` | Major local separation | **Approved continuity addition** from `src/web/styles.css:78`; retained so the existing public spacing root is not needlessly narrowed |
-| `--space-12` | `48px` | Large state separation only | **Approved continuity addition** from `src/web/styles.css:79`; retained for existing consumers, not inferred from the mockup |
-| `--space-16` | `64px` | Page-level state composition only | **Approved continuity addition** from `src/web/styles.css:80`; retained for existing consumers, not inferred from the mockup |
+| `--space-12` | `48px` | Large state separation only | Deferred to **Phase 11**; no declaration until that surface consumes it. |
+| `--space-16` | `64px` | Page-level state composition only | Deferred to **Phase 11**; no declaration until that surface consumes it. |
+
+### Phase 08 implementation disposition
+
+| Roles | Disposition |
+|-------|-------------|
+| `--space-1`, `--space-2`, `--space-3`, `--space-4`, `--space-6`, `--space-8` | Declared and consumed now; `--space-3` is the mobile session-header padding. |
+| `--space-5` | Deferred to **Phase 09** for the changed-file sidebar heading inset. |
+| `--space-12`, `--space-16` | Deferred to **Phase 11** for shell and dialog state composition. |
+
+No deferred spacing role is declared before its owning surface consumes it.
 
 The normative mockup intentionally uses off-scale component spacing. These values are **exceptions, not additions to the core scale**, and must not be normalized during Phase 08:
 
@@ -90,6 +100,7 @@ Exactly four authored type sizes and two weights are permitted. The Monaco code 
 - Wide Monaco override: `14px/28px` only at the mockup's `min-width: 1650px` rule, `mockups/01-quiet-workspace.html:10`.
 - Mobile Monaco override: `12px/24px` at the mockup's `max-width: 760px` rule, `mockups/01-quiet-workspace.html:12`.
 - **Approved continuity normalization:** weights are limited to `400` and `600`, sourced from `src/web/styles.css:67-68`. This deliberately replaces the mockup's intermediate and display-only weights so the existing two-weight semantic contract remains coherent; it is not described as mockup-derived.
+- **Display-role exemption:** `--font-size-display` and `--line-height-display` remain explicit continuity exemptions from this four-role table. They serve existing display-state UI, are already consumed, and do not introduce a fifth normative authored type role.
 - Paths, object IDs, counts, line numbers, diff content, and Base/Head identities use the code stack. All other text uses the UI stack.
 - Long paths may ellipsize only when the full accessible name remains available.
 
@@ -165,7 +176,7 @@ All values in this table come from `mockups/01-quiet-workspace.html:8-9`.
 | `--status-resolved-foreground` | `#A371F7` | Existing resolved-history state only | **Approved continuity addition** from `src/web/styles.css:33`; required state is absent from the normal-state mockup |
 | `--destructive-emphasis` | `#B62324` | Existing destructive confirmation emphasis only | **Approved continuity addition** from `src/web/styles.css:24`; retained for destructive continuity, not general palette use |
 
-The Phase 09-only tree badge palette is intentionally absent from the Phase 08 shared root. It must not be described as the normative mockup's added/deleted boundaries or intraline colors.
+Every color role named in the palette and status tables has a current declaration and consumer. `--surface-gap` paints Monaco's collapsed-context strip; `--border-overlay` paints the support-dialog boundary; `--interactive-accent-emphasis-hover` paints primary-button hover; `--text-selection-background` maps Monaco text selection; and the modified/added/deleted triplets paint their existing status badges and line counts. The Phase 09-only tree badge palette remains separate from these shared state roles.
 
 Syntax roles reuse only normative palette values from `mockups/01-quiet-workspace.html:8-9`: default `#e6edf3`, comment `#a7b1bd`, keyword `#ffb5ab`, string `#b4d7ff`, number/type `#79b8ff`, and invalid `#ffa198`.
 
@@ -173,7 +184,7 @@ Syntax roles reuse only normative palette values from `mockups/01-quiet-workspac
 
 ## Geometry and Density
 
-Phase 08 authors these density tokens but does not restructure their consumers.
+Phase 08 declares only density roles with current consumers; roles reserved for a later surface are deferred below rather than declared without a consumer.
 
 | Element | Contract | Evidence |
 |---------|----------|----------|
@@ -186,6 +197,17 @@ Phase 08 authors these density tokens but does not restructure their consumers.
 | Diff columns | `42px` number gutter and `18px` sign column; mobile unified uses `30px`, `30px`, and `16px` | `mockups/01-quiet-workspace.html:9,12` |
 | Sidebar | `294px` reference desktop, `248px` at `max-width: 1050px`, `320px` at `min-width: 1650px` | `mockups/01-quiet-workspace.html:9-11` |
 | Dialog | `min(560px, calc(100% - 24px))`, maximum height `85dvh` | `mockups/01-quiet-workspace.html:9` |
+
+### Phase 08 implementation disposition
+
+| Role | Disposition |
+|------|-------------|
+| `--border-width-default`, `--focus-outline-width`, `--focus-offset`, `--selected-rail-width`, `--radius-control`, `--radius-overlay`, `--control-height-standard` | Declared and consumed now by shared controls, focus treatment, selected rails, and existing overlays. |
+| `--radius-file-row`, `--radius-scrollbar`, `--file-row-min-height` | Deferred to **Phase 09** for changed-file tree density. |
+| `--control-height-compact`, `--sidebar-width`, `--dialog-width`, `--dialog-max-height` | Deferred to **Phase 11** for shell, toolbar, and dialog composition. |
+| `--diff-row-height`, `--diff-gutter-width`, `--diff-sign-width` | Deferred to **Phase 10** for Monaco diff-density work. |
+
+No deferred geometry role is declared before its owning phase consumes it.
 
 Borders, not shadows or floating cards, separate persistent work areas. Shadow is reserved for an open overlay. Controls, selected rows, and overlays receive radii; continuous shell regions remain square.
 

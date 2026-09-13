@@ -1,8 +1,11 @@
 import * as monaco from 'monaco-editor';
 
+import { TOKEN_ROOT_CSS } from 'virtual:cumpa-tokens';
+
 import { counterpartBoundary, type DiffSide } from './line-mapping';
 import { buildDiffDecorations } from './diff-semantics';
 import { applyCumpaTheme } from './theme';
+import { parseTokenRoot, resolveToken } from '../theme/token-contract';
 import type { WorkspaceCommand } from '../model/workspace-command.js';
 
 export type { DiffSide } from './line-mapping';
@@ -65,6 +68,11 @@ const HIDE_UNCHANGED_REGIONS = {
   revealLineCount: 10,
 } as const;
 
+const TOKENS = parseTokenRoot(TOKEN_ROOT_CSS);
+const CODE_FONT_FAMILY = resolveToken(TOKENS, '--font-mono');
+const CODE_FONT_SIZE = Number.parseInt(resolveToken(TOKENS, '--font-size-code'), 10);
+const CODE_LINE_HEIGHT = Number.parseInt(resolveToken(TOKENS, '--line-height-code'), 10);
+
 
 class PublicMonacoDiffAdapter {
   private readonly diffEditor: monaco.editor.IStandaloneDiffEditor;
@@ -99,6 +107,9 @@ class PublicMonacoDiffAdapter {
     this.diffEditor = monaco.editor.createDiffEditor(host, {
       ariaLabel: 'Immutable base and head side-by-side diff',
       automaticLayout: false,
+      fontFamily: CODE_FONT_FAMILY,
+      fontSize: CODE_FONT_SIZE,
+      lineHeight: CODE_LINE_HEIGHT,
       glyphMargin: true,
       minimap: { enabled: false },
       occurrencesHighlight: 'off',

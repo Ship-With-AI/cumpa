@@ -985,6 +985,9 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(firstDirectory).toHaveAttribute('aria-expanded', 'true');
       await page.locator('.file-tree .file-row').first().click();
       await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+      const monacoLine = page.locator('.monaco-diff-editor .modified .view-line').first();
+      await expect(monacoLine).toHaveCSS('font-size', resolveToken(canonicalTokens, '--font-size-code'));
+      await expect(monacoLine).toHaveCSS('line-height', resolveToken(canonicalTokens, '--line-height-code'));
       await hoverMonacoLine(page, 'head', 'export const changed = 3;');
       const gutter = page.getByRole('button', {
         name: 'Add comment to head line 10',

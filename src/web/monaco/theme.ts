@@ -71,7 +71,7 @@ export const CUMPA_THEME = {
     'editorWhitespace.foreground': color('--monaco-whitespace-foreground'),
     'editorIndentGuide.background1': color('--border-gap'),
     'editorIndentGuide.activeBackground1': color('--border-default'),
-    'editor.selectionBackground': color('--selection-background'),
+    'editor.selectionBackground': color('--text-selection-background'),
     'editor.inactiveSelectionBackground': color('--monaco-inactive-selection-background'),
     'editor.selectionForeground': color('--text-on-emphasis'),
     'editor.lineHighlightBackground': UNPAINTED_COLOR,

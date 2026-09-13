@@ -33,7 +33,7 @@ const THEME_COLOR_ROOT_MAP: Readonly<Record<string, RootMapping>> = {
   'editorWhitespace.foreground': { token: '--monaco-whitespace-foreground' },
   'editorIndentGuide.background1': { token: '--border-gap' },
   'editorIndentGuide.activeBackground1': { token: '--border-default' },
-  'editor.selectionBackground': { token: '--selection-background' },
+  'editor.selectionBackground': { token: '--text-selection-background' },
   'editor.inactiveSelectionBackground': { token: '--monaco-inactive-selection-background' },
   'editor.selectionForeground': { token: '--text-on-emphasis' },
   'editor.lineHighlightBorder': { token: '--border-control' },

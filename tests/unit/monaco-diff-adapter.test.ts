@@ -1,3 +1,7 @@
+import { resolve } from 'node:path';
+
+import { canonicalRoot } from '../helpers/canonical-root.js';
+import { resolveToken } from '../../src/web/theme/token-contract.js';
 import { describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
@@ -52,5 +56,20 @@ describe('PublicMonacoDiffAdapter construction', () => {
     expect(mocks.createDiffEditor).toHaveBeenCalledOnce();
     expect(mocks.defineTheme.mock.invocationCallOrder[0]).toBeLessThan(mocks.setTheme.mock.invocationCallOrder[0]);
     expect(mocks.setTheme.mock.invocationCallOrder[0]).toBeLessThan(mocks.createDiffEditor.mock.invocationCallOrder[0]);
+  });
+
+  it('derives diff-editor code typography from the canonical root', () => {
+    const tokens = canonicalRoot(resolve(import.meta.dirname, '../..'));
+
+    createMonacoDiffAdapter({} as HTMLElement, () => 'typescript', vi.fn());
+
+    expect(mocks.createDiffEditor).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        fontFamily: resolveToken(tokens, '--font-mono'),
+        fontSize: Number.parseInt(resolveToken(tokens, '--font-size-code'), 10),
+        lineHeight: Number.parseInt(resolveToken(tokens, '--line-height-code'), 10),
+      }),
+    );
   });
 });
