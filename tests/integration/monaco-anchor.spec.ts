@@ -256,6 +256,18 @@ test('11. paints first-frame semantic theme, flat empty regions, and sparse sign
   await expect(page.locator('.monaco-diff-change-sign--base')).not.toHaveCount(0);
 });
 
+test('11a. omits edit affordances from the immutable two-pane diff', async ({ page }) => {
+  await openPrototype(page);
+
+  await expect(page.locator('.monaco-diff-editor .gutter')).toHaveCount(0);
+  await expect(page.locator('.monaco-diff-pane--base')).toHaveCount(1);
+  await expect(page.locator('.monaco-diff-pane--base')).toBeVisible();
+  await expect(page.locator('.monaco-diff-pane--head')).toHaveCount(1);
+  await expect(page.locator('.monaco-diff-pane--head')).toBeVisible();
+  // Keep this readOnly regression canary even though the option is unit-proven.
+  await expect(page.locator('.monaco-diff-editor .arrow-revert-change')).toHaveCount(0);
+});
+
 test('12. keeps selection contrast, anchor rail, diff meaning, and focus in separate channels', async ({ page }) => {
   await openPrototype(page);
   expect((await readState(page)).listenerCount).toBe(17);
