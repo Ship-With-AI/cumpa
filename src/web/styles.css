@@ -2756,22 +2756,21 @@ h3.conversation-card__identity {
   background-image: none !important;
 }
 
-.monaco-editor .diff-hidden-lines .center {
-  background: var(--surface-gap);
-  box-shadow: none;
-  color: var(--diff-hunk-foreground);
-}
 
 .monaco-editor .diff-hidden-lines .top,
 .monaco-editor .diff-hidden-lines .bottom {
-  border-color: var(--border-default);
+  background-color: var(--surface-gap);
+  border-color: var(--border-gap);
 }
 
 .monaco-editor .diff-hidden-lines:not(.dragging) .top:hover,
 .monaco-editor .diff-hidden-lines:not(.dragging) .bottom:hover,
 .monaco-editor .diff-hidden-lines .top.dragging,
-.monaco-editor .diff-hidden-lines .bottom.dragging,
-.monaco-editor .diff-hidden-lines .center a:hover .codicon,
+.monaco-editor .diff-hidden-lines .bottom.dragging {
+  background-color: var(--diff-hunk-background);
+  color: var(--diff-hunk-foreground);
+}
+
 .monaco-editor .diff-hidden-lines div.breadcrumb-item:hover {
   background-color: var(--surface-panel);
   color: var(--diff-hunk-foreground);
