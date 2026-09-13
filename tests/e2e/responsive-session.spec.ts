@@ -1028,6 +1028,13 @@ test('responsive keyboard and accessibility contract', async ({
       const monacoLine = page.locator('.monaco-diff-editor .modified .view-line').first();
       await expect(monacoLine).toHaveCSS('font-size', resolveToken(canonicalTokens, '--font-size-code'));
       await expect(monacoLine).toHaveCSS('line-height', resolveToken(canonicalTokens, '--line-height-code'));
+      await page.setViewportSize({ width: 1650, height: 900 });
+      await expect(monacoLine).toHaveCSS('font-size', '14px');
+      await expect(monacoLine).toHaveCSS('line-height', '28px');
+      await page.setViewportSize({ width: 720, height: 900 });
+      await expect(monacoLine).toHaveCSS('font-size', '12px');
+      await expect(monacoLine).toHaveCSS('line-height', '24px');
+      await page.setViewportSize({ width: 1440, height: 560 });
       await hoverMonacoLine(page, 'head', 'export const changed = 3;');
       const gutter = page.getByRole('button', {
         name: 'Add comment to head line 10',

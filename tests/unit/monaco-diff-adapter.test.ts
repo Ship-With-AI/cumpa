@@ -86,6 +86,29 @@ describe('PublicMonacoDiffAdapter construction', () => {
     expect(mocks.originalEditor.updateOptions).toHaveBeenCalledWith(options);
     expect(mocks.modifiedEditor.updateOptions).toHaveBeenCalledWith(options);
   });
+
+  it('updates Monaco code typography for each responsive density', () => {
+    const tokens = canonicalRoot(resolve(import.meta.dirname, '../..'));
+    const adapter = createMonacoDiffAdapter({} as HTMLElement, () => 'typescript', vi.fn());
+    const updateOptions = mocks.createDiffEditor.mock.results.at(-1)?.value.updateOptions;
+
+    adapter.setCodeDensity('wide');
+    adapter.setCodeDensity('compact');
+    adapter.setCodeDensity('default');
+
+    expect(updateOptions).toHaveBeenNthCalledWith(1, {
+      fontSize: Number.parseInt(resolveToken(tokens, '--font-size-body'), 10),
+      lineHeight: Number.parseInt(resolveToken(tokens, '--font-size-body'), 10) * 2,
+    });
+    expect(updateOptions).toHaveBeenNthCalledWith(2, {
+      fontSize: Number.parseInt(resolveToken(tokens, '--font-size-metadata'), 10),
+      lineHeight: Number.parseInt(resolveToken(tokens, '--font-size-metadata'), 10) * 2,
+    });
+    expect(updateOptions).toHaveBeenNthCalledWith(3, {
+      fontSize: Number.parseInt(resolveToken(tokens, '--font-size-code'), 10),
+      lineHeight: Number.parseInt(resolveToken(tokens, '--line-height-code'), 10),
+    });
+  });
   it('pins the immutable side-by-side review surface options', () => {
     createMonacoDiffAdapter({} as HTMLElement, () => 'typescript', vi.fn());
 
