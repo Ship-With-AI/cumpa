@@ -16,7 +16,7 @@ Cumpa restyles the existing browser review workspace to the approved visual cont
 
 ## Phases
 
-- [ ] **Phase 08: Semantic Visual Foundation** — Establish the mockup-derived token root, Monaco parity, and shared typography, spacing, density, and radius language.
+- [x] **Phase 08: Semantic Visual Foundation** — Establish the mockup-derived token root, Monaco parity, and shared typography, spacing, density, and radius language. (completed 2026-09-13)
 - [ ] **Phase 09: Changed-File Tree** — Deliver the mockup's dense, filterable, keyboard-operable changed-file navigation without losing existing tree semantics.
 - [ ] **Phase 10: Diff Reading Surface** — Restyle the Monaco-authoritative diff into the mockup's quieter, explicit Base/Head reading surface while preserving geometry and context behavior.
 - [ ] **Phase 11: Workspace Shell & Review Surfaces** — Compose the responsive shell, dialogs, inline comments, and comments rail while keeping critical warnings continuously visible.
@@ -42,14 +42,15 @@ Cumpa restyles the existing browser review workspace to the approved visual cont
 - Update the palette and presentation expectations in `tests/unit/monaco-theme.test.ts` and the semantic-style assertions in `tests/e2e/responsive-session.spec.ts` to the canonical root.
 - Keep `tests/unit/monaco-diff-semantics.test.ts`, `tests/unit/monaco-diff-adapter.test.ts`, `tests/unit/workspace-state.test.ts`, and the API, Git, draft, persistence, and export contract suites passing unchanged.
 
-**Plans**: 5 plans
+**Plans**: 7/5 plans complete
 
 Plans:
-- [ ] 08-01-PLAN.md — Pure token contract, build-time root injection, and the shared node loader (wave 1)
-- [ ] 08-02-PLAN.md — Re-derive the canonical semantic token root and cut every CSS, Vue, and DESIGN.md consumer over to it (wave 2)
-- [ ] 08-03-PLAN.md — Derive the Monaco theme from the canonical root and turn the parity mirror into a real gate (wave 3)
-- [ ] 08-04-PLAN.md — Re-derive, harden, and wire the stray-literal and token-structure audit (wave 3)
-- [ ] 08-05-PLAN.md — Derive browser expectations from the root, take the browser suite green, and confirm the contract at the reference viewports (wave 4)
+
+- [x] 08-01-PLAN.md — Pure token contract, build-time root injection, and the shared node loader (wave 1)
+- [x] 08-02-PLAN.md — Re-derive the canonical semantic token root and cut every CSS, Vue, and DESIGN.md consumer over to it (wave 2)
+- [x] 08-03-PLAN.md — Derive the Monaco theme from the canonical root and turn the parity mirror into a real gate (wave 3)
+- [x] 08-04-PLAN.md — Re-derive, harden, and wire the stray-literal and token-structure audit (wave 3)
+- [x] 08-05-PLAN.md — Derive browser expectations from the root, take the browser suite green, and confirm the contract at the reference viewports (wave 4)
 
 ### Phase 09: Changed-File Tree
 
@@ -139,7 +140,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 08. Semantic Visual Foundation | 0/TBD | Not started | — |
+| 08. Semantic Visual Foundation | 7/5 | Complete   | 2026-09-13 |
 | 09. Changed-File Tree | 0/TBD | Not started | — |
 | 10. Diff Reading Surface | 0/TBD | Not started | — |
 | 11. Workspace Shell & Review Surfaces | 0/TBD | Not started | — |
