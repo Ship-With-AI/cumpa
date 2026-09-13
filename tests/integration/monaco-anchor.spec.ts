@@ -295,6 +295,28 @@ test('11b. paints hidden-region controls from canonical token bytes', async ({ p
     .toBe(toRootRgb('--diff-hunk-foreground'));
 });
 
+test('11c. paints hunk boundaries without changing code-line or paired-zone geometry', async ({ page }) => {
+  await openPrototype(page);
+
+  const start = page.locator('.monaco-diff-pane--head .monaco-diff-hunk-start').first();
+  const end = page.locator('.monaco-diff-pane--head .monaco-diff-hunk-end').first();
+  const interior = page.locator(
+    '.monaco-diff-pane--head .monaco-diff-change-bar--head:not(.monaco-diff-hunk-start):not(.monaco-diff-hunk-end)',
+  ).first();
+  await expect(start).toBeVisible();
+  await expect(end).toBeVisible();
+  await expect(interior).toBeVisible();
+  await expect(start).toHaveCSS('border-top-width', '1px');
+  await expect(start).toHaveCSS('border-top-color', toRootRgb('--diff-region-border'));
+  await expect(end).toHaveCSS('border-bottom-width', '1px');
+  await expect(end).toHaveCSS('border-bottom-color', toRootRgb('--diff-region-border'));
+  expect(await start.evaluate((element) => getComputedStyle(element).height))
+    .toBe(await interior.evaluate((element) => getComputedStyle(element).height));
+
+  await page.getByRole('button', { name: 'Add head comment' }).click();
+  await expectPairedZonesAligned(page);
+});
+
 test('12. keeps selection contrast, anchor rail, diff meaning, and focus in separate channels', async ({ page }) => {
   await openPrototype(page);
   expect((await readState(page)).listenerCount).toBe(17);

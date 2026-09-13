@@ -2729,6 +2729,16 @@ h3.conversation-card__identity {
   border-left: 2px solid var(--diff-addition-foreground);
 }
 
+.monaco-editor .monaco-diff-hunk-start {
+  box-sizing: border-box;
+  border-top: 1px solid var(--diff-region-border);
+}
+
+.monaco-editor .monaco-diff-hunk-end {
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--diff-region-border);
+}
+
 .monaco-editor .monaco-diff-change-sign--base::before,
 .monaco-editor .monaco-diff-change-sign--head::before {
   display: block;
@@ -2913,6 +2923,11 @@ h3.conversation-card__identity {
   .monaco-editor .monaco-diff-change-bar--base,
   .monaco-editor .monaco-diff-change-bar--head {
     border-left-color: CanvasText;
+  }
+
+  .monaco-editor .monaco-diff-hunk-start,
+  .monaco-editor .monaco-diff-hunk-end {
+    border-color: CanvasText;
   }
 
   .monaco-editor .monaco-diff-change-bar--base {
