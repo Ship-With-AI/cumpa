@@ -266,7 +266,6 @@ watch(() => props.comments, () => {
     </header>
 
 
-CUT 654.=817
 
     <section class="review-panel__comments review-panel__section" aria-labelledby="open-comments-heading">
     <section
