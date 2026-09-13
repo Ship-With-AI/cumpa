@@ -1164,7 +1164,7 @@ test('responsive keyboard and accessibility contract', async ({
         await page.keyboard.press('Shift+Tab');
         await page.keyboard.press('Tab');
         await expect(review).toBeFocused();
-        await expect(review).toHaveCSS('outline-width', '2px');
+        await expect(review).toHaveCSS('outline-width', resolveToken(canonicalTokens, '--focus-outline-width'));
         expect(await disabled.evaluate((element) => getComputedStyle(element).color))
           .not.toBe(await review.evaluate((element) => getComputedStyle(element).color));
 
@@ -1285,8 +1285,8 @@ test('responsive keyboard and accessibility contract', async ({
       const focusStyle = await readStyles(reviewButton);
       expect(focusStyle.outlineColor).toBe(toRootRgb('--focus-ring'));
       expect(focusStyle.outlineStyle).toBe('solid');
-      expect(focusStyle.outlineWidth).toBe('2px');
-      expect(focusStyle.outlineOffset).toBe('2px');
+      expect(focusStyle.outlineWidth).toBe(resolveToken(canonicalTokens, '--focus-outline-width'));
+      expect(focusStyle.outlineOffset).toBe(resolveToken(canonicalTokens, '--focus-offset'));
       await expectFocusIndicatorUnclipped(reviewButton);
 
       await page.setViewportSize({ width: 1439, height: 560 });

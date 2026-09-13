@@ -213,7 +213,7 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   await recoveryAction.focus();
   await expect(recoveryAction).toHaveCSS('outline-color', toRootRgb('--focus-ring'));
   await expect(recoveryAction).toHaveCSS('outline-width', resolveToken(canonicalTokens, '--focus-outline-width'));
-  await expect(recoveryAction).toHaveCSS('outline-offset', '2px');
+  await expect(recoveryAction).toHaveCSS('outline-offset', resolveToken(canonicalTokens, '--focus-offset'));
 
   await page.getByRole('button', { name: 'Reveal draft file' }).click();
   await expect(page.getByText('Draft file revealed in the system file browser.', { exact: true })).toBeVisible();

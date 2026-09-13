@@ -888,8 +888,8 @@ onBeforeUnmount(() => {
 .phase6-prototype__textarea:focus-visible,
 .phase6-prototype__editable-probe:focus-visible,
 .phase6-prototype__floating-switcher button:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
+  outline: var(--focus-outline-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .phase6-prototype__floating-switcher {

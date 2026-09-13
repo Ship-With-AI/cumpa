@@ -1,5 +1,5 @@
-import { readFile } from 'node:fs/promises';
-import { resolve, relative, sep } from 'node:path';
+import { readFile, readdir } from 'node:fs/promises';
+import { extname, resolve, relative, sep } from 'node:path';
 
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const sourcePath = resolve(repositoryRoot, 'src/web/styles.css');
@@ -13,14 +13,10 @@ const canonicalTokens = [
   '--border-default',
   '--border-gap',
   '--border-hunk',
-  '--border-overlay',
   '--border-width-default',
-  '--control-height-compact',
   '--control-height-standard',
   '--destructive-emphasis',
   '--destructive-foreground',
-  '--dialog-max-height',
-  '--dialog-width',
   '--diff-addition-background',
   '--diff-addition-foreground',
   '--diff-addition-intraline-background',
@@ -28,14 +24,10 @@ const canonicalTokens = [
   '--diff-deletion-foreground',
   '--diff-deletion-intraline-background',
   '--diff-empty-background',
-  '--diff-gutter-width',
   '--diff-hunk-background',
   '--diff-hunk-foreground',
   '--diff-region-border',
-  '--diff-row-height',
-  '--diff-sign-width',
   '--diff-unchanged-background',
-  '--file-row-min-height',
   '--focus-offset',
   '--focus-outline-width',
   '--focus-ring',
@@ -51,7 +43,6 @@ const canonicalTokens = [
   '--icon-size',
   '--interactive-accent',
   '--interactive-accent-emphasis',
-  '--interactive-accent-emphasis-hover',
   '--line-height-body',
   '--line-height-code',
   '--line-height-display',
@@ -62,38 +53,24 @@ const canonicalTokens = [
   '--monaco-scrollbar-hover-background',
   '--monaco-whitespace-foreground',
   '--radius-control',
-  '--radius-file-row',
   '--radius-overlay',
   '--radius-pill',
-  '--radius-scrollbar',
   '--scrollbar-thumb',
   '--selected-rail-width',
   '--selection-background',
   '--selection-border',
   '--shadow-overlay',
-  '--sidebar-width',
   '--space-1',
   '--space-2',
-  '--space-3',
   '--space-4',
-  '--space-5',
   '--space-6',
   '--space-8',
-  '--status-added-background',
-  '--status-added-border',
-  '--status-added-foreground',
-  '--status-deleted-background',
-  '--status-deleted-border',
-  '--status-deleted-foreground',
   '--status-disabled-background',
   '--status-disabled-foreground',
   '--status-error-background',
   '--status-error-foreground',
   '--status-information-background',
   '--status-information-foreground',
-  '--status-modified-background',
-  '--status-modified-border',
-  '--status-modified-foreground',
   '--status-pending-background',
   '--status-pending-foreground',
   '--status-resolved-background',
@@ -104,7 +81,6 @@ const canonicalTokens = [
   '--status-warning-foreground',
   '--surface-canvas',
   '--surface-empty',
-  '--surface-gap',
   '--surface-hunk',
   '--surface-interactive',
   '--surface-interactive-active',
@@ -125,7 +101,6 @@ const canonicalTokens = [
   '--text-muted',
   '--text-on-emphasis',
   '--text-primary',
-  '--text-selection-background',
   '--tree-indent',
 ];
 
@@ -278,6 +253,24 @@ function assertTokenRoot(rule, label, exact) {
   }
 }
 
+function assertDeclaredTokensConsumed(rule, sources) {
+  const declared = new Set(rule.declarations
+    .filter(({ property }) => property.startsWith('--'))
+    .map(({ property }) => property));
+  const referenced = new Set(sources.flatMap((source) => [
+    ...source.matchAll(/var\(\s*(--[\w-]+)/g),
+    ...source.matchAll(/\bcolor\(\s*['"](--[\w-]+)['"]\s*\)/g),
+  ].map(([, name]) => name)));
+  const dependencies = new Map(rule.declarations
+    .filter(({ property }) => property.startsWith('--'))
+    .map(({ property, value }) => [property, [...value.matchAll(/var\(\s*(--[\w-]+)/g)].map(([, name]) => name)]));
+  for (const token of referenced) {
+    for (const dependency of dependencies.get(token) ?? []) referenced.add(dependency);
+  }
+  const unused = [...declared].filter((name) => !referenced.has(name));
+  if (unused.length !== 0) fail(`canonical tokens have no consumer: ${unused.join(', ')}`);
+}
+
 function assertTokenValueShapes(rule, label) {
   for (const { property, value } of rule.declarations.filter(({ property }) => property.startsWith('--'))) {
     const hex = value.match(/#[0-9a-fA-F]+/);
@@ -410,9 +403,9 @@ function assertAuthorStyle(source, { enforceShadowAllowlist = true } = {}) {
 
 
   const insetAllowlist = new Map([
-    ['.tree-row--selected', 'inset 3px 0 var(--selection-border)'],
-    ['.view-tab[aria-selected="true"]', 'inset 0 -3px var(--selection-border)'],
-    ['.monaco-editor .monaco-anchor-line', 'inset 3px 0 var(--interactive-accent)'],
+    ['.tree-row--selected', 'inset var(--selected-rail-width) 0 var(--selection-border)'],
+    ['.view-tab[aria-selected="true"]', 'inset 0 calc(var(--selected-rail-width) * -1) var(--selection-border)'],
+    ['.monaco-editor .monaco-anchor-line', 'inset var(--selected-rail-width) 0 var(--interactive-accent)'],
   ]);
   const overlayAllowlist = new Set([
     '.identity-panel', '.keyboard-help', '.ui-tooltip__content', '.diff-workspace__gutter-action::after',
@@ -539,6 +532,13 @@ function assertAuditSelfChecks() {
     'retired token vocabulary',
   );
 
+  const tokenFixture = rootRule(':root { --used: 1px; --unused: 2px; }', 'token fixture');
+  expectAuditFailure(
+    () => assertDeclaredTokensConsumed(tokenFixture, ['.consumer { width: var(--used); }']),
+    'a canonical token without a consumer',
+  );
+  assertDeclaredTokensConsumed(tokenFixture, ['.consumer { width: var(--used); height: var(--unused); }']);
+
   assertAuthorStyle(`${canonicalRoot} .semantic-colors { color: var(--text-primary); border-color: currentColor; background: transparent; } @media (forced-colors: active) {
     body { background: Canvas; color: CanvasText; }
     button { background: ButtonFace; color: ButtonText; border-color: ButtonBorder; }
@@ -577,6 +577,15 @@ const generatedRoot = rootRule(generated, 'generated CSS', true);
 assertTokenRoot(sourceRoot, 'source CSS', true);
 assertTokenRoot(generatedRoot, 'generated CSS', false);
 assertTokenValueShapes(sourceRoot, 'source CSS');
+const webSourceRoot = resolve(repositoryRoot, 'src/web');
+const monacoThemeSource = await readFile(resolve(webSourceRoot, 'monaco/theme.ts'), 'utf8');
+const webSources = await Promise.all(
+  (await readdir(webSourceRoot, { recursive: true }))
+    .filter((path) => extname(path) === '.css' || extname(path) === '.vue')
+    .filter((path) => path !== 'styles.css')
+    .map((path) => readFile(resolve(webSourceRoot, path), 'utf8')),
+);
+assertDeclaredTokensConsumed(sourceRoot, [source.replace(sourceRoot.body, ''), ...webSources, monacoThemeSource]);
 assertNoLegacy(source, 'source CSS');
 assertNoLegacy(generated, 'generated CSS');
 assertAuthorStyle(source);
