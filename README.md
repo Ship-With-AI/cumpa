@@ -2,7 +2,7 @@
 
 Cumpa gives committed local Git comparisons a pull-request-style review workspace without publishing a branch or worktree. Choose local branches or registered worktrees, leave durable feedback, and export it for an agent or teammate to use.
 
-The prepared package identity is **`@shipwithai/cumpa@1.5.0`**; the command is **`cumpa`**. `cumpa` is the ASCII terminal spelling of Neapolitan `cumpà`, used colloquially for a friend, mate, or comrade.
+The prepared package identity **`@shipwithai/cumpa`**; command **`cumpa`**. `cumpa` ASCII terminal spelling Neapolitan `cumpà`, used colloquially friend, mate, comrade.
 
 **Availability gate:** Phase 3 preparation does not establish npm registry availability. Phase 5 must verify the real release before this version is presented as published. Package metadata and the command examples below are not proof that a release is installable. Likewise, the selected [source repository](https://github.com/Ship-With-AI/cumpa) and [Issues tracker](https://github.com/Ship-With-AI/cumpa/issues) require the separate repository-publication review and anonymous-access verification; these links alone make no public-access claim.
 
@@ -17,16 +17,16 @@ You need:
 
 ## Install a verified release
 
-After the exact release has been published and verified, install it globally:
+After a release is published and verified, install it globally:
 
 ```sh
-npm install --global @shipwithai/cumpa@1.5.0
+npm install --global @shipwithai/cumpa
 ```
 
-Alternatively, run that exact version from the repository you want to review:
+Alternatively, run it in the repository you want to review:
 
 ```sh
-npx --yes @shipwithai/cumpa@1.5.0
+npx --yes @shipwithai/cumpa
 ```
 
 Using a published release requires no Cumpa source checkout or local build. Both commands above remain conditional on the availability gate.

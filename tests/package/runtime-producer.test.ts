@@ -7,10 +7,12 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
 import { afterEach, describe, expect, test } from 'vitest';
+import { bootstrapVersion, version } from '../../scripts/release-identity.mjs';
 
 const execFileAsync = promisify(execFile);
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const producerSource = join(projectRoot, 'scripts', 'pack-runtime.mjs');
+const identitySource = join(projectRoot, 'scripts', 'release-identity.mjs');
 const roots: string[] = [];
 
 const origin = `https://${'a'.repeat(20)}.supabase.co`;
@@ -42,7 +44,7 @@ async function createFixture(): Promise<Fixture> {
   await Promise.all([
     writeFile(join(root, 'package.json'), JSON.stringify({
       name: '@shipwithai/cumpa',
-      version: '1.5.0',
+      version,
       engines: { node: '>=24' },
       bin: { cumpa: 'dist/bin/cumpa.mjs' },
       files: ['dist/', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'],
@@ -54,6 +56,7 @@ async function createFixture(): Promise<Fixture> {
     writeFile(join(root, 'THIRD_PARTY_NOTICES.md'), 'notices fixture\n', 'utf8'),
     writeFile(join(root, 'src', 'native', 'directory-exchange.cc'), 'native fixture\n', 'utf8'),
     writeFile(join(scripts, 'pack-runtime.mjs'), await readFile(producerSource)),
+    writeFile(join(scripts, 'release-identity.mjs'), await readFile(identitySource)),
   ]);
 
   const calls = join(root, 'calls.log');
@@ -342,9 +345,9 @@ describe('runtime archive producer', () => {
     expect((await npmCalls(fixture))[0]).toBe('run build');
     expect((await npmCalls(fixture))[1]).toMatch(/^pack --json --ignore-scripts --pack-destination /u);
     expect(evidence.kind).toBe('cumpa.runtime-artifact-evidence/v1');
-    expect(evidence.package.version).toBe('1.5.0');
+    expect(evidence.package.version).toBe(version);
     expect(evidence.archive).toMatchObject({
-      basename: 'cumpa-1.5.0.tgz',
+      basename: `cumpa-${version}.tgz`,
       byteLength: archive.byteLength,
       sha256: createHash('sha256').update(archive).digest('hex'),
       npmShasumSha1: createHash('sha1').update(archive).digest('hex'),
@@ -380,7 +383,7 @@ describe('runtime archive producer', () => {
       `pack ${observation.directory} --json --ignore-scripts --pack-destination ${fixture.custody}`,
     ]);
     expect(observation.mode).toBe(0o700);
-    expect(observation.manifest).toEqual({ ...JSON.parse(sourceManifest.toString('utf8')), version: '1.5.0-bootstrap.0' });
+    expect(observation.manifest).toEqual({ ...JSON.parse(sourceManifest.toString('utf8')), version: bootstrapVersion });
     expect(observation.files.map((file) => file.path).sort()).toEqual([
       'LICENSE',
       'README.md',
@@ -396,11 +399,11 @@ describe('runtime archive producer', () => {
       status: 'bootstrap',
       package: {
         name: '@shipwithai/cumpa',
-        version: '1.5.0-bootstrap.0',
+        version: bootstrapVersion,
         manifestProjection: {
           field: 'version',
-          sourceVersion: '1.5.0',
-          packedVersion: '1.5.0-bootstrap.0',
+          sourceVersion: version,
+          packedVersion: bootstrapVersion,
           sourceSha256: createHash('sha256').update(sourceManifest).digest('hex'),
           projectedInputSha256: observation.manifestSha256,
           packedOutputSha256: createHash('sha256').update(packedManifest).digest('hex'),
@@ -411,7 +414,7 @@ describe('runtime archive producer', () => {
         packageLockSha256: createHash('sha256').update(sourceLock).digest('hex'),
       },
       archive: {
-        basename: 'cumpa-1.5.0-bootstrap.0.tgz',
+        basename: `cumpa-${bootstrapVersion}.tgz`,
         byteLength: (await readFile(archive)).byteLength,
         sha256: createHash('sha256').update(await readFile(archive)).digest('hex'),
       },
@@ -459,7 +462,7 @@ describe('runtime archive producer', () => {
       await invoke(fixture, producerArgs(fixture), { [failure]: '1' });
       await expect(lstat(fixture.evidence)).rejects.toMatchObject({ code: 'ENOENT' });
       if (failure !== 'CUMPA_FAKE_BUILD_FAILURE') {
-        await expect(lstat(join(fixture.custody, 'cumpa-1.5.0.tgz'))).resolves.toMatchObject({ isFile: expect.any(Function) });
+        await expect(lstat(join(fixture.custody, `cumpa-${version}.tgz`))).resolves.toMatchObject({ isFile: expect.any(Function) });
       }
     }
   });
