@@ -8,7 +8,7 @@ import StatusBadge from './StatusBadge.vue';
 const props = defineProps<{
   leaf: FileTreeLeaf;
   level: number;
-  focused: boolean;
+  tabbable: boolean;
   selected: boolean;
 }>();
 
@@ -46,7 +46,7 @@ const availabilityLabel = computed(() => {
       role="treeitem"
       :aria-level="level"
       :aria-selected="selected"
-      :tabindex="focused ? 0 : -1"
+      :tabindex="tabbable ? 0 : -1"
       :data-row-id="rowId"
       :data-file-id="leaf.fileId"
       :style="{ '--tree-indent': `${8 + (level - 1) * 16}px` }"

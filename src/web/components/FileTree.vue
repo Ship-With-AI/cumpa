@@ -197,7 +197,7 @@ watch(
             :directory="node"
             :level="1"
             :expanded-directory-ids="model.displayExpandedDirectoryIds"
-            :focused-row-id="model.focusedRowId"
+            :tabbable-row-id="model.tabbableRowId"
             :selected-file-id="model.selectedFileId"
             @activate-file="activateFile"
             @focus-row="focusRow"
@@ -207,7 +207,7 @@ watch(
             v-else
             :leaf="node"
             :level="1"
-            :focused="model.focusedRowId === `file:${node.fileId}`"
+            :tabbable="model.tabbableRowId === `file:${node.fileId}`"
             :selected="model.selectedFileId === node.fileId"
             @activate="activateFile"
             @focus-row="focusRow"

@@ -10,7 +10,7 @@ const props = defineProps<{
   directory: FileTreeDirectory;
   level: number;
   expandedDirectoryIds: readonly string[];
-  focusedRowId: string | null;
+  tabbableRowId: string | null;
   selectedFileId: string | null;
 }>();
 
@@ -51,7 +51,7 @@ const descendantCountLabel = computed(
       :aria-level="level"
       :aria-expanded="expanded"
       aria-selected="false"
-      :tabindex="focusedRowId === rowId ? 0 : -1"
+      :tabindex="tabbableRowId === rowId ? 0 : -1"
       :data-row-id="rowId"
       :style="{ '--tree-indent': `${8 + (level - 1) * 16}px` }"
       @focus="emit('focusRow', rowId)"
@@ -71,7 +71,7 @@ const descendantCountLabel = computed(
           :directory="child"
           :level="level + 1"
           :expanded-directory-ids="expandedDirectoryIds"
-          :focused-row-id="focusedRowId"
+          :tabbable-row-id="tabbableRowId"
           :selected-file-id="selectedFileId"
           @activate-file="emit('activateFile', $event)"
           @focus-row="emit('focusRow', $event)"
@@ -82,7 +82,7 @@ const descendantCountLabel = computed(
           :key="child.fileId"
           :leaf="child"
           :level="level + 1"
-          :focused="focusedRowId === `file:${child.fileId}`"
+          :tabbable="tabbableRowId === `file:${child.fileId}`"
           :selected="selectedFileId === child.fileId"
           @activate="emit('activateFile', $event)"
           @focus-row="emit('focusRow', $event)"
