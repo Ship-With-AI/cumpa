@@ -382,9 +382,10 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
     await page.setViewportSize({ width: 760, height: 900 });
     const filesToggle = page.getByRole('button', { name: 'Open changed files', exact: true });
     await filesToggle.click();
-    await page.getByRole('button', { name: 'Close files' }).click();
+    await expect(page.getByRole('dialog', { name: 'Changed files', exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Close changed files' }).click();
     await expect(filesToggle).toBeFocused();
-    await expect(page.locator('.review-files')).toHaveAttribute('inert', '');
+    await expect(page.locator('.changed-files-sidebar')).toHaveCount(0);
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await ensureReviewOpen(page);
