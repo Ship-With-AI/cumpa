@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { bootstrapVersion, version } from '../../scripts/release-identity.mjs';
 
 import { readRuntimeArtifact } from '../helpers/runtime-artifact.js';
 
@@ -137,7 +138,7 @@ beforeAll(async () => {
   await mkdir(join(root, 'src/native'), { recursive: true });
   producer = join(root, 'scripts/pack-runtime.mjs');
   verifier = join(root, 'scripts/verify-production-artifacts.mjs');
-  for (const path of ['scripts/pack-runtime.mjs', 'scripts/verify-production-artifacts.mjs', 'src/native/directory-exchange.cc', 'package-lock.json', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md']) {
+  for (const path of ['scripts/pack-runtime.mjs', 'scripts/release-identity.mjs', 'scripts/verify-production-artifacts.mjs', 'src/native/directory-exchange.cc', 'package-lock.json', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md']) {
     await writeFile(join(root, path), await readFile(join(projectRoot, path)));
   }
   const manifest = JSON.parse(await readFile(join(projectRoot, 'package.json'), 'utf8'));
@@ -196,7 +197,7 @@ describe('runtime artifact verifier', () => {
     expect(output).toMatchObject({
       status: 'passed',
       purpose: 'bootstrap',
-      package: { name: '@shipwithai/cumpa', version: '1.5.0-bootstrap.0' },
+      package: { name: '@shipwithai/cumpa', version: bootstrapVersion },
       support: { configured: true, originSha256: createHash('sha256').update(origin).digest('hex') },
     });
     await expect(verifierFailure(verifierArgs(bootstrap), { CUMPA_RELEASE_SUPPORT_SERVICE_URL: origin })).resolves.toContain('runtime artifact verifier failed');
@@ -213,13 +214,13 @@ describe('runtime artifact verifier', () => {
         evidence.status = 'candidate';
       }),
       reboundEvidence(bootstrap, (evidence) => {
-        (evidence.package as Record<string, unknown>).version = '1.5.0';
+        (evidence.package as Record<string, unknown>).version = version;
       }),
       reboundEvidence(bootstrap, (evidence) => {
         (evidence.package as Record<string, unknown>).manifestProjection = {
           field: 'name',
-          sourceVersion: '1.5.0',
-          packedVersion: '1.5.0-bootstrap.0',
+          sourceVersion: version,
+          packedVersion: bootstrapVersion,
           sourceSha256: (evidence.source as Record<string, unknown>).packageJsonSha256,
           projectedInputSha256: (evidence.source as Record<string, unknown>).packageJsonSha256,
           packedOutputSha256: (evidence.source as Record<string, unknown>).packageJsonSha256,
@@ -242,7 +243,7 @@ describe('runtime artifact verifier', () => {
       CUMPA_RUNTIME_ARCHIVE_SHA256: stable.evidence.archive.sha256,
       CUMPA_RUNTIME_EVIDENCE: stable.evidencePath,
     };
-    expect(readRuntimeArtifact(stableEnvironment).package.version).toBe('1.5.0');
+    expect(readRuntimeArtifact(stableEnvironment).package.version).toBe(version);
 
     const bootstrap = await produce('bootstrap', true);
     const bootstrapEnvironment = {
@@ -252,7 +253,7 @@ describe('runtime artifact verifier', () => {
       CUMPA_RUNTIME_EVIDENCE: bootstrap.evidencePath,
       CUMPA_RUNTIME_PROFILE: 'bootstrap',
     };
-    expect(readRuntimeArtifact(bootstrapEnvironment).package.version).toBe('1.5.0-bootstrap.0');
+    expect(readRuntimeArtifact(bootstrapEnvironment).package.version).toBe(bootstrapVersion);
     for (const profile of ['', 'candidate']) {
       expect(() => readRuntimeArtifact({ ...bootstrapEnvironment, CUMPA_RUNTIME_PROFILE: profile })).toThrow();
     }

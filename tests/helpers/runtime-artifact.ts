@@ -20,11 +20,12 @@ import { tmpdir } from 'node:os';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 
 import { z } from 'zod';
+import { bootstrapVersion, version } from '../../scripts/release-identity.mjs';
 
 const packageName = '@shipwithai/cumpa';
 const runtimeProfiles = {
-  stable: { version: '1.5.0', purpose: undefined },
-  bootstrap: { version: '1.5.0-bootstrap.0', purpose: 'bootstrap' },
+  stable: { version, purpose: undefined },
+  bootstrap: { version: bootstrapVersion, purpose: 'bootstrap' },
 } as const;
 type RuntimeProfile = keyof typeof runtimeProfiles;
 const publicRegistry = 'https://registry.npmjs.org/';
@@ -56,7 +57,7 @@ const ProducerEvidenceSchema = z.object({
   }).passthrough(),
   package: z.object({
     name: z.literal(packageName),
-    version: z.enum([runtimeProfiles.stable.version, runtimeProfiles.bootstrap.version]),
+    version: z.union([z.literal(runtimeProfiles.stable.version), z.literal(runtimeProfiles.bootstrap.version)]),
     runtimeDependencies: RuntimeDependenciesSchema,
     manifestProjection: ManifestProjectionSchema.optional(),
   }).passthrough(),

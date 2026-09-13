@@ -17,13 +17,14 @@ import os from 'node:os';
 import { basename, dirname, isAbsolute, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { babelParse, walk } from 'vue/compiler-sfc';
+import { bootstrapVersion, version } from './release-identity.mjs';
 
 const root = resolve(dirname(dirname(fileURLToPath(import.meta.url))));
 const purposes = new Set(['bootstrap', 'candidate', 'development-check', 'deployment-check']);
 const reusableStatuses = new Set(['candidate', 'verified', 'accepted-local']);
 const profiles = {
-  stable: { purpose: undefined, version: '1.5.0' },
-  bootstrap: { purpose: 'bootstrap', version: '1.5.0-bootstrap.0' },
+  stable: { purpose: undefined, version },
+  bootstrap: { purpose: 'bootstrap', version: bootstrapVersion },
 };
 const requiredRoots = ['package.json', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'dist/bin/cumpa.mjs'];
 const legalRoots = ['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'];
