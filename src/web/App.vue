@@ -244,6 +244,7 @@ function toggleFiles(): void {
 
 function closeChangedFiles(): void {
   changedFilesOpen.value = false;
+  void nextTick(() => diffWorkspace.value?.layout());
 }
 
 function openComments(): void {
@@ -794,7 +795,7 @@ function selectFile(fileId: string): void {
     return;
   }
   const focusHeading = changedFilesOpen.value;
-  changedFilesOpen.value = false;
+  closeChangedFiles();
   if (file.availability.kind !== 'text') {
     selectedFile.value = file;
     selectedContent.value = undefined;

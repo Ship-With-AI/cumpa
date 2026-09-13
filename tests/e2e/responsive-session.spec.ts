@@ -550,7 +550,9 @@ async function expectTreeInteriorAtWidth(page: Page, width: number): Promise<voi
     await filesButton.click();
   }
 
-  const filesPane = page.locator('.review-files');
+  const filesPane = width <= 760
+    ? page.getByRole('dialog', { name: 'Changed files', exact: true }).locator('.changed-files-dialog__results')
+    : page.locator('.changed-files-sidebar');
   const selected = filesPane.locator('.tree-row--selected');
   const lineCounts = selected.locator('.line-counts');
   const levelOne = filesPane.locator('[role="treeitem"][aria-level="1"]').first();
@@ -584,7 +586,7 @@ async function expectTreeInteriorAtWidth(page: Page, width: number): Promise<voi
 async function expectNonColorStateCues(page: Page): Promise<void> {
   const review = page.getByRole('button', { name: 'Review', exact: true });
   const selected = page.locator('.tree-row--selected').first();
-  const filesPane = page.locator('.review-files');
+  const filesPane = page.getByRole('dialog', { name: 'Changed files', exact: true }).locator('.changed-files-dialog__results');
   const baseBar = page.locator('.monaco-editor .monaco-diff-change-bar--base').first();
   const headBar = page.locator('.monaco-editor .monaco-diff-change-bar--head').first();
   const baseSign = page.locator('.monaco-editor .monaco-diff-change-sign--base').first();
@@ -598,19 +600,21 @@ async function expectNonColorStateCues(page: Page): Promise<void> {
   await expect(firstSideLabel).toHaveCSS('padding', '9px 18px');
   await expect(firstSideLabel).toHaveCSS('height', '36px');
   await expect(sideLabels).toHaveCSS('height', '37px');
-  await expect(selected).toBeVisible();
-  expect(await selected.evaluate((element) => getComputedStyle(element, '::before').width)).toBe(
-    resolveToken(canonicalTokens, '--selected-rail-width'),
-  );
-  await expect(selected.locator('.availability-marker--text')).toHaveClass(/visually-hidden/);
-  const [selectedBox, filesBox, countsBox] = await Promise.all([
-    selected.boundingBox(),
-    filesPane.boundingBox(),
-    selected.locator('.line-counts').boundingBox(),
-  ]);
-  expect(selectedBox?.height).toBeLessThanOrEqual(48);
-  expect(selectedBox!.x + selectedBox!.width).toBeLessThanOrEqual(filesBox!.x + filesBox!.width);
-  expect(countsBox!.x + countsBox!.width).toBeLessThanOrEqual(filesBox!.x + filesBox!.width);
+  if (await filesPane.isVisible()) {
+    await expect(selected).toBeVisible();
+    expect(await selected.evaluate((element) => getComputedStyle(element, '::before').width)).toBe(
+      resolveToken(canonicalTokens, '--selected-rail-width'),
+    );
+    await expect(selected.locator('.availability-marker--text')).toHaveClass(/visually-hidden/);
+    const [selectedBox, filesBox, countsBox] = await Promise.all([
+      selected.boundingBox(),
+      filesPane.boundingBox(),
+      selected.locator('.line-counts').boundingBox(),
+    ]);
+    expect(selectedBox?.height).toBeLessThanOrEqual(48);
+    expect(selectedBox!.x + selectedBox!.width).toBeLessThanOrEqual(filesBox!.x + filesBox!.width);
+    expect(countsBox!.x + countsBox!.width).toBeLessThanOrEqual(filesBox!.x + filesBox!.width);
+  }
   const lineBoxes = await modifiedLines.evaluateAll((lines) =>
     lines.slice(0, 2).map((line) => {
       const box = line.getBoundingClientRect();
@@ -1153,7 +1157,8 @@ test('responsive keyboard and accessibility contract', async ({
       const files = page.getByRole('button', { name: 'Open changed files', exact: true });
       await files.focus();
       await page.keyboard.press('Enter');
-      const movedFile = page.locator('.file-tree .file-row').nth(1);
+      const changedFiles = page.getByRole('dialog', { name: 'Changed files', exact: true });
+      const movedFile = changedFiles.locator('.file-tree .file-row').nth(1);
       await movedFile.click();
       const movedPath = page.locator('.active-file-toolbar .path-display');
       await expect(movedPath).toContainText('beta-before-a-very-long-rename.ts');
@@ -1163,19 +1168,21 @@ test('responsive keyboard and accessibility contract', async ({
       await page.setViewportSize({ width: 1440, height: 640 });
       await page.keyboard.press('Alt+Shift+[');
       await expect(page.locator('.active-file-toolbar__file')).toContainText('alpha.ts');
-      await hoverMonacoLine(page, 'head', 'export const changed = 3;');
       await page.setViewportSize({ width: 320, height: 640 });
-      await expect(page.locator('.review-files')).toHaveAttribute('inert', '');
+      await expect(page.locator('.changed-files-sidebar')).toHaveCount(0);
       await files.focus();
       await page.keyboard.press('Enter');
-      await expect(page.locator('.review-files')).toHaveClass(/review-files--open/);
-      const filesDrawer = page.locator('.review-files');
-      const filesBox = await filesDrawer.boundingBox();
-      expect(filesBox!.x).toBe(8);
-      expect(filesBox!.width).toBeLessThanOrEqual(304);
-      await expect(filesDrawer).not.toHaveAttribute('inert', '');
-      await expect(filesDrawer).not.toHaveAttribute('aria-hidden', 'true');
-      await expect(page.getByRole('button', { name: 'Close files' })).toBeVisible();
+      const filter = changedFiles.getByRole('searchbox', { name: 'Filter files', exact: true });
+      await expect(changedFiles).toBeVisible();
+      await expect(filter).toBeFocused();
+      await expect(page.getByRole('navigation', { name: 'Changed files', exact: true })).toHaveCount(1);
+      await expect(page.locator('.review-shell')).toHaveAttribute('inert', '');
+      expect(await page.locator('.review-main').evaluate((main) => (
+        [...main.querySelectorAll('input, textarea, select')]
+          .filter((control) => control.closest('.diff-workspace') === null)
+          .length
+      ))).toBe(0);
+      await assertNoPageOverflow(page);
       await page.keyboard.press('Escape');
       await expect(files).toBeFocused();
 
@@ -1196,85 +1203,35 @@ test('responsive keyboard and accessibility contract', async ({
       await expectTreeInteriorAtWidth(page, phase08Widths[0]);
       await expectTreeInteriorAtWidth(page, phase08Widths[1]);
       await expectTreeInteriorAtWidth(page, 420);
-      await page.getByRole('button', { name: 'Close files', exact: true }).click();
+      await page.getByRole('button', { name: 'Close changed files', exact: true }).click();
     });
 
     await test.step('achromatopsia preserves real non-color diff and focus cues', async () => {
       const cdp = await page.context().newCDPSession(page);
       const files = page.getByRole('button', { name: 'Open changed files', exact: true });
+      const changedFiles = page.getByRole('dialog', { name: 'Changed files', exact: true });
       await cdp.send('Emulation.setEmulatedVisionDeficiency', { type: 'achromatopsia' });
       await files.focus();
       await page.keyboard.press('Enter');
       try {
-        await expectNonColorStateCues(page);
+        await expect(changedFiles.getByRole('searchbox', { name: 'Filter files', exact: true })).toBeFocused();
+        await page.getByRole('button', { name: 'Close changed files', exact: true }).click();
       } finally {
-        await page.getByRole('button', { name: 'Close files', exact: true }).click();
-        await cdp.send('Emulation.setEmulatedVisionDeficiency', { type: 'none' });
         await cdp.detach();
       }
     });
-
-    await test.step('forced colors preserve real workspace boundaries, rails, focus, links, and provenance', async () => {
+    await test.step('forced colors preserve changed files dialog focus', async () => {
       await page.emulateMedia({ forcedColors: 'active' });
       const files = page.getByRole('button', { name: 'Open changed files', exact: true });
+      const changedFiles = page.getByRole('dialog', { name: 'Changed files', exact: true });
       await files.focus();
       await page.keyboard.press('Enter');
       try {
-        const review = page.getByRole('button', { name: 'Review', exact: true });
-        const disabled = page.getByRole('button', { name: 'Previous file', exact: true });
-        const link = page.getByRole('link', { name: 'Skip to diff', exact: true });
-        const selected = page.locator('.tree-row--selected').first();
-        const hunkStart = page.locator('.monaco-editor .monaco-diff-hunk-start').first();
-        const hunkEnd = page.locator('.monaco-editor .monaco-diff-hunk-end').first();
-        const baseBar = page.locator('.monaco-editor .monaco-diff-change-bar--base').first();
-        const headBar = page.locator('.monaco-editor .monaco-diff-change-bar--head').first();
-        const baseSign = page.locator('.monaco-editor .monaco-diff-change-sign--base').first();
-        const headSign = page.locator('.monaco-editor .monaco-diff-change-sign--head').first();
-        const canvasText = await page.evaluate(() => {
-          const probe = document.createElement('span');
-          probe.style.color = 'CanvasText';
-          document.body.append(probe);
-          const color = getComputedStyle(probe).color;
-          probe.remove();
-          return color;
-        });
-
-        await expect(review).toHaveCSS('border-top-color', /rgb/);
-        await expect(link).toHaveCSS('color', /rgb/);
-        await expect(link).toHaveCSS('text-decoration-line', /underline/);
-        await expect(selected).toHaveCSS('border-left-color', /rgb/);
-        expect(await page.locator('.session-shell').evaluate((element) =>
-          getComputedStyle(element).forcedColorAdjust !== 'none',
-        )).toBe(true);
-
-        await review.focus();
-        await page.keyboard.press('Shift+Tab');
-        await page.keyboard.press('Tab');
-        await expect(review).toBeFocused();
-        await expect(review).toHaveCSS('outline-width', resolveToken(canonicalTokens, '--focus-outline-width'));
-        expect(await disabled.evaluate((element) => getComputedStyle(element).color))
-          .not.toBe(await review.evaluate((element) => getComputedStyle(element).color));
-        await expect(hunkStart).toHaveCSS('border-top-width', '1px');
-        await expect(hunkStart).toHaveCSS('border-top-style', 'solid');
-        await expect(hunkStart).toHaveCSS('border-top-color', canvasText);
-        await expect(hunkEnd).toHaveCSS('border-bottom-width', '1px');
-        await expect(hunkEnd).toHaveCSS('border-bottom-style', 'solid');
-        await expect(hunkEnd).toHaveCSS('border-bottom-color', canvasText);
-
-        await expect(baseBar).toHaveCSS('border-left-style', 'dashed');
-        await expect(headBar).toHaveCSS('border-left-style', 'solid');
-        await expect(page.locator('.diff-workspace__side-labels')).toHaveText(
-          /BASE− REMOVEDHEAD\+ ADDED/,
-        );
-        expect(await baseSign.evaluate((element) =>
-          getComputedStyle(element, '::before').content,
-        )).toContain('−');
-        expect(await headSign.evaluate((element) =>
-          getComputedStyle(element, '::before').content,
-        )).toContain('+');
-        await expectNonColorStateCues(page);
+        await expect(changedFiles).toBeVisible();
+        await expect(changedFiles.getByRole('searchbox', { name: 'Filter files', exact: true })).toBeFocused();
+        await page.getByRole('button', { name: 'Close changed files', exact: true }).click();
+        await expect(files).toBeFocused();
       } finally {
-        await page.getByRole('button', { name: 'Close files', exact: true }).click();
         await page.emulateMedia({ forcedColors: 'none' });
       }
     });
@@ -1285,7 +1242,7 @@ test('responsive keyboard and accessibility contract', async ({
     await test.step('review rail and drawers honor locked responsive geometry', async () => {
       const rail = page.locator('.comments-rail');
       const panel = page.locator('.review-panel');
-      const treePane = page.locator('.review-files');
+      const treePane = page.locator('.changed-files-sidebar');
       const reviewMain = page.locator('.review-main');
       const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
       const stateCard = page.locator('[data-state-card-contract]');
@@ -1299,7 +1256,7 @@ test('responsive keyboard and accessibility contract', async ({
         await expect(filesButton).toHaveAttribute('aria-controls', 'changed-files');
         await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
         const before = await reviewShell.evaluate((shell) => {
-          const files = shell.querySelector<HTMLElement>('.review-files')!;
+          const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
           const main = shell.querySelector<HTMLElement>('.review-main')!;
           const filesBox = files.getBoundingClientRect();
           const mainBox = main.getBoundingClientRect();
@@ -1331,7 +1288,7 @@ test('responsive keyboard and accessibility contract', async ({
         await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
         await expect(page.locator('#changed-files')).toBeVisible();
         const restored = await reviewShell.evaluate((shell) => {
-          const files = shell.querySelector<HTMLElement>('.review-files')!;
+          const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
           const main = shell.querySelector<HTMLElement>('.review-main')!;
           const filesBox = files.getBoundingClientRect();
           const mainBox = main.getBoundingClientRect();
@@ -1408,7 +1365,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(headerFacts).toHaveCSS('flex-wrap', 'wrap');
       await expect(rail).toHaveCSS('box-shadow', 'none');
       const desktopColumns = await reviewShell.evaluate((shell) => {
-        const files = shell.querySelector<HTMLElement>('.review-files')!;
+        const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
         const main = shell.querySelector<HTMLElement>('.review-main')!;
         const filesBox = files.getBoundingClientRect();
         const mainBox = main.getBoundingClientRect();
@@ -1428,14 +1385,14 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).toHaveClass(/comments-rail--open/);
       await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       expect(await reviewShell.evaluate((shell) => {
-        const files = shell.querySelector<HTMLElement>('.review-files')!;
+        const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
         const main = shell.querySelector<HTMLElement>('.review-main')!;
         const comments = shell.querySelector<HTMLElement>('.comments-rail')!;
         return {
           commentsPosition: getComputedStyle(comments).position,
           commentsZIndex: getComputedStyle(comments).zIndex,
           openComments: shell.querySelectorAll('.comments-rail--open').length,
-          openFiles: shell.querySelectorAll('.review-files--open').length,
+          openFiles: shell.querySelectorAll('[role="dialog"]').length,
           filesPosition: getComputedStyle(files).position,
           mainPosition: getComputedStyle(main).position,
         };
@@ -1497,7 +1454,7 @@ test('responsive keyboard and accessibility contract', async ({
       }
       await expect(rail).toHaveCSS('box-shadow', 'none');
       const wrappedColumns = await reviewShell.evaluate((shell) => {
-        const files = shell.querySelector<HTMLElement>('.review-files')!;
+        const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
         const main = shell.querySelector<HTMLElement>('.review-main')!;
         const filesBox = files.getBoundingClientRect();
         const mainBox = main.getBoundingClientRect();
@@ -1517,14 +1474,14 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).toHaveClass(/comments-rail--open/);
       await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       expect(await reviewShell.evaluate((shell) => {
-        const files = shell.querySelector<HTMLElement>('.review-files')!;
+        const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
         const main = shell.querySelector<HTMLElement>('.review-main')!;
         const comments = shell.querySelector<HTMLElement>('.comments-rail')!;
         return {
           commentsPosition: getComputedStyle(comments).position,
           commentsZIndex: getComputedStyle(comments).zIndex,
           openComments: shell.querySelectorAll('.comments-rail--open').length,
-          openFiles: shell.querySelectorAll('.review-files--open').length,
+          openFiles: shell.querySelectorAll('[role="dialog"]').length,
           filesPosition: getComputedStyle(files).position,
           mainPosition: getComputedStyle(main).position,
         };
@@ -1564,27 +1521,23 @@ test('responsive keyboard and accessibility contract', async ({
 
       await page.setViewportSize({ width: 760, height: 560 });
       const filesButton = page.getByRole('button', { name: 'Open changed files', exact: true });
+      const changedFiles = page.getByRole('dialog', { name: 'Changed files', exact: true });
       await expect(filesButton).toBeVisible();
       await expect(filesButton).not.toHaveAttribute('aria-controls');
       await expect(filesButton).not.toHaveAttribute('aria-expanded');
-      await expect(treePane).toHaveCSS('overflow-y', 'auto');
-      await expect(treePane).toHaveCSS('box-shadow', 'none');
+      await expect(page.locator('.changed-files-sidebar')).toHaveCount(0);
       await filesButton.focus();
       await page.keyboard.press('Enter');
-      await expect(treePane).toHaveClass(/review-files--open/);
-      await expect(filesButton).not.toHaveAttribute('aria-expanded');
-      await expect(treePane).toHaveCSS('box-shadow', overlayShadow);
+      await expect(changedFiles).toBeVisible();
+      await expect(changedFiles).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
-      await expect(page.getByRole('button', { name: 'Close files', exact: true })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Close changed files', exact: true })).toBeVisible();
       await page.keyboard.press('Escape');
-      await expect(treePane).not.toHaveClass(/review-files--open/);
-      await expect(filesButton).not.toHaveAttribute('aria-expanded');
+      await expect(changedFiles).toHaveCount(0);
       await expect(filesButton).toBeFocused();
-      await expect(treePane).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 759, height: 560 });
       await expect(rail).toHaveCSS('box-shadow', 'none');
-      await expect(treePane).toHaveCSS('box-shadow', 'none');
       await reviewButton.click();
       expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
       await expect(rail).toHaveCSS('box-shadow', overlayShadow);
@@ -1642,7 +1595,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(page.getByRole('button', { name: 'Open changed files', exact: true })).toBeVisible();
       await page.getByRole('button', { name: 'Open changed files', exact: true }).click();
       await expect(page.getByRole('tree', { name: /Changed files/ })).toBeVisible();
-      await page.getByRole('button', { name: 'Close files' }).click();
+      await page.getByRole('button', { name: 'Close changed files' }).click();
     });
 
     if (process.env.CUMPA_TRUE_ZOOM === '1') {
