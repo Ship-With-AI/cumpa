@@ -18,7 +18,7 @@ Cumpa restyles the existing browser review workspace to the approved visual cont
 
 - [x] **Phase 08: Semantic Visual Foundation** — Establish the mockup-derived token root, Monaco parity, and shared typography, spacing, density, and radius language. (completed 2026-09-13)
 - [x] **Phase 09: Changed-File Tree** — Deliver the mockup's dense, filterable, keyboard-operable changed-file navigation without losing existing tree semantics. (completed 2026-09-13)
-- [ ] **Phase 10: Diff Reading Surface** — Restyle the Monaco-authoritative diff into the mockup's quieter, explicit Base/Head reading surface while preserving geometry and context behavior.
+- [x] **Phase 10: Diff Reading Surface** — Restyle the Monaco-authoritative diff into the mockup's quieter, explicit Base/Head reading surface while preserving geometry and context behavior. (completed 2026-09-13)
 - [ ] **Phase 11: Workspace Shell & Review Surfaces** — Compose the responsive shell, dialogs, inline comments, and comments rail while keeping critical warnings continuously visible.
 - [ ] **Phase 12: Behavior Continuity** — Prove the complete restyled workflow preserves review contracts, packaged behavior, and structural accessibility.
 
@@ -100,14 +100,15 @@ Plans:
 - Keep `tests/unit/line-mapping.test.ts` and the anchoring behavior in `tests/integration/monaco-anchor.spec.ts` passing unchanged.
 - Planning correction: `tests/unit/monaco-diff-semantics.test.ts` and `tests/unit/monaco-diff-adapter.test.ts` **cannot** stay unchanged. The decoration suite projects every decoration's sorted option keys, so the added hunk-boundary decorations change all five exhaustive arrays; the adapter suite gains the new option and density assertions. Also not listed but coupled: `tests/unit/monaco-theme.test.ts` enforces exhaustive theme-key set equality, and `tests/integration/anchored-workspace.spec.ts` pins the side-label markup nesting and the outer-overflow canary.
 
-**Plans**: 5 plans
+**Plans**: 6/5 plans complete
 
 Plans:
-- [ ] 10-01-PLAN.md — Monaco public option surface and theme paint authority (wave 1)
-- [ ] 10-02-PLAN.md — Source-correct ariaLabel and responsive code typography (wave 2)
-- [ ] 10-03-PLAN.md — Hidden-region paint authority and token re-homing (wave 2)
-- [ ] 10-04-PLAN.md — Hunk-group boundary decorations (wave 3)
-- [ ] 10-05-PLAN.md — Side-label geometry and phase-wide green (wave 4)
+
+- [x] 10-01-PLAN.md — Monaco public option surface and theme paint authority (wave 1)
+- [x] 10-02-PLAN.md — Source-correct ariaLabel and responsive code typography (wave 2)
+- [x] 10-03-PLAN.md — Hidden-region paint authority and token re-homing (wave 2)
+- [x] 10-04-PLAN.md — Hunk-group boundary decorations (wave 3)
+- [x] 10-05-PLAN.md — Side-label geometry and phase-wide green (wave 4)
 
 ### Phase 11: Workspace Shell & Review Surfaces
 
@@ -158,6 +159,6 @@ Plans:
 |-------|----------------|--------|-----------|
 | 08. Semantic Visual Foundation | 7/5 | Complete   | 2026-09-13 |
 | 09. Changed-File Tree | 6/5 | Complete   | 2026-09-13 |
-| 10. Diff Reading Surface | 0/TBD | Not started | — |
+| 10. Diff Reading Surface | 6/5 | Complete   | 2026-09-13 |
 | 11. Workspace Shell & Review Surfaces | 0/TBD | Not started | — |
 | 12. Behavior Continuity | 0/TBD | Not started | — |

@@ -7,10 +7,10 @@ last_updated: "2026-09-13T10:05:00.000Z"
 last_activity: 2026-09-13
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
-  percent: 40
+  completed_phases: 3
+  total_plans: 15
+  completed_plans: 15
+  percent: 60
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-12)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 10 — Diff Reading Surface
+**Current focus:** Phase 11 — Workspace Shell & Review Surfaces
 
 ## Current Position
 
-Phase: 10 of 12 (3 of 5 for v1.6) — Diff Reading Surface
+Phase: 11 of 12 (4 of 5 for v1.6) — Workspace Shell & Review Surfaces
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-13 — Phase 09 complete (verification passed; UI audit 24/24 with live browser evidence; security 23/23; review findings closed)
+Last activity: 2026-09-13 — Phase 10 complete (29/29 must-haves; UI audit 24/24 with live evidence; security 17/17; review warnings closed)
 
 ## Performance Metrics
 
