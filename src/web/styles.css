@@ -749,6 +749,8 @@ input:-webkit-autofill:focus {
 
 .modal-dialog__close {
   justify-self: end;
+  min-width: 44px;
+  min-height: 44px;
 }
 
 .support-dialog {

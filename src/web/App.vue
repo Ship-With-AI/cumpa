@@ -29,10 +29,9 @@ import ErrorState from './components/ErrorState.vue';
 import FileTree from './components/FileTree.vue';
 import IdentityHeader from './components/IdentityHeader.vue';
 import SupportDialog from './components/SupportDialog.vue';
-import IdentityPanel from './components/IdentityPanel.vue';
+import DetailsDialog from './components/DetailsDialog.vue';
 import InlineNotice from './components/InlineNotice.vue';
 import SelectorDriftNotice from './components/SelectorDriftNotice.vue';
-import KeyboardHelp from './components/KeyboardHelp.vue';
 import ReviewToolbar from './components/ReviewToolbar.vue';
 import ActiveFileToolbar from './components/ActiveFileToolbar.vue';
 import ShellFooter from './components/ShellFooter.vue';
@@ -82,20 +81,18 @@ const diffError = ref('');
 const selectedMetadata = shallowRef<FileMetadataResponse>();
 const metadataLoading = ref(false);
 const metadataError = ref('');
-const identityOpen = ref(false);
+const detailsOpen = ref(false);
 const isNarrow = ref(false);
-const isCompact = ref(false);
 const isFilesDrawer = ref(false);
 const filesOpen = ref(false);
 const filesCollapsed = ref(false);
 const commentsOpen = ref(false);
-const keyboardHelpOpen = ref(false);
 const liveMessage = ref('');
 const liveMessageVersion = ref(0);
 const activeFileToolbar = ref<InstanceType<typeof ActiveFileToolbar>>();
 const diffWorkspace = ref<InstanceType<typeof DiffWorkspace>>();
 const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
-const identityPanel = ref<InstanceType<typeof IdentityPanel>>();
+const detailsDialog = ref<InstanceType<typeof DetailsDialog>>();
 const filesDrawer = ref<HTMLElement>();
 const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
@@ -157,9 +154,6 @@ const isExactPatchSession = computed(() => exactPatchSession.value !== undefined
 const supportEnabled = computed(() => session.value?.support?.enabled === true);
 
 const patchSnapshotUnavailable = computed(() => patchStatus.value?.kind === 'snapshotUnavailable');
-const identityModal = computed(() =>
-  isExactPatchSession.value ? isCompact.value : isNarrow.value,
-);
 const patchDrifted = computed(() => patchStatus.value?.kind === 'drifted');
 const reviewableFiles = computed(() => session.value?.files.filter((file) => file.availability.kind === 'text') ?? []);
 const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? selectedFile.value?.oldPath?.display ?? 'Changed file');
@@ -853,34 +847,23 @@ function retryMetadata(): void {
   }
 }
 
-function toggleIdentity(): void {
-  if (identityOpen.value) {
-
-    closeIdentity();
-    return;
-  }
-
-  identityOpen.value = true;
-  if (identityModal.value) {
-    void nextTick(() => identityPanel.value?.focusClose());
-  }
+function openDetails(): void {
+  detailsOpen.value = true;
 }
 
-function openIdentityScope(): void {
-  identityOpen.value = true;
-  if (identityModal.value) {
-    void nextTick(() => identityPanel.value?.focusClose());
-  }
+function openKeyboardHelp(): void {
+  detailsOpen.value = true;
+  void nextTick(() => nextTick(() => detailsDialog.value?.focusKeyboardHelp()));
+}
+
+function closeDetails(): void {
+  detailsOpen.value = false;
 }
 
 function openReviewNotes(): void {
   // Plan 04 supplies the dialog; the trigger is intentionally inert until then.
 }
 
-function closeIdentity(): void {
-  identityOpen.value = false;
-  void nextTick(() => identityHeader.value?.focusDisclosure());
-}
 
 function handleKeydown(event: KeyboardEvent): void {
   const target = event.target;
@@ -896,24 +879,17 @@ function handleKeydown(event: KeyboardEvent): void {
   }
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
   if (event.key === 'Escape') {
-    if (isExactPatchSession.value && identityOpen.value) {
-      closeIdentity();
-      return;
-    }
-    if (keyboardHelpOpen.value) {
-      keyboardHelpOpen.value = false;
-    } else if (commentsOpen.value) {
+    if (detailsOpen.value) return;
+    if (commentsOpen.value) {
       closeComments();
     } else if (filesOpen.value) {
       closeFiles();
-    } else if (identityOpen.value) {
-      closeIdentity();
     }
     return;
   }
   if (event.key === '?' && !event.metaKey && !event.ctrlKey && !event.altKey) {
     event.preventDefault();
-    keyboardHelpOpen.value = true;
+    openKeyboardHelp();
   } else if (event.altKey && event.shiftKey && event.key === '[') {
     event.preventDefault();
     previousFile();
@@ -930,7 +906,6 @@ function handleViewportChange(): void {
   const isNarrowViewport = viewportMedia?.matches ?? false;
   isFilesDrawer.value = isNarrowViewport;
   isNarrow.value = isNarrowViewport;
-  isCompact.value = isNarrowViewport;
   if (!isNarrowViewport) {
     filesOpen.value = false;
   }
@@ -1164,13 +1139,13 @@ onBeforeUnmount(() => {
     <IdentityHeader
       ref="identityHeader"
       :session="session"
-      :expanded="identityOpen"
+      :expanded="detailsOpen"
       :support-enabled="supportEnabled"
       :support-open="supportDialogOpen"
       :support-inert="supportDialogOpen"
       :attached-lifecycle="isAttachedSession ? (attachedLifecycle === 'finishing' || attachedLifecycle === 'completed' ? attachedLifecycle : 'waiting') : undefined"
-      :inert="isExactPatchSession && identityOpen && identityModal"
-      @toggle="toggleIdentity"
+      :inert="detailsOpen || supportDialogOpen"
+      @toggle="openDetails"
       @support="openSupportDialog"
       @review-notes="openReviewNotes"
     />
@@ -1179,7 +1154,6 @@ onBeforeUnmount(() => {
       <p>The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.</p>
     </InlineNotice>
     <SelectorDriftNotice v-else :drift="selectorDriftStatus" />
-    <IdentityPanel ref="identityPanel" v-if="identityOpen" :session="session" :modal="identityModal" @close="closeIdentity" />
 
     <DraftRecovery
       v-if="recoveryLoad !== undefined && primarySurface !== 'workspace'"
@@ -1193,7 +1167,7 @@ onBeforeUnmount(() => {
       v-else
       class="review-shell"
       :class="{ 'review-shell--files-collapsed': !isFilesDrawer && filesCollapsed }"
-      :inert="(identityOpen && identityModal) || supportDialogOpen"
+      :inert="detailsOpen || supportDialogOpen"
     >
       <nav
         v-if="isFilesDrawer || !filesCollapsed"
@@ -1238,10 +1212,9 @@ onBeforeUnmount(() => {
             @previous-change="previousChange"
             @next-change="nextChange"
             @comments="toggleComments"
-            @keyboard-help="keyboardHelpOpen = true"
+            @keyboard-help="openKeyboardHelp"
           />
         </div>
-        <KeyboardHelp :open="keyboardHelpOpen" @close="keyboardHelpOpen = false" />
 
         <section v-if="session.files.length === 0" class="empty-state">
           <template v-if="isExactPatchSession">
@@ -1357,11 +1330,22 @@ onBeforeUnmount(() => {
           @review-inline-composer="reviewInlineComposer"
           @finish-review="finishAttachedReview"
           @reload-attached="reloadPage"
-          @view-attached-scope="openIdentityScope"
+          @view-attached-scope="openDetails"
         />
       </aside>
     </div>
     <ShellFooter :session="session" />
+    <DetailsDialog
+      ref="detailsDialog"
+      :open="detailsOpen"
+      :session="session"
+      :file="selectedFile"
+      :metadata="selectedMetadata"
+      :metadata-loading="metadataLoading"
+      :metadata-error="metadataError"
+      @close="closeDetails"
+      @retry-metadata="retryMetadata"
+    />
     <SupportDialog
       v-if="supportEnabled"
       ref="supportDialog"

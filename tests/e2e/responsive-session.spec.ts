@@ -1116,11 +1116,19 @@ test('responsive keyboard and accessibility contract', async ({
       await keyboardHelp.focus();
       await expectFocusIndicatorUnclipped(keyboardHelp);
       await page.keyboard.press('?');
-      await expect(page.getByRole('heading', { name: 'Keyboard actions', exact: true })).toBeVisible();
-      await expect(page.getByText('Add or focus comment on current line — Option+Enter on macOS; Alt+Enter on Windows and Linux')).toBeVisible();
-      await expect(keyboardHelp).toBeFocused();
+      const details = page.getByRole('dialog', { name: 'Details', exact: true });
+      const keyboardHeading = details.getByRole('heading', {
+        name: 'Keyboard actions',
+        exact: true,
+      });
+      await expect(keyboardHeading).toBeVisible();
+      await expect(keyboardHeading).toBeFocused();
+      await expect(
+        details.getByText('Add or focus comment on current line — Option+Enter on macOS; Alt+Enter on Windows and Linux'),
+      ).toBeVisible();
       await page.keyboard.press('Escape');
-      await expect(page.getByRole('heading', { name: 'Keyboard actions', exact: true })).toHaveCount(0);
+      await expect(details).toHaveCount(0);
+      await expect(keyboardHelp).toBeFocused();
 
       await page.keyboard.press('F7');
       await page.keyboard.press('Shift+F7');
@@ -1538,7 +1546,7 @@ test('responsive keyboard and accessibility contract', async ({
       await assertFilesCollapse(761);
       const identityDisclosure = page.getByRole('button', { name: 'Details', exact: true });
       await identityDisclosure.click();
-      await expect(page.locator('.identity-panel--modal')).toHaveCount(0);
+      await expect(page.getByRole('dialog', { name: 'Details', exact: true })).toBeVisible();
       await page.keyboard.press('Escape');
       await expect(rail).toHaveCSS('box-shadow', 'none');
       await reviewButton.click();
@@ -1601,28 +1609,29 @@ test('responsive keyboard and accessibility contract', async ({
       await expectFocusIndicatorUnclipped(reviewButton);
       await assertNoPageOverflow(page);
     });
-    await test.step('narrow identity sheet traps focus and restores disclosure', async () => {
-      const disclosure = page.getByRole('button', {
-        name: 'Details',
-        exact: true,
-      });
-      await expectMinimumTarget(disclosure);
-      await disclosure.click();
-      const dialog = page.getByRole('dialog', { name: 'Comparison identities' });
-      const close = dialog.getByRole('button', {
-        name: 'Close comparison identities',
-      });
-      await expect(dialog).toHaveAttribute('aria-modal', 'true');
-      await expect(close).toBeFocused();
-      await expect(page.locator('.review-shell')).toHaveAttribute('inert', '');
-      const copyButtons = dialog.getByRole('button', { name: /^Copy full/ });
-      await copyButtons.last().focus();
-      await page.keyboard.press('Tab');
-      await expect(close).toBeFocused();
-      await page.keyboard.press('Escape');
-      await expect(dialog).toHaveCount(0);
-      await expect(disclosure).toBeFocused();
+  await test.step('details dialog traps focus and restores disclosure', async () => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const disclosure = page.getByRole('button', {
+      name: 'Details',
+      exact: true,
     });
+    await expectMinimumTarget(disclosure);
+    await disclosure.click();
+    const dialog = page.getByRole('dialog', { name: 'Details' });
+    const close = dialog.getByRole('button', {
+      name: 'Close details',
+    });
+    await expect(dialog).toHaveAttribute('aria-modal', 'true');
+    await expect(close).toBeFocused();
+    await expect(page.locator('.review-shell')).toHaveAttribute('inert', '');
+    const lastControl = dialog.locator('button:not(:disabled)').last();
+    await lastControl.focus();
+    await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(disclosure).toBeFocused();
+  });
 
     await test.step('compact viewport preserves accessible review controls', async () => {
       await page.setViewportSize({ width: 320, height: 640 });

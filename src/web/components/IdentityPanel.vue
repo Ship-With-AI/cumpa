@@ -36,11 +36,11 @@ const patchTarget = computed(() =>
     <h3 id="comparison-heading">Comparison</h3>
     <dl v-if="isExactPatch && patchSession !== undefined" class="identity-list">
       <div class="identity-row">
-        <dt>Preimage</dt>
+        <dt>PREIMAGE</dt>
         <dd>Repository object</dd>
       </div>
       <div class="identity-row">
-        <dt>Postimage</dt>
+        <dt>POSTIMAGE</dt>
         <dd>Implemented content</dd>
       </div>
       <div class="identity-row">

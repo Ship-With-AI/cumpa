@@ -37,10 +37,6 @@ const headLabel = computed(() =>
 const headOid = computed(() =>
   controlSafeDisplay(pinnedSession.value?.head.oid.slice(0, 7) ?? ''),
 );
-const isRange = computed(() => pinnedSession.value?.range?.kind === 'revisions');
-const panelId = computed(() =>
-  isExactPatch.value ? 'patch-scope-panel' : isRange.value ? 'review-scope-panel' : 'comparison-identities-panel',
-);
 const dirtyEndpoints = computed(() =>
   isExactPatch.value
     ? []
@@ -134,7 +130,6 @@ defineExpose({ focusDisclosure, focusSupport });
         type="button"
         class="identity-disclosure"
         aria-haspopup="dialog"
-        :aria-controls="panelId"
         :aria-expanded="expanded"
         @click="emit('toggle')"
       >

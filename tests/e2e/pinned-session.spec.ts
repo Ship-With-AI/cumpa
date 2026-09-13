@@ -441,8 +441,8 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
       `BASEBase fixture · ${expectedBase.slice(0, 7)}→HEADHead fixture · ${expectedHead.slice(0, 7)}`,
     );
     await expect(page.getByText('Pinned comparison', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Details' })).toHaveAttribute('aria-haspopup', 'dialog');
-    await page.getByRole('button', { name: 'Details' }).click();
+    await expect(page.getByRole('button', { name: 'Details', exact: true })).toHaveAttribute('aria-haspopup', 'dialog');
+    await page.getByRole('button', { name: 'Details', exact: true }).click();
     await expect(
       page.locator('.identity-row').nth(0).getByText(expectedBase, { exact: true }),
     ).toBeVisible();
@@ -497,10 +497,10 @@ test('generated range request preserves the server-scoped pinned review', async 
     await expect(page.getByRole('tree')).not.toContainText('at-limit.txt');
     await expect(page.getByRole('tree')).not.toContainText('over-limit.txt');
 
-    const disclosure = page.getByRole('button', { name: 'Details' });
+    const disclosure = page.getByRole('button', { name: 'Details', exact: true });
     await disclosure.click();
-    const scope = page.getByRole('region', { name: 'Review scope' });
-    await expect(scope.getByRole('heading', { name: 'Review scope' })).toBeVisible();
+    const scope = page.getByRole('dialog', { name: 'Details' });
+    await expect(scope.getByRole('heading', { name: 'Scope and provenance' })).toBeVisible();
     await expect(scope.getByText('Base commit', { exact: true })).toBeVisible();
     await expect(scope.getByText('Head commit', { exact: true })).toBeVisible();
     await expect(scope.getByText(expectedBase, { exact: true })).toBeVisible();
@@ -553,8 +553,8 @@ test('range empty state exposes all changed paths without changing interactive c
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'No changes match this review scope' })).toBeVisible();
     await expect(page.getByText('The pinned commits contain no changed files. Details lists the commits.')).toBeVisible();
-    await page.getByRole('button', { name: 'Details' }).click();
-    const scope = page.getByRole('region', { name: 'Review scope' });
+    await page.getByRole('button', { name: 'Details', exact: true }).click();
+    const scope = page.getByRole('dialog', { name: 'Details' });
     await expect(scope.getByText('All changed paths', { exact: true })).toBeVisible();
   } finally {
     await stopGeneratedCli(running);
@@ -602,16 +602,17 @@ test('narrow range scope is a focused modal sheet', async ({ browser }, testInfo
   try {
     const url = await waitForLoopbackUrl(running);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    const disclosure = page.getByRole('button', { name: 'Details' });
+    const disclosure = page.getByRole('button', { name: 'Details', exact: true });
     await disclosure.click();
-    const scope = page.getByRole('dialog', { name: 'Review scope' });
-    const close = scope.getByRole('button', { name: 'Close review scope' });
+    const scope = page.getByRole('dialog', { name: 'Details' });
+    const close = scope.getByRole('button', { name: 'Close details' });
     await expect(close).toBeFocused();
     const box = await close.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(44);
     expect(box?.height).toBeGreaterThanOrEqual(44);
+    const lastControl = scope.locator('button:not(:disabled)').last();
     await page.keyboard.press('Shift+Tab');
-    await expect(scope.getByRole('button', { name: 'Copy full head commit' })).toBeFocused();
+    await expect(lastControl).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(close).toBeFocused();
     await page.keyboard.press('Escape');
@@ -900,7 +901,7 @@ test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) 
           }),
         ).toContainText(laterFile.newPath?.display ?? laterFile.oldPath?.display ?? '');
 
-        await page.getByRole('button', { name: 'Details' }).click();
+        await page.getByRole('button', { name: 'Details', exact: true }).click();
         const identities = page.getByRole('dialog', {
           name: 'Details',
         });
@@ -980,6 +981,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
 
     const disclosure = page.getByRole('button', {
       name: 'Details',
+      exact: true,
     });
     await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
     await disclosure.click();
@@ -1157,7 +1159,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
         { exact: true },
       ),
     ).toBeAttached();
-    await dirtyPage.getByRole('button', { name: 'Details' }).click();
+    await dirtyPage.getByRole('button', { name: 'Details', exact: true }).click();
     const dirtyPanel = dirtyPage.getByRole('dialog', {
       name: 'Details',
     });
@@ -1196,7 +1198,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     await expect(emptyPage.getByText('Opening pinned comparison…')).toHaveCount(0);
     await expect(emptyPage.locator('.review-main > .empty-state')).toHaveCSS('background-color', toRootRgb('--surface-panel'));
     await expect(emptyPage.locator('.review-main > .empty-state')).toHaveCSS('box-shadow', 'none');
-    await expect(page.getByRole('button', { name: 'Details' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Details', exact: true })).toBeVisible();
   } finally {
     await stopGeneratedCli(emptyRunning);
     await emptyRepository.cleanup();
@@ -1421,6 +1423,19 @@ test('metadata and availability states', async ({ browser, context, page }, test
     const contextHeader = workspace.locator('.active-file-toolbar__context');
     await expect(contextHeader.getByText('Base', { exact: true })).toBeVisible();
     await expect(contextHeader.getByText('Head', { exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Details', exact: true }).click();
+    const details = page.getByRole('dialog', { name: 'Details' });
+    const fileDetails = details.getByLabel('File details');
+    await expect(fileDetails.getByRole('heading', { name: 'File details — 00-src/new\\nname.ts' })).toBeVisible();
+    await expect(fileDetails.getByText('Renamed (91% similarity)', { exact: true })).toBeVisible();
+    await expect(fileDetails.getByText('Text file availability', { exact: true })).toBeVisible();
+    await expect(fileDetails.getByText('00-src/old\\tname.ts', { exact: true })).toBeVisible();
+    await expect(fileDetails.getByText('00-src/new\\nname.ts', { exact: true })).toBeVisible();
+    await expect(fileDetails.getByText('12', { exact: true })).toBeVisible();
+    await expect(fileDetails.getByText('4', { exact: true })).toBeVisible();
+    await expect(fileDetails.getByText('100644', { exact: true })).toHaveCount(2);
+    await page.getByRole('button', { name: 'Close details' }).click();
 
     const selectFile = async (fileId: string): Promise<void> => {
       const row = page.locator(`[role="treeitem"][data-file-id="${fileId}"]`);

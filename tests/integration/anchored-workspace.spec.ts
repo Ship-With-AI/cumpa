@@ -88,6 +88,11 @@ function content(fileId: string) {
   };
 }
 
+function metadata(fileId: string) {
+  const file = session.files.find((candidate) => candidate.fileId === fileId);
+  return file === undefined ? undefined : { ...file, oldMode: '100644', newMode: '100644' };
+}
+
 function json(response: ServerResponse, body: unknown, statusCode = 200): void {
   response.statusCode = statusCode;
   response.setHeader('content-type', 'application/json');
@@ -260,14 +265,18 @@ async function startAppServer(): Promise<string> {
         });
         viteServer.middlewares.use('/api/draft', (_request, response) => json(response, draftLoad(canonicalComments)));
         viteServer.middlewares.use('/api/files', (request, response) => {
-          const fileId = request.url?.match(/^\/(file_[A-Za-z0-9_-]{43})\/content$/)?.[1];
+          const fileId = request.url?.match(/^\/(file_[A-Za-z0-9_-]{43})(?:\/content)?$/)?.[1];
           if (fileId !== firstFileId && fileId !== secondFileId) {
             response.statusCode = 404;
             response.end();
             return;
           }
-          contentRequests.push(fileId);
-          json(response, content(fileId));
+          if (request.url?.endsWith('/content') === true) {
+            contentRequests.push(fileId);
+            json(response, content(fileId));
+            return;
+          }
+          json(response, metadata(fileId));
         });
       },
     }],
@@ -478,9 +487,10 @@ test('diff navigation and session state', async ({ page }) => {
   await expect(selectedFile).toHaveCount(1);
 
   await page.getByRole('button', { name: 'Keyboard help' }).click();
-  await expect(page.getByRole('heading', { name: 'Keyboard actions' })).toBeVisible();
-  await expect(page.getByText('Shortcuts never replace the visible controls.')).toBeVisible();
-  await page.getByRole('button', { name: 'Close keyboard help' }).click();
+  const details = page.getByRole('dialog', { name: 'Details' });
+  await expect(details.getByRole('heading', { name: 'Keyboard actions' })).toBeVisible();
+  await expect(details.getByText('Shortcuts never replace the visible controls.')).toBeVisible();
+  await page.getByRole('button', { name: 'Close details' }).click();
 
   await page.setViewportSize({ width: 640, height: 700 });
   const narrowGeometry = await readMonacoGeometry(page, 'export const changed = 3;');
