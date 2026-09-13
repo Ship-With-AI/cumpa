@@ -14,6 +14,7 @@
     "src/web/monaco/diff-semantics.ts",
     "src/web/monaco/line-mapping.ts",
     "src/web/monaco/theme.ts",
+    "src/web/theme/token-contract.ts",
     "src/web/model/workspace-command.ts"
   ]
 }
