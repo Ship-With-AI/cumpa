@@ -347,6 +347,31 @@ test('review hierarchy, keyboard, discard, resolved lifecycle, and focus follow 
   await expect(page.getByRole('heading', { name: 'No resolved comments' })).toBeVisible();
 });
 
+
+test('review rail heading remains visible while the rail scrolls', async ({ page }) => {
+  await page.goto(serverUrl, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(async ({ commentId: id, body }) => {
+    const { mountReviewPanelHarness } = await import(`/@id/${'virtual:review-panel-resolved-harness'}`);
+    mountReviewPanelHarness(id, body);
+  }, { commentId, body: originalBody });
+
+  const rail = page.locator('.review-panel');
+  const heading = rail.locator('.review-panel__heading');
+  await rail.evaluate((panel) => {
+    const filler = document.createElement('div');
+    filler.style.height = '1600px';
+    filler.setAttribute('aria-hidden', 'true');
+    panel.append(filler);
+    panel.scrollTop = 500;
+  });
+
+  const [railBox, headingBox] = await Promise.all([rail.boundingBox(), heading.boundingBox()]);
+  expect(railBox).not.toBeNull();
+  expect(headingBox).not.toBeNull();
+  expect(headingBox!.y).toBeGreaterThanOrEqual(railBox!.y - 1);
+  expect(headingBox!.y).toBeLessThanOrEqual(railBox!.y + 1);
+  await expect(heading).toHaveCSS('background-color', /^(?!rgba\(0, 0, 0, 0\)$).+/);
+});
 test('Phase 07 notice status language', async ({ page }) => {
   await page.goto(serverUrl, { waitUntil: 'domcontentloaded' });
   await page.evaluate(async ({ commentId: id, body }) => {
