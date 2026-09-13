@@ -3,8 +3,12 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { expect, test, type Page } from '@playwright/test';
 import { createServer, type ViteDevServer } from 'vite';
+import { canonicalRoot } from '../helpers/canonical-root.js';
+import { toCssRgb } from '../../src/web/theme/token-contract.js';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
+const canonicalTokens = canonicalRoot(repositoryRoot);
+const toRootRgb = (token: string): string => toCssRgb(canonicalTokens, token);
 const token = 't'.repeat(43);
 const baseOid = 'a'.repeat(40);
 const headOid = 'b'.repeat(40);
@@ -262,12 +266,12 @@ test('renders only the confirmed receipt, copies it, and retains it after reveal
     await expect(receipt.locator('h4')).toHaveCSS('font-size', '16px');
     await expect(receipt.locator('h4')).toHaveCSS('font-weight', '600');
     await expect(receipt.locator('h4')).toHaveCSS('line-height', '24px');
-    await expect(receipt).toHaveCSS('background-color', 'rgb(22, 27, 34)');
-    await expect(receipt).toHaveCSS('border-color', 'rgb(48, 54, 61)');
+    await expect(receipt).toHaveCSS('background-color', toRootRgb('--surface-panel'));
+    await expect(receipt).toHaveCSS('border-color', toRootRgb('--border-default'));
     await expect(receipt).toHaveCSS('border-radius', '6px');
     await expect(receipt).toHaveCSS('box-shadow', 'none');
-    await expect(jsonRow).toHaveCSS('background-color', 'rgb(13, 17, 23)');
-    await expect(jsonRow).toHaveCSS('border-color', 'rgb(48, 54, 61)');
+    await expect(jsonRow).toHaveCSS('background-color', toRootRgb('--surface-canvas'));
+    await expect(jsonRow).toHaveCSS('border-color', toRootRgb('--border-default'));
     await expect(jsonRow).toHaveCSS('border-radius', '6px');
     await expect(jsonRow).toHaveCSS('box-shadow', 'none');
   }

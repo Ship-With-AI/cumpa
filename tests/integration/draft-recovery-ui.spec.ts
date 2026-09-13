@@ -12,8 +12,12 @@ import {
   type SessionResponse,
 } from '../../src/contracts/api.js';
 import { createServer, type ViteDevServer } from 'vite';
+import { canonicalRoot } from '../helpers/canonical-root.js';
+import { toCssRgb } from '../../src/web/theme/token-contract.js';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
+const canonicalTokens = canonicalRoot(repositoryRoot);
+const toRootRgb = (token: string): string => toCssRgb(canonicalTokens, token);
 const token = 't'.repeat(43);
 const safeDraftPath = '.cumpa/drafts/active-review.json';
 const safeBackupPath = '.cumpa/drafts/active-review.corrupt-backup.json';
@@ -199,15 +203,15 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   const card = page.locator('.draft-recovery__card');
   const badge = readOnlyStatus;
   const recoveryAction = page.getByRole('button', { name: 'Back up and start new' });
-  await expect(recovery).toHaveCSS('background-color', 'rgb(13, 17, 23)');
-  await expect(card).toHaveCSS('background-color', 'rgb(22, 27, 34)');
-  await expect(card).toHaveCSS('border-color', 'rgb(48, 54, 61)');
+  await expect(recovery).toHaveCSS('background-color', toRootRgb('--surface-canvas'));
+  await expect(card).toHaveCSS('background-color', toRootRgb('--surface-panel'));
+  await expect(card).toHaveCSS('border-color', toRootRgb('--border-default'));
   await expect(card).toHaveCSS('border-radius', '6px');
   await expect(card).toHaveCSS('box-shadow', 'none');
   await expect(badge).toHaveCSS('border-style', 'solid');
   await expect(badge).toHaveCSS('border-width', '1px');
   await recoveryAction.focus();
-  await expect(recoveryAction).toHaveCSS('outline-color', 'rgb(88, 166, 255)');
+  await expect(recoveryAction).toHaveCSS('outline-color', toRootRgb('--focus-ring'));
   await expect(recoveryAction).toHaveCSS('outline-width', '2px');
   await expect(recoveryAction).toHaveCSS('outline-offset', '2px');
 

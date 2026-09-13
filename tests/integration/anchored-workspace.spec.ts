@@ -8,8 +8,12 @@ import {
   DraftMutationResultSchema,
 } from '../../src/contracts/api.js';
 import { createServer, type ViteDevServer } from 'vite';
+import { canonicalRoot } from '../helpers/canonical-root.js';
+import { toCssRgb } from '../../src/web/theme/token-contract.js';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
+const canonicalTokens = canonicalRoot(repositoryRoot);
+const toRootRgb = (token: string): string => toCssRgb(canonicalTokens, token);
 const firstFileId = `file_${'a'.repeat(43)}`;
 const secondFileId = `file_${'b'.repeat(43)}`;
 const token = 't'.repeat(43);
@@ -1262,7 +1266,7 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
     await action.click({ force: true });
     const anchorLine = page.locator('.monaco-anchor-line').first();
     await expect(anchorLine).toHaveCSS('border-left-width', '0px');
-    await expect(anchorLine).toHaveCSS('box-shadow', 'rgb(47, 129, 247) 3px 0px 0px 0px inset');
+    await expect(anchorLine).toHaveCSS('box-shadow', `${toRootRgb('--interactive-accent')} 3px 0px 0px 0px inset`);
     const anchored = await readMonacoGeometry(page, targetText);
     expectAnchoringNotToReflow(before, anchored);
     expect(anchored.zones).toHaveLength(2);

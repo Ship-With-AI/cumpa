@@ -34,9 +34,13 @@ import type {
   SessionFile,
   SessionResponse,
 } from '../../src/contracts/api.js';
+import { canonicalRoot } from '../helpers/canonical-root.js';
+import { toCssRgb } from '../../src/web/theme/token-contract.js';
 
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const canonicalTokens = canonicalRoot(repositoryRoot);
+const toRootRgb = (token: string): string => toCssRgb(canonicalTokens, token);
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-session-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
@@ -341,8 +345,8 @@ async function proveLoadingTransition(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('status')).toHaveText('Opening local draft…');
   await expect(page.locator(':root')).toHaveCSS('color-scheme', 'dark');
-  await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(13, 17, 23)');
-  await expect(page.locator('.loading-shell')).toHaveCSS('background-color', 'rgb(13, 17, 23)');
+  await expect(page.locator('body')).toHaveCSS('background-color', toRootRgb('--surface-canvas'));
+  await expect(page.locator('.loading-shell')).toHaveCSS('background-color', toRootRgb('--surface-canvas'));
   gate.resolve();
 }
 
@@ -1064,10 +1068,10 @@ test('identity session and empty states', async ({ browser, context, page }, tes
       'This request is not available in the current session. Relaunch Cumpa from the terminal.',
     );
     await expect(securityPage.locator('body')).not.toContainText(repository.root);
-    await expect(securityPage.locator('.unavailable-shell')).toHaveCSS('background-color', 'rgb(13, 17, 23)');
-    await expect(securityPage.locator('.state-card')).toHaveCSS('background-color', 'rgb(22, 27, 34)');
+    await expect(securityPage.locator('.unavailable-shell')).toHaveCSS('background-color', toRootRgb('--surface-canvas'));
+    await expect(securityPage.locator('.state-card')).toHaveCSS('background-color', toRootRgb('--surface-panel'));
     await expect(securityPage.locator('.state-card')).toHaveCSS('box-shadow', 'none');
-    await expect(securityPage.locator('.state-card')).toHaveCSS('border-color', 'rgb(48, 54, 61)');
+    await expect(securityPage.locator('.state-card')).toHaveCSS('border-color', toRootRgb('--border-default'));
     await expect(securityPage.locator('body')).not.toContainText(new URL(url).hash);
     await expect(securityPage.getByRole('button', { name: /retry/i })).toHaveCount(0);
     await expect(securityPage.getByRole('navigation', { name: 'Changed files' })).toHaveCount(0);
@@ -1192,7 +1196,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     ).toBeVisible();
     await expect(emptyPage.getByRole('alert')).toHaveCount(0);
     await expect(emptyPage.getByText('Opening pinned comparison…')).toHaveCount(0);
-    await expect(emptyPage.locator('.review-main > .empty-state')).toHaveCSS('background-color', 'rgb(22, 27, 34)');
+    await expect(emptyPage.locator('.review-main > .empty-state')).toHaveCSS('background-color', toRootRgb('--surface-panel'));
     await expect(emptyPage.locator('.review-main > .empty-state')).toHaveCSS('box-shadow', 'none');
     await expect(
       emptyPage.getByRole('button', { name: 'Comparison identities' }),

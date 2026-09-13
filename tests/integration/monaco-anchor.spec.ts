@@ -2,8 +2,12 @@ import { resolve } from 'node:path';
 
 import { expect, test, type Page } from '@playwright/test';
 import { createServer, type ViteDevServer } from 'vite';
+import { canonicalRoot } from '../helpers/canonical-root.js';
+import { toCssRgb } from '../../src/web/theme/token-contract.js';
 
 const repositoryRoot = resolve(import.meta.dirname, '../..');
+const canonicalTokens = canonicalRoot(repositoryRoot);
+const toRootRgb = (token: string): string => toCssRgb(canonicalTokens, token);
 let server: ViteDevServer | undefined;
 let origin = '';
 
@@ -218,8 +222,8 @@ test('11. paints first-frame semantic theme, flat empty regions, and sparse sign
   await expect(page.getByTestId('monaco-render-status')).toHaveText('Rendered real Monaco');
   const state = await readState(page);
   expect(state.firstFrame).toMatchObject({
-    canvasBackground: 'rgb(13, 17, 23)',
-    gutterBackground: 'rgb(1, 4, 9)',
+    canvasBackground: toRootRgb('--surface-canvas'),
+    gutterBackground: toRootRgb('--surface-sidebar'),
   });
   expect(state.fileReadyAt).toBeGreaterThanOrEqual(state.firstFrame?.capturedAt ?? Infinity);
   expect(state.fileReadySequence).toBeGreaterThan(state.firstFrame?.sequence ?? Infinity);
@@ -243,7 +247,7 @@ test('11. paints first-frame semantic theme, flat empty regions, and sparse sign
   await page.getByRole('button', { name: 'Next file' }).click();
   const addedEmpty = page.locator('.diagonal-fill').first();
   await expect(addedEmpty).toHaveCSS('background-image', 'none');
-  await expect(addedEmpty).toHaveCSS('background-color', 'rgb(1, 4, 9)');
+  await expect(addedEmpty).toHaveCSS('background-color', toRootRgb('--surface-empty'));
   await expect(page.locator('.monaco-diff-change-sign--base')).toHaveCount(0);
   await expect(page.locator('.monaco-diff-change-sign--head')).not.toHaveCount(0);
 
@@ -265,15 +269,15 @@ test('12. keeps selection contrast, anchor rail, diff meaning, and focus in sepa
 
   const selectionContrast = page.locator('.monaco-selection-contrast-foreground');
   await expect(selectionContrast).not.toHaveCount(0);
-  await expect(selectionContrast.first()).toHaveCSS('color', 'rgb(255, 255, 255)');
-  await expect(page.locator('.selected-text').first()).toHaveCSS('outline-color', 'rgb(88, 166, 255)');
-  await expect(modifiedPane).toHaveCSS('outline-color', 'rgb(88, 166, 255)');
+  await expect(selectionContrast.first()).toHaveCSS('color', toRootRgb('--text-on-emphasis'));
+  await expect(page.locator('.selected-text').first()).toHaveCSS('outline-color', toRootRgb('--selection-border'));
+  await expect(modifiedPane).toHaveCSS('outline-color', toRootRgb('--focus-ring'));
   await expect(page.locator('.monaco-diff-change-bar--head')).not.toHaveCount(0);
 
   await page.getByRole('button', { name: 'Add head comment' }).click();
   const anchorLine = page.locator('.monaco-anchor-line').first();
   await expect(anchorLine).toHaveCSS('border-left-width', '0px');
-  await expect(anchorLine).toHaveCSS('box-shadow', 'rgb(47, 129, 247) 3px 0px 0px 0px inset');
+  await expect(anchorLine).toHaveCSS('box-shadow', `${toRootRgb('--interactive-accent')} 3px 0px 0px 0px inset`);
   await page.getByRole('button', { name: 'Next file' }).click();
   await expect(selectionContrast).toHaveCount(0);
   await expect.poll(() => readState(page)).toMatchObject({ listenerCount: 17, liveModels: 2 });

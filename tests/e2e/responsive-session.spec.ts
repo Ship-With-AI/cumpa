@@ -25,10 +25,18 @@ import type {
   SessionFile,
   SessionResponse,
 } from '../../src/contracts/api.js';
+import { canonicalRoot } from '../helpers/canonical-root.js';
 import { createGitFixture } from '../helpers/git-fixture.js';
 import type { GitFixture } from '../helpers/git-fixture.js';
+import {
+  normalizeDeclaration,
+  resolveToken,
+  toCssRgb,
+} from '../../src/web/theme/token-contract.js';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const canonicalTokens = canonicalRoot(repositoryRoot);
+const toRootRgb = (token: string): string => toCssRgb(canonicalTokens, token);
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 const packedRoot = mkdtempSync(join(tmpdir(), 'cumpa-responsive-pack-'));
 const extractedPackageRoot = join(packedRoot, 'package');
@@ -593,17 +601,30 @@ async function hoverMonacoLine(page: Page, side: 'base' | 'head', text: string):
   await page.mouse.move(bounds!.x + 20, bounds!.y + 9);
 }
 
+async function rootShadow(container: Locator): Promise<string> {
+  return container.evaluate((element) => {
+    const probe = document.createElement('div');
+    probe.style.boxShadow = getComputedStyle(document.documentElement)
+      .getPropertyValue('--shadow-overlay')
+      .trim();
+    element.append(probe);
+    const shadow = getComputedStyle(probe).boxShadow;
+    probe.remove();
+    return shadow;
+  });
+}
+
 async function expectTooltipSurface(tooltip: Locator): Promise<void> {
   await expect(tooltip).toHaveText('Keyboard help · ?');
   const styles = await readStyles(tooltip);
   expect(styles).toMatchObject({
-    backgroundColor: 'rgb(33, 38, 45)',
-    borderColor: 'rgb(48, 54, 61)',
+    backgroundColor: toRootRgb('--surface-interactive'),
+    borderColor: toRootRgb('--border-default'),
     borderRadius: '4px',
-    boxShadow: 'rgba(0, 0, 0, 0.4) 0px 8px 24px 0px',
     fontSize: '12px',
     lineHeight: '16px',
   });
+  expect(styles.boxShadow).toBe(await rootShadow(tooltip));
 }
 
 async function expectGutterLabelSurface(gutter: Locator): Promise<void> {
@@ -621,10 +642,10 @@ async function expectGutterLabelSurface(gutter: Locator): Promise<void> {
     };
   });
   expect(styles).toEqual({
-    backgroundColor: 'rgb(33, 38, 45)',
-    borderColor: 'rgb(48, 54, 61)',
+    backgroundColor: toRootRgb('--surface-interactive'),
+    borderColor: toRootRgb('--border-default'),
     borderRadius: '4px',
-    boxShadow: 'rgba(0, 0, 0, 0.4) 0px 8px 24px 0px',
+    boxShadow: await rootShadow(gutter),
     content: '"Add comment to head line 10"',
     display: 'block',
     fontSize: '12px',
@@ -832,85 +853,24 @@ test('responsive keyboard and accessibility contract', async ({
   });
 
     await test.step('exact semantic palette, typography, control, and motion contract', async () => {
-      const canonical = {
-        '--surface-canvas': '#0d1117',
-        '--surface-inset': '#010409',
-        '--surface-panel': '#161b22',
-        '--surface-raised': '#21262d',
-        '--surface-interactive': '#21262d',
-        '--surface-interactive-hover': '#292e36',
-        '--surface-interactive-active': '#30363d',
-        '--text-primary': '#e6edf3',
-        '--text-secondary': '#b1bac4',
-        '--text-muted': '#8b949e',
-        '--text-on-emphasis': '#fff',
-        '--border-muted': '#21262d',
-        '--border-default': '#30363d',
-        '--control-boundary': '#8b949e',
-        '--interactive-accent': '#2f81f7',
-        '--interactive-accent-emphasis': '#1f6feb',
-        '--focus-ring': '#58a6ff',
-        '--selection-background': '#388bfd59',
-        '--selection-border': '#58a6ff',
-        '--destructive-foreground': '#f85149',
-        '--destructive-emphasis': '#b62324',
-        '--status-success-foreground': '#3fb950',
-        '--status-success-background': '#2ea04326',
-        '--status-warning-foreground': '#d29922',
-        '--status-warning-background': '#bb800926',
-        '--status-error-foreground': '#f85149',
-        '--status-error-background': '#f8514926',
-        '--status-information-foreground': '#58a6ff',
-        '--status-information-background': '#388bfd26',
-        '--status-resolved-foreground': '#a371f7',
-        '--status-resolved-background': '#a371f726',
-        '--status-disabled-foreground': '#8b949e',
-        '--status-pending-foreground': '#b1bac4',
-        '--status-pending-background': '#21262d',
-        '--status-disabled-background': '#161b22',
-        '--diff-addition-foreground': '#3fb950',
-        '--diff-addition-background': '#2ea04338',
-        '--diff-addition-intraline-background': '#2ea04373',
-        '--diff-deletion-foreground': '#f85149',
-        '--diff-deletion-background': '#f8514938',
-        '--diff-deletion-intraline-background': '#f8514973',
-        '--diff-hunk-foreground': '#a371f7',
-        '--diff-hunk-background': '#a371f726',
-        '--diff-empty-background': '#010409',
-        '--diff-unchanged-background': '#010409',
-        '--diff-region-border': '#30363d',
-        '--font-ui': '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-        '--font-mono': 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-        '--font-size-metadata': '12px',
-        '--line-height-metadata': '16px',
-        '--font-size-body': '14px',
-        '--line-height-body': '20px',
-        '--font-size-section-heading': '16px',
-        '--line-height-section-heading': '24px',
-        '--font-size-page-heading': '20px',
-        '--line-height-page-heading': '28px',
-        '--font-weight-regular': '400',
-        '--font-weight-semibold': '600',
-        '--radius-compact': '4px',
-        '--radius-control': '6px',
-        '--radius-overlay': '8px',
-        '--radius-pill': '999px',
-        '--shadow-overlay': '0 8px 24px #0006',
-        '--space-xs': '4px',
-        '--space-sm': '8px',
-        '--space-md': '16px',
-        '--space-lg': '24px',
-        '--space-xl': '32px',
-        '--space-2xl': '48px',
-        '--space-3xl': '64px',
-      };
+      const canonical = Object.fromEntries(
+        [...canonicalTokens].map(([name]) => [
+          name,
+          normalizeDeclaration(resolveToken(canonicalTokens, name)),
+        ]),
+      );
+      expect(Object.keys(canonical)).not.toHaveLength(0);
       const retired = [
         '--canvas', '--panel', '--accent', '--destructive', '--surface', '--text', '--rule',
         '--addition-bg', '--addition-fg', '--deletion-bg', '--deletion-fg', '--warning-bg',
         '--warning-fg', '--info-bg', '--info-fg', '--error-bg', '--error-fg', '--color-dominant',
         '--color-secondary', '--color-accent', '--color-destructive', '--color-text-primary',
         '--color-text-secondary', '--color-border', '--color-hover', '--color-added',
-        '--color-modified', '--color-renamed', '--color-focus',
+        '--color-modified', '--color-renamed', '--color-focus', '--surface-inset',
+        '--text-secondary', '--border-muted', '--border-strong', '--control-boundary',
+        '--font-size-section-heading', '--line-height-section-heading', '--radius-compact',
+        '--space-xs', '--space-sm', '--space-md', '--space-lg', '--space-xl',
+        '--space-2xl', '--space-3xl',
       ];
       const rootTokens = await page.locator(':root').evaluate((element, names) => {
         const style = getComputedStyle(element);
@@ -918,8 +878,8 @@ test('responsive keyboard and accessibility contract', async ({
       }, Object.keys(canonical));
       expect(rootTokens).toEqual(canonical);
       expect(await page.locator(':root').evaluate((element) => getComputedStyle(element).colorScheme)).toBe('dark');
-      await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(13, 17, 23)');
-      await expect(page.locator('body')).toHaveCSS('color', 'rgb(230, 237, 243)');
+      await expect(page.locator('body')).toHaveCSS('background-color', toRootRgb('--surface-canvas'));
+      await expect(page.locator('body')).toHaveCSS('color', toRootRgb('--text-primary'));
 
       await page.evaluate(() => {
         const fixture = document.createElement('div');
@@ -953,16 +913,16 @@ test('responsive keyboard and accessibility contract', async ({
       for (const values of semanticValues) {
         expect(values).toEqual(Object.fromEntries(retired.map((name) => [name, ''])));
       }
-      await expect(fixture.locator('.inline-notice--warning')).toHaveCSS('border-left-color', 'rgb(210, 153, 34)');
-      await expect(fixture.locator('.inline-notice--error')).toHaveCSS('border-left-color', 'rgb(248, 81, 73)');
-      await expect(fixture.locator('.draft-recovery__notice')).toHaveCSS('border-left-color', 'rgb(88, 166, 255)');
-      await expect(fixture.locator('.ui-button').first()).toHaveCSS('background-color', 'rgb(33, 38, 45)');
-      await expect(fixture.locator('.ui-button--primary')).toHaveCSS('background-color', 'rgb(31, 111, 235)');
-      await expect(fixture.locator('.ui-button--primary')).toHaveCSS('color', 'rgb(255, 255, 255)');
-      await expect(fixture.locator('.ui-button--destructive')).toHaveCSS('color', 'rgb(248, 81, 73)');
+      await expect(fixture.locator('.inline-notice--warning')).toHaveCSS('border-left-color', toRootRgb('--status-warning-foreground'));
+      await expect(fixture.locator('.inline-notice--error')).toHaveCSS('border-left-color', toRootRgb('--status-error-foreground'));
+      await expect(fixture.locator('.draft-recovery__notice')).toHaveCSS('border-left-color', toRootRgb('--status-information-foreground'));
+      await expect(fixture.locator('.ui-button').first()).toHaveCSS('background-color', toRootRgb('--surface-interactive'));
+      await expect(fixture.locator('.ui-button--primary')).toHaveCSS('background-color', toRootRgb('--interactive-accent-emphasis'));
+      await expect(fixture.locator('.ui-button--primary')).toHaveCSS('color', toRootRgb('--text-on-emphasis'));
+      await expect(fixture.locator('.ui-button--destructive')).toHaveCSS('color', toRootRgb('--destructive-foreground'));
       await expect(fixture.getByRole('button', { name: 'Disabled' })).toHaveCSS('opacity', '1');
-      await expect(fixture.getByRole('button', { name: 'Disabled' })).toHaveCSS('color', 'rgb(139, 148, 158)');
-      await expect(fixture.getByLabel('Semantic textarea')).toHaveCSS('caret-color', 'rgb(230, 237, 243)');
+      await expect(fixture.getByRole('button', { name: 'Disabled' })).toHaveCSS('color', toRootRgb('--status-disabled-foreground'));
+      await expect(fixture.getByLabel('Semantic textarea')).toHaveCSS('caret-color', toRootRgb('--text-primary'));
 
       const typography = await page.evaluate(() => [
         '.session-header h1', '.review-context-header__file h1', '[data-normal-file]', '.availability-marker', '.pin-cue',
@@ -992,14 +952,14 @@ test('responsive keyboard and accessibility contract', async ({
 
       const neutral = fixture.locator('.ui-button').first();
       await neutral.hover();
-      await expect(neutral).toHaveCSS('background-color', 'rgb(41, 46, 54)');
+      await expect(neutral).toHaveCSS('background-color', toRootRgb('--surface-interactive-hover'));
       const neutralBox = await neutral.boundingBox();
       await page.mouse.move(neutralBox!.x + 1, neutralBox!.y + 1);
       await page.mouse.down();
       await expect(neutral).toHaveCSS('box-shadow', 'none');
       await page.mouse.up();
       await fixture.locator('.ui-button--destructive').hover();
-      await expect(fixture.locator('.ui-button--destructive')).toHaveCSS('background-color', 'rgb(182, 35, 36)');
+      await expect(fixture.locator('.ui-button--destructive')).toHaveCSS('background-color', toRootRgb('--destructive-emphasis'));
       await fixture.evaluate((element) => element.remove());
       const motionDurations = await page.locator('button').evaluateAll((buttons) =>
         buttons.map((button) => getComputedStyle(button).transitionDuration),
@@ -1228,7 +1188,7 @@ test('responsive keyboard and accessibility contract', async ({
       const reviewShell = page.locator('.review-shell');
       const sessionHeader = page.locator('.session-header');
       const headerFacts = page.locator('.header-facts');
-      const overlayShadow = 'rgba(0, 0, 0, 0.4) 0px 8px 24px 0px';
+      const overlayShadow = await rootShadow(headerFacts);
       const assertFilesCollapse = async (width: number): Promise<void> => {
         await page.setViewportSize({ width, height: 560 });
         const filesButton = page.getByRole('button', { name: 'Files', exact: true });
@@ -1312,7 +1272,7 @@ test('responsive keyboard and accessibility contract', async ({
       await page.keyboard.press('Tab');
       await expect(reviewButton).toBeFocused();
       const focusStyle = await readStyles(reviewButton);
-      expect(focusStyle.outlineColor).toBe('rgb(88, 166, 255)');
+      expect(focusStyle.outlineColor).toBe(toRootRgb('--focus-ring'));
       expect(focusStyle.outlineStyle).toBe('solid');
       expect(focusStyle.outlineWidth).toBe('2px');
       expect(focusStyle.outlineOffset).toBe('2px');
