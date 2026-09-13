@@ -1,84 +1,36 @@
 <script setup lang="ts">
-import type { FinishReviewResult } from '../../contracts/api.js';
 import { computed, nextTick, ref, watch } from 'vue';
 
 import type { ReviewPendingOperation } from '../model/review-draft-state.js';
-import type { ReviewExportState } from '../model/review-draft-state.js';
-import type { AppendCumpaIgnoreResult, ExportDirectoryRevealResult } from '../../contracts/api.js';
 import { projectCommentGroups } from '../model/comment-groups.js';
 import type { WorkspaceComment } from '../model/workspace-state.js';
-import SummarySection from './SummarySection.vue';
-import ExportSection from './ExportSection.vue';
 import ReviewStateBadge from './ui/ReviewStateBadge.vue';
-import UiIcon from './ui/UiIcon.vue';
 import PathText from './ui/PathText.vue';
-
-type ReviewFailure = Readonly<{
-  operation: ReviewPendingOperation;
-  commentId?: string;
-}>;
-
-type AttachedLifecycle =
-  | 'waiting'
-  | 'waitingDisconnected'
-  | 'finishing'
-  | 'completed'
-  | 'retryableFailure'
-  | 'terminalFailure';
 
 const props = defineProps<{
   readonly comments: readonly ReviewComment[];
   readonly inventory: readonly FileInventoryEntry[];
-  readonly summary: string;
-  readonly revision: number;
-  readonly pinnedEndpoints?: PinnedRangeEndpoints;
-  readonly summaryBuffer: string;
   readonly commentBuffers: ReadonlyMap<string, string>;
   readonly pending: ReviewPendingOperation | null;
   readonly conflict: ReviewConflict | null;
-  readonly failure: ReviewFailure | null;
-  readonly retainedSummary: boolean;
-  readonly exportState: ReviewExportState;
-  readonly appendIgnoreRule: AppendCumpaIgnoreRule | undefined;
-  readonly refreshIgnoreStatus: RefreshCumpaIgnoreStatus | undefined;
-  readonly revealExportDirectory: RevealExportDirectory | undefined;
   readonly selectedCommentId?: string;
-  readonly attachedLifecycle?: AttachedLifecycle;
-  readonly attachedReady?: boolean;
-  readonly attachedFailure?: FinishReviewResult;
-  readonly unsavedInlineComposerFile?: Readonly<{ fileId: string; display: string }>;
   readonly mutationLocked?: boolean;
-  readonly isExactPatch?: boolean;
 }>();
 
 const emit = defineEmits<{
-  'update:summaryBuffer': [body: string];
   'update:commentBuffer': [commentId: string, body: string];
-  saveSummary: [];
-  cancelSummary: [];
   editComment: [commentId: string];
   cancelComment: [commentId: string];
-  resolveComment: [commentId: string];
-  reopenComment: [commentId: string];
+  resolve: [commentId: string];
+  reopen: [commentId: string];
   deleteComment: [commentId: string];
   edit: [commentId: string];
   show: [commentId: string];
   delete: [commentId: string];
   close: [];
-  cancelExport: [];
-  export: [];
   inspectRecordedFile: [commentId: string];
   copyRecordedAnchor: [commentId: string];
   saveComment: [commentId: string];
-  reloadLatest: [];
-  reviewUnsavedText: [];
-  reviewInlineComposer: [fileId: string];
-  refreshIgnoreStatus: [];
-  revealExportDirectory: [];
-  exportReview: [];
-  finishReview: [];
-  reloadAttached: [];
-  viewAttachedScope: [];
 }>();
 
 const root = ref<HTMLElement>();
@@ -88,7 +40,6 @@ const resolvedOpen = ref(false);
 const editing = ref<string | null>(null);
 const confirmingEditDiscard = ref<string | null>(null);
 const confirmingDelete = ref<string | null>(null);
-const failureAlert = ref<HTMLElement>();
 const pendingFocus = ref<Readonly<{
   kind: 'resolve' | 'reopen' | 'delete';
   commentId: string;
@@ -125,40 +76,6 @@ const visibleOrder = computed(() => [
   ...groups.value.open.flatMap((group) => group.comments.map((comment) => comment.id)),
   ...(resolvedOpen.value ? groups.value.resolved.flatMap((group) => group.comments.map((comment) => comment.id)) : []),
 ]);
-const summaryFailure = computed(() => props.failure?.operation === 'summary');
-const reviewFailure = computed(() => props.failure !== null && props.failure.operation !== 'summary');
-
-const attached = computed(() => props.attachedLifecycle !== undefined);
-const attachedHasUnsavedText = computed(() => (
-  props.summaryBuffer !== props.summary
-  || props.comments.some((comment) => buffer(comment) !== comment.body)
-));
-const attachedBlockedByUnsavedText = computed(
-  () => attachedHasUnsavedText.value || props.unsavedInlineComposerFile !== undefined,
-);
-const attachedBlockedByPending = computed(() => props.pending !== null);
-const attachedBlockedByConflict = computed(() => props.conflict !== null);
-const attachedNoFeedback = computed(() => props.summary === '' && props.comments.length === 0);
-const completionAction = ref<HTMLButtonElement>();
-const completionSuccess = ref<HTMLElement>();
-const completionFailure = ref<HTMLElement>();
-
-function finishAttachedReview(): void {
-  if (props.attachedReady) emit('finishReview');
-}
-
-function focusStaleFeedback(): void {
-  const result = props.attachedFailure;
-  if (result?.kind !== 'staleAnchors') return;
-
-  const commentId = result.affectedCommentIds.find((id) => props.comments.some((comment) => comment.id === id));
-  if (commentId === undefined) return;
-
-  const comment = props.comments.find((candidate) => candidate.id === commentId);
-  if (comment?.state === 'resolved') resolvedOpen.value = true;
-  else openCommentsOpen.value = true;
-  void nextTick(() => focusCommentHeading(commentId));
-}
 
 function buffer(comment: WorkspaceComment): string {
   return props.commentBuffers.get(comment.id) ?? comment.body;
@@ -294,7 +211,15 @@ function focusHeading(): void {
   heading.value?.focus();
 }
 
-defineExpose({ focusHeading });
+function focusComment(commentId: string): void {
+  const comment = props.comments.find((candidate) => candidate.id === commentId);
+  if (comment === undefined) return;
+  if (comment.state === 'resolved') resolvedOpen.value = true;
+  else openCommentsOpen.value = true;
+  void nextTick(() => focusCommentHeading(commentId));
+}
+
+defineExpose({ focusHeading, focusComment });
 
 watch(() => props.comments, () => {
   const action = pendingFocus.value;
@@ -324,18 +249,6 @@ watch(() => props.comments, () => {
     }
   }
 }, { deep: true });
-
-watch(reviewFailure, (failed) => {
-  if (failed) void nextTick(() => failureAlert.value?.focus());
-});
-
-watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecycle, failure]) => {
-  if (lifecycle === 'finishing') void nextTick(() => completionAction.value?.focus());
-  if (lifecycle === 'completed') void nextTick(() => completionSuccess.value?.focus());
-  if (lifecycle === 'waitingDisconnected' || lifecycle === 'terminalFailure' || failure !== undefined) {
-    void nextTick(() => completionFailure.value?.focus());
-  }
-}, { deep: true });
 </script>
 
 <template>
@@ -351,56 +264,8 @@ watch(() => [props.attachedLifecycle, props.attachedFailure] as const, ([lifecyc
       <button type="button" class="ui-button" @click="emit('close')">Close review</button>
     </header>
 
-    <section
-      v-if="conflict !== null"
-      class="inline-notice inline-notice--warning review-panel__conflict"
-      role="alert"
-      tabindex="-1"
-      aria-labelledby="review-conflict-heading"
-    >
-      <UiIcon name="warning" class="inline-notice__icon" />
-      <div class="inline-notice__content">
-        <h3 id="review-conflict-heading">Review changed in another tab</h3>
-        <dl>
-          <div><dt>Your revision</dt><dd>{{ conflict.expectedRevision }}</dd></div>
-          <div><dt>Latest revision</dt><dd>{{ conflict.actualRevision }}</dd></div>
-        </dl>
-        <p>Nothing from your attempt was written.</p>
-        <p>Unsaved text retained in this tab.</p>
-        <button type="button" class="ui-button" @click="emit('reload-latest')">Reload latest</button>
-      </div>
-    </section>
 
-    <section
-      v-if="reviewFailure"
-      ref="failureAlert"
-      class="inline-notice inline-notice--error review-panel__failure"
-      role="alert"
-      tabindex="-1"
-      aria-labelledby="review-operation-failed-heading"
-    >
-      <UiIcon name="error" class="inline-notice__icon" />
-      <div class="inline-notice__content">
-        <h3 id="review-operation-failed-heading">Review change failed</h3>
-        <p v-if="failure?.operation === 'comment'">Comment wasn’t saved. Your text is still here in this tab.</p>
-        <p v-else>The review change wasn’t saved. The accepted local draft is unchanged. Try again after checking Cumpa is running.</p>
-      </div>
-    </section>
-
-    <section class="review-panel__section review-panel__section--summary">
-      <SummarySection
-        :canonical="summary"
-        :model-value="summaryBuffer"
-        :pending="pending !== null || mutationLocked === true"
-        :saving="pending === 'summary'"
-        :conflict="conflict !== null"
-        :failure="summaryFailure"
-        :retained="retainedSummary"
-        @cancel="emit('cancelSummary')"
-        @save="emit('saveSummary')"
-        @update:model-value="emit('update:summaryBuffer', $event)"
-      />
-    </section>
+CUT 654.=817
 
     <section class="review-panel__comments review-panel__section" aria-labelledby="open-comments-heading">
       <h3>

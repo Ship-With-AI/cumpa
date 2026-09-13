@@ -24,6 +24,7 @@ import {
 import type { DraftView, SessionClient } from './api/client';
 import DiffWorkspace from './components/DiffWorkspace.vue';
 import DraftRecovery from './components/DraftRecovery.vue';
+import ReviewNotesDialog from './components/ReviewNotesDialog.vue';
 import ReviewPanel from './components/ReviewPanel.vue';
 import ErrorState from './components/ErrorState.vue';
 import FileTree from './components/FileTree.vue';
@@ -86,6 +87,7 @@ const isNarrow = ref(false);
 const isFilesDrawer = ref(false);
 const filesOpen = ref(false);
 const filesCollapsed = ref(false);
+const reviewNotesOpen = ref(false);
 const commentsOpen = ref(false);
 const liveMessage = ref('');
 const liveMessageVersion = ref(0);
@@ -94,6 +96,7 @@ const diffWorkspace = ref<InstanceType<typeof DiffWorkspace>>();
 const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
 const detailsDialog = ref<InstanceType<typeof DetailsDialog>>();
 const filesDrawer = ref<HTMLElement>();
+const reviewPanel = ref<InstanceType<typeof ReviewPanel>>();
 const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
 const draftRevision = ref(0);
@@ -861,7 +864,28 @@ function closeDetails(): void {
 }
 
 function openReviewNotes(): void {
-  // Plan 04 supplies the dialog; the trigger is intentionally inert until then.
+  if (commentsOpen.value) closeComments();
+  reviewNotesOpen.value = true;
+}
+
+function closeReviewNotes(): void {
+  reviewNotesOpen.value = false;
+}
+
+function focusStaleFeedback(): void {
+  const result = attachedResult.value;
+  if (result?.kind !== 'staleAnchors') return;
+
+  const commentId = result.affectedCommentIds.find((id) =>
+    workspaceComments.value.some((comment) => comment.id === id),
+  );
+  if (commentId === undefined) return;
+
+  reviewNotesOpen.value = false;
+  void nextTick(() => {
+    openComments();
+    void nextTick(() => reviewPanel.value?.focusComment(commentId));
+  });
 }
 
 
@@ -1144,7 +1168,7 @@ onBeforeUnmount(() => {
       :support-open="supportDialogOpen"
       :support-inert="supportDialogOpen"
       :attached-lifecycle="isAttachedSession ? (attachedLifecycle === 'finishing' || attachedLifecycle === 'completed' ? attachedLifecycle : 'waiting') : undefined"
-      :inert="detailsOpen || supportDialogOpen"
+      :inert="detailsOpen || reviewNotesOpen || supportDialogOpen"
       @toggle="openDetails"
       @support="openSupportDialog"
       @review-notes="openReviewNotes"
@@ -1167,7 +1191,7 @@ onBeforeUnmount(() => {
       v-else
       class="review-shell"
       :class="{ 'review-shell--files-collapsed': !isFilesDrawer && filesCollapsed }"
-      :inert="detailsOpen || supportDialogOpen"
+      :inert="detailsOpen || reviewNotesOpen || supportDialogOpen"
     >
       <nav
         v-if="isFilesDrawer || !filesCollapsed"
@@ -1289,48 +1313,23 @@ onBeforeUnmount(() => {
       >
         <ReviewPanel
           v-if="reviewDraft !== undefined && session !== undefined"
+          ref="reviewPanel"
           :comments="workspaceComments"
           :selected-comment-id="selectedCommentId"
           :inventory="reviewableFiles.map((file) => ({ identity: file.newPath?.bytesBase64url ?? file.oldPath?.bytesBase64url ?? file.fileId, display: file.newPath?.display ?? file.oldPath?.display ?? 'Changed file' }))"
-          :summary="reviewDraft.canonical.summary"
-          :summary-buffer="reviewDraft.summaryBuffer"
-          :revision="reviewDraft.canonical.revision"
-          :pinned-endpoints="pinnedSession"
           :comment-buffers="reviewDraft.commentBuffers"
           :pending="reviewDraft.pending"
           :conflict="reviewDraft.conflict === null ? null : { expectedRevision: reviewDraft.conflict.expectedRevision, actualRevision: reviewDraft.conflict.latest.revision }"
-          :failure="reviewFailure"
-          :retained-summary="reviewDraft.retained.summary"
-          :attached-lifecycle="isAttachedSession ? attachedLifecycle : undefined"
-          :attached-ready="attachedFinishReady"
-          :unsaved-inline-composer-file="unsavedInlineComposerFile"
-          :attached-failure="attachedResult"
           :mutation-locked="attachedMutationLocked"
-          :is-exact-patch="isExactPatchSession"
-          @cancel-summary="if (!attachedMutationLocked) { reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot(); }"
           @close="closeComments"
           @delete="mutateComment($event, 'deleteComment')"
           @reopen="mutateComment($event, 'reopenComment')"
           @copy-recorded-anchor="copyRecordedAnchor"
-          :export-state="reviewDraft.export"
-          :append-ignore-rule="appendCumpaIgnoreRule"
-          :refresh-ignore-status="refreshIgnoreStatus"
-          :reveal-export-directory="revealExportDirectory"
           @resolve="mutateComment($event, 'resolveComment')"
           @inspect-recorded-file="inspectRecordedFile"
-          @reload-latest="reloadLatestReview"
           @save-comment="saveComment"
-          @save-summary="saveSummary"
           @show="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
           @update:comment-buffer="(commentId, value) => { if (!attachedMutationLocked) { reviewState?.setCommentBuffer(commentId, value); refreshReviewSnapshot(); } }"
-          @update:summary-buffer="(value) => { if (!attachedMutationLocked) { reviewState?.setSummaryBuffer(value); refreshReviewSnapshot(); } }"
-          @cancel-export="cancelExport"
-          @export="exportReview"
-          @review-unsaved-text="reviewUnsavedText"
-          @review-inline-composer="reviewInlineComposer"
-          @finish-review="finishAttachedReview"
-          @reload-attached="reloadPage"
-          @view-attached-scope="openDetails"
         />
       </aside>
     </div>
@@ -1356,6 +1355,43 @@ onBeforeUnmount(() => {
       @restore="restoreSupport"
       @dismiss="dismissSupportDialog"
       @close="closeSupportDialog"
+    />
+    <ReviewNotesDialog
+      v-if="reviewDraft !== undefined && session !== undefined"
+      :open="reviewNotesOpen"
+      :comments="workspaceComments"
+      :summary="reviewDraft.canonical.summary"
+      :summary-buffer="reviewDraft.summaryBuffer"
+      :revision="reviewDraft.canonical.revision"
+      :pinned-endpoints="pinnedSession"
+      :comment-buffers="reviewDraft.commentBuffers"
+      :pending="reviewDraft.pending"
+      :conflict="reviewDraft.conflict === null ? null : { expectedRevision: reviewDraft.conflict.expectedRevision, actualRevision: reviewDraft.conflict.latest.revision }"
+      :failure="reviewFailure"
+      :retained-summary="reviewDraft.retained.summary"
+      :export-state="reviewDraft.export"
+      :append-ignore-rule="appendCumpaIgnoreRule"
+      :refresh-ignore-status="refreshIgnoreStatus"
+      :reveal-export-directory="revealExportDirectory"
+      :attached-lifecycle="isAttachedSession ? attachedLifecycle : undefined"
+      :attached-ready="attachedFinishReady"
+      :unsaved-inline-composer-file="unsavedInlineComposerFile"
+      :attached-failure="attachedResult"
+      :mutation-locked="attachedMutationLocked"
+      :is-exact-patch="isExactPatchSession"
+      @close="closeReviewNotes"
+      @cancel-summary="if (!attachedMutationLocked) { reviewState?.setSummaryBuffer(reviewDraft?.canonical.summary ?? ''); refreshReviewSnapshot(); }"
+      @reload-latest="reloadLatestReview"
+      @save-summary="saveSummary"
+      @update:summary-buffer="(value) => { if (!attachedMutationLocked) { reviewState?.setSummaryBuffer(value); refreshReviewSnapshot(); } }"
+      @cancel-export="cancelExport"
+      @export="exportReview"
+      @review-unsaved-text="reviewUnsavedText"
+      @review-inline-composer="reviewInlineComposer"
+      @finish-review="finishAttachedReview"
+      @reload-attached="reloadPage"
+      @view-attached-scope="openDetails"
+      @focus-stale-feedback="focusStaleFeedback"
     />
     <p class="visually-hidden" aria-live="polite">
       <span :key="liveMessageVersion" :data-announcement-version="liveMessageVersion">{{ liveMessage }}</span>

@@ -64,8 +64,10 @@ test('Review notes owns the summary editor and local Escape handling', async ({ 
 
   const dialog = page.getByRole('dialog', { name: 'Review notes' });
   await expect(dialog.getByRole('region', { name: 'Summary Saved' })).toBeVisible();
+  await dialog.getByRole('tab', { name: 'Edit' }).click();
   const summary = dialog.getByLabel('Review summary (Markdown)');
   await summary.fill('Unsaved review note');
+  await dialog.getByRole('button', { name: 'Close review notes' }).focus();
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
 });
