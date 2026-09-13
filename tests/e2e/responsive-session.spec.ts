@@ -1214,6 +1214,14 @@ test('responsive keyboard and accessibility contract', async ({
         const headBar = page.locator('.monaco-editor .monaco-diff-change-bar--head').first();
         const baseSign = page.locator('.monaco-editor .monaco-diff-change-sign--base').first();
         const headSign = page.locator('.monaco-editor .monaco-diff-change-sign--head').first();
+        const canvasText = await page.evaluate(() => {
+          const probe = document.createElement('span');
+          probe.style.color = 'CanvasText';
+          document.body.append(probe);
+          const color = getComputedStyle(probe).color;
+          probe.remove();
+          return color;
+        });
 
         await expect(review).toHaveCSS('border-top-color', /rgb/);
         await expect(link).toHaveCSS('color', /rgb/);
@@ -1230,8 +1238,12 @@ test('responsive keyboard and accessibility contract', async ({
         await expect(review).toHaveCSS('outline-width', resolveToken(canonicalTokens, '--focus-outline-width'));
         expect(await disabled.evaluate((element) => getComputedStyle(element).color))
           .not.toBe(await review.evaluate((element) => getComputedStyle(element).color));
-        await expect(hunkStart).toHaveCSS('border-top-color', /rgb/);
-        await expect(hunkEnd).toHaveCSS('border-bottom-color', /rgb/);
+        await expect(hunkStart).toHaveCSS('border-top-width', '1px');
+        await expect(hunkStart).toHaveCSS('border-top-style', 'solid');
+        await expect(hunkStart).toHaveCSS('border-top-color', canvasText);
+        await expect(hunkEnd).toHaveCSS('border-bottom-width', '1px');
+        await expect(hunkEnd).toHaveCSS('border-bottom-style', 'solid');
+        await expect(hunkEnd).toHaveCSS('border-bottom-color', canvasText);
 
         await expect(baseBar).toHaveCSS('border-left-style', 'dashed');
         await expect(headBar).toHaveCSS('border-left-style', 'solid');

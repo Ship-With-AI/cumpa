@@ -24,12 +24,14 @@ function observableDecorations(
   range: readonly [number, number];
   bar: string | null | undefined;
   sign: string | null | undefined;
+  className?: string;
   optionKeys: string[];
 }> {
   return decorations.map(({ range, options }) => ({
     range: [range.startLineNumber, range.endLineNumber],
     bar: options.linesDecorationsClassName,
     sign: options.glyphMarginClassName,
+    ...(options.className === undefined ? {} : { className: options.className }),
     optionKeys: Object.keys(options).sort(),
   }));
 }
@@ -59,12 +61,14 @@ describe('buildDiffDecorations', () => {
         range: [2, 2],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-start',
         optionKeys: ['className', 'isWholeLine'],
       },
       {
         range: [4, 4],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-end',
         optionKeys: ['className', 'isWholeLine'],
       },
     ]);
@@ -86,12 +90,14 @@ describe('buildDiffDecorations', () => {
         range: [6, 6],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-start',
         optionKeys: ['className', 'isWholeLine'],
       },
       {
         range: [8, 8],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-end',
         optionKeys: ['className', 'isWholeLine'],
       },
     ]);
@@ -119,12 +125,14 @@ describe('buildDiffDecorations', () => {
         range: [4, 4],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-start',
         optionKeys: ['className', 'isWholeLine'],
       },
       {
         range: [6, 6],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-end',
         optionKeys: ['className', 'isWholeLine'],
       },
     ]);
@@ -145,12 +153,14 @@ describe('buildDiffDecorations', () => {
         range: [2, 2],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-start',
         optionKeys: ['className', 'isWholeLine'],
       },
       {
         range: [4, 4],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-end',
         optionKeys: ['className', 'isWholeLine'],
       },
     ]);
@@ -183,12 +193,14 @@ describe('buildDiffDecorations', () => {
         range: [3, 3],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-start',
         optionKeys: ['className', 'isWholeLine'],
       },
       {
         range: [6, 6],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-end',
         optionKeys: ['className', 'isWholeLine'],
       },
     ]);
@@ -220,12 +232,14 @@ describe('buildDiffDecorations', () => {
         range: [3, 3],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-start',
         optionKeys: ['className', 'isWholeLine'],
       },
       {
         range: [8, 8],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-end',
         optionKeys: ['className', 'isWholeLine'],
       },
     ]);
@@ -252,12 +266,14 @@ describe('buildDiffDecorations', () => {
         range: [1, 1],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-start',
         optionKeys: ['className', 'isWholeLine'],
       },
       {
         range: [2, 2],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-end',
         optionKeys: ['className', 'isWholeLine'],
       },
       {
@@ -276,12 +292,14 @@ describe('buildDiffDecorations', () => {
         range: [6, 6],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-start',
         optionKeys: ['className', 'isWholeLine'],
       },
       {
         range: [7, 7],
         bar: undefined,
         sign: undefined,
+        className: 'monaco-diff-hunk-end',
         optionKeys: ['className', 'isWholeLine'],
       },
     ]);

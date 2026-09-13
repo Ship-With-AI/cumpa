@@ -307,11 +307,13 @@ test('11c. paints hunk boundaries without changing code-line or paired-zone geom
   await expect(end).toBeVisible();
   await expect(interior).toBeVisible();
   await expect(start).toHaveCSS('border-top-width', '1px');
+  await expect(start).toHaveCSS('border-top-style', 'solid');
   await expect(start).toHaveCSS('border-top-color', toRootRgb('--diff-region-border'));
   await expect(end).toHaveCSS('border-bottom-width', '1px');
+  await expect(end).toHaveCSS('border-bottom-style', 'solid');
   await expect(end).toHaveCSS('border-bottom-color', toRootRgb('--diff-region-border'));
-  expect(await start.evaluate((element) => getComputedStyle(element).height))
-    .toBe(await interior.evaluate((element) => getComputedStyle(element).height));
+  expect((await start.boundingBox())?.height).toBe((await interior.boundingBox())?.height);
+  expect((await end.boundingBox())?.height).toBe((await interior.boundingBox())?.height);
 
   await page.getByRole('button', { name: 'Add head comment' }).click();
   await expectPairedZonesAligned(page);
