@@ -6,36 +6,26 @@ A local Git workbench: dense, inspectable, and commit-specific. The interface bo
 
 ## Color
 
-Source: the existing v1.1 semantic dark contract in `src/web/styles.css`, adapted from the familiar GitHub-dark code-review environment.
+Source: `src/web/styles.css :root` is the single canonical semantic dark contract.
 
-- Canvas/inset: `#0D1117` / `#010409`; primary text: `#E6EDF3`.
-- Panel/raised: `#161B22` / `#21262D`; secondary and muted text: `#B1BAC4` / `#8B949E`.
-- Interactive accent/focus: `#2F81F7` / `#58A6FF`.
-- Interactive hover/emphasis and emphasized text: `#292E36`, `#1F6FEB`, and `#FFFFFF`.
-- Borders: `#21262D`, `#30363D`, and `#484F58` by emphasis.
-- Removed state: `#F85149`; added state: `#3FB950`. Literal minus/plus labels and dashed/solid rails carry the same meaning without color.
-- Destructive emphasis: `#B62324`.
-- Warning and resolved states use the existing amber `#D29922` and violet `#A371F7` roles only when those states exist.
-- Syntax roles: keyword `#D2A8FF`, string `#A5D6FF`, number `#F2CC60`, type `#79C0FF`, and invalid `#FFA198`.
+Surfaces distinguish the continuous review canvas, navigation inset, grouped panels, raised controls, empty regions, diff gaps, and hunk context. Text, borders, interaction, selection, scrollbar, status, diff, and syntax roles use their named variables from that root. Literal minus/plus labels and dashed/solid rails carry removed and added meaning without colour.
 
 Components consume semantic variables; isolated component hex values are not introduced.
 
 ## Type
 
-Source: existing platform-system and editor stacks; no webfont dependency.
+Source: the platform-system and editor stacks defined by the canonical root; no webfont dependency.
 
-- Transitional loading and unavailable states use the display token `clamp(2rem, 8vw, 3.5rem)` at 1.05 line height. This is the only display role; it gives launch failures and progress a clear state boundary without enlarging the working diff header.
-- Page headings: 20/28, semibold. Section headings: 16/24, semibold.
-- Interface body: 14/20. Metadata and compact labels: 12/16.
-- Code, paths, object IDs, and line gutters use the system monospace stack.
+- Transitional loading and unavailable states use the `--font-size-display` and `--line-height-display` roles, preserving a clear state boundary without enlarging the working diff header.
+- Page headings use the `--font-size-page-heading` role; interface body, metadata, and code use their corresponding named roles.
+- Code, paths, object IDs, and line gutters use the `--font-mono` stack.
 - Long paths truncate only where the full accessible name remains available.
 
 ## Geometry
 
-- The wide review shell is a continuous three-column workbench: 288px files, fluid diff, 360px review rail.
-- Spacing follows the existing 4, 8, 12, 16, 24, and 32px scale.
+- `src/web/styles.css :root` owns shell, dialog, rail, gutter, control, icon, radius, border, focus, and spacing values through semantic geometry and density tokens.
 - Borders, not floating cards or shadows, separate persistent work areas. Radius is reserved for controls, compact state badges, and overlays.
-- Changed-file rows are at least 40px high, with fixed status/count columns and an ellipsized fluid path.
+- Changed-file rows use the named file-row density token, with fixed status/count columns and an ellipsized fluid path.
 - Only the inner diff viewport may own horizontal overflow.
 
 ## Components
@@ -56,5 +46,5 @@ Motion is functional only: drawer transitions, focus movement, and pending-state
 ## Responsive behavior
 
 - At narrow laptop widths the review rail leaves the persistent grid before the diff becomes unusable.
-- Below the established drawer breakpoint, files and review surfaces open as bounded overlays while the diff retains a 640px local canvas.
-- At phone widths, the 288px files drawer remains inside the viewport, the page itself does not scroll horizontally, and display-state headings reduce to 2rem.
+- Below the established drawer breakpoint, files and review surfaces open as bounded overlays while the diff retains its local canvas.
+- At phone widths, the files drawer remains inside the viewport, the page itself does not scroll horizontally, and display-state headings use the display role.
