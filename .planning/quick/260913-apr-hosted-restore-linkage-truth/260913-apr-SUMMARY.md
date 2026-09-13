@@ -4,31 +4,26 @@ plan: 260913-apr
 subsystem: hosted-support-ui
 tags: [supabase, restore, vue, playwright, deno]
 requires:
-  - phase: 07
-    provides: hosted voluntary-support flow and local support dialog
+ - phase: 07
 provides:
-  - truthful terminal response when restore did not create a linkage
-  - finite support wait with a retryable terminal dialog state
-affects: [hosted-support-deployment, phase-07-acceptance]
+ - finite support wait with a retryable terminal dialog state
+affects: []
 tech-stack:
-  added: []
-  patterns:
-    - restore RPC booleans are handled before rendering a hosted completion outcome
-    - hosted intent lifetime bounds local waiting polls
+ added: []
+ patterns:
+ - hosted intent lifetime bounds local waiting polls
 key-files:
-  created:
-    - .planning/quick/260913-apr-hosted-restore-linkage-truth/260913-apr-SUMMARY.md
-  modified:
-    - supabase/functions/support-flow/index.ts
-    - supabase/functions/tests/support-flow.test.ts
-    - src/web/App.vue
-    - src/web/components/SupportDialog.vue
-    - tests/integration/support-dialog.spec.ts
+ created:
+ - .planning/quick/260913-apr-hosted-restore-linkage-truth/260913-apr-SUMMARY.md
+ modified:
+ - src/web/App.vue
+ - src/web/components/SupportDialog.vue
+ - tests/integration/support-dialog.spec.ts
 key-decisions:
-  - "A false restore result is a 409 unlinked terminal response; RPC failures remain the existing generic 503 unavailable response."
-  - "The local waiting dialog ends after the hosted intent's 600,000 ms lifetime and exposes the existing retry actions."
+ - "The hosted unlinked response was deliberately reverted to preserve indistinguishable paid and unpaid restore completion."
+ - "The local waiting dialog ends after the hosted intent's 600,000 ms lifetime exposes existing retry actions."
 patterns-established:
-  - "Terminal hosted responses preserve accumulated Set-Cookie values when a callback has already cleared its intent cookie."
+ - "Terminal support-dialog states reuse the existing invitation action row."
 requirements-completed: []
 duration: 0min
 completed: 2026-09-13
@@ -37,92 +32,54 @@ status: complete
 
 # Quick 260913-apr: Hosted restore linkage truth Summary
 
-**Restore now reports an unlinked outcome instead of false completion, and an unverified hosted handoff returns the local dialog to a retryable state after ten minutes.**
+**The app-side bounded support wait stands; the hosted unlinked-response half was deliberately reverted to preserve the specified indistinguishable restore completion.**
 
-## SOURCE ONLY — deployment caveat
+## Final Outcome
 
-This changes source only. No Supabase deployment, provider, workflow, Stripe, database, payment, publish, push, or sign-in action was performed. The deployed hosted service still has its old false-success Restore behavior until the operator separately deploys `support-flow`; Phase 7 acceptance evidence, including the untouched live-page record, remains accurate as written.
+The observed defect is fixed entirely in the app: the support modal no longer waits forever on “Waiting for confirmation” when the hosted status remains unverified. It does not depend on the hosted completion page disclosing whether Restore created a linkage.
 
-## Accomplishments
+The hosted half was implemented and then **deliberately reverted** in `05384c8` (`revert(quick-260913-apr): restore indistinguishable paid/unpaid restore completion`). The reason is the property specified by `32b048b` (`test(02-03): specify Supabase support authority`): Restore uses the same opaque proof and has indistinguishable paid and unpaid completion. Consequently, a hosted completion page reading `Support flow complete. You can return to Cumpa.` for an unpaid Restore is intentional, specified behavior—not a defect.
 
-- Added the `unlinked` browser state: a false `restore_installation` result returns HTTP 409 with bounded, safe plain text and the cleared intent cookie; an RPC error remains the generic 503 unavailable result; true remains the existing completion redirect.
-- Bounded `scheduleSupportPoll` at the hosted intent's 600,000 ms lifetime without changing its 30-second background refresh, visibility refresh, or verified/thank-you promotion.
-- Added `notConfirmed` dialog rendering that uses the existing Support, Restore support, and Not now action row, plus hosted and Playwright regression coverage.
+The revert was exact: `git diff e1dc5f4^ -- supabase/functions/` was empty, and the hosted suite reported `ok | 17 passed | 0 failed`.
 
-## RED → GREEN Evidence
+## Standing App-side Fix
 
-### Task 1 — Hosted restore honors RPC result
+- `src/web/App.vue` bounds support polling at 600,000 ms, guarded on `mode === 'waiting'`.
+- `src/web/components/SupportDialog.vue` adds the `notConfirmed` terminal mode. It renders a reason-free retry line with the existing invitation action row.
+- The 30-second background refresh and `visibilitychange` refresh remain intact.
 
-- **RED:** `deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests/support-flow.test.ts` reported `FAILED | 5 passed | 1 failed (5ms)` at the new restore-outcome assertion before the implementation.
-- **GREEN:** the same command reported `ok | 6 passed | 0 failed (5ms)` after handling `restored.error` and `restored.data !== true`.
+Verification already established for the standing app-side change:
 
-### Task 2 — App-side wait reaches a terminal state
+- App-side suite: `5 passed`, including `ends an unconfirmed hosted restore wait with a retryable invitation`.
+- Web typecheck: clean.
 
-- **RED:** `npm run typecheck:web && npx playwright test tests/integration/support-dialog.spec.ts` reported `1 failed, 4 passed (11.5s)` because the waiting text remained visible after twelve virtual minutes.
-- **GREEN:** the same command reported `5 passed (6.2s)` after the deadline transition and retryable dialog rendering.
+## Source-only Deployment Note
 
-## Verification
+The app-side change ships with the normal build. No hosted-function change is pending deployment: the deployed hosted service is unaffected by this task, as is Phase 7's acceptance evidence.
 
-- `deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests/support-flow.test.ts` — `ok | 6 passed | 0 failed (5ms)`.
-- `npm run typecheck:web && npx playwright test tests/integration/support-dialog.spec.ts` — web typecheck completed; `5 passed (6.2s)`.
-- `deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests` — `ok | 18 passed | 0 failed (116ms)`.
-- `npx vitest run tests/api/support.test.ts` — `Test Files 1 passed (1)` and `Tests 10 passed (10)`.
+## Open Question
 
-## Protected Invariants
+**Undecided:** the Restore branch still ignores an RPC transport error or raise, so a transport fault also renders the completion page. Reverting the hosted half restored that pre-existing behavior. Whether to distinguish a transport fault from a legitimate unpaid Restore without breaking paid/unpaid indistinguishability is deliberately not resolved here.
 
-- The existing exact `/complete` test remained green, proving its literal 200 body remains `Support flow complete. You can return to Cumpa.`
-- The source diff changes only the `BrowserState`/`browserResponse` definition and restore branch; the checkout creation, `record_checkout_session`, `success_url`, `cancel_url`, and checkout `unavailable` catch are untouched.
-- The existing paid/unpaid indistinguishability test at line 149 is unmodified and green. The test diff contains only a new literal and a new test after that protected case.
-- `browserResponse` retains all existing single-argument calls; only the new restore outcomes pass the optional cookie array. The cookie loop appends values to preserve the cleared intent cookie.
-- `tests/e2e/public-support-states.spec.ts`, SQL/migrations, route set, state/cookie helpers, contracts, and server support code were not modified or run.
-- `git diff --name-only e1dc5f4^..HEAD` reported exactly the five planned source/test files. `git diff --check e1dc5f4^..HEAD` produced no errors.
+## Implementation History
 
-## Task Commits
+1. **Hosted RED:** `e1dc5f4` — `test(quick-260913-apr): add failing restore outcome coverage`
+2. **Hosted GREEN:** `e560b82` — `fix(quick-260913-apr): honor restore linkage result`
+3. **App RED:** `cd8af1e` — `test(quick-260913-apr): add failing support wait deadline coverage`
+4. **App GREEN:** `79f20dd` — `fix(quick-260913-apr): bound support wait terminal outcome`
+5. **Hosted revert:** `05384c8` — `revert(quick-260913-apr): restore indistinguishable paid/unpaid restore completion`
 
-1. **Task 1 RED:** `e1dc5f4` — `test(quick-260913-apr): add failing restore outcome coverage`
-2. **Task 1 GREEN:** `e560b82` — `fix(quick-260913-apr): honor restore linkage result`
-3. **Task 2 RED:** `cd8af1e` — `test(quick-260913-apr): add failing support wait deadline coverage`
-4. **Task 2 GREEN:** `79f20dd` — `fix(quick-260913-apr): bound support wait terminal outcome`
+## Files That Stand
 
-## Files Modified
+- `src/web/App.vue` — applies the 600,000 ms waiting-only deadline while retaining existing refresh behavior.
+- `src/web/components/SupportDialog.vue` — renders the reason-free `notConfirmed` terminal state with existing actions.
+- `tests/integration/support-dialog.spec.ts` — verifies the terminal retryable invitation after an unconfirmed hosted Restore wait.
 
-- `supabase/functions/support-flow/index.ts` — maps restore truth, failure, and cookies to terminal responses.
-- `supabase/functions/tests/support-flow.test.ts` — asserts false and error restore outcomes and no Checkout.
-- `src/web/App.vue` — sets a 600,000 ms polling deadline guarded by `mode === 'waiting'`.
-- `src/web/components/SupportDialog.vue` — renders the reason-free not-confirmed status with existing actions.
-- `tests/integration/support-dialog.spec.ts` — advances the virtual clock past the deadline and verifies Restore is enabled again.
+## Deviations from the Original Plan
 
-## Deviations from Plan
-
-### Auto-fixed Issues
-
-**1. [Rule 3 - Blocking] Used Playwright's accepted one-minute clock format**
-- **Found during:** Task 2
-- **Issue:** the plan's `page.clock.runFor('1:00')` was rejected by the installed Playwright: `Clock only understands numbers, 'mm:ss' 'hh:mm:ss'`.
-- **Fix:** used semantically identical `page.clock.runFor('01:00')`, the documented one-minute `mm:ss` form.
-- **Files modified:** `tests/integration/support-dialog.spec.ts`
-- **Verification:** the virtual-clock regression test reached the deadline and passed.
-- **Committed in:** `79f20dd`
-
-**2. [Rule 1 - Bug] Restored an unrelated declaration after an edit-anchor mistake**
-- **Found during:** Task 2
-- **Issue:** a duplicate support dialog mode declaration caused the Vue compiler to fail; correcting it also restored the existing `attachedResult` declaration.
-- **Fix:** retained one widened dialog mode declaration at its original location and preserved `attachedResult`.
-- **Files modified:** `src/web/App.vue`
-- **Verification:** web typecheck and all five dialog integration tests passed without the prior Vue warning.
-- **Committed in:** `79f20dd`
-
-**Total deviations:** 2 auto-fixed (1 blocking compatibility issue, 1 implementation bug). **Impact:** no scope expansion; the final behavior matches the plan.
-
-## Issues Encountered
-
-None remaining.
-
-## Next Readiness
-
-Source is ready for an operator-controlled hosted-function deployment. Until that deployment occurs, the deployed service intentionally remains unchanged.
+The operator chose a deliberate product/design correction after implementation: D-01's hosted `unlinked` HTTP 409 response was reverted because it violated the specified indistinguishability property. D-02 and D-03 stand unchanged.
 
 ## Self-Check: PASSED
 
 - Summary file exists at `.planning/quick/260913-apr-hosted-restore-linkage-truth/260913-apr-SUMMARY.md`.
-- `git log --oneline --all --grep="quick-260913-apr"` returned `79f20dd`, `cd8af1e`, `e560b82`, and `e1dc5f4`.
+- `05384c8` records the deliberate hosted revert; the standing app-side commit is `79f20dd`.

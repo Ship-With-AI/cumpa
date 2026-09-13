@@ -12,6 +12,12 @@ files_modified:
   - tests/integration/support-dialog.spec.ts
 ---
 
+## Outcome Note — Final State
+
+- **D-01:** The hosted `unlinked` HTTP 409 response was implemented and then deliberately reverted by operator decision in `05384c8`. It reversed the property specified by `32b048b` (`test(02-03)`): Restore has indistinguishable paid and unpaid completion.
+- **D-02 and D-03:** The bounded app-side waiting state, `notConfirmed` terminal mode, and their app-side coverage stand.
+- The original plan below remains the historical plan; this note records its final outcome.
+
 # Hosted restore must tell the truth about linkage
 
 ## Defect
