@@ -61,6 +61,14 @@ function leaves(nodes: readonly FileTreeNode[]): readonly FileTreeLeaf[] {
     node.kind === 'file' ? [node] : leaves(node.children),
   );
 }
+function fileDescendantCount(nodes: readonly FileTreeNode[]): number {
+  return nodes.reduce(
+    (count, node) =>
+      count + (node.kind === 'file' ? 1 : fileDescendantCount(node.children)),
+    0,
+  );
+}
+
 
 function directory(
   nodes: readonly FileTreeNode[],
@@ -457,5 +465,174 @@ describe('createFileTreeModel', () => {
     expect(model.handleKey('Home')).toBe(model);
     expect(model.focusRow('missing-row')).toBe(model);
     expect(model.toggleDirectory('missing-directory')).toBe(model);
+  });
+  function filterFiles(): readonly SessionFile[] {
+    return [
+      sessionFile(0, {
+        newPath: exactPath('parent/branch/filter-zone/alpha.ts'),
+      }),
+      sessionFile(1, {
+        newPath: exactPath('parent/branch/filter-zone/beta.ts'),
+      }),
+      sessionFile(2, {
+        newPath: exactPath('docs/guides/guide.ts'),
+      }),
+      sessionFile(3, {
+        newPath: exactPath('other.ts'),
+      }),
+      sessionFile(4, {
+        kind: 'added',
+        newPath: exactPath([0x80]),
+      }),
+      sessionFile(5, {
+        kind: 'added',
+        newPath: exactPath([0x81]),
+      }),
+    ];
+  }
+
+  it('matches full display paths case-insensitively', () => {
+    const model = createFileTreeModel(filterFiles());
+    const lowerCase = model.setQuery('filter-zone');
+    const upperCase = model.setQuery('FILTER-ZONE');
+
+    expect(
+      lowerCase.visibleRows
+        .filter((candidate) => candidate.kind === 'file')
+        .map((candidate) => candidate.fileId),
+    ).toEqual([fileId(0), fileId(1)]);
+    expect(upperCase.visibleRows.map((candidate) => candidate.rowId)).toEqual(
+      lowerCase.visibleRows.map((candidate) => candidate.rowId),
+    );
+  });
+
+  it('preserves surviving directory identity and segments while filtering', () => {
+    const model = createFileTreeModel(filterFiles());
+    const original = directory(model.tree, 'parent');
+    const projected = directory(model.setQuery('alpha').projectedTree, 'parent');
+
+    expect(projected.directoryId).toBe(original.directoryId);
+    expect(projected.segments).toEqual(original.segments);
+  });
+
+  it('force-expands matching ancestors without changing reviewer expansion', () => {
+    const model = createFileTreeModel(filterFiles()).toggleDirectory(
+      directory(createFileTreeModel(filterFiles()).tree, 'parent').directoryId,
+    );
+    const filtered = model.setQuery('alpha');
+
+    expect(filtered.expandedDirectoryIds).toEqual(model.expandedDirectoryIds);
+    expect(filtered.displayExpandedDirectoryIds).toContain(
+      directory(model.tree, 'parent').directoryId,
+    );
+    expect(
+      filtered.visibleRows.some(
+        (candidate) => candidate.kind === 'file' && candidate.fileId === fileId(0),
+      ),
+    ).toBe(true);
+  });
+
+  it('restores the reviewer collapse made during filtering', () => {
+    const model = createFileTreeModel(filterFiles());
+    const target = directory(model.tree, 'parent');
+    const rowsBeforeFilter = model.visibleRows;
+    const targetIndex = rowsBeforeFilter.findIndex(
+      (candidate) => candidate.rowId === `directory:${target.directoryId}`,
+    );
+    const expectedRowIds = rowsBeforeFilter
+      .filter(
+        (candidate, index) =>
+          index <= targetIndex || candidate.depth <= rowsBeforeFilter[targetIndex]!.depth,
+      )
+      .map((candidate) => candidate.rowId);
+
+    const restored = model
+      .setQuery('alpha')
+      .toggleDirectory(target.directoryId)
+      .setQuery('');
+
+    expect(restored.visibleRows.map((candidate) => candidate.rowId)).toEqual(
+      expectedRowIds,
+    );
+  });
+
+  it('keeps selection and removes the tab stop when a query has no matches', () => {
+    const model = createFileTreeModel(filterFiles()).selectFile(fileId(1));
+    const filtered = model.setQuery('no-match');
+
+    expect(filtered.visibleRows).toEqual([]);
+    expect(filtered.selectedFileId).toBe(fileId(1));
+    expect(filtered.tabbableRowId).toBeNull();
+  });
+
+  it('preserves filtered leaf order and display-colliding identities', () => {
+    const model = createFileTreeModel(filterFiles());
+    const collisionQuery = exactPath([0x80]).display;
+    const filtered = model.setQuery(collisionQuery);
+
+    expect(
+      filtered.visibleRows
+        .filter((candidate) => candidate.kind === 'file')
+        .map((candidate) => candidate.fileId),
+    ).toEqual([fileId(4), fileId(5)]);
+  });
+
+  it('prefers the visible selected row as the tab stop over focus', () => {
+    const model = createFileTreeModel(navigationFiles()).selectFile(fileId(1));
+    const selected = row(
+      model,
+      (candidate) => candidate.kind === 'file' && candidate.fileId === fileId(1),
+    );
+    const focusedElsewhere = model.focusRow(model.visibleRows[0]!.rowId);
+
+    expect(model.tabbableRowId).toBe(selected.rowId);
+    expect(focusedElsewhere.tabbableRowId).toBe(selected.rowId);
+  });
+
+  it('keeps only surviving descendants in projected directories', () => {
+    const model = createFileTreeModel(filterFiles());
+    const filtered = model.setQuery('alpha');
+
+    expect(fileDescendantCount(directory(model.projectedTree, 'parent').children)).toBe(
+      2,
+    );
+    expect(
+      fileDescendantCount(directory(filtered.projectedTree, 'parent').children),
+    ).toBe(1);
+  });
+
+  it('preserves selection, focus, and expansion while setting a query', () => {
+    const model = createFileTreeModel(filterFiles())
+      .selectFile(fileId(1))
+      .focusRow(`directory:${directory(createFileTreeModel(filterFiles()).tree, 'parent').directoryId}`);
+    const filtered = model.setQuery('alpha');
+    const whitespace = filtered.setQuery('   ');
+
+    expect(filtered.selectedFileId).toBe(model.selectedFileId);
+    expect(filtered.focusedRowId).toBe(model.focusedRowId);
+    expect(filtered.expandedDirectoryIds).toEqual(model.expandedDirectoryIds);
+    expect(whitespace.projectedTree).toBe(model.tree);
+  });
+
+  it('honours collapsing and expanding a surviving directory while filtering', () => {
+    const model = createFileTreeModel(filterFiles());
+    const target = directory(model.tree, 'parent');
+    const filtered = model.setQuery('alpha');
+    const collapsed = filtered.toggleDirectory(target.directoryId);
+    const expanded = collapsed.toggleDirectory(target.directoryId);
+
+    expect(collapsed.projectedTree).not.toEqual([]);
+    expect(collapsed.displayExpandedDirectoryIds).not.toContain(target.directoryId);
+    expect(
+      collapsed.visibleRows.some(
+        (candidate) => candidate.kind === 'file' && candidate.fileId === fileId(0),
+      ),
+    ).toBe(false);
+    expect(expanded.displayExpandedDirectoryIds).toContain(target.directoryId);
+    expect(
+      expanded.visibleRows.some(
+        (candidate) => candidate.kind === 'file' && candidate.fileId === fileId(0),
+      ),
+    ).toBe(true);
   });
 });
