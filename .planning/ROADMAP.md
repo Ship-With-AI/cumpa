@@ -97,9 +97,17 @@ Plans:
 **Expected test impact**:
 
 - Update diff presentation assertions in `tests/e2e/responsive-session.spec.ts` and side-label assertions in `tests/e2e/anchored-review.spec.ts` and `tests/e2e/complete-review-draft.spec.ts`.
-- Keep `tests/unit/line-mapping.test.ts`, `tests/unit/monaco-diff-semantics.test.ts`, `tests/unit/monaco-diff-adapter.test.ts`, and the anchoring behavior in `tests/integration/monaco-anchor.spec.ts` passing unchanged.
+- Keep `tests/unit/line-mapping.test.ts` and the anchoring behavior in `tests/integration/monaco-anchor.spec.ts` passing unchanged.
+- Planning correction: `tests/unit/monaco-diff-semantics.test.ts` and `tests/unit/monaco-diff-adapter.test.ts` **cannot** stay unchanged. The decoration suite projects every decoration's sorted option keys, so the added hunk-boundary decorations change all five exhaustive arrays; the adapter suite gains the new option and density assertions. Also not listed but coupled: `tests/unit/monaco-theme.test.ts` enforces exhaustive theme-key set equality, and `tests/integration/anchored-workspace.spec.ts` pins the side-label markup nesting and the outer-overflow canary.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Monaco public option surface and theme paint authority (wave 1)
+- [ ] 10-02-PLAN.md — Source-correct ariaLabel and responsive code typography (wave 2)
+- [ ] 10-03-PLAN.md — Hidden-region paint authority and token re-homing (wave 2)
+- [ ] 10-04-PLAN.md — Hunk-group boundary decorations (wave 3)
+- [ ] 10-05-PLAN.md — Side-label geometry and phase-wide green (wave 4)
 
 ### Phase 11: Workspace Shell & Review Surfaces
 
