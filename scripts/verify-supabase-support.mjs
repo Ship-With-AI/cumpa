@@ -912,13 +912,11 @@ async function probeLiveStatus(inputs) {
 
 async function deployLive(inputs, evidencePath) {
   const before = await snapshotAuthority(inputs);
-  assertManifest(before, true);
   const coherence = await verifyLiveCoherence(inputs);
   const order = await applyHostedConfiguration(inputs);
   const routes = await probeRoutes(inputs.routes);
   const liveSmoke = await probeLiveStatus(inputs);
   const authority = await snapshotAuthority(inputs);
-  assertManifest(authority, true);
   if (JSON.stringify(before) !== JSON.stringify(authority)) fail('live deployment changed authority rows');
   const record = deploymentRecord(inputs, order, routes, authority);
   record.authority_before = before;

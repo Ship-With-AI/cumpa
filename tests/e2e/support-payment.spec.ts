@@ -134,7 +134,7 @@ if (JSON.stringify(actual) !== database && !functionDeployment) {
   expect(failure?.stderr).not.toContain('sensitive-db-value');
 });
 
-test('live deployment rejects nonzero authority and keeps its smoke non-destructive', async ({}, testInfo) => {
+test('live deployment accepts unchanged populated authority and rejects changed authority', async ({}, testInfo) => {
   const projectRef = 'a'.repeat(20);
   const origin = `https://${projectRef}.supabase.co`;
   const bin = testInfo.outputPath('live-bin');
@@ -145,11 +145,13 @@ test('live deployment rejects nonzero authority and keeps its smoke non-destruct
   await writeFile(npx, '#!/usr/bin/env node\n');
   await chmod(npx, 0o755);
   await writeFile(fetchHook, `
+let authorityCalls = 0;
 globalThis.fetch = async (input, options = {}) => {
   const url = String(input);
   if (url.includes('/database/query')) {
-    if (process.env.NONZERO === 'true') return new Response(JSON.stringify([{ table_name: 'auth.users', id: '11111111-1111-4111-8111-111111111111' }]));
-    return new Response('[]');
+    authorityCalls += 1;
+    const populated = process.env.POPULATED === 'true' || (process.env.CHANGED === 'true' && authorityCalls > 1);
+    return new Response(JSON.stringify(populated ? [{ table_name: 'auth.users', id: '11111111-1111-4111-8111-111111111111' }] : []));
   }
   if (url === 'https://api.stripe.com/v1/prices/price_live') return new Response(JSON.stringify({ object: 'price', active: true, livemode: true, currency: 'usd', unit_amount: 4999, type: 'one_time' }));
   if (url === 'https://api.stripe.com/v1/webhook_endpoints/we_live') return new Response(JSON.stringify({ object: 'webhook_endpoint', status: 'enabled', livemode: true, url: '${origin}/functions/v1/stripe-webhook', enabled_events: process.env.BAD_ENDPOINT === 'true' ? ['checkout.session.completed'] : ['checkout.session.completed', 'checkout.session.async_payment_succeeded'] }));
@@ -193,8 +195,16 @@ globalThis.fetch = async (input, options = {}) => {
     live_smoke: { status: 'passed', non_destructive: true },
   });
   await expect(execFileAsync(process.execPath, [script, ...args], {
-    env: { ...environment, NONZERO: 'true' },
-  })).rejects.toMatchObject({ stderr: expect.stringContaining('evidence authority is not zero') });
+    env: { ...environment, POPULATED: 'true' },
+  })).resolves.toBeDefined();
+  expect(JSON.parse(await readFile(evidence, 'utf8'))).toMatchObject({
+    coherence: { status: 'passed' },
+    live_smoke: { status: 'passed', non_destructive: true },
+    authority: { 'auth.users': { count: 1 } },
+  });
+  await expect(execFileAsync(process.execPath, [script, ...args], {
+    env: { ...environment, CHANGED: 'true' },
+  })).rejects.toMatchObject({ stderr: expect.stringContaining('live deployment changed authority rows') });
   await expect(execFileAsync(process.execPath, [script, ...args], {
     env: { ...environment, BAD_ENDPOINT: 'true' },
   })).rejects.toMatchObject({ stderr: expect.stringContaining('live Stripe coherence failed: endpoint-events') });
