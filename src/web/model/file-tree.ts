@@ -36,9 +36,14 @@ export interface FileTreeModel {
   readonly expandedDirectoryIds: readonly string[];
   readonly focusedRowId: string | null;
   readonly selectedFileId: string | null;
+  readonly query: string;
+  readonly projectedTree: readonly FileTreeNode[];
+  readonly displayExpandedDirectoryIds: readonly string[];
+  readonly tabbableRowId: string | null;
   readonly focusRow: (rowId: string) => FileTreeModel;
   readonly toggleDirectory: (directoryId: string) => FileTreeModel;
   readonly selectFile: (fileId: string) => FileTreeModel;
+  readonly setQuery: (query: string) => FileTreeModel;
   readonly handleKey: (key: FileTreeNavigationKey) => FileTreeModel;
 }
 
@@ -92,6 +97,30 @@ function flattenVisibleRows(
   }
 }
 
+function pruneTree(
+  nodes: readonly FileTreeNode[],
+  matches: (leaf: FileTreeLeaf) => boolean,
+  survivingDirectoryIds: string[],
+): readonly FileTreeNode[] {
+  const pruned: FileTreeNode[] = [];
+  for (const node of nodes) {
+    if (node.kind === 'file') {
+      if (matches(node)) {
+        pruned.push(node);
+      }
+      continue;
+    }
+
+    const children = pruneTree(node.children, matches, survivingDirectoryIds);
+    if (children.length === 0) {
+      continue;
+    }
+    survivingDirectoryIds.push(node.directoryId);
+    pruned.push(Object.freeze({ ...node, children }));
+  }
+  return Object.freeze(pruned);
+}
+
 function findParentDirectoryRowId(
   nodes: readonly FileTreeNode[],
   targetRowId: string,
@@ -123,11 +152,52 @@ function createModel(
   expandedDirectoryIds: readonly string[],
   focusedRowId: string | null,
   selectedFileId: string | null,
+  query: string,
+  queryCollapsedDirectoryIds: readonly string[],
 ): FileTreeModel {
-  const expanded = new Set(expandedDirectoryIds);
+  const needle = query.trim().toLowerCase();
+  const survivingDirectoryIds: string[] = [];
+  const projectedTree =
+    needle === ''
+      ? tree
+      : pruneTree(
+          tree,
+          (leaf) => leaf.effectivePath.display.toLowerCase().includes(needle),
+          survivingDirectoryIds,
+        );
+  const effectiveExpanded = new Set(expandedDirectoryIds);
+  if (needle !== '') {
+    for (const directoryId of survivingDirectoryIds) {
+      effectiveExpanded.add(directoryId);
+    }
+    for (const directoryId of queryCollapsedDirectoryIds) {
+      effectiveExpanded.delete(directoryId);
+    }
+  }
+  const displayExpandedDirectoryIds =
+    needle === ''
+      ? expandedDirectoryIds
+      : Object.freeze(
+          allDirectoryIds.filter((directoryId) =>
+            effectiveExpanded.has(directoryId),
+          ),
+        );
   const visibleRows: VisibleFileTreeRow[] = [];
-  flattenVisibleRows(tree, expanded, 0, visibleRows);
+  flattenVisibleRows(projectedTree, effectiveExpanded, 0, visibleRows);
   const frozenVisibleRows = Object.freeze(visibleRows);
+  const selectedRowId =
+    selectedFileId === null ? null : fileRowId(selectedFileId);
+  const selectedRowVisible =
+    selectedRowId !== null &&
+    frozenVisibleRows.some((candidate) => candidate.rowId === selectedRowId);
+  const focusedRowVisible =
+    focusedRowId !== null &&
+    frozenVisibleRows.some((candidate) => candidate.rowId === focusedRowId);
+  const tabbableRowId = selectedRowVisible
+    ? selectedRowId
+    : focusedRowVisible
+      ? focusedRowId
+      : frozenVisibleRows[0]?.rowId ?? null;
 
   let model: FileTreeModel;
 
@@ -147,6 +217,8 @@ function createModel(
       expandedDirectoryIds,
       rowId,
       nextSelection,
+      query,
+      queryCollapsedDirectoryIds,
     );
   };
 
@@ -155,10 +227,19 @@ function createModel(
       return model;
     }
     const nextExpanded = new Set(expandedDirectoryIds);
-    if (nextExpanded.has(directoryId)) {
+    const wasExpanded = effectiveExpanded.has(directoryId);
+    if (wasExpanded) {
       nextExpanded.delete(directoryId);
     } else {
       nextExpanded.add(directoryId);
+    }
+    const nextQueryCollapsed = new Set(queryCollapsedDirectoryIds);
+    if (needle !== '') {
+      if (wasExpanded) {
+        nextQueryCollapsed.add(directoryId);
+      } else {
+        nextQueryCollapsed.delete(directoryId);
+      }
     }
     return createModel(
       tree,
@@ -168,18 +249,42 @@ function createModel(
       ),
       directoryRowId(directoryId),
       selectedFileId,
+      query,
+      Object.freeze(
+        allDirectoryIds.filter((candidate) => nextQueryCollapsed.has(candidate)),
+      ),
     );
   };
 
-  const selectFile = (fileId: string): FileTreeModel =>
-    selectedFileId === fileId
+  const selectFile = (fileId: string): FileTreeModel => {
+    if (selectedFileId === fileId) {
+      return model;
+    }
+    const rowId = fileRowId(fileId);
+    return createModel(
+      tree,
+      allDirectoryIds,
+      expandedDirectoryIds,
+      frozenVisibleRows.some((candidate) => candidate.rowId === rowId)
+        ? rowId
+        : focusedRowId,
+      fileId,
+      query,
+      queryCollapsedDirectoryIds,
+    );
+  };
+
+  const setQuery = (nextQuery: string): FileTreeModel =>
+    query === nextQuery
       ? model
       : createModel(
           tree,
           allDirectoryIds,
           expandedDirectoryIds,
           focusedRowId,
-          fileId,
+          selectedFileId,
+          nextQuery,
+          Object.freeze([]),
         );
 
   const handleKey = (key: FileTreeNavigationKey): FileTreeModel => {
@@ -214,7 +319,7 @@ function createModel(
       if (focused.kind === 'file') {
         return model;
       }
-      if (!expanded.has(focused.directoryId)) {
+      if (!effectiveExpanded.has(focused.directoryId)) {
         return toggleDirectory(focused.directoryId);
       }
       const firstChild = frozenVisibleRows[focusedIndex + 1];
@@ -225,11 +330,11 @@ function createModel(
     if (key === 'ArrowLeft') {
       if (
         focused.kind === 'directory' &&
-        expanded.has(focused.directoryId)
+        effectiveExpanded.has(focused.directoryId)
       ) {
         return toggleDirectory(focused.directoryId);
       }
-      const parent = findParentDirectoryRowId(tree, focused.rowId);
+      const parent = findParentDirectoryRowId(projectedTree, focused.rowId);
       return parent === undefined || parent === null ? model : focusRow(parent);
     }
     if (key === 'Enter' || key === ' ') {
@@ -246,9 +351,14 @@ function createModel(
     expandedDirectoryIds,
     focusedRowId,
     selectedFileId,
+    query,
+    projectedTree,
+    displayExpandedDirectoryIds,
+    tabbableRowId,
     focusRow,
     toggleDirectory,
     selectFile,
+    setQuery,
     handleKey,
   });
   return model;
@@ -271,5 +381,7 @@ export function createFileTreeModel(
     expandedDirectoryIds,
     initialLeaf?.rowId ?? null,
     initialLeaf?.kind === 'file' ? initialLeaf.fileId : null,
+    '',
+    Object.freeze([]),
   );
 }
