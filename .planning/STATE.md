@@ -6,9 +6,9 @@ current_phase: 07
 current_phase_name: clean-public-artifact-acceptance
 status: partially-blocked
 stopped_at: Phase 07 requirement-axis evidence corrected; ACC-04 partially blocked
-last_updated: "2026-09-12T20:14:22Z"
-last_activity: 2026-09-12
-last_activity_desc: Corrected regenerated acceptance record's installation and support axes
+last_updated: "2026-09-13T06:03:28Z"
+last_activity: 2026-09-13
+last_activity_desc: Completed hosted Restore linkage-truth quick task
 progress:
   total_phases: 5
   completed_phases: 5
@@ -32,7 +32,7 @@ Phase: 07 (clean-public-artifact-acceptance) PARTIALLY BLOCKED
 Plan: 7 7
 Status: Partially blocked
 Checkpoint: Six committed public-global, public-npx, and marketplace pre/post reports regenerated the hardened record. ACC-01, ACC-02, and ACC-03 passed their installation-plus-review axis; ACC-04 is `partially-blocked` because every verified row remains `live-entitlement-unavailable` with `substituted: false`. The restored public-global post-Restore linkage finding records the observed false successful Restore while status stayed unverified and the modal stayed non-terminal; no second sign-in, publishing, deployment, or hosted-service change is permitted.
-Last activity: 2026-09-12 — Corrected requirement-axis derivation, independently inspected the regenerated evidence, and completed the scoped regression gate.
+Last activity: 2026-09-13 — Completed hosted Restore linkage-truth quick task; source-only change awaiting operator deployment.
 
 Progress: [██████████] 100% — 23 23 milestone plans complete
 
@@ -108,6 +108,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260907-gdm | Reconcile approved proprietary source-available distribution | 2026-09-07 | 483671d | [260907-gdm-reconcile-cumpa-v1-5-with-approved-publi](./quick/260907-gdm-reconcile-cumpa-v1-5-with-approved-publi/) |
 | 260908-d25 | Switch Cumpa to standard MIT and reconcile distribution | 2026-09-08 | 2227f78 | [260908-d25-switch-cumpa-to-mit-and-reconcile-active](./quick/260908-d25-switch-cumpa-to-mit-and-reconcile-active/) |
+| 260913-apr | Hosted Restore linkage truth and bounded support wait | 2026-09-13 | 5508aab | [260913-apr-hosted-restore-linkage-truth](./quick/260913-apr-hosted-restore-linkage-truth/) |
 
 ## Deferred Items
 
