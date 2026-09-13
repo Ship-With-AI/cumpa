@@ -13,6 +13,7 @@ const harnessModule = `
 import { createApp, h, ref } from 'vue';
 import InlineNotice from '/components/InlineNotice.vue';
 import ReviewPanel from '/components/ReviewPanel.vue';
+import ReviewNotesDialog from '/components/ReviewNotesDialog.vue';
 import ReviewToolbar from '/components/ReviewToolbar.vue';
 import SelectorDriftNotice from '/components/SelectorDriftNotice.vue';
 
@@ -42,6 +43,7 @@ export function mountReviewPanelHarness(id, body) {
   }]);
   const commentBuffer = ref(body);
   const summaryBuffer = ref('');
+  const reviewNotesOpen = ref(false);
   const pending = ref(null);
   const selectedCommentId = ref(null);
   const conflict = ref(null);
@@ -54,6 +56,7 @@ export function mountReviewPanelHarness(id, body) {
     if ('failure' in nextState) failure.value = nextState.failure;
     if ('retainedSummary' in nextState) retainedSummary.value = nextState.retainedSummary;
   };
+  globalThis.__setReviewNotesOpen = (open) => { reviewNotesOpen.value = open; };
   const reviewExpanded = ref(true);
   const saved = ref([]);
   const deleted = ref([]);
@@ -116,6 +119,45 @@ export function mountReviewPanelHarness(id, body) {
         onExport: () => {},
         onReloadLatest: () => {},
         onReviewUnsavedText: () => {},
+      }),
+      h(ReviewNotesDialog, {
+        open: reviewNotesOpen.value,
+        comments: comments.value,
+        summary: '',
+        revision: 7,
+        pinnedEndpoints: {
+          base: { label: 'main', oid: '1'.repeat(40) },
+          head: { label: 'feature/export', oid: '2'.repeat(40) },
+        },
+        summaryBuffer: summaryBuffer.value,
+        commentBuffers: new Map([[id, commentBuffer.value]]),
+        pending: pending.value,
+        conflict: conflict.value,
+        failure: failure.value,
+        retainedSummary: retainedSummary.value,
+        exportState: {
+          pending: false,
+          progress: null,
+          phase: 'ready',
+          failure: null,
+          conflict: null,
+          receipt: null,
+          previousConfirmedReceipt: null,
+          driftObservation: null,
+          ignoreStatus: null,
+          driftStale: false,
+        },
+        appendIgnoreRule: async () => ({ kind: 'alreadyIgnored' }),
+        refreshIgnoreStatus: async () => {},
+        revealExportDirectory: async () => ({ kind: 'revealed' }),
+        'onUpdate:summaryBuffer': (value) => { summaryBuffer.value = value; },
+        onCancelSummary: () => { summaryBuffer.value = ''; },
+        onSaveSummary: () => { pending.value = 'summary'; },
+        onCancelExport: () => {},
+        onExport: () => {},
+        onReloadLatest: () => {},
+        onReviewUnsavedText: () => {},
+        onClose: () => { reviewNotesOpen.value = false; },
       }),
       h(InlineNotice, { tone: 'warning', role: 'alert' }, {
         default: () => [
@@ -187,16 +229,17 @@ test('review hierarchy, keyboard, discard, resolved lifecycle, and focus follow 
   await expect(reviewTrigger).toHaveAttribute('aria-controls', 'review-panel');
   await reviewTrigger.click();
   await expect(page.getByRole('button', { name: 'Review', exact: true })).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.locator('.review-panel__section')).toHaveCount(4);
+  await expect(page.locator('.review-panel__section')).toHaveCount(2);
   await expect(page.locator('.review-panel__heading-counts .review-state-badge')).toHaveText(['Open 0', 'Resolved 1']);
 
-  await expect(page.getByRole('heading', { name: 'No open comments' })).toBeVisible();
-  const summary = page.locator('.review-summary');
-  const summaryDisclosure = page.getByRole('button', { name: 'Summary', exact: true });
+  await page.evaluate(() => globalThis.__setReviewNotesOpen(true));
+  const dialog = page.getByRole('dialog', { name: 'Review notes' });
+  await expect(dialog).toBeVisible();
+  const summary = dialog.locator('.review-summary');
+  const summaryDisclosure = dialog.getByRole('button', { name: 'Summary', exact: true });
   await expect(summary.locator('.review-summary__badges .review-state-badge')).toHaveText('Saved');
   await expect(summaryDisclosure).toHaveAttribute('aria-expanded', 'true');
   await expect(summaryDisclosure).toHaveAttribute('aria-controls', 'review-summary-content');
-  await expect(page.locator('.review-panel__section').first()).toContainText('Summary');
   await expect(summary).toHaveCSS('box-shadow', 'none');
 
   const previewTab = page.getByRole('tab', { name: 'Preview' });
@@ -252,6 +295,7 @@ test('review hierarchy, keyboard, discard, resolved lifecycle, and focus follow 
   await page.getByRole('button', { name: 'Discard changes' }).click();
   await expect(summaryDisclosure).toBeFocused();
 
+  await dialog.getByRole('button', { name: 'Close review notes' }).click();
   await page.getByRole('button', { name: /Resolved comments \(1\)/ }).click();
   const record = page.locator(`article[data-comment-id="${commentId}"]`);
   await expect(record).toHaveCount(1);
@@ -310,6 +354,7 @@ test('Phase 07 notice status language', async ({ page }) => {
     mountReviewPanelHarness(id, body);
   }, { commentId, body: originalBody });
 
+  await page.evaluate(() => globalThis.__setReviewNotesOpen(true));
   await page.evaluate((id) => globalThis.__setReviewPanelState({
     failure: { operation: 'comment', commentId: id },
   }), commentId);
@@ -318,6 +363,7 @@ test('Phase 07 notice status language', async ({ page }) => {
   await expect(failure.locator('svg[aria-hidden="true"]')).toHaveCount(1);
   await expect(failure.getByRole('heading', { name: 'Review change failed' })).toBeVisible();
   await expect(failure).toHaveCSS('border-left-width', '3px');
+  await page.getByRole('dialog', { name: 'Review notes' }).getByRole('button', { name: 'Close review notes' }).click();
 
 
   const warning = page.locator('.inline-notice--warning').filter({ hasText: 'Warning notice' });

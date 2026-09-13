@@ -339,11 +339,10 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   await expect(notice).toContainText(baseOid);
   await expect(notice).toContainText(movedBaseOid);
 
-  const reviewDisclosure = page.getByRole('button', { name: 'Review', exact: true });
-  if (await reviewDisclosure.getAttribute('aria-expanded') === 'false') {
-    await reviewDisclosure.click();
-  }
-  await expect(reviewDisclosure).toHaveAttribute('aria-expanded', 'true');
+  const reviewNotes = page.getByRole('button', { name: 'Review notes', exact: true });
+  await expect(reviewNotes).toBeVisible();
+  await reviewNotes.click();
+  await expect(page.getByRole('dialog', { name: 'Review notes' })).toBeVisible();
 
   const summaryDisclosure = page.getByRole('button', { name: /^Summary\b/ });
   await expect(summaryDisclosure).toHaveAttribute('aria-expanded', 'true');

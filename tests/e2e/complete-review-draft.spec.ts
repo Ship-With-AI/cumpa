@@ -149,11 +149,19 @@ async function ensureReviewOpen(page: Page): Promise<void> {
   await expect(reviewButton).toHaveAttribute('aria-expanded', 'true');
 }
 
+async function openReviewNotes(page: Page): Promise<void> {
+  const button = page.getByRole('button', { name: 'Review notes', exact: true });
+  await expect(button).toBeVisible();
+  await button.click();
+  await expect(page.getByRole('dialog', { name: 'Review notes' })).toBeVisible();
+}
+
 async function openGeneratedReview(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
-  await expect(page.getByText('BASE', { exact: true })).toBeVisible();
-  await expect(page.getByText('HEAD', { exact: true })).toBeVisible();
+  const endpoints = page.getByRole('banner');
+  await expect(endpoints.getByText('BASE', { exact: true })).toBeVisible();
+  await expect(endpoints.getByText('HEAD', { exact: true })).toBeVisible();
 }
 
 function assertChromium(browser: Browser, testInfo: TestInfo): void {
@@ -325,8 +333,11 @@ test('complete draft lifecycle edits, resolves, reopens, deletes, and groups com
     await ensureReviewOpen(page);
     await expect(page.getByRole('complementary', { name: 'Review', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { level: 2, name: 'Review', exact: true })).toBeVisible();
+    await openReviewNotes(page);
     await expect(page.getByRole('region', { name: 'Summary Saved', exact: true })).toBeVisible();
     await expect(page.getByText('No summary yet', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Close review notes' }).click();
+    await ensureReviewOpen(page);
 
 
     const initialRecord = page.locator('.comments-rail__comment', { hasText: commentBody });
@@ -385,6 +396,7 @@ test('complete draft lifecycle saves a safe summary and relaunches it through th
   try {
     await openGeneratedReview(page, await waitForLoopbackUrl(running));
     await ensureReviewOpen(page);
+    await openReviewNotes(page);
     await page.getByRole('button', { name: 'Write summary' }).click();
     const summaryEditor = page.getByLabel('Review summary (Markdown)');
     await summaryEditor.fill('<script>window.bad = true</script>\n\n' + summary);
@@ -406,6 +418,7 @@ test('complete draft lifecycle saves a safe summary and relaunches it through th
   try {
     await openGeneratedReview(page, await waitForLoopbackUrl(running));
     await ensureReviewOpen(page);
+    await openReviewNotes(page);
     await expect(page.locator('.review-summary__preview')).toContainText('Review outcome');
   } finally {
     await stopGeneratedCli(running);
@@ -444,6 +457,7 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     await expect(seedRecord).toHaveCount(1);
     const seedId = await seedRecord.getAttribute('data-comment-id');
     expect(seedId).not.toBeNull();
+    await page.getByRole('button', { name: 'Close review', exact: true }).click();
 
     await otherTab.setViewportSize({ width: 1440, height: 900 });
     await openGeneratedReview(otherTab, url);
@@ -452,6 +466,7 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     await otherSeedRecord.getByRole('button', { name: 'Edit', exact: true }).click();
     const otherEdit = otherSeedRecord.getByLabel('Comment');
     await otherEdit.fill(attemptedEdit);
+    await openReviewNotes(otherTab);
     await otherTab.getByRole('button', { name: 'Write summary' }).click();
     const otherSummary = otherTab.getByLabel('Review summary (Markdown)');
     await otherSummary.fill(attemptedSummary);
@@ -462,12 +477,15 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
     expect((await remoteAdded).status()).toBe(201);
 
+    await openReviewNotes(page);
     await page.getByRole('button', { name: 'Write summary' }).click();
     const canonicalSummary = page.getByLabel('Review summary (Markdown)');
     await canonicalSummary.fill(firstCanonicalSummary);
     const accepted = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
     await page.getByRole('button', { name: 'Save summary' }).click();
     expect((await accepted).status()).toBe(200);
+    await page.getByRole('button', { name: 'Close review notes' }).click();
+    await ensureReviewOpen(page);
 
     const draftsDirectory = join(fixture.root, '.cumpa', 'drafts');
     const draftFilename = readdirSync(draftsDirectory).find((candidate) => candidate.endsWith('.json'));
@@ -501,6 +519,8 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     await expect(otherTab.getByText('Conflict — unsaved text retained', { exact: true })).toHaveCount(0);
     await expect(otherSummary).toHaveValue(attemptedSummary);
     await expect(otherEdit).toHaveValue(attemptedEdit);
+    await otherTab.getByRole('button', { name: 'Close review notes' }).click();
+    await ensureReviewOpen(otherTab);
     const remoteRecord = otherTab.locator('.comments-rail__comment', { hasText: remoteBody });
     await expect(remoteRecord).toHaveCount(1);
     await expect(remoteRecord.getByRole('button', { name: 'Resolve' })).toBeEnabled();
@@ -518,7 +538,10 @@ test('two-tab conflict retains every local buffer and requires fresh explicit CA
     expect((await deletedTargetConflict).status()).toBe(409);
     expect(readFileSync(draftPath)).toEqual(afterDeleteBytes);
     expect(createHash('sha256').update(readFileSync(draftPath)).digest('hex')).toBe(afterDeleteHash);
+    await openReviewNotes(otherTab);
     await otherTab.getByRole('button', { name: 'Reload latest' }).click();
+    await otherTab.getByRole('button', { name: 'Close review notes' }).click();
+    await ensureReviewOpen(otherTab);
     await expect(otherTab.locator(`[data-comment-id="${seedId}"]`)).toHaveCount(0);
 
     const occupiedResult = await page.evaluate(async ({ token, expectedRevision }) => {

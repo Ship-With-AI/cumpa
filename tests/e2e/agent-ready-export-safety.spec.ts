@@ -15,7 +15,7 @@ let lifecycleUrl: string;
 
 const lifecycleHarness = `
 import { createApp, h, ref } from 'vue';
-import ReviewPanel from '/components/ReviewPanel.vue';
+import ReviewNotesDialog from '/components/ReviewNotesDialog.vue';
 import CommentComposer from '/components/CommentComposer.vue';
 import '/styles.css';
 
@@ -34,8 +34,9 @@ export function mountLifecycleHarness() {
   };
   createApp({
     render: () => h('main', [
-      h(ReviewPanel, {
-        comments: [], inventory: [], summary: '', revision: 7, summaryBuffer: summaryBuffer.value,
+ h(ReviewNotesDialog, {
+ open: true,
+ comments: [], inventory: [], summary: '', revision: 7, summaryBuffer: summaryBuffer.value,
         commentBuffers: new Map(), pending: null, conflict: conflict.value, failure: null,
         retainedSummary: false, exportState, appendIgnoreRule: async () => ({ kind: 'alreadyIgnored' }),
         refreshIgnoreStatus: async () => {}, revealExportDirectory: async () => ({ kind: 'revealed' }),
