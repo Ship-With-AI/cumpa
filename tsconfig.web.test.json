@@ -3,7 +3,12 @@
   "compilerOptions": {
     "rootDir": ".",
     "noEmit": true,
-    "types": ["node", "vite/client"]
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "allowJs": true,
+    "checkJs": false
   },
   "include": [
     "src/web/shims-vue.d.ts",
