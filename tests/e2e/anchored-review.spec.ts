@@ -142,8 +142,9 @@ async function ensureReviewOpen(page: Page): Promise<void> {
 async function openGeneratedReview(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
-  await expect(page.getByText('BASE', { exact: true })).toBeVisible();
-  await expect(page.getByText('HEAD', { exact: true })).toBeVisible();
+  const endpoints = page.getByRole('banner');
+  await expect(endpoints.getByText('BASE', { exact: true })).toBeVisible();
+  await expect(endpoints.getByText('HEAD', { exact: true })).toBeVisible();
 }
 
 function assertChromium(browser: Browser, testInfo: TestInfo): void {
@@ -352,6 +353,7 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
   try {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openGeneratedReview(page, await waitForLoopbackUrl(resumed));
+    await ensureReviewOpen(page);
     const staleComment = page.locator(`[data-comment-id="${stale.id}"]`);
     const orphanComment = page.locator(`[data-comment-id="${orphan.id}"]`);
     await expect(staleComment.getByText('Stale anchor')).toBeVisible();
@@ -371,8 +373,8 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
     await expect(commentsToggle).toBeFocused();
     await expect(page.locator('.comments-rail')).toHaveAttribute('inert', '');
 
-    await page.setViewportSize({ width: 900, height: 900 });
-    const filesToggle = page.getByRole('button', { name: 'Files', exact: true });
+    await page.setViewportSize({ width: 760, height: 900 });
+    const filesToggle = page.getByRole('button', { name: 'Open changed files', exact: true });
     await filesToggle.click();
     await page.getByRole('button', { name: 'Close files' }).click();
     await expect(filesToggle).toBeFocused();
