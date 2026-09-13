@@ -1104,11 +1104,6 @@ input:-webkit-autofill:focus {
   color: var(--text-muted);
   font-weight: var(--font-weight-regular);
 }
-.file-row .path-text__directory {
-  display: none;
-}
-
-
 .path-text__filename {
   color: var(--text-primary);
   font-weight: var(--font-weight-semibold);

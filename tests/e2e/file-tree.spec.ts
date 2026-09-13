@@ -350,18 +350,24 @@ test('packaged file tree preserves opaque selection and keyboard semantics', asy
     const copiedRow = tree.getByRole('treeitem', {
       name: /Copied.*copied from copy-source\.ts to copy-target\.ts.*Text/i,
     });
-    await expect(renamedRow).toContainText(
-      'src/deep/only/rename-source.ts→src/deep/only/renamed.ts',
+    await expect(renamedRow).toContainText('rename-source.ts→renamed.ts');
+    await expect(renamedRow).toHaveAccessibleName(
+      /Renamed.*renamed from src\/deep\/only\/rename-source\.ts to src\/deep\/only\/renamed\.ts.*Text/i,
     );
     await expect(copiedRow).toContainText('copy-source.ts→copy-target.ts');
 
     const escapedControlRow = tree.getByRole('treeitem', {
       name: /control\/line\\nbreak\.ts/,
     });
-    await expect(escapedControlRow).toContainText('control/line\\nbreak.ts');
+    await expect(escapedControlRow).toContainText('line\\nbreak.ts');
+    await expect(escapedControlRow).not.toContainText('control/');
 
-    const displayCollisions = tree.getByText('collision/�.ts', { exact: true });
+    const displayCollisions = tree
+      .locator('[role="treeitem"] .path-display .path-text__filename')
+      .filter({ hasText: /^�\.ts$/ });
     await expect(displayCollisions).toHaveCount(2);
+    await expect(tree.getByRole('treeitem', { name: /collision\/.*2 changed files/i })).toBeVisible();
+    await expect(tree.getByRole('treeitem', { name: /control\/.*1 changed file/i })).toBeVisible();
     await displayCollisions.nth(0).click();
     await expect.poll(() => fileRequests.length).toBeGreaterThan(1);
     const firstCollisionRequest = fileRequests.at(-1)!;

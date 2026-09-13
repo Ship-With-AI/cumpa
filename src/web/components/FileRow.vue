@@ -54,7 +54,7 @@ const availabilityLabel = computed(() => {
       @click="emit('activate', leaf.fileId)"
     >
       <StatusBadge :kind="leaf.file.status.kind" />
-      <PathDisplay :file="leaf.file" />
+      <PathDisplay :file="leaf.file" basename />
       <span class="line-counts" :aria-label="countLabel">
         <template v-if="leaf.file.additions !== null && leaf.file.deletions !== null">
           <span class="line-counts__added" aria-hidden="true">+{{ leaf.file.additions }}</span>

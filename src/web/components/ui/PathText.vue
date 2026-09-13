@@ -3,6 +3,7 @@ import { computed } from 'vue';
 
 const props = defineProps<{
   display: string;
+  basename?: boolean;
 }>();
 
 const directory = computed(() => {
@@ -13,5 +14,5 @@ const filename = computed(() => props.display.slice(directory.value.length));
 </script>
 
 <template>
-  <span class="path-text"><span class="path-text__directory">{{ directory }}</span><span class="path-text__filename">{{ filename }}</span></span>
+  <span class="path-text"><span v-if="!basename" class="path-text__directory">{{ directory }}</span><span class="path-text__filename">{{ filename }}</span></span>
 </template>
