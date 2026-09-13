@@ -165,6 +165,6 @@ test('ends an unconfirmed hosted restore wait with a retryable invitation', asyn
   for (let i = 0; i < 12; i += 1) await page.clock.runFor('01:00');
 
   await expect(page.getByText('Waiting for confirmation… You can close this and keep reviewing.')).toBeHidden();
-  await expect(page.getByText("Support wasn't confirmed. You can try again.")).toBeVisible();
+  await expect(page.getByRole('dialog').getByText("Support wasn't confirmed. You can try again.")).toBeVisible();
   await expect(page.getByRole('button', { name: 'Restore support' })).toBeEnabled();
 });

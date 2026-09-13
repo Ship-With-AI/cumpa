@@ -108,7 +108,7 @@ const attachedResult = shallowRef<FinishReviewResult>();
 const attachedStatus = shallowRef<AttachedCompletionStatus>();
 const supportStatus = ref<'loading' | 'unverified' | 'verified' | 'unavailable'>('loading');
 const supportDialogOpen = ref(false);
-const supportDialogMode = ref<'invitation' | 'waiting' | 'verified' | 'thankYou'>('invitation');
+const supportDialogMode = ref<'invitation' | 'waiting' | 'verified' | 'thankYou' | 'notConfirmed'>('invitation');
 const supportBusy = ref(false);
 const dismissedForSession = ref(false);
 const supportDialog = ref<InstanceType<typeof SupportDialog>>();
@@ -953,11 +953,21 @@ function scheduleSupportPoll(delays = [2_000, 3_000, 5_000, 8_000, 10_000]): voi
   if (!supportEnabled.value) return;
   stopSupportWaiting();
   supportPollAbort = new AbortController();
+  // Hosted support intents expire after ten minutes.
+  const deadline = Date.now() + 600_000;
   let index = 0;
   const poll = (): void => {
     if (supportPollAbort?.signal.aborted || supportStatus.value === 'verified') return;
     void refreshSupportStatus().finally(() => {
       if (supportPollAbort?.signal.aborted || supportStatus.value === 'verified') return;
+      if (Date.now() >= deadline) {
+        stopSupportWaiting();
+        if (supportDialogMode.value === 'waiting') {
+          supportDialogMode.value = 'notConfirmed';
+          announce("Support wasn't confirmed. You can try again.");
+        }
+        return;
+      }
       supportWaitingTimer = window.setTimeout(poll, delays[index++] ?? 15_000);
     });
   };
