@@ -71,7 +71,15 @@ Plans:
 - Extend `tests/unit/file-tree.test.ts` for filter reconciliation and ancestor expansion while preserving its existing ordering, selection, expansion, and keyboard expectations.
 - Update the presentation and accessible-name assertions in `tests/e2e/file-tree.spec.ts` and the changed-files portions of `tests/e2e/responsive-session.spec.ts`; keep existing file-selection and content-loading flows in `tests/e2e/pinned-session.spec.ts` unchanged.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+
+- [ ] 09-01-PLAN.md — Query-aware pruned projection, effective expansion, and the derived roving tab stop in the tree model (wave 1)
+- [ ] 09-02-PLAN.md — Land the four deferred geometry tokens with their consumers and rewrite the row and tree chrome CSS to the dense contract (wave 1)
+- [ ] 09-03-PLAN.md — Basename presentation with the full path as announced identity, plus recursive directory descendant counts (wave 2)
+- [ ] 09-04-PLAN.md — Compose the header, filter, scroller, recovery state, and hint, and bind tabindex to the single tab stop (wave 3)
+- [ ] 09-05-PLAN.md — Packaged browser evidence for filtering, recovery, and the tab stop, plus tree interior at the shipped contract viewports (wave 4)
 
 ### Phase 10: Diff Reading Surface
 
@@ -141,7 +149,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 08. Semantic Visual Foundation | 7/5 | Complete   | 2026-09-13 |
-| 09. Changed-File Tree | 0/TBD | Not started | — |
+| 09. Changed-File Tree | 0/5 | Planned | — |
 | 10. Diff Reading Surface | 0/TBD | Not started | — |
 | 11. Workspace Shell & Review Surfaces | 0/TBD | Not started | — |
 | 12. Behavior Continuity | 0/TBD | Not started | — |
