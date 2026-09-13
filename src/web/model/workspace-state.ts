@@ -71,6 +71,7 @@ export type WorkspaceEvent =
   | Readonly<{ type: 'composer-text-changed'; text: string }>
   | Readonly<{ type: 'confirm-discard' }>
   | Readonly<{ type: 'confirm-move' }>
+  | Readonly<{ type: 'diff-ready'; fileId: string }>
   | Readonly<{ type: 'escape' }>
   | Readonly<{ type: 'keep-writing' }>
   | Readonly<{ type: 'next-change' }>
