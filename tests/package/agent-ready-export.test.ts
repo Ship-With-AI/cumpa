@@ -118,7 +118,10 @@ function parseScenarios(
     support: z.strictObject({ unavailable: passed, dismissed: passed, unrestricted: passed }),
     exactPatch: z.strictObject({ canonicalV3: passed, grounded: passed }),
     native: z.strictObject({ observedReExport: z.literal(native), fallback: z.literal('reExportUnsupported') }),
-    sourceControl: z.strictObject({ unchanged: passed }),
+    sourceControl: z.strictObject({
+      unchanged: passed,
+      scenarios: z.array(z.strictObject({ name: z.string().min(1), unchanged: z.literal(true) })).nonempty(),
+    }),
     checks: z.strictObject({ finish: passed }),
   });
   const assets = assetSchema.parse(assetInput);
