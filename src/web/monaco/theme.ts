@@ -67,6 +67,7 @@ export const CUMPA_THEME = {
     'editorGutter.background': color('--surface-sidebar'),
     'editorLineNumber.foreground': color('--text-line-number'),
     'editorLineNumber.activeForeground': color('--text-primary'),
+    'editorLink.activeForeground': color('--diff-hunk-foreground'),
     'editorCursor.foreground': color('--focus-ring'),
     'editorWhitespace.foreground': color('--monaco-whitespace-foreground'),
     'editorIndentGuide.background1': color('--border-gap'),
