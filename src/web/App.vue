@@ -27,7 +27,7 @@ import DraftRecovery from './components/DraftRecovery.vue';
 import ReviewNotesDialog from './components/ReviewNotesDialog.vue';
 import ReviewPanel from './components/ReviewPanel.vue';
 import ErrorState from './components/ErrorState.vue';
-import FileTree from './components/FileTree.vue';
+import ChangedFilesDialog from './components/ChangedFilesDialog.vue';
 import IdentityHeader from './components/IdentityHeader.vue';
 import SupportDialog from './components/SupportDialog.vue';
 import DetailsDialog from './components/DetailsDialog.vue';
@@ -84,8 +84,8 @@ const metadataLoading = ref(false);
 const metadataError = ref('');
 const detailsOpen = ref(false);
 const isNarrow = ref(false);
-const isFilesDrawer = ref(false);
-const filesOpen = ref(false);
+const changedFilesOpen = ref(false);
+const focusActiveFileAfterDialog = ref(false);
 const filesCollapsed = ref(false);
 const reviewNotesOpen = ref(false);
 const commentsOpen = ref(false);
@@ -95,7 +95,6 @@ const activeFileToolbar = ref<InstanceType<typeof ActiveFileToolbar>>();
 const diffWorkspace = ref<InstanceType<typeof DiffWorkspace>>();
 const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
 const detailsDialog = ref<InstanceType<typeof DetailsDialog>>();
-const filesDrawer = ref<HTMLElement>();
 const reviewPanel = ref<InstanceType<typeof ReviewPanel>>();
 const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
@@ -137,7 +136,6 @@ let workspace: WorkspaceController | undefined;
 let requestVersion = 0;
 let metadataRequestVersion = 0;
 let viewportMedia: MediaQueryList | undefined;
-let filesOpener: HTMLElement | undefined;
 let supportRefreshInFlight = false;
 let supportBackgroundTimer: number | undefined;
 let supportWaitingTimer: number | undefined;
@@ -233,15 +231,9 @@ function announce(message: string): void {
   liveMessageVersion.value += 1;
 }
 
-function openFiles(): void {
-  filesOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-  filesOpen.value = true;
-  void nextTick(() => filesDrawer.value?.focus());
-}
-
 function toggleFiles(): void {
-  if (isFilesDrawer.value) {
-    openFiles();
+  if (isNarrow.value) {
+    changedFilesOpen.value = true;
     return;
   }
   filesCollapsed.value = !filesCollapsed.value;
@@ -250,9 +242,8 @@ function toggleFiles(): void {
   void nextTick(() => activeFileToolbar.value?.focusFilesToggle());
 }
 
-function closeFiles(): void {
-  filesOpen.value = false;
-  void nextTick(() => filesOpener?.focus());
+function closeChangedFiles(): void {
+  changedFilesOpen.value = false;
 }
 
 function openComments(): void {
@@ -802,14 +793,17 @@ function selectFile(fileId: string): void {
   if (file === undefined) {
     return;
   }
-  filesOpen.value = false;
+  const focusHeading = changedFilesOpen.value;
+  changedFilesOpen.value = false;
   if (file.availability.kind !== 'text') {
     selectedFile.value = file;
     selectedContent.value = undefined;
     diffError.value = '';
     void loadFileMetadata(file);
+    if (focusHeading) void nextTick(() => activeFileToolbar.value?.focusHeading());
     return;
   }
+  if (focusHeading) focusActiveFileAfterDialog.value = true;
   if (workspace?.getState().activeFileId === file.fileId) {
     void loadFile(file);
     return;
@@ -836,6 +830,10 @@ function nextChange(): void {
 function handleDiffReady(fileId: string): void {
   dispatchWorkspace({ type: 'diff-ready', fileId });
   announce(`Loaded ${selectedPath.value}.`);
+  if (focusActiveFileAfterDialog.value) {
+    focusActiveFileAfterDialog.value = false;
+    void nextTick(() => activeFileToolbar.value?.focusHeading());
+  }
 }
 
 function retryDiff(): void {
@@ -906,8 +904,6 @@ function handleKeydown(event: KeyboardEvent): void {
     if (detailsOpen.value) return;
     if (commentsOpen.value) {
       closeComments();
-    } else if (filesOpen.value) {
-      closeFiles();
     }
     return;
   }
@@ -928,10 +924,9 @@ function handleKeydown(event: KeyboardEvent): void {
 
 function handleViewportChange(): void {
   const isNarrowViewport = viewportMedia?.matches ?? false;
-  isFilesDrawer.value = isNarrowViewport;
   isNarrow.value = isNarrowViewport;
   if (!isNarrowViewport) {
-    filesOpen.value = false;
+    changedFilesOpen.value = false;
   }
   dispatchWorkspace({ type: 'resize' });
   diffWorkspace.value?.layout();
@@ -1157,7 +1152,7 @@ onBeforeUnmount(() => {
   </main>
 
   <div v-else class="session-shell">
-    <a class="skip-link" href="#changed-files-heading">Skip to changed files</a>
+    <a v-if="!isNarrow && !filesCollapsed" class="skip-link" href="#changed-files-heading">Skip to changed files</a>
     <a class="skip-link" href="#cumpa-heading">Skip to diff</a>
     <a class="skip-link" href="#review-heading">Skip review</a>
     <IdentityHeader
@@ -1190,34 +1185,16 @@ onBeforeUnmount(() => {
     <div
       v-else
       class="review-shell"
-      :class="{ 'review-shell--files-collapsed': !isFilesDrawer && filesCollapsed }"
-      :inert="detailsOpen || reviewNotesOpen || supportDialogOpen"
+      :class="{ 'review-shell--files-collapsed': !isNarrow && filesCollapsed }"
+      :inert="detailsOpen || reviewNotesOpen || supportDialogOpen || changedFilesOpen"
     >
-      <nav
-        v-if="isFilesDrawer || !filesCollapsed"
-        ref="filesDrawer"
-        class="review-files"
-        :class="{ 'review-files--open': filesOpen }"
-        id="changed-files"
-        :inert="isFilesDrawer && !filesOpen"
-        :aria-hidden="isFilesDrawer && !filesOpen ? 'true' : undefined"
-        aria-label="Changed files"
-        tabindex="-1"
-      >
-        <button v-if="isFilesDrawer" type="button" class="drawer-close ui-button" @click="closeFiles">Close files</button>
-        <FileTree v-if="session.files.length > 0" :files="session.files" :initial-selected-file-id="selectedFile?.fileId" @select="selectFile" @activate="selectFile" />
-        <section v-else class="empty-state">
-          <h2 id="changed-files-heading">Changed files</h2>
-          <p>0 changed files</p>
-        </section>
-      </nav>
+      <div v-if="!isNarrow && !filesCollapsed" id="changed-files" class="changed-files-sidebar"></div>
 
       <main class="review-main" aria-labelledby="cumpa-heading">
         <ActiveFileToolbar
           ref="activeFileToolbar"
           :files-collapsed="filesCollapsed"
-          :files-drawer="isFilesDrawer"
-          :files-open="filesOpen"
+          :files-drawer="isNarrow"
           :selected-file="selectedFile"
           :selected-path="selectedPath"
           :session="session"
@@ -1334,6 +1311,15 @@ onBeforeUnmount(() => {
       </aside>
     </div>
     <ShellFooter :session="session" />
+    <ChangedFilesDialog
+      :open="changedFilesOpen"
+      :narrow="isNarrow"
+      :files="session.files"
+      :initial-selected-file-id="selectedFile?.fileId"
+      @close="closeChangedFiles"
+      @select="selectFile"
+      @activate="selectFile"
+    />
     <DetailsDialog
       ref="detailsDialog"
       :open="detailsOpen"

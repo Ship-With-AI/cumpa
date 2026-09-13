@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue';
+import { nextTick, ref, useId, watch } from 'vue';
 
 const props = withDefaults(defineProps<{
   readonly open: boolean;
@@ -7,14 +7,18 @@ const props = withDefaults(defineProps<{
   readonly closeLabel?: string;
   readonly closeAriaLabel?: string;
   readonly descriptionId?: string;
+  readonly initialFocusSelector?: string;
+  readonly keepMounted?: boolean;
 }>(), {
   closeLabel: 'Close',
+  keepMounted: false,
 });
 
 const emit = defineEmits<{ close: []; }>();
 
 const panel = ref<HTMLElement>();
 const closeButton = ref<HTMLButtonElement>();
+const headingId = useId();
 let opener: HTMLElement | undefined;
 
 const focusableSelector = [
@@ -27,7 +31,12 @@ const focusableSelector = [
 ].join(', ');
 
 function focusInitial(): void {
-  void nextTick(() => closeButton.value?.focus());
+  void nextTick(() => {
+    const initial = props.initialFocusSelector === undefined
+      ? undefined
+      : panel.value?.querySelector<HTMLElement>(props.initialFocusSelector);
+    (initial ?? closeButton.value)?.focus();
+  });
 }
 
 function restoreFocus(): void {
@@ -71,13 +80,13 @@ defineExpose({ focusInitial });
 </script>
 
 <template>
-  <div v-if="open" class="modal-dialog-backdrop">
+  <div v-if="open || keepMounted" v-show="open" class="modal-dialog-backdrop">
     <section
       ref="panel"
       class="modal-dialog"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="modal-dialog-heading"
+      :aria-labelledby="headingId"
       :aria-describedby="descriptionId"
       @keydown="containFocus"
     >
@@ -88,7 +97,7 @@ defineExpose({ focusInitial });
         :aria-label="closeAriaLabel ?? closeLabel"
         @click="dismiss"
       >{{ closeLabel }}</button>
-      <h2 id="modal-dialog-heading">{{ title }}</h2>
+      <h2 :id="headingId">{{ title }}</h2>
       <slot />
     </section>
   </div>

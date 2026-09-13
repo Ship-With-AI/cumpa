@@ -8,7 +8,6 @@ import PathDisplay from './PathDisplay.vue';
 const props = defineProps<{
   readonly filesCollapsed: boolean;
   readonly filesDrawer: boolean;
-  readonly filesOpen: boolean;
   readonly selectedFile?: SessionFile;
   readonly selectedPath: string;
   readonly session: SessionResponse;
@@ -41,7 +40,11 @@ function focusFilesToggle(): void {
   filesToggle.value?.focus();
 }
 
-defineExpose({ focusFilesToggle });
+function focusHeading(): void {
+  document.getElementById('cumpa-heading')?.focus();
+}
+
+defineExpose({ focusFilesToggle, focusHeading });
 </script>
 
 <template>
@@ -49,12 +52,12 @@ defineExpose({ focusFilesToggle });
     <div class="active-file-toolbar__context">
       <div class="active-file-toolbar__file">
         <div class="active-file-toolbar__title">
-          <h1 id="cumpa-heading">
+          <h1 id="cumpa-heading" tabindex="-1">
             <PathDisplay v-if="selectedFile !== undefined" :file="selectedFile" basename />
             <template v-else>{{ selectedPath }}</template>
           </h1>
-          <p v-if="directoryPath !== ''" class="active-file-toolbar__directory" :title="directoryPath">{{ directoryPath }}</p>
         </div>
+        <p v-if="directoryPath !== ''" class="active-file-toolbar__directory" :title="directoryPath">{{ directoryPath }}</p>
         <div v-if="selectedFile !== undefined" class="active-file-toolbar__metadata">
           <span class="active-file-toolbar__status">{{ selectedFile.status.kind }}</span>
           <span v-if="selectedFile.additions !== null && selectedFile.deletions !== null" class="active-file-toolbar__counts">
