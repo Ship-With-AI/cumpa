@@ -1208,6 +1208,8 @@ test('responsive keyboard and accessibility contract', async ({
         const disabled = page.getByRole('button', { name: 'Previous file', exact: true });
         const link = page.getByRole('link', { name: 'Skip to diff', exact: true });
         const selected = page.locator('.tree-row--selected').first();
+        const hunkStart = page.locator('.monaco-editor .monaco-diff-hunk-start').first();
+        const hunkEnd = page.locator('.monaco-editor .monaco-diff-hunk-end').first();
         const baseBar = page.locator('.monaco-editor .monaco-diff-change-bar--base').first();
         const headBar = page.locator('.monaco-editor .monaco-diff-change-bar--head').first();
         const baseSign = page.locator('.monaco-editor .monaco-diff-change-sign--base').first();
@@ -1228,6 +1230,8 @@ test('responsive keyboard and accessibility contract', async ({
         await expect(review).toHaveCSS('outline-width', resolveToken(canonicalTokens, '--focus-outline-width'));
         expect(await disabled.evaluate((element) => getComputedStyle(element).color))
           .not.toBe(await review.evaluate((element) => getComputedStyle(element).color));
+        await expect(hunkStart).toHaveCSS('border-top-color', /rgb/);
+        await expect(hunkEnd).toHaveCSS('border-bottom-color', /rgb/);
 
         await expect(baseBar).toHaveCSS('border-left-style', 'dashed');
         await expect(headBar).toHaveCSS('border-left-style', 'solid');
