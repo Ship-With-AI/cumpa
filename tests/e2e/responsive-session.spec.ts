@@ -590,10 +590,14 @@ async function expectNonColorStateCues(page: Page): Promise<void> {
   const baseSign = page.locator('.monaco-editor .monaco-diff-change-sign--base').first();
   const headSign = page.locator('.monaco-editor .monaco-diff-change-sign--head').first();
   const sideLabels = page.locator('.diff-workspace__side-labels');
+  const firstSideLabel = sideLabels.locator(':scope > span').first();
   const modifiedLines = page.locator('.monaco-diff-editor .modified .view-line');
 
   await expect(sideLabels).toHaveText(/BASE− REMOVEDHEAD\+ ADDED/);
   await expect(sideLabels.locator(':scope > span').first()).toHaveCSS('font-weight', '600');
+  await expect(firstSideLabel).toHaveCSS('padding', '9px 18px');
+  await expect(firstSideLabel).toHaveCSS('height', '36px');
+  await expect(sideLabels).toHaveCSS('height', '37px');
   await expect(selected).toBeVisible();
   expect(await selected.evaluate((element) => getComputedStyle(element, '::before').width)).toBe(
     resolveToken(canonicalTokens, '--selected-rail-width'),
