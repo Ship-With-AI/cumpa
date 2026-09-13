@@ -114,7 +114,7 @@ describe('cumpa Monaco theme', () => {
     expect(Object.keys(colors).filter((key) => !(key in UNPAINTED_THEME_COLORS)).sort()).toEqual(mappedKeys);
 
     for (const [color, mapping] of Object.entries(THEME_COLOR_ROOT_MAP)) {
-      expect(colors[color as keyof typeof colors]).toBe(toMonacoHex(tokens, mapping.token));
+      expect(colors[color as keyof typeof colors], color).toBe(toMonacoHex(tokens, mapping.token));
     }
     expect(Object.fromEntries(Object.entries(UNPAINTED_THEME_COLORS).map(([color, value]) => [color, colors[color as keyof typeof colors]]))).toEqual(UNPAINTED_THEME_COLORS);
 
