@@ -38,7 +38,7 @@ const moveLabel = computed(() => {
     <span aria-hidden="true" class="path-display__arrow">→</span>
     <span aria-hidden="true" class="path-display__new"><PathText :display="file.newPath.display" /></span>
   </span>
-  <span v-else class="path-display" :title="effectivePath?.display">
+  <span v-else class="path-display" :aria-label="effectivePath?.display" :title="effectivePath?.display">
     <PathText v-if="effectivePath !== undefined" :display="effectivePath.display" />
   </span>
 </template>
