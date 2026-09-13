@@ -33,7 +33,8 @@ import InlineNotice from './components/InlineNotice.vue';
 import SelectorDriftNotice from './components/SelectorDriftNotice.vue';
 import KeyboardHelp from './components/KeyboardHelp.vue';
 import ReviewToolbar from './components/ReviewToolbar.vue';
-import PathDisplay from './components/PathDisplay.vue';
+import ActiveFileToolbar from './components/ActiveFileToolbar.vue';
+import ShellFooter from './components/ShellFooter.vue';
 import type { WorkspaceCommand, WorkspaceEvent } from './model/workspace-state.js';
 import { createWorkspaceState, type WorkspaceController } from './model/workspace-state.js';
 import { reconcileDraftComments } from './model/draft-reconciliation.js';
@@ -156,8 +157,6 @@ const identityModal = computed(() =>
 const patchDrifted = computed(() => patchStatus.value?.kind === 'drifted');
 const reviewableFiles = computed(() => session.value?.files.filter((file) => file.availability.kind === 'text') ?? []);
 const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? selectedFile.value?.oldPath?.display ?? 'Changed file');
-const baseShortOid = computed(() => pinnedSession.value?.base.oid.slice(0, 7));
-const headShortOid = computed(() => pinnedSession.value?.head.oid.slice(0, 7));
 const isRangeSession = computed(() => pinnedSession.value?.range?.kind === 'revisions');
 const rangeHasPathspecs = computed(() => (pinnedSession.value?.range?.pathspecs.length ?? 0) > 0);
 const unavailableHeading = computed(() =>
@@ -1175,64 +1174,31 @@ onBeforeUnmount(() => {
       </nav>
 
       <main class="review-main" aria-labelledby="cumpa-heading">
-        <header class="review-context-header">
-          <div class="review-context-header__context">
-            <div class="review-context-header__file">
-              <div>
-                <p class="active-file-strip__eyebrow">{{ isExactPatchSession ? 'Exact patch' : 'Comparison' }}</p>
-                <h1 id="cumpa-heading">
-                  <PathDisplay v-if="selectedFile !== undefined" :file="selectedFile" />
-                  <template v-else>{{ selectedPath }}</template>
-                </h1>
-              </div>
-              <button
-                type="button"
-                class="ui-button"
-                aria-controls="changed-files"
-                :aria-expanded="isFilesDrawer ? filesOpen : !filesCollapsed"
-                @click="toggleFiles"
-              >Files</button>
-            </div>
-            <template v-if="isExactPatchSession">
-              <div class="review-context-header__endpoint review-context-header__endpoint--base">
-                <span class="review-context-header__endpoint-label">Preimage</span>
-                <span class="review-context-header__endpoint-name">Repository object</span>
-              </div>
-              <div class="review-context-header__endpoint review-context-header__endpoint--head">
-                <span class="review-context-header__endpoint-label">Postimage</span>
-                <span class="review-context-header__endpoint-name">Implemented content</span>
-              </div>
-            </template>
-            <template v-else-if="pinnedSession !== undefined">
-              <div class="review-context-header__endpoint review-context-header__endpoint--base">
-                <span class="review-context-header__endpoint-label">Base</span>
-                <span class="review-context-header__endpoint-name" :title="pinnedSession.base.label">{{ pinnedSession.base.label }}</span>
-                <span class="review-context-header__endpoint-oid" :title="pinnedSession.base.oid">{{ baseShortOid }}</span>
-              </div>
-              <div class="review-context-header__endpoint review-context-header__endpoint--head">
-                <span class="review-context-header__endpoint-label">Head</span>
-                <span class="review-context-header__endpoint-name" :title="pinnedSession.head.label">{{ pinnedSession.head.label }}</span>
-                <span class="review-context-header__endpoint-oid" :title="pinnedSession.head.oid">{{ headShortOid }}</span>
-              </div>
-            </template>
-          </div>
-          <div class="review-context-header__toolbar">
-            <ReviewToolbar
-              :at-first-file="atFirstFile"
-              :at-last-file="atLastFile"
-              :has-active-file="selectedFile?.availability.kind === 'text'"
-              :open-comment-count="openCommentCount"
-              :resolved-comment-count="resolvedCommentCount"
-              :review-expanded="commentsOpen"
-              @previous-file="previousFile"
-              @next-file="nextFile"
-              @previous-change="previousChange"
-              @next-change="nextChange"
-              @comments="toggleComments"
-              @keyboard-help="keyboardHelpOpen = true"
-            />
-          </div>
-        </header>
+        <ActiveFileToolbar
+          :files-collapsed="filesCollapsed"
+          :files-drawer="isFilesDrawer"
+          :files-open="filesOpen"
+          :selected-file="selectedFile"
+          :selected-path="selectedPath"
+          :session="session"
+          @toggle-files="toggleFiles"
+        />
+        <div class="active-file-toolbar__review">
+          <ReviewToolbar
+            :at-first-file="atFirstFile"
+            :at-last-file="atLastFile"
+            :has-active-file="selectedFile?.availability.kind === 'text'"
+            :open-comment-count="openCommentCount"
+            :resolved-comment-count="resolvedCommentCount"
+            :review-expanded="commentsOpen"
+            @previous-file="previousFile"
+            @next-file="nextFile"
+            @previous-change="previousChange"
+            @next-change="nextChange"
+            @comments="toggleComments"
+            @keyboard-help="keyboardHelpOpen = true"
+          />
+        </div>
         <KeyboardHelp :open="keyboardHelpOpen" @close="keyboardHelpOpen = false" />
 
         <section v-if="session.files.length === 0" class="empty-state">
@@ -1353,6 +1319,7 @@ onBeforeUnmount(() => {
         />
       </aside>
     </div>
+    <ShellFooter :session="session" />
     <SupportDialog
       v-if="supportEnabled"
       ref="supportDialog"

@@ -233,7 +233,7 @@ body {
   height: 100vh;
   height: 100dvh;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
   overflow: hidden;
 }
 
@@ -247,6 +247,8 @@ body {
   position: relative;
   z-index: 3;
   display: flex;
+  min-width: 0;
+  max-width: 100%;
   min-height: 64px;
   align-items: center;
   justify-content: space-between;
@@ -318,13 +320,18 @@ body {
   line-height: var(--line-height-page-heading);
 }
 
+.state-card h1 {
+  font-size: var(--font-size-display);
+  line-height: var(--line-height-display);
+}
+
 .state-card h2,
 .empty-state h2,
 .identity-panel h2,
 .file-tree-pane h2,
 .comments-rail h2,
 .comments-rail h3,
-.review-context-header__file h1,
+.active-file-toolbar__file h1,
 .metadata-section > h3,
 .inline-notice > h4,
 .export-section h3,
@@ -1469,6 +1476,7 @@ input:-webkit-autofill:focus {
   max-width: 100%;
   min-height: 0;
   contain: paint;
+  grid-row: 3;
   grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
 }
 
@@ -1513,103 +1521,117 @@ input:-webkit-autofill:focus {
   min-width: 0;
   max-width: 100%;
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
 }
 
-.review-context-header {
+.active-file-toolbar {
   min-width: 0;
-  border: 0;
   border-bottom: 1px solid var(--border-default);
-  border-radius: 0;
   background: var(--surface-panel);
 }
 
-.review-context-header__context {
+.active-file-toolbar__context {
   display: grid;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
   grid-template-areas: "base file head";
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
   align-items: center;
   gap: var(--space-1);
   padding: var(--space-1) var(--space-2);
 }
 
-.review-context-header__endpoint--base {
+.active-file-toolbar__endpoint--base {
   grid-area: base;
 }
 
-.review-context-header__file {
-  grid-area: file;
-}
-
-.review-context-header__endpoint--head {
-  grid-area: head;
-}
-
-.review-context-header__endpoint {
-  display: grid;
+.active-file-toolbar__file {
+  display: flex;
   min-width: 0;
-  align-content: start;
+  grid-area: file;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.review-context-header__endpoint--head {
-  text-align: right;
+.active-file-toolbar__title {
+  min-width: 0;
 }
 
-.review-context-header__endpoint-label,
-.review-context-header__endpoint-oid {
+.active-file-toolbar__file h1 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.active-file-toolbar__directory,
+.active-file-toolbar__counts,
+.active-file-toolbar__endpoint-label,
+.active-file-toolbar__endpoint-oid {
   font-family: var(--font-mono);
   font-size: var(--font-size-metadata);
   line-height: var(--line-height-metadata);
 }
 
-.review-context-header__endpoint-label {
+.active-file-toolbar__directory {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-file-toolbar__metadata {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.active-file-toolbar__status {
+  color: var(--text-muted);
+  font-size: var(--font-size-metadata);
+  line-height: var(--line-height-metadata);
+}
+
+.active-file-toolbar__counts {
+  color: var(--text-muted);
+}
+
+.active-file-toolbar__endpoint--head {
+  grid-area: head;
+  text-align: right;
+}
+
+.active-file-toolbar__endpoint {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+}
+
+.active-file-toolbar__endpoint-label {
   color: var(--text-muted);
   font-weight: var(--font-weight-semibold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-.review-context-header__endpoint-name,
-.review-context-header__endpoint-oid {
+.active-file-toolbar__endpoint-name,
+.active-file-toolbar__endpoint-oid {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.active-file-toolbar__endpoint-name {
+  color: var(--text-primary);
+}
+
+.active-file-toolbar__review {
   min-width: 0;
   max-width: 100%;
-  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border-default);
 }
 
-.review-context-header__endpoint-name {
-  color: var(--text-muted);
-  font-size: var(--font-size-metadata);
-  line-height: var(--line-height-metadata);
-}
-
-.review-context-header__endpoint-oid {
-  color: var(--text-muted);
-}
-
-.review-context-header__file {
-  display: grid;
-  min-width: 0;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.review-context-header__file h1 {
-  min-width: 0;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-  font-size: var(--font-size-page-heading);
-  line-height: var(--line-height-page-heading);
-}
-
-.review-context-header__toolbar {
-  min-width: 0;
-  max-width: 100%;
-  border-top: 1px solid var(--border-default);
-}
-
-.review-context-header__toolbar .review-toolbar {
+.active-file-toolbar__review .review-toolbar {
   box-sizing: border-box;
   width: 100%;
   min-width: 0;
@@ -1621,13 +1643,27 @@ input:-webkit-autofill:focus {
   box-shadow: none;
 }
 
-.review-context-header .ui-button {
+.active-file-toolbar .ui-button {
   font-size: var(--font-size-metadata);
   line-height: var(--line-height-metadata);
 }
 
-.review-context-header__toolbar .ui-button {
+.active-file-toolbar__review .ui-button {
   min-height: var(--control-height-compact);
+}
+
+.shell-footer {
+  display: flex;
+  min-width: 0;
+  grid-row: 4;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border-default);
+  background: var(--surface-panel);
+  color: var(--text-muted);
+  font-size: var(--font-size-metadata);
+  line-height: var(--line-height-metadata);
 }
 
 .review-toolbar__group {
@@ -2480,7 +2516,7 @@ h3.conversation-card__identity {
     width: min(480px, calc(100vw - 32px));
   }
 
-  .review-context-header__context {
+  .active-file-toolbar__context {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
       "file file"
@@ -2684,7 +2720,7 @@ h3.conversation-card__identity {
   }
 
 
-  .review-context-header__context {
+  .active-file-toolbar__context {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "file"
@@ -2692,8 +2728,12 @@ h3.conversation-card__identity {
       "head";
   }
 
-  .review-context-header__endpoint--head {
+  .active-file-toolbar__endpoint--head {
     text-align: left;
+  }
+
+  .shell-footer {
+    flex-wrap: wrap;
   }
 
   .review-toolbar {

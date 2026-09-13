@@ -445,7 +445,7 @@ async function expectPhase08ReflowAtCurrentWidth(
   page: Page,
   width: Phase08Width,
 ): Promise<void> {
-  const context = page.locator('.review-context-header__context');
+  const context = page.locator('.active-file-toolbar__context');
   await expect.poll(async () => await context.evaluate((element) => {
     const viewport = document.querySelector<HTMLElement>('.diff-workspace__viewport');
     const canvas = document.querySelector<HTMLElement>('.diff-workspace__canvas');
@@ -480,13 +480,13 @@ async function expectPhase08ReflowAtCurrentWidth(
       },
       headerOrder: [
         ...document.querySelectorAll<HTMLElement>(
-          '.review-context-header__file, .review-context-header__endpoint--base, .review-context-header__endpoint--head',
+          '.active-file-toolbar__file, .active-file-toolbar__endpoint--base, .active-file-toolbar__endpoint--head',
         ),
       ].map((item) => item.className),
       layout: {
-        base: rect('.review-context-header__endpoint--base'),
-        file: rect('.review-context-header__file'),
-        head: rect('.review-context-header__endpoint--head'),
+        base: rect('.active-file-toolbar__endpoint--base'),
+        file: rect('.active-file-toolbar__file'),
+        head: rect('.active-file-toolbar__endpoint--head'),
       },
       toolbarGroups: [...document.querySelectorAll<HTMLElement>('.review-toolbar__group')]
         .map((group) => group.getBoundingClientRect()),
@@ -499,9 +499,9 @@ async function expectPhase08ReflowAtCurrentWidth(
     reflow.document.clientWidth,
   );
   expect(reflow.headerOrder).toEqual([
-    'review-context-header__file',
-    'review-context-header__endpoint review-context-header__endpoint--base',
-    'review-context-header__endpoint review-context-header__endpoint--head',
+    'active-file-toolbar__file',
+    'active-file-toolbar__endpoint active-file-toolbar__endpoint--base',
+    'active-file-toolbar__endpoint active-file-toolbar__endpoint--head',
   ]);
   expect(reflow.toolbarGroups).toHaveLength(3);
   for (const [index, group] of reflow.toolbarGroups.entries()) {
@@ -868,18 +868,22 @@ test('responsive keyboard and accessibility contract', async ({
     await expect(page.locator('.session-header__comparison')).toContainText(
       'BASEBase responsive fixture',
     );
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('alpha.ts');
+    await expect(page.locator('.active-file-toolbar__directory')).toHaveText('00-src/components/');
+    await expect(page.locator('.shell-footer__local-status')).toHaveText('Local review · pinned commits');
+    await expect(page.locator('.shell-footer__draft-status')).toHaveText('Draft stays local · export is explicit');
 
-  await test.step('rendered real workspace contrast contract', async () => {
-    await expectRenderedContrast(
-      page.locator('.session-header h1'),
-      'session heading',
-      4.5,
-    );
-    await expectRenderedContrast(
-      page.locator('.review-context-header__file h1'),
-      'active file heading',
-      4.5,
-    );
+    await test.step('rendered real workspace contrast contract', async () => {
+      await expectRenderedContrast(
+        page.locator('.active-file-toolbar__file h1'),
+        'session heading',
+        4.5,
+      );
+      await expectRenderedContrast(
+        page.locator('.active-file-toolbar__file h1'),
+        'active file heading',
+        4.5,
+      );
     const review = page.getByRole('button', { name: 'Review', exact: true });
     const keyboardHelp = page.getByRole('button', {
       name: 'Keyboard help',
@@ -974,7 +978,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(fixture.getByLabel('Semantic textarea')).toHaveCSS('caret-color', toRootRgb('--text-primary'));
 
       const typography = await page.evaluate(() => [
-        '.session-header h1', '.review-context-header__file h1', '[data-normal-file]', '.availability-marker', '.pin-cue',
+        '.active-file-toolbar__file h1', '.active-file-toolbar__file h1', '[data-normal-file]', '.availability-marker', '.pin-cue',
       ].map((selector) => {
         const style = getComputedStyle(document.querySelector(selector)!);
         return [selector, style.fontSize, style.fontWeight, style.lineHeight, style.fontFamily];
@@ -986,8 +990,8 @@ test('responsive keyboard and accessibility contract', async ({
       const metadataSize = resolveToken(canonicalTokens, '--font-size-metadata');
       const metadataLineHeight = resolveToken(canonicalTokens, '--line-height-metadata');
       expect(typography).toEqual([
-        ['.session-header h1', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.review-context-header__file h1', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.active-file-toolbar__file h1', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.active-file-toolbar__file h1', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['[data-normal-file]', bodySize, '400', bodyLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['.availability-marker', metadataSize, '600', metadataLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['.pin-cue', metadataSize, '600', metadataLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
@@ -1104,9 +1108,9 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(page.locator('.review-files')).not.toHaveClass(/review-files--open/);
 
       await page.keyboard.press('Alt+Shift+]');
-      await expect(page.locator('.review-context-header__file')).toContainText('beta-after-a-very-long-rename.ts');
+      await expect(page.locator('.active-file-toolbar__file')).toContainText('beta-after-a-very-long-rename.ts');
       await page.keyboard.press('Alt+Shift+[');
-      await expect(page.locator('.review-context-header__file')).toContainText('alpha.ts');
+      await expect(page.locator('.active-file-toolbar__file')).toContainText('alpha.ts');
 
       const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
       await keyboardHelp.focus();
@@ -1139,14 +1143,14 @@ test('responsive keyboard and accessibility contract', async ({
       await page.keyboard.press('Enter');
       const movedFile = page.locator('.file-tree .file-row').nth(1);
       await movedFile.click();
-      const movedPath = page.locator('.review-context-header .path-display');
+      const movedPath = page.locator('.active-file-toolbar .path-display');
       await expect(movedPath).toContainText('beta-before-a-very-long-rename.ts');
       await expect(movedPath).toContainText('→');
       await expect(movedPath).toContainText('beta-after-a-very-long-rename.ts');
 
       await page.setViewportSize({ width: 1440, height: 640 });
       await page.keyboard.press('Alt+Shift+[');
-      await expect(page.locator('.review-context-header__file')).toContainText('alpha.ts');
+      await expect(page.locator('.active-file-toolbar__file')).toContainText('alpha.ts');
       await hoverMonacoLine(page, 'head', 'export const changed = 3;');
       await page.setViewportSize({ width: 320, height: 640 });
       await expect(page.locator('.review-files')).toHaveAttribute('inert', '');
@@ -1442,7 +1446,7 @@ test('responsive keyboard and accessibility contract', async ({
       const wrappedHeaderGeometry = await sessionHeader.evaluate((header) => {
         const headerBox = header.getBoundingClientRect();
         const items = [
-          header.querySelector<HTMLElement>('h1')!,
+          header.querySelector<HTMLElement>('.session-header__brand')!,
           ...header.querySelectorAll<HTMLElement>('.header-facts > *'),
         ].map((element) => {
           const box = element.getBoundingClientRect();
@@ -1653,7 +1657,7 @@ test('responsive keyboard and accessibility contract', async ({
             },
             focus: focused?.getAttribute('aria-label') ?? focused?.textContent?.trim() ?? null,
             headerOrder: [...document.querySelectorAll<HTMLElement>(
-              '.review-context-header__file, .review-context-header__endpoint--base, .review-context-header__endpoint--head',
+              '.active-file-toolbar__file, .active-file-toolbar__endpoint--base, .active-file-toolbar__endpoint--head',
             )].map((element) => element.className),
             viewport: { clientWidth: viewport.clientWidth, scrollWidth: viewport.scrollWidth },
           };

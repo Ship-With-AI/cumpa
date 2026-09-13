@@ -457,8 +457,8 @@ test('diff navigation and session state', async ({ page }) => {
   await openReview(page);
   await expect(page.getByRole('button', { name: 'Previous file' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Next file' })).toBeEnabled();
-  const contextBaseLabel = page.locator('.review-context-header__endpoint--base .review-context-header__endpoint-label');
-  const contextHeadLabel = page.locator('.review-context-header__endpoint--head .review-context-header__endpoint-label');
+  const contextBaseLabel = page.locator('.active-file-toolbar__endpoint--base .active-file-toolbar__endpoint-label');
+  const contextHeadLabel = page.locator('.active-file-toolbar__endpoint--head .active-file-toolbar__endpoint-label');
   await expect(contextBaseLabel).toHaveText('Base');
   await expect(contextHeadLabel).toHaveText('Head');
   await expect(contextBaseLabel).toHaveCSS('text-transform', 'uppercase');
@@ -516,25 +516,24 @@ test('Phase 07 header and control states', async ({ page }) => {
     await page.goto(`${origin}#token=${token}`);
     await expect(page.locator('.monaco-diff-editor')).toBeVisible();
 
-    const header = page.locator('.review-context-header');
+    const header = page.locator('.active-file-toolbar');
     await expect(header).toHaveCount(1);
-    await expect(header.locator('.review-context-header__context')).toHaveCount(1);
-    await expect(header.locator('.review-context-header__toolbar')).toHaveCount(1);
-    const baseLabel = header.locator('.review-context-header__endpoint--base .review-context-header__endpoint-label');
-    const headLabel = header.locator('.review-context-header__endpoint--head .review-context-header__endpoint-label');
+    await expect(header.locator('.active-file-toolbar__context')).toHaveCount(1);
+    await expect(page.locator('.active-file-toolbar__review')).toHaveCount(1);
+    const baseLabel = header.locator('.active-file-toolbar__endpoint--base .active-file-toolbar__endpoint-label');
+    const headLabel = header.locator('.active-file-toolbar__endpoint--head .active-file-toolbar__endpoint-label');
     await expect(baseLabel).toHaveText('Base');
     await expect(headLabel).toHaveText('Head');
     await expect(baseLabel).toHaveCSS('text-transform', 'uppercase');
     await expect(headLabel).toHaveCSS('text-transform', 'uppercase');
-    await expect(header.locator('.review-context-header__endpoint-oid').nth(0)).toHaveText('aaaaaaa');
-    await expect(header.locator('.review-context-header__endpoint-oid').nth(1)).toHaveText('bbbbbbb');
+    await expect(header.locator('.active-file-toolbar__endpoint-oid').nth(0)).toHaveText('aaaaaaa');
+    await expect(header.locator('.active-file-toolbar__endpoint-oid').nth(1)).toHaveText('bbbbbbb');
     await expect(page.getByRole('heading', {
       level: 1,
       name: 'renamed from src/old/first.ts to src/new/first.ts',
     })).toBeVisible();
-    await expect(header.locator('.path-display__old .path-text__directory')).toHaveText('src/old/');
+    await expect(header.locator('.active-file-toolbar__directory')).toHaveText('src/new/');
     await expect(header.locator('.path-display__old .path-text__filename')).toHaveText('first.ts');
-    await expect(header.locator('.path-display__new .path-text__directory')).toHaveText('src/new/');
     await expect(header.locator('.path-display__new .path-text__filename')).toHaveText('first.ts');
 
     const previousFile = page.getByRole('button', { name: 'Previous file', exact: true });
@@ -990,7 +989,7 @@ test('anchored gap closure', async ({ page }) => {
   await page.getByRole('button', { name: 'Close review' }).click();
   await expect(reviewToggle).toBeFocused();
 
-  await page.setViewportSize({ width: 900, height: 900 });
+  await page.setViewportSize({ width: 760, height: 900 });
   const filesToggle = page.getByRole('button', { name: 'Files', exact: true });
   await filesToggle.click();
   await expect(page.getByRole('button', { name: 'Close files' })).toBeVisible();
@@ -1183,8 +1182,8 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
     resetAsyncSettlementFixture();
     await page.setViewportSize({ width, height: 760 });
     await openReview(page);
-    const baseEndpointLabel = page.locator('.review-context-header__endpoint--base .review-context-header__endpoint-label');
-    const headEndpointLabel = page.locator('.review-context-header__endpoint--head .review-context-header__endpoint-label');
+    const baseEndpointLabel = page.locator('.active-file-toolbar__endpoint--base .active-file-toolbar__endpoint-label');
+    const headEndpointLabel = page.locator('.active-file-toolbar__endpoint--head .active-file-toolbar__endpoint-label');
     await expect(baseEndpointLabel).toHaveText('Base');
     await expect(headEndpointLabel).toHaveText('Head');
     await expect(baseEndpointLabel).toHaveCSS('text-transform', 'uppercase');
