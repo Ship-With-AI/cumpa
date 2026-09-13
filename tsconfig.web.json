@@ -15,6 +15,7 @@
     "src/web/monaco/line-mapping.ts",
     "src/web/monaco/theme.ts",
     "src/web/theme/token-contract.ts",
+    "src/web/theme/virtual-tokens.d.ts",
     "src/web/model/workspace-command.ts"
   ]
 }

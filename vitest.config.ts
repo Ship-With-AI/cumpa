@@ -1,6 +1,8 @@
+import { tokenRootPlugin as rootPlugin } from './scripts/token-root-plugin.mjs';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
+  plugins: [rootPlugin(import.meta.dirname)],
   test: {
     environment: 'node',
     include: [

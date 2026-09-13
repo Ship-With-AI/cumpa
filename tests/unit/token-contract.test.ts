@@ -1,3 +1,9 @@
+import { resolve } from 'node:path';
+
+import { describe, expect, it } from 'vitest';
+import { TOKEN_ROOT_CSS } from 'virtual:cumpa-tokens';
+
+import { canonicalRoot } from '../helpers/canonical-root.js';
 import {
   normalizeColor,
   normalizeDeclaration,
@@ -6,7 +12,6 @@ import {
   toCssRgb,
   toMonacoHex,
 } from '../../src/web/theme/token-contract.js';
-import { describe, expect, it } from 'vitest';
 
 const root = `
   color-scheme: dark;
@@ -60,4 +65,14 @@ describe('token contract', () => {
   it('normalizes colors within composite declarations only', () => {
     expect(normalizeDeclaration('0 8px 24px rgb(1 4 9 / 68%)')).toBe('0 8px 24px #010409ad');
   });
+  it('agrees on the canonical root from build and filesystem readers', () => {
+    const repositoryRoot = resolve(import.meta.dirname, '../..');
+    const buildTokens = parseTokenRoot(TOKEN_ROOT_CSS);
+    const filesystemTokens = canonicalRoot(repositoryRoot);
+
+    expect(buildTokens.size).toBeGreaterThan(0);
+    expect(filesystemTokens.size).toBeGreaterThan(0);
+    expect(buildTokens).toEqual(filesystemTokens);
+  });
+
 });
