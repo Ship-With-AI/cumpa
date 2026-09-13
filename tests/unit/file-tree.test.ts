@@ -635,4 +635,28 @@ describe('createFileTreeModel', () => {
       ),
     ).toBe(true);
   });
+  it('reconciles opaque selection, focus, expansion, and query across file replacement', () => {
+    const initial = createFileTreeModel(filterFiles());
+    const parent = directory(initial.tree, 'parent');
+    const docs = directory(initial.tree, 'docs');
+    const current = initial
+      .selectFile(fileId(1))
+      .toggleDirectory(docs.directoryId)
+      .focusRow(`directory:${parent.directoryId}`)
+      .setQuery('filter-zone');
+    const replacement = [
+      ...filterFiles(),
+      sessionFile(6, { newPath: exactPath('new/new.ts') }),
+    ];
+
+    const replaced = createFileTreeModel(replacement).setQuery(current.query);
+
+    expect(replaced.selectedFileId).toBe(fileId(1));
+    expect(replaced.focusedRowId).toBe(`directory:${parent.directoryId}`);
+    expect(replaced.expandedDirectoryIds).not.toContain(docs.directoryId);
+    expect(replaced.visibleRows.map((candidate) => candidate.rowId)).toEqual(
+      current.visibleRows.map((candidate) => candidate.rowId),
+    );
+    expect(replaced.tabbableRowId).toBe(`file:${fileId(1)}`);
+  });
 });
