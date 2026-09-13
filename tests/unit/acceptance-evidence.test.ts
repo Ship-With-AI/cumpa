@@ -52,6 +52,58 @@ type ProducerReport = {
   reason?: string;
   substituted?: false;
 };
+type ReviewEvidence = {
+  assetGraph: { assets: boolean; workers: boolean; codicon: boolean };
+  reviewExport: {
+    relaunch: boolean;
+    canonicalV2: boolean;
+    isolatedDrafts: boolean;
+    reExport: string;
+    exactPatch: { canonicalV3: boolean; grounded: boolean };
+  };
+  finish: { finish: boolean };
+};
+
+type AcceptanceEvidencePath = {
+  installSource: 'global' | 'npx' | 'marketplace';
+  requirement: 'ACC-01' | 'ACC-02' | 'ACC-03';
+  status: 'passed';
+  installProof: {
+    packageLabel: string;
+    resolvedTarball: string;
+    resolvedIntegrity: string;
+    resolvedVersion: string;
+    binaryContainedInIsolatedPrefix: boolean;
+    npmInstallAttempts: number;
+  };
+  supportStates: SupportState[];
+  sharedSupportIdentity: { shared: boolean; restoreCompleted: boolean; restoreObservedFromSharedIdentity: boolean };
+  sourceControlUnchanged: boolean;
+  cleanup: { removedOwnedRoots: boolean };
+  evidence: ReviewEvidence;
+  reason?: string;
+  substituted?: boolean;
+};
+
+type AcceptanceEvidenceInputs = {
+  acceptedAt: string;
+  host: typeof host;
+  artifactIdentity: {
+    tarballUrl: string;
+    byteLength: number;
+    sha256: string;
+    npmShasumSha1: string;
+    npmIntegritySha512: string;
+  };
+  marketplaceIdentity: {
+    collectionVersion: string;
+    commit: string;
+    skillDigest: string;
+    repository: string;
+  };
+  paths: [AcceptanceEvidencePath, AcceptanceEvidencePath, AcceptanceEvidencePath];
+};
+
 
 
 function supportStates(source: string, verified: 'passed' | 'blocked' = 'passed'): SupportState[] {
@@ -73,14 +125,14 @@ function rows(verified: 'passed' | 'blocked' = 'passed'): AcceptanceRow[] {
   ];
 }
 
-function reviewEvidence() {
+function reviewEvidence(): ReviewEvidence {
   return {
     assetGraph: { assets: true, workers: true, codicon: true },
     reviewExport: { relaunch: true, canonicalV2: true, isolatedDrafts: true, reExport: 'exported', exactPatch: { canonicalV3: true, grounded: true } },
     finish: { finish: true },
   };
 }
-function inputs(shared = false) {
+function inputs(shared = false): AcceptanceEvidenceInputs {
   return {
     acceptedAt: '2026-09-12T16:05:28.000Z',
     host,
@@ -136,7 +188,17 @@ test('derives passed only from a complete all-passed matrix', () => {
 test('treats blocked rows and incomplete support observations as partially blocked', () => {
   expect(deriveAcceptanceStatus(rows('blocked'))).toBe('partially-blocked');
   const incomplete = rows();
-  incomplete[3].supportStates = incomplete[3].supportStates.filter((row) => row.state !== 'verified');
+  const acc04 = incomplete[3];
+  expect(acc04).toBeDefined();
+  if (acc04 === undefined) {
+    throw new Error('ACC-04 row is required.');
+  }
+  const supportStates = acc04.supportStates;
+  expect(supportStates).toBeDefined();
+  if (supportStates === undefined) {
+    throw new Error('ACC-04 support states are required.');
+  }
+  acc04.supportStates = supportStates.filter((row) => row.state !== 'verified');
   expect(deriveAcceptanceStatus(incomplete)).toBe('partially-blocked');
 });
 
@@ -148,7 +210,17 @@ test('rejects blocked rows without a named unsubstituted reason', () => {
 test('requires every requirement and every ACC-04 path', () => {
   expect(() => deriveAcceptanceStatus(rows().slice(0, 3))).toThrow(/coverage/u);
   const missingMarketplace = rows();
-  missingMarketplace[3].supportStates = missingMarketplace[3].supportStates.filter((row) => row.installSource !== 'marketplace');
+  const acc04 = missingMarketplace[3];
+  expect(acc04).toBeDefined();
+  if (acc04 === undefined) {
+    throw new Error('ACC-04 row is required.');
+  }
+  const supportStates = acc04.supportStates;
+  expect(supportStates).toBeDefined();
+  if (supportStates === undefined) {
+    throw new Error('ACC-04 support states are required.');
+  }
+  acc04.supportStates = supportStates.filter((row) => row.installSource !== 'marketplace');
   expect(() => deriveAcceptanceStatus(missingMarketplace)).toThrow(/marketplace/u);
 });
 

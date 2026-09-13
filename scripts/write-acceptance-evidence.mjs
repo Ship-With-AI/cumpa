@@ -378,7 +378,22 @@ function readMarketplaceIdentity() {
   };
 }
 
-export function writeAcceptanceEvidence({ publicReportPaths = [], marketplaceReportPaths = [], outputPath, acceptedAt, extraForbiddenValues = [] }) {
+/**
+ * @param {{
+ *   publicReportPaths?: string[];
+ *   marketplaceReportPaths?: string[];
+ *   outputPath: string;
+ *   acceptedAt: string;
+ *   extraForbiddenValues?: string[];
+ * }} options
+ */
+export function writeAcceptanceEvidence({
+  publicReportPaths = [],
+  marketplaceReportPaths = [],
+  outputPath,
+  acceptedAt,
+  extraForbiddenValues = [],
+}) {
   if (!isAbsolute(outputPath)) fail('output path must be absolute');
   if (existsSync(outputPath)) fail('output path already exists');
   const identity = readPinnedIdentity();

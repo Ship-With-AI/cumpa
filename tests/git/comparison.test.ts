@@ -311,7 +311,12 @@ describe('comparison validation matrix', () => {
       headOid: repository.headOid,
       pathspecs: [],
     });
-    expect(comparison.range.reviewKey).toMatch(/^[0-9a-f]{64}$/u);
+    const range = comparison.range;
+    expect(range).toBeDefined();
+    if (range === undefined) {
+      throw new Error('Expected pinned range provenance.');
+    }
+    expect(range.reviewKey).toMatch(/^[0-9a-f]{64}$/u);
     expect(
       commands.filter((command) =>
         command.some((argument_) => argument_.includes(repository.baseRef)),
