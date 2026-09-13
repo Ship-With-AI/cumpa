@@ -34,6 +34,8 @@ export interface FileTreeModel {
   readonly tree: readonly FileTreeNode[];
   readonly visibleRows: readonly VisibleFileTreeRow[];
   readonly expandedDirectoryIds: readonly string[];
+  readonly effectiveExpandedDirectoryIds: ReadonlySet<string>;
+  readonly directoryDescendantCounts: ReadonlyMap<string, number>;
   readonly focusedRowId: string | null;
   readonly selectedFileId: string | null;
   readonly query: string;
@@ -44,6 +46,7 @@ export interface FileTreeModel {
   readonly toggleDirectory: (directoryId: string) => FileTreeModel;
   readonly selectFile: (fileId: string) => FileTreeModel;
   readonly setQuery: (query: string) => FileTreeModel;
+  readonly replaceFiles: (files: readonly SessionFile[]) => FileTreeModel;
   readonly handleKey: (key: FileTreeNavigationKey) => FileTreeModel;
 }
 
@@ -65,6 +68,49 @@ function collectDirectoryIds(
       collectDirectoryIds(node.children, output);
     }
   }
+}
+
+function collectFileIds(
+  nodes: readonly FileTreeNode[],
+  output: Set<string>,
+): void {
+  for (const node of nodes) {
+    if (node.kind === 'file') {
+      output.add(node.fileId);
+    } else {
+      collectFileIds(node.children, output);
+    }
+  }
+}
+
+function firstFileId(nodes: readonly FileTreeNode[]): string | null {
+  for (const node of nodes) {
+    if (node.kind === 'file') {
+      return node.fileId;
+    }
+    const nested = firstFileId(node.children);
+    if (nested !== null) {
+      return nested;
+    }
+  }
+  return null;
+}
+
+function countDirectoryDescendants(
+  nodes: readonly FileTreeNode[],
+  counts: Map<string, number>,
+): number {
+  let total = 0;
+  for (const node of nodes) {
+    if (node.kind === 'file') {
+      total += 1;
+    } else {
+      const descendantCount = countDirectoryDescendants(node.children, counts);
+      counts.set(node.directoryId, descendantCount);
+      total += descendantCount;
+    }
+  }
+  return total;
 }
 
 function flattenVisibleRows(
@@ -165,6 +211,8 @@ function createModel(
           (leaf) => leaf.effectivePath.display.toLowerCase().includes(needle),
           survivingDirectoryIds,
         );
+  const directoryDescendantCounts = new Map<string, number>();
+  countDirectoryDescendants(projectedTree, directoryDescendantCounts);
   const effectiveExpanded = new Set(expandedDirectoryIds);
   if (needle !== '') {
     for (const directoryId of survivingDirectoryIds) {
@@ -287,6 +335,59 @@ function createModel(
           Object.freeze([]),
         );
 
+  const replaceFiles = (files: readonly SessionFile[]): FileTreeModel => {
+    const nextTree = buildFileTree(files);
+    const nextDirectoryIds: string[] = [];
+    collectDirectoryIds(nextTree, nextDirectoryIds);
+    const nextFileIds = new Set<string>();
+    collectFileIds(nextTree, nextFileIds);
+    const previousDirectoryIds = new Set(allDirectoryIds);
+    const currentExpandedDirectoryIds = new Set(expandedDirectoryIds);
+    const currentQueryCollapsedDirectoryIds = new Set(queryCollapsedDirectoryIds);
+    const nextExpandedDirectoryIds = Object.freeze(
+      nextDirectoryIds.filter(
+        (directoryId) =>
+          !previousDirectoryIds.has(directoryId) ||
+          currentExpandedDirectoryIds.has(directoryId),
+      ),
+    );
+    const nextQueryCollapsedDirectoryIds = Object.freeze(
+      nextDirectoryIds.filter((directoryId) =>
+        currentQueryCollapsedDirectoryIds.has(directoryId),
+      ),
+    );
+    const nextSelectedFileId =
+      selectedFileId !== null && nextFileIds.has(selectedFileId)
+        ? selectedFileId
+        : firstFileId(nextTree);
+    const replacement = createModel(
+      nextTree,
+      Object.freeze(nextDirectoryIds),
+      nextExpandedDirectoryIds,
+      focusedRowId,
+      nextSelectedFileId,
+      query,
+      nextQueryCollapsedDirectoryIds,
+    );
+    const nextFocusedRowId =
+      focusedRowId !== null &&
+      replacement.visibleRows.some((row) => row.rowId === focusedRowId)
+        ? focusedRowId
+        : replacement.tabbableRowId;
+
+    return nextFocusedRowId === focusedRowId
+      ? replacement
+      : createModel(
+          nextTree,
+          Object.freeze(nextDirectoryIds),
+          nextExpandedDirectoryIds,
+          nextFocusedRowId,
+          nextSelectedFileId,
+          query,
+          nextQueryCollapsedDirectoryIds,
+        );
+  };
+
   const handleKey = (key: FileTreeNavigationKey): FileTreeModel => {
     if (focusedRowId === null || frozenVisibleRows.length === 0) {
       return model;
@@ -349,6 +450,8 @@ function createModel(
     tree,
     visibleRows: frozenVisibleRows,
     expandedDirectoryIds,
+    effectiveExpandedDirectoryIds: effectiveExpanded,
+    directoryDescendantCounts,
     focusedRowId,
     selectedFileId,
     query,
@@ -359,6 +462,7 @@ function createModel(
     toggleDirectory,
     selectFile,
     setQuery,
+    replaceFiles,
     handleKey,
   });
   return model;

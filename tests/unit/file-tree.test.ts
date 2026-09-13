@@ -649,7 +649,7 @@ describe('createFileTreeModel', () => {
       sessionFile(6, { newPath: exactPath('new/new.ts') }),
     ];
 
-    const replaced = createFileTreeModel(replacement).setQuery(current.query);
+    const replaced = current.replaceFiles(replacement);
 
     expect(replaced.selectedFileId).toBe(fileId(1));
     expect(replaced.focusedRowId).toBe(`directory:${parent.directoryId}`);
@@ -658,5 +658,28 @@ describe('createFileTreeModel', () => {
       current.visibleRows.map((candidate) => candidate.rowId),
     );
     expect(replaced.tabbableRowId).toBe(`file:${fileId(1)}`);
+  });
+  it('derives filtered directory expansion and descendant counts once', () => {
+    const deepPath = [
+      ...Array.from({ length: 30 }, (_, index) => `level-${index}`),
+      'leaf.ts',
+    ].join('/');
+    const model = createFileTreeModel([
+      sessionFile(0, { newPath: exactPath(deepPath) }),
+    ]).setQuery('leaf.ts');
+    const directories = model.visibleRows.filter(
+      (candidate): candidate is FileTreeDirectory =>
+        candidate.kind === 'directory',
+    );
+
+    expect(model.effectiveExpandedDirectoryIds).toBeInstanceOf(Set);
+    expect(model.directoryDescendantCounts.size).toBe(directories.length);
+    expect(
+      directories.every(
+        (directory) =>
+          model.effectiveExpandedDirectoryIds.has(directory.directoryId) &&
+          model.directoryDescendantCounts.get(directory.directoryId) === 1,
+      ),
+    ).toBe(true);
   });
 });

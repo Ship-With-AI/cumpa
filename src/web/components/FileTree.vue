@@ -139,10 +139,7 @@ watch(
 watch(
   () => props.files,
   (files) => {
-    model.value = createFileTreeModel(files).setQuery(query.value);
-    if (model.value.selectedFileId !== null) {
-      emit('select', model.value.selectedFileId);
-    }
+    applyModel(model.value.replaceFiles(files));
   },
 );
 </script>
@@ -196,7 +193,8 @@ watch(
             v-if="node.kind === 'directory'"
             :directory="node"
             :level="1"
-            :expanded-directory-ids="model.displayExpandedDirectoryIds"
+            :expanded-directory-ids="model.effectiveExpandedDirectoryIds"
+            :directory-descendant-counts="model.directoryDescendantCounts"
             :tabbable-row-id="model.tabbableRowId"
             :selected-file-id="model.selectedFileId"
             @activate-file="activateFile"

@@ -19,6 +19,8 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test } from '@playwright/test';
 import type { Browser, Page, Request, TestInfo } from '@playwright/test';
+import { createServer } from 'vite';
+import type { ViteDevServer } from 'vite';
 
 import {
   createGitFixture,
@@ -45,6 +47,53 @@ const safeGitArguments = [
   '-c',
   'protocol.file.allow=never',
 ] as const;
+
+const fileTreeHarnessModule = `
+import { createApp, h, ref } from 'vue';
+import FileTree from '/components/FileTree.vue';
+import '/styles.css';
+
+const path = (display) => ({
+  bytesBase64url: btoa(display),
+  display,
+  utf8: display,
+});
+const file = (fileId, display) => ({
+  fileId,
+  status: { kind: 'modified' },
+  oldPath: path(display),
+  newPath: path(display),
+  additions: 1,
+  deletions: 1,
+  availability: { kind: 'text' },
+});
+const initialFiles = [
+  file('file_opaque-alpha', 'kept/alpha.ts'),
+  file('file_opaque-bravo', 'kept/bravo.ts'),
+  file('file_opaque-charlie', 'collapsed/charlie.ts'),
+];
+const replacementFiles = [
+  ...initialFiles.map((entry) => ({ ...entry })),
+  file('file_opaque-new', 'new/new.ts'),
+];
+
+export function mountFileTreeHarness() {
+  const files = ref(initialFiles);
+  const selectCount = ref(0);
+  createApp({
+    setup: () => () => h('main', { id: 'file-tree-harness' }, [
+      h(FileTree, {
+        files: files.value,
+        onSelect: () => { selectCount.value += 1; },
+      }),
+      h('output', { id: 'file-tree-select-count' }, String(selectCount.value)),
+    ]),
+  }).mount('#file-tree-harness');
+  globalThis.__replaceFileTreeFiles = () => { files.value = replacementFiles; };
+}
+`;
+let fileTreeHarness: ViteDevServer | undefined;
+let fileTreeHarnessUrl = '';
 
 interface PackResult {
   filename: string;
@@ -258,7 +307,7 @@ function captureFileRequest(request: Request): FileRequestEvidence | undefined {
 }
 
 
-test.beforeAll(() => {
+test.beforeAll(async () => {
   runPrerequisite(npmCommand, ['run', 'build']);
   const packOutput = runPrerequisite(npmCommand, [
     'pack',
@@ -288,9 +337,26 @@ test.beforeAll(() => {
   mkdirSync(fakeBinRoot, { recursive: true });
   copyFileSync(join(packedRoot, 'fake-open.mjs'), join(fakeBinRoot, 'open'));
   chmodSync(join(fakeBinRoot, 'open'), 0o755);
+  fileTreeHarness = await createServer({
+    configFile: 'vite.config.ts',
+    plugins: [{
+      name: 'file-tree-replacement-harness',
+      resolveId: (id) =>
+        id === 'virtual:file-tree-replacement-harness'
+          ? '\0file-tree-replacement-harness'
+          : undefined,
+      load: (id) =>
+        id === '\0file-tree-replacement-harness' ? fileTreeHarnessModule : undefined,
+    }],
+    server: { host: '127.0.0.1' },
+  });
+  await fileTreeHarness.listen();
+  fileTreeHarnessUrl = fileTreeHarness.resolvedUrls?.local[0] ?? '';
+  expect(fileTreeHarnessUrl).not.toBe('');
 });
 
-test.afterAll(() => {
+test.afterAll(async () => {
+  await fileTreeHarness?.close();
   rmSync(packedRoot, { force: true, recursive: true });
 });
 
@@ -549,9 +615,78 @@ test('packaged file tree filters and recovers without changing the open file', a
     await expect(filter).toBeFocused();
     await expect(filter).toHaveValue('');
     await expect(clearFilter).toHaveCount(0);
+    await filter.blur();
+    const glyphBox = await navigation
+      .locator('.file-tree-pane__filter-glyph')
+      .boundingBox();
+    if (glyphBox === null) {
+      throw new Error('Expected visible file filter glyph');
+    }
+    await page.mouse.click(
+      glyphBox.x + glyphBox.width / 2,
+      glyphBox.y + glyphBox.height / 2,
+    );
+    await expect(filter).toBeFocused();
     await expect.poll(() => browserErrors).toEqual([]);
   } finally {
     await stopGeneratedCli(running);
     await repository.cleanup();
   }
+});
+
+test('component tree replacement preserves opaque state without selecting again', async ({
+  browser,
+  page,
+}, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  await page.goto(fileTreeHarnessUrl);
+  await page.evaluate(async () => {
+    // The Vite plugin only exposes this component harness at runtime.
+    const { mountFileTreeHarness } = await import(
+      `/@id/${'virtual:file-tree-replacement-harness'}`,
+    );
+    document.body.innerHTML = '<div id="file-tree-harness"></div>';
+    mountFileTreeHarness();
+  });
+
+  const navigation = page.getByRole('navigation', { name: 'Changed files' });
+  const tree = navigation.getByRole('tree', { name: 'Changed files' });
+  const filter = navigation.getByRole('searchbox', { name: 'Filter files' });
+  const bravo = tree.getByRole('treeitem', { name: /bravo\.ts/i });
+  const collapsed = tree.getByRole('treeitem', { name: /collapsed\/.*1 changed file/i });
+  const kept = tree.getByRole('treeitem', { name: /kept\/.*2 changed files/i });
+
+  await bravo.click();
+  await collapsed.click();
+  await expect(collapsed).toHaveAttribute('aria-expanded', 'false');
+  await kept.click();
+  await expect(kept).toHaveAttribute('aria-expanded', 'false');
+  await filter.fill('kept');
+  await expect(kept).toHaveAttribute('aria-expanded', 'true');
+  const projectedRowIds = await tree.locator('[role="treeitem"]').evaluateAll(
+    (rows) => rows.map((row) => row.getAttribute('data-row-id')),
+  );
+  const selectCount = await page.locator('#file-tree-select-count').textContent();
+
+  await page.evaluate(() =>
+    (globalThis as typeof globalThis & {
+      __replaceFileTreeFiles: () => void;
+    }).__replaceFileTreeFiles(),
+  );
+
+  await expect(filter).toHaveValue('kept');
+  await expect(bravo).toHaveAttribute('aria-selected', 'true');
+  await expect(bravo).toHaveAttribute('tabindex', '0');
+  await expect(tree.locator('[role="treeitem"][tabindex="0"]')).toHaveCount(1);
+  await expect(kept).toBeFocused();
+  await expect(tree.locator('[role="treeitem"]').evaluateAll(
+    (rows) => rows.map((row) => row.getAttribute('data-row-id')),
+  )).resolves.toEqual(projectedRowIds);
+  await expect(page.locator('#file-tree-select-count')).toHaveText(selectCount ?? '');
+
+  await filter.fill('');
+  await expect(collapsed).toHaveAttribute('aria-expanded', 'false');
+  await expect(kept).toHaveAttribute('aria-expanded', 'false');
+  await expect(tree.getByRole('treeitem', { name: /new\/.*1 changed file/i }))
+    .toHaveAttribute('aria-expanded', 'true');
 });

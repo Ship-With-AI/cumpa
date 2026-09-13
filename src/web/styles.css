@@ -1155,6 +1155,7 @@ input:-webkit-autofill:focus {
   position: absolute;
   inset-block-start: var(--space-2);
   inset-inline-start: var(--space-3);
+  pointer-events: none;
 }
 
 .file-tree-pane__filter input[type="search"] {

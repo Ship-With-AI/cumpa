@@ -9,7 +9,8 @@ defineOptions({ name: 'DirectoryRow' });
 const props = defineProps<{
   directory: FileTreeDirectory;
   level: number;
-  expandedDirectoryIds: readonly string[];
+  expandedDirectoryIds: ReadonlySet<string>;
+  directoryDescendantCounts: ReadonlyMap<string, number>;
   tabbableRowId: string | null;
   selectedFileId: string | null;
 }>();
@@ -22,20 +23,14 @@ const emit = defineEmits<{
 
 const rowId = computed(() => `directory:${props.directory.directoryId}`);
 const expanded = computed(() =>
-  props.expandedDirectoryIds.includes(props.directory.directoryId),
+  props.expandedDirectoryIds.has(props.directory.directoryId),
 );
 const displayPath = computed(() =>
   props.directory.segments.map((segment) => segment.display).join('/'),
 );
-function changedFileCount(directory: FileTreeDirectory): number {
-  let total = 0;
-  for (const child of directory.children) {
-    total += child.kind === 'file' ? 1 : changedFileCount(child);
-  }
-  return total;
-}
-
-const descendantCount = computed(() => changedFileCount(props.directory));
+const descendantCount = computed(
+  () => props.directoryDescendantCounts.get(props.directory.directoryId) ?? 0,
+);
 const descendantCountLabel = computed(
   () => `${descendantCount.value} ${descendantCount.value === 1 ? 'changed file' : 'changed files'}`,
 );
@@ -71,6 +66,7 @@ const descendantCountLabel = computed(
           :directory="child"
           :level="level + 1"
           :expanded-directory-ids="expandedDirectoryIds"
+          :directory-descendant-counts="directoryDescendantCounts"
           :tabbable-row-id="tabbableRowId"
           :selected-file-id="selectedFileId"
           @activate-file="emit('activateFile', $event)"
