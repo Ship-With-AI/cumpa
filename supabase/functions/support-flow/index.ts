@@ -29,7 +29,7 @@ const browserMessages: Record<BrowserState, string> = {
   complete: "Support flow complete. You can return to Cumpa.",
   invalid: "This support link is invalid or expired. Return to Cumpa and try again.",
   unavailable: "Support is temporarily unavailable. Return to Cumpa and try again.",
-  unlinked: "No support to restore for sign-in. Return to Cumpa support.",
+  unlinked: "No support to restore for this sign-in. Return to Cumpa to support.",
 };
 
 function browserResponse(state: BrowserState, cookies: string[] = []) {

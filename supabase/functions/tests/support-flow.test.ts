@@ -7,7 +7,7 @@ const userId = "11111111-1111-4111-8111-111111111111";
 const complete = "Support flow complete. You can return to Cumpa.";
 const invalid = "This support link is invalid or expired. Return to Cumpa and try again.";
 const unavailable = "Support is temporarily unavailable. Return to Cumpa and try again.";
-const unlinked = "No support to restore for sign-in. Return to Cumpa support.";
+const unlinked = "No support to restore for this sign-in. Return to Cumpa to support.";
 
 function assert(condition: unknown, message = "assertion failed"): asserts condition {
   if (!condition) throw new Error(message);
