@@ -1841,7 +1841,7 @@ input:-webkit-autofill:focus {
   margin: var(--space-2) var(--space-4);
   border: 1px solid var(--border-default);
   border-radius: var(--radius-control);
-  background: var(--surface-panel);
+  background: var(--surface-canvas);
   box-shadow: none;
   overflow-wrap: anywhere;
 }
@@ -1856,8 +1856,18 @@ input:-webkit-autofill:focus {
   padding: var(--space-2) var(--space-4);
 }
 
+.conversation-card__footer {
+  border-block-start: 1px solid var(--border-gap);
+  background: var(--surface-panel);
+}
+
 .conversation-card__header {
   flex-wrap: wrap;
+}
+
+.conversation-card__header {
+  border-block-end: 1px solid var(--border-gap);
+  background: var(--surface-panel);
 }
 
 .conversation-card__identity,
