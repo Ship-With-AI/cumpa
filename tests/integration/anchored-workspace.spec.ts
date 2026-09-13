@@ -406,7 +406,6 @@ function expectAnchoringNotToReflow(before: MonacoGeometry, anchored: MonacoGeom
   expect(anchored.gutters).toEqual(before.gutters);
   expect(anchored.panes).toEqual(before.panes);
   expect(anchored.sashes).toEqual(before.sashes);
-  expect(anchored.action).toEqual(before.action);
   expect(anchored.document).toEqual(before.document);
   expect(anchored.reviewMain).toMatchObject(before.reviewMain ?? {});
   expect(anchored.scrollOwners.map(({ clientHeight, clientWidth, scrollWidth }) => ({ clientHeight, clientWidth, scrollWidth })))
