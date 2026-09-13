@@ -2,7 +2,7 @@
 phase: 08-semantic-visual-foundation
 plan: 01
 subsystem: ui
- tags: [vite, vitest, monaco, css-tokens]
+tags: [vite, vitest, monaco, css-tokens]
 
 requires:
   - phase: prior workspace theme
