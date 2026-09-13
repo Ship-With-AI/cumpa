@@ -235,6 +235,12 @@ test('packaged anchored gap closure recovers a non-line-1 exact anchor', async (
     await expect(page.locator('.inline-comment-composer__header')).toContainText(
       'src/changed.ts · Base line 10',
     );
+    const composerCard = page.locator('.monaco-anchor-zone--composer .conversation-card');
+    await expect(composerCard).toHaveCSS('background-color', 'rgb(13, 17, 23)');
+    await expect(composerCard.locator('.conversation-card__header')).toHaveCSS(
+      'border-bottom-color',
+      'rgb(37, 45, 56)',
+    );
     await composer.fill('Keep this draft while moving.');
 
     await activateMonacoLine(page, 'head', 'export const stableContext10 = 10;', 10);
