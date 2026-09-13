@@ -1,6 +1,15 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { extname, resolve, relative, sep } from 'node:path';
 
+import {
+  CANONICAL_TOKENS as canonicalTokens,
+  assertCanonicalTokenValues,
+  cssBlocks as blocks,
+  cssDeclarations as declarations,
+  parseTokenRoot,
+  selectorArms,
+} from './css-token-contract.mjs';
+
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const sourcePath = resolve(repositoryRoot, 'src/web/styles.css');
 const prototypePath = resolve(repositoryRoot, 'src/web/prototypes/MonacoStabilityPrototype.vue');
@@ -8,184 +17,10 @@ const phase6PrototypePath = resolve(repositoryRoot, 'src/web/prototypes/Phase6Di
 const outputRoot = resolve(repositoryRoot, 'dist/web');
 const indexPath = resolve(outputRoot, 'index.html');
 
-const canonicalTokens = [
-  '--border-control',
-  '--border-default',
-  '--border-gap',
-  '--border-hunk',
-  '--border-width-default',
-  '--control-height-standard',
-  '--destructive-emphasis',
-  '--destructive-foreground',
-  '--diff-addition-background',
-  '--diff-addition-foreground',
-  '--diff-addition-intraline-background',
-  '--diff-deletion-background',
-  '--diff-deletion-foreground',
-  '--diff-deletion-intraline-background',
-  '--diff-empty-background',
-  '--diff-hunk-background',
-  '--diff-hunk-foreground',
-  '--diff-region-border',
-  '--diff-unchanged-background',
-  '--focus-offset',
-  '--focus-outline-width',
-  '--focus-ring',
-  '--font-mono',
-  '--font-size-body',
-  '--font-size-code',
-  '--font-size-display',
-  '--font-size-metadata',
-  '--font-size-page-heading',
-  '--font-ui',
-  '--font-weight-regular',
-  '--font-weight-semibold',
-  '--icon-size',
-  '--interactive-accent',
-  '--interactive-accent-emphasis',
-  '--line-height-body',
-  '--line-height-code',
-  '--line-height-display',
-  '--line-height-metadata',
-  '--line-height-page-heading',
-  '--monaco-inactive-selection-background',
-  '--monaco-scrollbar-active-background',
-  '--monaco-scrollbar-hover-background',
-  '--monaco-whitespace-foreground',
-  '--radius-control',
-  '--radius-overlay',
-  '--radius-pill',
-  '--scrollbar-thumb',
-  '--selected-rail-width',
-  '--selection-background',
-  '--selection-border',
-  '--shadow-overlay',
-  '--space-1',
-  '--space-2',
-  '--space-4',
-  '--space-6',
-  '--space-8',
-  '--status-disabled-background',
-  '--status-disabled-foreground',
-  '--status-error-background',
-  '--status-error-foreground',
-  '--status-information-background',
-  '--status-information-foreground',
-  '--status-pending-background',
-  '--status-pending-foreground',
-  '--status-resolved-background',
-  '--status-resolved-foreground',
-  '--status-success-background',
-  '--status-success-foreground',
-  '--status-warning-background',
-  '--status-warning-foreground',
-  '--surface-canvas',
-  '--surface-empty',
-  '--surface-hunk',
-  '--surface-interactive',
-  '--surface-interactive-active',
-  '--surface-interactive-hover',
-  '--surface-panel',
-  '--surface-raised',
-  '--surface-scrim',
-  '--surface-sidebar',
-  '--syntax-comment-foreground',
-  '--syntax-default-foreground',
-  '--syntax-invalid-foreground',
-  '--syntax-keyword-foreground',
-  '--syntax-number-foreground',
-  '--syntax-string-foreground',
-  '--syntax-type-foreground',
-  '--text-hunk',
-  '--text-line-number',
-  '--text-muted',
-  '--text-on-emphasis',
-  '--text-primary',
-  '--tree-indent',
-];
-
 function fail(message) {
   throw new Error(`Semantic CSS audit failed: ${message}`);
 }
 
-function declarations(body) {
-  const uncommented = body.replaceAll(/\/\*[\s\S]*?\*\//g, '');
-  return [...uncommented.matchAll(/([\w-]+)\s*:\s*([^;{}]+);/g)].map(([, property, value]) => ({
-    property,
-    value: value.trim(),
-  }));
-}
-
-function selectorArms(selector) {
-  return selector.split(',').map((arm) => arm.trim());
-}
-
-function skipCssStringOrComment(css, cursor) {
-  if (css.startsWith('/*', cursor)) {
-    const closing = css.indexOf('*/', cursor + 2);
-    if (closing === -1) fail('unterminated CSS comment');
-    return closing + 2;
-  }
-  if (css[cursor] !== '"' && css[cursor] !== "'") return cursor;
-
-  const quote = css[cursor];
-  cursor += 1;
-  while (cursor < css.length) {
-    if (css[cursor] === '\\') {
-      cursor += 2;
-    } else if (css[cursor] === quote) {
-      return cursor + 1;
-    } else {
-      cursor += 1;
-    }
-  }
-  fail('unterminated CSS string');
-}
-
-function closingBrace(css, opening, selector) {
-  let depth = 1;
-  for (let cursor = opening + 1; cursor < css.length; cursor += 1) {
-    const next = skipCssStringOrComment(css, cursor);
-    if (next !== cursor) {
-      cursor = next - 1;
-      continue;
-    }
-    if (css[cursor] === '{') depth += 1;
-    if (css[cursor] === '}') depth -= 1;
-    if (depth === 0) return cursor;
-  }
-  fail(`unbalanced rule near ${selector}`);
-}
-
-function blocks(css) {
-  const rules = [];
-  let preludeStart = 0;
-  let groupingDepth = 0;
-
-  for (let cursor = 0; cursor < css.length; cursor += 1) {
-    const next = skipCssStringOrComment(css, cursor);
-    if (next !== cursor) {
-      cursor = next - 1;
-      continue;
-    }
-
-    if (css[cursor] === '(' || css[cursor] === '[') groupingDepth += 1;
-    if (css[cursor] === ')' || css[cursor] === ']') groupingDepth -= 1;
-    if (groupingDepth !== 0) continue;
-    if (css[cursor] === ';') {
-      preludeStart = cursor + 1;
-      continue;
-    }
-    if (css[cursor] !== '{') continue;
-
-    const selector = css.slice(preludeStart, cursor).replaceAll(/\/\*[\s\S]*?\*\//g, '').trim();
-    const closing = closingBrace(css, cursor, selector);
-    rules.push({ selector, body: css.slice(cursor + 1, closing) });
-    preludeStart = closing + 1;
-    cursor = closing;
-  }
-  return rules;
-}
 
 function isKeyframes(selector) {
   return /^@(?:-[\w]+-)?keyframes\b/i.test(selector);
@@ -272,25 +107,10 @@ function assertDeclaredTokensConsumed(rule, sources) {
 }
 
 function assertTokenValueShapes(rule, label) {
-  for (const { property, value } of rule.declarations.filter(({ property }) => property.startsWith('--'))) {
-    const hex = value.match(/#[0-9a-fA-F]+/);
-    if (hex !== null && /[A-F]/.test(hex[0])) {
-      fail(`${label} token ${property} must not use uppercase hex color`);
-    }
-
-    const alias = value.match(/^var\(\s*(--[\w-]+)\s*\)$/);
-    if (alias !== null) {
-      if (!canonicalTokens.includes(alias[1])) fail(`${label} token ${property} references non-canonical ${alias[1]}`);
-      continue;
-    }
-    if (value.includes('var(')) fail(`${label} token ${property} must be a single canonical var() reference`);
-    if (/^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/.test(value)) continue;
-    const colorFunctions = [...value.matchAll(/\b(rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch|color|color-mix)\s*\(([^)]*)\)/gi)];
-    for (const [, name, argumentsText] of colorFunctions) {
-      if (name.toLowerCase() !== 'rgb' || !/^\s*\d{1,3}\s+\d{1,3}\s+\d{1,3}\s*\/\s*(?:\d+(?:\.\d+)?|\.\d+)%\s*$/u.test(argumentsText)) {
-        fail(`${label} token ${property} must use lowercase hex or rgb(r g b / n%)`);
-      }
-    }
+  try {
+    assertCanonicalTokenValues(parseTokenRoot(rule.body));
+  } catch (error) {
+    fail(`${label} ${error.message}`);
   }
 }
 
@@ -338,7 +158,7 @@ const nonPaletteColorProperties = new Set([
 
 function isPaintBearingProperty(property) {
   return property.startsWith('--')
-    || /^(?:background(?:-color)?|border(?:-(?:top|right|bottom|left))?(?:-color)?|outline(?:-color)?|color|caret-color|accent-color|column-rule(?:-color)?|text-(?:decoration|emphasis)(?:-color)?|(?:-webkit-)?text-(?:fill|stroke)(?:-color)?|fill|stroke|stop-color|flood-color|lighting-color)$/.test(property);
+    || /^(?:background(?:-color)?|border(?:-(?:top|right|bottom|left))?(?:-color)?|outline(?:-color)?|box-shadow|color|caret-color|accent-color|column-rule(?:-color)?|text-(?:decoration|emphasis)(?:-color)?|(?:-webkit-)?text-(?:fill|stroke)(?:-color)?|fill|stroke|stop-color|flood-color|lighting-color)$/.test(property);
 }
 
 function directColorSyntaxes(value) {
@@ -361,7 +181,7 @@ function directColorSyntaxes(value) {
 }
 
 function isNonPaletteColor(property, syntax) {
-  return nonPaletteColorProperties.has(property)
+  return (nonPaletteColorProperties.has(property) || property === 'box-shadow')
     && (syntax === 'currentColor' || syntax === 'transparent');
 }
 
@@ -374,7 +194,7 @@ function assertDirectColorConfinement(source) {
     const isTokenRoot = rule.selector === ':root' && rule.context.length === 0;
     const inForcedColors = isForcedColorsContext(rule.context);
     for (const declaration of rule.declarations) {
-      if (!isPaintBearingProperty(declaration.property) || declaration.property === 'box-shadow') continue;
+      if (!isPaintBearingProperty(declaration.property)) continue;
       const syntaxes = directColorSyntaxes(declaration.value);
       for (const syntax of syntaxes) {
         if (isTokenRoot || isNonPaletteColor(declaration.property, syntax)) continue;
@@ -459,6 +279,10 @@ function expectAuditFailure(assertion, name) {
 function assertAuditSelfChecks() {
   const forcedColors = '@media (forced-colors: active) { body { color: CanvasText; } }';
   const canonicalRoot = ':root { --surface-canvas: #0d1117; }';
+  const canonicalTokenRoot = (overrides = {}) => `:root { ${canonicalTokens.map((token) => {
+    const colorToken = /^--(?:surface|text|border|interactive|focus|selection|scrollbar|destructive|status|diff|monaco|syntax)-/u.test(token);
+    return `${token}: ${overrides[token] ?? (colorToken ? '#000000' : '1px')};`;
+  }).join(' ')} }`;
 
   for (const [name, groupingRule] of [
     ['@supports', '@supports (display: grid)'],
@@ -513,20 +337,25 @@ function assertAuditSelfChecks() {
     () => assertVueStyleBlocks('<style scoped>.prototype { background: #f6f3ec; }</style>', 'raw Vue fixture'),
     'a direct palette literal in an authored Vue style block',
   );
+  expectAuditFailure(
+    () => assertVueStyleBlocks('<style scoped>.prototype { box-shadow: 0 0 1px #fff; }</style>', 'raw Vue shadow fixture'),
+    'a direct box-shadow palette literal in an authored Vue style block',
+  );
 
-  const uppercaseRoot = canonicalRoot.replace('#0d1117', '#0d1117'.toUpperCase());
-  expectAuditFailure(
-    () => assertTokenValueShapes(rootRule(uppercaseRoot, 'uppercase token fixture'), 'uppercase token fixture'),
-    'uppercase token hex',
-  );
-  expectAuditFailure(
-    () => assertTokenValueShapes(rootRule(':root { --surface-canvas: var(--unknown-token); }', 'unknown alias fixture'), 'unknown alias fixture'),
-    'non-canonical token alias',
-  );
-  expectAuditFailure(
-    () => assertTokenValueShapes(rootRule(':root { --surface-canvas: hsl(0 0% 0%); }', 'unsupported color fixture'), 'unsupported color fixture'),
-    'unsupported color function',
-  );
+  for (const [name, overrides] of [
+    ['uppercase hex', { '--surface-canvas': '#ABCDEF' }],
+    ['unknown alias', { '--surface-canvas': 'var(--unknown-token)' }],
+    ['unsupported color function', { '--surface-canvas': 'hsl(0 0% 0%)' }],
+    ['out-of-range channel', { '--surface-canvas': 'rgb(256 0 0 / 45%)' }],
+    ['fractional alpha', { '--surface-canvas': 'rgb(0 0 0 / 45.5%)' }],
+    ['arbitrary value', { '--surface-canvas': 'canvas' }],
+    ['alias cycle', { '--surface-canvas': 'var(--surface-panel)', '--surface-panel': 'var(--surface-canvas)' }],
+  ]) {
+    expectAuditFailure(
+      () => assertTokenValueShapes(rootRule(canonicalTokenRoot(overrides), `${name} token fixture`), `${name} token fixture`),
+      name,
+    );
+  }
   expectAuditFailure(
     () => assertNoLegacy(':root { --surface-canvas: var(--surface-inset); }', 'retired token fixture'),
     'retired token vocabulary',

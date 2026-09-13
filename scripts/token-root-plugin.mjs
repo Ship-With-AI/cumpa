@@ -1,15 +1,31 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+import {
+  assertCanonicalTokenSet,
+  canonicalRootCss,
+  parseTokenRoot,
+} from './css-token-contract.mjs';
+
 const VIRTUAL_ID = 'virtual:cumpa-tokens';
 const RESOLVED_ID = `\0${VIRTUAL_ID}`;
-export const ROOT_DECLARATIONS = /:root\s*\{([\s\S]*?)\n\}/u;
 
 export function tokenRootPlugin(repositoryRoot) {
   return {
     name: 'cumpa-token-root',
     resolveId(id) {
       return id === VIRTUAL_ID ? RESOLVED_ID : undefined;
+    },
+    configureServer(server) {
+      const sourcePath = resolve(repositoryRoot, 'src/web/styles.css');
+      server.watcher.add(sourcePath);
+      server.watcher.on('change', (file) => {
+        if (file !== sourcePath) return;
+        for (const environment of Object.values(server.environments)) {
+          const module = environment.moduleGraph.getModuleById(RESOLVED_ID);
+          if (module !== undefined) environment.moduleGraph.invalidateModule(module);
+        }
+      });
     },
     load(id) {
       if (id !== RESOLVED_ID) {
@@ -18,10 +34,8 @@ export function tokenRootPlugin(repositoryRoot) {
 
       const sourcePath = resolve(repositoryRoot, 'src/web/styles.css');
       this.addWatchFile(sourcePath);
-      const root = readFileSync(sourcePath, 'utf8').match(ROOT_DECLARATIONS)?.[1];
-      if (root === undefined) {
-        throw new Error('src/web/styles.css must declare the canonical :root token block');
-      }
+      const root = canonicalRootCss(readFileSync(sourcePath, 'utf8'), 'src/web/styles.css');
+      assertCanonicalTokenSet(parseTokenRoot(root));
 
       return `export const TOKEN_ROOT_CSS = ${JSON.stringify(root)};\n`;
     },
