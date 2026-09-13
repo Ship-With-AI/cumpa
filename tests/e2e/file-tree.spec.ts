@@ -435,3 +435,123 @@ test('packaged file tree preserves opaque selection and keyboard semantics', asy
     await repository.cleanup();
   }
 });
+
+test('packaged file tree filters and recovers without changing the open file', async ({
+  browser,
+  page,
+}, testInfo) => {
+  assertChromiumPrerequisite(browser, testInfo);
+  const repository = await createFileTreeFixture();
+  const running = startGeneratedCli(repository);
+  const fileRequests: FileRequestEvidence[] = [];
+  const browserErrors: string[] = [];
+  page.on('pageerror', (error) => browserErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      browserErrors.push(message.text());
+    }
+  });
+  page.on('request', (request) => {
+    const evidence = captureFileRequest(request);
+    if (evidence !== undefined) {
+      fileRequests.push(evidence);
+    }
+  });
+
+  try {
+    await page.goto(await waitForLoopbackUrl(running));
+    await expect.poll(() => browserErrors).toEqual([]);
+
+    const navigation = page.getByRole('navigation', { name: 'Changed files' });
+    const tree = navigation.getByRole('tree', { name: 'Changed files' });
+    const filter = navigation.getByRole('searchbox', { name: 'Filter files' });
+    const treeitems = tree.locator('[role="treeitem"]');
+    const tabbableTreeitems = tree.locator('[role="treeitem"][tabindex="0"]');
+    const selectedLeaf = tree.locator('[role="treeitem"][aria-selected="true"]');
+    const collisionDirectory = tree.getByRole('treeitem', {
+      name: /collision\/.*2 changed files/i,
+    });
+
+    await expect(tree).toBeVisible();
+    await expect(selectedLeaf).toHaveCount(1);
+    await expect(tabbableTreeitems).toHaveCount(1);
+    await expect(tabbableTreeitems).toHaveAttribute(
+      'data-file-id',
+      await selectedLeaf.getAttribute('data-file-id'),
+    );
+    const trackedRow = tree.getByRole('treeitem', {
+      name: /Modified.*tracked\.txt.*\d+ additions?.*1 deletion.*Text/i,
+    });
+    await trackedRow.click();
+    await expect(selectedLeaf).toHaveAttribute(
+      'data-file-id',
+      await trackedRow.getAttribute('data-file-id'),
+    );
+    const selectedFileId = await selectedLeaf.getAttribute('data-file-id');
+    await expect.poll(() => fileRequests.length).toBeGreaterThan(1);
+    const fileRequestsBeforeFilter = fileRequests.length;
+
+    await collisionDirectory.click();
+    await expect(collisionDirectory).toHaveAttribute('aria-expanded', 'false');
+    const collapsedTreeitemCount = await treeitems.count();
+    await filter.fill('collision');
+    await expect(collisionDirectory).toHaveAttribute('aria-expanded', 'true');
+    await expect(treeitems).toHaveCount(3);
+    await expect(
+      tree.locator('[role="treeitem"] .path-display .path-text__filename').filter({
+        hasText: /^�\.ts$/,
+      }),
+    ).toHaveCount(2);
+    await expect(
+      tree.getByRole('treeitem', { name: /control\/.*1 changed file/i }),
+    ).toHaveCount(0);
+    await expect(
+      tree.getByRole('treeitem', { name: /src\/deep\/only\/.*1 changed file/i }),
+    ).toHaveCount(0);
+    await expect(tree.getByRole('treeitem', { name: /binary\.dat/i })).toHaveCount(0);
+    await expect(tree.getByRole('treeitem', { name: /copy-target\.ts/i })).toHaveCount(0);
+    await expect(tree.getByRole('treeitem', { name: /deleted\.txt/i })).toHaveCount(0);
+    await expect(tree.getByRole('treeitem', { name: /tracked\.txt/i })).toHaveCount(0);
+    await expect.poll(() => fileRequests.length).toBe(fileRequestsBeforeFilter);
+
+    await filter.fill('COLLISION');
+    await expect(treeitems).toHaveCount(3);
+    await filter.fill('src/deep');
+    await expect(
+      tree.getByRole('treeitem', {
+        name: /renamed from src\/deep\/only\/rename-source\.ts to src\/deep\/only\/renamed\.ts/i,
+      }),
+    ).toBeVisible();
+    await expect.poll(() => fileRequests.length).toBe(fileRequestsBeforeFilter);
+
+    await filter.fill('no matching path');
+    await expect(treeitems).toHaveCount(0);
+    await expect(tabbableTreeitems).toHaveCount(0);
+    await expect(navigation.getByRole('heading', { name: 'No matching files' })).toBeVisible();
+    await expect(
+      navigation.getByText('Clear the filter to show all changed files.', { exact: true }),
+    ).toBeVisible();
+    await expect(navigation.getByRole('button', { name: 'Clear filter' })).toBeVisible();
+    await expect(tree).toBeAttached();
+
+    await navigation.getByRole('button', { name: 'Clear filter' }).click();
+    await expect(treeitems).toHaveCount(collapsedTreeitemCount);
+    await expect(selectedLeaf).toHaveAttribute('data-file-id', selectedFileId!);
+    await expect(tabbableTreeitems).toHaveCount(1);
+    await expect(tabbableTreeitems).toHaveAttribute('data-file-id', selectedFileId!);
+    await expect(collisionDirectory).toHaveAttribute('aria-expanded', 'false');
+    await expect.poll(() => fileRequests.length).toBe(fileRequestsBeforeFilter);
+
+    await filter.fill('tracked');
+    const clearFilter = navigation.getByRole('button', { name: 'Clear file filter' });
+    await expect(clearFilter).toBeVisible();
+    await clearFilter.click();
+    await expect(filter).toBeFocused();
+    await expect(filter).toHaveValue('');
+    await expect(clearFilter).toHaveCount(0);
+    await expect.poll(() => browserErrors).toEqual([]);
+  } finally {
+    await stopGeneratedCli(running);
+    await repository.cleanup();
+  }
+});
