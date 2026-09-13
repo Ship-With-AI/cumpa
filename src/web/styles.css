@@ -311,8 +311,7 @@ body {
 }
 
 .state-card h1,
-.unavailable-shell > h1,
-.file-metadata-pane > h2,
+.unavailable-shell h1,
 .draft-recovery__card h1 {
   margin: 0;
   font-size: var(--font-size-page-heading);
@@ -327,13 +326,14 @@ body {
 
 .state-card h2,
 .empty-state h2,
-.identity-panel h2,
+.identity-panel h3,
+.file-metadata-pane > h3,
 .file-tree-pane h2,
 .comments-rail h2,
 .comments-rail h3,
 .active-file-toolbar__file h1,
-.metadata-section > h3,
-.inline-notice > h4,
+.metadata-section h3,
+.inline-notice h4,
 .export-section h3,
 .export-section h4,
 .export-receipt__heading h4,
@@ -701,34 +701,21 @@ input:-webkit-autofill:focus {
   box-shadow: none;
 }
 
-.identity-panel,
-.keyboard-help,
 .ui-tooltip__content {
   border: 1px solid var(--border-default);
   background: var(--surface-raised);
   box-shadow: var(--shadow-overlay);
 }
 
-.identity-panel {
-  position: absolute;
-  z-index: 8;
-  top: 72px;
-  right: var(--space-6);
-  width: min(520px, calc(100vw - 48px));
-  max-height: calc(100dvh - 96px);
-  padding: var(--space-6);
-  overflow-y: auto;
-  border-radius: var(--radius-overlay);
+.identity-panel,
+.keyboard-help {
+  display: grid;
+  gap: var(--space-4);
 }
 
-.modal-dialog-backdrop {
-  position: fixed;
-  z-index: 20;
-  inset: 0;
+.identity-provenance {
   display: grid;
-  place-items: center;
-  padding: var(--space-4);
-  background: var(--surface-scrim);
+  gap: var(--space-2);
 }
 
 .modal-dialog {
@@ -743,6 +730,17 @@ input:-webkit-autofill:focus {
   background: var(--surface-raised);
   box-shadow: var(--shadow-overlay);
 }
+
+.modal-dialog-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: var(--surface-scrim);
+}
+
 
 .modal-dialog h2,
 .support-dialog p {
@@ -1718,7 +1716,7 @@ input:-webkit-autofill:focus {
   border-radius: var(--radius-overlay);
 }
 
-.keyboard-help h2,
+.keyboard-help h3,
 .keyboard-help p,
 .export-section h3,
 .export-section h4 {
@@ -2512,9 +2510,6 @@ h3.conversation-card__identity {
     flex: 1 1 480px;
   }
 
-  .identity-panel {
-    width: min(480px, calc(100vw - 32px));
-  }
 
   .active-file-toolbar__context {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -2686,20 +2681,6 @@ h3.conversation-card__identity {
     flex-wrap: wrap;
   }
 
-  .identity-panel--modal {
-    position: absolute;
-    z-index: 8;
-    grid-column: 1;
-    grid-row: 2;
-    inset: 0;
-    width: 100%;
-    max-height: 100vh;
-    max-height: 100dvh;
-    padding: var(--space-4);
-    border-radius: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
-  }
 
   .identity-row,
   .identity-value {
@@ -2713,8 +2694,7 @@ h3.conversation-card__identity {
   }
 
   .identity-disclosure,
-  .identity-panel--modal .sheet-close-button,
-  .identity-panel--modal .copy-button {
+  .copy-button {
     min-width: 44px;
     min-height: 44px;
   }
@@ -2939,8 +2919,6 @@ h3.conversation-card__identity {
   .export-receipt,
   .receipt-file-row,
   .export-progress,
-  .identity-panel,
-  .keyboard-help,
   .ui-tooltip__content {
     border-color: ButtonBorder;
     background: Canvas;

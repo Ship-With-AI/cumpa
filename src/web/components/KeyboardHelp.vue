@@ -1,24 +1,26 @@
 <script setup lang="ts">
-defineProps<{
-  open: boolean;
-}>();
+import { ref } from 'vue';
 
-const emit = defineEmits<{
-  close: [];
-}>();
+const headingElement = ref<HTMLHeadingElement>();
+
+function focusHeading(): void {
+  headingElement.value?.focus();
+}
+
+defineExpose({ focusHeading });
 </script>
 
 <template>
-  <section v-if="open" class="keyboard-help" aria-labelledby="keyboard-actions-heading">
+  <section class="keyboard-help" aria-labelledby="keyboard-actions-heading">
     <div class="keyboard-help__heading">
-      <h2 id="keyboard-actions-heading" tabindex="-1">Keyboard actions</h2>
-      <button type="button" class="ui-button" @click="emit('close')">Close keyboard help</button>
+      <h3 id="keyboard-actions-heading" ref="headingElement" tabindex="-1">Keyboard actions</h3>
     </div>
     <ul>
-      <li>Previous file — Alt+Shift+[</li>
-      <li>Next file — Alt+Shift+]</li>
-      <li>Previous change — Shift+F7</li>
-      <li>Next change — F7</li>
+      <li><kbd>j</kbd> / <kbd>k</kbd> — next / previous file</li>
+      <li><kbd>n</kbd> / <kbd>p</kbd> — next / previous changed line</li>
+      <li><kbd>f</kbd> — focus file tree</li>
+      <li><kbd>c</kbd> — focus comments</li>
+      <li><kbd>?</kbd> — focus this keyboard help</li>
       <li>Add or focus comment on current line — Option+Enter on macOS; Alt+Enter on Windows and Linux</li>
       <li>Add comment — Command+Enter on macOS; Ctrl+Enter on Windows and Linux</li>
       <li>Discard or close composer — Escape</li>

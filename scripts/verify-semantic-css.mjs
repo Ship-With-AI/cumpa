@@ -228,7 +228,7 @@ function assertAuthorStyle(source, { enforceShadowAllowlist = true } = {}) {
     ['.monaco-editor .monaco-anchor-line', 'inset var(--selected-rail-width) 0 var(--interactive-accent)'],
   ]);
   const overlayAllowlist = new Set([
-    '.identity-panel', '.keyboard-help', '.ui-tooltip__content', '.diff-workspace__gutter-action::after',
+    '.ui-tooltip__content', '.diff-workspace__gutter-action::after',
     '.comments-rail--open', '.review-files--open', '.support-dialog', '.modal-dialog',
   ]);
 

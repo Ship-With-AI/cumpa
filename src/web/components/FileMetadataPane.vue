@@ -178,9 +178,9 @@ defineExpose({ focusHeading, getScrollPosition, setScrollPosition });
 
 <template>
   <div ref="paneElement" class="file-metadata-pane" aria-label="File details">
-    <h2 ref="headingElement" tabindex="-1">
+    <h3 ref="headingElement" tabindex="-1">
       File details — {{ effectivePath?.display }}
-    </h2>
+    </h3>
 
     <InlineNotice v-if="errorMessage !== ''" tone="error">
       <h3>{{ metadataErrorHeading }}</h3>
