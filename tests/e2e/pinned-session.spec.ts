@@ -1415,7 +1415,7 @@ test('metadata and availability states', async ({ browser, context, page }, test
     }
 
     await expect(page.locator('.monaco-editor, iframe, [aria-label*="editor" i]')).toHaveCount(0);
-    await expect(page.locator('input, textarea, select')).toHaveCount(0);
+    await expect(page.locator('main.review-main').locator('input, textarea, select')).toHaveCount(0);
     await expect(page.getByText(repository.root, { exact: false })).toHaveCount(0);
     expect(requestEvidence).toHaveLength(1);
     expect(requestEvidence[0]).toMatchObject({ method: 'GET', postData: null });

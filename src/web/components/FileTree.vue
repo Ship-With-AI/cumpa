@@ -20,9 +20,9 @@ const emit = defineEmits<{
   select: [fileId: string];
 }>();
 
-const headingElement = ref<HTMLHeadingElement>();
-const paneElement = ref<HTMLElement>();
+const filterInput = ref<HTMLInputElement>();
 const treeElement = ref<HTMLElement>();
+const query = ref('');
 const model = shallowRef<FileTreeModel>(createFileTreeModel(props.files));
 
 function focusModelRow(): void {
@@ -68,6 +68,30 @@ function toggleDirectory(directoryId: string): void {
   applyModel(model.value.toggleDirectory(directoryId));
 }
 
+function updateQuery(nextQuery: string): void {
+  query.value = nextQuery;
+  model.value = model.value.setQuery(nextQuery);
+}
+
+function revealSelectedFile(): void {
+  const selectedFileId = model.value.selectedFileId;
+  if (selectedFileId === null) {
+    return;
+  }
+  void nextTick(() => {
+    const row = Array.from(
+      treeElement.value?.querySelectorAll<HTMLElement>('[role="treeitem"]') ?? [],
+    ).find((candidate) => candidate.dataset.fileId === selectedFileId);
+    row?.scrollIntoView({ block: 'nearest' });
+  });
+}
+
+function clearQuery(): void {
+  updateQuery('');
+  revealSelectedFile();
+  void nextTick(() => filterInput.value?.focus());
+}
+
 function handleKeydown(event: KeyboardEvent): void {
   const supportedKeys: readonly FileTreeNavigationKey[] = [
     'ArrowUp',
@@ -96,39 +120,6 @@ function handleKeydown(event: KeyboardEvent): void {
   }
 }
 
-
-function focusHeading(): void {
-  headingElement.value?.focus({ preventScroll: true });
-}
-
-function focusSelectedFile(): void {
-  const selectedFileId = model.value.selectedFileId;
-  if (selectedFileId === null) {
-    focusHeading();
-    return;
-  }
-  treeElement.value
-    ?.querySelector<HTMLElement>(`[data-file-id="${selectedFileId}"]`)
-    ?.focus({ preventScroll: true });
-}
-
-function getScrollPosition(): number {
-  return paneElement.value?.scrollTop ?? 0;
-}
-
-function setScrollPosition(position: number): void {
-  if (paneElement.value !== undefined) {
-    paneElement.value.scrollTop = position;
-  }
-}
-
-defineExpose({
-  focusHeading,
-  focusSelectedFile,
-  getScrollPosition,
-  setScrollPosition,
-});
-
 onMounted(() => {
   if (props.initialSelectedFileId === undefined && model.value.selectedFileId !== null) {
     emit('select', model.value.selectedFileId);
@@ -145,11 +136,10 @@ watch(
   { immediate: true },
 );
 
-
 watch(
   () => props.files,
   (files) => {
-    model.value = createFileTreeModel(files);
+    model.value = createFileTreeModel(files).setQuery(query.value);
     if (model.value.selectedFileId !== null) {
       emit('select', model.value.selectedFileId);
     }
@@ -158,43 +148,78 @@ watch(
 </script>
 
 <template>
-  <nav ref="paneElement" class="file-tree-pane" aria-label="Changed files">
-    <h2 id="changed-files-heading" ref="headingElement" tabindex="-1">
-      Changed files ({{ files.length }})
-    </h2>
-    <ul
-      ref="treeElement"
-      class="file-tree"
-      role="tree"
-      aria-label="Changed files"
-      aria-labelledby="changed-files-heading"
-      @keydown="handleKeydown"
-    >
-      <template
-        v-for="node in model.tree"
-        :key="node.kind === 'file' ? node.fileId : node.directoryId"
+  <nav class="file-tree-pane" aria-label="Changed files">
+    <div class="file-tree-pane__top">
+      <h2 id="changed-files-heading" tabindex="-1">
+        <span aria-hidden="true">Files</span>
+        <span class="visually-hidden">Changed files ({{ files.length }})</span>
+        <span class="file-tree-pane__count" aria-hidden="true">{{ files.length }}</span>
+        <span class="file-tree-pane__eyebrow" aria-hidden="true">Changed</span>
+      </h2>
+      <div class="file-tree-pane__filter">
+        <span class="file-tree-pane__filter-glyph" aria-hidden="true">⌕</span>
+        <label class="visually-hidden" for="file-tree-filter">Filter files</label>
+        <input
+          id="file-tree-filter"
+          ref="filterInput"
+          type="search"
+          autocomplete="off"
+          placeholder="Find file…"
+          :value="query"
+          @input="updateQuery(($event.target as HTMLInputElement).value)"
+        />
+        <button
+          v-if="query !== ''"
+          type="button"
+          class="file-tree-pane__clear ui-button"
+          aria-label="Clear file filter"
+          @click="clearQuery"
+        >
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+    </div>
+    <div class="file-tree-pane__scroller">
+      <ul
+        ref="treeElement"
+        class="file-tree"
+        role="tree"
+        aria-label="Changed files"
+        aria-labelledby="changed-files-heading"
+        @keydown="handleKeydown"
       >
-        <DirectoryRow
-          v-if="node.kind === 'directory'"
-          :directory="node"
-          :level="1"
-          :expanded-directory-ids="model.expandedDirectoryIds"
-          :focused-row-id="model.focusedRowId"
-          :selected-file-id="model.selectedFileId"
-          @activate-file="activateFile"
-          @focus-row="focusRow"
-          @toggle-directory="toggleDirectory"
-        />
-        <FileRow
-          v-else
-          :leaf="node"
-          :level="1"
-          :focused="model.focusedRowId === `file:${node.fileId}`"
-          :selected="model.selectedFileId === node.fileId"
-          @activate="activateFile"
-          @focus-row="focusRow"
-        />
-      </template>
-    </ul>
+        <template
+          v-for="node in model.projectedTree"
+          :key="node.kind === 'file' ? node.fileId : node.directoryId"
+        >
+          <DirectoryRow
+            v-if="node.kind === 'directory'"
+            :directory="node"
+            :level="1"
+            :expanded-directory-ids="model.displayExpandedDirectoryIds"
+            :focused-row-id="model.focusedRowId"
+            :selected-file-id="model.selectedFileId"
+            @activate-file="activateFile"
+            @focus-row="focusRow"
+            @toggle-directory="toggleDirectory"
+          />
+          <FileRow
+            v-else
+            :leaf="node"
+            :level="1"
+            :focused="model.focusedRowId === `file:${node.fileId}`"
+            :selected="model.selectedFileId === node.fileId"
+            @activate="activateFile"
+            @focus-row="focusRow"
+          />
+        </template>
+      </ul>
+      <section v-if="model.visibleRows.length === 0" class="tree-empty" aria-labelledby="tree-empty-heading">
+        <h3 id="tree-empty-heading">No matching files</h3>
+        <p>Clear the filter to show all changed files.</p>
+        <button type="button" class="ui-button" @click="clearQuery">Clear filter</button>
+      </section>
+      <p class="tree-hint">↑↓ move · → open · ← close · Home/End jump · Enter/Space select</p>
+    </div>
   </nav>
 </template>
