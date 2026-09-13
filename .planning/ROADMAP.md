@@ -46,10 +46,10 @@ Cumpa restyles the existing browser review workspace to the approved visual cont
 
 Plans:
 - [ ] 08-01-PLAN.md — Pure token contract, build-time root injection, and the shared node loader (wave 1)
-- [ ] 08-02-PLAN.md — Re-derive the canonical semantic token root and cut every CSS consumer and DESIGN.md over to it (wave 1)
-- [ ] 08-03-PLAN.md — Derive the Monaco theme from the canonical root and turn the parity mirror into a real gate (wave 2)
-- [ ] 08-04-PLAN.md — Re-derive, harden, and wire the stray-literal and token-structure audit (wave 2)
-- [ ] 08-05-PLAN.md — Derive browser expectations from the root, take the browser suite green, and confirm the contract at the reference viewports (wave 3)
+- [ ] 08-02-PLAN.md — Re-derive the canonical semantic token root and cut every CSS, Vue, and DESIGN.md consumer over to it (wave 2)
+- [ ] 08-03-PLAN.md — Derive the Monaco theme from the canonical root and turn the parity mirror into a real gate (wave 3)
+- [ ] 08-04-PLAN.md — Re-derive, harden, and wire the stray-literal and token-structure audit (wave 3)
+- [ ] 08-05-PLAN.md — Derive browser expectations from the root, take the browser suite green, and confirm the contract at the reference viewports (wave 4)
 
 ### Phase 09: Changed-File Tree
 
