@@ -245,8 +245,7 @@ function assertAuthorStyle(source, { enforceShadowAllowlist = true } = {}) {
         if (insetAllowlist.get(selector) !== shadow.value) fail(`inset shadow is not allowlisted for ${selector}`);
       } else if (shadow.value === 'var(--shadow-overlay)') {
         if (!overlayAllowlist.has(selector)) fail(`overlay shadow is not allowlisted for ${selector}`);
-        if ((selector === '.comments-rail--open' && !rule.context.some((item) => item.includes('max-width: 1439px')))
-          || (selector === '.review-files--open' && !rule.context.some((item) => item.includes('max-width: 1099px')))) {
+        if (selector === '.review-files--open' && !rule.context.some((item) => item.includes('max-width: 760px'))) {
           fail(`overlay shadow for ${selector} is outside its permitted responsive query`);
         }
       } else if (shadow.value !== 'none') {

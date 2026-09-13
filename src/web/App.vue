@@ -81,7 +81,6 @@ const identityOpen = ref(false);
 const isNarrow = ref(false);
 const isCompact = ref(false);
 const isFilesDrawer = ref(false);
-const isCommentsDrawer = ref(false);
 const filesOpen = ref(false);
 const filesCollapsed = ref(false);
 const commentsOpen = ref(false);
@@ -130,10 +129,8 @@ let patchStatusRefreshing = false;
 let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
 let requestVersion = 0;
-let filesDrawerMedia: MediaQueryList | undefined;
-let commentsDrawerMedia: MediaQueryList | undefined;
+let viewportMedia: MediaQueryList | undefined;
 let filesOpener: HTMLElement | undefined;
-let compactIdentityMedia: MediaQueryList | undefined;
 let supportRefreshInFlight = false;
 let supportBackgroundTimer: number | undefined;
 let supportWaitingTimer: number | undefined;
@@ -606,7 +603,7 @@ function reviewUnsavedText(): void {
 
 function reviewInlineComposer(fileId: string): void {
   selectFile(fileId);
-  if (isCommentsDrawer.value) commentsOpen.value = false;
+  commentsOpen.value = false;
 }
 
 async function reloadLatestReview(): Promise<void> {
@@ -886,11 +883,11 @@ function handleKeydown(event: KeyboardEvent): void {
 }
 
 function handleViewportChange(): void {
-  isFilesDrawer.value = filesDrawerMedia?.matches ?? false;
-  isCommentsDrawer.value = commentsDrawerMedia?.matches ?? false;
-  isNarrow.value = isFilesDrawer.value;
-  isCompact.value = compactIdentityMedia?.matches ?? false;
-  if (!isFilesDrawer.value) {
+  const isNarrowViewport = viewportMedia?.matches ?? false;
+  isFilesDrawer.value = isNarrowViewport;
+  isNarrow.value = isNarrowViewport;
+  isCompact.value = isNarrowViewport;
+  if (!isNarrowViewport) {
     filesOpen.value = false;
   }
   dispatchWorkspace({ type: 'resize' });
@@ -1035,14 +1032,10 @@ function stopPatchStatus(): void {
 
 onMounted(async () => {
   document.addEventListener('keydown', handleKeydown);
-  filesDrawerMedia = window.matchMedia('(max-width: 1099px)');
-  commentsDrawerMedia = window.matchMedia('(max-width: 1439px)');
-  compactIdentityMedia = window.matchMedia('(max-width: 767px)');
-  commentsOpen.value = !commentsDrawerMedia.matches;
+  viewportMedia = window.matchMedia('(max-width: 760px)');
+  commentsOpen.value = false;
   handleViewportChange();
-  filesDrawerMedia.addEventListener('change', handleViewportChange);
-  compactIdentityMedia.addEventListener('change', handleViewportChange);
-  commentsDrawerMedia.addEventListener('change', handleViewportChange);
+  viewportMedia.addEventListener('change', handleViewportChange);
   try {
     sessionClient = createSessionClient();
     const loaded = await sessionClient.getSession();
@@ -1095,9 +1088,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleKeydown);
-  filesDrawerMedia?.removeEventListener('change', handleViewportChange);
-  commentsDrawerMedia?.removeEventListener('change', handleViewportChange);
-  compactIdentityMedia?.removeEventListener('change', handleViewportChange);
+  viewportMedia?.removeEventListener('change', handleViewportChange);
   selectorDriftState?.stop();
   stopPatchStatus();
   stopSupportStatus();

@@ -57,7 +57,7 @@ interface RunningCli {
   readonly outputDescriptor: number;
   readonly outputPath: string;
 }
-const phase08Widths = [1440, 1280, 1100, 1099, 768, 767, 640, 320] as const;
+const phase08Widths = [1440, 1051, 1050, 761, 760, 759, 640, 320] as const;
 
 type Phase08Width = (typeof phase08Widths)[number];
 
@@ -524,13 +524,13 @@ async function expectPhase08ReflowAtCurrentWidth(
     expect(localScroll.documentLeft).toBe(0);
   }
 
-  if (width >= 1100) {
+  if (width >= 1051) {
     expect(reflow.layout.base.left).toBeLessThan(reflow.layout.file.left);
     expect(reflow.layout.file.left).toBeLessThan(reflow.layout.head.left);
     return;
   }
   expect(reflow.layout.file.top).toBeLessThan(reflow.layout.base.top);
-  if (width >= 768) {
+  if (width >= 761) {
     expect(Math.abs(reflow.layout.base.top - reflow.layout.head.top)).toBeLessThanOrEqual(1);
     expect(reflow.layout.base.left).toBeLessThan(reflow.layout.head.left);
     return;
@@ -546,7 +546,7 @@ async function expectPhase08ReflowAtWidth(page: Page, width: Phase08Width): Prom
 async function expectTreeInteriorAtWidth(page: Page, width: number): Promise<void> {
   await page.setViewportSize({ width, height: 640 });
   const filesButton = page.getByRole('button', { name: 'Files', exact: true });
-  if (width < 1100) {
+  if (width <= 760) {
     await filesButton.click();
   }
 
@@ -1332,6 +1332,9 @@ test('responsive keyboard and accessibility contract', async ({
 
       await page.setViewportSize({ width: 1440, height: 560 });
       await expect(reviewMain).toBeVisible();
+      if (await rail.isVisible()) {
+        await page.getByRole('button', { name: 'Close review' }).click();
+      }
       await expect(rail).not.toBeVisible();
       const canvasWidthBeforeRail = Math.round((await reviewMain.boundingBox())!.width);
       await reviewButton.click();
@@ -1357,6 +1360,8 @@ test('responsive keyboard and accessibility contract', async ({
         await expect(staticSurface).toHaveCSS('box-shadow', 'none');
       }
       await assertNoPageOverflow(page);
+      await page.getByRole('button', { name: 'Close review' }).click();
+      await expect(rail).not.toBeVisible();
       await assertFilesCollapse(1440);
 
       await reviewButton.focus();
@@ -1371,6 +1376,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expectFocusIndicatorUnclipped(reviewButton);
 
       await page.setViewportSize({ width: 1051, height: 560 });
+      await reviewButton.click();
       await expect(rail).toHaveClass(/comments-rail--open/);
       await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
