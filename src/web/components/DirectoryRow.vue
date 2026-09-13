@@ -27,6 +27,19 @@ const expanded = computed(() =>
 const displayPath = computed(() =>
   props.directory.segments.map((segment) => segment.display).join('/'),
 );
+function changedFileCount(directory: FileTreeDirectory): number {
+  let total = 0;
+  for (const child of directory.children) {
+    total += child.kind === 'file' ? 1 : changedFileCount(child);
+  }
+  return total;
+}
+
+const descendantCount = computed(() => changedFileCount(props.directory));
+const descendantCountLabel = computed(
+  () => `${descendantCount.value} ${descendantCount.value === 1 ? 'changed file' : 'changed files'}`,
+);
+
 </script>
 
 <template>
@@ -47,7 +60,8 @@ const displayPath = computed(() =>
       <span class="directory-row__disclosure" aria-hidden="true">
         {{ expanded ? '▾' : '▸' }}
       </span>
-      <span class="directory-row__path">{{ displayPath }}</span>
+      <span class="directory-row__path">{{ displayPath }}/</span>
+      <span class="directory-row__count" :aria-label="descendantCountLabel">{{ descendantCount }}</span>
     </div>
 
     <ul v-if="expanded" class="tree-group" role="group">
