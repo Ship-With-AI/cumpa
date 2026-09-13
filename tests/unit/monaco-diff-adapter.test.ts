@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => {
       getModifiedEditor: vi.fn(() => modifiedEditor),
       getOriginalEditor: vi.fn(() => originalEditor),
       onDidUpdateDiff: vi.fn(disposable),
+      updateOptions: vi.fn(),
     })),
     defineTheme: vi.fn(),
     setTheme: vi.fn(),
@@ -71,6 +72,16 @@ describe('PublicMonacoDiffAdapter construction', () => {
         lineHeight: Number.parseInt(resolveToken(tokens, '--line-height-code'), 10),
       }),
     );
+  });
+
+  it('updates Monaco aria label with source-correct side names', () => {
+    const adapter = createMonacoDiffAdapter({} as HTMLElement, () => 'typescript', vi.fn());
+
+    adapter.setSideNames({ original: 'preimage', modified: 'postimage' });
+
+    expect(mocks.createDiffEditor.mock.results[0]?.value.updateOptions).toHaveBeenCalledWith({
+      ariaLabel: 'Immutable preimage and postimage side-by-side diff',
+    });
   });
   it('pins the immutable side-by-side review surface options', () => {
     createMonacoDiffAdapter({} as HTMLElement, () => 'typescript', vi.fn());
