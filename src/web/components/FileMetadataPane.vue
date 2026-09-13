@@ -177,7 +177,7 @@ defineExpose({ focusHeading, getScrollPosition, setScrollPosition });
 </script>
 
 <template>
-  <main ref="paneElement" class="file-metadata-pane" aria-label="File details">
+  <div ref="paneElement" class="file-metadata-pane" aria-label="File details">
     <h2 ref="headingElement" tabindex="-1">
       File details — {{ effectivePath?.display }}
     </h2>
@@ -269,5 +269,5 @@ defineExpose({ focusHeading, getScrollPosition, setScrollPosition });
         <p>{{ availabilityExplanation }}</p>
       </InlineNotice>
     </section>
-  </main>
+  </div>
 </template>

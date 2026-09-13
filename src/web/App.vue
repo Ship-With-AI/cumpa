@@ -7,6 +7,7 @@ import type {
   DraftRecoveryResult,
   DraftRevealResult,
   FileContentResponse,
+  FileMetadataResponse,
   FinishReviewResult,
   PatchStatusResponse,
   SessionFile,
@@ -78,6 +79,9 @@ const selectedFile = shallowRef<SessionFile>();
 const selectedContent = shallowRef<FileContentResponse>();
 const diffLoading = ref(false);
 const diffError = ref('');
+const selectedMetadata = shallowRef<FileMetadataResponse>();
+const metadataLoading = ref(false);
+const metadataError = ref('');
 const identityOpen = ref(false);
 const isNarrow = ref(false);
 const isCompact = ref(false);
@@ -131,6 +135,7 @@ let patchStatusRefreshing = false;
 let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
 let requestVersion = 0;
+let metadataRequestVersion = 0;
 let viewportMedia: MediaQueryList | undefined;
 let filesOpener: HTMLElement | undefined;
 let supportRefreshInFlight = false;
@@ -294,6 +299,7 @@ async function loadFile(file: SessionFile): Promise<void> {
   selectedFile.value = file;
   diffError.value = '';
   selectedContent.value = undefined;
+  void loadFileMetadata(file);
   if (file.availability.kind !== 'text') {
     diffLoading.value = false;
     return;
@@ -314,6 +320,29 @@ async function loadFile(file: SessionFile): Promise<void> {
   } finally {
     if (version === requestVersion) {
       diffLoading.value = false;
+    }
+  }
+}
+
+async function loadFileMetadata(file: SessionFile): Promise<void> {
+  metadataError.value = '';
+  selectedMetadata.value = undefined;
+
+  const version = ++metadataRequestVersion;
+  metadataLoading.value = true;
+  try {
+    const metadata = await sessionClient?.getFileMetadata(file.fileId);
+    if (metadata === undefined || version !== metadataRequestVersion || metadata.fileId !== file.fileId) {
+      return;
+    }
+    selectedMetadata.value = metadata;
+  } catch (error) {
+    if (version === metadataRequestVersion) {
+      metadataError.value = error instanceof SessionClientError ? error.message : FILE_UNAVAILABLE_MESSAGE;
+    }
+  } finally {
+    if (version === metadataRequestVersion) {
+      metadataLoading.value = false;
     }
   }
 }
@@ -781,6 +810,7 @@ function selectFile(fileId: string): void {
     selectedFile.value = file;
     selectedContent.value = undefined;
     diffError.value = '';
+    void loadFileMetadata(file);
     return;
   }
   if (workspace?.getState().activeFileId === file.fileId) {
@@ -817,8 +847,15 @@ function retryDiff(): void {
   }
 }
 
+function retryMetadata(): void {
+  if (selectedFile.value !== undefined) {
+    void loadFileMetadata(selectedFile.value);
+  }
+}
+
 function toggleIdentity(): void {
   if (identityOpen.value) {
+
     closeIdentity();
     return;
   }

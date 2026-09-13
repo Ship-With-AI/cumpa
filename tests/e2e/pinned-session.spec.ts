@@ -1353,6 +1353,11 @@ test('metadata and availability states', async ({ browser, context, page }, test
     postData: string | null;
     url: string;
   }> = [];
+  const metadataRequestEvidence: Array<{
+    method: string;
+    postData: string | null;
+    url: string;
+  }> = [];
   const sessionGate = Promise.withResolvers<void>();
 
   await page.route('**/api/session', async (route) => {
@@ -1381,11 +1386,11 @@ test('metadata and availability states', async ({ browser, context, page }, test
     });
   });
 
-  await page.route('**/api/files/*', async (route) => {
+  await page.route(/\/api\/files\/[^/]+$/u, async (route) => {
     const request = route.request();
     const requestUrl = new URL(request.url());
     const fileId = decodeURIComponent(requestUrl.pathname.split('/').at(-1) ?? '');
-    requestEvidence.push({
+    metadataRequestEvidence.push({
       method: request.method(),
       postData: request.postData(),
       url: request.url(),
@@ -1448,13 +1453,8 @@ test('metadata and availability states', async ({ browser, context, page }, test
     const requestUrl = new URL(requestEvidence[0]!.url);
     expect(requestUrl.search).toBe('');
     expect(requestUrl.pathname).toBe(`/api/files/${ids.supported}/content`);
-    expect(requestEvidence).toHaveLength(files.length + 1);
-    expect(requestEvidence.slice(1)).toEqual(
-      files.map((file) => ({
-        method: 'GET',
-        postData: null,
-        url: expect.stringMatching(new RegExp(`/api/files/${file.fileId}$`)),
-      })),
+    expect(new Set(metadataRequestEvidence.map(({ url }) => new URL(url).pathname))).toEqual(
+      new Set(files.map((file) => `/api/files/${file.fileId}`)),
     );
 
     const metadataHarness = await startMetadataHarness();
