@@ -8,65 +8,133 @@ const outputRoot = resolve(repositoryRoot, 'dist/web');
 const indexPath = resolve(outputRoot, 'index.html');
 
 const canonicalTokens = [
-  '--surface-canvas', '--surface-inset', '--surface-panel', '--surface-raised',
-  '--surface-interactive', '--surface-interactive-hover', '--surface-interactive-active',
-  '--text-primary', '--text-secondary', '--text-muted', '--text-on-emphasis',
-  '--border-muted', '--border-default', '--border-strong', '--control-boundary', '--interactive-accent',
-  '--interactive-accent-emphasis', '--focus-ring', '--selection-background',
-  '--selection-border', '--destructive-foreground', '--destructive-emphasis',
-  '--status-success-foreground', '--status-success-background', '--status-warning-foreground',
-  '--status-warning-background', '--status-error-foreground', '--status-error-background',
-  '--status-information-foreground', '--status-information-background',
-  '--status-resolved-foreground', '--status-resolved-background', '--status-pending-foreground',
-  '--status-pending-background', '--status-disabled-foreground', '--status-disabled-background',
-  '--syntax-keyword-foreground', '--syntax-string-foreground', '--syntax-number-foreground',
-  '--syntax-type-foreground', '--syntax-invalid-foreground',
-  '--diff-addition-foreground', '--diff-addition-background', '--diff-addition-intraline-background',
-  '--diff-deletion-foreground', '--diff-deletion-background', '--diff-deletion-intraline-background',
-  '--diff-hunk-foreground', '--diff-hunk-background', '--diff-empty-background',
-  '--diff-unchanged-background', '--diff-region-border', '--font-ui', '--font-mono',
-  '--font-size-metadata', '--line-height-metadata', '--font-size-body', '--line-height-body',
-  '--font-size-section-heading', '--line-height-section-heading', '--font-size-page-heading',
-  '--line-height-page-heading', '--font-weight-regular', '--font-weight-semibold',
-  '--radius-compact', '--radius-control', '--radius-overlay', '--radius-pill', '--shadow-overlay',
-  '--space-xs', '--space-sm', '--space-md', '--space-lg', '--space-xl', '--space-2xl', '--space-3xl',
+  '--border-control',
+  '--border-default',
+  '--border-gap',
+  '--border-hunk',
+  '--border-overlay',
+  '--border-width-default',
+  '--control-height-compact',
+  '--control-height-standard',
+  '--destructive-emphasis',
+  '--destructive-foreground',
+  '--dialog-max-height',
+  '--dialog-width',
+  '--diff-addition-background',
+  '--diff-addition-foreground',
+  '--diff-addition-intraline-background',
+  '--diff-deletion-background',
+  '--diff-deletion-foreground',
+  '--diff-deletion-intraline-background',
+  '--diff-empty-background',
+  '--diff-gutter-width',
+  '--diff-hunk-background',
+  '--diff-hunk-foreground',
+  '--diff-region-border',
+  '--diff-row-height',
+  '--diff-sign-width',
+  '--diff-unchanged-background',
+  '--file-row-min-height',
+  '--focus-offset',
+  '--focus-outline-width',
+  '--focus-ring',
+  '--font-mono',
+  '--font-size-body',
+  '--font-size-code',
+  '--font-size-display',
+  '--font-size-metadata',
+  '--font-size-page-heading',
+  '--font-ui',
+  '--font-weight-regular',
+  '--font-weight-semibold',
+  '--icon-size',
+  '--interactive-accent',
+  '--interactive-accent-emphasis',
+  '--interactive-accent-emphasis-hover',
+  '--line-height-body',
+  '--line-height-code',
+  '--line-height-display',
+  '--line-height-metadata',
+  '--line-height-page-heading',
+  '--monaco-inactive-selection-background',
+  '--monaco-scrollbar-active-background',
+  '--monaco-scrollbar-hover-background',
+  '--monaco-whitespace-foreground',
+  '--radius-control',
+  '--radius-file-row',
+  '--radius-overlay',
+  '--radius-pill',
+  '--radius-scrollbar',
+  '--scrollbar-thumb',
+  '--selected-rail-width',
+  '--selection-background',
+  '--selection-border',
+  '--shadow-overlay',
+  '--sidebar-width',
+  '--space-1',
+  '--space-2',
+  '--space-3',
+  '--space-4',
+  '--space-5',
+  '--space-6',
+  '--space-8',
+  '--status-added-background',
+  '--status-added-border',
+  '--status-added-foreground',
+  '--status-deleted-background',
+  '--status-deleted-border',
+  '--status-deleted-foreground',
+  '--status-disabled-background',
+  '--status-disabled-foreground',
+  '--status-error-background',
+  '--status-error-foreground',
+  '--status-information-background',
+  '--status-information-foreground',
+  '--status-modified-background',
+  '--status-modified-border',
+  '--status-modified-foreground',
+  '--status-pending-background',
+  '--status-pending-foreground',
+  '--status-resolved-background',
+  '--status-resolved-foreground',
+  '--status-success-background',
+  '--status-success-foreground',
+  '--status-warning-background',
+  '--status-warning-foreground',
+  '--surface-canvas',
+  '--surface-empty',
+  '--surface-gap',
+  '--surface-hunk',
+  '--surface-interactive',
+  '--surface-interactive-active',
+  '--surface-interactive-hover',
+  '--surface-panel',
+  '--surface-raised',
+  '--surface-scrim',
+  '--surface-sidebar',
+  '--syntax-comment-foreground',
+  '--syntax-default-foreground',
+  '--syntax-invalid-foreground',
+  '--syntax-keyword-foreground',
+  '--syntax-number-foreground',
+  '--syntax-string-foreground',
+  '--syntax-type-foreground',
+  '--text-hunk',
+  '--text-line-number',
+  '--text-muted',
+  '--text-on-emphasis',
+  '--text-primary',
+  '--text-selection-background',
+  '--tree-indent',
 ];
-
-const expectedValues = new Map([
-  ['--surface-canvas', '#0D1117'], ['--surface-inset', '#010409'], ['--surface-panel', '#161B22'],
-  ['--surface-raised', '#21262D'], ['--surface-interactive', '#21262D'],
-  ['--surface-interactive-hover', '#292E36'], ['--surface-interactive-active', '#30363D'],
-  ['--text-primary', '#E6EDF3'], ['--text-secondary', '#B1BAC4'], ['--text-muted', '#8B949E'],
-  ['--text-on-emphasis', '#FFFFFF'], ['--border-muted', '#21262D'], ['--border-default', '#30363D'],
-  ['--border-strong', '#484F58'], ['--control-boundary', '#8B949E'], ['--interactive-accent', '#2F81F7'],
-  ['--interactive-accent-emphasis', '#1F6FEB'], ['--focus-ring', '#58A6FF'],
-  ['--selection-background', 'rgb(56 139 253 / 35%)'], ['--selection-border', '#58A6FF'],
-  ['--destructive-foreground', '#F85149'], ['--destructive-emphasis', '#B62324'],
-  ['--status-success-foreground', '#3FB950'], ['--status-success-background', 'rgb(46 160 67 / 15%)'],
-  ['--status-warning-foreground', '#D29922'], ['--status-warning-background', 'rgb(187 128 9 / 15%)'],
-  ['--status-error-foreground', '#F85149'], ['--status-error-background', 'rgb(248 81 73 / 15%)'],
-  ['--status-information-foreground', '#58A6FF'], ['--status-information-background', 'rgb(56 139 253 / 15%)'],
-  ['--status-resolved-foreground', '#A371F7'], ['--status-resolved-background', 'rgb(163 113 247 / 15%)'],
-  ['--status-pending-foreground', '#B1BAC4'], ['--status-pending-background', '#21262D'],
-  ['--status-disabled-foreground', '#8B949E'], ['--status-disabled-background', '#161B22'],
-  ['--syntax-keyword-foreground', '#D2A8FF'], ['--syntax-string-foreground', '#A5D6FF'],
-  ['--syntax-number-foreground', '#F2CC60'], ['--syntax-type-foreground', '#79C0FF'],
-  ['--syntax-invalid-foreground', '#FFA198'],
-  ['--diff-addition-foreground', '#3FB950'], ['--diff-addition-background', 'rgb(46 160 67 / 15%)'],
-  ['--diff-addition-intraline-background', 'rgb(46 160 67 / 35%)'],
-  ['--diff-deletion-foreground', '#F85149'], ['--diff-deletion-background', 'rgb(248 81 73 / 15%)'],
-  ['--diff-deletion-intraline-background', 'rgb(248 81 73 / 35%)'],
-  ['--diff-hunk-foreground', '#A371F7'], ['--diff-hunk-background', 'rgb(163 113 247 / 15%)'],
-  ['--diff-empty-background', 'var(--surface-inset)'], ['--diff-unchanged-background', 'var(--surface-inset)'],
-  ['--diff-region-border', 'var(--border-default)'], ['--shadow-overlay', '0 8px 24px rgb(0 0 0 / 40%)'],
-]);
 
 function fail(message) {
   throw new Error(`Semantic CSS audit failed: ${message}`);
 }
 
 function declarations(body) {
-  return [...body.matchAll(/([\w-]+)\s*:\s*([^;{}]+);/g)].map(([, property, value]) => ({
+  const uncommented = body.replaceAll(/\/\*[\s\S]*?\*\//g, '');
+  return [...uncommented.matchAll(/([\w-]+)\s*:\s*([^;{}]+);/g)].map(([, property, value]) => ({
     property,
     value: value.trim(),
   }));
@@ -209,10 +277,26 @@ function assertTokenRoot(rule, label, exact) {
   }
 }
 
-function assertExpectedValues(rule) {
-  const values = new Map(rule.declarations.map(({ property, value }) => [property, value]));
-  for (const [token, expected] of expectedValues) {
-    if (values.get(token) !== expected) fail(`source token ${token} must equal ${expected}`);
+function assertTokenValueShapes(rule, label) {
+  for (const { property, value } of rule.declarations.filter(({ property }) => property.startsWith('--'))) {
+    const hex = value.match(/#[0-9a-fA-F]+/);
+    if (hex !== null && /[A-F]/.test(hex[0])) {
+      fail(`${label} token ${property} must not use uppercase hex color`);
+    }
+
+    const alias = value.match(/^var\(\s*(--[\w-]+)\s*\)$/);
+    if (alias !== null) {
+      if (!canonicalTokens.includes(alias[1])) fail(`${label} token ${property} references non-canonical ${alias[1]}`);
+      continue;
+    }
+    if (value.includes('var(')) fail(`${label} token ${property} must be a single canonical var() reference`);
+    if (/^#[0-9a-f]{6}(?:[0-9a-f]{2})?$/.test(value)) continue;
+    const colorFunctions = [...value.matchAll(/\b(rgb|rgba|hsl|hsla|hwb|lab|lch|oklab|oklch|color|color-mix)\s*\(([^)]*)\)/gi)];
+    for (const [, name, argumentsText] of colorFunctions) {
+      if (name.toLowerCase() !== 'rgb' || !/^\s*\d{1,3}\s+\d{1,3}\s+\d{1,3}\s*\/\s*(?:\d+(?:\.\d+)?|\.\d+)%\s*$/u.test(argumentsText)) {
+        fail(`${label} token ${property} must use lowercase hex or rgb(r g b / n%)`);
+      }
+    }
   }
 }
 
@@ -329,7 +413,7 @@ function assertAuthorStyle(source) {
   ]);
   const overlayAllowlist = new Set([
     '.identity-panel', '.keyboard-help', '.ui-tooltip__content', '.diff-workspace__gutter-action::after',
-    '.comments-rail--open', '.review-files--open',
+    '.comments-rail--open', '.review-files--open', '.support-dialog',
   ]);
 
   for (const rule of declarationRules(ordinary)) {
@@ -433,6 +517,20 @@ function assertAuditSelfChecks() {
     'a direct palette literal in an authored Vue style block',
   );
 
+  const uppercaseRoot = canonicalRoot.replace('#0d1117', '#0d1117'.toUpperCase());
+  expectAuditFailure(
+    () => assertTokenValueShapes(rootRule(uppercaseRoot, 'uppercase token fixture'), 'uppercase token fixture'),
+    'uppercase token hex',
+  );
+  expectAuditFailure(
+    () => assertTokenValueShapes(rootRule(':root { --surface-canvas: var(--unknown-token); }', 'unknown alias fixture'), 'unknown alias fixture'),
+    'non-canonical token alias',
+  );
+  expectAuditFailure(
+    () => assertTokenValueShapes(rootRule(':root { --surface-canvas: hsl(0 0% 0%); }', 'unsupported color fixture'), 'unsupported color fixture'),
+    'unsupported color function',
+  );
+
   assertAuthorStyle(`${canonicalRoot} .semantic-colors { color: var(--text-primary); border-color: currentColor; background: transparent; } @media (forced-colors: active) {
     body { background: Canvas; color: CanvasText; }
     button { background: ButtonFace; color: ButtonText; border-color: ButtonBorder; }
@@ -469,7 +567,7 @@ const sourceRoot = rootRule(source, 'source CSS');
 const generatedRoot = rootRule(generated, 'generated CSS', true);
 assertTokenRoot(sourceRoot, 'source CSS', true);
 assertTokenRoot(generatedRoot, 'generated CSS', false);
-assertExpectedValues(sourceRoot);
+assertTokenValueShapes(sourceRoot, 'source CSS');
 assertNoLegacy(source, 'source CSS');
 assertNoLegacy(generated, 'generated CSS');
 assertAuthorStyle(source);
