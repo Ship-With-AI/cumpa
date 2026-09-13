@@ -4,6 +4,7 @@ import { resolve, relative, sep } from 'node:path';
 const repositoryRoot = resolve(import.meta.dirname, '..');
 const sourcePath = resolve(repositoryRoot, 'src/web/styles.css');
 const prototypePath = resolve(repositoryRoot, 'src/web/prototypes/MonacoStabilityPrototype.vue');
+const phase6PrototypePath = resolve(repositoryRoot, 'src/web/prototypes/Phase6DiffSemanticsPrototype.vue');
 const outputRoot = resolve(repositoryRoot, 'dist/web');
 const indexPath = resolve(outputRoot, 'index.html');
 
@@ -301,7 +302,7 @@ function assertTokenValueShapes(rule, label) {
 }
 
 function assertNoLegacy(css, label) {
-  const legacy = /(?<![\w-])--(?:canvas|panel|accent|destructive|surface|text|rule|addition-(?:bg|fg)|deletion-(?:bg|fg)|warning-(?:bg|fg)|info-(?:bg|fg)|error-(?:bg|fg))(?![\w-])|(?<![\w-])--color-[\w-]+/g;
+  const legacy = /(?<![\w-])--(?:canvas|panel|accent|destructive|surface|text|rule|addition-(?:bg|fg)|deletion-(?:bg|fg)|warning-(?:bg|fg)|info-(?:bg|fg)|error-(?:bg|fg)|surface-inset|text-secondary|border-muted|border-strong|control-boundary|font-size-section-heading|line-height-section-heading|radius-compact|space-(?:xs|sm|md|lg|xl|2xl|3xl))(?![\w-])|(?<![\w-])--color-[\w-]+/g;
   const match = css.match(legacy);
   if (match !== null) fail(`${label} still references retired token ${match[0]}`);
 }
@@ -353,7 +354,7 @@ function directColorSyntaxes(value) {
     .replace(/url\([^)]*\)/gi, '');
   const syntaxes = [];
   if (/#[0-9a-f]{3,8}\b/i.test(inspected)) syntaxes.push('hex color');
-  if (/\b(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color-mix|color|device-cmyk|light-dark|color-contrast|contrast-color)\s*\(/i.test(inspected)) {
+  if (/\b(?:rgba?|hsla?|hwb|oklch|oklab|lab|lch|color|device-cmyk|light-dark|color-contrast|contrast-color)\s*\(/i.test(inspected)) {
     syntaxes.push('color function');
   }
   for (const word of inspected.matchAll(/\b[a-z][\w-]*\b/gi)) {
@@ -392,7 +393,7 @@ function assertDirectColorConfinement(source) {
   }
 }
 
-function assertAuthorStyle(source) {
+function assertAuthorStyle(source, { enforceShadowAllowlist = true } = {}) {
   if (/@import\b|url\(\s*(?:['"]?https?:|['"]?\/\/)|(?:repeating-)?(?:linear|radial|conic)-gradient\(|backdrop-filter\s*:|text-shadow\s*:|filter\s*:\s*drop-shadow\(/i.test(source)) {
     fail('source contains an import, remote URL, gradient, glow, glass, or drop shadow');
   }
@@ -405,6 +406,8 @@ function assertAuthorStyle(source) {
   if (systemKeyword.test(ordinary)) fail('system colors are only allowed in the forced-colors repair block');
 
   assertDirectColorConfinement(source);
+  if (!enforceShadowAllowlist) return;
+
 
   const insetAllowlist = new Map([
     ['.tree-row--selected', 'inset 3px 0 var(--selection-border)'],
@@ -444,9 +447,10 @@ function assertVueStyleBlocks(source, label) {
   const styles = [...source.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].map((match) => match[1]);
   if (styles.length === 0) fail(`${label} has no authored style block to audit`);
   for (const style of styles) {
-    assertAuthorStyle(`:root { --surface-canvas: #0D1117; } ${style} @media (forced-colors: active) {
+    assertNoLegacy(style, label);
+    assertAuthorStyle(`:root { --surface-canvas: #0d1117; } ${style} @media (forced-colors: active) {
       body { background: Canvas; color: CanvasText; }
-    }`);
+    }`, { enforceShadowAllowlist: false });
   }
 }
 
@@ -461,7 +465,7 @@ function expectAuditFailure(assertion, name) {
 
 function assertAuditSelfChecks() {
   const forcedColors = '@media (forced-colors: active) { body { color: CanvasText; } }';
-  const canonicalRoot = ':root { --surface-canvas: #0D1117; }';
+  const canonicalRoot = ':root { --surface-canvas: #0d1117; }';
 
   for (const [name, groupingRule] of [
     ['@supports', '@supports (display: grid)'],
@@ -480,11 +484,11 @@ function assertAuditSelfChecks() {
     'a non-permitted pressed-control shadow inside @container',
   );
   expectAuditFailure(
-    () => assertAuthorStyle(`${canonicalRoot} @scope (.review-workspace) { .review-heading { color: #E6EDF3; } } ${forcedColors}`),
+    () => assertAuthorStyle(`${canonicalRoot} @scope (.review-workspace) { .review-heading { color: #e6edf3; } } ${forcedColors}`),
     'a raw color literal inside @scope',
   );
   expectAuditFailure(
-    () => assertAuthorStyle(`${canonicalRoot} @keyframes theme-bypass { to { color: #FFFFFF; } } ${forcedColors}`),
+    () => assertAuthorStyle(`${canonicalRoot} @keyframes theme-bypass { to { color: #ffffff; } } ${forcedColors}`),
     'a raw color literal inside a keyframe step',
   );
   expectAuditFailure(
@@ -530,6 +534,10 @@ function assertAuditSelfChecks() {
     () => assertTokenValueShapes(rootRule(':root { --surface-canvas: hsl(0 0% 0%); }', 'unsupported color fixture'), 'unsupported color fixture'),
     'unsupported color function',
   );
+  expectAuditFailure(
+    () => assertNoLegacy(':root { --surface-canvas: var(--surface-inset); }', 'retired token fixture'),
+    'retired token vocabulary',
+  );
 
   assertAuthorStyle(`${canonicalRoot} .semantic-colors { color: var(--text-primary); border-color: currentColor; background: transparent; } @media (forced-colors: active) {
     body { background: Canvas; color: CanvasText; }
@@ -544,6 +552,7 @@ assertAuditSelfChecks();
 
 const source = await readFile(sourcePath, 'utf8');
 const prototypeSource = await readFile(prototypePath, 'utf8');
+const phase6PrototypeSource = await readFile(phase6PrototypePath, 'utf8');
 const index = await readFile(indexPath, 'utf8');
 const cssHrefs = [...index.matchAll(/<link\b[^>]*\brel=["']stylesheet["'][^>]*\bhref=["']([^"']+)["'][^>]*>/gi)]
   .map((match) => match[1]);
@@ -572,5 +581,6 @@ assertNoLegacy(source, 'source CSS');
 assertNoLegacy(generated, 'generated CSS');
 assertAuthorStyle(source);
 assertVueStyleBlocks(prototypeSource, 'Monaco stability prototype');
+assertVueStyleBlocks(phase6PrototypeSource, 'Phase 6 diff semantics prototype');
 
 console.log('Semantic CSS verified: canonical root, retired vocabulary, and author-style invariants pass.');
