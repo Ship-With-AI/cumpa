@@ -55,6 +55,18 @@ describe('buildDiffDecorations', () => {
         sign: 'monaco-diff-change-sign--base',
         optionKeys: ['glyphMarginClassName'],
       },
+      {
+        range: [2, 2],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
+      {
+        range: [4, 4],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
     ]);
 
     expect(observableDecorations(buildDiffDecorations([change(2, 4, 6, 8)], 'head', 10))).toEqual([
@@ -69,6 +81,18 @@ describe('buildDiffDecorations', () => {
         bar: undefined,
         sign: 'monaco-diff-change-sign--head',
         optionKeys: ['glyphMarginClassName'],
+      },
+      {
+        range: [6, 6],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
+      {
+        range: [8, 8],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
       },
     ]);
   });
@@ -91,6 +115,18 @@ describe('buildDiffDecorations', () => {
         sign: 'monaco-diff-change-sign--head',
         optionKeys: ['glyphMarginClassName'],
       },
+      {
+        range: [4, 4],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
+      {
+        range: [6, 6],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
     ]);
     expect(observableDecorations(buildDiffDecorations([deletion], 'base', 8))).toEqual([
       {
@@ -105,13 +141,25 @@ describe('buildDiffDecorations', () => {
         sign: 'monaco-diff-change-sign--base',
         optionKeys: ['glyphMarginClassName'],
       },
+      {
+        range: [2, 2],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
+      {
+        range: [4, 4],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
     ]);
     expect(buildDiffDecorations([deletion], 'head', 8)).toEqual([]);
   });
 
   it('places endpoint signs only for blocks of four or more lines', () => {
-    expect(observableDecorations(buildDiffDecorations([change(3, 3)], 'base', 8))).toHaveLength(2);
-    expect(observableDecorations(buildDiffDecorations([change(3, 5)], 'base', 8))).toHaveLength(2);
+    expect(observableDecorations(buildDiffDecorations([change(3, 3)], 'base', 8))).toHaveLength(4);
+    expect(observableDecorations(buildDiffDecorations([change(3, 5)], 'base', 8))).toHaveLength(4);
     expect(observableDecorations(buildDiffDecorations([change(3, 6)], 'base', 8))).toEqual([
       {
         range: [3, 6],
@@ -130,6 +178,18 @@ describe('buildDiffDecorations', () => {
         bar: undefined,
         sign: 'monaco-diff-change-sign--base',
         optionKeys: ['glyphMarginClassName'],
+      },
+      {
+        range: [3, 3],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
+      {
+        range: [6, 6],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
       },
     ]);
   });
@@ -156,6 +216,18 @@ describe('buildDiffDecorations', () => {
         sign: 'monaco-diff-change-sign--base',
         optionKeys: ['glyphMarginClassName'],
       },
+      {
+        range: [3, 3],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
+      {
+        range: [8, 8],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
     ]);
   });
 
@@ -177,6 +249,18 @@ describe('buildDiffDecorations', () => {
         optionKeys: ['glyphMarginClassName'],
       },
       {
+        range: [1, 1],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
+      {
+        range: [2, 2],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
+      {
         range: [6, 7],
         bar: 'monaco-diff-change-bar--base',
         sign: undefined,
@@ -187,6 +271,18 @@ describe('buildDiffDecorations', () => {
         bar: undefined,
         sign: 'monaco-diff-change-sign--base',
         optionKeys: ['glyphMarginClassName'],
+      },
+      {
+        range: [6, 6],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
+      },
+      {
+        range: [7, 7],
+        bar: undefined,
+        sign: undefined,
+        optionKeys: ['className', 'isWholeLine'],
       },
     ]);
     expect(decorations.every(({ range }) => range.startLineNumber >= 1 && range.endLineNumber <= 7)).toBe(true);
