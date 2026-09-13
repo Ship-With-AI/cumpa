@@ -1332,7 +1332,11 @@ test('responsive keyboard and accessibility contract', async ({
 
       await page.setViewportSize({ width: 1440, height: 560 });
       await expect(reviewMain).toBeVisible();
+      await expect(rail).not.toBeVisible();
+      const canvasWidthBeforeRail = Math.round((await reviewMain.boundingBox())!.width);
+      await reviewButton.click();
       await expect(rail).toBeVisible();
+      expect(Math.round((await reviewMain.boundingBox())!.width)).toBe(canvasWidthBeforeRail);
       expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
       await expect(rail).toHaveCSS('overflow-y', 'hidden');
       await expect(panel).toHaveCSS('overflow-y', 'auto');
@@ -1349,7 +1353,7 @@ test('responsive keyboard and accessibility contract', async ({
         document.body.append(card);
       });
       await expect(stateCard).toHaveCSS('padding', '24px');
-      for (const staticSurface of [rail, treePane, page.locator('.session-header'), reviewMain, stateCard]) {
+      for (const staticSurface of [treePane, page.locator('.session-header'), reviewMain, stateCard]) {
         await expect(staticSurface).toHaveCSS('box-shadow', 'none');
       }
       await assertNoPageOverflow(page);
@@ -1366,7 +1370,7 @@ test('responsive keyboard and accessibility contract', async ({
       expect(focusStyle.outlineOffset).toBe(resolveToken(canonicalTokens, '--focus-offset'));
       await expectFocusIndicatorUnclipped(reviewButton);
 
-      await page.setViewportSize({ width: 1439, height: 560 });
+      await page.setViewportSize({ width: 1051, height: 560 });
       await expect(rail).toHaveClass(/comments-rail--open/);
       await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
@@ -1375,10 +1379,10 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).not.toHaveClass(/comments-rail--open/);
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
-      await page.setViewportSize({ width: 1280, height: 560 });
+      await page.setViewportSize({ width: 1050, height: 560 });
       await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveAttribute('aria-expanded', 'true');
-      await expect(sessionHeader).toHaveCSS('flex-wrap', 'nowrap');
-      await expect(headerFacts).toHaveCSS('flex-wrap', 'nowrap');
+      await expect(sessionHeader).toHaveCSS('flex-wrap', 'wrap');
+      await expect(headerFacts).toHaveCSS('flex-wrap', 'wrap');
       await expect(rail).toHaveCSS('box-shadow', 'none');
       const desktopColumns = await reviewShell.evaluate((shell) => {
         const files = shell.querySelector<HTMLElement>('.review-files')!;
@@ -1425,7 +1429,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).not.toHaveClass(/comments-rail--open/);
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
-      await page.setViewportSize({ width: 1279, height: 560 });
+      await page.setViewportSize({ width: 761, height: 560 });
       await expect(page.getByRole('button', { name: 'Files', exact: true })).toHaveAttribute('aria-expanded', 'true');
       await expect(sessionHeader).toHaveCSS('flex-wrap', 'wrap');
       await expect(headerFacts).toHaveCSS('flex-wrap', 'wrap');
@@ -1514,18 +1518,28 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(rail).not.toHaveClass(/comments-rail--open/);
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
-      await assertFilesCollapse(1100);
+      await page.setViewportSize({ width: 1651, height: 560 });
+      const wideSidebarWidth = Math.round((await treePane.boundingBox())!.width);
+      await page.setViewportSize({ width: 1051, height: 560 });
+      const compactSidebarWidth = Math.round((await treePane.boundingBox())!.width);
+      expect(wideSidebarWidth).toBeGreaterThan(compactSidebarWidth);
+      await page.setViewportSize({ width: 761, height: 560 });
+      await assertFilesCollapse(761);
+      const identityDisclosure = page.getByRole('button', { name: 'Comparison identities', exact: true });
+      await identityDisclosure.click();
+      await expect(page.locator('.identity-panel--modal')).toHaveCount(0);
+      await page.keyboard.press('Escape');
       await expect(rail).toHaveCSS('box-shadow', 'none');
       await reviewButton.click();
       const mediumBox = await rail.boundingBox();
       expect(Math.round(mediumBox!.width)).toBe(360);
-      expect(Math.round(mediumBox!.x + mediumBox!.width)).toBe(1092);
+      expect(Math.round(mediumBox!.x + mediumBox!.width)).toBe(753);
       await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
       await page.getByRole('button', { name: 'Close review' }).click();
       await expect(rail).toHaveCSS('box-shadow', 'none');
 
-      await page.setViewportSize({ width: 1099, height: 560 });
+      await page.setViewportSize({ width: 760, height: 560 });
       const filesButton = page.getByRole('button', { name: 'Files', exact: true });
       await expect(filesButton).toBeVisible();
       await expect(filesButton).toHaveAttribute('aria-controls', 'changed-files');
@@ -1545,7 +1559,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(filesButton).toBeFocused();
       await expect(treePane).toHaveCSS('box-shadow', 'none');
 
-      await page.setViewportSize({ width: 768, height: 560 });
+      await page.setViewportSize({ width: 759, height: 560 });
       await expect(rail).toHaveCSS('box-shadow', 'none');
       await expect(treePane).toHaveCSS('box-shadow', 'none');
       await reviewButton.click();
