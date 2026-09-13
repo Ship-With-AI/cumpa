@@ -543,6 +543,44 @@ async function expectPhase08ReflowAtWidth(page: Page, width: Phase08Width): Prom
   await expectPhase08ReflowAtCurrentWidth(page, width);
 }
 
+async function expectTreeInteriorAtWidth(page: Page, width: number): Promise<void> {
+  await page.setViewportSize({ width, height: 640 });
+  const filesButton = page.getByRole('button', { name: 'Files', exact: true });
+  if (width < 1100) {
+    await filesButton.click();
+  }
+
+  const filesPane = page.locator('.review-files');
+  const selected = filesPane.locator('.tree-row--selected');
+  const lineCounts = selected.locator('.line-counts');
+  const levelOne = filesPane.locator('[role="treeitem"][aria-level="1"]').first();
+  const nested = filesPane.locator('[role="treeitem"][aria-level="2"]').first();
+  const directoryCount = filesPane.locator('.directory-row__count').first();
+
+  await expect(filesPane).toBeVisible();
+  await expect(selected).toBeVisible();
+  await expect(directoryCount).toBeVisible();
+  await expect(directoryCount).toHaveText(/\S+/);
+  await expect(lineCounts).toBeVisible();
+  await expect(lineCounts).toContainText(/\+.*−/u);
+
+  const [selectedBox, filesBox, countsBox, levelOnePadding, nestedPadding] = await Promise.all([
+    selected.boundingBox(),
+    filesPane.boundingBox(),
+    lineCounts.boundingBox(),
+    levelOne.evaluate((element) => getComputedStyle(element).paddingInlineStart),
+    nested.evaluate((element) => getComputedStyle(element).paddingInlineStart),
+  ]);
+  expect(selectedBox!.height).toBe(Number.parseFloat(resolveToken(
+    canonicalTokens,
+    '--file-row-min-height',
+  )));
+  expect(selectedBox!.x + selectedBox!.width).toBeLessThanOrEqual(filesBox!.x + filesBox!.width);
+  expect(countsBox!.x + countsBox!.width).toBeLessThanOrEqual(filesBox!.x + filesBox!.width);
+  expect(Number.parseFloat(nestedPadding)).toBeGreaterThan(Number.parseFloat(levelOnePadding));
+  await assertNoPageOverflow(page);
+}
+
 async function expectNonColorStateCues(page: Page): Promise<void> {
   const review = page.getByRole('button', { name: 'Review', exact: true });
   const selected = page.locator('.tree-row--selected').first();
@@ -1126,6 +1164,13 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(review).toBeFocused();
     });
 
+
+    await test.step('tree interiors remain fluid at shipped hosts', async () => {
+      await expectTreeInteriorAtWidth(page, phase08Widths[0]);
+      await expectTreeInteriorAtWidth(page, phase08Widths[1]);
+      await expectTreeInteriorAtWidth(page, 420);
+      await page.getByRole('button', { name: 'Close files', exact: true }).click();
+    });
 
     await test.step('achromatopsia preserves real non-color diff and focus cues', async () => {
       const cdp = await page.context().newCDPSession(page);
