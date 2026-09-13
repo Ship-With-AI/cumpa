@@ -148,12 +148,11 @@ interface GeneratedRangeRequest {
     readonly pathspecs?: readonly string[];
   }>;
 }
-
 function rangeRequest(
   repository: GitFixture,
   pathspecs: readonly string[] = [],
   base = repository.baseRef,
-  head = repository.headRef,
+  head: string = repository.headRef,
 ): GeneratedRangeRequest {
   return {
     kind: 'cumpa.review-request',
@@ -474,6 +473,9 @@ test('generated range request preserves the server-scoped pinned review', async 
       headers: { authorization: `Bearer ${token}` },
     });
     const session = (await sessionResponse.json()) as SessionResponse;
+    if (!('base' in session)) {
+      throw new Error('Expected a pinned session response.');
+    }
 
     expect(terminal).not.toContain('Base source');
     expect(openerEvidence.trim().split('\n')).toHaveLength(1);
@@ -809,6 +811,9 @@ test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) 
           `[behavioral] ${matrixCase.name} session API`,
         ).toBe(200);
         const session = (await sessionResponse.json()) as SessionResponse;
+        if (!('base' in session)) {
+          throw new Error('Expected a pinned session response.');
+        }
         expect(session.base).toMatchObject({
           label: matrixCase.selections.base.label,
           oid: expectedBase,

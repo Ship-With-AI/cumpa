@@ -28,6 +28,13 @@ let releaseRecovery: (() => void) | undefined;
 const recoveryBodies: string[] = [];
 const revealBodies: string[] = [];
 
+function releasePendingRecovery(): void {
+  const release = releaseRecovery;
+  if (release !== undefined) {
+    release();
+  }
+}
+
 function pinnedSession(): SessionResponse {
   return SessionResponseSchema.parse({
     base: { label: 'base', oid: 'a'.repeat(40) },
@@ -249,7 +256,7 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   await expect(page.locator('.draft-recovery .ui-spinner')).toHaveCount(1);
   await expect(page.getByText('Backing up existing draft…', { exact: true })).toBeVisible();
   await expect.poll(() => recoveryBodies).toEqual([JSON.stringify({ expectedFingerprint: fingerprint })]);
-  releaseRecovery?.();
+  releasePendingRecovery();
   await expect(page.getByRole('heading', { name: 'Recovery did not complete' })).toBeVisible();
   await expect(page.getByText('The existing draft is still read only and has not been replaced. Check the terminal details, then try again.', { exact: true })).toBeVisible();
   await expect(page.getByText(safeDraftPath, { exact: true })).toBeVisible();
@@ -266,7 +273,7 @@ test('corrupt drafts remain read only until the fingerprint-bound recovery respo
   await startNew.click();
   await page.getByRole('button', { name: 'Back up and start new' }).last().click();
   await expect(page.getByText('Backing up existing draft…', { exact: true })).toBeVisible();
-  releaseRecovery?.();
+  releasePendingRecovery();
   await expect(page.getByRole('heading', { name: 'New draft started' })).toBeVisible();
   const recoveredCard = page.locator('.draft-recovery__card');
   const recoveryNotice = recoveredCard.locator('.draft-recovery__notice');
@@ -359,7 +366,7 @@ test('exact patch recovery opens a frozen draft without pinned-session language'
   await page.getByRole('button', { name: 'Back up and start new' }).click();
   await page.getByRole('button', { name: 'Back up and start new' }).last().click();
   await expect.poll(() => releaseRecovery !== undefined).toBe(true);
-  releaseRecovery?.();
+  releasePendingRecovery();
 
   await expect(page.getByRole('heading', { name: 'New draft started' })).toBeVisible();
   await page.getByRole('button', { name: 'Open new draft' }).click();

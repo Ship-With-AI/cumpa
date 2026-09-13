@@ -1,11 +1,18 @@
 import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
+import type {
+  AnchorVerificationDto,
+  ReviewDraftCommentV1,
+} from '../../src/contracts/draft.js';
+
 
 import { expect, test, type Page } from '@playwright/test';
 import {
   DraftLoadResponseSchema,
   DraftMutationRequestSchema,
   DraftMutationResultSchema,
+  type DraftMutationRequest,
+  type SessionResponse,
 } from '../../src/contracts/api.js';
 import { createServer, type ViteDevServer } from 'vite';
 
@@ -15,7 +22,7 @@ const secondFileId = `file_${'b'.repeat(43)}`;
 const token = 't'.repeat(43);
 let server: ViteDevServer | undefined;
 let origin = '';
-let canonicalComments: unknown[] = [];
+let canonicalComments: WorkspaceComment[] = [];
 let contentRequests: string[] = [];
 type DelayedMutationOutcome = 'accepted' | 'persistenceFailure' | 'revisionConflict';
 
@@ -25,6 +32,10 @@ type DelayedMutation = Readonly<{
   release: () => void;
   notifyReceived: () => void;
   waitForRelease: () => Promise<void>;
+}>;
+
+type WorkspaceComment = ReviewDraftCommentV1 & Readonly<{
+  verification?: AnchorVerificationDto;
 }>;
 
 let delayedMutation: DelayedMutation | undefined;
@@ -48,7 +59,7 @@ const changedFirstText = firstText.replace('export const changed = 2;', 'export 
 const secondText = firstText.replace('export const changed = 2;', 'export const secondChanged = 2;');
 const changedSecondText = secondText.replace('export const secondChanged = 2;', 'export const secondChanged = 3;');
 
-let session = {
+let session: SessionResponse = {
   base: { label: 'base', oid: 'a'.repeat(40) },
   head: { label: 'head', oid: 'b'.repeat(40) },
   mergeBaseOid: 'c'.repeat(40),
@@ -90,7 +101,7 @@ function json(response: ServerResponse, body: unknown, statusCode = 200): void {
   response.end(JSON.stringify(body));
 }
 
-function draftSnapshot(comments: readonly unknown[]) {
+function draftSnapshot(comments: readonly WorkspaceComment[]) {
   return {
     schemaVersion: 1,
     comparison: {
@@ -104,7 +115,7 @@ function draftSnapshot(comments: readonly unknown[]) {
   };
 }
 
-function draftView(comments: readonly object[]) {
+function draftView(comments: readonly WorkspaceComment[]) {
   const draft = draftSnapshot(comments);
   return {
     ...draft,
@@ -117,12 +128,18 @@ function draftView(comments: readonly object[]) {
   };
 }
 
-function draftLoad(comments: readonly object[]) {
+function draftLoad(comments: readonly WorkspaceComment[]) {
   return DraftLoadResponseSchema.parse({
     kind: 'current',
     path: '.cumpa/drafts/anchored-workspace.json',
     draft: draftView(comments),
   });
+}
+
+function isDeleteCommentMutation(
+  mutation: DraftMutationRequest,
+): mutation is Extract<DraftMutationRequest, Readonly<{ type: 'deleteComment' }>> {
+  return mutation.type === 'deleteComment';
 }
 
 function delayNextMutation(outcome: DelayedMutationOutcome): DelayedMutation {
@@ -178,6 +195,8 @@ async function startAppServer(): Promise<string> {
               return;
             }
 
+            const request = mutation.data;
+
             const delayed = delayedMutation;
             if (delayed !== undefined) {
               delayedMutation = undefined;
@@ -211,9 +230,9 @@ async function startAppServer(): Promise<string> {
               return;
             }
 
-            if (mutation.data.type === 'deleteComment') {
+            if (isDeleteCommentMutation(request)) {
               canonicalComments = canonicalComments.filter(
-                (comment) => typeof comment !== 'object' || comment === null || !('id' in comment) || comment.id !== mutation.data.commentId,
+                (comment) => typeof comment !== 'object' || comment === null || !('id' in comment) || comment.id !== request.commentId,
               );
               json(response, DraftMutationResultSchema.parse({
                 kind: 'accepted',
@@ -321,7 +340,7 @@ type MonacoGeometry = Readonly<{
 }>;
 
 async function readMonacoGeometry(page: Page, targetText: string): Promise<MonacoGeometry> {
-  return page.evaluate((text) => {
+  return page.evaluate<MonacoGeometry, string>((text) => {
     const canvasBounds = document.querySelector('.diff-workspace__canvas')?.getBoundingClientRect();
     const rawRect = (element: Element | null): GeometryRect | null => {
       if (element === null) return null;
