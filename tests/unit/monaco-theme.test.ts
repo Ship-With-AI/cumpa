@@ -29,6 +29,7 @@ const THEME_COLOR_ROOT_MAP: Readonly<Record<string, RootMapping>> = {
   'editorGutter.background': { token: '--surface-sidebar' },
   'editorLineNumber.foreground': { token: '--text-line-number' },
   'editorLineNumber.activeForeground': { token: '--text-primary' },
+  'editorLink.activeForeground': { token: '--diff-hunk-foreground' },
   'editorCursor.foreground': { token: '--focus-ring' },
   'editorWhitespace.foreground': { token: '--monaco-whitespace-foreground' },
   'editorIndentGuide.background1': { token: '--border-gap' },
