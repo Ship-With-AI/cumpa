@@ -7,6 +7,7 @@ const userId = "11111111-1111-4111-8111-111111111111";
 const complete = "Support flow complete. You can return to Cumpa.";
 const invalid = "This support link is invalid or expired. Return to Cumpa and try again.";
 const unavailable = "Support is temporarily unavailable. Return to Cumpa and try again.";
+const unlinked = "No support to restore for sign-in. Return to Cumpa support.";
 
 function assert(condition: unknown, message = "assertion failed"): asserts condition {
   if (!condition) throw new Error(message);
@@ -161,4 +162,41 @@ Deno.test("restore keeps paid and unpaid completion indistinguishable and reject
   const foreignDeps = dependencies();
   await assertTerminal(await handleSupportFlowRequest(new Request(`${supabaseUrl}/functions/v1/support-flow?intent=${intent}`, { headers: { origin: "https://attacker.example" } }), foreignDeps), 400, invalid);
   assert(foreignDeps.calls.length === 0 && foreignDeps.checkoutCalls.length === 0);
+});
+
+Deno.test("restore reports unlinked and unavailable terminal outcomes without Checkout", async () => {
+  const restoreDeps = dependencies({
+    service: {
+      rpc: async (name: string, args: Record<string, unknown>) => {
+        restoreDeps.calls.push({ name, args });
+        if (name === "claim_support_intent") {
+          return { data: [{ id: "22222222-2222-4222-8222-222222222222", action: "restore", installation_id: installationId }], error: null };
+        }
+        return { data: false, error: null };
+      },
+    },
+  });
+  const unlinkedResponse = await handleSupportFlowRequest(new Request(`${supabaseUrl}/functions/v1/support-flow/callback?code=provider-code`, {
+    headers: { cookie: `support-intent=${intent}` },
+  }), restoreDeps);
+  assert(unlinkedResponse.status !== 302);
+  assert(await unlinkedResponse.clone().text() !== complete);
+  await assertTerminal(unlinkedResponse, 409, unlinked);
+  assert(restoreDeps.checkoutCalls.length === 0);
+  assert(cookie(unlinkedResponse).includes("support-intent=") && cookie(unlinkedResponse).includes("Max-Age=0"));
+
+  const unavailableDeps = dependencies({
+    service: {
+      rpc: async (name: string, args: Record<string, unknown>) => {
+        unavailableDeps.calls.push({ name, args });
+        if (name === "claim_support_intent") {
+          return { data: [{ id: "22222222-2222-4222-8222-222222222222", action: "restore", installation_id: installationId }], error: null };
+        }
+        return { data: null, error: { message: "installation already bound" } };
+      },
+    },
+  });
+  await assertTerminal(await handleSupportFlowRequest(new Request(`${supabaseUrl}/functions/v1/support-flow/callback?code=provider-code`, {
+    headers: { cookie: `support-intent=${intent}` },
+  }), unavailableDeps), 503, unavailable);
 });
