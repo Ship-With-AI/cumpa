@@ -6,9 +6,9 @@ current_phase: 07
 current_phase_name: clean-public-artifact-acceptance
 status: partially-blocked
 stopped_at: Phase 07 requirement-axis evidence corrected; ACC-04 partially blocked
-last_updated: "2026-09-13T08:19:13Z"
+last_updated: "2026-09-13T15:52:09Z"
 last_activity: 2026-09-13
-last_activity_desc: Completed live deploy authority stability quick task
+last_activity_desc: Completed test typecheck coverage quick task
 progress:
   total_phases: 5
   completed_phases: 5
@@ -32,7 +32,7 @@ Phase: 07 (clean-public-artifact-acceptance) PARTIALLY BLOCKED
 Plan: 7 7
 Status: Partially blocked
 Checkpoint: Six committed public-global, public-npx, and marketplace pre/post reports regenerated the hardened record. ACC-01, ACC-02, and ACC-03 passed their installation-plus-review axis; ACC-04 is `partially-blocked` because every verified row remains `live-entitlement-unavailable` with `substituted: false`. The restored public-global post-Restore linkage finding records the observed false successful Restore while status stayed unverified and the modal stayed non-terminal; no second sign-in, publishing, deployment, or hosted-service change is permitted.
-Last activity: 2026-09-13 — Completed 260913-dzc: the production-live authority gate now verifies snapshot stability instead of emptiness, and the retired recovery-spec deploy gate is removed.
+Last activity: 2026-09-13 — Completed 260913-nx0: test TypeScript projects are now gated in repository CI; all test diagnostics are zero.
 
 Progress: [██████████] 100% — 23 23 milestone plans complete
 
@@ -110,6 +110,7 @@ None yet.
 | 260908-d25 | Switch Cumpa to standard MIT and reconcile distribution | 2026-09-08 | 2227f78 | [260908-d25-switch-cumpa-to-mit-and-reconcile-active](./quick/260908-d25-switch-cumpa-to-mit-and-reconcile-active/) |
 | 260913-apr | Bounded support wait; hosted Restore result deliberately reverted | 2026-09-13 | 05384c8 | [260913-apr-hosted-restore-linkage-truth](./quick/260913-apr-hosted-restore-linkage-truth/) |
 | 260913-dzc | Verify live deploy authority stability instead of emptiness | 2026-09-13 | a4edcf3 | [260913-dzc-live-deploy-authority](./quick/260913-dzc-live-deploy-authority/) |
+| 260913-nx0 | Bring tests under `tsc` and gate test typechecks in CI | 2026-09-13 | a8dfcf9 | [260913-nx0-test-typecheck-coverage](./quick/260913-nx0-test-typecheck-coverage/) |
 
 ## Deferred Items
 
