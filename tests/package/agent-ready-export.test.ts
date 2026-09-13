@@ -272,7 +272,7 @@ test.for(['stable', 'bootstrap'] as const)('enforces trusted %s scenario identit
     support: { unavailable: true, dismissed: true, unrestricted: true },
     exactPatch: { canonicalV3: true, grounded: true },
     native: { observedReExport: native, fallback: 'reExportUnsupported' },
-    sourceControl: { unchanged: true },
+    sourceControl: { unchanged: true, scenarios: [{ name: 'review', unchanged: true }] },
     checks: { finish: true },
   };
   const parsed = parseScenarios('current-run', expected, assets, review, selectedProfile);
