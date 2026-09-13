@@ -1086,7 +1086,6 @@ test('responsive keyboard and accessibility contract', async ({
       await page.setViewportSize({ width: 320, height: 640 });
 
       for (const [name, destination] of [
-        ['Skip to changed files', 'changed-files-heading'],
         ['Skip to diff', 'cumpa-heading'],
         ['Skip review', 'review-heading'],
       ] as const) {
@@ -1101,11 +1100,16 @@ test('responsive keyboard and accessibility contract', async ({
       await files.focus();
       await expectFocusIndicatorUnclipped(files);
       await page.keyboard.press('Enter');
-      const firstFile = page.locator('.file-tree .file-row').first();
+      const changedFiles = page.getByRole('dialog', { name: 'Changed files', exact: true });
+      const filter = changedFiles.getByRole('searchbox', { name: 'Filter files', exact: true });
+      await expect(changedFiles).toBeVisible();
+      await expect(filter).toBeFocused();
+      const firstFile = changedFiles.locator('.file-tree .file-row').first();
       await firstFile.focus();
       await expectFocusIndicatorUnclipped(firstFile);
       await page.keyboard.press('Enter');
-      await expect(page.locator('.review-files')).not.toHaveClass(/review-files--open/);
+      await expect(changedFiles).toHaveCount(0);
+      await expect(page.locator('.active-file-toolbar h1')).toBeFocused();
 
       await page.keyboard.press('Alt+Shift+]');
       await expect(page.locator('.active-file-toolbar__file')).toContainText('beta-after-a-very-long-rename.ts');
