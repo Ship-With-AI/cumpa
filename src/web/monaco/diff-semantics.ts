@@ -90,6 +90,21 @@ export function buildDiffDecorations(
         },
       });
     }
+
+    decorations.push({
+      range: { startLineNumber: range.start, startColumn: 1, endLineNumber: range.start, endColumn: 1 },
+      options: {
+        isWholeLine: true,
+        className: 'monaco-diff-hunk-start',
+      },
+    });
+    decorations.push({
+      range: { startLineNumber: range.end, startColumn: 1, endLineNumber: range.end, endColumn: 1 },
+      options: {
+        isWholeLine: true,
+        className: 'monaco-diff-hunk-end',
+      },
+    });
   }
 
   return decorations;
