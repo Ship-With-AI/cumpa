@@ -1,5 +1,54 @@
 # Milestones
 
+## v1.6 Workspace Restyle (Shipped: 2026-09-14)
+
+**Delivered:** One mockup-derived visual system across the workspace and Monaco — dense changed-file tree, quieter Base/Head diff surface, mockup-equivalent shell with Details and Review-notes dialogs — with review behaviour, exports, and support mechanics unchanged.
+
+**Phases completed:** 5 phases, 25 plans, 76 tasks
+**Timeline:** 2026-09-12 → 2026-09-14
+**Git range:** `6279e15` → `de1362e` — 164 files changed, +27,770 / -2,270
+
+**Key accomplishments:**
+
+- Collapsed four independently-authored palettes into one canonical semantic token root, with the Monaco theme deriving byte-identical values from it at build time through a Vite virtual module.
+- Turned an inherited, unwired drift audit into a real gate: `npm run verify:semantic-css` now rejects stray colour literals, orphan tokens, gradients, uppercase hex, and retired vocabulary, and proves it can reject via unconditional self-checks.
+- Rebuilt the changed-file tree as dense rows with signed counts and directory descendant counts, plus a filter that prunes (never rebuilds) the tree so expansion identity and selection survive clearing.
+- Fixed roving tabindex, which the shipped implementation had never satisfied despite a spec asserting it since 2026-07-20.
+- Restyled the diff surface entirely through Monaco's own mechanisms — pinned options, source-correct side labels, responsive code density, and zero-height hunk boundaries that cannot desynchronise comment anchoring.
+- Recomposed the shell around one extracted `ModalDialog` primitive with three dialogs, unified four disagreeing breakpoint systems onto 760/1050/1650, and kept every warning class in the shell behind a single live-region owner.
+- Repaired `tests/e2e/agent-ready-export.spec.ts`, which no default runner executed for the entire milestone and which failed 6/6 once run.
+
+### Final Evidence
+
+- Requirements: 24/24
+- Phase verifications: 08 6/6, 09 25/25, 10 29/29, 11 5/5, 12 4/4 — all `passed`
+- Security audits: 08 25 threats, 09 23/23, 10 17/17, 11 41/41 — all closed
+- UI audits: 09 24/24, 10 24/24, 11 24/24, 12 native-scale visual equivalence signed off
+- Suites at close: 186 unit, 69 git, 142 api, 99 browser, 7 runtime-artifact
+- Milestone audit: status `tech_debt`; archiveable with one accepted inherited item
+
+### Defects found and fixed that predated the restyle
+
+- A browser spec excluded from every default runner, silently rotting for a full milestone.
+- An order-sensitive suite failure root-caused to the runtime packer inheriting `NODE_ENV=development` from a Vite server started by an earlier spec, packaging a development Vue runtime.
+- A pack lock whose stale-owner recovery let two packers delete each other's lock and run concurrently.
+- Roving tabindex never satisfied by the implementation.
+- The v1.0 debt item "retire or intentionally consume the orphan `SessionClient.getFileMetadata()`" is now resolved: the Details dialog is its first real caller.
+
+### Retained Technical Debt
+
+- DEBT-01 (audit D-01): four `ReviewToolbar.vue` layout containers carry `aria-label` or nothing without a queryable `role`, so `getByRole('group', …)` cannot reach them. Pre-existing and byte-unchanged across v1.6; promoted into `.planning/REQUIREMENTS.md` as a scheduled next-milestone requirement rather than left in a ledger.
+- Two release-only specs remain documented external prerequisites, not regressions: `tests/e2e/public-support-states.spec.ts` (published package plus live hosted origin; gate at `:327-329`) and `tests/e2e/marketplace-review.spec.ts:97-99`.
+
+### Archives
+
+- Roadmap: `.planning/milestones/v1.6-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.6-REQUIREMENTS.md`
+- Milestone audit: `.planning/milestones/v1.6-MILESTONE-AUDIT.md`
+- Phase history: `.planning/milestones/v1.6-phases/`
+
+---
+
 ## v1.4 Voluntary Support (Shipped: 2026-09-04)
 
 **Delivered:** Optional one-time support and paid-account restoration through a canonical Supabase-hosted flow without gating or changing any review feature.
