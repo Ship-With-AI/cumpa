@@ -339,7 +339,7 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   await expect(notice).toContainText(baseOid);
   await expect(notice).toContainText(movedBaseOid);
 
-  const warningStack = page.locator('.session-shell > .shell-warning-stack');
+  const warningStack = page.locator('.session-shell__content > .shell-warning-stack');
   await expect(warningStack).toBeVisible();
   await expect(warningStack).toContainText('Selected source changed — open review remains pinned');
 
@@ -462,7 +462,7 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
   await expect(retry).toBeFocused();
   await retry.click();
   await expect(page.getByText('PREIMAGE', { exact: true })).toBeVisible();
-  await expect(page.getByText('POSTIMAGE', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('src/exact.ts: preimage and postimage side-by-side diff').getByText('POSTIMAGE', { exact: true })).toBeVisible();
   await expect(page.getByText('− REMOVED', { exact: true })).toBeVisible();
   await expect(page.getByText('+ ADDED', { exact: true })).toBeVisible();
   await expect(page.getByLabel('src/exact.ts: preimage and postimage side-by-side diff')).toBeVisible();
