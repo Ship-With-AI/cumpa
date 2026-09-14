@@ -970,12 +970,13 @@ test('responsive keyboard and accessibility contract', async ({
         const style = getComputedStyle(document.querySelector(selector)!);
         return [selector, style.fontSize, style.fontWeight, style.lineHeight, style.fontFamily];
       }));
+      const computedUiFont = expect.stringMatching(/^-apple-system, (?:BlinkMacSystemFont|"system-ui"), "Segoe UI", sans-serif$/);
       expect(typography).toEqual([
-        ['.session-header h1', '20px', '600', '28px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-      ['.review-context-header__file h1', '16px', '600', '24px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['[data-normal-file]', '14px', '400', '20px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.availability-marker', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.pin-cue', '12px', '600', '16px', '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['.session-header h1', '20px', '600', '28px', computedUiFont],
+        ['.review-context-header__file h1', '16px', '600', '24px', computedUiFont],
+        ['[data-normal-file]', '14px', '400', '20px', computedUiFont],
+        ['.availability-marker', '12px', '600', '16px', computedUiFont],
+        ['.pin-cue', '12px', '600', '16px', computedUiFont],
       ]);
       await expect(page.locator('.path-display').first()).toHaveCSS('font-family', /monospace/);
       await expect(fixture.locator('.object-id')).toHaveCSS('font-family', /monospace/);
