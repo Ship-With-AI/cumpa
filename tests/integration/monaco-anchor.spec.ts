@@ -154,7 +154,7 @@ test('5. follows deterministic file order and public previous/next change contro
   await expect(page.getByTestId('monaco-metrics')).toContainText('fixture-a · typescript');
 });
 
-test('6. restores A → B → A composer text, focus side, and model state after readiness', async ({ page }) => {
+test('6. restores A → B → A composer text, anchor, and model state after readiness', async ({ page }) => {
   await openPrototype(page);
   await page.getByRole('button', { name: 'Add base comment' }).click();
   await page.locator('textarea[aria-label=\"Comment\"]').fill('preserved composer text');
