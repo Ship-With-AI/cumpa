@@ -90,3 +90,15 @@ The former local baseline's three failures and two did-not-run tests are fully a
 ## Cleanup and boundaries
 
 No push, deployment, registry action, remote mutation, formatter, or project-wide linter was run. The temporary `cumpa-ci6-composer-debug` Docker volume is removed after this evidence was recorded.
+
+## Post-verification focus-restore correction
+
+Independent verification found that the initial composer-race fix incorrectly derived restored focus from **every** active composer. On a normal A → B → A switch, a saved `head:11` focus could differ from a saved `base:10` composer; the prior version wrongly restored the composer position.
+
+`505ba43 fix(web): restore saved focus independently from composer` separates the two cases: only an in-flight same-file composer from the pending initial diff derives focus; a composer restored from saved state retains `saved?.focused` exactly. The permanent deterministic adapter test saves a `base:10` composer and `head:11` focus across A → B → A, then asserts both directions: the composer restores at `base:10` and the editor focuses `head:11`.
+
+- **RED:** before the correction, the test expected `{ lineNumber: 11, column: 1 }` and received `{ lineNumber: 10, column: 1 }`.
+- **GREEN:** `npx vitest run tests/unit/monaco-diff-adapter.test.ts` → **3 passed**.
+- **Regression verification:** `npx vitest run --no-file-parallelism` → **65 files, 524 tests passed**; `npx playwright test` → **94 passed**.
+
+No Linux re-gate was required: this is platform-independent adapter state restoration, and the Linux suite had already green-gated the earlier CI-widening commit. The recorded **90 passed / 4 explicit Darwin-only skips** Noble result predates this focused hunk and remains an observed historical gate result, not a claim that this follow-up was rerun in Linux.
