@@ -8,6 +8,7 @@ const props = defineProps<{
   readonly initialSelectedFileId?: string;
   readonly narrow: boolean;
   readonly open: boolean;
+  readonly restoreFocus?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -21,6 +22,7 @@ const emit = defineEmits<{
   <ModalDialog
     :open="open"
     :keep-mounted="true"
+    :restore-focus="restoreFocus"
     initial-focus-selector="#file-tree-filter"
     title="Changed files"
     close-label="Close"

@@ -74,6 +74,8 @@ type ReviewFailure = Readonly<{
 
 type AttachedLifecycle = 'ordinary' | 'waiting' | 'waitingDisconnected' | 'finishing' | 'completed' | 'retryableFailure' | 'terminalFailure';
 
+type ShellDialog = 'changed-files' | 'details' | 'review-notes' | 'support';
+
 const session = shallowRef<SessionResponse>();
 const errorMessage = ref('');
 const selectedFile = shallowRef<SessionFile>();
@@ -83,12 +85,15 @@ const diffError = ref('');
 const selectedMetadata = shallowRef<FileMetadataResponse>();
 const metadataLoading = ref(false);
 const metadataError = ref('');
-const detailsOpen = ref(false);
+const shellDialog = ref<ShellDialog | null>(null);
+const detailsOpen = computed(() => shellDialog.value === 'details');
 const isNarrow = ref(false);
-const changedFilesOpen = ref(false);
+const changedFilesOpen = computed(() => shellDialog.value === 'changed-files');
+const changedFilesRestoreFocus = ref(true);
 const focusActiveFileAfterDialog = ref(false);
 const filesCollapsed = ref(false);
-const reviewNotesOpen = ref(false);
+const reviewNotesOpen = computed(() => shellDialog.value === 'review-notes');
+const shellModalOpen = computed(() => shellDialog.value !== null);
 const commentsOpen = ref(false);
 const liveMessage = ref('');
 const liveMessageVersion = ref(0);
@@ -112,7 +117,7 @@ const attachedLifecycle = ref<AttachedLifecycle>('ordinary');
 const attachedResult = shallowRef<FinishReviewResult>();
 const attachedStatus = shallowRef<AttachedCompletionStatus>();
 const supportStatus = ref<'loading' | 'unverified' | 'verified' | 'unavailable'>('loading');
-const supportDialogOpen = ref(false);
+const supportDialogOpen = computed(() => shellDialog.value === 'support');
 const supportDialogMode = ref<'invitation' | 'waiting' | 'verified' | 'thankYou'>('invitation');
 const supportBusy = ref(false);
 const dismissedForSession = ref(false);
@@ -141,8 +146,8 @@ let supportRefreshInFlight = false;
 let supportBackgroundTimer: number | undefined;
 let supportWaitingTimer: number | undefined;
 let supportThankYouTimer: number | undefined;
-let supportPollAbort: AbortController | undefined;
 let supportOpener: HTMLElement | undefined;
+let supportPollAbort: AbortController | undefined;
 let commentsOpener: HTMLElement | undefined;
 let latestConflictDraft: CanonicalReviewDraft | undefined;
 
@@ -243,9 +248,17 @@ function announce(message: string): void {
   liveMessageVersion.value += 1;
 }
 
+function openShellDialog(dialog: ShellDialog): void {
+  shellDialog.value = dialog;
+}
+
+function closeShellDialog(dialog: ShellDialog): void {
+  if (shellDialog.value === dialog) shellDialog.value = null;
+}
+
 function toggleFiles(): void {
   if (isNarrow.value) {
-    changedFilesOpen.value = true;
+    openShellDialog('changed-files');
     return;
   }
   filesCollapsed.value = !filesCollapsed.value;
@@ -254,9 +267,14 @@ function toggleFiles(): void {
   void nextTick(() => activeFileToolbar.value?.focusFilesToggle());
 }
 
-function closeChangedFiles(): void {
-  changedFilesOpen.value = false;
-  void nextTick(() => diffWorkspace.value?.layout());
+function closeChangedFiles(restoreFocus = true): void {
+  if (!changedFilesOpen.value) return;
+  changedFilesRestoreFocus.value = restoreFocus;
+  closeShellDialog('changed-files');
+  void nextTick(() => {
+    diffWorkspace.value?.layout();
+    changedFilesRestoreFocus.value = true;
+  });
 }
 
 function openComments(): void {
@@ -566,7 +584,8 @@ function saveComment(commentId: string): void {
 
 function mutateComment(commentId: string, type: 'deleteComment' | 'resolveComment' | 'reopenComment'): void {
   const current = reviewDraft.value;
-  if (current === undefined) return;
+  const comment = workspaceComments.value.find((candidate) => candidate.id === commentId);
+  if (current === undefined || comment?.status !== 'verified') return;
   mutateReview({ type, expectedRevision: current.canonical.revision, commentId });
 }
 
@@ -807,7 +826,7 @@ function selectFile(fileId: string): void {
     return;
   }
   const focusHeading = changedFilesOpen.value;
-  closeChangedFiles();
+  closeChangedFiles(!focusHeading);
   if (file.availability.kind !== 'text') {
     selectedFile.value = file;
     selectedContent.value = undefined;
@@ -862,25 +881,25 @@ function retryMetadata(): void {
 }
 
 function openDetails(): void {
-  detailsOpen.value = true;
+  openShellDialog('details');
 }
 
 function openKeyboardHelp(): void {
-  detailsOpen.value = true;
+  openShellDialog('details');
   void nextTick(() => nextTick(() => detailsDialog.value?.focusKeyboardHelp()));
 }
 
 function closeDetails(): void {
-  detailsOpen.value = false;
+  closeShellDialog('details');
 }
 
 function openReviewNotes(): void {
   if (commentsOpen.value) closeComments();
-  reviewNotesOpen.value = true;
+  openShellDialog('review-notes');
 }
 
 function closeReviewNotes(): void {
-  reviewNotesOpen.value = false;
+  closeShellDialog('review-notes');
 }
 
 function focusStaleFeedback(): void {
@@ -892,13 +911,12 @@ function focusStaleFeedback(): void {
   );
   if (commentId === undefined) return;
 
-  reviewNotesOpen.value = false;
+  closeReviewNotes();
   void nextTick(() => {
     openComments();
     void nextTick(() => reviewPanel.value?.focusComment(commentId));
   });
 }
-
 
 function handleKeydown(event: KeyboardEvent): void {
   const target = event.target;
@@ -939,7 +957,7 @@ function handleViewportChange(): void {
   const isNarrowViewport = viewportMedia?.matches ?? false;
   isNarrow.value = isNarrowViewport;
   if (!isNarrowViewport) {
-    changedFilesOpen.value = false;
+    closeChangedFiles();
   }
   dispatchWorkspace({ type: 'resize' });
   diffWorkspace.value?.layout();
@@ -1027,13 +1045,11 @@ function stopSupportStatus(): void {
 function openSupportDialog(): void {
   if (!supportEnabled.value) return;
   supportOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-  supportDialogOpen.value = true;
+  openShellDialog('support');
   supportDialogMode.value = supportStatus.value === 'verified' ? 'verified' : 'invitation';
-  void nextTick(() => supportDialog.value?.focusInitial());
 }
-
 function closeSupportDialog(): void {
-  supportDialogOpen.value = false;
+  closeShellDialog('support');
   void nextTick(() => (supportOpener === undefined ? identityHeader.value?.focusSupport() : supportOpener.focus()));
   stopSupportWaiting();
 }
@@ -1126,9 +1142,8 @@ onMounted(async () => {
         await refreshSupportStatus();
         startSupportStatus();
         if (supportStatus.value === 'unverified' && !dismissedForSession.value && primarySurface.value === 'workspace') {
-          supportDialogOpen.value = true;
+          openShellDialog('support');
           supportDialogMode.value = 'invitation';
-          void nextTick(() => supportDialog.value?.focusInitial());
         }
       }
     }
@@ -1165,6 +1180,7 @@ onBeforeUnmount(() => {
   </main>
 
   <div v-else class="session-shell">
+    <div class="session-shell__content" :inert="shellModalOpen">
     <a v-if="!isNarrow && !filesCollapsed" class="skip-link" href="#changed-files-heading">Skip to changed files</a>
     <a class="skip-link" href="#cumpa-heading">Skip to diff</a>
     <a class="skip-link" href="#review-heading">Skip review</a>
@@ -1176,7 +1192,7 @@ onBeforeUnmount(() => {
       :support-open="supportDialogOpen"
       :support-inert="supportDialogOpen"
       :attached-lifecycle="isAttachedSession ? (attachedLifecycle === 'finishing' || attachedLifecycle === 'completed' ? attachedLifecycle : 'waiting') : undefined"
-      :inert="detailsOpen || reviewNotesOpen || supportDialogOpen"
+      :inert="shellModalOpen"
       @toggle="openDetails"
       @support="openSupportDialog"
       @review-notes="openReviewNotes"
@@ -1330,8 +1346,10 @@ onBeforeUnmount(() => {
       </aside>
     </div>
     <ShellFooter :session="session" />
+    </div>
     <ChangedFilesDialog
       :open="changedFilesOpen"
+      :restore-focus="changedFilesRestoreFocus"
       :narrow="isNarrow"
       :files="session.files"
       :initial-selected-file-id="selectedFile?.fileId"

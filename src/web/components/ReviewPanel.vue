@@ -82,6 +82,10 @@ function buffer(comment: WorkspaceComment): string {
   return props.commentBuffers.get(comment.id) ?? comment.body;
 }
 
+function isVerified(commentId: string): boolean {
+  return props.comments.find((comment) => comment.id === commentId)?.status === 'verified';
+}
+
 function selectorForComment(commentId: string): string {
   return `[data-comment-id="${CSS.escape(commentId)}"]`;
 }
@@ -99,7 +103,7 @@ function focusEditButton(commentId: string): void {
 }
 
 function startEdit(comment: WorkspaceComment): void {
-  if (props.mutationLocked) return;
+  if (props.mutationLocked || comment.status !== 'verified') return;
   editing.value = comment.id;
   confirmingEditDiscard.value = null;
   emit('edit', comment.id);
@@ -146,7 +150,7 @@ function onEditKeydown(event: KeyboardEvent, comment: WorkspaceComment): void {
 }
 
 function openDeleteConfirmation(commentId: string): void {
-  if (props.mutationLocked) return;
+  if (props.mutationLocked || !isVerified(commentId)) return;
   confirmingDelete.value = commentId;
   focusWithinComment(commentId, '[data-keep-comment]');
 }
@@ -157,13 +161,13 @@ function cancelDelete(commentId: string): void {
 }
 
 function confirmDelete(commentId: string): void {
-  if (props.mutationLocked) return;
+  if (props.mutationLocked || !isVerified(commentId)) return;
   pendingFocus.value = { kind: 'delete', commentId, visibleOrder: [...visibleOrder.value] };
   emit('delete', commentId);
 }
 
 function runLifecycle(commentId: string, kind: 'resolve' | 'reopen'): void {
-  if (props.mutationLocked) return;
+  if (props.mutationLocked || !isVerified(commentId)) return;
   pendingFocus.value = { kind, commentId, visibleOrder: [...visibleOrder.value] };
   emit(kind, commentId);
 }
@@ -364,15 +368,15 @@ watch(() => props.comments, () => {
                   class="ui-button"
                   :class="{ 'ui-button--busy': pending === 'resolve' && pendingFocus?.commentId === comment.id }"
                   :aria-busy="pending === 'resolve' && pendingFocus?.commentId === comment.id || undefined"
-                  :disabled="pending !== null || conflict !== null || mutationLocked === true"
+                  :disabled="comment.status !== 'verified' || pending !== null || conflict !== null || mutationLocked === true"
                   @click="runLifecycle(comment.id, 'resolve')"
                 >
                   <span v-if="pending === 'resolve' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />
                   {{ pending === 'resolve' && pendingFocus?.commentId === comment.id ? 'Resolving…' : 'Resolve' }}
                 </button>
-                <button data-comment-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null || mutationLocked === true" @click="openDeleteConfirmation(comment.id)">Delete</button>
+                <button data-comment-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null || mutationLocked === true" @click="openDeleteConfirmation(comment.id)">Delete</button>
               </div>
-              <p v-if="comment.status !== 'verified'">Editing requires a verified anchor.</p>
+              <p v-if="comment.status !== 'verified'">This stale or unavailable anchor is read-only history. Resolve, reopen, and delete require a verified anchor.</p>
               <template v-if="comment.status !== 'verified'">
                 <p>This recorded anchor cannot be relocated. Its exact recorded details remain available.</p>
                 <dl class="comments-rail__anchor-details">
@@ -416,7 +420,7 @@ watch(() => props.comments, () => {
                 class="ui-button ui-button--destructive"
                 :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }"
                 :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined"
-                :disabled="pending !== null || conflict !== null || mutationLocked === true"
+                :disabled="comment.status !== 'verified' || pending !== null || conflict !== null || mutationLocked === true"
                 @click="confirmDelete(comment.id)"
               >
                 <span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />
@@ -494,10 +498,10 @@ watch(() => props.comments, () => {
                 <button v-if="comment.status === 'verified'" type="button" class="ui-button" @click="emit('show', comment.id)">Show comment</button>
                 <button v-else type="button" class="ui-button" disabled>Show comment</button>
                 <button data-comment-edit type="button" class="ui-button" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null || mutationLocked === true" @click="startEdit(comment)">Edit</button>
-                <button type="button" class="ui-button" :class="{ 'ui-button--busy': pending === 'reopen' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'reopen' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null || mutationLocked === true" @click="runLifecycle(comment.id, 'reopen')"><span v-if="pending === 'reopen' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'reopen' && pendingFocus?.commentId === comment.id ? 'Reopening…' : 'Reopen' }}</button>
-                <button data-comment-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="pending !== null || conflict !== null || mutationLocked === true" @click="openDeleteConfirmation(comment.id)">Delete</button>
+                <button type="button" class="ui-button" :class="{ 'ui-button--busy': pending === 'reopen' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'reopen' && pendingFocus?.commentId === comment.id || undefined" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null || mutationLocked === true" @click="runLifecycle(comment.id, 'reopen')"><span v-if="pending === 'reopen' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'reopen' && pendingFocus?.commentId === comment.id ? 'Reopening…' : 'Reopen' }}</button>
+                <button data-comment-delete-trigger type="button" class="ui-button ui-button--destructive" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null || mutationLocked === true" @click="openDeleteConfirmation(comment.id)">Delete</button>
               </div>
-              <p v-if="comment.status !== 'verified'">Editing requires a verified anchor.</p>
+              <p v-if="comment.status !== 'verified'">This stale or unavailable anchor is read-only history. Resolve, reopen, and delete require a verified anchor.</p>
             </template>
 
             <section
@@ -525,7 +529,7 @@ watch(() => props.comments, () => {
               <p>{{ comment.body }}</p>
               <p>This permanently removes the comment from this local draft. Cumpa has no undo history.</p>
               <button data-keep-comment type="button" class="ui-button" :disabled="pending !== null || mutationLocked === true" @click="cancelDelete(comment.id)">Keep comment</button>
-              <button type="button" class="ui-button ui-button--destructive" :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined" :disabled="pending !== null || conflict !== null || mutationLocked === true" @click="confirmDelete(comment.id)"><span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" class="ui-spinner" aria-hidden="true" />{{ pending === 'delete' && pendingFocus?.commentId === comment.id ? 'Deleting…' : 'Delete comment' }}</button>
+              <button type="button" class="ui-button ui-button--destructive" :class="{ 'ui-button--busy': pending === 'delete' && pendingFocus?.commentId === comment.id }" :aria-busy="pending === 'delete' && pendingFocus?.commentId === comment.id || undefined" :disabled="comment.status !== 'verified' || pending !== null || conflict !== null || mutationLocked === true" @click="confirmDelete(comment.id)"><span v-if="pending === 'delete' && pendingFocus?.commentId === comment.id" aria-hidden="true" class="ui-spinner" />{{ pending === 'delete' && pendingFocus?.commentId === comment.id ? 'Deleting…' : 'Delete comment' }}</button>
             </section>
             <p v-if="pending === 'reopen' && pendingFocus?.commentId === comment.id" role="status">Reopening comment…</p>
           </article>

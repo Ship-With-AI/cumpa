@@ -9,9 +9,11 @@ const props = withDefaults(defineProps<{
   readonly descriptionId?: string;
   readonly initialFocusSelector?: string;
   readonly keepMounted?: boolean;
+  readonly restoreFocus?: boolean;
 }>(), {
   closeLabel: 'Close',
   keepMounted: false,
+  restoreFocus: true,
 });
 
 const emit = defineEmits<{ close: []; }>();
@@ -45,7 +47,6 @@ function restoreFocus(): void {
 
 function dismiss(): void {
   emit('close');
-  void nextTick(restoreFocus);
 }
 
 function containFocus(event: KeyboardEvent): void {
@@ -70,17 +71,20 @@ function containFocus(event: KeyboardEvent): void {
   }
 }
 
-watch(() => props.open, (open) => {
-  if (!open) return;
-  opener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-  focusInitial();
+watch(() => props.open, (open, wasOpen) => {
+  if (open) {
+    opener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+    focusInitial();
+  } else if (wasOpen && props.restoreFocus) {
+    void nextTick(() => nextTick(restoreFocus));
+  }
 });
 
 defineExpose({ focusInitial });
 </script>
 
 <template>
-  <div v-if="open || keepMounted" v-show="open" class="modal-dialog-backdrop">
+  <div v-if="open || keepMounted" v-show="open" class="modal-dialog-backdrop" @click.self="dismiss">
     <section
       ref="panel"
       class="modal-dialog"

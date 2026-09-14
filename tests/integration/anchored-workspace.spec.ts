@@ -857,7 +857,7 @@ test('draft resume and anchor states', async ({ page }) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
   await page.goto(`${origin}#token=${token}`);
-  await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
+  await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
     'Local draft resumed. Accepted comments for this pinned comparison are ready.',
   );
   await ensureReviewOpen(page);
@@ -961,6 +961,12 @@ test('anchored gap closure', async ({ page }) => {
       verification: { state: 'orphaned', reason: 'anchor-unavailable' },
     },
   ];
+  canonicalComments.push({
+    ...canonicalComments[0]!,
+    id: 'comment_33333333-3333-4333-8333-333333333333',
+    state: 'resolved',
+    resolvedAt: '2026-07-21T00:01:00.000Z',
+  });
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await openReview(page);
@@ -975,6 +981,8 @@ test('anchored gap closure', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Close review' })).toBeVisible();
   await page.getByRole('button', { name: 'Close review' }).click();
   await page.setViewportSize({ width: 1200, height: 1100 });
+  const staleComment = page.locator('[data-comment-id="comment_11111111-1111-4111-8111-111111111111"]');
+  const orphanComment = page.locator('[data-comment-id="comment_22222222-2222-4222-8222-222222222222"]');
 
   await hoverMonacoLine(page, 'head', 'export const changed = 3;');
   await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
@@ -1019,11 +1027,16 @@ test('anchored gap closure', async ({ page }) => {
   await page.getByRole('button', { name: 'Close changed files' }).click();
   await expect(filesToggle).toBeFocused();
   await expect(page.locator('.changed-files-sidebar')).toHaveCount(0);
+  await filesToggle.click();
+  await expect(changedFiles).toBeVisible();
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const desktopFilesToggle = page.getByRole('button', { name: 'Hide changed files sidebar', exact: true });
+  await expect(changedFiles).toHaveCount(0);
+  await expect(desktopFilesToggle).toBeFocused();
   await page.setViewportSize({ width: 1440, height: 900 });
   await ensureReviewOpen(page);
 
-  const staleComment = page.locator('[data-comment-id="comment_11111111-1111-4111-8111-111111111111"]');
-  const orphanComment = page.locator('[data-comment-id="comment_22222222-2222-4222-8222-222222222222"]');
+
   await expect(staleComment.getByText('Stale anchor')).toBeVisible();
   await expect(staleComment.getByText('Exact path bytes')).toBeVisible();
   await expect(staleComment.getByText('Blob OID')).toBeVisible();
@@ -1034,11 +1047,49 @@ test('anchored gap closure', async ({ page }) => {
   await orphanComment.getByRole('button', { name: 'Copy anchor details' }).click();
   await expect(page.getByText(/(Recorded anchor details copied|Couldn’t copy anchor details)/)).toBeVisible();
 
+
   await page.getByRole('button', { name: 'Next file' }).click();
   const inspectRecordedFile = staleComment.getByRole('button', { name: 'Inspect recorded file' });
   await inspectRecordedFile.click();
   await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
   await expect(inspectRecordedFile).toBeFocused();
+  await expect(staleComment.getByRole('button', { name: 'Resolve', exact: true })).toBeDisabled();
+  await expect(staleComment.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
+  await expect(orphanComment.getByRole('button', { name: 'Resolve', exact: true })).toBeDisabled();
+  await expect(orphanComment.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: /Resolved comments \(1\)/ }).click();
+  const resolvedStaleComment = page.locator('[data-comment-id="comment_33333333-3333-4333-8333-333333333333"]');
+  await expect(resolvedStaleComment.getByText('Stale anchor')).toBeVisible();
+  await expect(resolvedStaleComment.getByRole('button', { name: 'Reopen', exact: true })).toBeDisabled();
+  await expect(resolvedStaleComment.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
+  await page.getByRole('button', { name: /Open comments \(2\)/ }).click();
+  const reviewNotes = page.getByRole('button', { name: 'Review notes', exact: true });
+  await reviewNotes.focus();
+  await reviewNotes.click();
+  const reviewNotesDialog = page.getByRole('dialog', { name: 'Review notes', exact: true });
+  const reviewNotesClose = reviewNotesDialog.getByRole('button', { name: 'Close review notes', exact: true });
+  await expect(reviewNotesDialog).toBeVisible();
+  await expect(page.locator('.session-shell__content')).toHaveAttribute('inert', '');
+  await expect(reviewNotesClose).toBeFocused();
+  await page.keyboard.press('Shift+Tab');
+  await expect(reviewNotesDialog.getByRole('button').last()).toBeFocused();
+  await page.keyboard.press('Tab');
+  await expect(reviewNotesClose).toBeFocused();
+  await reviewNotesClose.click();
+  await expect(reviewNotes).toBeFocused();
+  await reviewNotes.click();
+  await reviewNotesDialog.locator('..').dispatchEvent('click');
+  await expect(reviewNotesDialog).toHaveCount(0);
+  await expect(reviewNotes).toBeFocused();
+  await reviewNotes.click();
+  await page.keyboard.press('Escape');
+  await expect(reviewNotesDialog).toHaveCount(0);
+  await expect(reviewNotes).toBeFocused();
+  await ensureReviewOpen(page);
+  await expect(page.getByRole('button', { name: 'Close review' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close review' }).click();
+  await openReview(page);
+  await page.setViewportSize({ width: 1200, height: 1100 });
 });
 
 test.describe('async comment settlement', () => {
@@ -1073,7 +1124,7 @@ test.describe('async comment settlement', () => {
     expect(settled).toBe(false);
     delayed.release();
     expect((await response).status()).toBe(201);
-    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
+    await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
       'Comment on src/first.ts at head line 10 was added and saved locally.',
       { timeout: 15_000 },
     );
@@ -1106,7 +1157,7 @@ test.describe('async comment settlement', () => {
     await hoverMonacoLine(page, 'head', 'export const secondChanged = 3;');
     delayed.release();
     expect((await response).status()).toBe(500);
-    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
+    await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
       'Comment on src/first.ts at head line 10 wasn’t added. Your text is still here. Check that Cumpa is running, then try again.',
     );
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
@@ -1143,12 +1194,12 @@ test.describe('async comment settlement', () => {
     await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
     await page.locator('.monaco-anchor-zone--composer textarea').fill('Advance the canonical draft on file B.');
     await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
-    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
+    await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
       'Comment on src/second.ts at head line 10 was added and saved locally.',
     );
     delayed.release();
     expect((await response).status()).toBe(409);
-    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
+    await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
       'Comment on src/first.ts at head line 10 wasn’t added. Your text is still here. Reload the latest draft before trying again.',
     );
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
@@ -1168,7 +1219,7 @@ test.describe('async comment settlement', () => {
   test('repeated identical settlement messages create distinct live-region updates', async ({ page }) => {
     const body = 'Retry the same failed comment.';
     const announcement = 'Comment on src/first.ts at head line 10 wasn’t added. Your text is still here. Check that Cumpa is running, then try again.';
-    const liveRegion = page.locator('.session-shell > .visually-hidden[aria-live="polite"]');
+    const liveRegion = page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]');
 
     const firstDelayed = delayNextMutation('persistenceFailure');
     await openReview(page);

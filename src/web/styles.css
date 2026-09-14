@@ -237,6 +237,10 @@ body {
   overflow: hidden;
 }
 
+.session-shell__content {
+  display: contents;
+}
+
 .shell-warning-stack {
   display: grid;
   min-width: 0;
