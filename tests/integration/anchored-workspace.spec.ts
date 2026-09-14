@@ -857,7 +857,7 @@ test('draft resume and anchor states', async ({ page }) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
   await page.goto(`${origin}#token=${token}`);
-  await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
+  await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
     'Local draft resumed. Accepted comments for this pinned comparison are ready.',
   );
   await ensureReviewOpen(page);
@@ -1124,7 +1124,7 @@ test.describe('async comment settlement', () => {
     expect(settled).toBe(false);
     delayed.release();
     expect((await response).status()).toBe(201);
-    await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
+    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
       'Comment on src/first.ts at head line 10 was added and saved locally.',
       { timeout: 15_000 },
     );
@@ -1157,7 +1157,7 @@ test.describe('async comment settlement', () => {
     await hoverMonacoLine(page, 'head', 'export const secondChanged = 3;');
     delayed.release();
     expect((await response).status()).toBe(500);
-    await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
+    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
       'Comment on src/first.ts at head line 10 wasn’t added. Your text is still here. Check that Cumpa is running, then try again.',
     );
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
@@ -1194,12 +1194,12 @@ test.describe('async comment settlement', () => {
     await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
     await page.locator('.monaco-anchor-zone--composer textarea').fill('Advance the canonical draft on file B.');
     await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
-    await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
+    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
       'Comment on src/second.ts at head line 10 was added and saved locally.',
     );
     delayed.release();
     expect((await response).status()).toBe(409);
-    await expect(page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]')).toHaveText(
+    await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
       'Comment on src/first.ts at head line 10 wasn’t added. Your text is still here. Reload the latest draft before trying again.',
     );
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
@@ -1219,7 +1219,7 @@ test.describe('async comment settlement', () => {
   test('repeated identical settlement messages create distinct live-region updates', async ({ page }) => {
     const body = 'Retry the same failed comment.';
     const announcement = 'Comment on src/first.ts at head line 10 wasn’t added. Your text is still here. Check that Cumpa is running, then try again.';
-    const liveRegion = page.locator('.session-shell__content > .visually-hidden[aria-live="polite"]');
+    const liveRegion = page.locator('.session-shell > .visually-hidden[aria-live="polite"]');
 
     const firstDelayed = delayNextMutation('persistenceFailure');
     await openReview(page);
