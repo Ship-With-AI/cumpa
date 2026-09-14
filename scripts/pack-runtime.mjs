@@ -23,6 +23,9 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { fileURLToPath } from 'node:url';
 
 const root = resolve(dirname(dirname(fileURLToPath(import.meta.url))));
+
+const runtimePackLock = join(os.tmpdir(), `cumpa-pack-runtime-${sha256(root).slice(0, 16)}.lock`);
+const lockWait = new Int32Array(new SharedArrayBuffer(4));
 const purposes = new Set(['bootstrap', 'candidate', 'development-check', 'deployment-check']);
 const stableVersion = '1.5.0';
 const bootstrapVersion = '1.5.0-bootstrap.0';
@@ -47,6 +50,25 @@ function sha1(value) {
 
 function sha512Integrity(value) {
   return `sha512-${createHash('sha512').update(value).digest('base64')}`;
+}
+
+function acquireRuntimePackLock() {
+  const deadline = Date.now() + 300_000;
+  for (;;) {
+    try {
+      mkdirSync(runtimePackLock, { mode: 0o700 });
+      writeFileSync(join(runtimePackLock, 'owner'), String(process.pid), { mode: 0o600 });
+      return;
+    } catch (error) {
+      if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
+      if (Date.now() >= deadline) fail('timed out waiting for runtime pack lock');
+      Atomics.wait(lockWait, 0, 0, 50);
+    }
+  }
+}
+
+function releaseRuntimePackLock() {
+  rmSync(runtimePackLock, { recursive: true, force: true });
 }
 
 function normalizePath(path) {
@@ -416,16 +438,7 @@ function main() {
   const packageIdentity = packageContract();
   const inputsSha256 = preflightSource();
   mkdirSync(options.custodyDirectory, { mode: 0o700 });
-  command('npm', ['run', 'build'], { env: buildEnvironment(origin) });
-  const contents = { dist: packageOutputInventory() };
-  const sourceAfterBuild = trackedSource();
-  if (
-    sourceBefore.head !== sourceAfterBuild.head
-    || sourceBefore.tree !== sourceAfterBuild.tree
-    || sourceBefore.trackedDiffSha256 !== sourceAfterBuild.trackedDiffSha256
-    || inputsSha256 !== preflightSource()
-  ) fail('tracked source changed during build');
-  const native = nativeIdentity();
+  acquireRuntimePackLock();
   let packingTree;
   const cleanup = () => {
     if (packingTree !== undefined) {
@@ -435,11 +448,22 @@ function main() {
   };
   const onSignal = () => {
     cleanup();
+    releaseRuntimePackLock();
     process.exit(128);
   };
   process.once('SIGINT', onSignal);
   process.once('SIGTERM', onSignal);
   try {
+    command('npm', ['run', 'build'], { env: buildEnvironment(origin) });
+    const contents = { dist: packageOutputInventory() };
+    const sourceAfterBuild = trackedSource();
+    if (
+      sourceBefore.head !== sourceAfterBuild.head
+      || sourceBefore.tree !== sourceAfterBuild.tree
+      || sourceBefore.trackedDiffSha256 !== sourceAfterBuild.trackedDiffSha256
+      || inputsSha256 !== preflightSource()
+    ) fail('tracked source changed during build');
+    const native = nativeIdentity();
     let packOutput;
     let projection;
     if (options.purpose === 'bootstrap') {
@@ -516,6 +540,7 @@ function main() {
     process.removeListener('SIGINT', onSignal);
     process.removeListener('SIGTERM', onSignal);
     cleanup();
+    releaseRuntimePackLock();
   }
 }
 
