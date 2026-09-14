@@ -49,6 +49,8 @@
 
 ---
 
+> **Archive note (2026-09-14):** `v1.5-phases/` was empty — a prior archive run created the directory but never copied phases 03–07. Back-filled at v1.6 close (101 files, verified byte-identical before the working copies were removed).
+
 ## v1.4 Voluntary Support (Shipped: 2026-09-04)
 
 **Delivered:** Optional one-time support and paid-account restoration through a canonical Supabase-hosted flow without gating or changing any review feature.
