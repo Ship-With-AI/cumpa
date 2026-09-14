@@ -56,8 +56,8 @@ defineExpose({ focusFilesToggle, focusHeading });
             <PathDisplay v-if="selectedFile !== undefined" :file="selectedFile" basename />
             <template v-else>{{ selectedPath }}</template>
           </h1>
+          <p v-if="directoryPath !== ''" class="active-file-toolbar__directory" :title="directoryPath">{{ directoryPath }}</p>
         </div>
-        <p v-if="directoryPath !== ''" class="active-file-toolbar__directory" :title="directoryPath">{{ directoryPath }}</p>
         <div v-if="selectedFile !== undefined" class="active-file-toolbar__metadata">
           <span class="active-file-toolbar__status">{{ selectedFile.status.kind }}</span>
           <span v-if="selectedFile.additions !== null && selectedFile.deletions !== null" class="active-file-toolbar__counts">

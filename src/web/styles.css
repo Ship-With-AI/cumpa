@@ -1567,12 +1567,11 @@ input:-webkit-autofill:focus {
 }
 
 .active-file-toolbar__directory {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 100%;
   margin: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
   color: var(--text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .active-file-toolbar__metadata {
