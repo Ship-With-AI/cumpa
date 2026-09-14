@@ -19,7 +19,7 @@ Cumpa restyles the existing browser review workspace to the approved visual cont
 - [x] **Phase 08: Semantic Visual Foundation** — Establish the mockup-derived token root, Monaco parity, and shared typography, spacing, density, and radius language. (completed 2026-09-13)
 - [x] **Phase 09: Changed-File Tree** — Deliver the mockup's dense, filterable, keyboard-operable changed-file navigation without losing existing tree semantics. (completed 2026-09-13)
 - [x] **Phase 10: Diff Reading Surface** — Restyle the Monaco-authoritative diff into the mockup's quieter, explicit Base/Head reading surface while preserving geometry and context behavior. (completed 2026-09-13)
-- [ ] **Phase 11: Workspace Shell & Review Surfaces** — Compose the responsive shell, dialogs, inline comments, and comments rail while keeping critical warnings continuously visible.
+- [x] **Phase 11: Workspace Shell & Review Surfaces** — Compose the responsive shell, dialogs, inline comments, and comments rail while keeping critical warnings continuously visible. (completed 2026-09-14)
 - [ ] **Phase 12: Behavior Continuity** — Prove the complete restyled workflow preserves review contracts, packaged behavior, and structural accessibility.
 
 ## Phase Details
@@ -132,16 +132,17 @@ Plans:
 - `tests/integration/complete-review-panel.spec.ts` needs no edit — it is a 33-line `createReviewDraftState` model test with zero DOM selectors.
 - Keep draft-recovery behavior in `tests/integration/draft-recovery-ui.spec.ts`, comment mechanics in `tests/e2e/anchored-review.spec.ts`, the Phase 09 tree contract in `tests/e2e/file-tree.spec.ts`, the Phase 10 diff contract in `tests/integration/monaco-anchor.spec.ts`, and all persistence, export, attached-completion, and support contract tests passing unchanged.
 
-**Plans:** 7 plans
+**Plans:** 9/7 plans complete
 
 Plans:
-- [ ] 11-01-PLAN.md — Geometry tokens, breakpoint unification, drift-gate realignment, ModalDialog extraction
-- [ ] 11-02-PLAN.md — Shell chrome: identity header, active-file toolbar, footer, sidebar hide/restore
-- [ ] 11-03-PLAN.md — Details dialog: identity, revived file metadata, keyboard help
-- [ ] 11-04-PLAN.md — ReviewPanel split, Review-notes dialog, comments-rail restyle
-- [ ] 11-07-PLAN.md — REV-01 inline comment surfaces restyled; two dead components deleted (wave 5)
-- [ ] 11-05-PLAN.md — Narrow reflow and the Changed files dialog
-- [ ] 11-06-PLAN.md — REV-05 shell warning stack and single-owner live behaviour
+
+- [x] 11-01-PLAN.md — Geometry tokens, breakpoint unification, drift-gate realignment, ModalDialog extraction
+- [x] 11-02-PLAN.md — Shell chrome: identity header, active-file toolbar, footer, sidebar hide/restore
+- [x] 11-03-PLAN.md — Details dialog: identity, revived file metadata, keyboard help
+- [x] 11-04-PLAN.md — ReviewPanel split, Review-notes dialog, comments-rail restyle
+- [x] 11-07-PLAN.md — REV-01 inline comment surfaces restyled; two dead components deleted (wave 5)
+- [x] 11-05-PLAN.md — Narrow reflow and the Changed files dialog
+- [x] 11-06-PLAN.md — REV-05 shell warning stack and single-owner live behaviour
 
 ### Phase 12: Behavior Continuity
 
@@ -172,5 +173,5 @@ Plans:
 | 08. Semantic Visual Foundation | 7/5 | Complete   | 2026-09-13 |
 | 09. Changed-File Tree | 6/5 | Complete   | 2026-09-13 |
 | 10. Diff Reading Surface | 6/5 | Complete   | 2026-09-13 |
-| 11. Workspace Shell & Review Surfaces | 0/TBD | Not started | — |
+| 11. Workspace Shell & Review Surfaces | 9/7 | Complete   | 2026-09-14 |
 | 12. Behavior Continuity | 0/TBD | Not started | — |

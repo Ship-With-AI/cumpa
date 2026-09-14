@@ -7,10 +7,10 @@ last_updated: "2026-09-13T10:05:00.000Z"
 last_activity: 2026-09-13
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 15
-  completed_plans: 15
-  percent: 60
+  completed_phases: 4
+  total_plans: 22
+  completed_plans: 22
+  percent: 80
 ---
 
 # Project State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-09-12)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Phase 11 — Workspace Shell & Review Surfaces
+**Current focus:** Phase 12 — Behavior Continuity
 
 ## Current Position
 
-Phase: 11 of 12 (4 of 5 for v1.6) — Workspace Shell & Review Surfaces
+Phase: 12 of 12 (5 of 5 for v1.6) — Behavior Continuity
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-09-13 — Phase 10 complete (29/29 must-haves; UI audit 24/24 with live evidence; security 17/17; review warnings closed)
+Last activity: 2026-09-14 — Phase 11 complete (5/5 must-haves; UI audit 24/24 live; security 41/41; suite order-sensitivity root-caused to a dev-mode runtime pack and fixed)
 
 ## Performance Metrics
 
