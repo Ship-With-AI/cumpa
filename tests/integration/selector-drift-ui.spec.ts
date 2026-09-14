@@ -221,7 +221,7 @@ async function startAppServer(): Promise<string> {
 
 async function openReview(page: Page): Promise<void> {
   await page.goto(`${origin}#token=${token}`);
-  await expect(page.getByRole('heading', { name: /Cumpa:/ })).toBeVisible();
+  await expect(page.getByRole('main')).toBeVisible();
 }
 
 test.beforeAll(async () => {
@@ -339,6 +339,10 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   await expect(notice).toContainText(baseOid);
   await expect(notice).toContainText(movedBaseOid);
 
+  const warningStack = page.locator('.session-shell > .shell-warning-stack');
+  await expect(warningStack).toBeVisible();
+  await expect(warningStack).toContainText('Selected source changed — open review remains pinned');
+
   const reviewNotes = page.getByRole('button', { name: 'Review notes', exact: true });
   await expect(reviewNotes).toBeVisible();
   await reviewNotes.click();
@@ -357,7 +361,7 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   await expect.poll(() => driftRequests.length).toBe(3);
   await expect(summary).toHaveValue('Unsaved review buffer');
   await expect(summary).toBeFocused();
-  await expect(page.getByRole('heading', { name: /aaaaaaa.*bbbbbbb/ })).toBeVisible();
+  await expect(page.getByRole('banner').getByText(/BASE base · aaaaaaa HEAD head · bbbbbbb/)).toBeVisible();
 
   await page.getByRole('button', { name: `Copy pinned Base commit ${baseOid}` }).click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(baseOid);
@@ -390,8 +394,8 @@ test('exact patch sessions observe only their frozen patch status', async ({ pag
   session = exactPatchSession();
   await openReview(page);
 
-  await expect(page.getByRole('heading', { name: 'Cumpa: exact patch · dddddddddddd' })).toBeVisible();
-  await expect(page.getByText('Frozen verified patch')).toBeVisible();
+  await expect(page.getByRole('banner').getByText('Frozen patch', { exact: true })).toBeVisible();
+  await expect(page.getByRole('contentinfo').getByText('Local review · frozen patch', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'View patch scope' })).toBeVisible();
   expect(patchStatusRequests).toHaveLength(1);
   expect(driftRequests).toHaveLength(0);
