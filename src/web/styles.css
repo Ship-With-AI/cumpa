@@ -517,7 +517,7 @@ button {
   font-weight: var(--font-weight-semibold);
 }
 
-.identity-disclosure {
+.identity-disclosure--accent {
   color: var(--interactive-accent);
 }
 
@@ -1544,7 +1544,7 @@ input:-webkit-autofill:focus {
   grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
   align-items: center;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
+  padding: 18px 24px 14px;
 }
 
 .active-file-toolbar__endpoint--base {
@@ -1650,10 +1650,6 @@ input:-webkit-autofill:focus {
   box-shadow: none;
 }
 
-.active-file-toolbar .ui-button {
-  font-size: var(--font-size-metadata);
-  line-height: var(--line-height-metadata);
-}
 
 .active-file-toolbar__review .ui-button {
   min-height: var(--control-height-compact);
@@ -1665,7 +1661,7 @@ input:-webkit-autofill:focus {
   grid-row: 4;
   justify-content: space-between;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
+  padding: 9px 18px;
   border-top: 1px solid var(--border-default);
   background: var(--surface-panel);
   color: var(--text-muted);
@@ -2056,6 +2052,10 @@ h3.conversation-card__identity {
   margin: 0;
   padding: var(--space-1) var(--space-4);
   border-top: 1px solid var(--border-default);
+}
+
+.diff-workspace__horizontal-cue {
+  display: none;
 }
 
 .diff-state,
@@ -2710,6 +2710,20 @@ h3.conversation-card__identity {
       "file"
       "base"
       "head";
+  }
+
+  .active-file-toolbar__context {
+    padding: 14px 12px 10px;
+  }
+
+  .diff-workspace__horizontal-cue {
+    display: block;
+    margin: 0;
+    padding: var(--space-1) var(--space-3);
+    border-top: 1px solid var(--border-default);
+    color: var(--text-muted);
+    font-size: var(--font-size-metadata);
+    line-height: var(--line-height-metadata);
   }
 
   .active-file-toolbar__endpoint--head {

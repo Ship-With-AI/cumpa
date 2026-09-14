@@ -347,6 +347,7 @@ onBeforeUnmount(() => {
         <div ref="host" class="diff-workspace__editor" />
       </div>
     </div>
+    <p class="diff-workspace__horizontal-cue" aria-hidden="true">Scroll horizontally to view {{ visibleSides.modified }}.</p>
     <p class="diff-workspace__context-help">
       Unchanged regions begin collapsed. Use Monaco’s context controls to reveal bounded context or all remaining context.
     </p>

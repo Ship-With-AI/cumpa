@@ -167,6 +167,27 @@ const reviewableFiles = computed(() => session.value?.files.filter((file) => fil
 const selectedPath = computed(() => selectedFile.value?.newPath?.display ?? selectedFile.value?.oldPath?.display ?? 'Changed file');
 const isRangeSession = computed(() => pinnedSession.value?.range?.kind === 'revisions');
 const rangeHasPathspecs = computed(() => (pinnedSession.value?.range?.pathspecs.length ?? 0) > 0);
+const emptyFilesCopy = computed(() => {
+  if (isExactPatchSession.value) {
+    return {
+      heading: 'No files in this exact patch',
+      message: 'This accepted patch contains no changed file entries. Details lists the patch digest; relaunch with a non-empty already-applied patch.',
+    };
+  }
+  if (isRangeSession.value) {
+    return {
+      heading: 'No changes match this review scope',
+      message: rangeHasPathspecs.value
+        ? 'The pinned commits contain no changed files selected by this scope. Details lists the commits and ordered Git pathspecs.'
+        : 'The pinned commits contain no changed files. Details lists the commits.',
+    };
+  }
+  return {
+    heading: 'No PR-style changes in this pinned comparison',
+    message: 'The selected head has no changes from the displayed merge base.',
+  };
+});
+
 const unavailableHeading = computed(() =>
   patchSnapshotUnavailable.value
     ? 'Frozen patch unavailable'
@@ -243,6 +264,12 @@ watch(hasUnverifiedAnchors, (hasUnverified) => {
   }
   hadUnverifiedAnchors = hasUnverified;
 });
+let hadPatchDrift = false;
+watch(patchDrifted, (drifted) => {
+  if (drifted && !hadPatchDrift) announce('Implemented content changed.');
+  hadPatchDrift = drifted;
+});
+
 
 function announce(message: string): void {
   liveMessage.value = message;
@@ -1204,7 +1231,7 @@ onBeforeUnmount(() => {
       v-if="patchDrifted || hasUnverifiedAnchors || selectorDriftStatus?.base.kind !== 'unchanged' || selectorDriftStatus?.head.kind !== 'unchanged'"
       class="shell-warning-stack"
     >
-      <InlineNotice v-if="patchDrifted" tone="error" role="alert">
+      <InlineNotice v-if="patchDrifted" tone="error">
         <h2>Implemented content changed</h2>
         <p>The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.</p>
       </InlineNotice>
@@ -1256,23 +1283,8 @@ onBeforeUnmount(() => {
         </div>
 
         <section v-if="session.files.length === 0" class="empty-state">
-          <template v-if="isExactPatchSession">
-            <h2>No files in this exact patch</h2>
-            <p>This accepted patch contains no changed file entries. Details lists the patch digest; relaunch with a non-empty already-applied patch.</p>
-          </template>
-          <template v-else-if="isRangeSession">
-            <h2>No changes match this review scope</h2>
-            <p>
-              {{ rangeHasPathspecs
-                ? 'The pinned commits contain no changed files selected by this scope. Details lists the commits and ordered Git pathspecs.'
-                : 'The pinned commits contain no changed files. Details lists the commits.'
-              }}
-            </p>
-          </template>
-          <template v-else>
-            <h2>No PR-style changes in this pinned comparison</h2>
-            <p>The selected head has no changes from the displayed merge base.</p>
-          </template>
+          <h2>{{ emptyFilesCopy.heading }}</h2>
+          <p>{{ emptyFilesCopy.message }}</p>
         </section>
         <section v-else-if="selectedFile?.availability.kind !== 'text'" class="empty-state">
           <h2>Diff unavailable for this file</h2>
@@ -1356,6 +1368,8 @@ onBeforeUnmount(() => {
       :narrow="isNarrow"
       :files="session.files"
       :initial-selected-file-id="selectedFile?.fileId"
+      :empty-heading="emptyFilesCopy.heading"
+      :empty-message="emptyFilesCopy.message"
       @close="closeChangedFiles"
       @select="selectFile"
       @activate="selectFile"

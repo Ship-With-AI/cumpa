@@ -137,7 +137,7 @@ defineExpose({ focusDisclosure, focusSupport });
       </button>
       <button
         type="button"
-        class="identity-disclosure"
+        class="identity-disclosure identity-disclosure--accent"
         aria-haspopup="dialog"
         @click="emit('reviewNotes')"
       >

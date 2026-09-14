@@ -1190,7 +1190,7 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     await expect(
       emptyPage.getByRole('heading', { level: 2, name: 'No PR-style changes in this pinned comparison' }),
     ).toBeVisible();
-    await expect(emptyPage.getByText('0 changed files', { exact: true })).toBeVisible();
+    await expect(emptyPage.getByText('0 changed files', { exact: true })).toHaveCount(0);
     await expect(
       emptyPage.getByText('The selected head has no changes from the displayed merge base.', { exact: true }),
     ).toBeVisible();

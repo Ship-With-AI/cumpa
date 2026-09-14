@@ -4,6 +4,8 @@ import FileTree from './FileTree.vue';
 import ModalDialog from './ui/ModalDialog.vue';
 
 const props = defineProps<{
+  readonly emptyHeading: string;
+  readonly emptyMessage: string;
   readonly files: readonly SessionFile[];
   readonly initialSelectedFileId?: string;
   readonly narrow: boolean;
@@ -31,7 +33,6 @@ const emit = defineEmits<{
   >
     <div id="changed-files-dialog-tree" class="changed-files-dialog__results"></div>
   </ModalDialog>
-  <p v-if="!narrow && files.length === 0">0 changed files</p>
   <Teleport v-if="narrow || files.length > 0" defer :to="narrow ? '#changed-files-dialog-tree' : '#changed-files'">
     <FileTree
       v-if="files.length > 0"
@@ -40,7 +41,10 @@ const emit = defineEmits<{
       @select="emit('select', $event)"
       @activate="emit('activate', $event)"
     />
-    <p v-else>0 changed files</p>
+    <section v-else class="empty-files-pane">
+      <h2>{{ emptyHeading }}</h2>
+      <p>{{ emptyMessage }}</p>
+    </section>
   </Teleport>
 </template>
 

@@ -385,7 +385,7 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   }
 });
 
-test('exact patch sessions observe only their frozen patch status', async ({ page }) => {
+test('exact patch drift is announced while Review notes makes the shell inert', async ({ page }) => {
   const pinnedPropWarnings: string[] = [];
   page.on('console', (message) => {
     if (message.type() === 'warning' && /prop "pinned(?:Base|Head)"/u.test(message.text())) {
@@ -397,7 +397,9 @@ test('exact patch sessions observe only their frozen patch status', async ({ pag
 
   await expect(page.getByRole('banner').getByText('Frozen patch', { exact: true })).toBeVisible();
   await expect(page.getByRole('contentinfo').getByText('Local review · frozen patch', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Details' })).toBeVisible();
+  await page.getByRole('button', { name: 'Review notes', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Review notes' })).toBeVisible();
+  await expect(page.locator('.session-shell__content')).toHaveAttribute('inert', '');
   expect(patchStatusRequests).toHaveLength(1);
   expect(driftRequests).toHaveLength(0);
 
@@ -412,12 +414,8 @@ test('exact patch sessions observe only their frozen patch status', async ({ pag
     document.dispatchEvent(new Event('visibilitychange'));
   });
 
-  const notice = page.getByRole('alert');
-  await expect(notice).toContainText('Implemented content changed');
-  await expect(notice).toContainText(
-    'The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.',
-  );
-  await expect(page.getByRole('button', { name: 'Details' })).toBeVisible();
+  await expect(page.locator('[aria-live="polite"]')).toHaveText('Implemented content changed.');
+  await expect(page.locator('.session-shell__content [role="alert"]')).toHaveCount(0);
   expect(pinnedPropWarnings).toEqual([]);
 });
 

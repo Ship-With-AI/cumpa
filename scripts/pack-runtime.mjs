@@ -52,6 +52,17 @@ function sha512Integrity(value) {
   return `sha512-${createHash('sha512').update(value).digest('base64')}`;
 }
 
+function runtimePackLockOwnerIsAlive() {
+  try {
+    const owner = readFileSync(join(runtimePackLock, 'owner'), 'utf8').trim();
+    if (!/^[1-9]\d*$/u.test(owner)) return false;
+    process.kill(Number(owner), 0);
+    return true;
+  } catch (error) {
+    return !(error && typeof error === 'object' && (error.code === 'ESRCH' || error.code === 'ENOENT'));
+  }
+}
+
 function acquireRuntimePackLock() {
   const deadline = Date.now() + 300_000;
   for (;;) {
@@ -61,6 +72,10 @@ function acquireRuntimePackLock() {
       return;
     } catch (error) {
       if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
+      if (!runtimePackLockOwnerIsAlive()) {
+        rmSync(runtimePackLock, { recursive: true, force: true });
+        continue;
+      }
       if (Date.now() >= deadline) fail('timed out waiting for runtime pack lock');
       Atomics.wait(lockWait, 0, 0, 50);
     }
