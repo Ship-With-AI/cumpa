@@ -20,7 +20,7 @@ Cumpa restyles the existing browser review workspace to the approved visual cont
 - [x] **Phase 09: Changed-File Tree** — Deliver the mockup's dense, filterable, keyboard-operable changed-file navigation without losing existing tree semantics. (completed 2026-09-13)
 - [x] **Phase 10: Diff Reading Surface** — Restyle the Monaco-authoritative diff into the mockup's quieter, explicit Base/Head reading surface while preserving geometry and context behavior. (completed 2026-09-13)
 - [x] **Phase 11: Workspace Shell & Review Surfaces** — Compose the responsive shell, dialogs, inline comments, and comments rail while keeping critical warnings continuously visible. (completed 2026-09-14)
-- [ ] **Phase 12: Behavior Continuity** — Prove the complete restyled workflow preserves review contracts, packaged behavior, and structural accessibility.
+- [x] **Phase 12: Behavior Continuity** — Prove the complete restyled workflow preserves review contracts, packaged behavior, and structural accessibility. (completed 2026-09-14)
 
 ## Phase Details
 
@@ -162,13 +162,13 @@ Plans:
 - Reconcile only remaining presentation-dependent selectors in `tests/e2e/file-tree.spec.ts`, `tests/e2e/pinned-session.spec.ts`, `tests/e2e/anchored-review.spec.ts`, `tests/e2e/complete-review-draft.spec.ts`, `tests/e2e/agent-ready-export.spec.ts`, and `tests/e2e/responsive-session.spec.ts`; do not skip covered flows.
 - Keep the existing Vitest session, draft, persistence, export, agent-ready handoff, exact-patch, selector-drift, and voluntary-support contract suites passing unchanged.
 
-**Plans**: 3 plans
+**Plans**: 3/3 plans complete
 
 Plans:
 
-- [ ] 12-01-PLAN.md — CON-02: repair the never-executing `agent-ready-export.spec.ts` against the relocated Review notes controls, and close the runner-reachability gap (wave 1)
-- [ ] 12-02-PLAN.md — CON-03: desktop sequential Tab traversal of the six review-toolbar controls; record the `ReviewToolbar` semantic-group gap as a Phase 11 finding (wave 1)
-- [ ] 12-03-PLAN.md — CON-01/02/03: live packaged evidence dossier, visual equivalence record, and the full-suite continuity ledger (wave 2)
+- [x] 12-01-PLAN.md — CON-02: repair the never-executing `agent-ready-export.spec.ts` against the relocated Review notes controls, and close the runner-reachability gap (wave 1)
+- [x] 12-02-PLAN.md — CON-03: desktop sequential Tab traversal of the six review-toolbar controls; record the `ReviewToolbar` semantic-group gap as a Phase 11 finding (wave 1)
+- [x] 12-03-PLAN.md — CON-01/02/03: live packaged evidence dossier, visual equivalence record, and the full-suite continuity ledger (wave 2)
 
 ## Progress
 
@@ -180,4 +180,4 @@ Plans:
 | 09. Changed-File Tree | 6/5 | Complete   | 2026-09-13 |
 | 10. Diff Reading Surface | 6/5 | Complete   | 2026-09-13 |
 | 11. Workspace Shell & Review Surfaces | 9/7 | Complete   | 2026-09-14 |
-| 12. Behavior Continuity | 0/TBD | Not started | — |
+| 12. Behavior Continuity | 3/3 | Complete   | 2026-09-14 |

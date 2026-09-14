@@ -1,87 +1,107 @@
 ---
 phase: 12
-status: passed-with-findings
-audit: ui-six-pillars
-score: 23/24
+status: passed
+review: ui-six-pillars
 reviewed: 2026-09-14
 ---
 
-# Phase 12 UI Review
+# Phase 12 — UI Review
+
+**Baseline:** `.planning/phases/12-behavior-continuity/12-UI-SPEC.md` and the approved Phase 08–11 contracts.
 
 ## Verdict
 
-**PASS with one inherited owning-phase finding — 23/24.** The retained evidence is a real packaged `@shipwithai/cumpa@1.5.0` attached review: an ephemeral loopback Fastify workspace, never Vite and never a fixed development port. The complete reviewer journey was exercised through accepted comment, resolution, summary, paired export, and attached Finish. The documented external browser prerequisites remain the only suite gates; no production source changed in this plan.
+**PASS — visually equivalent to the approved integrated contract, except for documented differences.**
+
+The retained captures are sufficient: they are real packaged-CLI evidence from one ephemeral `127.0.0.1` Fastify session, not Vite or a static mockup; their raster metadata matches the contract exactly. No re-capture was needed.
+
+| Capture | Required size | Measured size | Result |
+|---|---:|---:|---|
+| `desktop.png` | 1440×1000 | 1440×1000 | PASS |
+| `mobile.png` | 420×900 | 420×900 | PASS |
+| `full-desktop.png` | 1650×900 | 1650×900 | PASS — Phase 11 wide evidence only |
+
+The retained session also measured `document.documentElement.clientWidth === scrollWidth` at 1440, 1650, and 420 pixels. Narrow horizontal overflow is therefore local to the inherited Monaco diff viewport, not document-level overflow.
 
 ## Live evidence
 
-Captures are retained and ignored by `.planning/ui-reviews/.gitignore` in `.planning/ui-reviews/12-live-20260914/`. The fixture is recorded as `<temporary packaged-fixture repository>`; it pinned Base `e79662ed784a4136a55a892746469b76e8f3e052` and Head `28c66776eede1ceac4fbd02bfe4f7da2a4f3c63a`. Capture time: `2026-09-14T06:12:31.891Z`. Artifact custody: `@shipwithai/cumpa@1.5.0`, SHA-256 `b070f4562c62c66e985416280974897690a177c5fa79b0e61bdb3867a890d35d`, producer source `d9607dd1788695d25074f251422e139cf4ce4e28`.
+Screenshots are safely ignored by `.planning/ui-reviews/.gitignore`. The seven captures are retained at `.planning/ui-reviews/12-live-20260914/`:
 
-The package was freshly built before the session, then its packaged CLI served Fastify at an ephemeral `127.0.0.1` port. It was not launched from Vite, a component harness, a static mockup, a fixed port, or a local `dist` entrypoint.
+| Capture | State | Viewport |
+|---|---|---:|
+| `desktop.png` | Persistent changed-file tree, selected `alpha.ts`, Base/Head labels, Monaco diff, saved Head-side comment, truthful footer | 1440×1000 |
+| `full-desktop.png` | Same live fixture state at the inherited Phase 11 wide treatment | 1650×900 |
+| `mobile.png` | Narrow shell, Files entry, Base before Head, local horizontal-scroll cue, truthful footer | 420×900 |
+| `mobile-files.png` | Changed files dialog; `Filter files` focused; same selected tree state | 420×900 |
+| `details.png` | Details dialog over the live comparison | 1440×900 |
+| `review-notes.png` | Accepted summary, resolved count, paired export receipt, attached Finish region | 1440×900 |
+| `warning-stack.png` | Shell warning stack over the workspace | 1440×900 |
 
-| Capture | Viewport | State |
-|---|---:|---|
-| `desktop.png` | 1440×1000 | Persistent tree; selected `alpha.ts`; Base/Head labels; Monaco; saved Head-side comment; truthful footer. |
-| `full-desktop.png` | 1650×900 | The same selected live fixture state at the Phase 11 wide treatment. |
-| `mobile.png` | 420×900 | Narrow shell, Files entry, Base before Head, local horizontal-scroll cue, footer. |
-| `mobile-files.png` | 420×900 | Changed files dialog; `Filter files` is focused; tree retains the same selection. |
-| `details.png` | 1440×900 | Real Details dialog over the live comparison. |
-| `review-notes.png` | 1440×900 | Accepted summary, resolved count, paired current export receipt, and attached Finish region. |
-| `warning-stack.png` | 1440×900 | Live closed-dialog workspace with verified resolved-history record retained. Selector-drift and stale/orphan warning paths are separately covered by `complete-review-draft.spec.ts:856` and `anchored-review.spec.ts:317`; this attached package did not surface those notices before Finish. |
+The packaged session retained the selected file while exercising a real Head-side comment, resolution, summary, paired export receipt, recovery, and attached Finish. Before Finish, attached stdout was empty; Finish moved focus to `Review finished`, emitted one 2,423-byte canonical JSON document, and exited successfully.
 
-| Viewport | `clientWidth` | `scrollWidth` | Result |
-|---|---:|---:|---|
-| 1440×1000 | 1440 | 1440 | PASS — no document overflow. |
-| 1650×900 | 1650 | 1650 | PASS — no document overflow (retained raster inspection). |
-| 420×900 | 420 | 420 | PASS — no document overflow (retained raster inspection); the inherited local side-by-side canvas is the only horizontal scroll owner, `.diff-workspace__viewport`. |
+## Native-scale visual-equivalence comparison
 
-Live computed styles: footer `padding: 9px 18px`, `12px/18px`; toolbar/control `14px` type; dialog boundary foreground `rgb(230, 237, 243)` on `rgb(33, 38, 45)`; selected tree row `padding: 5px 10px 5px 24px`, `14px/21px`, `rgb(26, 43, 67)` background and `rgb(52, 84, 119)` boundary; Monaco `14px` consumer. These are the measured packaged-page values, not mockup CSS assumptions.
+### 1440×1000 desktop
 
-## Eight behavioural checks
+`desktop.png` was compared at its native 1440×1000 pixels with `mockups/01b-desktop.png`, also verified as 1440×1000. The shipped workspace preserves the required dark shell hierarchy: identity header, persistent changed-files tree, selected-file header, compact navigation, Base-before-Head side-by-side Monaco reading surface, comment overlay, contextual guidance, and truthful footer. Sidebar/main balance, selected-row treatment, diff semantics, panel boundaries, and the sole accented Review-notes entry remain consistent with the accepted integrated contracts.
 
-| Step | Reviewer action | Observable live result | Automated evidence |
-|---|---|---|---|
-| Launch | Open the attached packaged request. | Pinned Base/Head identities, changed-file tree, Monaco comparison, and empty pre-Finish stdout appeared at ephemeral loopback. | `pinned-session.spec.ts:395`; `agent-ready-export.spec.ts:581` |
-| Select file | Select `src/alpha.ts` from the tree. | Active-file toolbar and Monaco changed to `alpha.ts`; selection survived subsequent actions. | `file-tree.spec.ts:363` |
-| Line comment | Use real modified Monaco line 3 action and save text. | `Live packaged Head-side comment.` appeared as a saved Head comment. | `anchored-review.spec.ts:216`; `agent-ready-export.spec.ts:258` |
-| Resolve | Resolve it in Review and expose resolved history. | Open count fell; the read-only resolved record retained its verified anchor. | `complete-review-draft.spec.ts:314` |
-| Summary | Write and save Markdown in Review notes. | Accepted summary was visibly saved and included in `review-notes.png`. | `complete-review-draft.spec.ts:390`; `agent-ready-export.spec.ts:281` |
-| Export | Export from Review notes. | `Review export complete` showed the current paired receipt. `review.json` was 2,423 bytes, SHA-256 `e3829d8dfbc885066aceccae8ccf7d1eb198f6933daaeedd670234eeeaad870c`; `review.md` was 1,973 bytes, SHA-256 `9b9aabf8788aed8e4b4314ce4b0e8976a2e63efda7efe9bbac22fe958b72e2d9`; both disk files matched the receipt. | `agent-ready-export.spec.ts:425` |
-| Recover | Preserve accepted work before Finish; exercise corrupt-draft recovery contract. | The live mutation sequence retained selection, accepted comment/resolution, summary, and receipt; browser recovery separately proves reload-before-Finish restoration plus corrupt-draft backup and clean replacement. | `complete-review-draft.spec.ts:670-703` |
-| Finish attached | Choose Finish review after the accepted draft is saved. | Focus moved to `Review finished`; pre-Finish stdout was empty, then exactly one canonical JSON document (2,423 bytes) emitted and CLI exited 0. | `agent-ready-export.spec.ts:594-623` |
+### 420×900 mobile
 
-## CON-03 structural evidence
+`mobile.png` was compared at its native 420×900 pixels with `mockups/01b-mobile.png`, also verified as 420×900, with `mobile-files.png` used to inspect the matching focused Changed files state. The shipped narrow shell retains the Files entry, selected-file identity, Base-before-Head side-by-side canvas, footer, and focused dialog/tree treatment. The visible `Scroll horizontally to view HEAD.` cue correctly explains the inherited local Monaco overflow without causing page overflow.
 
-The six ROADMAP-named specs carry 290 `getByRole` assertions and 37 `toBeFocused` assertions: `file-tree.spec.ts`, `pinned-session.spec.ts`, `anchored-review.spec.ts`, `complete-review-draft.spec.ts`, `responsive-session.spec.ts`, and `agent-ready-export.spec.ts`. They cover `aria-level`, `aria-selected`, `aria-expanded`, roving `tabindex`, navigation/tree/treeitem semantics, `aria-modal`, `aria-haspopup`, named dialogs and controls. Plan 12-02 added the missing desktop toolbar Tab-order traversal coverage. `DEFER-04` is not claimed: no new composited-contrast, forced-colors, 320px, or true 400% zoom recertification is asserted here.
+### 1650×900 wide treatment
 
-## Visual equivalence and classified differences
+`full-desktop.png` was **not** compared with or relabeled as `mockups/01b-desktop-full.png`: that reference raster is 1440×1000, not 1650×900. Per the Phase 12 UI-SPEC, this case rests solely on Phase 11's retained 1650×900 packaged evidence and wide contract. The capture preserves that approved wide composition: expanded persistent tree, centered active-file identity, ordered Base/Head panes, compact toolbar, comment overlay, and footer without a semantic or document-width shift. The Phase 11 review already passed this same 1650×900 treatment with `clientWidth === scrollWidth`.
 
-`desktop.png` was compared at its true 1440×1000 raster size with `mockups/01b-desktop.png`; `mobile.png` was compared at true 420×900 with `mockups/01b-mobile.png`. `full-desktop.png` at 1650×900 is assessed only against the Phase 11 wide contract and retained Phase 11 evidence; no reference raster was rescaled or relabeled.
+## Difference classification
 
-| Bucket | Classified visible difference |
-|---|---|
-| Authorized production-data difference | Real ref labels/OIDs, fixture paths, Monaco content, saved comment, accepted summary, receipt metadata, and warning/history data replace illustrative mockup data. |
-| Authorized inherited departure | Mobile retains its 640px side-by-side local Monaco canvas; Review is a production overlay; footer truthfully says local/pinned/export-explicit; prototypes' viewed tracking, All files/Unviewed, hunk jump, wrap-lines, and unified-diff controls are absent. |
-| Owning-phase finding | The inherited bare layout containers in `ReviewToolbar.vue:25`, `ReviewToolbar.vue:26`, `ReviewToolbar.vue:51`, and `ReviewToolbar.vue:76` remain unroled. Plan 12-02 records `git log --oneline f810081..HEAD -- src/web/components/ReviewToolbar.vue` as empty, so this is Phase 11 ownership, not a Phase 12 change. |
+| Visible difference from the illustrative references | Classification | Contract basis |
+|---|---|---|
+| Real Base/Head refs and OIDs; attached-session state; fixture paths, file count/statuses, source text, Monaco search/highlight/context, line numbers, hunks, and scroll position replace demo data. | **Authorized production-data difference** | `12-UI-SPEC.md`, “Authorized production-data differences.” |
+| The saved Head-side comment, its Open/Resolved state, verified marker, accepted summary, counts, receipt metadata, timestamps, warning/history state, and Finish status replace illustrative mockup content. | **Authorized production-data difference** | `12-UI-SPEC.md`, “Authorized production-data differences.” |
+| The shipped footer says local/pinned/export-explicit facts rather than mockup/demo wording; production review surfaces use the real Review overlay and comment overlay. | **Authorized inherited departure** | `12-UI-SPEC.md`, “Authorized inherited departures”; Phase 11 shell/review-surface contract. |
+| On mobile, Monaco remains side-by-side with its local 640px canvas minimum and an explicit horizontal-scroll cue instead of silently changing to a unified diff. | **Authorized inherited departure** | `12-UI-SPEC.md`; Phase 10 diff-reading contract. |
+| Prototype-only viewed tracking, `All files`/`Unviewed`, hunk jump, wrap-lines, and unified-diff controls are absent from the shipped surface. | **Authorized inherited departure** | `12-UI-SPEC.md`, “Authorized inherited departures.” |
+| `ReviewToolbar.vue` groups six controls in bare `div`s rather than an exposed named group. | **Owning-phase finding — Phase 11** | `12-02-SUMMARY.md`; this is a semantic accessibility finding, not a visual departure or Phase 12 regression. |
 
-No observed visible difference is left unclassified.
+**Unclassified differences:** none. No visible difference observed in the required capture states falls outside these three contract buckets.
 
 ## Pillar scores
 
 | Pillar | Score | Finding |
 |---|---:|---|
-| Copywriting | 4/4 | Pinned/local/export language remains factual in live package. |
-| Visuals | 4/4 | Desktop, wide, narrow, dialogs and footer preserve the approved hierarchy. |
-| Interaction | 4/4 | File selection, Monaco comment, resolve, summary, export and Finish all completed live. |
-| Accessibility | 3/4 | Semantic controls are covered; the inherited `ReviewToolbar.vue` bare-container finding remains. |
-| Responsiveness | 4/4 | All contractual viewport rasters retain document-width containment. |
-| Fidelity | 4/4 | Exact-size comparison has only classified differences. |
+| Copywriting | 4/4 | Pinned/local/export language is factual; no mockup-only claim is presented as live state. |
+| Visuals | 4/4 | Desktop, wide, narrow, dialog, warning, and footer hierarchy preserve the approved integrated surface. |
+| Color | 4/4 | Semantic diff, warning, comment, selection, and the reserved Review-notes accent remain legible and differentiated. |
+| Typography | 4/4 | Required UI/mono roles remain coherent across header, tree, controls, and Monaco. |
+| Spacing | 4/4 | Native-size captures retain the approved shell, toolbar, footer, dialog, and narrow treatment without document overflow. |
+| Experience design | 3/4 | The shipped flows are coherent and the narrow scroll cue is clear; the inherited Phase 11 semantic-group finding remains open. |
 
-## Top priority fixes
+**Overall: 23/24.**
 
-Address the Phase 11-owned `ReviewToolbar.vue:25`, `:26`, `:51`, and `:76` semantics in its owning phase. No Phase 12 production change is proposed.
+## Phase 11 owning-phase finding
 
-## Mockup comparison conclusion
+`ReviewToolbar.vue:25`, `:26`, `:51`, and `:76` are bare layout containers rather than exposed named groups. This was not changed by Phase 12: `git log --oneline f810081..HEAD -- src/web/components/ReviewToolbar.vue` produced no output. The Phase 12 packaged keyboard step instead verifies all six native named controls in sequential Tab order. The owning-phase repair is to expose the outer `Diff navigation` group and address the three inner containers together.
 
-- **1440×1000:** equivalent quiet-workspace hierarchy, selected-file toolbar, Base/Head comparison, review controls, and truthful footer.
-- **1650×900:** equivalent Phase 11 wide composition without changed semantic hierarchy.
-- **420×900:** equivalent narrow shell with Files entry and ordered Base/Head presentation; inherited local side-by-side overflow is scoped to the diff viewport and accompanied by the scroll cue.
+## Conclusion
+
+**Yes.** The shipped integrated restyle is visually equivalent to the approved Phase 08–11 contract at the specified native scales, except for the documented production-data differences and inherited departures above. The 1650×900 wide case is approved through its retained Phase 11 evidence, not by resizing or relabeling a 1440×1000 reference. No unclassified visual difference was found.
+
+## Files audited
+
+- `.planning/phases/12-behavior-continuity/12-UI-SPEC.md`
+- `.planning/phases/12-behavior-continuity/12-VERIFICATION.md`
+- `.planning/phases/11-workspace-shell-review-surfaces/11-UI-REVIEW.md`
+- `.planning/ui-reviews/12-live-20260914/desktop.png`
+- `.planning/ui-reviews/12-live-20260914/full-desktop.png`
+- `.planning/ui-reviews/12-live-20260914/mobile.png`
+- `.planning/ui-reviews/12-live-20260914/mobile-files.png`
+- `.planning/ui-reviews/12-live-20260914/details.png`
+- `.planning/ui-reviews/12-live-20260914/review-notes.png`
+- `.planning/ui-reviews/12-live-20260914/warning-stack.png`
+- `mockups/01b-desktop.png`
+- `mockups/01b-mobile.png`
+- `mockups/01b-desktop-full.png` (metadata checked only; not used as a wide comparison target)
+- `mockups/01b-quiet-workspace-tree.html`
+- `mockups/02-review-stream.html`
+- `mockups/03-focus-mode.html`
