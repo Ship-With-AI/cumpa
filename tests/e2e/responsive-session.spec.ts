@@ -1144,6 +1144,39 @@ test('responsive keyboard and accessibility contract', async ({
       await assertNoPageOverflow(page);
     });
 
+    await test.step('desktop review toolbar exposes six controls in sequential Tab order', async () => {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.keyboard.press('Alt+Shift+]');
+      await expect(page.locator('.active-file-toolbar__file')).toContainText('beta-after-a-very-long-rename.ts');
+
+      const previousFile = page.getByRole('button', { name: 'Previous file', exact: true });
+      const nextFile = page.getByRole('button', { name: 'Next file', exact: true });
+      const previousChange = page.getByRole('button', { name: 'Previous change', exact: true });
+      const nextChange = page.getByRole('button', { name: 'Next change', exact: true });
+      const review = page.getByRole('button', { name: 'Review', exact: true });
+      const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
+      const controls = [previousFile, nextFile, previousChange, nextChange, review, keyboardHelp] as const;
+
+      for (const control of [previousFile, nextFile, previousChange, nextChange]) {
+        await expect(control).toBeEnabled();
+      }
+      await expect(review).toBeVisible();
+      await expect(keyboardHelp).toBeVisible();
+
+      await previousFile.focus();
+      await expect(previousFile).toBeFocused();
+      await expectFocusIndicatorUnclipped(previousFile);
+      for (const control of controls.slice(1)) {
+        await page.keyboard.press('Tab');
+        await expect(control).toBeFocused();
+        await expectFocusIndicatorUnclipped(control);
+      }
+      await assertNoPageOverflow(page);
+
+      await page.keyboard.press('Alt+Shift+[');
+      await expect(page.locator('.active-file-toolbar__file')).toContainText('alpha.ts');
+    });
+
     await test.step('Phase 08 boundary matrix preserves local diff overflow and complete identities', async () => {
       for (const width of phase08Widths) {
         await expectPhase08ReflowAtWidth(page, width);
