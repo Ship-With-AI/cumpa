@@ -14,6 +14,7 @@ import {
   openSync,
   readFileSync,
   readdirSync,
+  renameSync,
   rmSync,
   unlinkSync,
   writeFileSync,
@@ -52,30 +53,111 @@ function sha512Integrity(value) {
   return `sha512-${createHash('sha512').update(value).digest('base64')}`;
 }
 
-function runtimePackLockOwnerIsAlive() {
+function runtimePackProcessIdentity(pid) {
+  if (process.platform === 'linux') {
+    try {
+      const stat = readFileSync(`/proc/${pid}/stat`, 'utf8');
+      const closingParenthesis = stat.lastIndexOf(')');
+      const startTime = stat.slice(closingParenthesis + 2).trim().split(/\s+/u)[19];
+      return /^\d+$/u.test(startTime) ? `linux:${startTime}` : null;
+    } catch {
+      return null;
+    }
+  }
+  if (process.platform === 'darwin') {
+    try {
+      const startTime = execFileSync('ps', ['-o', 'lstart=', '-p', String(pid)], {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      }).trim().replace(/\s+/gu, ' ');
+      return startTime ? `darwin:${startTime}` : null;
+    } catch {
+      return null;
+    }
+  }
+  if (process.platform === 'win32') {
+    try {
+      const startTime = execFileSync(
+        'powershell.exe',
+        ['-NoProfile', '-NonInteractive', '-Command', `(Get-Process -Id ${pid}).StartTime.ToUniversalTime().Ticks`],
+        { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
+      ).trim();
+      return /^\d+$/u.test(startTime) ? `win32:${startTime}` : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function runtimePackLockOwner() {
   try {
-    const owner = readFileSync(join(runtimePackLock, 'owner'), 'utf8').trim();
-    if (!/^[1-9]\d*$/u.test(owner)) return false;
-    process.kill(Number(owner), 0);
-    return true;
-  } catch (error) {
-    return !(error && typeof error === 'object' && (error.code === 'ESRCH' || error.code === 'ENOENT'));
+    const owner = JSON.parse(readFileSync(join(runtimePackLock, 'owner'), 'utf8'));
+    if (
+      owner === null
+      || typeof owner !== 'object'
+      || !Number.isSafeInteger(owner.pid)
+      || owner.pid < 1
+      || typeof owner.identity !== 'string'
+      || typeof owner.token !== 'string'
+    ) return null;
+    return owner;
+  } catch {
+    return null;
   }
 }
+
+function runtimePackLockOwnerIsAlive(owner) {
+  return owner !== null && runtimePackProcessIdentity(owner.pid) === owner.identity;
+}
+
+function recoverDeadRuntimePackLock(owner) {
+  const takeover = `${runtimePackLock}.takeover`;
+  try {
+    mkdirSync(takeover, { mode: 0o700 });
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'EEXIST') return false;
+    throw error;
+  }
+  try {
+    const currentOwner = runtimePackLockOwner();
+    if (
+      currentOwner === null
+      || currentOwner.token !== owner?.token
+      || runtimePackLockOwnerIsAlive(currentOwner)
+    ) return false;
+    const staleLock = `${runtimePackLock}.stale-${randomBytes(8).toString('hex')}`;
+    renameSync(runtimePackLock, staleLock);
+    rmSync(staleLock, { recursive: true, force: true });
+    return true;
+  } catch (error) {
+    if (error && typeof error === 'object' && error.code === 'ENOENT') return false;
+    throw error;
+  } finally {
+    rmSync(takeover, { recursive: true, force: true });
+  }
+}
+
+let runtimePackLockToken;
 
 function acquireRuntimePackLock() {
   const deadline = Date.now() + 300_000;
   for (;;) {
     try {
       mkdirSync(runtimePackLock, { mode: 0o700 });
-      writeFileSync(join(runtimePackLock, 'owner'), String(process.pid), { mode: 0o600 });
+      const identity = runtimePackProcessIdentity(process.pid);
+      if (identity === null) fail(`cannot identify runtime pack lock owner on ${process.platform}`);
+      runtimePackLockToken = randomBytes(16).toString('hex');
+      writeFileSync(
+        join(runtimePackLock, 'owner'),
+        `${JSON.stringify({ pid: process.pid, identity, token: runtimePackLockToken })}\n`,
+        { mode: 0o600, flag: 'wx' },
+      );
       return;
     } catch (error) {
       if (!(error && typeof error === 'object' && error.code === 'EEXIST')) throw error;
-      if (!runtimePackLockOwnerIsAlive()) {
-        rmSync(runtimePackLock, { recursive: true, force: true });
-        continue;
-      }
+      const owner = runtimePackLockOwner();
+      if (!runtimePackLockOwnerIsAlive(owner) && recoverDeadRuntimePackLock(owner)) continue;
       if (Date.now() >= deadline) fail('timed out waiting for runtime pack lock');
       Atomics.wait(lockWait, 0, 0, 50);
     }
@@ -83,7 +165,10 @@ function acquireRuntimePackLock() {
 }
 
 function releaseRuntimePackLock() {
-  rmSync(runtimePackLock, { recursive: true, force: true });
+  if (runtimePackLockToken === undefined) return;
+  const owner = runtimePackLockOwner();
+  if (owner?.token === runtimePackLockToken) rmSync(runtimePackLock, { recursive: true, force: true });
+  runtimePackLockToken = undefined;
 }
 
 function normalizePath(path) {
@@ -468,6 +553,8 @@ function main() {
   };
   process.once('SIGINT', onSignal);
   process.once('SIGTERM', onSignal);
+  process.once('SIGHUP', onSignal);
+  process.once('SIGQUIT', onSignal);
   try {
     command('npm', ['run', 'build'], { env: buildEnvironment(origin) });
     const contents = { dist: packageOutputInventory() };
@@ -554,6 +641,8 @@ function main() {
   } finally {
     process.removeListener('SIGINT', onSignal);
     process.removeListener('SIGTERM', onSignal);
+    process.removeListener('SIGHUP', onSignal);
+    process.removeListener('SIGQUIT', onSignal);
     cleanup();
     releaseRuntimePackLock();
   }

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { execFile } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { chmod, lstat, mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
@@ -79,6 +79,12 @@ if (args[0] === 'run' && args[1] === 'build') {
   writeFileSync(join(dist, 'native', 'directory_exchange.node'), 'native\\n');
   if (process.env.CUMPA_FAKE_FORBIDDEN_CONTENT) writeFileSync(join(dist, 'web', 'app.js.map'), '{}\\n');
   if (process.env.CUMPA_FAKE_SOURCE_DRIFT) writeFileSync(join(process.cwd(), 'README.md'), 'drifted source\\n');
+  const holdMilliseconds = Number.parseInt(process.env.CUMPA_FAKE_BUILD_HOLD_MS ?? '0', 10);
+  if (holdMilliseconds > 0) {
+    appendFileSync(process.env.CUMPA_FAKE_BUILD_EVENTS, 'start ' + process.pid + '\\n');
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, holdMilliseconds);
+    appendFileSync(process.env.CUMPA_FAKE_BUILD_EVENTS, 'end ' + process.pid + '\\n');
+  }
   process.exit(0);
 }
 if (args[0] !== 'pack') process.exit(8);
@@ -182,6 +188,49 @@ async function invoke(fixture: Fixture, args: readonly string[], extra: NodeJS.P
   } catch (error) {
     return error as Invocation;
   }
+}
+
+async function invokeConcurrent(
+  fixture: Fixture,
+  args: readonly string[],
+  extra: NodeJS.ProcessEnv = {},
+): Promise<{ readonly code: number | null; readonly stderr: string }> {
+  const { promise, reject, resolve } = Promise.withResolvers<{
+    readonly code: number | null;
+    readonly stderr: string;
+  }>();
+  const child = spawn(process.execPath, [fixture.pack, ...args], {
+    cwd: fixture.root,
+    env: { ...fixture.env, ...extra },
+    stdio: ['ignore', 'ignore', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', (chunk: string) => {
+    stderr += chunk;
+  });
+  child.once('error', reject);
+  child.once('close', (code) => {
+    resolve({ code, stderr });
+  });
+  return await promise;
+}
+
+function runtimePackLock(root: string): string {
+  return join(
+    tmpdir(),
+    `cumpa-pack-runtime-${createHash('sha256').update(root).digest('hex').slice(0, 16)}.lock`,
+  );
+}
+
+function maxConcurrentBuilds(events: string): number {
+  let current = 0;
+  let maximum = 0;
+  for (const event of events.trim().split('\n').filter(Boolean)) {
+    current += event.startsWith('start ') ? 1 : -1;
+    maximum = Math.max(maximum, current);
+  }
+  return maximum;
 }
 
 function producerArgs(fixture: Fixture, purpose = 'development-check'): string[] {
@@ -445,6 +494,45 @@ describe('runtime archive producer', () => {
     expect((await lstat(join(fixture.root, 'package.json'))).mode & 0o777).toBe(sourceManifestMode);
     expect(await readFile(join(fixture.root, 'package-lock.json'))).toEqual(sourceLock);
     expect((await lstat(join(fixture.root, 'package-lock.json'))).mode & 0o777).toBe(sourceLockMode);
+  });
+
+  test('atomically recovers a dead owner while serializing concurrent packers', async () => {
+    const fixture = await createFixture();
+    const lock = runtimePackLock(fixture.root);
+    const events = join(fixture.root, 'build-events.log');
+    await mkdir(lock, { mode: 0o700 });
+    await writeFile(
+      join(lock, 'owner'),
+      JSON.stringify({ pid: 999_999_999, identity: 'dead-owner', token: 'dead-owner' }),
+    );
+
+    try {
+      const results = await Promise.all(
+        Array.from({ length: 8 }, async (_, index) => await invokeConcurrent(
+          fixture,
+          [
+            '--purpose',
+            'development-check',
+            '--custody-dir',
+            join(fixture.root, `custody-${index}`),
+            '--evidence',
+            join(fixture.root, `evidence-${index}.json`),
+          ],
+          {
+            CUMPA_FAKE_BUILD_EVENTS: events,
+            CUMPA_FAKE_BUILD_HOLD_MS: '250',
+          },
+        )),
+      );
+
+      expect(results).toEqual(
+        Array.from({ length: 8 }, () => expect.objectContaining({ code: 0, stderr: '' })),
+      );
+      expect(maxConcurrentBuilds(await readFile(events, 'utf8'))).toBe(1);
+    } finally {
+      await rm(lock, { recursive: true, force: true });
+      await rm(`${lock}.takeover`, { recursive: true, force: true });
+    }
   });
 
   test('denies evidence after build/pack failures, ambiguous results, inventory mismatch, or archive substitution without deleting emitted archives', async () => {
