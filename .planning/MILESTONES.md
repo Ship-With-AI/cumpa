@@ -34,6 +34,7 @@
 - A pack lock whose stale-owner recovery let two packers delete each other's lock and run concurrently.
 - Roving tabindex never satisfied by the implementation.
 - The v1.0 debt item "retire or intentionally consume the orphan `SessionClient.getFileMetadata()`" is now resolved: the Details dialog is its first real caller.
+- Four immutable evidence records were read as live fixtures through `.planning/phases/`, whose working copies are removed at milestone close. The two v1.4 references were already dangling from an earlier cleanup; removing the v1.5 phase directories broke five unit tests. All four now point at `.planning/milestones/`, their permanent home.
 
 ### Retained Technical Debt
 
