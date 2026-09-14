@@ -275,8 +275,11 @@ function mergeReports(reports, source, requirement, identity) {
 }
 
 const root = resolve(import.meta.dirname, '..');
-const releaseEvidencePath = join(root, '.planning/phases/05-bootstrap-trusted-stable-publication/05-RELEASE-EVIDENCE.json');
-const marketplaceEvidencePath = join(root, '.planning/phases/06-independent-mit-marketplace-skill/06-PUBLICATION-EVIDENCE.json');
+// These are immutable v1.5 evidence records, read as fixtures. They live in the milestone
+// archive, which is their permanent home; the working `.planning/phases/` copies are removed
+// at milestone close, so pointing at those would break on every cleanup.
+const releaseEvidencePath = join(root, '.planning/milestones/v1.5-phases/05-bootstrap-trusted-stable-publication/05-RELEASE-EVIDENCE.json');
+const marketplaceEvidencePath = join(root, '.planning/milestones/v1.5-phases/06-independent-mit-marketplace-skill/06-PUBLICATION-EVIDENCE.json');
 
 function readPinnedIdentity() {
   const releaseEvidence = JSON.parse(readFileSync(releaseEvidencePath, 'utf8'));

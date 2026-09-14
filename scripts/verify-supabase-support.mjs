@@ -9,7 +9,9 @@ import { fileURLToPath } from 'node:url';
 
 const EVIDENCE_VERSION = 1;
 const MANAGEMENT_ORIGIN = 'https://api.supabase.com';
-const PRELAUNCH_DEPLOYMENT_EVIDENCE = '.planning/phases/02-move-the-implementation-to-supabase/02-08-TEST-DEPLOYMENT-EVIDENCE.md';
+// Immutable v1.4 evidence, read as a fixture from its permanent archive home. The working
+// `.planning/phases/` copy was removed when v1.4 was archived.
+const PRELAUNCH_DEPLOYMENT_EVIDENCE = '.planning/milestones/v1.4-phases/02-move-the-implementation-to-supabase/02-08-TEST-DEPLOYMENT-EVIDENCE.md';
 const TABLES = [
   ['auth.users', 'id'],
   ['support_private.support_intents', 'id'],
