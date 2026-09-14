@@ -186,8 +186,13 @@ class PublicMonacoDiffAdapter {
     await ready;
     this.diffEditor.restoreViewState(saved?.viewState ?? null);
     this.refreshSelectionDecorations();
-    this.focused = saved?.focused;
-    this.activeComposer = saved?.composer;
+    const activeComposer = this.activeComposer?.fileId === file.id
+      ? this.activeComposer
+      : saved?.composer;
+    this.focused = activeComposer === undefined
+      ? saved?.focused
+      : { side: activeComposer.side, line: activeComposer.line };
+    this.activeComposer = activeComposer;
     this.rebuildAnchoredLayout();
     if (this.focused !== undefined) {
       this.editorFor(this.focused.side).setPosition({ lineNumber: this.focused.line, column: 1 });
