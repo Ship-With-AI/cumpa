@@ -171,16 +171,24 @@ function createModel(
     );
   };
 
-  const selectFile = (fileId: string): FileTreeModel =>
-    selectedFileId === fileId
-      ? model
-      : createModel(
-          tree,
-          allDirectoryIds,
-          expandedDirectoryIds,
-          focusedRowId,
-          fileId,
-        );
+  const selectFile = (fileId: string): FileTreeModel => {
+    if (selectedFileId === fileId) {
+      return model;
+    }
+    const targetRowId = fileRowId(fileId);
+    const nextFocusedRowId = frozenVisibleRows.some(
+      (candidate) => candidate.rowId === targetRowId,
+    )
+      ? targetRowId
+      : focusedRowId;
+    return createModel(
+      tree,
+      allDirectoryIds,
+      expandedDirectoryIds,
+      nextFocusedRowId,
+      fileId,
+    );
+  };
 
   const handleKey = (key: FileTreeNavigationKey): FileTreeModel => {
     if (focusedRowId === null || frozenVisibleRows.length === 0) {

@@ -362,6 +362,42 @@ describe('createFileTreeModel', () => {
     expect(entered.selectedFileId).toBe(fileId(0));
   });
 
+  it('moves the tabbable row to a visible selected file', () => {
+    const selected = createFileTreeModel(navigationFiles()).selectFile(fileId(2));
+
+    expect(selected.selectedFileId).toBe(fileId(2));
+    expect(selected.focusedRowId).toBe(
+      row(
+        selected,
+        (candidate) =>
+          candidate.kind === 'file' && candidate.fileId === fileId(2),
+      ).rowId,
+    );
+  });
+
+  it('keeps keyboard navigation focused on a visible row when selecting a hidden file', () => {
+    const initial = createFileTreeModel(navigationFiles());
+    const aDirectory = row(
+      initial,
+      (candidate) =>
+        candidate.kind === 'directory' && candidate.path.utf8 === 'a',
+    );
+    if (aDirectory.kind !== 'directory') {
+      throw new Error('Expected directory row');
+    }
+
+    const collapsed = initial
+      .focusRow(aDirectory.rowId)
+      .handleKey('ArrowLeft')
+      .selectFile(fileId(1));
+
+    expect(collapsed.selectedFileId).toBe(fileId(1));
+    expect(collapsed.focusedRowId).toBe(aDirectory.rowId);
+    expect(collapsed.handleKey('ArrowDown').focusedRowId).not.toBe(
+      aDirectory.rowId,
+    );
+  });
+
   it('applies Arrow, Home, End, Enter, and Space transitions over visible rows with roving file selection', () => {
     const initial = createFileTreeModel(navigationFiles());
 
