@@ -89,3 +89,26 @@ Explicit spec paths are required in this recipe. A bare `npm run test:runtime-ar
 3. Recording these prerequisites does not violate CON-02: neither spec is among the six ROADMAP presentation-sensitive specs, neither is presentation-sensitive, both failed identically before the restyle (`08-VERIFICATION.md:62-70`), and no skip, fixme, weakened assertion, or fabricated marker was introduced.
 
 The covered local flow — review, comment, export, and Finish — remains proven by the locally packed `agent-ready-export.spec.ts`. What remains unproven locally is only the published registry artifact plus live hosted support states.
+
+## Full suite ledger
+
+| Command | Exit | Passed | Failed | Skipped | Compared with Phase 11 |
+|---|---:|---:|---:|---:|---|
+| `npm run test:unit` | 0 | 186 | 0 | 0 | Unchanged: 186. |
+| `npm run test:git` | 0 | 69 | 0 | 0 | Unchanged: 69. |
+| `npm run test:api` | 0 | 142 | 0 | 0 | Unchanged: 142. |
+| `npm run verify:semantic-css` | 0 | n/a | 0 | n/a | Passed; script reports no test-count summary. |
+| `npm run typecheck:web` | 0 | n/a | 0 | n/a | Passed; compiler reports no test-count summary. |
+| `npm run build` | 0 | n/a | 0 | n/a | Passed fresh runtime and web build. |
+| `npm run test:browser` | 1 | 99 | 2 | 0 | Same 99 passed / two external prerequisites as Phase 11. |
+| `npm run test:runtime-artifact -- tests/e2e/agent-ready-export.spec.ts tests/e2e/package-assets.spec.ts` | 0 | 7 | 0 | 0 | Plan 12-01 repaired flow: six `agent-ready-export` cases plus package-assets. |
+
+The browser result executed all 103 collected tests. Its only failures were the documented external prerequisites: `tests/e2e/marketplace-review.spec.ts:97-99` stopped for missing `CUMPA_MARKETPLACE_URL_MARKER`; `tests/e2e/public-support-states.spec.ts:327-329` stopped when no runtime-custody inputs were configured. Neither was skipped or weakened.
+
+## Six named specs
+
+`npm run test:browser` executed `file-tree.spec.ts`, `pinned-session.spec.ts`, `anchored-review.spec.ts`, `complete-review-draft.spec.ts`, and `responsive-session.spec.ts`. The explicit custody command executed `agent-ready-export.spec.ts` (six scenarios) together with `package-assets.spec.ts` (one scenario). This split is intentional: default browser configuration excludes the custody-bound runtime artifact suite.
+
+## CON-02 verdict
+
+Covered flows execute. The Plan 12-01 re-authored assertions meet all five reconciliation-rule conditions: each targets the relocated named dialog control, retains the production flow, observes persistence/HTTP/export/attached-stdout behavior, fails if the relocated control regresses, and preserves the flow-identifying test name. No covered flow was skipped. Only the two documented external prerequisites remain.
