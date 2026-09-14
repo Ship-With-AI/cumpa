@@ -140,6 +140,7 @@ let patchStatusRefreshing = false;
 let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
 let requestVersion = 0;
+let loadedContentMessageVersion = 0;
 let metadataRequestVersion = 0;
 let viewportMedia: MediaQueryList | undefined;
 let supportRefreshInFlight = false;
@@ -325,12 +326,14 @@ async function loadFile(file: SessionFile): Promise<void> {
   }
 
   const version = ++requestVersion;
+  const messageVersion = liveMessageVersion.value;
   diffLoading.value = true;
   try {
     const content = await sessionClient?.getFileContent(file.fileId);
     if (content === undefined || version !== requestVersion || content.fileId !== file.fileId) {
       return;
     }
+    loadedContentMessageVersion = messageVersion;
     selectedContent.value = content;
   } catch (error) {
     if (version === requestVersion) {
@@ -861,7 +864,7 @@ function nextChange(): void {
 
 function handleDiffReady(fileId: string): void {
   dispatchWorkspace({ type: 'diff-ready', fileId });
-  announce(`Loaded ${selectedPath.value}.`);
+  if (loadedContentMessageVersion === liveMessageVersion.value) announce(`Loaded ${selectedPath.value}.`);
   if (focusActiveFileAfterDialog.value) {
     focusActiveFileAfterDialog.value = false;
     void nextTick(() => activeFileToolbar.value?.focusHeading());
