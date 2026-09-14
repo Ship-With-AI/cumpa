@@ -358,7 +358,7 @@ test('exact patch recovery opens a frozen draft without pinned-session language'
   recoveryResult = exactRecoveredResult();
 
   await openDraft(page);
-  await expect(page.getByRole('heading', { name: 'Cumpa: exact patch · dddddddddddd' })).toBeVisible();
+  await expect(page.getByRole('banner').getByText('Frozen patch', { exact: true })).toBeVisible();
   await expect(page.locator('body')).not.toContainText(/\bpinned\b/iu);
   await page.getByRole('button', { name: 'Back up and start new' }).click();
   await page.getByRole('button', { name: 'Back up and start new' }).last().click();

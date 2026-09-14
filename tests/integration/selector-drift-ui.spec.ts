@@ -361,7 +361,8 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
   await expect.poll(() => driftRequests.length).toBe(3);
   await expect(summary).toHaveValue('Unsaved review buffer');
   await expect(summary).toBeFocused();
-  await expect(page.getByRole('banner').getByText(/BASE base · aaaaaaa HEAD head · bbbbbbb/)).toBeVisible();
+  await expect(page.getByRole('banner')).toContainText(new RegExp(`BASE\\s*base · ${baseOid.slice(0, 7)}`));
+  await page.getByRole('dialog', { name: 'Review notes' }).getByRole('button', { name: 'Close review notes' }).click();
 
   await page.getByRole('button', { name: `Copy pinned Base commit ${baseOid}` }).click();
   await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(baseOid);

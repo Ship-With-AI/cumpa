@@ -237,6 +237,13 @@ body {
   overflow: hidden;
 }
 
+.shell-warning-stack {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+
 .workspace-shell {
   display: grid;
   min-height: 0;

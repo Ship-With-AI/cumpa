@@ -1169,11 +1169,16 @@ onBeforeUnmount(() => {
       @support="openSupportDialog"
       @review-notes="openReviewNotes"
     />
-    <InlineNotice v-if="patchDrifted" tone="error" role="alert">
-      <h2>Implemented content changed</h2>
-      <p>The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.</p>
-    </InlineNotice>
-    <SelectorDriftNotice v-else :drift="selectorDriftStatus" />
+    <section
+      v-if="patchDrifted || selectorDriftStatus?.base.kind !== 'unchanged' || selectorDriftStatus?.head.kind !== 'unchanged'"
+      class="shell-warning-stack"
+    >
+      <InlineNotice v-if="patchDrifted" tone="error" role="alert">
+        <h2>Implemented content changed</h2>
+        <p>The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.</p>
+      </InlineNotice>
+      <SelectorDriftNotice :drift="selectorDriftStatus" />
+    </section>
 
     <DraftRecovery
       v-if="recoveryLoad !== undefined && primarySurface !== 'workspace'"
