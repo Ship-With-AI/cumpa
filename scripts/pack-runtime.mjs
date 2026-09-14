@@ -359,7 +359,7 @@ function npmVersion() {
 }
 
 function buildEnvironment(origin) {
-  const environment = { ...process.env };
+  const environment = { ...process.env, NODE_ENV: 'production' };
   if (origin === undefined) delete environment.CUMPA_RELEASE_SUPPORT_SERVICE_URL;
   return environment;
 }
