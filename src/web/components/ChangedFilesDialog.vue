@@ -29,6 +29,7 @@ const emit = defineEmits<{
   >
     <div id="changed-files-dialog-tree" class="changed-files-dialog__results"></div>
   </ModalDialog>
+  <p v-if="!narrow && files.length === 0">0 changed files</p>
   <Teleport v-if="narrow || files.length > 0" defer :to="narrow ? '#changed-files-dialog-tree' : '#changed-files'">
     <FileTree
       v-if="files.length > 0"
