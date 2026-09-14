@@ -41,7 +41,6 @@ function copyPinnedCommit(status: Exclude<SelectorDriftStatus, { readonly kind: 
   <aside
     v-if="affectedSources.length > 0"
     class="inline-notice inline-notice--warning selector-drift-notice"
-    role="status"
     aria-labelledby="selector-drift-heading"
   >
     <UiIcon name="warning" class="inline-notice__icon" />
@@ -65,7 +64,7 @@ function copyPinnedCommit(status: Exclude<SelectorDriftStatus, { readonly kind: 
           Copy pinned commit
         </button>
       </section>
-      <p>{{ copied }}</p>
+      <p v-if="copied !== ''" :role="copied.startsWith('Couldn') ? 'alert' : 'status'">{{ copied }}</p>
       <button type="button" class="ui-button" @click="relaunchInstructionsOpen = !relaunchInstructionsOpen">
         Launch new comparison
       </button>

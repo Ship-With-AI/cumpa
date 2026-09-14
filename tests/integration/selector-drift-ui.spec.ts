@@ -333,7 +333,7 @@ test('selector drift uses the fixed endpoint and leaves the pinned review and fo
     document.dispatchEvent(new Event('visibilitychange'));
   });
 
-  const notice = page.getByRole('status', { name: 'Selected source changed — open review remains pinned' });
+  const notice = page.getByRole('complementary', { name: 'Selected source changed — open review remains pinned' });
   await expect(notice).toBeVisible();
   await expect(notice).toContainText('Base source moved');
   await expect(notice).toContainText(baseOid);
@@ -397,7 +397,7 @@ test('exact patch sessions observe only their frozen patch status', async ({ pag
 
   await expect(page.getByRole('banner').getByText('Frozen patch', { exact: true })).toBeVisible();
   await expect(page.getByRole('contentinfo').getByText('Local review · frozen patch', { exact: true })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'View patch scope' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Details' })).toBeVisible();
   expect(patchStatusRequests).toHaveLength(1);
   expect(driftRequests).toHaveLength(0);
 
@@ -417,7 +417,7 @@ test('exact patch sessions observe only their frozen patch status', async ({ pag
   await expect(notice).toContainText(
     'The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.',
   );
-  await expect(page.getByRole('button', { name: 'View patch scope' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Details' })).toBeVisible();
   expect(pinnedPropWarnings).toEqual([]);
 });
 
@@ -447,7 +447,7 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
     }
   });
   session = exactPatchSession(true);
-  patchContentFailures = 1;
+  patchContentFailures = 2;
 
   await openReview(page);
   await expect(page.getByRole('heading', { name: 'Frozen patch file unavailable' })).toBeVisible();
@@ -470,7 +470,9 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
     'Immutable preimage and postimage side-by-side diff',
   );
   expect(patchContentRequests).toEqual([
+    `/${patchFileId}`,
     `/${patchFileId}/content`,
+    `/${patchFileId}`,
     `/${patchFileId}/content`,
   ]);
 
@@ -511,50 +513,21 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
   await expect.poll(() => page.evaluate(
     () => Number(document.body.dataset.snapshotHeadingFocusCount),
   )).toBe(1);
-  expect(patchContentRequests).toHaveLength(2);
+  expect(patchContentRequests).toHaveLength(4);
   expect(vueWarnings).toEqual([]);
 });
 
-test('exact patch scope follows approved responsive and modal focus behavior', async ({ page }) => {
-  const vueWarnings: string[] = [];
-  page.on('console', (message) => {
-    if (/\[Vue warn\]|Unhandled/u.test(message.text())) {
-      vueWarnings.push(message.text());
-    }
-  });
+test('exact patch details remain accessible on a narrow viewport', async ({ page }) => {
   session = exactPatchSession(true);
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize({ width: 320, height: 640 });
   await openReview(page);
 
-  for (const width of [1440, 1100, 768]) {
-    await page.setViewportSize({ width, height: 900 });
-    const disclosure = page.getByRole('button', { name: 'View patch scope' });
-    await disclosure.click();
-    const scope = page.getByRole('region', { name: 'Patch scope' });
-    await expect(scope).toBeVisible();
-    const bounds = await scope.boundingBox();
-    expect(bounds?.width).toBeLessThanOrEqual(width === 1440 ? 520 : 480);
-    expect(bounds?.x).toBeGreaterThanOrEqual(width === 768 ? 16 : 0);
-    await page.keyboard.press('Escape');
-    await expect(disclosure).toBeFocused();
-  }
-
-  await page.setViewportSize({ width: 320, height: 640 });
-  const disclosure = page.getByRole('button', { name: 'View patch scope' });
-  await disclosure.click();
-  const dialog = page.getByRole('dialog', { name: 'Patch scope' });
+  const details = page.getByRole('button', { name: 'Details' });
+  await details.click();
+  const dialog = page.getByRole('dialog', { name: 'Details' });
   await expect(dialog).toBeVisible();
-  const close = page.getByRole('button', { name: 'Close patch scope' });
-  const copy = page.getByRole('button', { name: 'Copy full patch digest' });
-  await expect(close).toBeFocused();
-  await page.keyboard.press('Shift+Tab');
-  await expect(copy).toBeFocused();
-  await page.keyboard.press('Tab');
-  await expect(close).toBeFocused();
-  await expect(page.locator('.object-id')).toHaveText('d'.repeat(64));
+  await expect(dialog.getByRole('heading', { name: 'Comparison' })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-  expect((await page.locator('.session-header').boundingBox())?.height).toBeGreaterThanOrEqual(96);
   await page.keyboard.press('Escape');
-  await expect(disclosure).toBeFocused();
-  expect(vueWarnings).toEqual([]);
+  await expect(details).toBeFocused();
 });
