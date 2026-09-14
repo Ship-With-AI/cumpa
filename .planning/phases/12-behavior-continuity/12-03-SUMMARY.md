@@ -42,7 +42,7 @@ commits:
 
 ## Constraints preserved
 
-- No production source, test, or `package.json` changes were made by this plan.
+- Plan 12-03 did not change production source or tests; the subsequent CR-01 closure intentionally updates the runtime-artifact package script.
 - `STATE.md` and `ROADMAP.md` were untouched.
 - The retained rasters are ignored and uncommitted.
 - Existing user-owned untracked work remains untouched: `.gsd/`, `12-PATTERNS.md`, `EVIDENCE.md`, and both `.omp-profile-*-repro.test.ts` files.
@@ -51,3 +51,9 @@ commits:
 
 - `ae4849a` — `docs(12-03): record UI continuity dossier`
 - `bbb8801` — `docs(12-03): complete continuity suite ledger`
+
+## CR-01 closure
+
+- Made `npm run test:runtime-artifact` explicitly select the two local-custody specs and added `npm run test:runtime-artifact:full` for the complete release set.
+- Updated `12-CONTINUITY.md` with the bare local command, the full release invocation, and the unchanged classification that `public-support-states.spec.ts` and `marketplace-review.spec.ts` are documented external prerequisites rather than regressions.
+- With a fresh development-check archive packed through `npm run pack:runtime-artifact -- --purpose development-check --custody-dir <fresh path> --evidence <fresh path>`, the bare command passed all 7 tests. `npm run test:runtime-artifact -- --list` listed only `agent-ready-export.spec.ts` and `package-assets.spec.ts`; `npm run test:runtime-artifact -- tests/e2e/package-assets.spec.ts` preserved argument pass-through and passed all 7 default local tests.

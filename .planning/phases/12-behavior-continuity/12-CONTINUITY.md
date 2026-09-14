@@ -14,8 +14,7 @@ export CUMPA_RUNTIME_CUSTODY_DIR=<fresh-realpath-custody-dir>
 export CUMPA_RUNTIME_ARCHIVE_BASENAME=shipwithai-cumpa-1.5.0.tgz
 export CUMPA_RUNTIME_EVIDENCE=<fresh-realpath-evidence-json>
 export CUMPA_RUNTIME_ARCHIVE_SHA256=$(node -e "process.stdout.write(require(process.env.CUMPA_RUNTIME_EVIDENCE).archive.sha256)")
-npx playwright test --config playwright.runtime-artifact.config.ts \
-  tests/e2e/agent-ready-export.spec.ts tests/e2e/package-assets.spec.ts
+npm run test:runtime-artifact
 ```
 
 Observed on the packed artifact: `tests/e2e/package-assets.spec.ts` passed; `tests/e2e/agent-ready-export.spec.ts` failed all six collected scenarios (7 tests total: 1 passed, 6 failed). The package-assets result isolates the problem to stale presentation locators rather than the custody harness. The `afterAll` source-control evidence gate at `tests/e2e/agent-ready-export.spec.ts:71-80` also failed only because no scenario reached its registration; it clears itself once every scenario passes and requires no edit.
@@ -61,7 +60,7 @@ The named explicit-path command shown below then ran the same six flows plus `pa
 
 The spec had zero executions during the restyle milestone: `playwright.config.ts:6-9` excludes both runtime-artifact specs from the default `test:browser` path, and `tests/package/agent-ready-export.test.ts:134-178` reaches its Playwright command only after requiring `CUMPA_RELEASE_SUPPORT_SERVICE_URL` and an acceptance report. The default-suite exclusion remains intentional: `tests/helpers/runtime-artifact.ts:259-276` throws without all four custody inputs, so adding this spec to `npm run test:browser` would fail every ordinary developer invocation.
 
-`package.json` now exposes `test:runtime-artifact`, which runs `playwright test --config playwright.runtime-artifact.config.ts`. It intentionally accepts supplied custody inputs rather than packing or fabricating them.
+`package.json` exposes `test:runtime-artifact`, which runs only `agent-ready-export.spec.ts` and `package-assets.spec.ts` through `playwright.runtime-artifact.config.ts`. It intentionally accepts supplied custody inputs rather than packing or fabricating them.
 
 Local reproduction:
 
@@ -75,10 +74,10 @@ export CUMPA_RUNTIME_CUSTODY_DIR=<fresh-realpath-custody-dir>
 export CUMPA_RUNTIME_ARCHIVE_BASENAME=shipwithai-cumpa-1.5.0.tgz
 export CUMPA_RUNTIME_EVIDENCE=<fresh-realpath-evidence-json>
 export CUMPA_RUNTIME_ARCHIVE_SHA256=$(node -e "process.stdout.write(require(process.env.CUMPA_RUNTIME_EVIDENCE).archive.sha256)")
-npm run test:runtime-artifact -- tests/e2e/agent-ready-export.spec.ts tests/e2e/package-assets.spec.ts
+npm run test:runtime-artifact
 ```
 
-Explicit spec paths are required in this recipe. A bare `npm run test:runtime-artifact` also matches `public-support-states.spec.ts` and `marketplace-review.spec.ts` through `playwright.runtime-artifact.config.ts:6-11`; their failures are documented external prerequisites, not regressions in this local continuity run.
+The bare local command selects only the two local-custody specs. Extra arguments still pass through, so `npm run test:runtime-artifact -- <path>` remains available to pass an explicit path to Playwright. For a real release with a registry-installed public package, live hosted support origin, and `CUMPA_MARKETPLACE_URL_MARKER`, run the full configured set with `npm run test:runtime-artifact:full`; its `public-support-states.spec.ts` and `marketplace-review.spec.ts` prerequisites are documented external prerequisites, not regressions in this local continuity run.
 
 ## Documented external prerequisites
 
@@ -101,13 +100,13 @@ The covered local flow — review, comment, export, and Finish — remains prove
 | `npm run typecheck:web` | 0 | n/a | 0 | n/a | Passed; compiler reports no test-count summary. |
 | `npm run build` | 0 | n/a | 0 | n/a | Passed fresh runtime and web build. |
 | `npm run test:browser` | 1 | 99 | 2 | 0 | Same 99 passed / two external prerequisites as Phase 11. |
-| `npm run test:runtime-artifact -- tests/e2e/agent-ready-export.spec.ts tests/e2e/package-assets.spec.ts` | 0 | 7 | 0 | 0 | Plan 12-01 repaired flow: six `agent-ready-export` cases plus package-assets. |
+| `npm run test:runtime-artifact` | 0 | 7 | 0 | 0 | Plan 12-01 repaired flow: six `agent-ready-export` cases plus package-assets. |
 
 The browser result executed all 103 collected tests. Its only failures were the documented external prerequisites: `tests/e2e/marketplace-review.spec.ts:97-99` stopped for missing `CUMPA_MARKETPLACE_URL_MARKER`; `tests/e2e/public-support-states.spec.ts:327-329` stopped when no runtime-custody inputs were configured. Neither was skipped or weakened.
 
 ## Six named specs
 
-`npm run test:browser` executed `file-tree.spec.ts`, `pinned-session.spec.ts`, `anchored-review.spec.ts`, `complete-review-draft.spec.ts`, and `responsive-session.spec.ts`. The explicit custody command executed `agent-ready-export.spec.ts` (six scenarios) together with `package-assets.spec.ts` (one scenario). This split is intentional: default browser configuration excludes the custody-bound runtime artifact suite.
+`npm run test:browser` executed `file-tree.spec.ts`, `pinned-session.spec.ts`, `anchored-review.spec.ts`, `complete-review-draft.spec.ts`, and `responsive-session.spec.ts`. The local-custody `npm run test:runtime-artifact` command executed `agent-ready-export.spec.ts` (six scenarios) together with `package-assets.spec.ts` (one scenario). This split is intentional: default browser configuration excludes the custody-bound runtime artifact suite.
 
 ## CON-02 verdict
 
