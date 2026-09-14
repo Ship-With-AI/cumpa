@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => {
   const disposable = () => ({ dispose: vi.fn() });
+  const cursorListeners: Array<(event: { position: { lineNumber: number } }) => void> = [];
   const decorationCollection = () => ({ clear: vi.fn(), set: vi.fn() });
   const codeEditor = () => ({
     addAction: vi.fn(),
@@ -18,13 +19,16 @@ const mocks = vi.hoisted(() => {
     getScrollTop: vi.fn(() => 0),
     getSelections: vi.fn(() => []),
     getTopForLineNumber: vi.fn(() => 0),
-    onDidChangeCursorPosition: vi.fn(disposable),
     onDidChangeCursorSelection: vi.fn(disposable),
     onDidChangeModel: vi.fn(disposable),
     onDidFocusEditorText: vi.fn(disposable),
     onDidScrollChange: vi.fn(disposable),
-    onMouseDown: vi.fn(disposable),
+    onDidChangeCursorPosition: vi.fn((listener) => {
+      cursorListeners.push(listener);
+      return disposable();
+    }),
     onMouseMove: vi.fn(disposable),
+    onMouseDown: vi.fn(disposable),
     revealLineInCenter: vi.fn(),
     setPosition: vi.fn(),
   });
@@ -54,6 +58,8 @@ const mocks = vi.hoisted(() => {
       getValueLength: vi.fn(() => 1),
     })),
     defineTheme: vi.fn(),
+    modifiedEditor,
+    cursorListeners,
     diffUpdateListeners,
     parseUri: vi.fn((value: string) => value),
     setTheme: vi.fn(),
@@ -107,6 +113,52 @@ describe('PublicMonacoDiffAdapter construction', () => {
       await loading;
 
       expect(adapter.getActiveAnchor()).toEqual({ fileId: 'file_a', side: 'head', line: 10 });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('restores saved focus independently from saved composer', async () => {
+    vi.stubGlobal('document', {
+      createElement: vi.fn(() => ({ className: '', setAttribute: vi.fn() })),
+    });
+    try {
+      mocks.diffUpdateListeners.length = 0;
+      mocks.cursorListeners.length = 0;
+      const adapter = createMonacoDiffAdapter({ offsetTop: 0 } as HTMLElement, () => 'typescript', vi.fn());
+      const fileA = {
+        id: 'file_a',
+        base: { path: 'src/example.ts', text: 'const base = 1;' },
+        head: { path: 'src/example.ts', text: 'const head = 2;' },
+      };
+      const loadingA = adapter.setFile(fileA);
+      const finishA = mocks.diffUpdateListeners.at(-1);
+      if (finishA === undefined) throw new Error('expected file A diff listener');
+      finishA();
+      await loadingA;
+      adapter.activateAnchor('base', 10);
+      const captureHeadCursor = mocks.cursorListeners.at(-1);
+      if (captureHeadCursor === undefined) throw new Error('expected head cursor listener');
+      captureHeadCursor({ position: { lineNumber: 11 } });
+
+      const loadingB = adapter.setFile({
+        id: 'file_b',
+        base: { path: 'src/other.ts', text: 'const otherBase = 1;' },
+        head: { path: 'src/other.ts', text: 'const otherHead = 2;' },
+      });
+      const finishB = mocks.diffUpdateListeners.at(-1);
+      if (finishB === undefined) throw new Error('expected file B diff listener');
+      finishB();
+      await loadingB;
+
+      const restoringA = adapter.setFile(fileA);
+      const finishRestoringA = mocks.diffUpdateListeners.at(-1);
+      if (finishRestoringA === undefined) throw new Error('expected restored file A diff listener');
+      finishRestoringA();
+      await restoringA;
+
+      expect(adapter.getActiveAnchor()).toEqual({ fileId: 'file_a', side: 'base', line: 10 });
+      expect(mocks.modifiedEditor.setPosition).toHaveBeenLastCalledWith({ lineNumber: 11, column: 1 });
     } finally {
       vi.unstubAllGlobals();
     }
