@@ -33,6 +33,7 @@ import SupportDialog from './components/SupportDialog.vue';
 import DetailsDialog from './components/DetailsDialog.vue';
 import InlineNotice from './components/InlineNotice.vue';
 import SelectorDriftNotice from './components/SelectorDriftNotice.vue';
+import StaleAnchorNotice from './components/StaleAnchorNotice.vue';
 import ReviewToolbar from './components/ReviewToolbar.vue';
 import ActiveFileToolbar from './components/ActiveFileToolbar.vue';
 import ShellFooter from './components/ShellFooter.vue';
@@ -187,6 +188,9 @@ const unsavedInlineComposerFile = computed(() => {
       };
 });
 const workspaceComments = computed(() => workspaceState.value?.comments ?? []);
+const hasUnverifiedAnchors = computed(() =>
+  workspaceComments.value.some((comment) => comment.status === 'stale' || comment.status === 'orphaned'),
+);
 const openCommentCount = computed(
   () => workspaceComments.value.filter((comment) => comment.state === 'open').length,
 );
@@ -224,6 +228,14 @@ watch(workspaceComments, (comments) => {
   if (selectedCommentId.value !== null && !comments.some((comment) => comment.id === selectedCommentId.value)) {
     selectedCommentId.value = null;
   }
+});
+
+let hadUnverifiedAnchors = false;
+watch(hasUnverifiedAnchors, (hasUnverified) => {
+  if (hasUnverified && !hadUnverifiedAnchors) {
+    announce('Some saved comment anchors cannot be verified.');
+  }
+  hadUnverifiedAnchors = hasUnverified;
 });
 
 function announce(message: string): void {
@@ -1170,7 +1182,7 @@ onBeforeUnmount(() => {
       @review-notes="openReviewNotes"
     />
     <section
-      v-if="patchDrifted || selectorDriftStatus?.base.kind !== 'unchanged' || selectorDriftStatus?.head.kind !== 'unchanged'"
+      v-if="patchDrifted || hasUnverifiedAnchors || selectorDriftStatus?.base.kind !== 'unchanged' || selectorDriftStatus?.head.kind !== 'unchanged'"
       class="shell-warning-stack"
     >
       <InlineNotice v-if="patchDrifted" tone="error" role="alert">
@@ -1178,6 +1190,7 @@ onBeforeUnmount(() => {
         <p>The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.</p>
       </InlineNotice>
       <SelectorDriftNotice :drift="selectorDriftStatus" />
+      <StaleAnchorNotice v-if="hasUnverifiedAnchors" @open-comments="openComments" />
     </section>
 
     <DraftRecovery
@@ -1246,7 +1259,7 @@ onBeforeUnmount(() => {
           <h2>Diff unavailable for this file</h2>
           <p>{{ selectedFile?.availability.kind === 'unsupported' ? `unsupported: ${selectedFile.availability.reason}` : 'unavailable: missing-object' }}. Select another changed file to continue reviewing.</p>
         </section>
-        <section v-else-if="diffLoading" class="diff-state" aria-live="polite">Loading diff…</section>
+        <section v-else-if="diffLoading" class="diff-state">Loading diff…</section>
         <section v-else-if="diffError !== ''" class="empty-state" :role="isRangeSession || isExactPatchSession ? 'alert' : undefined">
           <template v-if="isExactPatchSession">
             <h2>Frozen patch file unavailable</h2>

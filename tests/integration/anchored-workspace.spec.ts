@@ -965,6 +965,14 @@ test('anchored gap closure', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await openReview(page);
 
+  const staleNotice = page.getByRole('complementary', {
+    name: 'Some saved comment anchors cannot be verified',
+  });
+  await expect(staleNotice).toBeVisible();
+  await expect(staleNotice).not.toHaveAttribute('role');
+  await expect(staleNotice).toContainText('Stale and unavailable comments remain visible as read-only history.');
+  await page.setViewportSize({ width: 1200, height: 1100 });
+
   await hoverMonacoLine(page, 'head', 'export const changed = 3;');
   await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
   const composer = page.locator('.monaco-anchor-zone--composer textarea');
