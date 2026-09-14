@@ -730,6 +730,14 @@ test('Phase 07 inline conversation states', async ({ page }) => {
   await expect(inlineAccepted.locator('.review-state-badge svg[aria-hidden="true"]')).toHaveCount(2);
   await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(1);
   await expect(page.locator('.monaco-anchor-zone--spacer')).toHaveCount(1);
+  await expect.poll(async () => await page.evaluate(() => {
+    const composerZone = document.querySelector('.monaco-anchor-zone--composer');
+    const spacerZone = document.querySelector('.monaco-anchor-zone--spacer');
+    if (composerZone === null || spacerZone === null) return false;
+    const composerRect = composerZone.getBoundingClientRect();
+    const spacerRect = spacerZone.getBoundingClientRect();
+    return Math.abs(composerRect.top - spacerRect.top) <= 1 && composerRect.height === spacerRect.height;
+  })).toBe(true);
   const acceptedGeometry = await page.evaluate(() => {
     const rect = (element: Element): DOMRect => element.getBoundingClientRect();
     const card = document.querySelector('.monaco-anchor-zone--composer .inline-accepted-comment');
@@ -755,14 +763,14 @@ test('Phase 07 inline conversation states', async ({ page }) => {
       nextCodeTop: nextCode?.top ?? null,
     };
   });
-  expect(acceptedGeometry).not.toBeNull();
-  expect(acceptedGeometry!.cardHeight).toBeGreaterThan(280);
-  expect(acceptedGeometry!.zoneTopDelta).toBeLessThanOrEqual(1);
-  expect(acceptedGeometry!.composerHeight).toBe(acceptedGeometry!.spacerHeight);
-  expect(acceptedGeometry!.cardBottom).toBeLessThanOrEqual(acceptedGeometry!.composerBottom + 1);
-  expect(acceptedGeometry!.nextCodeTop).not.toBeNull();
-  expect(acceptedGeometry!.nextCodeTop!).toBeGreaterThanOrEqual(acceptedGeometry!.composerBottom - 1);
-  expect(acceptedGeometry!.nextCodeTop!).toBeGreaterThanOrEqual(acceptedGeometry!.cardBottom - 1);
+  if (acceptedGeometry === null) throw new Error('expected accepted comment geometry');
+  expect(acceptedGeometry.cardHeight).toBeGreaterThan(280);
+  expect(acceptedGeometry.zoneTopDelta).toBeLessThanOrEqual(1);
+  expect(acceptedGeometry.composerHeight).toBe(acceptedGeometry.spacerHeight);
+  expect(acceptedGeometry.cardBottom).toBeLessThanOrEqual(acceptedGeometry.composerBottom + 1);
+  expect(acceptedGeometry.nextCodeTop).not.toBeNull();
+  expect(acceptedGeometry.nextCodeTop).toBeGreaterThanOrEqual(acceptedGeometry.composerBottom - 1);
+  expect(acceptedGeometry.nextCodeTop).toBeGreaterThanOrEqual(acceptedGeometry.cardBottom - 1);
 
   await ensureReviewOpen(page);
   await page.getByRole('button', { name: /^Resolved comments/ }).click();
@@ -1282,7 +1290,16 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
     const anchorLine = page.locator('.monaco-anchor-line').first();
     await expect(anchorLine).toHaveCSS('border-left-width', '0px');
     await expect(anchorLine).toHaveCSS('box-shadow', 'rgb(47, 129, 247) 3px 0px 0px 0px inset');
-    const anchored = await readMonacoGeometry(page, targetText);
+    let anchored: MonacoGeometry | undefined;
+    await expect.poll(async () => {
+      const candidate = await readMonacoGeometry(page, targetText);
+      if (candidate.zones.length !== 2) return false;
+      if (Math.abs(candidate.zones[0].y - candidate.zones[1].y) > 1) return false;
+      if (candidate.zones[0].height !== candidate.zones[1].height) return false;
+      anchored = candidate;
+      return true;
+    }).toBe(true);
+    if (anchored === undefined) throw new Error('expected settled anchor geometry');
     expectAnchoringNotToReflow(before, anchored);
     expect(anchored.zones).toHaveLength(2);
     expect(Math.abs(anchored.zones[0].y - anchored.zones[1].y)).toBeLessThanOrEqual(1);
@@ -1294,8 +1311,8 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
     await page.keyboard.press('ArrowRight');
     await page.keyboard.up('Shift');
     await hoverMonacoLine(page, 'head', targetText);
+    await expect.poll(async () => await readMonacoGeometry(page, targetText)).toEqual(anchored);
     const semanticStates = await readMonacoGeometry(page, targetText);
-    expect(semanticStates).toEqual(anchored);
     expect(semanticStates.document.scrollWidth).toBeLessThanOrEqual(semanticStates.document.clientWidth);
   }
 });
