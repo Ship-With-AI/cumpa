@@ -1,14 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
 
+export const custodyGatedSpecs: string[] = [
+  '**/e2e/package-assets.spec.ts',
+  '**/e2e/agent-ready-export.spec.ts',
+  '**/e2e/public-support-states.spec.ts',
+  '**/e2e/marketplace-review.spec.ts',
+];
+
 export default defineConfig({
   testDir: './tests',
   outputDir: 'node_modules/.cache/cumpa-runtime-playwright',
-  testMatch: [
-    '**/e2e/package-assets.spec.ts',
-    '**/e2e/agent-ready-export.spec.ts',
-    '**/e2e/public-support-states.spec.ts',
-    '**/e2e/marketplace-review.spec.ts',
-  ],
+  testMatch: custodyGatedSpecs,
   fullyParallel: false,
   forbidOnly: true,
   retries: 0,
