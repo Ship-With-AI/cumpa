@@ -971,6 +971,9 @@ test('anchored gap closure', async ({ page }) => {
   await expect(staleNotice).toBeVisible();
   await expect(staleNotice).not.toHaveAttribute('role');
   await expect(staleNotice).toContainText('Stale and unavailable comments remain visible as read-only history.');
+  await staleNotice.getByRole('button', { name: 'Open comments' }).click();
+  await expect(page.getByRole('button', { name: 'Close review' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close review' }).click();
   await page.setViewportSize({ width: 1200, height: 1100 });
 
   await hoverMonacoLine(page, 'head', 'export const changed = 3;');
