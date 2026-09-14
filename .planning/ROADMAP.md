@@ -162,7 +162,13 @@ Plans:
 - Reconcile only remaining presentation-dependent selectors in `tests/e2e/file-tree.spec.ts`, `tests/e2e/pinned-session.spec.ts`, `tests/e2e/anchored-review.spec.ts`, `tests/e2e/complete-review-draft.spec.ts`, `tests/e2e/agent-ready-export.spec.ts`, and `tests/e2e/responsive-session.spec.ts`; do not skip covered flows.
 - Keep the existing Vitest session, draft, persistence, export, agent-ready handoff, exact-patch, selector-drift, and voluntary-support contract suites passing unchanged.
 
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+
+- [ ] 12-01-PLAN.md — CON-02: repair the never-executing `agent-ready-export.spec.ts` against the relocated Review notes controls, and close the runner-reachability gap (wave 1)
+- [ ] 12-02-PLAN.md — CON-03: desktop sequential Tab traversal of the six review-toolbar controls; record the `ReviewToolbar` semantic-group gap as a Phase 11 finding (wave 1)
+- [ ] 12-03-PLAN.md — CON-01/02/03: live packaged evidence dossier, visual equivalence record, and the full-suite continuity ledger (wave 2)
 
 ## Progress
 
