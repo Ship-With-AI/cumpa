@@ -354,8 +354,10 @@ function mergeReports(reports, source, requirement, identity) {
 }
 
 const root = resolve(import.meta.dirname, '..');
-const releaseEvidencePath = join(root, '.planning/phases/05-bootstrap-trusted-stable-publication/05-RELEASE-EVIDENCE.json');
-const marketplaceEvidencePath = join(root, '.planning/phases/06-independent-mit-marketplace-skill/06-PUBLICATION-EVIDENCE.json');
+// Read from the v1.5 milestone archive, not `.planning/phases/`: phase directories are
+// deleted by GSD cleanup after a milestone closes, while the archive is their permanent home.
+const releaseEvidencePath = join(root, '.planning/milestones/v1.5-phases/05-bootstrap-trusted-stable-publication/05-RELEASE-EVIDENCE.json');
+const marketplaceEvidencePath = join(root, '.planning/milestones/v1.5-phases/06-independent-mit-marketplace-skill/06-PUBLICATION-EVIDENCE.json');
 
 function readPinnedIdentity() {
   const releaseEvidence = JSON.parse(readFileSync(releaseEvidencePath, 'utf8'));

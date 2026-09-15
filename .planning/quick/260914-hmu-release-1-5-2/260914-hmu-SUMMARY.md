@@ -1,3 +1,33 @@
+---
+phase: quick
+plan: 260914-hmu
+subsystem: distribution
+tags: [npm, release, provenance, draft-loss]
+requires:
+  - phase: quick
+    provides: manifest-derived release identity and the widened repository gate
+provides:
+  - Published @shipwithai/cumpa@1.5.2 carrying the composer draft-loss and roving-tabindex fixes
+  - Proof that the shipped fix is present in the published bytes, not only in the version number
+affects: [distribution, web workspace]
+tech-stack:
+  added: []
+  patterns: [verify a release payload by bundle delta and commit ancestry, recover a transient transport from the published artifact and verify it by hash alone]
+key-files:
+  created: []
+  modified: [package.json, package-lock.json, tests/integration/monaco-anchor.spec.ts]
+key-decisions:
+  - "Patch-release the draft-loss fix immediately rather than holding it for the next milestone, since users on 1.5.1 can lose typed comment text."
+  - "Treat a UI approval as unproven until pending_deployments is empty; the operator's approval silently failed to register."
+  - "Name integration test 6 for what it verifies instead of adding a focus seam to product code for coverage the adapter unit regression already guarantees."
+patterns-established:
+  - "Never report a publish from the job's exit code: npm returns success while still serving the previous version, so verify the registry."
+requirements-completed: []
+duration: 2h
+completed: 2026-09-14
+status: complete
+---
+
 # Quick Task 260914-hmu — Release 1.5.2
 
 **Date:** 2026-09-14

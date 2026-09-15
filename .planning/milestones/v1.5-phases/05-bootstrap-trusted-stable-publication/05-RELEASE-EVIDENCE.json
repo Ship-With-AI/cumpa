@@ -1,0 +1,326 @@
+{
+  "kind": "cumpa.npm-release-evidence/v1",
+  "status": "published-verified",
+  "package": {
+    "name": "@shipwithai/cumpa",
+    "version": "1.5.0",
+    "license": "MIT",
+    "nodeEngine": ">=24",
+    "bin": {
+      "cumpa": "dist/bin/cumpa.mjs"
+    }
+  },
+  "candidate": {
+    "sourceSha": "fcc12be291623c37211291681420fe0203df6cb0",
+    "sourceTree": "23f87114ad2ddbc18c51f95e2611ef5b4f1e9f9c",
+    "workflow": "publish-npm.yml",
+    "runId": 34490078365,
+    "runAttempt": 1,
+    "candidateJobId": 102914227367,
+    "publisherJobId": 102915021477,
+    "artifactId": 10157421286,
+    "artifactDigestSha256": "b6af207adbe4a0f1b1873a0e284986d0e4dc86ee163dbb388a3f6685578ea2d9",
+    "artifactTransportBytes": 3520829,
+    "evidenceSha256": "b7fe676a35c40cbd03a8d73bbb7bc83c5a4893d6aa7d01d1ab60799af3ff1091",
+    "archive": {
+      "basename": "shipwithai-cumpa-1.5.0.tgz",
+      "byteLength": 3514800,
+      "sha256": "dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141",
+      "npmShasumSha1": "2d58866c862283f2c41b3f4f7d51282b2ca96472",
+      "npmIntegritySha512": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g=="
+    },
+    "custody": "operation-owned read-only payload; private location omitted",
+    "readOnlyPostPublicationRehashMatched": true
+  },
+  "authorizations": {
+    "candidate": {
+      "document": "05-CI-ARTIFACT-APPROVAL.md",
+      "sha256": "866598a581710953d75b90b8e60fcc321defb5317c31e0f8cbb05a6aef714f13",
+      "approver": "Alessandro Magionami",
+      "recordedAt": "2026-09-10T14:55:40Z",
+      "publicationAuthorizedByCandidateAssent": false
+    },
+    "stable": {
+      "sha256": "98ba4c9427acbd07a7fe6804107dde2ec16e020db7dc96a023860be453b0eecf",
+      "approver": "Alessandro Magionami",
+      "recordedAt": "2026-09-10T15:16:15Z",
+      "verbatimAssent": "AUTHORIZE STABLE PUBLICATION: @shipwithai/cumpa@1.5.0 sha256 dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141 bytes 3514800; evidence sha256\nb7fe676a35c40cbd03a8d73bbb7bc83c5a4893d6aa7d01d1ab60799af3ff1091; source fcc12be291623c37211291681420fe0203df6cb0; run 34490078365 attempt 1; artifact\n10157421286 digest b6af207adbe4a0f1b1873a0e284986d0e4dc86ee163dbb388a3f6685578ea2d9; approve npm-release job 102915021477; public registry and\ntransparency-log mutation acknowledged; no retry authorized",
+      "lineWrappingOnlyNormalizedForComparison": true,
+      "registryAndTransparencyMutationAcknowledged": true,
+      "publishAttemptLimit": 1,
+      "retryAuthorized": false
+    },
+    "sourceAmendmentSha256": "ce70d14bd7eecb0bdb6be014e137c781537458e97655c97207abec46610733d4",
+    "sourcePublicationAuthorizationSha256": "e07f23c8c5a9956db1fc3f8b2191127e1f4ee05b2cabc009f65e8d787618c632"
+  },
+  "configuration": {
+    "repository": "Ship-With-AI/cumpa",
+    "repositoryId": 1327753770,
+    "public": true,
+    "trustedPublisher": {
+      "provider": "GitHub Actions",
+      "workflow": "publish-npm.yml",
+      "environment": "npm-release",
+      "directPublicationEnabled": true,
+      "setupAssurance": "Owner confirmed exact saved/reloaded npm UI; no authenticated API observation invented",
+      "executionAssurance": "Actual direct trusted-publisher CI publication and npm-verified provenance"
+    },
+    "githubEnvironment": {
+      "id": 21638471478,
+      "name": "npm-release",
+      "requiredReviewer": {
+        "login": "alemagio",
+        "id": 21338507
+      },
+      "preventSelfReview": false,
+      "canAdminsBypass": false,
+      "branchPolicy": {
+        "id": 59602014,
+        "name": "main",
+        "type": "branch"
+      },
+      "environmentSecretCount": 0
+    },
+    "configuredOriginSha256": "89485617b2d50d4778542ebedc3817a3e3fcddb6520a4a9c3a66e37c3a9c6cdf",
+    "staticNpmPublicationCredentialUsed": false
+  },
+  "publication": {
+    "verifiedAt": "2026-09-10T15:47:52Z",
+    "outcome": "succeeded",
+    "runId": 34490078365,
+    "runAttempt": 1,
+    "jobId": 102915021477,
+    "deploymentApprovalId": 6374161747,
+    "deploymentApprovalExitCode": 0,
+    "jobConclusion": "success",
+    "jobStartedAt": "2026-09-10T15:17:17Z",
+    "jobCompletedAt": "2026-09-10T15:17:40Z",
+    "publishStep": {
+      "name": "Run npm publish once on the unchanged approved archive",
+      "conclusion": "success",
+      "startedAt": "2026-09-10T15:17:32Z",
+      "completedAt": "2026-09-10T15:17:38Z"
+    },
+    "observedPublishInvocationCount": 1,
+    "commandPolicy": {
+      "exactAbsoluteApprovedTarball": true,
+      "tag": "latest",
+      "access": "public",
+      "ignoreScripts": true,
+      "fetchRetries": 0,
+      "registry": "https://registry.npmjs.org/",
+      "sourceBuildOrRepack": false
+    },
+    "retryPerformed": false,
+    "workflowRerunPerformed": false,
+    "visibilityObservations": {
+      "initialExactMetadataAndTarball404": true,
+      "initialNativeNpmView": "E404",
+      "publicVisibleBy": "2026-09-10T15:36:48Z",
+      "registryRecordedPublishTime": "2026-09-10T15:27:53.362Z",
+      "backendCauseConfirmed": false,
+      "statement": "Public visibility appeared after earlier absence observations; no further publication or account action was used."
+    }
+  },
+  "registry": {
+    "name": "@shipwithai/cumpa",
+    "version": "1.5.0",
+    "license": "MIT",
+    "engines": {
+      "node": ">=24"
+    },
+    "bin": {
+      "cumpa": "dist/bin/cumpa.mjs"
+    },
+    "dist": {
+      "tarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
+      "shasum": "2d58866c862283f2c41b3f4f7d51282b2ca96472",
+      "integrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==",
+      "signatureCount": 2,
+      "attestations": {
+        "url": "https://registry.npmjs.org/-/npm/v1/attestations/@shipwithai%2fcumpa@1.5.0",
+        "provenance": {
+          "predicateType": "https://slsa.dev/provenance/v1"
+        }
+      }
+    },
+    "publishedAt": "2026-09-10T15:27:53.362Z",
+    "tags": {
+      "bootstrap": "1.5.0-bootstrap.0",
+      "latest": "1.5.0"
+    },
+    "downloadedArchive": {
+      "basename": "shipwithai-cumpa-1.5.0.tgz",
+      "byteLength": 3514800,
+      "sha256": "dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141",
+      "npmShasumSha1": "2d58866c862283f2c41b3f4f7d51282b2ca96472",
+      "npmIntegritySha512": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g=="
+    },
+    "approvedByteLengthSha256Sha1Sha512Match": true,
+    "exactVersionMetadataVerified": true
+  },
+  "attestation": {
+    "verificationTool": "npm 11.19.1",
+    "command": "npm audit signatures --json --include-attestations",
+    "cryptographicAuditExitCode": 0,
+    "auditTargetActuallyInstalled": true,
+    "exactTargetLockIntegrityMatched": true,
+    "inspection": {
+      "kind": "cumpa.npm-provenance-inspection/v1",
+      "status": "passed",
+      "subject": {
+        "name": "pkg:npm/%40shipwithai/cumpa@1.5.0",
+        "sha512": "81406b318c0bf2eef9935257d4ec4ed9dc1f52c8d018702a3d48e1f1ee44a7a815b39db0c04645c24978f5f054d9e82053d4bb275af6ed209af16d57fe21e7e6"
+      },
+      "claims": {
+        "repository": "Ship-With-AI/cumpa",
+        "repositoryId": "1327753770",
+        "ownerId": "224984099",
+        "workflowPath": ".github/workflows/publish-npm.yml",
+        "ref": "refs/heads/main",
+        "sourceSha": "fcc12be291623c37211291681420fe0203df6cb0",
+        "runId": "34490078365",
+        "runAttempt": "1",
+        "event": "workflow_dispatch",
+        "runner": "github-hosted"
+      },
+      "checks": [
+        {
+          "field": "subject",
+          "expected": "pkg:npm/%40shipwithai/cumpa@1.5.0",
+          "observed": "pkg:npm/%40shipwithai/cumpa@1.5.0",
+          "pass": true
+        },
+        {
+          "field": "sha512",
+          "expected": "81406b318c0bf2eef9935257d4ec4ed9dc1f52c8d018702a3d48e1f1ee44a7a815b39db0c04645c24978f5f054d9e82053d4bb275af6ed209af16d57fe21e7e6",
+          "observed": "81406b318c0bf2eef9935257d4ec4ed9dc1f52c8d018702a3d48e1f1ee44a7a815b39db0c04645c24978f5f054d9e82053d4bb275af6ed209af16d57fe21e7e6",
+          "pass": true
+        },
+        {
+          "field": "repository",
+          "expected": "https://github.com/Ship-With-AI/cumpa",
+          "observed": "https://github.com/Ship-With-AI/cumpa",
+          "pass": true
+        },
+        {
+          "field": "repositoryId",
+          "expected": "1327753770",
+          "observed": "1327753770",
+          "pass": true
+        },
+        {
+          "field": "ownerId",
+          "expected": "224984099",
+          "observed": "224984099",
+          "pass": true
+        },
+        {
+          "field": "workflow",
+          "expected": ".github/workflows/publish-npm.yml",
+          "observed": ".github/workflows/publish-npm.yml",
+          "pass": true
+        },
+        {
+          "field": "ref",
+          "expected": "refs/heads/main",
+          "observed": "refs/heads/main",
+          "pass": true
+        },
+        {
+          "field": "sourceUri",
+          "expected": "git+https://github.com/Ship-With-AI/cumpa@refs/heads/main",
+          "observed": "git+https://github.com/Ship-With-AI/cumpa@refs/heads/main",
+          "pass": true
+        },
+        {
+          "field": "sourceSha",
+          "expected": "fcc12be291623c37211291681420fe0203df6cb0",
+          "observed": "fcc12be291623c37211291681420fe0203df6cb0",
+          "pass": true
+        },
+        {
+          "field": "event",
+          "expected": "workflow_dispatch",
+          "observed": "workflow_dispatch",
+          "pass": true
+        },
+        {
+          "field": "runner",
+          "expected": "https://github.com/actions/runner/github-hosted",
+          "observed": "https://github.com/actions/runner/github-hosted",
+          "pass": true
+        },
+        {
+          "field": "invocation",
+          "expected": "https://github.com/Ship-With-AI/cumpa/actions/runs/34490078365/attempts/1",
+          "observed": "https://github.com/Ship-With-AI/cumpa/actions/runs/34490078365/attempts/1",
+          "pass": true
+        }
+      ]
+    },
+    "rawAuditOrBundleRetainedInCanonicalEvidence": false,
+    "verificationReportSha256": "c96a6447f6e2194b16cf5340355afe341f2b5bfdab983e81586563327607602a"
+  },
+  "consumers": {
+    "global": {
+      "package": "@shipwithai/cumpa@1.5.0",
+      "installCommand": "npm install --global @shipwithai/cumpa@1.5.0",
+      "installScripts": "enabled",
+      "generatedBinContainedInExactPackage": true,
+      "command": "cumpa --version",
+      "exitCode": 0,
+      "stdout": "1.5.0",
+      "freshHomeCachePrefixAndConfigs": true,
+      "credentialsInherited": false,
+      "localTarballFallback": false,
+      "ownedTemporaryStateRemoved": true
+    },
+    "npx": {
+      "command": "npx --yes @shipwithai/cumpa@1.5.0 --version",
+      "exitCode": 0,
+      "stdout": "1.5.0",
+      "freshHomeCachePrefixAndConfigs": true,
+      "initialGlobalInstallAbsent": true,
+      "credentialsInherited": false,
+      "localTarballFallback": false,
+      "ownedTemporaryStateRemoved": true
+    },
+    "additionalVerifierChecks": {
+      "global": {
+        "package": "@shipwithai/cumpa@1.5.0",
+        "command": "cumpa --version",
+        "version": "1.5.0",
+        "installScripts": "disabled"
+      },
+      "npx": {
+        "command": "npx --yes @shipwithai/cumpa@1.5.0 --version",
+        "version": "1.5.0"
+      }
+    },
+    "npmVersion": "11.19.1",
+    "npxVersion": "11.19.1"
+  },
+  "cleanup": {
+    "temporarySourceVariableAbsent": true,
+    "temporaryOriginSecretAbsent": true,
+    "authoritativeOriginFingerprintUnchanged": true,
+    "publicVerifierConsumersRemoved": true,
+    "normalGlobalConsumerRemoved": true,
+    "literalNpxConsumerRemoved": true,
+    "verificationToolchainRemoved": true,
+    "dedicatedNpmInspectionTabClosed": true,
+    "unrelatedBrowserTabNotNavigatedOrClosed": true,
+    "existingAuthenticationPreserved": true,
+    "candidateCustodyRetainedReadOnly": true,
+    "phase4AndBootstrapHistoryPreserved": true
+  },
+  "limitations": [
+    "Static disclosure scanning is bounded and does not prove every possible credential or legal obligation absent.",
+    "Native re-export was observed on Darwin ARM64; other targets retain the documented fallback.",
+    "Transitive dependency resolution is observed at install time and those dependencies are not inside the tarball.",
+    "No SLSA level, exhaustive source-input completeness, every-platform native or full public-browser-review claim is made.",
+    "The initial public visibility gap is recorded without attributing an unverified backend mechanism.",
+    "Historical Phase 4 bytes and failed CI candidates were not publication fallbacks and gain no retrospective provenance."
+  ]
+}

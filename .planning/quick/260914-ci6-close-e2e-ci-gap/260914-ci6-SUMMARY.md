@@ -1,3 +1,36 @@
+---
+phase: quick
+plan: 260914-ci6
+subsystem: testing
+tags: [playwright, ci, accessibility, monaco, linux]
+requires:
+  - phase: quick
+    provides: repository gate running the two hosted-support specs only
+provides:
+  - Repository gate running the full main-config Playwright suite including integration specs
+  - Single shared custody spec list partitioning the gate from release acceptance
+  - Composer draft-loss and roving-tabindex defects fixed at their roots
+affects: [ci, e2e tests, web file tree, monaco diff adapter]
+tech-stack:
+  added: []
+  patterns: [derive one config's testIgnore from the other config's testMatch, isolate host-platform assertions into explicitly skipped tests, prove a widened gate in a Linux container before flipping CI]
+key-files:
+  created: []
+  modified: [.github/workflows/deploy-supabase-production.yml, playwright.config.ts, playwright.runtime-artifact.config.ts, src/web/model/file-tree.ts, src/web/monaco/diff-adapter.ts, scripts/verify-supabase-support.mjs]
+key-decisions:
+  - "Widen the gate by sharing one custody spec list so new specs are included by default, instead of enumerating spec paths in workflow YAML."
+  - "Keep custody-gated acceptance specs failing loudly without custody env; a silently skipped acceptance spec is how release coverage disappears."
+  - "Gate only host-platform opener evidence to darwin, never the cross-platform behaviour it accompanies."
+  - "Prove the widened suite in an unprivileged Linux container before flipping CI, because a root container hides umask-dependent failures."
+patterns-established:
+  - "A workflow command line asserted by a verifier and its mutation test must change in one atomic commit with both."
+  - "An intermittent assertion belongs in no gate: root-cause it before widening coverage that will run it on every push."
+requirements-completed: []
+duration: 6h
+completed: 2026-09-14
+status: complete
+---
+
 # Quick Task 260914-ci6 — Close the e2e CI gap
 
 **Date:** 2026-09-14  

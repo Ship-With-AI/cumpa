@@ -10,15 +10,43 @@ A developer can accurately review repository-grounded changes chosen by a develo
 
 ## Current State
 
-**Shipped:** v1.4 Voluntary Support on 2026-09-04.
+**Shipped:** v1.5 MIT Distribution on 2026-09-15.
 
-Cumpa now offers an optional one-time USD $49.99 support flow in configured release packages without gating review behavior. The local app hands Support or Restore actions to a canonical Supabase-hosted GitHub OAuth flow; only a signature-verified Stripe webhook can establish paid status. Verified status persists installation-wide and a paid GitHub account can restore suppression on unlimited installations. Ordinary unconfigured local builds contain no hosted capability, provider credential, or support route.
+Cumpa is published on the public npm registry as `@shipwithai/cumpa` under standard MIT
+terms. Users install it globally, run it through `npx --yes`, or install the public
+ShipWithAI marketplace skill that checks for the separately installed CLI. Every release is
+published through OIDC trusted publishing from the approved public repository with no
+long-lived credentials, and carries SLSA provenance bound to its source commit and CI run.
+`latest` is `1.5.2`.
 
-**v1.5 progress:** Phase 03 — Distribution Contract & Legal Boundary completed on 2026-09-08. The existing `Ship-With-AI/cumpa` repository is public under the approved MIT terms at reviewed publication commit `ff72519969da8d2c0761c9533ccb27b809cd17bb`; anonymous source/LICENSE/Issues access and approved public controls were verified. Temporary publication tokens were revoked per operator confirmation and local copies removed. Public npm availability and provenance are not yet claimed.
+The full browser-review acceptance matrix — install, launch, ordered base/head selection,
+review, comment, Finish, export — was proved end to end against the public `1.5.0` artifact
+on all three installation paths. The 1.5.1 and 1.5.2 patches carry their own publication,
+provenance, and fix-presence evidence but did not re-run that whole matrix.
 
-**Phase 04 — Exact Runtime Tarball completed on 2026-09-09.** One production-configured `@shipwithai/cumpa@1.5.0` archive passed scanner and installed acceptance, remains read-only, and received direct digest-bound approval: SHA-256 `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca`, length `3513998` bytes. During Phase 5 planning, the owner selected a fresh CI-built candidate with new exact-byte approval and publication in the same workflow run/attempt for truthful CI-build provenance. The old archive/evidence remain immutable history; they are not a publication fallback. No Phase 5 execution or remote mutation is authorized by that planning choice.
+One requirement is knowingly unmet: ACC-04's verified-support state remains unreachable
+because the paid entitlement exists only in Stripe test-mode data, D-07 forbade a new
+purchase, and Restore still completes on a false RPC result. Unpaid and dismissed support
+states passed on every path, so no review or export behaviour is gated.
 
-## Current Milestone: v1.5 MIT Distribution
+The repository gate runs the full Playwright suite (94 tests) on every push to `main`;
+it found and forced fixes for a composer draft-loss race and a roving-tabindex defect
+within hours of being widened.
+
+## Next Milestone Goals
+
+No milestone is active. Start the next one with `/gsd:new-milestone`, which defines fresh
+requirements and a new roadmap. Candidates carried forward from v1.5:
+
+- Make Restore propagate a false or failed RPC result into a non-completion response, then
+  obtain a permitted genuine live entitlement and close ACC-04 by rerunning only the
+  verified-state portions for the global, npx, and marketplace paths.
+- Correct `SKILL.md`, which still installs `@1.5.0` and claims only 1.5.0 has independent
+  release verification; this needs a separate marketplace publication.
+- Bring `.vue` files under typechecking with `vue-tsc`.
+
+<details>
+<summary>v1.5 MIT Distribution (shipped)</summary>
 
 **Goal:** Let users install and run MIT-licensed Cumpa from public npm and install its public ShipWithAI skill, with the existing Cumpa source repository and reviewed history publicly available under the same standard MIT license.
 
@@ -33,7 +61,10 @@ Cumpa now offers an optional one-time USD $49.99 support flow in configured rele
 - Verify clean global, npx, and marketplace-installed browser-review flows against released artifacts.
 - Completed in Phase 03: publish the existing `Ship-With-AI/cumpa` repository and reviewed history after the approval gates, with its verified public Issues page and no separate homepage.
 
+**Delivered:** all six target features. ACC-04's verified-support acceptance remained
+blocked under D-07/D-08; see `.planning/milestones/v1.5-ROADMAP.md`.
 
+</details>
 <details>
 <summary>v1.4 Voluntary Support (shipped)</summary>
 
@@ -143,12 +174,20 @@ Validated in v1.5 Phase 04: Exact Runtime Tarball:
 - [x] The same exact bytes passed installed review/relaunch, support-unavailable dismissal and canonical V2/V3 Finish, then received attributable SHA-256/length approval in read-only outside-checkout custody.
 - [x] Sealed accepted-local evidence and attributable approval established the initial exact-byte handoff without publication authority. The owner's subsequent Phase 5 CI-build decision supersedes only that publication designation; the Phase 4 artifact and records remain unchanged.
 
+Validated in v1.5 Phases 05–07: Publication, Marketplace Skill, and Public Acceptance:
+
+- [x] Users can install MIT-licensed `@shipwithai/cumpa` globally to obtain the `cumpa` command or run it through `npx @shipwithai/cumpa@<version>`.
+- [x] Maintainers can publish approved releases from the public repository through npm trusted publishing without a long-lived token, retaining eligible automatic provenance and verifying attestation claims.
+- [x] Coding-agent users can install the existing public MIT-licensed Cumpa skill through ShipWithAI and follow its declared CLI prerequisite.
+- [x] Clean global, npx, and marketplace installation paths complete the existing browser-review workflow against released artifacts.
+
+ACC-04 remains the one unmet v1.5 requirement: unpaid and dismissed support states preserve
+unrestricted review and export on all three paths, but the verified-support state could not
+be genuinely reached (`live-entitlement-unavailable`, `substituted: false`) under D-07/D-08.
+
 ### Active
 
-- [ ] Users can install MIT-licensed `@shipwithai/cumpa@1.5.0` globally to obtain the `cumpa` command or run it through `npx @shipwithai/cumpa@1.5.0`.
-- [ ] Maintainers can publish approved releases from the public repository through npm trusted publishing without a long-lived token, retaining eligible automatic provenance and verifying any attestation claims.
-- [ ] Coding-agent users can install the existing public MIT-licensed Cumpa skill through ShipWithAI and follow its declared CLI prerequisite.
-- [ ] Clean global, npx, and marketplace installation paths complete the existing browser-review workflow against released artifacts.
+None. Start the next milestone with `/gsd:new-milestone` to define fresh requirements.
 
 ### Out of Scope
 
@@ -260,4 +299,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-09-09 after verified Phase 5 planning and the owner-selected same-run CI-build publication decision; execution not started*
+*Last updated: 2026-09-15 after the v1.5 MIT Distribution milestone shipped; 18/19 requirements validated, ACC-04 blocked under D-07/D-08, `latest` published as 1.5.2*

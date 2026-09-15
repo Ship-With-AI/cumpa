@@ -1,0 +1,526 @@
+{
+  "kind": "cumpa.public-artifact-acceptance/v1",
+  "status": "partially-blocked",
+  "acceptedAt": "2026-09-12T20:14:22Z",
+  "host": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "osRelease": "25.6.0",
+    "node": "v24.15.0",
+    "npm": "11.12.1",
+    "git": "git version 2.54.0 (Apple Git-157)",
+    "playwright": "Version 1.61.1",
+    "browser": "149.0.7827.55"
+  },
+  "isolationBoundary": {
+    "type": "isolated-local-environments",
+    "freshMachine": false,
+    "ranOutsideCheckout": true,
+    "preservedUserState": true,
+    "isolatedDimensions": [
+      "npm-cache",
+      "npm-configuration",
+      "install-prefix",
+      "browser-profile-state",
+      "checkout-separation",
+      "sanitized-path"
+    ],
+    "sharedSupportHome": true
+  },
+  "artifactIdentity": {
+    "tarballUrl": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
+    "byteLength": 3514800,
+    "sha256": "dc8f792920833415d309015d5f4c31501016e9a4a6cc945bb69dde2453137141",
+    "npmShasumSha1": "2d58866c862283f2c41b3f4f7d51282b2ca96472",
+    "npmIntegritySha512": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g=="
+  },
+  "marketplaceIdentity": {
+    "collectionVersion": "0.3.0",
+    "commit": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+    "skillDigest": "8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220",
+    "repository": "https://github.com/Ship-With-AI/skills.git"
+  },
+  "requirements": [
+    {
+      "requirement": "ACC-01",
+      "status": "passed",
+      "installSource": "global"
+    },
+    {
+      "requirement": "ACC-02",
+      "status": "passed",
+      "installSource": "npx"
+    },
+    {
+      "requirement": "ACC-03",
+      "status": "passed",
+      "installSource": "marketplace"
+    },
+    {
+      "requirement": "ACC-04",
+      "status": "partially-blocked",
+      "supportStates": [
+        {
+          "state": "unverified",
+          "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "global"
+        },
+        {
+          "state": "dismissed",
+          "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "global"
+        },
+        {
+          "state": "verified",
+          "status": "blocked",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": false,
+          "exportUnrestricted": false,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": false,
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "window": "post-restore",
+          "observed": true,
+          "installSource": "global"
+        },
+        {
+          "state": "unverified",
+          "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "npx"
+        },
+        {
+          "state": "dismissed",
+          "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "npx"
+        },
+        {
+          "state": "verified",
+          "status": "blocked",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": false,
+          "exportUnrestricted": false,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": false,
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "window": "post-restore",
+          "observed": true,
+          "installSource": "npx"
+        },
+        {
+          "state": "unverified",
+          "window": "pre-restore",
+          "observed": true,
+          "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
+          "substituted": false,
+          "installSource": "marketplace"
+        },
+        {
+          "state": "dismissed",
+          "window": "pre-restore",
+          "observed": true,
+          "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "substituted": false,
+          "installSource": "marketplace"
+        },
+        {
+          "state": "verified",
+          "window": "post-restore",
+          "observed": true,
+          "status": "blocked",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "installSource": "marketplace"
+        }
+      ]
+    }
+  ],
+  "installations": [
+    {
+      "installSource": "global",
+      "requirement": "ACC-01",
+      "status": "passed",
+      "installProof": {
+        "packageLabel": "@shipwithai/cumpa@1.5.0",
+        "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
+        "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==",
+        "installScripts": "enabled",
+        "resolvedVersion": "1.5.0",
+        "binaryContainedInIsolatedPrefix": true,
+        "npmInstallAttempts": 1
+      },
+      "sharedSupportIdentity": {
+        "shared": true,
+        "restoreCompleted": false,
+        "restoreObservedFromSharedIdentity": false
+      },
+      "sourceControlUnchanged": true,
+      "supportStates": [
+        {
+          "state": "unverified",
+          "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "global"
+        },
+        {
+          "state": "dismissed",
+          "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "global"
+        },
+        {
+          "state": "verified",
+          "status": "blocked",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": false,
+          "exportUnrestricted": false,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": false,
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "window": "post-restore",
+          "observed": true,
+          "installSource": "global"
+        }
+      ],
+      "cleanup": {
+        "removedOwnedRoots": true
+      },
+      "evidence": {
+        "assetGraph": {
+          "assets": true,
+          "workers": true,
+          "codicon": true
+        },
+        "reviewExport": {
+          "relaunch": true,
+          "canonicalV2": true,
+          "isolatedDrafts": true,
+          "reExport": "exported",
+          "exactPatch": {
+            "canonicalV3": true,
+            "grounded": true
+          },
+          "native": {
+            "observedReExport": true,
+            "fallback": "reExportUnsupported"
+          }
+        },
+        "finish": {
+          "finish": true
+        }
+      }
+    },
+    {
+      "installSource": "npx",
+      "requirement": "ACC-02",
+      "status": "passed",
+      "installProof": {
+        "packageLabel": "@shipwithai/cumpa@1.5.0",
+        "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
+        "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==",
+        "installScripts": "enabled",
+        "resolvedVersion": "1.5.0",
+        "binaryContainedInIsolatedPrefix": true,
+        "npmInstallAttempts": 1,
+        "npmCacheEmptyBeforeRun": true,
+        "npmCacheEntryCountBefore": 0,
+        "priorGlobalInstallAbsent": true,
+        "localNodeModulesBinAbsent": true,
+        "registryFetchObserved": true,
+        "npxResolvedPackageVersion": "1.5.0"
+      },
+      "sharedSupportIdentity": {
+        "shared": true,
+        "restoreCompleted": false,
+        "restoreObservedFromSharedIdentity": false
+      },
+      "sourceControlUnchanged": true,
+      "supportStates": [
+        {
+          "state": "unverified",
+          "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "npx"
+        },
+        {
+          "state": "dismissed",
+          "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "substituted": false,
+          "window": "pre-restore",
+          "observed": true,
+          "installSource": "npx"
+        },
+        {
+          "state": "verified",
+          "status": "blocked",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": false,
+          "exportUnrestricted": false,
+          "finishUnrestricted": false,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": false,
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "window": "post-restore",
+          "observed": true,
+          "installSource": "npx"
+        }
+      ],
+      "cleanup": {
+        "removedOwnedRoots": true
+      },
+      "evidence": {
+        "assetGraph": {
+          "assets": true,
+          "workers": true,
+          "codicon": true
+        },
+        "reviewExport": {
+          "relaunch": true,
+          "canonicalV2": true,
+          "isolatedDrafts": true,
+          "reExport": "exported",
+          "exactPatch": {
+            "canonicalV3": true,
+            "grounded": true
+          },
+          "native": {
+            "observedReExport": true,
+            "fallback": "reExportUnsupported"
+          }
+        },
+        "finish": {
+          "finish": true
+        }
+      }
+    },
+    {
+      "installSource": "marketplace",
+      "requirement": "ACC-03",
+      "status": "passed",
+      "installProof": {
+        "packageLabel": "@shipwithai/cumpa@1.5.0",
+        "resolvedTarball": "https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz",
+        "resolvedIntegrity": "sha512-gUBrMYwL8u75k1JX1OxO2dwfUsjQGHAqPUjh8e5Ep6gVs52wwEZFwkl49fBU2eggU9S7J1r27SCa8W1X/iHn5g==",
+        "resolvedVersion": "1.5.0",
+        "installScripts": "enabled",
+        "binaryContainedInIsolatedPrefix": true,
+        "manifestSha256": "4bad666e56748bb1c7c9ed6b12043c43d28ac15383a569626f50ea5179480a54",
+        "npmInstallAttempts": 1
+      },
+      "sharedSupportIdentity": {
+        "shared": true,
+        "restoreCompleted": false,
+        "restoreObservedFromSharedIdentity": false
+      },
+      "sourceControlUnchanged": true,
+      "supportStates": [
+        {
+          "state": "unverified",
+          "window": "pre-restore",
+          "observed": true,
+          "status": "passed",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": true,
+          "interactiveReviewExportPerformed": false,
+          "substituted": false,
+          "installSource": "marketplace"
+        },
+        {
+          "state": "dismissed",
+          "window": "pre-restore",
+          "observed": true,
+          "status": "passed",
+          "promptShown": false,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "substituted": false,
+          "installSource": "marketplace"
+        },
+        {
+          "state": "verified",
+          "window": "post-restore",
+          "observed": true,
+          "status": "blocked",
+          "promptShown": true,
+          "restoreCompleted": false,
+          "restoreObservedFromSharedIdentity": false,
+          "reviewUnrestricted": true,
+          "exportUnrestricted": true,
+          "finishUnrestricted": true,
+          "modalPromptBlocksInteractiveActions": false,
+          "interactiveReviewExportPerformed": true,
+          "reason": "live-entitlement-unavailable",
+          "substituted": false,
+          "installSource": "marketplace"
+        }
+      ],
+      "cleanup": {
+        "removedOwnedRoots": true
+      },
+      "evidence": {
+        "collection": "ship-with-ai",
+        "lifecycle": {
+          "readinessStarted": "2026-09-12T19:42:02.993Z",
+          "readiness": "2026-09-12T19:43:30.423Z",
+          "completion": "2026-09-12T19:44:52.575Z",
+          "terminalExit": 0
+        },
+        "canonical": {
+          "nonEmpty": true,
+          "parseable": true,
+          "kind": "cumpa/export",
+          "summaryMatchesBrowser": true,
+          "commentMatchesBrowser": true
+        }
+      }
+    }
+  ],
+  "restoreReportedCompleteWithoutLinkage": {
+    "observed": true,
+    "path": "public-global",
+    "window": "post-restore",
+    "description": "The hosted flow reported a successful Restore while installation status remained unverified and the in-product modal reached no terminal state.",
+    "regenerationNote": "The report-only regeneration did not reproduce this observation because the single authorized Restore sign-in was already consumed."
+  },
+  "localArchivePrerequisite": true,
+  "limitations": [
+    "Local process isolation is not fresh-machine proof.",
+    "One macOS host platform and one browser were exercised; no operating-system or browser compatibility matrix is claimed.",
+    "OMP is the only agent runtime exercised; Claude Code, Codex, and Pi remain unexercised and the Phase 6 four-agent waiver remains intact.",
+    "The Phase 4 and Phase 5 local-archive acceptance record is separate and unchanged.",
+    "The local-archive path requires operator-held custody inputs and the protected CUMPA_RELEASE_SUPPORT_SERVICE_URL; its full execution was not available.",
+    "One shared voluntary-support identity was used across all three installation paths; three distinct identities would have required three protected sign-ins. This operator-confirmed narrowing left npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH isolated per path.",
+    "The public-global Restore linkage finding was observed and remains a product defect outside Phase 7 scope under D-09.",
+    "Blocked support-state reason: live-entitlement-unavailable."
+  ]
+}

@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: MIT Distribution
-current_phase: 07
-current_phase_name: clean-public-artifact-acceptance
-status: partially-blocked
-stopped_at: Phase 07 requirement-axis evidence corrected; ACC-04 partially blocked
-last_updated: "2026-09-13T15:52:09Z"
-last_activity: 2026-09-13
-last_activity_desc: Completed test typecheck coverage quick task
+current_phase: none
+current_phase_name: milestone-complete
+status: complete
+stopped_at: v1.5 MIT Distribution archived; ACC-04 carried forward as the one known gap
+last_updated: "2026-09-15T12:40:00Z"
+last_activity: 2026-09-15
+last_activity_desc: Archived the v1.5 MIT Distribution milestone
 progress:
   total_phases: 5
   completed_phases: 5

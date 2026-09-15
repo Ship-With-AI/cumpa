@@ -33,9 +33,9 @@
 
 ### Released-Artifact Acceptance
 
-- [ ] **ACC-01**: A clean environment can install `@shipwithai/cumpa@1.5.0` globally and complete the existing browser-review workflow without using a source checkout, a workspace link, or a local tarball.
-- [ ] **ACC-02**: A clean environment with an empty npm cache can run `npx --yes @shipwithai/cumpa@1.5.0` and complete the existing browser-review workflow without a prior or local installation.
-- [ ] **ACC-03**: A clean agent profile can install the public marketplace skill, invoke the separately installed `@shipwithai/cumpa@1.5.0` CLI, finish a browser review, and receive its validated canonical result.
+- [x] **ACC-01**: A clean environment can install `@shipwithai/cumpa@1.5.0` globally and complete the existing browser-review workflow without using a source checkout, a workspace link, or a local tarball.
+- [x] **ACC-02**: A clean environment with an empty npm cache can run `npx --yes @shipwithai/cumpa@1.5.0` and complete the existing browser-review workflow without a prior or local installation.
+- [x] **ACC-03**: A clean agent profile can install the public marketplace skill, invoke the separately installed `@shipwithai/cumpa@1.5.0` CLI, finish a browser review, and receive its validated canonical result.
 - [ ] **ACC-04**: All released installation paths preserve unrestricted review and export behavior regardless of voluntary-support payment state.
 
 ## Future Requirements
@@ -79,10 +79,10 @@ Each active requirement maps to exactly one roadmap phase.
 | SKL-01 | Phase 6 | Complete |
 | SKL-02 | Phase 6 | Complete |
 | SKL-03 | Phase 6 | Complete |
-| ACC-01 | Phase 7 | Pending |
-| ACC-02 | Phase 7 | Pending |
-| ACC-03 | Phase 7 | Pending |
-| ACC-04 | Phase 7 | Pending |
+| ACC-01 | Phase 7 | Complete |
+| ACC-02 | Phase 7 | Complete |
+| ACC-03 | Phase 7 | Complete |
+| ACC-04 | Phase 7 | Blocked — `live-entitlement-unavailable`; verified-support rows unreachable under D-07/D-08 |
 
 **Coverage:**
 

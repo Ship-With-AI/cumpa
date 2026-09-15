@@ -1,0 +1,1032 @@
+{
+  "kind": "cumpa.bootstrap-publication/v1",
+  "status": "complete-under-owner-approved-first-release-latest-exception",
+  "package": "@shipwithai/cumpa",
+  "version": "1.5.0-bootstrap.0",
+  "tag": "bootstrap",
+  "access": "public",
+  "archiveSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+  "archiveByteLength": 3514006,
+  "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+  "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+  "publicSourceSha": "72c9bb499538a2c542d5165148e2d45096f7da56",
+  "sourceTreeSha": "cee68f305f818383364edc1a9595800970dac580",
+  "artifactApproval": {
+    "received": true,
+    "capturedAt": "2026-09-09T20:13:04Z",
+    "additionalConfiguredOriginFingerprintMatched": true
+  },
+  "guard": {
+    "serviceName": "cumpa-bootstrap-auth-guard",
+    "codeSha256": "b11ad8729363e95b3e297a82b76d9ef6c6ec31c3fd6e9c8ef1b3c314d6d0f800",
+    "currentState": "closed",
+    "running": false,
+    "readyObserved": true,
+    "idleLimitSeconds": 900,
+    "absoluteLimitSeconds": 3600,
+    "standinChecksPassed": 16,
+    "nativePtyForNpm": true,
+    "rawNpmOutputRemainsPrivate": true,
+    "idleDeadlineEpoch": 1789029615.975586,
+    "absoluteDeadlineEpoch": 1789032315.029814,
+    "cleanupComplete": true,
+    "reason": "publication-finished"
+  },
+  "authentication": {
+    "authorized": true,
+    "authorization": {
+      "kind": "cumpa.bootstrap-authentication-authorization/v1",
+      "authorizer": "Alessandro Magionami",
+      "capturedAt": "2026-09-10T08:25:13Z",
+      "source": "Direct user selection at second-attempt authorization gate",
+      "verbatimResponse": "Authorize one new attempt",
+      "scope": [
+        "one fresh isolated native-browser npm CLI login as alemagio",
+        "read-only account/scope/2FA/vacancy checks",
+        "apply the new one-attempt publication authority if bindings match",
+        "owned-session revocation and cleanup"
+      ],
+      "package": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+      "publicationAuthorizationSha256": "056cd80371e2f202b2449b2fa2241652e9083591b9e8b45d586f63d26b4a203a",
+      "stableOrCiAuthorized": false
+    },
+    "authorizationSha256": "98a170dc7ea1032880c273acb4dc5c953dffc7a47e49cfbc1a591232d8aa53c5",
+    "attempted": true,
+    "authenticated": true,
+    "publicAccount": "alemagio",
+    "authorityAnd2faVerified": true
+  },
+  "publication": {
+    "authorized": true,
+    "authorization": {
+      "kind": "cumpa.bootstrap-publication-authorization/v1",
+      "authorizer": "Alessandro Magionami",
+      "capturedAt": "2026-09-10T08:25:13Z",
+      "source": "Direct user selection authorizing a second real bootstrap publication attempt",
+      "verbatimResponse": "Authorize one new attempt",
+      "selectedAuthorizationText": "Authorize one fresh isolated CLI login as alemagio and one new real publication of @shipwithai/cumpa@1.5.0-bootstrap.0 sha256 4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f bytes 3514006 tag bootstrap access public as shipwithai owner; unchanged approved bytes, fresh preconditions, one attempt and immediate owned-session revocation.",
+      "package": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "byteLength": 3514006,
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+      "sourceSha": "72c9bb499538a2c542d5165148e2d45096f7da56",
+      "account": "alemagio",
+      "organization": "shipwithai",
+      "organizationRole": "owner",
+      "tag": "bootstrap",
+      "access": "public",
+      "registry": "https://registry.npmjs.org/",
+      "ignoreScripts": true,
+      "fetchRetries": 0,
+      "attemptLimit": 1,
+      "revokeOwnedSessionImmediatelyAfterAttempt": true,
+      "latestAssignmentAuthorized": false,
+      "rebuildOrRetryAuthorized": false,
+      "stableOrCiAuthorized": false,
+      "attemptOrdinal": 2,
+      "priorConsumedAuthorizationSha256": "2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930"
+    },
+    "authorizationSha256": "056cd80371e2f202b2449b2fa2241652e9083591b9e8b45d586f63d26b4a203a",
+    "attemptOrdinal": 2,
+    "attempted": true,
+    "attemptRequested": true,
+    "authorizationConsumed": true,
+    "retryAuthorized": false,
+    "stableOrCiAuthorized": false,
+    "prepublicationChecksPassed": true,
+    "finalPreconditionsObservedAt": "2026-09-10T08:29:33Z",
+    "attemptCount": 1,
+    "totalPublicationAttemptCount": 2,
+    "npmExitCode": 0
+  },
+  "revocation": {
+    "sessionExists": false,
+    "providerRevocationClaim": "supported-npm-logout-server-response",
+    "ownedCleanupComplete": true,
+    "state": "complete",
+    "ownedLocalCredentialFound": false,
+    "independentTokenRejectionObserved": false,
+    "operatorConfirmationOfLatestLogout": {
+      "at": "2026-09-10T09:06:19Z",
+      "source": "Direct user selection",
+      "response": "Revocation confirmed",
+      "assurance": "Operator confirmation in addition to the supported npm logout; independent token rejection not claimed."
+    }
+  },
+  "limits": [
+    "Readiness is a timestamped observation, not a promise the guard remains alive after idle/deadline or process loss.",
+    "Native browser web authentication is supported; unexpected legacy password/classic-code prompts stop without relaying credentials to chat.",
+    "SIGKILL, machine loss and unreachable provider are unresolved until cleanup-first recovery proves the real outcome.",
+    "Artifact approval does not authorize authentication or publication."
+  ],
+  "publicationRouteRequest": {
+    "requestedAt": "2026-09-10T05:48:15Z",
+    "source": "Direct user custom response at fresh CLI-login gate",
+    "statement": "I want to authorize pubblication via CI",
+    "publicationChannel": "GitHub Actions",
+    "furtherLocalLoginAuthorized": false,
+    "bootstrapArchiveIdentityUnchanged": true,
+    "observedPublicRegistry": [
+      {
+        "target": "%40shipwithai%2Fcumpa",
+        "status": 404,
+        "authoritativeNotFound": true
+      },
+      {
+        "target": "%40shipwithai%2Fcumpa/1.5.0-bootstrap.0",
+        "status": 404,
+        "authoritativeNotFound": true
+      },
+      {
+        "target": "%40shipwithai%2Fcumpa/1.5.0",
+        "status": 404,
+        "authoritativeNotFound": true
+      }
+    ],
+    "trustedPublisherPrerequisite": "npm trust requires the package already to exist; initial-version OIDC support remains an open npm issue.",
+    "sources": [
+      "https://docs.npmjs.com/cli/v11/commands/npm-trust/#prerequisites",
+      "https://github.com/npm/cli/issues/8544",
+      "https://docs.npmjs.com/creating-and-viewing-access-tokens/"
+    ],
+    "proposedBootstrapAuthentication": "One-operation granular npm token with target-scope package-write access and publishing 2FA bypass, protected GitHub environment secret, immediate revocation/deletion after the attempt.",
+    "credentialExceptionAuthorized": false,
+    "exactCiSetupRunAndPublicationAuthorization": null,
+    "stableCandidateApprovalUnchanged": "Still requires a fresh CI build and actual digest-bound approval.",
+    "status": "superseded-by-local-bootstrap-decision"
+  },
+  "localBootstrapDecision": {
+    "recordedAt": "2026-09-10T06:05:14Z",
+    "source": "Direct user message after route explanation",
+    "statement": "ok, now I get it, let's go with the first local publication",
+    "route": "Approved bootstrap published locally first, then fresh stable CI build and OIDC publication",
+    "ciBootstrapGranularTokenExceptionApproved": false,
+    "exactPublicationConfirmation": "Pending observed npm identity, permissions, 2FA and actual exact-value publication gate"
+  },
+  "safeGuardDiagnostics": {
+    "sha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+    "failedCommandExitStatusAndAllowlistedErrorCodeOnly": true,
+    "privateUrlsAndTokensExcluded": true,
+    "harmlessLifecycleChecksPassed": 15,
+    "missingSafeDiagnosticObservedBeforeChange": true,
+    "realAuthenticationOrPublicationUsedForChecks": false
+  },
+  "previousAuthenticationAttempts": [
+    {
+      "authentication": {
+        "authorized": true,
+        "attempted": true,
+        "publicAccount": null,
+        "authorityAnd2faVerified": false,
+        "authorization": {
+          "kind": "cumpa.bootstrap-authentication-authorization/v1",
+          "authorizer": "Alessandro Magionami",
+          "source": "Direct user selection: Authorize isolated npm login",
+          "capturedAt": "2026-09-10T04:54:36Z",
+          "package": "@shipwithai/cumpa",
+          "version": "1.5.0-bootstrap.0",
+          "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+          "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+          "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+          "scope": [
+            "one isolated native-browser npm login",
+            "read-only account/scope-write/2FA checks",
+            "owned-session revocation and cleanup"
+          ],
+          "publicationAuthorized": false,
+          "hostedConfigurationOrCiAuthorized": false,
+          "expiredPreloginGuard": "closed with no session created; fresh empty context permitted before login"
+        },
+        "authorizationSha256": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b",
+        "authenticated": false,
+        "outcome": "Guarded CLI login did not establish an owned token. Operator subsequently clarified that only website login completed, without CLI authorization.",
+        "failureObservedAt": "2026-09-10T05:12:50Z",
+        "operatorLoginReport": {
+          "reportedAt": "2026-09-10T05:30:55Z",
+          "statement": "I just logged in",
+          "interpretation": "User reports successful login; whether the isolated CLI session completed remains unresolved."
+        },
+        "operatorLoginClarification": {
+          "reportedAt": "2026-09-10T05:36:59Z",
+          "source": "Direct user selection",
+          "response": "Website login only",
+          "selectedMeaning": "Signed into npm in the browser, but did not complete an approval for CLI access.",
+          "assurance": "Operator-reported absence of completed CLI authorization; not an independently observed server revocation."
+        }
+      },
+      "guard": {
+        "observedAt": "2026-09-09T21:08:51Z",
+        "serviceName": "cumpa-bootstrap-auth-guard",
+        "readyObserved": true,
+        "safeStatusControlObserved": true,
+        "codeSha256": "1b521a7b26a5ad8a2601c99abab67396d3986cf5013ad57dfddb5429b11502ab",
+        "privateOwnershipReceiptPersisted": true,
+        "fixedRelativeOwnedPathsOnly": true,
+        "nativePtyForNpm": true,
+        "rawNpmOutputRemainsPrivate": true,
+        "nodeVersion": "v24.15.0",
+        "npmVersion": "11.12.1",
+        "idleLimitSeconds": 900,
+        "absoluteLimitSeconds": 3600,
+        "observedIdleDeadline": "2026-09-09T21:18:14Z",
+        "absoluteDeadline": "2026-09-09T21:51:30Z",
+        "standinChecksPassed": [
+          "cancelled-login",
+          "failed-login",
+          "authority-failure",
+          "publication-rejection",
+          "normal-stdin-exit",
+          "SIGINT",
+          "SIGTERM",
+          "SIGHUP",
+          "idle-timeout",
+          "publication-terminal-cleanup",
+          "absolute-deadline",
+          "SIGKILL-then-cleanup-first-recovery",
+          "pre-auth-abort-creates-no-session",
+          "pre-auth-publish-creates-no-session",
+          "provider-loss-retains-recovery-route"
+        ],
+        "standinChecksUsedRealCredentials": false,
+        "recoveryRule": "Inspect the actual private receipt and live guard first. Resolve any attempted/unknown session before another login. Closed no-session preparation can be replaced with a fresh empty context.",
+        "previousPreloginPreparationClosedWithoutSession": true,
+        "freshPreparationReadyForAuthorizedLogin": false,
+        "absoluteDeadlineEpoch": 1789019737.0,
+        "idleDeadlineEpoch": 1789017037.6838763,
+        "currentState": "closed",
+        "running": false,
+        "cleanupComplete": true,
+        "reason": "operator-reported-website-login-only-without-cli-authorization",
+        "ownedRecoveryStatePreserved": true,
+        "lastHeartbeatEpoch": 1789018619.8309839,
+        "failedAttemptLastHeartbeatEpoch": 1789016209.4129128
+      },
+      "revocation": {
+        "sessionExists": null,
+        "providerRevocationClaim": null,
+        "ownedLocalCredentialFound": false,
+        "providerOutcomeRequiresConfirmation": false,
+        "automaticRetryProhibited": true,
+        "automaticLogoutOutcome": "unresolved",
+        "operatorObservation": {
+          "reportedAt": "2026-09-10T05:36:59Z",
+          "source": "Direct user selection",
+          "response": "Website login only",
+          "selectedMeaning": "Signed into npm in the browser, but did not complete an approval for CLI access.",
+          "assurance": "Operator-reported absence of completed CLI authorization; not an independently observed server revocation."
+        },
+        "closureBasis": "Operator reports no completed CLI authorization; owned empty local context removed. No independent server invalidation claim.",
+        "ownedCleanupComplete": true,
+        "recoveryReceiptPreserved": true
+      },
+      "diagnostics": {
+        "ownedAuthenticationLocationsChecked": [
+          "user.npmrc",
+          "global.npmrc",
+          "home/.npmrc"
+        ],
+        "ownedCredentialFound": false,
+        "ownedDebugLogCount": 0,
+        "nativeBrowserReadAvailable": false,
+        "rawLoginOrProfileOutputDisclosed": false
+      }
+    },
+    {
+      "authentication": {
+        "authorized": true,
+        "authorization": {
+          "kind": "cumpa.bootstrap-authentication-authorization/v1",
+          "authorizer": "Alessandro Magionami",
+          "source": "Direct user selection of local first publication at the authentication-route decision",
+          "verbatimResponse": "ok, now I get it, let's go with the first local publication",
+          "capturedAt": "2026-09-10T06:05:14Z",
+          "package": "@shipwithai/cumpa",
+          "version": "1.5.0-bootstrap.0",
+          "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+          "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+          "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+          "scope": [
+            "one fresh isolated native-browser npm CLI login for the local bootstrap",
+            "read-only account/scope-write/2FA checks",
+            "owned-session revocation and cleanup"
+          ],
+          "exactPublicationGateStillPending": true,
+          "ciBootstrapTokenAuthorized": false,
+          "hostedConfigurationOrCiAuthorized": false
+        },
+        "authorizationSha256": "8a5a6e0e2073810602eb911a6d18a019eee9ed4bb39457ed35eb3ac7ae4f98e8",
+        "attempted": true,
+        "authenticated": true,
+        "publicAccount": "alemagio",
+        "authorityAnd2faVerified": true,
+        "previousAuthorizationConsumed": "1a537942ff09a1310f3a8a83cb0a917a0cc307640bac81c62e9c985121b6914b",
+        "attemptRequested": true
+      },
+      "guard": {
+        "serviceName": "cumpa-bootstrap-auth-guard",
+        "codeSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+        "readyObserved": true,
+        "running": false,
+        "currentState": "closed",
+        "idleLimitSeconds": 900,
+        "absoluteLimitSeconds": 3600,
+        "standinChecksPassed": 15,
+        "standinChecksUsedRealCredentials": false,
+        "nativePtyForNpm": true,
+        "rawNpmOutputRemainsPrivate": true,
+        "recoveryRule": "Inspect the owned receipt; cleanup-first for any attempted or unknown session before another login.",
+        "nodeVersion": "v24.15.0",
+        "npmVersion": "11.12.1",
+        "absoluteDeadlineEpoch": 1789024168.943604,
+        "idleDeadlineEpoch": 1789021493.689931,
+        "privateOwnershipReceiptPersisted": true,
+        "cleanupComplete": true,
+        "reason": "operator-stop",
+        "lastHeartbeatEpoch": 1789021480.1640918
+      },
+      "revocation": {
+        "sessionExists": false,
+        "providerRevocationClaim": "supported-npm-logout-server-response",
+        "ownedLocalCredentialFound": false,
+        "ownedCleanupComplete": true,
+        "state": "complete",
+        "independentTokenRejectionObserved": false,
+        "recoveryReceiptPreserved": true
+      }
+    },
+    {
+      "authentication": {
+        "authorized": true,
+        "authorization": {
+          "kind": "cumpa.bootstrap-authentication-authorization/v1",
+          "authorizer": "Alessandro Magionami",
+          "capturedAt": "2026-09-10T06:37:08Z",
+          "source": "Direct user selection at authentication-renewal gate",
+          "verbatimResponse": "Renew login and proceed",
+          "scope": [
+            "one renewed isolated native-browser npm CLI login as alemagio",
+            "read-only matching account/scope/2FA/vacancy checks",
+            "apply the existing one-attempt publication authorization if its bindings still match",
+            "owned-session revocation and cleanup"
+          ],
+          "package": "@shipwithai/cumpa",
+          "version": "1.5.0-bootstrap.0",
+          "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+          "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+          "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+          "existingPublicationAuthorizationSha256": "2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930",
+          "stableOrCiAuthorized": false
+        },
+        "authorizationSha256": "30acf0ecf947e4d3352969232f3f76cfb67125365969287dc84b7e6940d1f673",
+        "attempted": true,
+        "authenticated": false,
+        "publicAccount": null,
+        "authorityAnd2faVerified": false,
+        "renewalFailure": {
+          "observedAt": "2026-09-10T06:45:24Z",
+          "reason": "unsupported-non-browser-credential-prompt",
+          "loginExitCode": -15,
+          "guardInitiatedStop": true,
+          "detectedPromptCategory": "One of the disallowed username/password/classic-OTP prompts; specific matched prompt was not retained.",
+          "ownedTokenPresent": false,
+          "providerRevocation": "unresolved",
+          "recoveryStateRetained": true,
+          "publicationAttempted": false
+        },
+        "latestProviderSuccessReport": {
+          "recordedAt": "2026-09-10T06:54:56Z",
+          "source": "Direct user selection at latest-attempt outcome gate",
+          "response": "CLI authorization succeeded",
+          "meaning": "User confirms latest provider-side CLI authorization succeeded; this is accepted, not re-tested."
+        }
+      },
+      "guard": {
+        "serviceName": "cumpa-bootstrap-auth-guard",
+        "codeSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+        "currentState": "closed",
+        "readyObserved": true,
+        "running": false,
+        "idleLimitSeconds": 900,
+        "absoluteLimitSeconds": 3600,
+        "standinChecksPassed": 16,
+        "standinChecksUsedRealCredentials": false,
+        "nativePtyForNpm": true,
+        "rawNpmOutputRemainsPrivate": true,
+        "idleDeadlineEpoch": 1789023128.4647164,
+        "absoluteDeadlineEpoch": 1789025828.081739,
+        "nodeVersion": "v24.15.0",
+        "npmVersion": "11.12.1",
+        "cleanupComplete": true,
+        "reason": "unsupported-non-browser-credential-prompt"
+      },
+      "revocation": {
+        "sessionExists": false,
+        "providerRevocationClaim": "operator-confirmed-native-provider-revocation",
+        "ownedLocalCredentialFound": false,
+        "ownedCleanupComplete": true,
+        "state": "complete",
+        "recoveryReceiptPreserved": true,
+        "providerCliAuthorizationSucceededPerOperator": true,
+        "providerSessionRequiresTargetedRevocation": false,
+        "operatorActionRequired": {
+          "action": "Use the native npm account token/security interface to identify and revoke only the session belonging to the latest CLI authorization; leave unrelated credentials untouched.",
+          "expectedAccount": "alemagio",
+          "requestStartedAroundUtc": "2026-09-10T06:37Z",
+          "browserAutomationAvailable": false,
+          "supportedInstructions": "https://docs.npmjs.com/revoking-access-tokens/",
+          "noMatchingEntryPolicy": "Do not delete or revoke unrelated entries; retain recovery state and report the unresolved identification."
+        },
+        "operatorConfirmation": {
+          "recordedAt": "2026-09-10T07:39:50Z",
+          "source": "Direct user selection",
+          "response": "Revoked; continue",
+          "selectedMeaning": "Identified and revoked only the latest CLI session, left existing credentials untouched, and authorized one fresh isolated login as alemagio to complete the already-approved bootstrap publication followed by owned cleanup.",
+          "assurance": "Operator-confirmed native provider revocation; independent token-rejection check not claimed."
+        },
+        "independentTokenRejectionObserved": false
+      }
+    },
+    {
+      "authentication": {
+        "authorized": true,
+        "authorization": {
+          "kind": "cumpa.bootstrap-authentication-authorization/v1",
+          "authorizer": "Alessandro Magionami",
+          "capturedAt": "2026-09-10T07:39:50Z",
+          "source": "Direct user selection at scoped provider-recovery gate",
+          "verbatimResponse": "Revoked; continue",
+          "selectedMeaning": "Identified and revoked only the latest CLI session, left existing credentials untouched, and authorized one fresh isolated login as alemagio to complete the already-approved bootstrap publication followed by owned cleanup.",
+          "package": "@shipwithai/cumpa",
+          "version": "1.5.0-bootstrap.0",
+          "account": "alemagio",
+          "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+          "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+          "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+          "existingPublicationAuthorizationSha256": "2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930",
+          "scope": [
+            "one fresh isolated native-browser CLI login",
+            "read-only matching authority/2FA/vacancy checks",
+            "apply existing one-attempt publication approval if unchanged",
+            "owned-session revocation and cleanup"
+          ],
+          "stableOrCiAuthorized": false
+        },
+        "authorizationSha256": "5e2842a8f05eb2fe36618788cff8ede13c9270e796d2a2df03603d17eefd6e48",
+        "attempted": true,
+        "authenticated": true,
+        "publicAccount": "alemagio",
+        "authorityAnd2faVerified": true
+      },
+      "guard": {
+        "serviceName": "cumpa-bootstrap-auth-guard",
+        "codeSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+        "currentState": "closed",
+        "running": false,
+        "readyObserved": true,
+        "idleLimitSeconds": 900,
+        "absoluteLimitSeconds": 3600,
+        "standinChecksPassed": 16,
+        "standinChecksUsedRealCredentials": false,
+        "nativePtyForNpm": true,
+        "rawNpmOutputRemainsPrivate": true,
+        "idleDeadlineEpoch": 1789026892.5050163,
+        "absoluteDeadlineEpoch": 1789029591.5783098,
+        "cleanupComplete": true,
+        "reason": "publication-failed-or-ambiguous"
+      },
+      "revocation": {
+        "sessionExists": false,
+        "providerRevocationClaim": "supported-npm-logout-server-response",
+        "ownedCleanupComplete": true,
+        "state": "complete",
+        "ownedLocalCredentialFound": false,
+        "independentTokenRejectionObserved": false,
+        "recoveryReceiptPreserved": true,
+        "operatorConfirmationOfLatestLogout": {
+          "at": "2026-09-10T08:25:13Z",
+          "source": "Direct user selection",
+          "response": "Revocation confirmed",
+          "assurance": "Operator confirmation of the latest publishing-session revocation, separate from independent token rejection."
+        }
+      }
+    }
+  ],
+  "authorityObservation": {
+    "observedAt": "2026-09-10T08:29:33Z",
+    "publicAccount": "alemagio",
+    "scope": "@shipwithai",
+    "organizationRole": "owner",
+    "scopePackageCreationAuthority": true,
+    "twoFactorMode": "auth-only",
+    "twoFactorPending": false,
+    "authenticatedPackageAbsent": true,
+    "publicBootstrapVersionAbsent": true,
+    "publicStableVersionAbsent": true,
+    "priorLatest": null,
+    "priorLatestBasis": "Public and authenticated package absence",
+    "approvedArchiveEvidenceAndApprovalUnchanged": true,
+    "publicSourceSha": "72c9bb499538a2c542d5165148e2d45096f7da56",
+    "authenticationGuardRemainingSeconds": 634,
+    "emailVerified": true
+  },
+  "registryReconciliation": {
+    "observedAt": "2026-09-10T07:50:53Z",
+    "afterSupportedLogoutAndOwnedCleanup": true,
+    "credentialFree": true,
+    "results": [
+      {
+        "target": "%40shipwithai%2Fcumpa",
+        "status": 404,
+        "authoritativeNotFound": true
+      },
+      {
+        "target": "%40shipwithai%2Fcumpa/1.5.0-bootstrap.0",
+        "status": 404,
+        "authoritativeNotFound": true
+      },
+      {
+        "target": "%40shipwithai%2Fcumpa/1.5.0",
+        "status": 404,
+        "authoritativeNotFound": true
+      }
+    ],
+    "freshNoCacheObservation": [
+      {
+        "target": "%40shipwithai%2Fcumpa",
+        "status": 404,
+        "authoritativeNotFound": true,
+        "responseDate": "Thu, 10 Sep 2026 08:08:27 GMT",
+        "cacheAge": null
+      },
+      {
+        "target": "%40shipwithai%2Fcumpa/1.5.0-bootstrap.0",
+        "status": 404,
+        "authoritativeNotFound": true,
+        "responseDate": "Thu, 10 Sep 2026 08:08:27 GMT",
+        "cacheAge": null
+      },
+      {
+        "target": "%40shipwithai%2Fcumpa/1.5.0",
+        "status": 404,
+        "authoritativeNotFound": true,
+        "responseDate": "Thu, 10 Sep 2026 08:08:28 GMT",
+        "cacheAge": null
+      }
+    ]
+  },
+  "postAttemptDiagnostics": {
+    "observedEmailVerified": true,
+    "actualPublicationFailureReason": "Not recoverable from the discarded raw output; do not infer a particular provider error.",
+    "diagnosticDefect": "Whole-line matching missed a real npm E404 in a credential-free native PTY reproduction.",
+    "diagnosticFix": "Recognize only bounded allowlisted codes without whole-line assumptions; announce browser requests and classify unsupported prompts without URLs or credentials.",
+    "futureGuardSha256": "b11ad8729363e95b3e297a82b76d9ef6c6ec31c3fd6e9c8ef1b3c314d6d0f800",
+    "attemptUsedGuardSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+    "nativeReadOnlyReproductionFailedBeforeAndPassedAfter": true,
+    "harmlessLifecycleChecksPassed": 16,
+    "newAuthenticationOrPublicationDuringDiagnosis": false,
+    "npmVersionChanged": false,
+    "npmServiceStatus": {
+      "description": "All Systems Operational",
+      "unresolvedIncidents": 0,
+      "statusPageUpdatedAt": "2026-09-10T07:59:00.964Z"
+    }
+  },
+  "allOwnedOperationCleanup": {
+    "operationCount": 6,
+    "allLocalContextsRemoved": true,
+    "publicationAttempts": 2,
+    "outcomes": [
+      {
+        "authAttempted": true,
+        "publicationAttempted": false,
+        "publicationExitCode": null,
+        "revocation": "operator-confirmed-native-provider-revocation",
+        "cleanupComplete": true
+      },
+      {
+        "authAttempted": true,
+        "publicationAttempted": false,
+        "publicationExitCode": null,
+        "revocation": "supported-npm-logout-server-response",
+        "cleanupComplete": true
+      },
+      {
+        "authAttempted": false,
+        "publicationAttempted": false,
+        "publicationExitCode": null,
+        "revocation": "no-session-created",
+        "cleanupComplete": true
+      },
+      {
+        "authAttempted": true,
+        "publicationAttempted": true,
+        "publicationExitCode": 0,
+        "revocation": "supported-npm-logout-server-response",
+        "cleanupComplete": true
+      },
+      {
+        "authAttempted": true,
+        "publicationAttempted": true,
+        "publicationExitCode": 1,
+        "revocation": "supported-npm-logout-server-response",
+        "cleanupComplete": true
+      },
+      {
+        "authAttempted": true,
+        "publicationAttempted": false,
+        "publicationExitCode": null,
+        "revocation": "operator-reported-cli-not-authorized-no-server-revocation-claim",
+        "cleanupComplete": true
+      }
+    ],
+    "normalUserCredentialsAccessedOrRemoved": false,
+    "tagRepair": {
+      "operationCount": 2,
+      "removalAttempts": 1,
+      "allLocalContextsRemoved": true,
+      "outcomes": [
+        {
+          "authAttempted": true,
+          "tagRemovalAttempted": false,
+          "tagRemovalExitCode": null,
+          "revocation": "operator-reported-cli-not-authorized-no-server-revocation-claim",
+          "cleanupComplete": true
+        },
+        {
+          "authAttempted": true,
+          "tagRemovalAttempted": true,
+          "tagRemovalExitCode": 1,
+          "revocation": "supported-npm-logout-server-response",
+          "cleanupComplete": true
+        }
+      ]
+    },
+    "totalOperationCount": 8
+  },
+  "previousPublicationAttempts": [
+    {
+      "publication": {
+        "authorized": true,
+        "attempted": true,
+        "authorization": {
+          "kind": "cumpa.bootstrap-publication-authorization/v1",
+          "authorizer": "Alessandro Magionami",
+          "capturedAt": "2026-09-10T06:22:58Z",
+          "source": "Direct user selection at the exact bootstrap publication gate",
+          "verbatimResponse": "Publish this exact bootstrap",
+          "selectedAuthorizationText": "BOOTSTRAP PUBLICATION AUTHORIZED: @shipwithai/cumpa@1.5.0-bootstrap.0 sha256 4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f bytes 3514006 tag bootstrap access public account alemagio organizationRole owner; one attempt then owned-session revocation.",
+          "package": "@shipwithai/cumpa",
+          "version": "1.5.0-bootstrap.0",
+          "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+          "byteLength": 3514006,
+          "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+          "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+          "sourceSha": "72c9bb499538a2c542d5165148e2d45096f7da56",
+          "account": "alemagio",
+          "organization": "shipwithai",
+          "organizationRole": "owner",
+          "tag": "bootstrap",
+          "access": "public",
+          "registry": "https://registry.npmjs.org/",
+          "ignoreScripts": true,
+          "fetchRetries": 0,
+          "attemptLimit": 1,
+          "revokeOwnedSessionImmediatelyAfterAttempt": true,
+          "latestAssignmentAuthorized": false,
+          "rebuildOrRetryAuthorized": false,
+          "stableOrCiAuthorized": false
+        },
+        "authorizationSha256": "2d57c56229b8b5c32330061a80ac7b1377a9018430f2b3acb042d478472e9930",
+        "attemptRequested": true,
+        "deferralReason": "Prepublication idle margin was 115 seconds, below the 120-second local preflight threshold; no publish control was sent.",
+        "authorizationRemainsUnused": false,
+        "deferralDiagnosis": {
+          "cause": "Agent-side 120-second idle-margin threshold was stricter than the actual guard.",
+          "guardBehavior": "Idle expiry is ignored while a command is running; absolute and command deadlines remain enforced.",
+          "preflightCorrection": "Require unexpired idle admission and more than the configured command limit before the absolute deadline; recheck immediately before sending publish.",
+          "guardCodeChanged": false,
+          "harmlessChecksPassed": 16
+        },
+        "prepublicationChecksPassed": true,
+        "finalPreconditionsObservedAt": "2026-09-10T07:42:42Z",
+        "attemptCount": 1,
+        "npmExitCode": 1,
+        "guardReason": "publication-failed-or-ambiguous",
+        "boundedNpmErrorCode": "unclassified",
+        "retryAuthorized": false,
+        "authorizationConsumed": true,
+        "operatorBrowserOutcome": {
+          "at": "2026-09-10T08:25:13Z",
+          "source": "Direct user response",
+          "verbatim": "I didn't have the time to complete the browser session in time, do it atgain and I will complete it",
+          "outcome": "Publishing-browser authentication was not completed in time."
+        }
+      },
+      "registryReconciliation": {
+        "observedAt": "2026-09-10T07:50:53Z",
+        "afterSupportedLogoutAndOwnedCleanup": true,
+        "credentialFree": true,
+        "results": [
+          {
+            "target": "%40shipwithai%2Fcumpa",
+            "status": 404,
+            "authoritativeNotFound": true
+          },
+          {
+            "target": "%40shipwithai%2Fcumpa/1.5.0-bootstrap.0",
+            "status": 404,
+            "authoritativeNotFound": true
+          },
+          {
+            "target": "%40shipwithai%2Fcumpa/1.5.0",
+            "status": 404,
+            "authoritativeNotFound": true
+          }
+        ],
+        "freshNoCacheObservation": [
+          {
+            "target": "%40shipwithai%2Fcumpa",
+            "status": 404,
+            "authoritativeNotFound": true,
+            "responseDate": "Thu, 10 Sep 2026 08:08:27 GMT",
+            "cacheAge": null
+          },
+          {
+            "target": "%40shipwithai%2Fcumpa/1.5.0-bootstrap.0",
+            "status": 404,
+            "authoritativeNotFound": true,
+            "responseDate": "Thu, 10 Sep 2026 08:08:27 GMT",
+            "cacheAge": null
+          },
+          {
+            "target": "%40shipwithai%2Fcumpa/1.5.0",
+            "status": 404,
+            "authoritativeNotFound": true,
+            "responseDate": "Thu, 10 Sep 2026 08:08:28 GMT",
+            "cacheAge": null
+          }
+        ]
+      },
+      "revocation": {
+        "sessionExists": false,
+        "providerRevocationClaim": "supported-npm-logout-server-response",
+        "ownedCleanupComplete": true,
+        "state": "complete",
+        "ownedLocalCredentialFound": false,
+        "independentTokenRejectionObserved": false,
+        "recoveryReceiptPreserved": true,
+        "operatorConfirmationOfLatestLogout": {
+          "at": "2026-09-10T08:25:13Z",
+          "source": "Direct user selection",
+          "response": "Revocation confirmed",
+          "assurance": "Operator confirmation of the latest publishing-session revocation, separate from independent token rejection."
+        }
+      },
+      "guard": {
+        "serviceName": "cumpa-bootstrap-auth-guard",
+        "codeSha256": "a2c35e5f216b2c8fb3efd0afbdfdb5aeab3d9353232fe4bfbdd607701ef8d23e",
+        "currentState": "closed",
+        "running": false,
+        "readyObserved": true,
+        "idleLimitSeconds": 900,
+        "absoluteLimitSeconds": 3600,
+        "standinChecksPassed": 16,
+        "standinChecksUsedRealCredentials": false,
+        "nativePtyForNpm": true,
+        "rawNpmOutputRemainsPrivate": true,
+        "idleDeadlineEpoch": 1789026892.5050163,
+        "absoluteDeadlineEpoch": 1789029591.5783098,
+        "cleanupComplete": true,
+        "reason": "publication-failed-or-ambiguous"
+      },
+      "authorityObservation": {
+        "observedAt": "2026-09-10T07:42:42Z",
+        "publicAccount": "alemagio",
+        "scope": "@shipwithai",
+        "organizationRole": "owner",
+        "scopePackageCreationAuthority": true,
+        "twoFactorMode": "auth-only",
+        "twoFactorPending": false,
+        "authenticatedPackageAbsent": true,
+        "publicBootstrapVersionAbsent": true,
+        "publicStableVersionAbsent": true,
+        "priorLatest": null,
+        "priorLatestBasis": "Public and authenticated package absence",
+        "approvedArchiveEvidenceAndApprovalUnchanged": true,
+        "publicSourceSha": "72c9bb499538a2c542d5165148e2d45096f7da56",
+        "authenticationGuardRemainingSeconds": 634
+      }
+    }
+  ],
+  "publicVerification": {
+    "name": "@shipwithai/cumpa",
+    "version": "1.5.0-bootstrap.0",
+    "license": "MIT",
+    "publiclyAccessible": true,
+    "bootstrapTag": "1.5.0-bootstrap.0",
+    "latestTag": "1.5.0-bootstrap.0",
+    "bootstrapTagMatches": true,
+    "latestUnchanged": false,
+    "registryPublisher": "alemagio",
+    "publishedAt": "2026-09-10T08:31:35.088Z",
+    "archive": {
+      "byteLength": 3514006,
+      "sha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "sha1": "c34bee6983580de9f0fbbcce3bbb6759fc9933f2",
+      "integrity": "sha512-911RewXQwTbNLlrqprXf9elM89Pcz41WYhAHSzQ6YZjo9Ka9zJPwcpR1uHoP11dnYYLQEpoCagReM8kXb933hw=="
+    },
+    "downloadedBytesEqualApproved": true,
+    "trustedPublishingClaimed": false,
+    "ciBuildProvenanceClaimed": false
+  },
+  "globalInstallVerification": {
+    "registryExactGlobalInstall": true,
+    "installExitCode": 0,
+    "installScriptsDisabled": false,
+    "localArchiveFallbackUsed": false,
+    "freshIsolatedHomeCacheAndPrefix": true,
+    "inheritedAuthenticationUsed": false,
+    "generatedBinResolvedInsideInstalledPackage": true,
+    "generatedBinExitCode": 0,
+    "generatedBinVersion": "1.5.0-bootstrap.0",
+    "nodeVersion": "v24.15.0",
+    "npmVersion": "11.12.1",
+    "platform": "darwin",
+    "architecture": "arm64",
+    "createdConsumerDirectoryRemoved": true,
+    "downloadHomeCachePrefixAndConfigsRemoved": true
+  },
+  "metadataIncident": {
+    "kind": "unexpected-latest-tag",
+    "observedAt": "2026-09-10T08:39:48Z",
+    "beforeLatest": null,
+    "afterLatest": "1.5.0-bootstrap.0",
+    "expectedLatest": null,
+    "explicitCommandTag": "bootstrap",
+    "bootstrapTagCorrect": true,
+    "publishedBytesAndBinVerified": true,
+    "tagRepairAttempted": true,
+    "unpublishAttempted": false,
+    "ownerDecisionRequired": false,
+    "ownerDecision": "Accept until stable CI",
+    "repairAuthorized": true,
+    "policyExceptionAccepted": true,
+    "repairOutcome": "E400; tag state unchanged",
+    "registryConstraintEvidence": {
+      "source": "https://github.com/npm/cli/issues/8490",
+      "maintainerConfirmsFirstPublishCreatesLatestAlongsideCustomTag": true,
+      "upstreamReportAlsoShows400RemovingLatest": true,
+      "thisOperationAuthenticatedRemovalResult": "E400; tags unchanged",
+      "noSupportedRemovalAchieved": true,
+      "proposedOwnerException": "Retain bootstrap as temporary latest until separately approved stable CI publication replaces it.",
+      "exceptionApproved": true
+    },
+    "repairAuthorizationConsumed": true,
+    "exceptionApproved": true,
+    "ownerException": {
+      "kind": "cumpa.bootstrap-first-release-latest-exception/v1",
+      "authorizer": "Alessandro Magionami",
+      "capturedAt": "2026-09-10T09:44:36Z",
+      "source": "Direct user selection",
+      "verbatimResponse": "Accept until stable CI",
+      "package": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "acceptedTags": {
+        "bootstrap": "1.5.0-bootstrap.0",
+        "latest": "1.5.0-bootstrap.0"
+      },
+      "scope": "One-time amendment of the unchanged-latest bootstrap condition only, until separately approved stable CI publication replaces latest.",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "byteLength": 3514006,
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+      "preserveImmutableBootstrap": true,
+      "ciBuildProvenanceClaimed": false,
+      "ciConfigurationDispatchOrStablePublicationAuthorized": false,
+      "basis": "Observed first-release registry behavior and rejected latest removal, corroborated by npm/cli#8490."
+    },
+    "ownerExceptionSha256": "fdf592eef8725d7e5c5d2e6a59a94d9351b8bbca9884ebe4ae85ad9a1021fd19",
+    "resolution": "Owner accepted this first-release latest pointer until the separately authorized stable CI publication replaces it.",
+    "initialOwnerDecision": "Remove only latest"
+  },
+  "latestTagRepair": {
+    "authorization": {
+      "kind": "cumpa.bootstrap-latest-removal-authorization/v1",
+      "authorizer": "Alessandro Magionami",
+      "capturedAt": "2026-09-10T09:06:19Z",
+      "source": "Direct user selection at registry-metadata decision",
+      "verbatimResponse": "Remove only latest",
+      "selectedMeaning": "Authorize one fresh isolated npm login as alemagio and removal of only latest if it still points to 1.5.0-bootstrap.0; preserve the immutable version, bootstrap and all other tags; revoke the new session afterward; no republish or unpublish.",
+      "package": "@shipwithai/cumpa",
+      "tag": "latest",
+      "expectedVersion": "1.5.0-bootstrap.0",
+      "preserveBootstrapTag": "1.5.0-bootstrap.0",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec",
+      "account": "alemagio",
+      "attemptLimit": 1,
+      "freshIsolatedLoginAuthorized": true,
+      "publishOrUnpublishAuthorized": false,
+      "stableOrCiAuthorized": false
+    },
+    "authorizationSha256": "71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142",
+    "guardSha256": "bb01dc9ef894040e53ab2ac873051a8b14784852e4654593f6e4343af9db5b59",
+    "status": "removal-rejected-e400-owned-session-cleaned",
+    "before": {
+      "name": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "tags": {
+        "bootstrap": "1.5.0-bootstrap.0",
+        "latest": "1.5.0-bootstrap.0"
+      },
+      "integrity": "sha512-911RewXQwTbNLlrqprXf9elM89Pcz41WYhAHSzQ6YZjo9Ka9zJPwcpR1uHoP11dnYYLQEpoCagReM8kXb933hw==",
+      "shasum": "c34bee6983580de9f0fbbcce3bbb6759fc9933f2",
+      "publishedAt": "2026-09-10T08:31:35.088Z"
+    },
+    "authenticationAttempted": true,
+    "removalAttempted": true,
+    "harmlessChecksPassed": 19,
+    "publicationCapabilityPresent": false,
+    "nativeTagJsonReadVerified": true,
+    "guardRunning": false,
+    "idleDeadlineEpoch": 1789033066.2291207,
+    "absoluteDeadlineEpoch": 1789035765.8830311,
+    "removalAuthorizationUnconsumed": false,
+    "guardReason": "tag-removal-failed-or-ambiguous",
+    "ownedTokenPresent": false,
+    "providerRevocation": "supported-npm-logout-server-response",
+    "ownedCleanupComplete": true,
+    "recoveryStateRetained": true,
+    "previousLoginOperatorOutcome": {
+      "at": "2026-09-10T09:22:44Z",
+      "source": "Direct user selection",
+      "response": "Not approved; retry login now",
+      "meaning": "No completed CLI authorization for the previous tag-repair request; one fresh isolated login authorized for the already-approved tag removal.",
+      "assurance": "Operator-reported no completed CLI authorization; no independent server revocation claimed."
+    },
+    "loginRenewalAuthorization": {
+      "kind": "cumpa.bootstrap-tag-login-authorization/v1",
+      "authorizer": "Alessandro Magionami",
+      "at": "2026-09-10T09:22:44Z",
+      "source": "Direct user selection",
+      "response": "Not approved; retry login now",
+      "account": "alemagio",
+      "package": "@shipwithai/cumpa",
+      "scope": "One fresh isolated CLI login to execute the existing latest-only removal authorization, then owned-session revocation. No publication or unpublish.",
+      "existingTagAuthorizationSha256": "71733dcdc3cae362ffa686d1a232ae80ce75ac512d1ae99fb4619617bd59f142",
+      "artifactSha256": "4405580ba53d20ee2c802eb30a2e77c32fb4425ac7e53673c39de6c14cd97f5f",
+      "evidenceSha256": "54fc66c7354921bae673fe53aa0d58256055df967486089232d797ad59c5cdb4",
+      "approvalSha256": "c91450bdd8fdf1c775bfa5189ba30e3534bd5867e6a55e9065db9ecdea0328ec"
+    },
+    "loginRenewalAuthorizationSha256": "3db912b37c33ba1006c79bd8afff21233976ffbe5235d2e1e1d5d06523675d75",
+    "previousLoginContextCleaned": true,
+    "verifiedAccount": "alemagio",
+    "verifiedOrganizationRole": "owner",
+    "twoFactorMode": "auth-only",
+    "removalRequested": true,
+    "removalExitCode": 1,
+    "boundedNpmErrorCode": "E400",
+    "after": {
+      "name": "@shipwithai/cumpa",
+      "version": "1.5.0-bootstrap.0",
+      "tags": {
+        "bootstrap": "1.5.0-bootstrap.0",
+        "latest": "1.5.0-bootstrap.0"
+      },
+      "integrity": "sha512-911RewXQwTbNLlrqprXf9elM89Pcz41WYhAHSzQ6YZjo9Ka9zJPwcpR1uHoP11dnYYLQEpoCagReM8kXb933hw==",
+      "shasum": "c34bee6983580de9f0fbbcce3bbb6759fc9933f2",
+      "publishedAt": "2026-09-10T08:31:35.088Z"
+    },
+    "tagsUnchanged": true,
+    "versionIntegrityUnchanged": true,
+    "retryAuthorized": false,
+    "operatorConfirmationOfTagSessionLogout": {
+      "capturedAt": "2026-09-10T09:44:36Z",
+      "source": "Direct user selection",
+      "verbatimResponse": "Revocation confirmed",
+      "scope": "Final tag-repair CLI session",
+      "assurance": "Operator confirmation alongside supported npm logout and verified owned-file cleanup; no independent rejected-token probe claimed."
+    },
+    "previousLoginFailure": {
+      "guardReason": "unsupported-non-browser-credential-prompt",
+      "unsupportedPrompt": "username",
+      "operatorOutcome": {
+        "at": "2026-09-10T09:22:44Z",
+        "source": "Direct user selection",
+        "response": "Not approved; retry login now",
+        "meaning": "No completed CLI authorization for the previous tag-repair request; one fresh isolated login authorized for the already-approved tag removal.",
+        "assurance": "Operator-reported no completed CLI authorization; no independent server revocation claimed."
+      },
+      "contextClosed": true
+    },
+    "authenticated": true
+  },
+  "completedAt": "2026-09-10T09:44:36Z"
+}

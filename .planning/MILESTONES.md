@@ -1,5 +1,58 @@
 # Milestones
 
+## v1.5 MIT Distribution (Shipped: 2026-09-15)
+
+**Delivered:** Cumpa published on the public npm registry under standard MIT terms, installable globally, through `npx`, or via a public marketplace skill, with SLSA provenance bound to its source commit on every release.
+
+**Phases completed:** 5 phases, 23 plans, 69 tasks
+**Timeline:** 2026-09-07 → 2026-09-15
+**Git range:** `a7f5639` → `67990e7` — 201 files changed, +34,120 / -1,401
+**Published:** `@shipwithai/cumpa` 1.5.0 stable, then 1.5.1 and 1.5.2 patches
+
+**Key accomplishments:**
+
+- Relicensed to standard MIT with refreshed dual-licensor exact-text assent, then published the existing repository and its reviewed history safely, replacing the earlier proprietary source-available direction.
+- Verified one complete compiled-runtime-only tarball byte-for-byte before any registry mutation.
+- Published stable `1.5.0` through OIDC trusted publishing with no long-lived credentials, after a usable non-`latest` bootstrap whose temporary authorization was revoked.
+- Published the thin MIT marketplace skill as a separate artifact that checks for, rather than bundles, the CLI.
+- Proved the public artifact end to end on three independent installation paths — global install, empty-cache `npx --yes`, and an isolated agent profile using the marketplace skill — each completing a real browser review through Finish and export.
+
+**Final evidence**
+
+- Requirements: 18/19 (ACC-04 blocked; zero orphans, zero summary/verification mismatches)
+- Phase verifications: 4/5 `passed`, Phase 07 deliberately `gaps_found`
+- Cross-phase integration seams: 6/8 wired; 1 warning (Phase 4 → Phase 5 archive identity), 1 blocker (verified-support acceptance)
+- End-to-end flows: 3/4 complete (global, npx, marketplace); verified-support partial
+- Plans and summaries: 23/23
+- Published-artifact verification: registry integrity matched locally hashed bytes on every release; `npm audit signatures --include-attestations` reported 0 invalid / 0 missing
+
+**Known gaps**
+
+- ACC-04: verified-support rows recorded `live-entitlement-unavailable` with `substituted: false` on all three paths. The paid entitlement exists only in Stripe test-mode data and D-07 forbade a new purchase; D-08 mandated recording the bounded truth rather than fabricating, substituting, or reusing evidence.
+
+**Retained technical debt**
+
+- Restore completes even when its RPC result is false (`supabase/functions/support-flow/index.ts`); this must become a non-completion response before ACC-04 can be genuinely retried.
+- `SKILL.md` still installs `@1.5.0` and claims only 1.5.0 has independent release verification; its checker accepts `>=1.5.0 <2.0.0`, so 1.5.2 works, but the text needs a separate marketplace publication.
+- `.vue` files remain outside `tsc`; `vue-tsc` would close the gap.
+- Acceptance evidence is specific to `1.5.0`; the 1.5.1 and 1.5.2 patches carry publication, provenance, and fix-presence evidence but not the full acceptance matrix.
+
+**Defects found and fixed during close-adjacent work**
+
+- A composer draft-loss race (`PublicMonacoDiffAdapter.setFile` discarded an anchor activated during the first diff load) shipped in 1.5.1 and was found by the widened CI gate, fixed, and published in 1.5.2.
+- A roving-tabindex a11y defect left the selected file row untabbable; fixed and published in 1.5.2.
+- Two dangling `.planning/phases/02-…` references left by the v1.4 close were repointed at the v1.4 archive during this close; in `prelaunch-test` mode the missing file had been causing a hard `exit 1`.
+- `.planning/milestones/v1.5-phases/` had been created empty by an earlier run; it was back-filled and proved byte-identical to the working phase directories.
+
+**Archives**
+
+- Roadmap: `.planning/milestones/v1.5-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.5-REQUIREMENTS.md`
+- Milestone audit: `.planning/milestones/v1.5-MILESTONE-AUDIT.md`
+- Phase history: `.planning/milestones/v1.5-phases/`
+
+---
+
 ## v1.4 Voluntary Support (Shipped: 2026-09-04)
 
 **Delivered:** Optional one-time support and paid-account restoration through a canonical Supabase-hosted flow without gating or changing any review feature.

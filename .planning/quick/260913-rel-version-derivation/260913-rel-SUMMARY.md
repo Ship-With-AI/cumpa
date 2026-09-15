@@ -1,3 +1,33 @@
+---
+phase: quick
+plan: 260913-rel
+subsystem: distribution
+tags: [npm, release, provenance, ci, version-derivation]
+requires:
+  - phase: quick
+    provides: pinned stable publish pipeline and acceptance harnesses
+provides:
+  - Manifest-derived release identity shared by pack, verify, seal, and publish paths
+  - Published @shipwithai/cumpa@1.5.1 with SLSA provenance bound to its source commit
+affects: [distribution, ci, package acceptance]
+tech-stack:
+  added: []
+  patterns: [derive release identity from the manifest instead of pinning literals, keep historical acceptance pins literal]
+key-files:
+  created: [scripts/release-identity.mjs]
+  modified: [.github/workflows/publish-npm.yml, scripts/pack-runtime.mjs, scripts/verify-production-artifacts.mjs, scripts/verify-npm-release.mjs, package.json]
+key-decisions:
+  - "Derive the version from package.json rather than retargeting ~107 literal pins, safe because the candidate job SHA-pins the tree before anything reads it."
+  - "Keep historical acceptance and bootstrap pins literal at 1.5.0 so shipped-artifact history stays true."
+  - "Replace the deliberately-wrong 1.5.1 test value with 9999.0.0 so the bump cannot delete its own rejection coverage."
+patterns-established:
+  - "A record shape consumed by several strict validators must be changed in every consumer in one commit, including validators excluded from the default suite."
+requirements-completed: []
+duration: 4h
+completed: 2026-09-14
+status: complete
+---
+
 # Quick Task 260913-rel — Derive release identity and publish 1.5.1
 
 **Date:** 2026-09-13 / 2026-09-14

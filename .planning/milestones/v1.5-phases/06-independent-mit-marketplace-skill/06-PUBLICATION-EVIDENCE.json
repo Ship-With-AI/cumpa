@@ -1,0 +1,224 @@
+{
+  "kind": "cumpa.marketplace-publication/v1",
+  "status": "published-and-public-bytes-verified",
+  "repository": "https://github.com/Ship-With-AI/skills.git",
+  "repositoryId": 1178350399,
+  "baselineOid": "7be01dca277a53f4144620be6cc9657a9371571c",
+  "candidateOid": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+  "candidateRecordSha256": "9b63232de4f6f6eb2ffd6ad6e3563ba5b4e1ca2c91b4509bba187ad393f3e354",
+  "collectionVersion": {
+    "from": "0.2.0",
+    "to": "0.3.0"
+  },
+  "reviewedFileHashes": {
+    ".claude-plugin/plugin.json": "14715bbad051a7aa871067c0c509b0b226a57c5dfdc998066ae46872d453fbf1",
+    "README.md": "6662b01fed29049489aa76b1ec7b92c7c2d2d945d65770f3d9fe5bbe60fc9975",
+    "skills/cumpa/LICENSE": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+    "skills/cumpa/SKILL.md": "8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220",
+    "skills/cumpa/scripts/check-cumpa.mjs": "9b45ae3be81908cf7b57798ed8be8df5f1e46727624965151a6e44aaf1325c2c"
+  },
+  "verificationWaiver": {
+    "kind": "cumpa.marketplace-verification-waiver/v1",
+    "verbatimInstruction": "ignore this test part",
+    "approver": "Alessandro Magionami",
+    "source": "direct current-chat instruction",
+    "recordedAt": "2026-09-11T14:17:11+02:00",
+    "candidateOid": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+    "status": "waived-not-run",
+    "targets": [
+      "claude-code",
+      "codex",
+      "pi",
+      "omp"
+    ],
+    "scope": [
+      "06-02 Task 3 authentication and proof assent",
+      "06-03 Task 1 local four-agent proof and associated readiness/abort smoke",
+      "06-03 Task 3 four-agent public installation proof"
+    ],
+    "publicationAuthorized": false,
+    "phase7Unchanged": true
+  },
+  "publicationAssent": {
+    "kind": "cumpa.marketplace-push-assent/v1",
+    "verbatimAssent": "you have approval",
+    "approver": "Alessandro Magionami",
+    "source": "direct current-chat assent",
+    "recordedAt": "2026-09-11T14:32:58+02:00",
+    "scope": {
+      "repository": "https://github.com/Ship-With-AI/skills.git",
+      "repositoryId": 1178350399,
+      "baselineOid": "7be01dca277a53f4144620be6cc9657a9371571c",
+      "candidateOid": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+      "refspec": "984e28c5838176ec15d2af8b996d0307e45b28d5:refs/heads/main",
+      "mutation": "one non-force exact-candidate marketplace push",
+      "verification": "anonymous public commit and file-byte verification",
+      "fourAgentTests": "user-waived",
+      "exclusions": [
+        "Cumpa source push",
+        "npm publication",
+        "manual Supabase mutation",
+        "agent sign-in or provider-backed target tests",
+        "integration settings changes",
+        "manual deployment or workflow dispatch"
+      ],
+      "automaticActions": "Existing automatic actions configured for this repository push, including deployments, are expressly authorized; no integration settings changes or manual dispatch.",
+      "pushCommandSha256": "a35c2fa22f75f587e21c04bd7ba6f344434933c7e5c1a79ab7afc7f89ba27c88",
+      "effectsSha256": "bcaae38e44e139c5df496838e3594f7271e4bb1fc1aa19ff3b51d913ad06fd64"
+    },
+    "state": "consumed",
+    "consumedAt": "2026-09-11T14:52:42+02:00"
+  },
+  "automaticEffectsAssent": {
+    "verbatimSelection": "Allow existing automatic actions",
+    "scope": "Publish the exact candidate and allow any automatic actions already configured for this repository's push, including deployments. Do not change integration settings.",
+    "approver": "Alessandro Magionami",
+    "source": "direct current-chat selection",
+    "recordedAt": "2026-09-11T14:50:17+02:00"
+  },
+  "pushCommand": {
+    "cwd": "$MARKETPLACE_CHECKOUT",
+    "argv": [
+      "git",
+      "-c",
+      "core.hooksPath=/dev/null",
+      "-c",
+      "credential.helper=",
+      "-c",
+      "credential.helper=!gh auth git-credential",
+      "-c",
+      "push.followTags=false",
+      "-c",
+      "push.recurseSubmodules=no",
+      "push",
+      "--porcelain",
+      "https://github.com/Ship-With-AI/skills.git",
+      "984e28c5838176ec15d2af8b996d0307e45b28d5:refs/heads/main"
+    ],
+    "environmentOverrides": {
+      "GIT_CONFIG_NOSYSTEM": "1",
+      "GIT_CONFIG_GLOBAL": "/dev/null",
+      "GIT_TERMINAL_PROMPT": "0",
+      "GIT_ASKPASS": "/usr/bin/false",
+      "GH_PROMPT_DISABLED": "1"
+    },
+    "removeInheritedGitEnvironment": true,
+    "credentials": "existing native gh git-credential route; not inspected or changed"
+  },
+  "pushCommandSha256": "a35c2fa22f75f587e21c04bd7ba6f344434933c7e5c1a79ab7afc7f89ba27c88",
+  "pushEffects": {
+    "repositoryId": 1178350399,
+    "branch": "main",
+    "branchProtected": false,
+    "branchRules": [],
+    "githubActionsWorkflows": [],
+    "repositoryWebhooks": [],
+    "pagesConfigured": false,
+    "deploymentRecordsBefore": 0,
+    "organizationWebhookInspection": {
+      "source": "authenticated GitHub settings UI",
+      "configurationLinksObserved": 0,
+      "settingsUnchanged": true
+    },
+    "organizationApps": [
+      {
+        "appSlug": "lovable-dev",
+        "repositorySelection": "selected",
+        "pushSubscribed": true
+      },
+      {
+        "appSlug": "render",
+        "repositorySelection": "all",
+        "pushSubscribed": true
+      },
+      {
+        "appSlug": "digitalocean",
+        "repositorySelection": "all",
+        "pushSubscribed": true
+      },
+      {
+        "appSlug": "supabase",
+        "repositorySelection": "all",
+        "pushSubscribed": true
+      }
+    ],
+    "downstreamServiceConfiguration": "not fully inspectable; existing automatic actions explicitly authorized by the operator",
+    "manualActions": "none beyond one marketplace git push"
+  },
+  "effectsSha256": "bcaae38e44e139c5df496838e3594f7271e4bb1fc1aa19ff3b51d913ad06fd64",
+  "publicationAttempts": [
+    {
+      "attemptIndex": 0,
+      "state": "applied",
+      "startedAt": "2026-09-11T14:52:42+02:00",
+      "candidateOid": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+      "expectedBaselineOid": "7be01dca277a53f4144620be6cc9657a9371571c",
+      "commandSha256": "a35c2fa22f75f587e21c04bd7ba6f344434933c7e5c1a79ab7afc7f89ba27c88",
+      "effectsSha256": "bcaae38e44e139c5df496838e3594f7271e4bb1fc1aa19ff3b51d913ad06fd64",
+      "exitCode": 0,
+      "outputSha256": "56cb1555a1013c830c2e711f8439808304f228a495916a79f373c18b647decb5",
+      "finishedAt": "2026-09-11T14:52:44+02:00",
+      "observedPublicOid": "984e28c5838176ec15d2af8b996d0307e45b28d5"
+    }
+  ],
+  "publicInstalls": {
+    "status": "waived-not-run",
+    "targets": [
+      "claude-code",
+      "codex",
+      "pi",
+      "omp"
+    ]
+  },
+  "publicVerification": {
+    "status": "passed",
+    "verifiedAt": "2026-09-11T14:54:25+02:00",
+    "method": "anonymous fresh bare Git fetch of exact public commit; raw Git blob SHA-256 comparisons",
+    "credentialsDisabled": true,
+    "preexistingObjectReuse": false,
+    "observedPublicOid": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+    "reviewedFileHashes": {
+      ".claude-plugin/plugin.json": "14715bbad051a7aa871067c0c509b0b226a57c5dfdc998066ae46872d453fbf1",
+      "README.md": "6662b01fed29049489aa76b1ec7b92c7c2d2d945d65770f3d9fe5bbe60fc9975",
+      "skills/cumpa/LICENSE": "c947d781600d41cdeac710b2c81f5cd04ed88bad83dcc2277cffb30768490c7d",
+      "skills/cumpa/SKILL.md": "8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220",
+      "skills/cumpa/scripts/check-cumpa.mjs": "9b45ae3be81908cf7b57798ed8be8df5f1e46727624965151a6e44aaf1325c2c"
+    },
+    "allFiveFilesMatch": true,
+    "marketplaceCatalogUnchanged": true,
+    "installerOrProviderExecution": false
+  },
+  "phase7Acceptance": "not performed",
+  "observedPublicOid": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+  "postPushObservation": {
+    "observedAt": "2026-09-11T14:56:31+02:00",
+    "publicMain": "984e28c5838176ec15d2af8b996d0307e45b28d5",
+    "checkRunCount": 0,
+    "commitStatusCount": 0,
+    "deploymentRecordsCount": 0,
+    "githubActionsRunCount": 0,
+    "limitations": "Point-in-time GitHub-visible observations only; downstream service configuration and later automatic actions are not independently verified. Existing automatic reactions were expressly authorized; no integration settings were changed."
+  },
+  "securityReview": {
+    "sourceReport": "06-SECURITY.md",
+    "highSeverityOpen": 0,
+    "nonblockingLowDisclosureGap": "Version compatibility checking does not authenticate the PATH-selected binary; the explicit provenance disclaimer is absent."
+  },
+  "custody": {
+    "ownedPrivateRootMode": "0700",
+    "privateJournalMode": "0600",
+    "exclusiveOperationLockHeld": true,
+    "originalCandidateCheckoutReused": true,
+    "candidateHeadAndParentMatched": true,
+    "candidateWorktreeWasClean": true,
+    "noPreparationOrPushReplay": true
+  },
+  "cleanup": {
+    "emptyAuthenticationDirectoriesRemoved": 22,
+    "credentialsInspectedOrCopied": false,
+    "ownedInspectionTabClosed": true,
+    "unrelatedBrowserTabsUntouched": true,
+    "publicByteReadbackRemoved": true,
+    "candidateCustodyRetained": true
+  }
+}
