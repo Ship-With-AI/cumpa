@@ -103,6 +103,7 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260907-gdm | Reconcile approved proprietary source-available distribution | 2026-09-07 | 483671d | [260907-gdm-reconcile-cumpa-v1-5-with-approved-publi](./quick/260907-gdm-reconcile-cumpa-v1-5-with-approved-publi/) |
 | 260908-d25 | Switch Cumpa to standard MIT and reconcile distribution | 2026-09-08 | 2227f78 | [260908-d25-switch-cumpa-to-mit-and-reconcile-active](./quick/260908-d25-switch-cumpa-to-mit-and-reconcile-active/) |
+| 260915-gxg | Merge the active-file bar into the review navigation bar | 2026-09-15 | c49ea08 | [260915-gxg-merge-active-file-bar-into-nav](./quick/260915-gxg-merge-active-file-bar-into-nav/) |
 
 ## Deferred Items
 
