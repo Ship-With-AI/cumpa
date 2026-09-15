@@ -42,7 +42,7 @@ status: complete
 
 - Removed the duplicate active-file context bar, including Base/Head and Preimage/Postimage endpoint markup.
 - Preserved the level-1 heading, full-path title, Files-toggle focus/ARIA behavior, and the three existing navigation groups.
-- Updated only affected assertions; added a falsifiable 320px single-line-heading gate.
+- Updated only affected assertions; added falsifiable 320px heading and desktop toolbar compactness gates.
 
 ## Task Commits
 
@@ -50,22 +50,23 @@ status: complete
 2. **Follow-up: Keep review navigation clear of the open review overlay** — `8abde96`
 3. **Follow-up: Preserve narrow active-heading visibility** — `928059d`
 4. **Task 2: Retarget and remove merged-toolbar assertions** — `d2bb700`
+5. **Follow-up: Keep merged toolbar controls compact** — `644f00e`
 
 ## Files Changed
 
 - `src/web/components/ActiveFileToolbar.vue` — repurposed as the slotted active-file block; retains the exposed focus methods and Files toggle.
 - `src/web/components/ReviewToolbar.vue` — accepts the active-file block through its leading default slot; navigation groups remain unchanged.
 - `src/web/App.vue` — renders `ActiveFileToolbar` inside `ReviewToolbar`; keeps `#changed-files` on `v-show`.
-- `src/web/styles.css` — removes all legacy bar rules, styles the merged toolbar, truncates heading paths to one line, and preserves review-navigation hit-area clearance.
-- `tests/e2e/responsive-session.spec.ts` — removes deleted-bar geometry assertions, retargets heading contracts, and adds the 32px height gate.
+- `src/web/styles.css` — removes all legacy bar rules, styles the merged toolbar, truncates heading paths to one line, preserves review-navigation hit-area clearance, and keeps active Files/count controls on one line.
+- `tests/e2e/responsive-session.spec.ts` — removes deleted-bar geometry assertions, retargets heading contracts, and bounds the 320px heading plus 1440px toolbar height.
 - `tests/e2e/pinned-session.spec.ts` — removes deleted endpoint-context assertions.
 - `tests/integration/anchored-workspace.spec.ts` — verifies one bar/heading, identity-header HEAD oid, and permits deliberate internal ellipsis overflow without allowing document overflow.
 
 ## Verification
 
 - `npm run typecheck:web` — passed (exit 0).
-- `npm run build:web` — passed (exit 0; Vite built in 1.14s; only its existing chunk-size warning appeared).
-- `npx playwright test tests/e2e/responsive-session.spec.ts tests/e2e/pinned-session.spec.ts tests/integration/anchored-workspace.spec.ts` — passed: **25 tests in 51.6s**.
+- `npm run build:web` — passed (exit 0; Vite built in 1.25s; only its existing chunk-size warning appeared).
+- `npx playwright test tests/e2e/responsive-session.spec.ts tests/e2e/pinned-session.spec.ts tests/integration/anchored-workspace.spec.ts` — passed: **25 tests in 51.9s**.
   - `responsive-session.spec.ts`: 1 passing test.
   - `pinned-session.spec.ts`: 11 passing tests.
   - `anchored-workspace.spec.ts`: 13 passing tests.
@@ -74,6 +75,12 @@ status: complete
 ## Falsifiability Evidence
 
 Temporarily changed only `.review-toolbar__active-file .path-display` from `flex-wrap: nowrap` to `flex-wrap: wrap` and ran the responsive spec. The new `#cumpa-heading` height gate failed at the renamed 320px fixture with **102.5px** observed versus the required `<= 32px`. Restored `nowrap` without committing the temporary change; the final scoped suite passed.
+
+## Desktop Toolbar Compactness
+
+The inherited Files label and `+1 −1` count text wrapped inside the newly shared toolbar, producing a **61px** desktop bar before this follow-up. The fix applies `white-space: nowrap` only to the active Files button and counts; the bar itself still wraps at `<=760px`.
+
+At 1440px the fixed toolbar measures **41px**. The new `<=41px` gate is derived from the heading’s 31.5px line-height plus 4px top padding, 4px bottom padding, and 1px bottom border: **40.5px**, rounded to the rendered 41px. The pre-fix 61px bar exceeds that bound, so this gate fails for the inherited wrapping defect and passes for the fixed compact row.
 
 ## Overlay Geometry
 
@@ -108,4 +115,4 @@ None.
 ## Self-Check: PASSED
 
 - SUMMARY.md exists.
-- Task commits `8a9fa1c`, `8abde96`, `928059d`, and `d2bb700` exist.
+- Task commits `8a9fa1c`, `8abde96`, `928059d`, `d2bb700`, and `644f00e` exist.
