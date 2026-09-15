@@ -64,12 +64,6 @@ type Phase08Width = (typeof phase08Widths)[number];
 interface Phase08Reflow {
   readonly canvas: { readonly clientWidth: number; readonly scrollWidth: number };
   readonly document: { readonly clientWidth: number; readonly scrollWidth: number };
-  readonly headerOrder: readonly string[];
-  readonly layout: {
-    readonly base: DOMRect;
-    readonly file: DOMRect;
-    readonly head: DOMRect;
-  };
   readonly toolbarGroups: readonly DOMRect[];
   readonly viewport: { readonly clientWidth: number; readonly scrollWidth: number };
 }
@@ -445,7 +439,7 @@ async function expectPhase08ReflowAtCurrentWidth(
   page: Page,
   width: Phase08Width,
 ): Promise<void> {
-  const context = page.locator('.active-file-toolbar__context');
+  const context = page.locator('.review-toolbar');
   await expect.poll(async () => await context.evaluate((element) => {
     const viewport = document.querySelector<HTMLElement>('.diff-workspace__viewport');
     const canvas = document.querySelector<HTMLElement>('.diff-workspace__canvas');
@@ -456,13 +450,6 @@ async function expectPhase08ReflowAtCurrentWidth(
   })).toBe(true);
 
   const reflow: Phase08Reflow = await page.evaluate(() => {
-    const rect = (selector: string): DOMRect => {
-      const element = document.querySelector<HTMLElement>(selector);
-      if (element === null) {
-        throw new Error(`[accessibility] missing ${selector}`);
-      }
-      return element.getBoundingClientRect();
-    };
     const element = (selector: string): HTMLElement => {
       const candidate = document.querySelector<HTMLElement>(selector);
       if (candidate === null) {
@@ -478,16 +465,6 @@ async function expectPhase08ReflowAtCurrentWidth(
         clientWidth: document.documentElement.clientWidth,
         scrollWidth: document.documentElement.scrollWidth,
       },
-      headerOrder: [
-        ...document.querySelectorAll<HTMLElement>(
-          '.active-file-toolbar__file, .active-file-toolbar__endpoint--base, .active-file-toolbar__endpoint--head',
-        ),
-      ].map((item) => item.className),
-      layout: {
-        base: rect('.active-file-toolbar__endpoint--base'),
-        file: rect('.active-file-toolbar__file'),
-        head: rect('.active-file-toolbar__endpoint--head'),
-      },
       toolbarGroups: [...document.querySelectorAll<HTMLElement>('.review-toolbar__group')]
         .map((group) => group.getBoundingClientRect()),
       viewport: { clientWidth: viewport.clientWidth, scrollWidth: viewport.scrollWidth },
@@ -498,11 +475,6 @@ async function expectPhase08ReflowAtCurrentWidth(
   expect(reflow.document.scrollWidth, `[responsive] ${width}px document fit`).toBeLessThanOrEqual(
     reflow.document.clientWidth,
   );
-  expect(reflow.headerOrder).toEqual([
-    'active-file-toolbar__file',
-    'active-file-toolbar__endpoint active-file-toolbar__endpoint--base',
-    'active-file-toolbar__endpoint active-file-toolbar__endpoint--head',
-  ]);
   expect(reflow.toolbarGroups).toHaveLength(3);
   for (const [index, group] of reflow.toolbarGroups.entries()) {
     expect(group.width, `[responsive] ${width}px toolbar group ${index}`).toBeGreaterThan(0);
@@ -524,18 +496,6 @@ async function expectPhase08ReflowAtCurrentWidth(
     expect(localScroll.documentLeft).toBe(0);
   }
 
-  if (width >= 1051) {
-    expect(reflow.layout.base.left).toBeLessThan(reflow.layout.file.left);
-    expect(reflow.layout.file.left).toBeLessThan(reflow.layout.head.left);
-    return;
-  }
-  expect(reflow.layout.file.top).toBeLessThan(reflow.layout.base.top);
-  if (width >= 761) {
-    expect(Math.abs(reflow.layout.base.top - reflow.layout.head.top)).toBeLessThanOrEqual(1);
-    expect(reflow.layout.base.left).toBeLessThan(reflow.layout.head.left);
-    return;
-  }
-  expect(reflow.layout.base.top).toBeLessThan(reflow.layout.head.top);
 }
 
 async function expectPhase08ReflowAtWidth(page: Page, width: Phase08Width): Promise<void> {
@@ -873,18 +833,13 @@ test('responsive keyboard and accessibility contract', async ({
       'BASEBase responsive fixture',
     );
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('alpha.ts');
-    await expect(page.locator('.active-file-toolbar__directory')).toHaveText('00-src/components/');
+    await expect(page.locator('#cumpa-heading')).toHaveAttribute('title', '00-src/components/alpha.ts');
     await expect(page.locator('.shell-footer__local-status')).toHaveText('Local review · pinned commits');
     await expect(page.locator('.shell-footer__draft-status')).toHaveText('Draft stays local · export is explicit');
 
     await test.step('rendered real workspace contrast contract', async () => {
       await expectRenderedContrast(
-        page.locator('.active-file-toolbar__file h1'),
-        'session heading',
-        4.5,
-      );
-      await expectRenderedContrast(
-        page.locator('.active-file-toolbar__file h1'),
+        page.locator('#cumpa-heading'),
         'active file heading',
         4.5,
       );
@@ -982,7 +937,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(fixture.getByLabel('Semantic textarea')).toHaveCSS('caret-color', toRootRgb('--text-primary'));
 
       const typography = await page.evaluate(() => [
-        '.active-file-toolbar__file h1', '.active-file-toolbar__file h1', '[data-normal-file]', '.availability-marker', '.pin-cue',
+        '#cumpa-heading', '[data-normal-file]', '.availability-marker', '.pin-cue',
       ].map((selector) => {
         const style = getComputedStyle(document.querySelector(selector)!);
         return [selector, style.fontSize, style.fontWeight, style.lineHeight, style.fontFamily];
@@ -994,8 +949,7 @@ test('responsive keyboard and accessibility contract', async ({
       const metadataSize = resolveToken(canonicalTokens, '--font-size-metadata');
       const metadataLineHeight = resolveToken(canonicalTokens, '--line-height-metadata');
       expect(typography).toEqual([
-        ['.active-file-toolbar__file h1', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.active-file-toolbar__file h1', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['#cumpa-heading', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['[data-normal-file]', bodySize, '400', bodyLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['.availability-marker', metadataSize, '600', metadataLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
         ['.pin-cue', metadataSize, '600', metadataLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
@@ -1113,12 +1067,12 @@ test('responsive keyboard and accessibility contract', async ({
       await expectFocusIndicatorUnclipped(firstFile);
       await page.keyboard.press('Enter');
       await expect(changedFiles).toHaveCount(0);
-      await expect(page.locator('.active-file-toolbar h1')).toBeFocused();
+      await expect(page.locator('#cumpa-heading')).toBeFocused();
 
       await page.keyboard.press('Alt+Shift+]');
-      await expect(page.locator('.active-file-toolbar__file')).toContainText('beta-after-a-very-long-rename.ts');
+      await expect(page.locator('#cumpa-heading')).toContainText('beta-after-a-very-long-rename.ts');
       await page.keyboard.press('Alt+Shift+[');
-      await expect(page.locator('.active-file-toolbar__file')).toContainText('alpha.ts');
+      await expect(page.locator('#cumpa-heading')).toContainText('alpha.ts');
 
       const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
       await keyboardHelp.focus();
@@ -1147,7 +1101,7 @@ test('responsive keyboard and accessibility contract', async ({
     await test.step('desktop review toolbar exposes six controls in sequential Tab order', async () => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.keyboard.press('Alt+Shift+]');
-      await expect(page.locator('.active-file-toolbar__file')).toContainText('beta-after-a-very-long-rename.ts');
+      await expect(page.locator('#cumpa-heading')).toContainText('beta-after-a-very-long-rename.ts');
 
       const previousFile = page.getByRole('button', { name: 'Previous file', exact: true });
       const nextFile = page.getByRole('button', { name: 'Next file', exact: true });
@@ -1174,7 +1128,7 @@ test('responsive keyboard and accessibility contract', async ({
       await assertNoPageOverflow(page);
 
       await page.keyboard.press('Alt+Shift+[');
-      await expect(page.locator('.active-file-toolbar__file')).toContainText('alpha.ts');
+      await expect(page.locator('#cumpa-heading')).toContainText('alpha.ts');
     });
 
     await test.step('Phase 08 boundary matrix preserves local diff overflow and complete identities', async () => {
@@ -1193,14 +1147,15 @@ test('responsive keyboard and accessibility contract', async ({
       const changedFiles = page.getByRole('dialog', { name: 'Changed files', exact: true });
       const movedFile = changedFiles.locator('.file-tree .file-row').nth(1);
       await movedFile.click();
-      const movedPath = page.locator('.active-file-toolbar .path-display');
+      const movedPath = page.locator('#cumpa-heading .path-display');
       await expect(movedPath).toContainText('beta-before-a-very-long-rename.ts');
       await expect(movedPath).toContainText('→');
       await expect(movedPath).toContainText('beta-after-a-very-long-rename.ts');
+      expect(await page.locator('#cumpa-heading').evaluate((element) => element.getBoundingClientRect().height)).toBeLessThanOrEqual(32);
 
       await page.setViewportSize({ width: 1440, height: 640 });
       await page.keyboard.press('Alt+Shift+[');
-      await expect(page.locator('.active-file-toolbar__file')).toContainText('alpha.ts');
+      await expect(page.locator('#cumpa-heading')).toContainText('alpha.ts');
       await page.setViewportSize({ width: 320, height: 640 });
       await expect(page.locator('.changed-files-sidebar')).not.toBeVisible();
       await files.focus();
@@ -1657,9 +1612,6 @@ test('responsive keyboard and accessibility contract', async ({
               scrollWidth: document.documentElement.scrollWidth,
             },
             focus: focused?.getAttribute('aria-label') ?? focused?.textContent?.trim() ?? null,
-            headerOrder: [...document.querySelectorAll<HTMLElement>(
-              '.active-file-toolbar__file, .active-file-toolbar__endpoint--base, .active-file-toolbar__endpoint--head',
-            )].map((element) => element.className),
             viewport: { clientWidth: viewport.clientWidth, scrollWidth: viewport.scrollWidth },
           };
         })));

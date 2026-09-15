@@ -466,12 +466,6 @@ test('diff navigation and session state', async ({ page }) => {
   await openReview(page);
   await expect(page.getByRole('button', { name: 'Previous file' })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Next file' })).toBeEnabled();
-  const contextBaseLabel = page.locator('.active-file-toolbar__endpoint--base .active-file-toolbar__endpoint-label');
-  const contextHeadLabel = page.locator('.active-file-toolbar__endpoint--head .active-file-toolbar__endpoint-label');
-  await expect(contextBaseLabel).toHaveText('Base');
-  await expect(contextHeadLabel).toHaveText('Head');
-  await expect(contextBaseLabel).toHaveCSS('text-transform', 'uppercase');
-  await expect(contextHeadLabel).toHaveCSS('text-transform', 'uppercase');
   await expect(page.getByText(/Unchanged regions begin collapsed/)).toBeVisible();
 
   const selectedFile = page.locator('[role="treeitem"][aria-selected="true"]');
@@ -526,25 +520,17 @@ test('Phase 07 header and control states', async ({ page }) => {
     await page.goto(`${origin}#token=${token}`);
     await expect(page.locator('.monaco-diff-editor')).toBeVisible();
 
-    const header = page.locator('.active-file-toolbar');
+    const header = page.locator('.review-toolbar');
     await expect(header).toHaveCount(1);
-    await expect(header.locator('.active-file-toolbar__context')).toHaveCount(1);
-    await expect(page.locator('.active-file-toolbar__review')).toHaveCount(1);
-    const baseLabel = header.locator('.active-file-toolbar__endpoint--base .active-file-toolbar__endpoint-label');
-    const headLabel = header.locator('.active-file-toolbar__endpoint--head .active-file-toolbar__endpoint-label');
-    await expect(baseLabel).toHaveText('Base');
-    await expect(headLabel).toHaveText('Head');
-    await expect(baseLabel).toHaveCSS('text-transform', 'uppercase');
-    await expect(headLabel).toHaveCSS('text-transform', 'uppercase');
-    await expect(header.locator('.active-file-toolbar__endpoint-oid').nth(0)).toHaveText('aaaaaaa');
-    await expect(header.locator('.active-file-toolbar__endpoint-oid').nth(1)).toHaveText('bbbbbbb');
+    await expect(page.locator('#cumpa-heading')).toHaveCount(1);
+    await expect(page.getByRole('banner')).toContainText(new RegExp('HEAD\\s*head · bbbbbbb'));
     await expect(page.getByRole('heading', {
       level: 1,
       name: 'renamed from src/old/first.ts to src/new/first.ts',
     })).toBeVisible();
-    await expect(header.locator('.active-file-toolbar__directory')).toHaveText('src/new/');
-    await expect(header.locator('.path-display__old .path-text__filename')).toHaveText('first.ts');
-    await expect(header.locator('.path-display__new .path-text__filename')).toHaveText('first.ts');
+    await expect(page.locator('#cumpa-heading')).toHaveAttribute('title', 'src/new/first.ts');
+    await expect(page.locator('#cumpa-heading .path-display__old .path-text__filename')).toHaveText('first.ts');
+    await expect(page.locator('#cumpa-heading .path-display__new .path-text__filename')).toHaveText('first.ts');
 
     const previousFile = page.getByRole('button', { name: 'Previous file', exact: true });
     const nextFile = page.getByRole('button', { name: 'Next file', exact: true });
@@ -1248,7 +1234,7 @@ test.describe('async comment settlement', () => {
   });
 });
 
-test('preserves production Base Head labels and no-reflow Monaco semantic channels at every phase viewport', async ({ page }) => {
+test('preserves no-reflow Monaco semantic channels at every phase viewport', async ({ page }) => {
   test.setTimeout(120_000);
   const targetText = 'export const changed = 3;';
 
@@ -1256,12 +1242,6 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
     resetAsyncSettlementFixture();
     await page.setViewportSize({ width, height: 760 });
     await openReview(page);
-    const baseEndpointLabel = page.locator('.active-file-toolbar__endpoint--base .active-file-toolbar__endpoint-label');
-    const headEndpointLabel = page.locator('.active-file-toolbar__endpoint--head .active-file-toolbar__endpoint-label');
-    await expect(baseEndpointLabel).toHaveText('Base');
-    await expect(headEndpointLabel).toHaveText('Head');
-    await expect(baseEndpointLabel).toHaveCSS('text-transform', 'uppercase');
-    await expect(headEndpointLabel).toHaveCSS('text-transform', 'uppercase');
     await expect(page.locator('.monaco-diff-pane--base')).toHaveCount(1);
     await expect(page.locator('.monaco-diff-pane--head')).toHaveCount(1);
 
@@ -1275,6 +1255,7 @@ test('preserves production Base Head labels and no-reflow Monaco semantic channe
     expect(initial.diffViewport.rect.width).toBeLessThanOrEqual(initial.reviewMain.rect.width + 1);
     const outerOverflowOwners = await page.locator('.review-main').evaluate((root) => [...root.querySelectorAll<HTMLElement>('*')]
       .filter((element) => !element.closest('.diff-workspace__viewport')
+        && !element.closest('.review-toolbar__active-file')
         && !element.classList.contains('sr-only')
         && element.scrollWidth > element.clientWidth)
       .map((element) => element.className));

@@ -1420,9 +1420,6 @@ test('metadata and availability states', async ({ browser, context, page }, test
     await expect(heading).toHaveText('old\\tname.ts→new\\nname.ts');
     await expect(heading).toHaveAccessibleName('renamed from 00-src/old\\tname.ts to 00-src/new\\nname.ts');
     await expect(workspace.locator('.monaco-diff-editor')).toBeVisible();
-    const contextHeader = workspace.locator('.active-file-toolbar__context');
-    await expect(contextHeader.getByText('Base', { exact: true })).toBeVisible();
-    await expect(contextHeader.getByText('Head', { exact: true })).toBeVisible();
 
     await page.getByRole('button', { name: 'Details', exact: true }).click();
     const details = page.getByRole('dialog', { name: 'Details' });
