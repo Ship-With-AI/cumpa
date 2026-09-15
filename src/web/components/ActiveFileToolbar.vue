@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import type { SessionFile, SessionResponse } from '../../contracts/api.js';
-import { controlSafeDisplay } from '../../domain/path-bytes.js';
+import type { SessionFile } from '../../contracts/api.js';
 import PathDisplay from './PathDisplay.vue';
 
 const props = defineProps<{
@@ -10,7 +9,6 @@ const props = defineProps<{
   readonly filesDrawer: boolean;
   readonly selectedFile?: SessionFile;
   readonly selectedPath: string;
-  readonly session: SessionResponse;
 }>();
 
 const emit = defineEmits<{
@@ -18,8 +16,6 @@ const emit = defineEmits<{
 }>();
 
 const filesToggle = ref<HTMLButtonElement>();
-const isExactPatch = computed(() => 'patch' in props.session);
-const pinnedSession = computed(() => 'base' in props.session ? props.session : undefined);
 const effectivePath = computed(() => {
   const file = props.selectedFile;
   if (file === undefined) return props.selectedPath;
@@ -27,14 +23,16 @@ const effectivePath = computed(() => {
     ? file.oldPath?.display ?? props.selectedPath
     : file.newPath?.display ?? file.oldPath?.display ?? props.selectedPath;
 });
-const directoryPath = computed(() => effectivePath.value.slice(0, effectivePath.value.lastIndexOf('/') + 1));
-const baseShortOid = computed(() => controlSafeDisplay(pinnedSession.value?.base.oid.slice(0, 7) ?? ''));
+const counts = computed(() => props.selectedFile !== undefined
+  && props.selectedFile.additions !== null
+  && props.selectedFile.deletions !== null
+  ? `+${props.selectedFile.additions} −${props.selectedFile.deletions}`
+  : undefined);
 const filesHostVisible = computed(() => !props.filesDrawer && !props.filesCollapsed);
 const filesToggleCopy = computed(() => props.filesDrawer ? 'Files' : props.filesCollapsed ? 'Show files' : 'Hide files');
 const filesToggleLabel = computed(() => props.filesDrawer
   ? 'Open changed files'
   : props.filesCollapsed ? 'Show changed files sidebar' : 'Hide changed files sidebar');
-const headShortOid = computed(() => controlSafeDisplay(pinnedSession.value?.head.oid.slice(0, 7) ?? ''));
 
 function focusFilesToggle(): void {
   filesToggle.value?.focus();
@@ -48,54 +46,21 @@ defineExpose({ focusFilesToggle, focusHeading });
 </script>
 
 <template>
-  <header class="active-file-toolbar">
-    <div class="active-file-toolbar__context">
-      <div class="active-file-toolbar__file">
-        <div class="active-file-toolbar__title">
-          <h1 id="cumpa-heading" tabindex="-1">
-            <PathDisplay v-if="selectedFile !== undefined" :file="selectedFile" basename />
-            <template v-else>{{ selectedPath }}</template>
-          </h1>
-          <p v-if="directoryPath !== ''" class="active-file-toolbar__directory" :title="directoryPath">{{ directoryPath }}</p>
-        </div>
-        <div v-if="selectedFile !== undefined" class="active-file-toolbar__metadata">
-          <span class="active-file-toolbar__status">{{ selectedFile.status.kind }}</span>
-          <span v-if="selectedFile.additions !== null && selectedFile.deletions !== null" class="active-file-toolbar__counts">
-            +{{ selectedFile.additions }} −{{ selectedFile.deletions }}
-          </span>
-        </div>
-        <button
-          ref="filesToggle"
-          type="button"
-          class="ui-button"
-          :aria-label="filesToggleLabel"
-          :aria-controls="filesHostVisible ? 'changed-files' : undefined"
-          :aria-expanded="filesHostVisible ? true : undefined"
-          @click="emit('toggleFiles')"
-        >{{ filesToggleCopy }}</button>
-      </div>
-      <template v-if="isExactPatch">
-        <div class="active-file-toolbar__endpoint active-file-toolbar__endpoint--base">
-          <span class="active-file-toolbar__endpoint-label">Preimage</span>
-          <span class="active-file-toolbar__endpoint-name">Repository object</span>
-        </div>
-        <div class="active-file-toolbar__endpoint active-file-toolbar__endpoint--head">
-          <span class="active-file-toolbar__endpoint-label">Postimage</span>
-          <span class="active-file-toolbar__endpoint-name">Implemented content</span>
-        </div>
-      </template>
-      <template v-else-if="pinnedSession !== undefined">
-        <div class="active-file-toolbar__endpoint active-file-toolbar__endpoint--base">
-          <span class="active-file-toolbar__endpoint-label">Base</span>
-          <span class="active-file-toolbar__endpoint-name" :title="pinnedSession.base.label">{{ controlSafeDisplay(pinnedSession.base.label) }}</span>
-          <span class="active-file-toolbar__endpoint-oid" :title="pinnedSession.base.oid">{{ baseShortOid }}</span>
-        </div>
-        <div class="active-file-toolbar__endpoint active-file-toolbar__endpoint--head">
-          <span class="active-file-toolbar__endpoint-label">Head</span>
-          <span class="active-file-toolbar__endpoint-name" :title="pinnedSession.head.label">{{ controlSafeDisplay(pinnedSession.head.label) }}</span>
-          <span class="active-file-toolbar__endpoint-oid" :title="pinnedSession.head.oid">{{ headShortOid }}</span>
-        </div>
-      </template>
-    </div>
-  </header>
+  <div class="review-toolbar__active-file">
+    <h1 id="cumpa-heading" tabindex="-1" :title="effectivePath">
+      <PathDisplay v-if="selectedFile !== undefined" :file="selectedFile" basename />
+      <template v-else>{{ selectedPath }}</template>
+    </h1>
+    <span v-if="selectedFile !== undefined" class="review-toolbar__status">{{ selectedFile.status.kind }}</span>
+    <span v-if="counts !== undefined" class="review-toolbar__counts">{{ counts }}</span>
+    <button
+      ref="filesToggle"
+      type="button"
+      class="ui-button"
+      :aria-label="filesToggleLabel"
+      :aria-controls="filesHostVisible ? 'changed-files' : undefined"
+      :aria-expanded="filesHostVisible ? true : undefined"
+      @click="emit('toggleFiles')"
+    >{{ filesToggleCopy }}</button>
+  </div>
 </template>

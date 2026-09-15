@@ -23,6 +23,7 @@ const emit = defineEmits<{
 
 <template>
   <div class="review-toolbar" aria-label="Diff navigation">
+    <slot />
     <div class="review-toolbar__group" aria-label="File navigation">
       <span class="review-toolbar__label" aria-hidden="true">File</span>
       <UiTooltip :text="atFirstFile ? 'Previous file · Alt+Shift+[ · First changed file.' : 'Previous file · Alt+Shift+['">

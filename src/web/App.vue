@@ -1258,31 +1258,29 @@ onBeforeUnmount(() => {
       <div v-show="!isNarrow && !filesCollapsed" id="changed-files" class="changed-files-sidebar"></div>
 
       <main class="review-main" aria-labelledby="cumpa-heading">
-        <ActiveFileToolbar
-          ref="activeFileToolbar"
-          :files-collapsed="filesCollapsed"
-          :files-drawer="isNarrow"
-          :selected-file="selectedFile"
-          :selected-path="selectedPath"
-          :session="session"
-          @toggle-files="toggleFiles"
-        />
-        <div class="active-file-toolbar__review">
-          <ReviewToolbar
-            :at-first-file="atFirstFile"
-            :at-last-file="atLastFile"
-            :has-active-file="selectedFile?.availability.kind === 'text'"
-            :open-comment-count="openCommentCount"
-            :resolved-comment-count="resolvedCommentCount"
-            :review-expanded="commentsOpen"
-            @previous-file="previousFile"
-            @next-file="nextFile"
-            @previous-change="previousChange"
-            @next-change="nextChange"
-            @comments="toggleComments"
-            @keyboard-help="openKeyboardHelp"
+        <ReviewToolbar
+          :at-first-file="atFirstFile"
+          :at-last-file="atLastFile"
+          :has-active-file="selectedFile?.availability.kind === 'text'"
+          :open-comment-count="openCommentCount"
+          :resolved-comment-count="resolvedCommentCount"
+          :review-expanded="commentsOpen"
+          @previous-file="previousFile"
+          @next-file="nextFile"
+          @previous-change="previousChange"
+          @next-change="nextChange"
+          @comments="toggleComments"
+          @keyboard-help="openKeyboardHelp"
+        >
+          <ActiveFileToolbar
+            ref="activeFileToolbar"
+            :files-collapsed="filesCollapsed"
+            :files-drawer="isNarrow"
+            :selected-file="selectedFile"
+            :selected-path="selectedPath"
+            @toggle-files="toggleFiles"
           />
-        </div>
+        </ReviewToolbar>
 
         <section v-if="session.files.length === 0" class="empty-state">
           <h2>{{ emptyFilesCopy.heading }}</h2>
