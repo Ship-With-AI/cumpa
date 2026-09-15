@@ -38,7 +38,7 @@
 
 ### Retained Technical Debt
 
-- DEBT-01 (audit D-01): four `ReviewToolbar.vue` layout containers carry `aria-label` or nothing without a queryable `role`, so `getByRole('group', …)` cannot reach them. Pre-existing and byte-unchanged across v1.6; promoted into `.planning/REQUIREMENTS.md` as a scheduled next-milestone requirement rather than left in a ledger.
+- DEBT-01 (audit D-01): `ReviewToolbar.vue` layout containers carry `aria-label` or nothing without a queryable `role`, so `getByRole('group', …)` cannot reach them. Pre-existing and byte-unchanged across v1.6. **Carried to `ROADMAP.md` Backlog at the 2026-09-15 close** (the earlier note said `.planning/REQUIREMENTS.md`, which the close removes), and **re-scoped from four containers to three** — quick task `260915-jbv` deleted the fourth with the review-toolbar actions group.
 - Two release-only specs remain documented external prerequisites, not regressions: `tests/e2e/public-support-states.spec.ts` (published package plus live hosted origin; gate at `:327-329`) and `tests/e2e/marketplace-review.spec.ts:97-99`.
 
 ### Archives
@@ -47,6 +47,34 @@
 - Requirements: `.planning/milestones/v1.6-REQUIREMENTS.md`
 - Milestone audit: `.planning/milestones/v1.6-MILESTONE-AUDIT.md`
 - Phase history: `.planning/milestones/v1.6-phases/`
+
+### Post-close changes to the shipped surface (2026-09-15)
+
+The archive alone no longer describes the running app. Four items landed on `restyle` after the
+`de1362e` archive commit, all verified against the live workspace:
+
+- `80c3b92` — the Files toggle emptied the sidebar permanently: Vue resolves a Teleport target
+  once, so `v-if` on `#changed-files` stranded the single file tree in a detached element. Host
+  now hidden with `v-show`; filter text and selection survive hide/show as a side benefit.
+- `8b2a050` — the Review rail rendered transparent over Monaco. Bisected to `5599805`
+  (Phase 11-05), which deleted its only `background` declaration while retiring drawer styles.
+- Quick task `260915-gxg` — removed the active-file context bar; filename, status/counts and the
+  Files toggle moved onto the navigation bar. Two bars became one 41px bar. Caught mid-task: the
+  plan's `flex: 1 1 auto` slid navigation under the open Review rail (pointer-intercept at
+  `anchored-workspace.spec.ts:1037`), and the merged bar rendered 61px because inherited label
+  wrapping — both fixed and pinned by assertions.
+- Quick task `260915-jbv` — removed the Details dialog, the Review comments rail, and Keyboard
+  help outright at the owner's instruction, no relocation. Net −2,991 lines, six files deleted.
+  Accepted losses: comment resolve/reopen/edit/delete, stale and orphaned anchor records, the
+  cross-tab conflict notice, comparison identity, per-file metadata, in-app keyboard help.
+  Reopened the v1.0 file-metadata orphan debt that v1.6 had recorded as resolved, because the
+  Details dialog was `SessionClient.getFileMetadata()`'s only real caller.
+
+Suite at the 2026-09-15 close: 92 passed, 2 external-prerequisite failures
+(`CUMPA_MARKETPLACE_URL_MARKER`, `CUMPA_RUNTIME_CUSTODY_DIR`), 2 not run. `typecheck:web` and
+`verify:semantic-css` clean. Note that `typecheck:web` covers seven `.ts` files and zero `.vue`
+files, and `vue-tsc@3.3.7` cannot run against `typescript@7.0.2` — Vue templates are gated by
+deterministic identifier greps and a runtime console collector, not by a typechecker.
 
 ---
 

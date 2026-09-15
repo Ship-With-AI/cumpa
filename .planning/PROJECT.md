@@ -10,17 +10,54 @@ A developer can accurately review repository-grounded changes chosen by a develo
 
 ## Current State
 
-**Shipped:** v1.4 Voluntary Support on 2026-09-04.
+**Shipped:** v1.6 Workspace Restyle on 2026-09-14. Milestone audit status `tech_debt` — archiveable with one accepted item (DEBT-01, see `ROADMAP.md` Backlog).
 
-Cumpa now offers an optional one-time USD $49.99 support flow in configured release packages without gating review behavior. The local app hands Support or Restore actions to a canonical Supabase-hosted GitHub OAuth flow; only a signature-verified Stripe webhook can establish paid status. Verified status persists installation-wide and a paid GitHub account can restore suppression on unlimited installations. Ordinary unconfigured local builds contain no hosted capability, provider credential, or support route.
+The whole browser review workspace now renders from one canonical semantic token root, with the
+typed Monaco theme derived byte-identically from it at build time. The changed-file tree is dense
+rows with signed counts and directory descendant counts, plus a filter that prunes rather than
+rebuilds so expansion identity and selection survive clearing. The diff surface is restyled
+entirely through Monaco's own mechanisms — pinned options, source-correct side labels, responsive
+code density, zero-height hunk boundaries that cannot desynchronise comment anchoring. The shell
+is composed around one extracted `ModalDialog` primitive, four disagreeing breakpoint systems are
+unified onto 760/1050/1650, and every warning class sits behind a single live-region owner.
+Review, comment, persistence, and export mechanics were unchanged by the restyle, as scoped.
 
-**v1.5 progress:** Phase 03 — Distribution Contract & Legal Boundary completed on 2026-09-08. The existing `Ship-With-AI/cumpa` repository is public under the approved MIT terms at reviewed publication commit `ff72519969da8d2c0761c9533ccb27b809cd17bb`; anonymous source/LICENSE/Issues access and approved public controls were verified. Temporary publication tokens were revoked per operator confirmation and local copies removed. Public npm availability and provenance are not yet claimed.
+**Post-close changes (2026-09-15), all on branch `restyle`:** four fixes and two quick tasks
+altered the shipped v1.6 surface after the archive commit, so the milestone archive alone no
+longer describes the running app:
 
-**Phase 04 — Exact Runtime Tarball completed on 2026-09-09.** One production-configured `@shipwithai/cumpa@1.5.0` archive passed scanner and installed acceptance, remains read-only, and received direct digest-bound approval: SHA-256 `e7766d43f7f804b138e694b298480cdec62ebfc16960f86d4c1e3c7959cf1dca`, length `3513998` bytes. During Phase 5 planning, the owner selected a fresh CI-built candidate with new exact-byte approval and publication in the same workflow run/attempt for truthful CI-build provenance. The old archive/evidence remain immutable history; they are not a publication fallback. No Phase 5 execution or remote mutation is authorized by that planning choice.
+- `80c3b92` — the Files toggle emptied the sidebar permanently. Vue resolves a Teleport target
+  once, so `v-if` on `#changed-files` stranded the single file tree in a detached element; the
+  host is now hidden with `v-show`.
+- `8b2a050` — the Review rail was transparent, compositing Monaco text through the panel.
+  `5599805` (Phase 11-05) had deleted its only `background` declaration while retiring drawer
+  styles.
+- Quick task `260915-gxg` — the active-file context bar was removed; the filename, its status and
+  counts, and the Files toggle moved onto the navigation bar. One 41px bar replaced two.
+- Quick task `260915-jbv` — the **Details** dialog, the **Review** comments rail, and
+  **Keyboard help** were removed outright at the owner's instruction, with no relocation of their
+  content. Accepted losses: comment resolve/reopen/edit/delete, the stale and orphaned anchor
+  records, the cross-tab conflict notice, comparison identity (commits, oids, pathspecs, patch
+  digest), per-file metadata, and in-app keyboard help. Comment *creation*, export, summary,
+  Finish attached review, draft persistence, Changed files, and Support are intact.
 
-**v1.5 close-out status (2026-09-12):** All 23 v1.5 plans across 5 phases are complete, but Phase 07 — clean-public-artifact-acceptance is `partially-blocked`: the hardened acceptance rerun stopped rather than overwrite the stale pre-review evidence record, because the post-restore path required an already-consumed protected Restore and OMP isolation reported `omp-isolation-unavailable`. No substitute row was fabricated. v1.5 was therefore never archived; v1.6 starts with that blocker carried over unchanged.
+**v1.5 status, unchanged:** all 23 plans across 5 phases are complete, but Phase 07 —
+clean-public-artifact-acceptance — remains `partially-blocked`. The hardened acceptance rerun
+stopped rather than overwrite the stale pre-review evidence record, because the post-restore path
+required an already-consumed protected Restore and OMP isolation reported
+`omp-isolation-unavailable`. No substitute row was fabricated. v1.5's roadmap, requirements and
+phase history are archived under `.planning/milestones/`.
 
-## Current Milestone: v1.6 Workspace Restyle
+**Published artifact:** `@shipwithai/cumpa@1.5.0`, MIT, on public npm.
+
+## Next Milestone
+
+Not yet defined. `ROADMAP.md` carries the Backlog that feeds it: DEBT-01 (accepted debt), four
+DEFER items excluded from v1.6 scope, and the reopened file-metadata orphan. Run
+`/gsd-new-milestone` to define v1.7.
+
+<details>
+<summary>v1.6 Workspace Restyle (shipped 2026-09-14)</summary>
 
 **Goal:** Restyle the whole browser review workspace to the approved `mockups/01b-quiet-workspace-tree.html` composition so changed files and diffs are easier to read and scroll, without changing any review, comment, persistence, or export mechanic.
 
@@ -33,9 +70,11 @@ Cumpa now offers an optional one-time USD $49.99 support flow in configured rele
 - Re-derive the canonical semantic tokens from the mockup's values (surfaces, borders, muted text, diff fills, status colors) and re-map the typed Monaco theme byte-for-byte to the new root.
 - Keep Monaco as the diff authority and restyle its editor, gutter, sign, spacing, and hidden-region presentation to the quieter reading surface.
 - Keep inline comment mechanics, accepted cards, anchors, and the comments rail unchanged while adapting them to the new visual language.
-- Move comparison metadata into a Details dialog and the review summary, export controls, export readiness, export progress, and receipts into a Review-notes dialog.
+- Move comparison metadata into a Details dialog and the review summary, export controls, export readiness, export progress, and receipts into a Review-notes dialog. **Superseded 2026-09-15:** the Details dialog was later removed by `260915-jbv`; the Review-notes dialog remains.
 - Keep selector-drift, stale and orphaned anchor, and draft-recovery warnings visible in the workspace shell — never only inside a dialog.
 - Preserve the mobile files dialog and narrow-viewport reflow of the new composition.
+
+</details>
 
 <details>
 <summary>v1.5 MIT Distribution (plans complete; Phase 07 evidence blocked, not archived)</summary>
@@ -102,7 +141,7 @@ Cumpa now offers an optional one-time USD $49.99 support flow in configured rele
 - [x] User can launch the application from a Git repository through a CLI that opens a loopback-only browser session.
 - [x] User can interactively select an ordered base and head from local branches and registered worktrees.
 - [x] User can review merge-base-to-head changes in a GitHub-like side-by-side text diff with changed-file navigation and expandable context.
-- [x] User can create, edit, delete, and resolve comments on any visible line on either side of a diff.
+- [x] User can create, edit, delete, and resolve comments on any visible line on either side of a diff. **Narrowed 2026-09-15 by quick task `260915-jbv`:** creation survives (inline, from the diff gutter); edit, delete, resolve and reopen were removed with the Review comments rail at the owner's explicit instruction. Comments still persist to the draft and still appear in exports.
 - [x] User can write an overall review summary while the review remains an editable repository-local draft.
 - [x] User can export a completed review as readable Markdown and versioned JSON containing stable Git identities and context anchors for an applying agent.
 
@@ -309,4 +348,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-09-12 at the start of v1.6 Workspace Restyle; v1.5 plans complete but unarchived with its Phase 07 acceptance-evidence blocker carried over*
+*Last updated: 2026-09-15 after the v1.6 Workspace Restyle close; audit status `tech_debt` with DEBT-01 accepted into the ROADMAP Backlog, and four post-close fixes plus quick tasks `260915-gxg` and `260915-jbv` recorded in Current State. v1.5 remains archived with its Phase 07 acceptance-evidence blocker unresolved.*

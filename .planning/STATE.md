@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Workspace Restyle
-status: complete
-last_updated: "2026-09-14T09:30:00.000Z"
-last_activity: 2026-09-14
+status: archived
+last_updated: "2026-09-15T14:00:00.000Z"
+last_activity: 2026-09-15
 progress:
   total_phases: 5
   completed_phases: 5
@@ -17,17 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-12)
+See: .planning/PROJECT.md (updated 2026-09-15)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** v1.6 Workspace Restyle — all phases complete, milestone lifecycle pending
+**Current focus:** Between milestones — v1.6 archived 2026-09-15; v1.7 not yet defined
 
 ## Current Position
 
-Phase: 12 of 12 (5 of 5 for v1.6) — Behavior Continuity
-Plan: 12-03 complete
-Status: All v1.6 phases complete — awaiting milestone audit
-Last activity: 2026-09-14 — Phase 12 complete (4/4 must-haves; visual equivalence signed off; agent-ready-export.spec.ts repaired 6/6 after never executing during the milestone)
+Phase: none — between milestones, previous milestone closed and archived
+Plan: none
+Status: Between milestones. ROADMAP.md is collapsed to the milestone index plus the Backlog (DEBT-01 accepted debt, four DEFER items, the reopened file-metadata orphan). REQUIREMENTS.md is intentionally absent until /gsd-new-milestone writes a fresh one.
+Last activity: 2026-09-15 — v1.6 close completed: roadmap collapsed, requirements and duplicate audit removed after verifying the archives, PROJECT.md evolved, DEBT-01 carried to the Backlog and re-scoped to three containers
 
 ## Performance Metrics
 
