@@ -1202,7 +1202,7 @@ test('responsive keyboard and accessibility contract', async ({
       await page.keyboard.press('Alt+Shift+[');
       await expect(page.locator('.active-file-toolbar__file')).toContainText('alpha.ts');
       await page.setViewportSize({ width: 320, height: 640 });
-      await expect(page.locator('.changed-files-sidebar')).toHaveCount(0);
+      await expect(page.locator('.changed-files-sidebar')).not.toBeVisible();
       await files.focus();
       await page.keyboard.press('Enter');
       const filter = changedFiles.getByRole('searchbox', { name: 'Filter files', exact: true });
@@ -1303,7 +1303,7 @@ test('responsive keyboard and accessibility contract', async ({
         await filesButton.click();
         const showFilesButton = page.getByRole('button', { name: 'Show changed files sidebar', exact: true });
         await expect(showFilesButton).not.toHaveAttribute('aria-controls');
-        await expect(page.locator('#changed-files')).toHaveCount(0);
+        await expect(page.locator('#changed-files')).not.toBeVisible();
         const collapsed = await reviewShell.evaluate((shell) => {
           const main = shell.querySelector<HTMLElement>('.review-main')!;
           const shellBox = shell.getBoundingClientRect();
@@ -1320,6 +1320,7 @@ test('responsive keyboard and accessibility contract', async ({
         await showFilesButton.click();
         await expect(filesButton).toHaveAttribute('aria-expanded', 'true');
         await expect(page.locator('#changed-files')).toBeVisible();
+        await expect(page.locator('.changed-files-sidebar [role="treeitem"]').first()).toBeVisible();
         const restored = await reviewShell.evaluate((shell) => {
           const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
           const main = shell.querySelector<HTMLElement>('.review-main')!;
@@ -1558,7 +1559,7 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(filesButton).toBeVisible();
       await expect(filesButton).not.toHaveAttribute('aria-controls');
       await expect(filesButton).not.toHaveAttribute('aria-expanded');
-      await expect(page.locator('.changed-files-sidebar')).toHaveCount(0);
+      await expect(page.locator('.changed-files-sidebar')).not.toBeVisible();
       await filesButton.focus();
       await page.keyboard.press('Enter');
       await expect(changedFiles).toBeVisible();

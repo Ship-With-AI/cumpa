@@ -1026,7 +1026,7 @@ test('anchored gap closure', async ({ page }) => {
   await expect(changedFiles.getByRole('searchbox', { name: 'Filter files', exact: true })).toBeFocused();
   await page.getByRole('button', { name: 'Close changed files' }).click();
   await expect(filesToggle).toBeFocused();
-  await expect(page.locator('.changed-files-sidebar')).toHaveCount(0);
+  await expect(page.locator('.changed-files-sidebar')).not.toBeVisible();
   await filesToggle.click();
   await expect(changedFiles).toBeVisible();
   await page.setViewportSize({ width: 1440, height: 900 });

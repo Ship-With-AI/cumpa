@@ -1253,7 +1253,9 @@ onBeforeUnmount(() => {
       :class="{ 'review-shell--files-collapsed': !isNarrow && filesCollapsed }"
       :inert="detailsOpen || reviewNotesOpen || supportDialogOpen || changedFilesOpen"
     >
-      <div v-if="!isNarrow && !filesCollapsed" id="changed-files" class="changed-files-sidebar"></div>
+      <!-- v-show, not v-if: Teleport resolves `#changed-files` once, so destroying the host
+           strands the teleported tree and the sidebar comes back empty. -->
+      <div v-show="!isNarrow && !filesCollapsed" id="changed-files" class="changed-files-sidebar"></div>
 
       <main class="review-main" aria-labelledby="cumpa-heading">
         <ActiveFileToolbar
