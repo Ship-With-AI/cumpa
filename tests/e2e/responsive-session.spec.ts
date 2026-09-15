@@ -1154,6 +1154,8 @@ test('responsive keyboard and accessibility contract', async ({
       expect(await page.locator('#cumpa-heading').evaluate((element) => element.getBoundingClientRect().height)).toBeLessThanOrEqual(32);
 
       await page.setViewportSize({ width: 1440, height: 640 });
+      // 31.5px heading line-height + 4px top padding + 4px bottom padding + 1px bottom border.
+      expect(await page.locator('.review-toolbar').evaluate((element) => element.getBoundingClientRect().height)).toBeLessThanOrEqual(41);
       await page.keyboard.press('Alt+Shift+[');
       await expect(page.locator('#cumpa-heading')).toContainText('alpha.ts');
       await page.setViewportSize({ width: 320, height: 640 });

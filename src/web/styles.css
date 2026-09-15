@@ -1587,6 +1587,11 @@ input:-webkit-autofill:focus {
   line-height: var(--line-height-metadata);
 }
 
+.review-toolbar__active-file .ui-button,
+.review-toolbar__counts {
+  white-space: nowrap;
+}
+
 .shell-footer {
   display: flex;
   min-width: 0;
