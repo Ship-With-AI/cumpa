@@ -1516,6 +1516,7 @@ input:-webkit-autofill:focus {
   grid-template-rows: minmax(0, 1fr);
   padding: 0;
   border-left: 1px solid var(--border-default);
+  background: var(--surface-panel);
 }
 
 .comments-rail h3 {

@@ -1304,6 +1304,7 @@ test('responsive keyboard and accessibility contract', async ({
       const canvasWidthBeforeRail = Math.round((await reviewMain.boundingBox())!.width);
       await reviewButton.click();
       await expect(rail).toBeVisible();
+      await expect(rail).toHaveCSS('background-color', toRootRgb('--surface-panel'));
       expect(Math.round((await reviewMain.boundingBox())!.width)).toBe(canvasWidthBeforeRail);
       expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
       await expect(rail).toHaveCSS('overflow-y', 'hidden');
