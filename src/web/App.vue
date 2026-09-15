@@ -7,7 +7,6 @@ import type {
   DraftRecoveryResult,
   DraftRevealResult,
   FileContentResponse,
-  FileMetadataResponse,
   FinishReviewResult,
   PatchStatusResponse,
   SessionFile,
@@ -25,12 +24,10 @@ import type { DraftView, SessionClient } from './api/client';
 import DiffWorkspace from './components/DiffWorkspace.vue';
 import DraftRecovery from './components/DraftRecovery.vue';
 import ReviewNotesDialog from './components/ReviewNotesDialog.vue';
-import ReviewPanel from './components/ReviewPanel.vue';
 import ErrorState from './components/ErrorState.vue';
 import ChangedFilesDialog from './components/ChangedFilesDialog.vue';
 import IdentityHeader from './components/IdentityHeader.vue';
 import SupportDialog from './components/SupportDialog.vue';
-import DetailsDialog from './components/DetailsDialog.vue';
 import InlineNotice from './components/InlineNotice.vue';
 import SelectorDriftNotice from './components/SelectorDriftNotice.vue';
 import StaleAnchorNotice from './components/StaleAnchorNotice.vue';
@@ -74,7 +71,7 @@ type ReviewFailure = Readonly<{
 
 type AttachedLifecycle = 'ordinary' | 'waiting' | 'waitingDisconnected' | 'finishing' | 'completed' | 'retryableFailure' | 'terminalFailure';
 
-type ShellDialog = 'changed-files' | 'details' | 'review-notes' | 'support';
+type ShellDialog = 'changed-files' | 'review-notes' | 'support';
 
 const session = shallowRef<SessionResponse>();
 const errorMessage = ref('');
@@ -82,11 +79,7 @@ const selectedFile = shallowRef<SessionFile>();
 const selectedContent = shallowRef<FileContentResponse>();
 const diffLoading = ref(false);
 const diffError = ref('');
-const selectedMetadata = shallowRef<FileMetadataResponse>();
-const metadataLoading = ref(false);
-const metadataError = ref('');
 const shellDialog = ref<ShellDialog | null>(null);
-const detailsOpen = computed(() => shellDialog.value === 'details');
 const isNarrow = ref(false);
 const changedFilesOpen = computed(() => shellDialog.value === 'changed-files');
 const changedFilesRestoreFocus = ref(true);
@@ -94,15 +87,11 @@ const focusActiveFileAfterDialog = ref(false);
 const filesCollapsed = ref(false);
 const reviewNotesOpen = computed(() => shellDialog.value === 'review-notes');
 const shellModalOpen = computed(() => shellDialog.value !== null);
-const commentsOpen = ref(false);
 const liveMessage = ref('');
 const liveMessageVersion = ref(0);
 const activeFileToolbar = ref<InstanceType<typeof ActiveFileToolbar>>();
 const diffWorkspace = ref<InstanceType<typeof DiffWorkspace>>();
 const identityHeader = ref<InstanceType<typeof IdentityHeader>>();
-const detailsDialog = ref<InstanceType<typeof DetailsDialog>>();
-const reviewPanel = ref<InstanceType<typeof ReviewPanel>>();
-const commentsDrawer = ref<HTMLElement>();
 const workspaceState = shallowRef<WorkspaceState>();
 const draftRevision = ref(0);
 const reviewDraft = shallowRef<ReviewDraftSnapshot>();
@@ -112,7 +101,6 @@ const draftLoad = shallowRef<DraftLoadResponse>();
 const recoveredDraft = shallowRef<Extract<DraftRecoveryResult, { readonly kind: 'recovered' }>>();
 const recoveredDraftOpen = ref(false);
 const selectorDriftStatus = shallowRef<SelectorDriftResponse>();
-const selectedCommentId = ref<string | null>(null);
 const attachedLifecycle = ref<AttachedLifecycle>('ordinary');
 const attachedResult = shallowRef<FinishReviewResult>();
 const attachedStatus = shallowRef<AttachedCompletionStatus>();
@@ -141,7 +129,6 @@ let sessionClient: SessionClient | undefined;
 let workspace: WorkspaceController | undefined;
 let requestVersion = 0;
 let loadedContentMessageVersion = 0;
-let metadataRequestVersion = 0;
 let viewportMedia: MediaQueryList | undefined;
 let supportRefreshInFlight = false;
 let supportBackgroundTimer: number | undefined;
@@ -149,7 +136,6 @@ let supportWaitingTimer: number | undefined;
 let supportThankYouTimer: number | undefined;
 let supportOpener: HTMLElement | undefined;
 let supportPollAbort: AbortController | undefined;
-let commentsOpener: HTMLElement | undefined;
 let latestConflictDraft: CanonicalReviewDraft | undefined;
 
 const pinnedSession = computed(() =>
@@ -171,15 +157,15 @@ const emptyFilesCopy = computed(() => {
   if (isExactPatchSession.value) {
     return {
       heading: 'No files in this exact patch',
-      message: 'This accepted patch contains no changed file entries. Details lists the patch digest; relaunch with a non-empty already-applied patch.',
+      message: 'This accepted patch contains no changed file entries. Relaunch with a non-empty already-applied patch.',
     };
   }
   if (isRangeSession.value) {
     return {
       heading: 'No changes match this review scope',
       message: rangeHasPathspecs.value
-        ? 'The pinned commits contain no changed files selected by this scope. Details lists the commits and ordered Git pathspecs.'
-        : 'The pinned commits contain no changed files. Details lists the commits.',
+        ? 'The pinned commits contain no changed files selected by this scope.'
+        : 'The pinned commits contain no changed files.',
     };
   }
   return {
@@ -218,12 +204,6 @@ const workspaceComments = computed(() => workspaceState.value?.comments ?? []);
 const hasUnverifiedAnchors = computed(() =>
   workspaceComments.value.some((comment) => comment.status === 'stale' || comment.status === 'orphaned'),
 );
-const openCommentCount = computed(
-  () => workspaceComments.value.filter((comment) => comment.state === 'open').length,
-);
-const resolvedCommentCount = computed(
-  () => workspaceComments.value.filter((comment) => comment.state === 'resolved').length,
-);
 
 const isAttachedSession = computed(() => session.value?.attached?.kind === 'agent-review');
 const attachedMutationLocked = computed(() =>
@@ -250,11 +230,6 @@ const attachedFinishReady = computed(() => {
     && !hasUnsavedReviewText.value
     && recoveryLoad.value === undefined
     && !patchSnapshotUnavailable.value;
-});
-watch(workspaceComments, (comments) => {
-  if (selectedCommentId.value !== null && !comments.some((comment) => comment.id === selectedCommentId.value)) {
-    selectedCommentId.value = null;
-  }
 });
 
 let hadUnverifiedAnchors = false;
@@ -305,38 +280,6 @@ function closeChangedFiles(restoreFocus = true): void {
   });
 }
 
-function openComments(): void {
-  commentsOpener = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
-  commentsOpen.value = true;
-  void nextTick(() => commentsDrawer.value?.querySelector<HTMLElement>('#review-heading')?.focus());
-}
-
-function closeComments(): void {
-  if (!commentsOpen.value) return;
-  commentsOpen.value = false;
-  void nextTick(() => commentsOpener?.focus());
-}
-
-function toggleComments(): void {
-  commentsOpen.value ? closeComments() : openComments();
-}
-
-function inspectRecordedFile(commentId: string): void {
-  const comment = workspaceState.value?.comments.find((candidate) => candidate.id === commentId);
-  if (comment?.exactFile.kind === 'available') {
-    selectFile(comment.exactFile.fileId);
-  }
-}
-
-function copyRecordedAnchor(commentId: string): void {
-  const comment = workspaceState.value?.comments.find((candidate) => candidate.id === commentId);
-  if (comment === undefined) {
-    return;
-  }
-  void navigator.clipboard.writeText(JSON.stringify(comment.recordedAnchor, null, 2))
-    .then(() => announce('Recorded anchor details copied.'))
-    .catch(() => announce('Couldn’t copy anchor details. The recorded comment remains selected.'));
-}
 
 function activeFile(fileId: string): SessionFile | undefined {
   return session.value?.files.find((file) => file.fileId === fileId);
@@ -346,7 +289,6 @@ async function loadFile(file: SessionFile): Promise<void> {
   selectedFile.value = file;
   diffError.value = '';
   selectedContent.value = undefined;
-  void loadFileMetadata(file);
   if (file.availability.kind !== 'text') {
     diffLoading.value = false;
     return;
@@ -373,28 +315,6 @@ async function loadFile(file: SessionFile): Promise<void> {
   }
 }
 
-async function loadFileMetadata(file: SessionFile): Promise<void> {
-  metadataError.value = '';
-  selectedMetadata.value = undefined;
-
-  const version = ++metadataRequestVersion;
-  metadataLoading.value = true;
-  try {
-    const metadata = await sessionClient?.getFileMetadata(file.fileId);
-    if (metadata === undefined || version !== metadataRequestVersion || metadata.fileId !== file.fileId) {
-      return;
-    }
-    selectedMetadata.value = metadata;
-  } catch (error) {
-    if (version === metadataRequestVersion) {
-      metadataError.value = error instanceof SessionClientError ? error.message : FILE_UNAVAILABLE_MESSAGE;
-    }
-  } finally {
-    if (version === metadataRequestVersion) {
-      metadataLoading.value = false;
-    }
-  }
-}
 
 function reviewCanonical(draft: CanonicalReviewDraft) {
   return {
@@ -605,19 +525,6 @@ function saveSummary(): void {
   mutateReview({ type: 'setSummary', expectedRevision: current.canonical.revision, markdown: current.summaryBuffer }, 'summary');
 }
 
-function saveComment(commentId: string): void {
-  const current = reviewDraft.value;
-  const body = current?.commentBuffers.get(commentId);
-  if (current === undefined || body === undefined || body.trim() === '') return;
-  mutateReview({ type: 'editComment', expectedRevision: current.canonical.revision, commentId, body }, commentId);
-}
-
-function mutateComment(commentId: string, type: 'deleteComment' | 'resolveComment' | 'reopenComment'): void {
-  const current = reviewDraft.value;
-  const comment = workspaceComments.value.find((candidate) => candidate.id === commentId);
-  if (current === undefined || comment?.status !== 'verified') return;
-  mutateReview({ type, expectedRevision: current.canonical.revision, commentId });
-}
 
 function exportReview(): void {
   const current = reviewDraft.value;
@@ -685,7 +592,6 @@ function reviewUnsavedText(): void {
 
 function reviewInlineComposer(fileId: string): void {
   selectFile(fileId);
-  commentsOpen.value = false;
 }
 
 async function reloadLatestReview(): Promise<void> {
@@ -740,7 +646,6 @@ function runCommands(commands: readonly WorkspaceCommand[]): void {
         announce(command.text);
         break;
       case 'focus-comment':
-        selectedCommentId.value = command.commentId;
         void nextTick(() => diffWorkspace.value?.focusComment(command.commentId));
         break;
       case 'go-to-change':
@@ -861,7 +766,6 @@ function selectFile(fileId: string): void {
     selectedFile.value = file;
     selectedContent.value = undefined;
     diffError.value = '';
-    void loadFileMetadata(file);
     if (focusHeading) void nextTick(() => activeFileToolbar.value?.focusHeading());
     return;
   }
@@ -904,27 +808,8 @@ function retryDiff(): void {
   }
 }
 
-function retryMetadata(): void {
-  if (selectedFile.value !== undefined) {
-    void loadFileMetadata(selectedFile.value);
-  }
-}
-
-function openDetails(): void {
-  openShellDialog('details');
-}
-
-function openKeyboardHelp(): void {
-  openShellDialog('details');
-  void nextTick(() => nextTick(() => detailsDialog.value?.focusKeyboardHelp()));
-}
-
-function closeDetails(): void {
-  closeShellDialog('details');
-}
 
 function openReviewNotes(): void {
-  if (commentsOpen.value) closeComments();
   openShellDialog('review-notes');
 }
 
@@ -932,21 +817,6 @@ function closeReviewNotes(): void {
   closeShellDialog('review-notes');
 }
 
-function focusStaleFeedback(): void {
-  const result = attachedResult.value;
-  if (result?.kind !== 'staleAnchors') return;
-
-  const commentId = result.affectedCommentIds.find((id) =>
-    workspaceComments.value.some((comment) => comment.id === id),
-  );
-  if (commentId === undefined) return;
-
-  closeReviewNotes();
-  void nextTick(() => {
-    openComments();
-    void nextTick(() => reviewPanel.value?.focusComment(commentId));
-  });
-}
 
 function handleKeydown(event: KeyboardEvent): void {
   const target = event.target;
@@ -961,17 +831,7 @@ function handleKeydown(event: KeyboardEvent): void {
     return;
   }
   if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLSelectElement) return;
-  if (event.key === 'Escape') {
-    if (detailsOpen.value) return;
-    if (commentsOpen.value) {
-      closeComments();
-    }
-    return;
-  }
-  if (event.key === '?' && !event.metaKey && !event.ctrlKey && !event.altKey) {
-    event.preventDefault();
-    openKeyboardHelp();
-  } else if (event.altKey && event.shiftKey && event.key === '[') {
+  if (event.altKey && event.shiftKey && event.key === '[') {
     event.preventDefault();
     previousFile();
   } else if (event.altKey && event.shiftKey && event.key === ']') {
@@ -1130,7 +990,6 @@ function stopPatchStatus(): void {
 onMounted(async () => {
   document.addEventListener('keydown', handleKeydown);
   viewportMedia = window.matchMedia('(max-width: 760px)');
-  commentsOpen.value = false;
   handleViewportChange();
   viewportMedia.addEventListener('change', handleViewportChange);
   try {
@@ -1213,17 +1072,14 @@ onBeforeUnmount(() => {
     <div class="session-shell__content" :inert="shellModalOpen">
     <a v-if="!isNarrow && !filesCollapsed" class="skip-link" href="#changed-files-heading">Skip to changed files</a>
     <a class="skip-link" href="#cumpa-heading">Skip to diff</a>
-    <a class="skip-link" href="#review-heading">Skip review</a>
     <IdentityHeader
       ref="identityHeader"
       :session="session"
-      :expanded="detailsOpen"
       :support-enabled="supportEnabled"
       :support-open="supportDialogOpen"
       :support-inert="supportDialogOpen"
       :attached-lifecycle="isAttachedSession ? (attachedLifecycle === 'finishing' || attachedLifecycle === 'completed' ? attachedLifecycle : 'waiting') : undefined"
       :inert="shellModalOpen"
-      @toggle="openDetails"
       @support="openSupportDialog"
       @review-notes="openReviewNotes"
     />
@@ -1236,7 +1092,7 @@ onBeforeUnmount(() => {
         <p>The repository or worktree no longer matches this exact patch. The frozen review remains readable, but Cumpa will not substitute current content. Relaunch with a patch that matches the current implementation.</p>
       </InlineNotice>
       <SelectorDriftNotice :drift="selectorDriftStatus" />
-      <StaleAnchorNotice v-if="hasUnverifiedAnchors" @open-comments="openComments" />
+      <StaleAnchorNotice v-if="hasUnverifiedAnchors" />
     </section>
 
     <DraftRecovery
@@ -1251,7 +1107,7 @@ onBeforeUnmount(() => {
       v-else
       class="review-shell"
       :class="{ 'review-shell--files-collapsed': !isNarrow && filesCollapsed }"
-      :inert="detailsOpen || reviewNotesOpen || supportDialogOpen || changedFilesOpen"
+      :inert="reviewNotesOpen || supportDialogOpen || changedFilesOpen"
     >
       <!-- v-show, not v-if: Teleport resolves `#changed-files` once, so destroying the host
            strands the teleported tree and the sidebar comes back empty. -->
@@ -1262,15 +1118,10 @@ onBeforeUnmount(() => {
           :at-first-file="atFirstFile"
           :at-last-file="atLastFile"
           :has-active-file="selectedFile?.availability.kind === 'text'"
-          :open-comment-count="openCommentCount"
-          :resolved-comment-count="resolvedCommentCount"
-          :review-expanded="commentsOpen"
           @previous-file="previousFile"
           @next-file="nextFile"
           @previous-change="previousChange"
           @next-change="nextChange"
-          @comments="toggleComments"
-          @keyboard-help="openKeyboardHelp"
         >
           <ActiveFileToolbar
             ref="activeFileToolbar"
@@ -1328,37 +1179,6 @@ onBeforeUnmount(() => {
         />
 
       </main>
-      <aside
-        v-show="commentsOpen"
-        id="review-panel"
-        ref="commentsDrawer"
-        class="comments-rail"
-        :class="{ 'comments-rail--open': commentsOpen }"
-        :inert="!commentsOpen"
-        :aria-hidden="commentsOpen ? undefined : 'true'"
-        aria-labelledby="review-heading"
-      >
-        <ReviewPanel
-          v-if="reviewDraft !== undefined && session !== undefined"
-          ref="reviewPanel"
-          :comments="workspaceComments"
-          :selected-comment-id="selectedCommentId"
-          :inventory="reviewableFiles.map((file) => ({ identity: file.newPath?.bytesBase64url ?? file.oldPath?.bytesBase64url ?? file.fileId, display: file.newPath?.display ?? file.oldPath?.display ?? 'Changed file' }))"
-          :comment-buffers="reviewDraft.commentBuffers"
-          :pending="reviewDraft.pending"
-          :conflict="reviewDraft.conflict === null ? null : { expectedRevision: reviewDraft.conflict.expectedRevision, actualRevision: reviewDraft.conflict.latest.revision }"
-          :mutation-locked="attachedMutationLocked"
-          @close="closeComments"
-          @delete="mutateComment($event, 'deleteComment')"
-          @reopen="mutateComment($event, 'reopenComment')"
-          @copy-recorded-anchor="copyRecordedAnchor"
-          @resolve="mutateComment($event, 'resolveComment')"
-          @inspect-recorded-file="inspectRecordedFile"
-          @save-comment="saveComment"
-          @show="(commentId) => dispatchWorkspace({ type: 'show-comment', commentId })"
-          @update:comment-buffer="(commentId, value) => { if (!attachedMutationLocked) { reviewState?.setCommentBuffer(commentId, value); refreshReviewSnapshot(); } }"
-        />
-      </aside>
     </div>
     <ShellFooter :session="session" />
     </div>
@@ -1373,17 +1193,6 @@ onBeforeUnmount(() => {
       @close="closeChangedFiles"
       @select="selectFile"
       @activate="selectFile"
-    />
-    <DetailsDialog
-      ref="detailsDialog"
-      :open="detailsOpen"
-      :session="session"
-      :file="selectedFile"
-      :metadata="selectedMetadata"
-      :metadata-loading="metadataLoading"
-      :metadata-error="metadataError"
-      @close="closeDetails"
-      @retry-metadata="retryMetadata"
     />
     <SupportDialog
       v-if="supportEnabled"
@@ -1430,8 +1239,6 @@ onBeforeUnmount(() => {
       @review-inline-composer="reviewInlineComposer"
       @finish-review="finishAttachedReview"
       @reload-attached="reloadPage"
-      @view-attached-scope="openDetails"
-      @focus-stale-feedback="focusStaleFeedback"
     />
     <p class="visually-hidden" aria-live="polite">
       <span :key="liveMessageVersion" :data-announcement-version="liveMessageVersion">{{ liveMessage }}</span>

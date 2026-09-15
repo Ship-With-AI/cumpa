@@ -6,9 +6,6 @@ defineProps<{
   atFirstFile: boolean;
   atLastFile: boolean;
   hasActiveFile: boolean;
-  openCommentCount: number;
-  resolvedCommentCount: number;
-  reviewExpanded: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -16,8 +13,6 @@ const emit = defineEmits<{
   nextFile: [];
   previousChange: [];
   nextChange: [];
-  comments: [];
-  keyboardHelp: [];
 }>();
 </script>
 
@@ -72,26 +67,6 @@ const emit = defineEmits<{
         >
           <UiIcon name="next-change" />
         </button>
-      </UiTooltip>
-    </div>
-    <div class="review-toolbar__group review-toolbar__group--actions">
-      <span id="review-description" class="sr-only">
-        {{ openCommentCount }} open comments, {{ resolvedCommentCount }} resolved comments
-      </span>
-      <UiTooltip text="Review">
-        <button
-          type="button"
-          :class="['ui-button', { 'ui-button--selected': reviewExpanded }]"
-          aria-controls="review-panel"
-          :aria-expanded="reviewExpanded"
-          aria-describedby="review-description"
-          @click="emit('comments')"
-        >
-          Review
-        </button>
-      </UiTooltip>
-      <UiTooltip text="Keyboard help · ?">
-        <button type="button" class="ui-button" @click="emit('keyboardHelp')">Keyboard help</button>
       </UiTooltip>
     </div>
   </div>

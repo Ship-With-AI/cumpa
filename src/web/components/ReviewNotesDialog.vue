@@ -63,8 +63,6 @@ const emit = defineEmits<{
   reviewInlineComposer: [fileId: string];
   finishReview: [];
   reloadAttached: [];
-  viewAttachedScope: [];
-  reviewStaleFeedback: [];
 }>();
 
 const reviewFailure = computed(() => props.failure !== null && props.failure.operation !== 'summary');
@@ -250,8 +248,7 @@ watch(reviewFailure, (failed) => {
           <UiIcon name="warning" class="inline-notice__icon" />
           <div class="inline-notice__content">
             <h4 ref="completionFailure" tabindex="-1">Review can’t be finished</h4>
-            <p>Cumpa found stale or unavailable feedback anchors in the accepted review. Affected comments: {{ attachedFailure.affectedCount }}. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.</p>
-            <button type="button" class="ui-button" @click="emit('reviewStaleFeedback')">Review stale feedback</button>
+            <p>Cumpa found stale or unavailable feedback anchors in the accepted review. Affected comments: {{ attachedFailure.affectedCount }}. No feedback returned. Their recorded anchors remain unchanged and may not be actionable in exported feedback.</p>
           </div>
         </div>
       </template>
@@ -261,8 +258,7 @@ watch(reviewFailure, (failed) => {
           <UiIcon name="warning" class="inline-notice__icon" />
           <div class="inline-notice__content">
             <h4 ref="completionFailure" tabindex="-1">Reviewed content changed</h4>
-            <p>{{ isExactPatch ? 'The submitted patch content no longer passes completion validation. No feedback was returned. Inspect the recorded patch scope, then relaunch the agent request against valid content.' : 'The submitted review scope no longer passes completion validation. No feedback was returned. Inspect the recorded review scope, then relaunch the agent request against valid content.' }}</p>
-            <button type="button" class="ui-button" @click="emit('viewAttachedScope')">{{ isExactPatch ? 'View patch scope' : 'View review scope' }}</button>
+            <p>{{ isExactPatch ? 'The submitted patch content no longer passes completion validation. No feedback returned. Relaunch agent request against valid content.' : 'The submitted review scope no longer passes completion validation. No feedback returned. Relaunch agent request against valid content.' }}</p>
           </div>
         </div>
       </template>

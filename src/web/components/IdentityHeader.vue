@@ -6,7 +6,6 @@ import { controlSafeDisplay } from '../../domain/path-bytes';
 
 const props = defineProps<{
   readonly attachedLifecycle?: 'waiting' | 'finishing' | 'completed';
-  readonly expanded: boolean;
   readonly inert?: boolean;
   readonly supportEnabled?: boolean;
   readonly supportInert?: boolean;
@@ -15,14 +14,12 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  toggle: [];
   reviewNotes: [];
   support: [];
 }>();
 
 const support = ref<HTMLButtonElement>();
 
-const disclosure = ref<HTMLButtonElement>();
 const isExactPatch = computed(() => 'patch' in props.session);
 const pinnedSession = computed(() => 'base' in props.session ? props.session : undefined);
 const baseLabel = computed(() =>
@@ -62,11 +59,8 @@ const attachedFact = computed(() => {
 function focusSupport(): void {
   support.value?.focus();
 }
-function focusDisclosure(): void {
-  disclosure.value?.focus();
-}
 
-defineExpose({ focusDisclosure, focusSupport });
+defineExpose({ focusSupport });
 </script>
 
 <template>
@@ -124,16 +118,6 @@ defineExpose({ focusDisclosure, focusSupport });
         @click="emit('support')"
       >
         Support Cumpa
-      </button>
-      <button
-        ref="disclosure"
-        type="button"
-        class="identity-disclosure"
-        aria-haspopup="dialog"
-        :aria-expanded="expanded"
-        @click="emit('toggle')"
-      >
-        Details
       </button>
       <button
         type="button"
