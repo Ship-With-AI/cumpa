@@ -39,3 +39,9 @@ Comment management through the rail; browsing stale/orphan anchor records; compa
 3. `9642c11` — test cleanup and runtime binding gate.
 
 ## Self-Check: PASSED
+
+## Follow-up verification and dead-code note
+
+- Aggregate default browser suite after retargeting: 89 passed; two runtime-support tests did not run because their required environment was absent; the only remaining five failures were two external prerequisites (`CUMPA_MARKETPLACE_URL_MARKER` and `CUMPA_RUNTIME_CUSTODY_DIR`) plus saturated-machine retries that passed cleanly for `responsive-session` and `anchored-workspace`.
+- `selector-drift-ui` had one real regression: its fixture treated removed Details metadata calls as failures. The retry now models only the two `/content` requests (one failure, then recovery); `npx playwright test tests/integration/selector-drift-ui.spec.ts` passed 5/5.
+- `GET /api/files/:fileId` and `SessionClient.getFileMetadata()` remain but are now dead code: the removed Details dialog was their only UI caller.

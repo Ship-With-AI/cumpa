@@ -445,7 +445,7 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
     }
   });
   session = exactPatchSession(true);
-  patchContentFailures = 2;
+  patchContentFailures = 1;
 
   await openReview(page);
   await expect(page.getByRole('heading', { name: 'Frozen patch file unavailable' })).toBeVisible();
@@ -468,9 +468,7 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
     'Immutable preimage and postimage side-by-side diff',
   );
   expect(patchContentRequests).toEqual([
-    `/${patchFileId}`,
     `/${patchFileId}/content`,
-    `/${patchFileId}`,
     `/${patchFileId}/content`,
   ]);
 
@@ -511,7 +509,7 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
   await expect.poll(() => page.evaluate(
     () => Number(document.body.dataset.snapshotHeadingFocusCount),
   )).toBe(1);
-  expect(patchContentRequests).toHaveLength(4);
+  expect(patchContentRequests).toHaveLength(2);
   expect(vueWarnings).toEqual([]);
 });
 
