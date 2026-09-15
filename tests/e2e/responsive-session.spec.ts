@@ -1346,6 +1346,7 @@ test('responsive keyboard and accessibility contract', async ({
       await page.keyboard.press('Tab');
       await expect(nextChange).toBeFocused();
       await expectFocusIndicatorUnclipped(nextChange);
+      await nextChange.evaluate((element) => element.blur());
       await assertNoPageOverflow(page);
     });
 
