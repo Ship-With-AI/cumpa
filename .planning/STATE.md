@@ -113,6 +113,7 @@ None yet.
 | 260913-nx0 | Bring tests under `tsc` and gate test typechecks in CI | 2026-09-13 | 4ae6d6b | [260913-nx0-test-typecheck-coverage](./quick/260913-nx0-test-typecheck-coverage/) |
 | 260913-rel | Derive release identity from the manifest and publish 1.5.1 | 2026-09-14 | 7c8363e | [260913-rel-version-derivation](./quick/260913-rel-version-derivation/) |
 | 260914-ci6 | Close the e2e CI gap | 2026-09-14 | 0a1a359 | [260914-ci6-close-e2e-ci-gap](./quick/260914-ci6-close-e2e-ci-gap/) |
+| 260914-hmu | Publish 1.5.2 with the composer draft-loss fix | 2026-09-14 | d49ed2c | [260914-hmu-release-1-5-2](./quick/260914-hmu-release-1-5-2/) |
 
 ## Deferred Items
 
