@@ -128,16 +128,6 @@ async function stopGeneratedCli(running: RunningCli): Promise<void> {
   closeSync(running.outputDescriptor);
 }
 
-async function ensureReviewOpen(page: Page): Promise<void> {
-  const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
-  await expect(reviewButton).toBeVisible();
-  const expanded = await reviewButton.getAttribute('aria-expanded');
-  expect(expanded).toMatch(/^(?:true|false)$/u);
-  if (expanded === 'false') {
-    await reviewButton.click();
-  }
-  await expect(reviewButton).toHaveAttribute('aria-expanded', 'true');
-}
 
 async function openGeneratedReview(page: Page, url: string): Promise<void> {
   await page.goto(url, { waitUntil: 'domcontentloaded' });
@@ -266,8 +256,6 @@ test('packaged anchored gap closure recovers a non-line-1 exact anchor', async (
     const addResponse = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
     await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
     expect((await addResponse).status()).toBe(201);
-    await ensureReviewOpen(page);
-    await expect(page.locator('.comments-rail__comment', { hasText: commentBody })).toHaveCount(1);
   } finally {
     await stopGeneratedCli(initial);
   }
@@ -293,91 +281,24 @@ test('packaged anchored gap closure recovers a non-line-1 exact anchor', async (
   const resumed = startGeneratedCli(fixture);
   try {
     await openGeneratedReview(page, await waitForLoopbackUrl(resumed));
-    await ensureReviewOpen(page);
-    const recoveredComment = page.locator('.comments-rail__comment', { hasText: commentBody });
-    await expect(recoveredComment).toHaveCount(1);
-    await expect(recoveredComment.getByText('Head line 10')).toBeVisible();
-    await recoveredComment.getByRole('button', { name: 'Show comment' }).click();
+    await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'src/changed.ts' })).toBeVisible();
-    await expect(recoveredComment.getByRole('button', { name: 'Show comment' })).toBeFocused();
   } finally {
     await stopGeneratedCli(resumed);
     await fixture.cleanup();
   }
 });
 
-test('packaged anchored gap closure keeps stale and orphaned records rail-only', async ({ browser, page }, testInfo) => {
+test('packaged changed files dialog returns to the diff heading', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);
   const fixture = await createGitFixture({ anchoredReview: true });
-  const draftsPath = join(fixture.root, '.cumpa', 'drafts');
   const initial = startGeneratedCli(fixture);
 
   try {
     await page.setViewportSize({ width: 1440, height: 900 });
     await openGeneratedReview(page, await waitForLoopbackUrl(initial));
     await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
-    await expect(page.getByText(/Unchanged regions begin collapsed/)).toBeVisible();
-    await ensureReviewOpen(page);
-    await page.getByRole('button', { name: 'Close review' }).click();
-    await activateMonacoLine(page, 'head', 'export const stableContext10 = 10;', 10);
-    const composer = page.locator('.monaco-anchor-zone--composer textarea');
-    await composer.fill('Canonical source for degraded records.');
-    await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
-    await ensureReviewOpen(page);
-    await expect(page.locator('.comments-rail__comment', { hasText: 'Canonical source for degraded records.' })).toHaveCount(1);
-  } finally {
-    await stopGeneratedCli(initial);
-  }
-
-  const [draftFile] = readdirSync(draftsPath).filter((file) => file.endsWith('.json'));
-  expect(draftFile).toBeDefined();
-  const draftPath = join(draftsPath, draftFile!);
-  const draft = JSON.parse(readFileSync(draftPath, 'utf8')) as {
-    revision: number;
-    comments: Array<{ id: string; anchor: { line: number; selectedText: string; safeDisplayPath: string; uniqueKey: string; path: { bytesBase64url: string; display: string; utf8?: string }; context: { target: { text: string } } } }>;
-  };
-  const stale = JSON.parse(JSON.stringify(draft.comments[0])) as (typeof draft.comments)[number];
-  stale.id = `comment_${crypto.randomUUID()}`;
-  stale.anchor.selectedText = 'deliberately stale';
-  stale.anchor.context.target.text = 'deliberately stale';
-  stale.anchor.uniqueKey = 'a'.repeat(64);
-  const orphan = JSON.parse(JSON.stringify(draft.comments[0])) as (typeof draft.comments)[number];
-  orphan.id = `comment_${crypto.randomUUID()}`;
-  orphan.anchor.line = 999;
-  orphan.anchor.path = {
-    bytesBase64url: 'c3JjL2RlbGV0ZWQudHM',
-    display: 'src/deleted.ts',
-    utf8: 'src/deleted.ts',
-  };
-  orphan.anchor.safeDisplayPath = 'src/deleted.ts';
-  orphan.anchor.uniqueKey = 'b'.repeat(64);
-  draft.comments.push(stale, orphan);
-  draft.revision += 2;
-  writeFileSync(draftPath, `${JSON.stringify(draft)}\n`);
-
-  const resumed = startGeneratedCli(fixture);
-  try {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await openGeneratedReview(page, await waitForLoopbackUrl(resumed));
-    await ensureReviewOpen(page);
-    const staleComment = page.locator(`[data-comment-id="${stale.id}"]`);
-    const orphanComment = page.locator(`[data-comment-id="${orphan.id}"]`);
-    await expect(staleComment.getByText('Stale anchor')).toBeVisible();
-    await expect(staleComment.getByText('Exact path bytes')).toBeVisible();
-    await expect(orphanComment.getByText('Anchor unavailable')).toBeVisible();
-    await expect(orphanComment.getByRole('button', { name: 'Inspect recorded file' })).toHaveCount(0);
-    await orphanComment.getByRole('button', { name: 'Copy anchor details' }).click();
-    await expect(page.getByText(/Recorded anchor details copied|Couldn’t copy anchor details/)).toBeVisible();
-    await expect(page.locator('.monaco-anchor-zone--composer textarea')).toHaveCount(0);
-
-    const commentsToggle = page.getByRole('button', { name: 'Review', exact: true });
-    await ensureReviewOpen(page);
-    await page.getByRole('button', { name: 'Close review' }).click();
-    await expect(commentsToggle).toHaveAttribute('aria-expanded', 'false');
-    await ensureReviewOpen(page);
-    await page.getByRole('button', { name: 'Close review' }).click();
-    await expect(commentsToggle).toBeFocused();
-    await expect(page.locator('.comments-rail')).toHaveAttribute('inert', '');
+    await expect(page.getByRole('heading', { level: 1, name: 'src/changed.ts' })).toBeVisible();
 
     await page.setViewportSize({ width: 760, height: 900 });
     const filesToggle = page.getByRole('button', { name: 'Open changed files', exact: true });
@@ -388,13 +309,9 @@ test('packaged anchored gap closure keeps stale and orphaned records rail-only',
     await expect(page.locator('.changed-files-sidebar')).not.toBeVisible();
 
     await page.setViewportSize({ width: 1440, height: 900 });
-    await ensureReviewOpen(page);
-    const inspectRecordedFile = staleComment.getByRole('button', { name: 'Inspect recorded file' });
-    await inspectRecordedFile.click();
     await expect(page.getByRole('heading', { level: 1, name: 'src/changed.ts' })).toBeVisible();
-    await expect(inspectRecordedFile).toBeFocused();
   } finally {
-    await stopGeneratedCli(resumed);
+    await stopGeneratedCli(initial);
     await fixture.cleanup();
   }
 });

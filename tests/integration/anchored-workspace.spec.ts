@@ -287,10 +287,16 @@ async function startAppServer(): Promise<string> {
 }
 
 async function openReview(page: Page, expectedPath = 'src/first.ts', resumeAttempt?: number): Promise<void> {
+  const entries: string[] = [];
+  page.on('console', (message) => {
+    if (message.type() === 'warning' || message.type() === 'error') entries.push(message.text());
+  });
+  page.on('pageerror', (error) => entries.push(error.message));
   const resumeQuery = resumeAttempt === undefined ? '' : `?resume=${resumeAttempt}`;
   await page.goto(`${origin}${resumeQuery}#token=${token}`);
   await expect(page.getByRole('heading', { level: 1, name: expectedPath })).toBeVisible();
   await expect(page.locator('.monaco-diff-editor')).toBeVisible();
+  expect(entries).toEqual([]);
 }
 
 async function hoverMonacoLine(page: Page, side: 'base' | 'head', text: string): Promise<void> {
@@ -434,16 +440,6 @@ function expectConversationCardNotToReflow(before: MonacoGeometry, anchored: Mon
   expect(anchored.document.scrollWidth).toBeLessThanOrEqual(anchored.document.clientWidth);
 }
 
-async function ensureReviewOpen(page: Page): Promise<void> {
-  const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
-  await expect(reviewButton).toBeVisible();
-  const expanded = await reviewButton.getAttribute('aria-expanded');
-  expect(expanded).toMatch(/^(?:true|false)$/u);
-  if (expanded === 'false') {
-    await reviewButton.click();
-  }
-  await expect(reviewButton).toHaveAttribute('aria-expanded', 'true');
-}
 
 test.beforeAll(async () => {
   origin = await startAppServer();
@@ -480,11 +476,6 @@ test('diff navigation and session state', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
   await expect(selectedFile).toHaveCount(1);
 
-  await page.getByRole('button', { name: 'Keyboard help' }).click();
-  const details = page.getByRole('dialog', { name: 'Details' });
-  await expect(details.getByRole('heading', { name: 'Keyboard actions' })).toBeVisible();
-  await expect(details.getByText('Shortcuts never replace the visible controls.')).toBeVisible();
-  await page.getByRole('button', { name: 'Close details' }).click();
 
   await page.setViewportSize({ width: 640, height: 700 });
   const narrowGeometry = await readMonacoGeometry(page, 'export const changed = 3;');
@@ -495,8 +486,6 @@ test('diff navigation and session state', async ({ page }) => {
     throw new Error('Expected rendered review shell and main geometry.');
   }
   expect(narrowGeometry.reviewMain.rect.width).toBeLessThanOrEqual(narrowGeometry.reviewShell.rect.width + 1);
-  await ensureReviewOpen(page);
-  await expect(page.getByRole('heading', { level: 2, name: 'Review', exact: true })).toBeVisible();
 
   expect(pageErrors).toEqual([]);
   expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);
@@ -536,15 +525,11 @@ test('Phase 07 header and control states', async ({ page }) => {
     const nextFile = page.getByRole('button', { name: 'Next file', exact: true });
     const previousChange = page.getByRole('button', { name: 'Previous change', exact: true });
     const nextChange = page.getByRole('button', { name: 'Next change', exact: true });
-    const review = page.getByRole('button', { name: 'Review', exact: true });
-    const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
 
     await expect(previousFile).toBeDisabled();
     await expect(nextFile).toBeEnabled();
     await expect(previousChange).toBeEnabled();
     await expect(nextChange).toBeEnabled();
-    await expect(review).toBeVisible();
-    await expect(keyboardHelp).toBeVisible();
 
     for (const control of [previousFile, nextFile, previousChange, nextChange]) {
       await expect(control).toHaveClass(/ui-button--icon/);
@@ -560,25 +545,6 @@ test('Phase 07 header and control states', async ({ page }) => {
     expect(await previousFile.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe(disabledBackground);
     expect(await nextFile.boundingBox()).toEqual(restBounds);
 
-    await review.click();
-    await expect(review).toHaveAttribute('aria-expanded', 'true');
-    await expect(review).toHaveClass(/ui-button--selected/);
-
-    const selectedBounds = await review.boundingBox();
-    await review.evaluate((element) => {
-      element.classList.add('ui-button--busy');
-      element.setAttribute('aria-busy', 'true');
-      element.setAttribute('disabled', '');
-      const spinner = document.createElement('span');
-      spinner.className = 'ui-spinner';
-      spinner.setAttribute('aria-hidden', 'true');
-      element.append(spinner);
-    });
-    expect(await review.boundingBox()).toEqual(selectedBounds);
-    await expect(review.locator('.ui-spinner')).toHaveCSS('animation-name', 'ui-spinner-rotate');
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await expect(review.locator('.ui-spinner')).toHaveCSS('animation-duration', '0s');
-    await page.emulateMedia({ reducedMotion: 'no-preference' });
 
     for (const width of [1440, 1280, 1100, 768, 640]) {
       await page.setViewportSize({ width, height: 700 });
@@ -601,9 +567,10 @@ test('inline comment persistence', async ({ page }) => {
   await textarea.fill('Please explain this context.');
   await textarea.blur();
   await expect(textarea).toHaveValue('Please explain this context.');
+  const accepted = page.waitForResponse((candidate) => candidate.url().includes('/api/draft/mutations'));
   await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
-  await ensureReviewOpen(page);
-  await expect(page.locator('.comments-rail__comment[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]')).toBeVisible();
+  expect((await accepted).status()).toBe(201);
+  await expect(page.locator('.monaco-anchor-zone--composer .inline-accepted-comment')).toHaveCount(1);
 });
 
 test('Phase 07 inline conversation states', async ({ page }) => {
@@ -740,12 +707,6 @@ test('Phase 07 inline conversation states', async ({ page }) => {
   expect(acceptedGeometry!.nextCodeTop!).toBeGreaterThanOrEqual(acceptedGeometry!.composerBottom - 1);
   expect(acceptedGeometry!.nextCodeTop!).toBeGreaterThanOrEqual(acceptedGeometry!.cardBottom - 1);
 
-  await ensureReviewOpen(page);
-  await page.getByRole('button', { name: /^Resolved comments/ }).click();
-  const resolvedRow = page.locator('.comments-rail__comment').filter({ hasText: resolvedText });
-  await resolvedRow.getByRole('button', { name: 'Show comment' }).click();
-  await expect(inlineAccepted).toHaveCount(1);
-  await expect(inlineAccepted.getByText('Resolved', { exact: true })).toBeVisible();
   await expect(inlineAccepted.getByText('Verified', { exact: true })).toBeVisible();
 
   const restored = await readMonacoGeometry(page, targetText);
@@ -754,66 +715,6 @@ test('Phase 07 inline conversation states', async ({ page }) => {
   expect(restored.zones[0]!.height).toBe(restored.zones[1]!.height);
 });
 
-test('Phase 07 rail selection follows focus-comment', async ({ page }) => {
-  resetAsyncSettlementFixture();
-  const resolvedCommentId = 'comment_323e4567-e89b-12d3-a456-426614174000';
-  canonicalComments = [{
-    id: resolvedCommentId,
-    state: 'resolved',
-    body: 'Selected resolved comment.',
-    anchor: {
-      version: 'durable-anchor-v1',
-      path: path('src/first.ts'),
-      safeDisplayPath: 'src/first.ts',
-      side: 'head',
-      line: 11,
-      blobOid: 'd'.repeat(40),
-      selectedText: 'const context11 = 11;',
-      context: { before: [], target: { line: 11, text: 'const context11 = 11;' }, after: [] },
-      contextHash: { algorithm: 'sha256-v1', value: 'f'.repeat(64) },
-      uniqueKey: '3'.repeat(64),
-    },
-    createdAt: '2026-07-21T00:00:00.000Z',
-    updatedAt: '2026-07-21T00:00:00.000Z',
-    resolvedAt: '2026-07-21T00:00:00.000Z',
-  }];
-
-  await openReview(page);
-  await ensureReviewOpen(page);
-  await page.getByRole('button', { name: /^Resolved comments/ }).click();
-
-  const resolvedRow = page.locator(`article[data-comment-id="${resolvedCommentId}"]`);
-  await resolvedRow.getByRole('button', { name: 'Show comment' }).click();
-  await expect(resolvedRow).toHaveClass(/review-panel__comment--selected/);
-  await expect(resolvedRow).toHaveCSS('border-left-width', '3px');
-  await expect(resolvedRow.getByText('Selected', { exact: true })).toBeVisible();
-  await expect(resolvedRow).not.toHaveAttribute('aria-selected');
-  await expect(resolvedRow.locator('[tabindex="0"]')).toHaveCount(0);
-
-  await page.getByRole('button', { name: 'Close review' }).focus();
-  await expect(resolvedRow).toHaveClass(/review-panel__comment--selected/);
-
-  await page.getByRole('button', { name: 'Close review' }).click();
-  await hoverMonacoLine(page, 'head', 'export const changed = 3;');
-  await page.getByRole('button', { name: 'Add comment to head line 10' }).click();
-  const composer = page.locator('.monaco-anchor-zone--composer textarea');
-  await composer.fill('Selected open comment.');
-  await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
-
-  await ensureReviewOpen(page);
-  const openRow = page.locator('article[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]');
-  await openRow.getByRole('button', { name: 'Show comment' }).click();
-  await expect(resolvedRow).not.toHaveClass(/review-panel__comment--selected/);
-  await expect(openRow).toHaveClass(/review-panel__comment--selected/);
-
-  const persistedDraft = await page.evaluate(async () => (await fetch('/api/draft')).json());
-  expect(JSON.stringify(persistedDraft)).not.toContain('selectedCommentId');
-
-  await openRow.getByRole('button', { name: 'Delete' }).click();
-  await openRow.getByRole('button', { name: 'Delete comment' }).click();
-  await expect(openRow).toHaveCount(0);
-  await expect(page.locator('.review-panel__comment--selected')).toHaveCount(0);
-});
 
 test('draft resume and anchor states', async ({ page }) => {
   canonicalComments = [{
@@ -846,8 +747,6 @@ test('draft resume and anchor states', async ({ page }) => {
   await expect(page.locator('.session-shell > .visually-hidden[aria-live="polite"]')).toHaveText(
     'Local draft resumed. Accepted comments for this pinned comparison are ready.',
   );
-  await ensureReviewOpen(page);
-  await expect(page.getByText('Please explain this context.')).toBeVisible();
   expect(pageErrors).toEqual([]);
   expect(consoleErrors.filter((message) => !message.includes('Download the Vue Devtools extension'))).toEqual([]);
 });
@@ -886,14 +785,8 @@ test('exact-byte draft resume', async ({ page }) => {
       verification: { state: 'verified', reason: 'exact-match' },
     }];
     await openReview(page, 'src/�.ts', resumeAttempt++);
-    await ensureReviewOpen(page);
-    const restoredComment = page.locator('.comments-rail__comment').filter({
-      hasText: 'Restore the second exact-byte path.',
-    });
-    await expect(restoredComment).toHaveCount(1);
-    await expect(restoredComment).toBeVisible();
-    contentRequests = [];
-    await restoredComment.getByRole('button', { name: 'Show comment' }).click();
+    const resumedDraft = await page.evaluate(async () => (await fetch('/api/draft')).json());
+    expect(JSON.stringify(resumedDraft)).toContain('Restore the second exact-byte path.');
   }
 });
 
@@ -962,10 +855,7 @@ test('anchored gap closure', async ({ page }) => {
   });
   await expect(staleNotice).toBeVisible();
   await expect(staleNotice).not.toHaveAttribute('role');
-  await expect(staleNotice).toContainText('Stale and unavailable comments remain visible as read-only history.');
-  await staleNotice.getByRole('button', { name: 'Open comments' }).click();
-  await expect(page.getByRole('button', { name: 'Close review' })).toBeVisible();
-  await page.getByRole('button', { name: 'Close review' }).click();
+  await expect(staleNotice).toContainText('Their recorded anchors are unchanged and may not be actionable in exported feedback.');
   await page.setViewportSize({ width: 1200, height: 1100 });
   const staleComment = page.locator('[data-comment-id="comment_11111111-1111-4111-8111-111111111111"]');
   const orphanComment = page.locator('[data-comment-id="comment_22222222-2222-4222-8222-222222222222"]');
@@ -994,15 +884,6 @@ test('anchored gap closure', async ({ page }) => {
   await expect(movedComposer).toHaveValue('');
 
   await page.setViewportSize({ width: 1200, height: 900 });
-  const reviewToggle = page.getByRole('button', { name: 'Review', exact: true });
-  await ensureReviewOpen(page);
-  await expect(page.getByRole('button', { name: 'Close review' })).toBeVisible();
-  await page.getByRole('button', { name: 'Close review' }).click();
-  await expect(reviewToggle).toHaveAttribute('aria-expanded', 'false');
-  await expect(page.locator('.comments-rail')).toHaveAttribute('inert', '');
-  await ensureReviewOpen(page);
-  await page.getByRole('button', { name: 'Close review' }).click();
-  await expect(reviewToggle).toBeFocused();
 
   await page.setViewportSize({ width: 760, height: 900 });
   const filesToggle = page.getByRole('button', { name: 'Open changed files', exact: true });
@@ -1020,35 +901,8 @@ test('anchored gap closure', async ({ page }) => {
   await expect(changedFiles).toHaveCount(0);
   await expect(desktopFilesToggle).toBeFocused();
   await page.setViewportSize({ width: 1440, height: 900 });
-  await ensureReviewOpen(page);
 
 
-  await expect(staleComment.getByText('Stale anchor')).toBeVisible();
-  await expect(staleComment.getByText('Exact path bytes')).toBeVisible();
-  await expect(staleComment.getByText('Blob OID')).toBeVisible();
-  await expect(staleComment.getByText('Selected text')).toBeVisible();
-  await expect(staleComment.getByText('Verification')).toBeVisible();
-  await expect(orphanComment.getByText('Anchor unavailable')).toBeVisible();
-  await expect(orphanComment.getByRole('button', { name: 'Inspect recorded file' })).toHaveCount(0);
-  await orphanComment.getByRole('button', { name: 'Copy anchor details' }).click();
-  await expect(page.getByText(/(Recorded anchor details copied|Couldn’t copy anchor details)/)).toBeVisible();
-
-
-  await page.getByRole('button', { name: 'Next file' }).click();
-  const inspectRecordedFile = staleComment.getByRole('button', { name: 'Inspect recorded file' });
-  await inspectRecordedFile.click();
-  await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
-  await expect(inspectRecordedFile).toBeFocused();
-  await expect(staleComment.getByRole('button', { name: 'Resolve', exact: true })).toBeDisabled();
-  await expect(staleComment.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
-  await expect(orphanComment.getByRole('button', { name: 'Resolve', exact: true })).toBeDisabled();
-  await expect(orphanComment.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: /Resolved comments \(1\)/ }).click();
-  const resolvedStaleComment = page.locator('[data-comment-id="comment_33333333-3333-4333-8333-333333333333"]');
-  await expect(resolvedStaleComment.getByText('Stale anchor')).toBeVisible();
-  await expect(resolvedStaleComment.getByRole('button', { name: 'Reopen', exact: true })).toBeDisabled();
-  await expect(resolvedStaleComment.getByRole('button', { name: 'Delete', exact: true })).toBeDisabled();
-  await page.getByRole('button', { name: /Open comments \(2\)/ }).click();
   const reviewNotes = page.getByRole('button', { name: 'Review notes', exact: true });
   await reviewNotes.focus();
   await reviewNotes.click();
@@ -1071,9 +925,6 @@ test('anchored gap closure', async ({ page }) => {
   await page.keyboard.press('Escape');
   await expect(reviewNotesDialog).toHaveCount(0);
   await expect(reviewNotes).toBeFocused();
-  await ensureReviewOpen(page);
-  await expect(page.getByRole('button', { name: 'Close review' })).toBeVisible();
-  await page.getByRole('button', { name: 'Close review' }).click();
   await openReview(page);
   await page.setViewportSize({ width: 1200, height: 1100 });
 });
@@ -1119,8 +970,7 @@ test.describe('async comment settlement', () => {
     await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(0);
     await page.getByRole('treeitem', { name: /src\/first\.ts/ }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
-    await ensureReviewOpen(page);
-    await expect(page.locator('.comments-rail__comment[data-comment-id="comment_123e4567-e89b-12d3-a456-426614174000"]')).toContainText(body);
+    await expect(page.locator('.inline-accepted-comment')).toContainText(body);
     await expect(page.locator('.monaco-anchor-zone--composer textarea')).toHaveCount(0);
   });
 
@@ -1191,10 +1041,6 @@ test.describe('async comment settlement', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'src/second.ts' })).toBeVisible();
 
     await page.getByRole('treeitem', { name: /src\/first\.ts/ }).click();
-    await ensureReviewOpen(page);
-    const conflict = page.getByRole('alert').filter({ hasText: 'Review changed in another tab' });
-    await expect(conflict).toContainText('Your revision0');
-    await expect(conflict).toContainText('Latest revision1');
     await expect(page.getByRole('heading', { level: 1, name: 'src/first.ts' })).toBeVisible();
     await hoverMonacoLine(page, 'head', 'export const changed = 3;');
     const retryComposer = page.locator('.monaco-anchor-zone--composer');

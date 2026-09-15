@@ -25,15 +25,8 @@ async function waitForLoopbackUrl(marker: string): Promise<string> {
   throw new Error('[marketplace-review] timed out waiting for the agent-supervised loopback URL');
 }
 
-async function ensureReviewOpen(page: Page): Promise<void> {
-  const review = page.getByRole('button', { name: 'Review', exact: true });
-  if (await review.getAttribute('aria-expanded') === 'false') await review.click();
-  await expect(review).toHaveAttribute('aria-expanded', 'true');
-}
 
 async function addHeadComment(page: Page): Promise<void> {
-  const review = page.getByRole('button', { name: 'Review', exact: true });
-  if (await review.getAttribute('aria-expanded') === 'true') await review.click();
   await page.getByRole('treeitem', { name: /changed\.ts/u }).click();
   await page.keyboard.press('Meta+g');
   await page.keyboard.insertText('10');
@@ -46,7 +39,6 @@ async function addHeadComment(page: Page): Promise<void> {
   const accepted = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
   await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
   expect((await accepted).status()).toBe(201);
-  await ensureReviewOpen(page);
 }
 
 async function saveSummaryAndExport(page: Page): Promise<void> {

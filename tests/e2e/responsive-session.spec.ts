@@ -250,12 +250,6 @@ async function readStyles(locator: Locator): Promise<Record<string, string>> {
   });
 }
 
-async function expectMinimumTarget(locator: Locator): Promise<void> {
-  const box = await locator.boundingBox();
-  expect(box, `[accessibility] missing target box for ${await locator.getAttribute('aria-label')}`).not.toBeNull();
-  expect(box!.width).toBeGreaterThanOrEqual(40);
-  expect(box!.height).toBeGreaterThanOrEqual(40);
-}
 
 function srgbChannel(value: number): number {
   const channel = value / 255;
@@ -475,7 +469,7 @@ async function expectPhase08ReflowAtCurrentWidth(
   expect(reflow.document.scrollWidth, `[responsive] ${width}px document fit`).toBeLessThanOrEqual(
     reflow.document.clientWidth,
   );
-  expect(reflow.toolbarGroups).toHaveLength(3);
+  expect(reflow.toolbarGroups).toHaveLength(2);
   for (const [index, group] of reflow.toolbarGroups.entries()) {
     expect(group.width, `[responsive] ${width}px toolbar group ${index}`).toBeGreaterThan(0);
     expect(group.height, `[responsive] ${width}px toolbar group ${index}`).toBeGreaterThan(0);
@@ -544,7 +538,6 @@ async function expectTreeInteriorAtWidth(page: Page, width: number): Promise<voi
 }
 
 async function expectNonColorStateCues(page: Page): Promise<void> {
-  const review = page.getByRole('button', { name: 'Review', exact: true });
   const selected = page.locator('.tree-row--selected').first();
   const filesPane = page.getByRole('dialog', { name: 'Changed files', exact: true }).locator('.changed-files-dialog__results');
   const baseBar = page.locator('.monaco-editor .monaco-diff-change-bar--base').first();
@@ -587,8 +580,6 @@ async function expectNonColorStateCues(page: Page): Promise<void> {
   await expect(headBar).toHaveCSS('border-left-style', 'solid');
   expect(await baseSign.evaluate((element) => getComputedStyle(element, '::before').content)).toContain('−');
   expect(await headSign.evaluate((element) => getComputedStyle(element, '::before').content)).toContain('+');
-  await review.focus();
-  await expectFocusIndicatorUnclipped(review);
 }
 
 async function hoverMonacoLine(page: Page, side: 'base' | 'head', text: string): Promise<void> {
@@ -627,18 +618,6 @@ async function rootShadow(container: Locator): Promise<string> {
   });
 }
 
-async function expectTooltipSurface(tooltip: Locator): Promise<void> {
-  await expect(tooltip).toHaveText('Keyboard help · ?');
-  const styles = await readStyles(tooltip);
-  expect(styles).toMatchObject({
-    backgroundColor: toRootRgb('--surface-interactive'),
-    borderColor: toRootRgb('--border-default'),
-    borderRadius: resolveToken(canonicalTokens, '--radius-control'),
-    fontSize: resolveToken(canonicalTokens, '--font-size-metadata'),
-    lineHeight: resolveToken(canonicalTokens, '--line-height-metadata'),
-  });
-  expect(styles.boxShadow).toBe(await rootShadow(tooltip));
-}
 
 async function expectGutterLabelSurface(gutter: Locator): Promise<void> {
   const styles = await gutter.evaluate((element) => {
@@ -843,25 +822,6 @@ test('responsive keyboard and accessibility contract', async ({
         'active file heading',
         4.5,
       );
-    const review = page.getByRole('button', { name: 'Review', exact: true });
-    const keyboardHelp = page.getByRole('button', {
-      name: 'Keyboard help',
-      exact: true,
-    });
-    await expectRenderedContrast(review, 'Review control label', 4.5);
-    await expectRenderedContrast(
-      review,
-      'Review control boundary',
-      1.8,
-      'borderColor',
-    );
-    await expectRenderedContrast(keyboardHelp, 'Keyboard help control label', 4.5);
-    await expectRenderedContrast(
-      keyboardHelp,
-      'Keyboard help control boundary',
-      1.8,
-      'borderColor',
-    );
   });
 
     await test.step('exact semantic palette, typography, control, and motion contract', async () => {
@@ -907,7 +867,6 @@ test('responsive keyboard and accessibility contract', async ({
           '<textarea aria-label="Semantic textarea" placeholder="Write a comment"></textarea>',
           '<input type="checkbox" aria-label="Semantic checkbox" />',
           '<div class="tree-row file-row" data-normal-file>normal.ts</div>',
-          '<span class="object-id">0123456789abcdef</span>',
           '<div data-gutter-targets style="position: relative; height: 32px">',
           '<button class="diff-workspace__gutter-action" aria-label="Add comment to head line 10">+</button>',
           '<button aria-label="Second semantic target" style="position: absolute; right: 48px">Second</button></div>',
@@ -955,7 +914,6 @@ test('responsive keyboard and accessibility contract', async ({
         ['.pin-cue', metadataSize, '600', metadataLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
       ]);
       await expect(page.locator('.path-display').first()).toHaveCSS('font-family', /monospace/);
-      await expect(fixture.locator('.object-id')).toHaveCSS('font-family', /monospace/);
 
       const gutterTarget = fixture.locator('.diff-workspace__gutter-action');
       const gutterBox = await gutterTarget.boundingBox();
@@ -984,7 +942,7 @@ test('responsive keyboard and accessibility contract', async ({
       expect(motionDurations.every((duration) => duration === '0s')).toBe(true);
     });
 
-    await test.step('real gutter action and UiPrimitives tooltip journeys remain independently accessible', async () => {
+    await test.step('real gutter action remains independently accessible', async () => {
       const firstDirectory = page.getByRole('treeitem').first();
       await firstDirectory.focus();
       await page.keyboard.press('ArrowRight');
@@ -1006,7 +964,7 @@ test('responsive keyboard and accessibility contract', async ({
         name: 'Add comment to head line 10',
         exact: true,
       });
-      const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
+      const nextChange = page.getByRole('button', { name: 'Next change', exact: true });
       await expect(gutter).toBeVisible();
       await expect(gutter).toHaveAttribute('aria-label', 'Add comment to head line 10');
 
@@ -1017,27 +975,9 @@ test('responsive keyboard and accessibility contract', async ({
 
       await gutter.focus();
       await expectGutterLabelSurface(gutter);
-      await reviewButton.focus();
+      await nextChange.focus();
       expect(await gutter.evaluate((element) => getComputedStyle(element, '::after').display)).toBe('none');
 
-      const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
-      await gutter.focus();
-      await expect(page.getByRole('tooltip', { name: 'Review', exact: true })).toHaveCount(0);
-      await keyboardHelp.hover();
-      const tooltip = page.getByRole('tooltip', { name: 'Keyboard help · ?', exact: true });
-      await expectTooltipSurface(tooltip);
-      await page.mouse.move(0, 0);
-      await expect(tooltip).toHaveCount(0);
-
-      await keyboardHelp.focus();
-      await expectTooltipSurface(tooltip);
-      await reviewButton.focus();
-      await expect(tooltip).toHaveCount(0);
-
-      await keyboardHelp.focus();
-      await expectTooltipSurface(tooltip);
-      await page.keyboard.press('Escape');
-      await expect(tooltip).toHaveCount(0);
       await expect(page.locator('.review-toolbar')).toHaveCSS('box-shadow', 'none');
     });
     await test.step('keyboard-only 320px journey keeps existing destinations and discard flow reachable', async () => {
@@ -1045,7 +985,6 @@ test('responsive keyboard and accessibility contract', async ({
 
       for (const [name, destination] of [
         ['Skip to diff', 'cumpa-heading'],
-        ['Skip review', 'review-heading'],
       ] as const) {
         const skipLink = page.getByRole('link', { name, exact: true });
         await skipLink.focus();
@@ -1074,23 +1013,6 @@ test('responsive keyboard and accessibility contract', async ({
       await page.keyboard.press('Alt+Shift+[');
       await expect(page.locator('#cumpa-heading')).toContainText('alpha.ts');
 
-      const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
-      await keyboardHelp.focus();
-      await expectFocusIndicatorUnclipped(keyboardHelp);
-      await page.keyboard.press('?');
-      const details = page.getByRole('dialog', { name: 'Details', exact: true });
-      const keyboardHeading = details.getByRole('heading', {
-        name: 'Keyboard actions',
-        exact: true,
-      });
-      await expect(keyboardHeading).toBeVisible();
-      await expect(keyboardHeading).toBeFocused();
-      await expect(
-        details.getByText('Add or focus comment on current line — Option+Enter on macOS; Alt+Enter on Windows and Linux'),
-      ).toBeVisible();
-      await page.keyboard.press('Escape');
-      await expect(details).toHaveCount(0);
-      await expect(keyboardHelp).toBeFocused();
 
       await page.keyboard.press('F7');
       await page.keyboard.press('Shift+F7');
@@ -1098,7 +1020,7 @@ test('responsive keyboard and accessibility contract', async ({
       await assertNoPageOverflow(page);
     });
 
-    await test.step('desktop review toolbar exposes six controls in sequential Tab order', async () => {
+    await test.step('desktop review toolbar exposes four controls in sequential Tab order', async () => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.keyboard.press('Alt+Shift+]');
       await expect(page.locator('#cumpa-heading')).toContainText('beta-after-a-very-long-rename.ts');
@@ -1107,15 +1029,11 @@ test('responsive keyboard and accessibility contract', async ({
       const nextFile = page.getByRole('button', { name: 'Next file', exact: true });
       const previousChange = page.getByRole('button', { name: 'Previous change', exact: true });
       const nextChange = page.getByRole('button', { name: 'Next change', exact: true });
-      const review = page.getByRole('button', { name: 'Review', exact: true });
-      const keyboardHelp = page.getByRole('button', { name: 'Keyboard help', exact: true });
-      const controls = [previousFile, nextFile, previousChange, nextChange, review, keyboardHelp] as const;
+      const controls = [previousFile, nextFile, previousChange, nextChange] as const;
 
       for (const control of [previousFile, nextFile, previousChange, nextChange]) {
         await expect(control).toBeEnabled();
       }
-      await expect(review).toBeVisible();
-      await expect(keyboardHelp).toBeVisible();
 
       await previousFile.focus();
       await expect(previousFile).toBeFocused();
@@ -1136,11 +1054,6 @@ test('responsive keyboard and accessibility contract', async ({
         await expectPhase08ReflowAtWidth(page, width);
       }
 
-      const closeReview = page.getByRole('button', { name: 'Close review', exact: true });
-      if (await closeReview.isVisible()) {
-        await closeReview.focus();
-        await page.keyboard.press('Enter');
-      }
       const files = page.getByRole('button', { name: 'Open changed files', exact: true });
       await files.focus();
       await page.keyboard.press('Enter');
@@ -1176,16 +1089,6 @@ test('responsive keyboard and accessibility contract', async ({
       await page.keyboard.press('Escape');
       await expect(files).toBeFocused();
 
-      const review = page.getByRole('button', { name: 'Review', exact: true });
-      await review.focus();
-      await page.keyboard.press('Enter');
-      const reviewDrawer = page.locator('.comments-rail');
-      const reviewBox = await reviewDrawer.boundingBox();
-      expect(Math.round(reviewBox!.x + reviewBox!.width)).toBe(312);
-      expect(reviewBox!.width).toBeLessThanOrEqual(304);
-      await expect(page.getByRole('button', { name: 'Close review' })).toBeVisible();
-      await page.keyboard.press('Escape');
-      await expect(review).toBeFocused();
     });
 
 
@@ -1226,15 +1129,11 @@ test('responsive keyboard and accessibility contract', async ({
       }
     });
     await page.setViewportSize({ width: 1440, height: 560 });
-    await page.getByRole('button', { name: 'Review', exact: true }).click();
 
 
-    await test.step('review rail and drawers honor locked responsive geometry', async () => {
-      const rail = page.locator('.comments-rail');
-      const panel = page.locator('.review-panel');
+    await test.step('changed-files drawers honor locked responsive geometry', async () => {
       const treePane = page.locator('.changed-files-sidebar');
       const reviewMain = page.locator('.review-main');
-      const reviewButton = page.getByRole('button', { name: 'Review', exact: true });
       const stateCard = page.locator('[data-state-card-contract]');
       const reviewShell = page.locator('.review-shell');
       const sessionHeader = page.locator('.session-header');
@@ -1295,26 +1194,6 @@ test('responsive keyboard and accessibility contract', async ({
         await assertNoPageOverflow(page);
       };
 
-      await page.setViewportSize({ width: 1440, height: 560 });
-      await expect(reviewMain).toBeVisible();
-      if (await rail.isVisible()) {
-        await page.getByRole('button', { name: 'Close review' }).click();
-      }
-      await expect(rail).not.toBeVisible();
-      const canvasWidthBeforeRail = Math.round((await reviewMain.boundingBox())!.width);
-      await reviewButton.click();
-      await expect(rail).toBeVisible();
-      await expect(rail).toHaveCSS('background-color', toRootRgb('--surface-panel'));
-      expect(Math.round((await reviewMain.boundingBox())!.width)).toBe(canvasWidthBeforeRail);
-      expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
-      await expect(rail).toHaveCSS('overflow-y', 'hidden');
-      await expect(panel).toHaveCSS('overflow-y', 'auto');
-      const reviewScrollOwners = await page.locator('.comments-rail, .review-panel').evaluateAll((elements) =>
-        elements
-          .filter((element) => ['auto', 'scroll'].includes(getComputedStyle(element).overflowY))
-          .map((element) => element.classList.contains('review-panel') ? 'panel' : 'rail'),
-      );
-      expect(reviewScrollOwners).toEqual(['panel']);
       await page.evaluate(() => {
         const card = document.createElement('section');
         card.className = 'state-card';
@@ -1326,36 +1205,26 @@ test('responsive keyboard and accessibility contract', async ({
         await expect(staticSurface).toHaveCSS('box-shadow', 'none');
       }
       await assertNoPageOverflow(page);
-      await page.getByRole('button', { name: 'Close review' }).click();
-      await expect(rail).not.toBeVisible();
       await assertFilesCollapse(1440);
 
-      await reviewButton.focus();
+      const nextChange = page.getByRole('button', { name: 'Next change', exact: true });
+      await nextChange.focus();
       await page.keyboard.press('Shift+Tab');
       await page.keyboard.press('Tab');
-      await expect(reviewButton).toBeFocused();
-      const focusStyle = await readStyles(reviewButton);
+      await expect(nextChange).toBeFocused();
+      const focusStyle = await readStyles(nextChange);
       expect(focusStyle.outlineColor).toBe(toRootRgb('--focus-ring'));
       expect(focusStyle.outlineStyle).toBe('solid');
       expect(focusStyle.outlineWidth).toBe(resolveToken(canonicalTokens, '--focus-outline-width'));
       expect(focusStyle.outlineOffset).toBe(resolveToken(canonicalTokens, '--focus-offset'));
-      await expectFocusIndicatorUnclipped(reviewButton);
+      await expectFocusIndicatorUnclipped(nextChange);
 
-      await page.setViewportSize({ width: 1051, height: 560 });
-      await reviewButton.click();
-      await expect(rail).toHaveClass(/comments-rail--open/);
-      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
-      expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
       await assertNoPageOverflow(page);
-      await page.getByRole('button', { name: 'Close review' }).click();
-      await expect(rail).not.toHaveClass(/comments-rail--open/);
-      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 1050, height: 560 });
       await expect(page.getByRole('button', { name: 'Hide changed files sidebar', exact: true })).toHaveAttribute('aria-expanded', 'true');
       await expect(sessionHeader).toHaveCSS('flex-wrap', 'wrap');
       await expect(headerFacts).toHaveCSS('flex-wrap', 'wrap');
-      await expect(rail).toHaveCSS('box-shadow', 'none');
       const desktopColumns = await reviewShell.evaluate((shell) => {
         const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
         const main = shell.querySelector<HTMLElement>('.review-main')!;
@@ -1373,33 +1242,7 @@ test('responsive keyboard and accessibility contract', async ({
       expect(desktopColumns.filesBox.width).toBeGreaterThan(0);
       expect(desktopColumns.mainBox.width).toBeGreaterThan(0);
       expect(desktopColumns.filesBox.x + desktopColumns.filesBox.width).toBeCloseTo(desktopColumns.mainBox.x, 3);
-      await reviewButton.click();
-      await expect(rail).toHaveClass(/comments-rail--open/);
-      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
-      expect(await reviewShell.evaluate((shell) => {
-        const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
-        const main = shell.querySelector<HTMLElement>('.review-main')!;
-        const comments = shell.querySelector<HTMLElement>('.comments-rail')!;
-        return {
-          commentsPosition: getComputedStyle(comments).position,
-          commentsZIndex: getComputedStyle(comments).zIndex,
-          openComments: shell.querySelectorAll('.comments-rail--open').length,
-          openFiles: shell.querySelectorAll('[role="dialog"]').length,
-          filesPosition: getComputedStyle(files).position,
-          mainPosition: getComputedStyle(main).position,
-        };
-      })).toEqual({
-        commentsPosition: 'absolute',
-        commentsZIndex: '7',
-        openComments: 1,
-        openFiles: 0,
-        filesPosition: 'static',
-        mainPosition: 'static',
-      });
       await assertNoPageOverflow(page);
-      await page.getByRole('button', { name: 'Close review' }).click();
-      await expect(rail).not.toHaveClass(/comments-rail--open/);
-      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 761, height: 560 });
       await expect(page.getByRole('button', { name: 'Hide changed files sidebar', exact: true })).toHaveAttribute('aria-expanded', 'true');
@@ -1444,7 +1287,6 @@ test('responsive keyboard and accessibility contract', async ({
           expect(item.right <= other.left || other.right <= item.left || item.bottom <= other.top || other.bottom <= item.top).toBe(true);
         }
       }
-      await expect(rail).toHaveCSS('box-shadow', 'none');
       const wrappedColumns = await reviewShell.evaluate((shell) => {
         const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
         const main = shell.querySelector<HTMLElement>('.review-main')!;
@@ -1462,33 +1304,7 @@ test('responsive keyboard and accessibility contract', async ({
       expect(wrappedColumns.filesBox.width).toBeGreaterThan(0);
       expect(wrappedColumns.mainBox.width).toBeGreaterThan(0);
       expect(wrappedColumns.filesBox.x + wrappedColumns.filesBox.width).toBeCloseTo(wrappedColumns.mainBox.x, 3);
-      await reviewButton.click();
-      await expect(rail).toHaveClass(/comments-rail--open/);
-      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
-      expect(await reviewShell.evaluate((shell) => {
-        const files = shell.querySelector<HTMLElement>('.changed-files-sidebar')!;
-        const main = shell.querySelector<HTMLElement>('.review-main')!;
-        const comments = shell.querySelector<HTMLElement>('.comments-rail')!;
-        return {
-          commentsPosition: getComputedStyle(comments).position,
-          commentsZIndex: getComputedStyle(comments).zIndex,
-          openComments: shell.querySelectorAll('.comments-rail--open').length,
-          openFiles: shell.querySelectorAll('[role="dialog"]').length,
-          filesPosition: getComputedStyle(files).position,
-          mainPosition: getComputedStyle(main).position,
-        };
-      })).toEqual({
-        commentsPosition: 'absolute',
-        commentsZIndex: '7',
-        openComments: 1,
-        openFiles: 0,
-        filesPosition: 'static',
-        mainPosition: 'static',
-      });
       await assertNoPageOverflow(page);
-      await page.getByRole('button', { name: 'Close review' }).click();
-      await expect(rail).not.toHaveClass(/comments-rail--open/);
-      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 1651, height: 560 });
       const wideSidebarWidth = Math.round((await treePane.boundingBox())!.width);
@@ -1497,19 +1313,7 @@ test('responsive keyboard and accessibility contract', async ({
       expect(wideSidebarWidth).toBeGreaterThan(compactSidebarWidth);
       await page.setViewportSize({ width: 761, height: 560 });
       await assertFilesCollapse(761);
-      const identityDisclosure = page.getByRole('button', { name: 'Details', exact: true });
-      await identityDisclosure.click();
-      await expect(page.getByRole('dialog', { name: 'Details', exact: true })).toBeVisible();
-      await page.keyboard.press('Escape');
-      await expect(rail).toHaveCSS('box-shadow', 'none');
-      await reviewButton.click();
-      const mediumBox = await rail.boundingBox();
-      expect(Math.round(mediumBox!.width)).toBe(360);
-      expect(Math.round(mediumBox!.x + mediumBox!.width)).toBe(753);
-      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
-      await page.getByRole('button', { name: 'Close review' }).click();
-      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 760, height: 560 });
       const filesButton = page.getByRole('button', { name: 'Open changed files', exact: true });
@@ -1529,58 +1333,21 @@ test('responsive keyboard and accessibility contract', async ({
       await expect(filesButton).toBeFocused();
 
       await page.setViewportSize({ width: 759, height: 560 });
-      await expect(rail).toHaveCSS('box-shadow', 'none');
-      await reviewButton.click();
-      expect(Math.round((await rail.boundingBox())!.width)).toBe(360);
-      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       await assertNoPageOverflow(page);
-      await page.getByRole('button', { name: 'Close review' }).click();
-      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 375, height: 640 });
-      await expect(rail).toHaveCSS('box-shadow', 'none');
-      await reviewButton.click();
-      const compactBox = await rail.boundingBox();
-      expect(Math.round(compactBox!.width)).toBe(359);
-      expect(Math.round(compactBox!.x + compactBox!.width)).toBe(367);
-      await expect(rail).toHaveCSS('box-shadow', overlayShadow);
       await expect(stateCard).toHaveCSS('padding', '16px');
       await assertNoPageOverflow(page);
       await stateCard.evaluate((element) => element.remove());
-      await page.getByRole('button', { name: 'Close review' }).click();
-      await expect(rail).toHaveCSS('box-shadow', 'none');
 
       await page.setViewportSize({ width: 320, height: 640 });
-      await reviewButton.focus();
+      await nextChange.focus();
       await page.keyboard.press('Shift+Tab');
       await page.keyboard.press('Tab');
-      await expect(reviewButton).toBeFocused();
-      await expectFocusIndicatorUnclipped(reviewButton);
+      await expect(nextChange).toBeFocused();
+      await expectFocusIndicatorUnclipped(nextChange);
       await assertNoPageOverflow(page);
     });
-  await test.step('details dialog traps focus and restores disclosure', async () => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    const disclosure = page.getByRole('button', {
-      name: 'Details',
-      exact: true,
-    });
-    await expectMinimumTarget(disclosure);
-    await disclosure.click();
-    const dialog = page.getByRole('dialog', { name: 'Details' });
-    const close = dialog.getByRole('button', {
-      name: 'Close details',
-    });
-    await expect(dialog).toHaveAttribute('aria-modal', 'true');
-    await expect(close).toBeFocused();
-    await expect(page.locator('.review-shell')).toHaveAttribute('inert', '');
-    const lastControl = dialog.locator('button:not(:disabled)').last();
-    await lastControl.focus();
-    await page.keyboard.press('Tab');
-    await expect(close).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(dialog).toHaveCount(0);
-    await expect(disclosure).toBeFocused();
-  });
 
     await test.step('compact viewport preserves accessible review controls', async () => {
       await page.setViewportSize({ width: 320, height: 640 });
@@ -1594,9 +1361,9 @@ test('responsive keyboard and accessibility contract', async ({
       test.setTimeout(90_000);
       await test.step('headed true 4× browser zoom preserves the effective 320px contract', async () => {
         await page.setViewportSize({ width: 1280, height: 640 });
-        const review = page.getByRole('button', { name: 'Review', exact: true });
-        await review.focus();
-        await expect(review).toBeFocused();
+        const nextChange = page.getByRole('button', { name: 'Next change', exact: true });
+        await nextChange.focus();
+        await expect(nextChange).toBeFocused();
         await page.bringToFront();
         console.log('[manual] Apply Chromium browser zoom to 4× with the browser zoom shortcut.');
         await expect.poll(

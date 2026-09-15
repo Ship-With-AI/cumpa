@@ -20,8 +20,6 @@ import { fileURLToPath } from 'node:url';
 
 import { expect, test } from '@playwright/test';
 import type { Browser, Page, TestInfo } from '@playwright/test';
-import { createServer } from 'vite';
-import type { ViteDevServer } from 'vite';
 
 import {
   createGitFixture,
@@ -31,7 +29,6 @@ import { createShutdownController } from '../../src/server/lifecycle.js';
 import type { ComparisonSelection } from '../../src/contracts/comparison.js';
 import type {
   FileContentResponse,
-  FileMetadataResponse,
   SessionFile,
   SessionResponse,
 } from '../../src/contracts/api.js';
@@ -51,81 +48,7 @@ const executablePath = join(
   'dist/bin/cumpa.mjs',
 );
 
-const metadataHarnessModule = `
-import { createApp, h } from 'vue';
-import FileMetadataPane from '/components/FileMetadataPane.vue';
 
-const path = (display) => ({
-  bytesBase64url: btoa(display),
-  display,
-  utf8: display,
-});
-
-const file = (availability, name) => ({
-  fileId: name,
-  status: { kind: 'modified' },
-  oldPath: path(name),
-  newPath: path(name),
-  additions: 1,
-  deletions: 1,
-  availability,
-});
-
-export function mountMetadataHarness() {
-  createApp({
-    setup: () => () => h('main', { id: 'metadata-harness' }, [
-      h('section', { id: 'metadata-text' }, [
-        h(FileMetadataPane, {
-          file: file({ kind: 'text' }, 'src/safe text.ts'),
-          loading: false,
-          errorMessage: '',
-        }),
-      ]),
-      h('section', { id: 'metadata-unsupported' }, [
-        h(FileMetadataPane, {
-          file: file({ kind: 'unsupported', reason: 'binary' }, 'assets/image.dat'),
-          loading: false,
-          errorMessage: '',
-        }),
-      ]),
-      h('section', { id: 'metadata-unavailable' }, [
-        h(FileMetadataPane, {
-          file: file({ kind: 'unavailable', reason: 'missing-object' }, 'removed/missing.txt'),
-          loading: false,
-          errorMessage: '',
-        }),
-      ]),
-      h('section', { id: 'metadata-retry-error' }, [
-        h(FileMetadataPane, {
-          file: file({ kind: 'text' }, 'src/retry.ts'),
-          loading: true,
-          errorMessage: 'Metadata request failed without exposing a path.',
-          onRetry: () => {},
-        }),
-      ]),
-    ]),
-  }).mount('#metadata-harness');
-}
-`;
-
-async function startMetadataHarness(): Promise<Readonly<{ server: ViteDevServer; url: string }>> {
-  const server = await createServer({
-    configFile: 'vite.config.ts',
-    plugins: [{
-      name: 'metadata-pane-harness',
-      resolveId: (id) => id === 'virtual:metadata-pane-harness' ? '\0metadata-pane-harness' : undefined,
-      load: (id) => id === '\0metadata-pane-harness' ? metadataHarnessModule : undefined,
-    }],
-    server: { host: '127.0.0.1' },
-  });
-  await server.listen();
-  const url = server.resolvedUrls?.local[0];
-  if (url === undefined) {
-    await server.close();
-    throw new Error('metadata harness did not expose a loopback URL');
-  }
-  return { server, url };
-}
 
 interface PackResult {
   filename: string;
@@ -407,12 +330,6 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
       '--verify',
       repository.headRef,
     ]);
-    const expectedMergeBase = independentlyResolve(repository, [
-      'merge-base',
-      '--all',
-      expectedBase,
-      expectedHead,
-    ]);
     const url = await waitForLoopbackUrl(running);
     const parsedUrl = new URL(url);
 
@@ -441,20 +358,6 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
       `BASEBase fixture · ${expectedBase.slice(0, 7)}→HEADHead fixture · ${expectedHead.slice(0, 7)}`,
     );
     await expect(page.getByText('Pinned comparison', { exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Details', exact: true })).toHaveAttribute('aria-haspopup', 'dialog');
-    await page.getByRole('button', { name: 'Details', exact: true }).click();
-    await expect(
-      page.locator('.identity-row').nth(0).getByText(expectedBase, { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.locator('.identity-row').nth(1).getByText(expectedHead, { exact: true }),
-    ).toBeVisible();
-    await expect(
-      page
-        .locator('.identity-row')
-        .nth(2)
-        .getByText(expectedMergeBase, { exact: true }),
-    ).toBeVisible();
   } finally {
     await stopGeneratedCli(running);
     await repository.cleanup();
@@ -497,19 +400,6 @@ test('generated range request preserves the server-scoped pinned review', async 
     await expect(page.getByRole('tree')).not.toContainText('at-limit.txt');
     await expect(page.getByRole('tree')).not.toContainText('over-limit.txt');
 
-    const disclosure = page.getByRole('button', { name: 'Details', exact: true });
-    await disclosure.click();
-    const scope = page.getByRole('dialog', { name: 'Details' });
-    await expect(scope.getByRole('heading', { name: 'Scope and provenance' })).toBeVisible();
-    await expect(scope.getByText('Base commit', { exact: true })).toBeVisible();
-    await expect(scope.getByText('Head commit', { exact: true })).toBeVisible();
-    await expect(scope.getByText(expectedBase, { exact: true })).toBeVisible();
-    await expect(scope.getByText(expectedHead, { exact: true })).toBeVisible();
-    await expect(scope.getByText('Ordered Git pathspecs', { exact: true })).toBeVisible();
-    await expect(scope.locator('ol')).toHaveText(':(literal)committed.txt');
-    await expect(scope.getByRole('button', { name: 'Copy full base commit' })).toBeVisible();
-    await expect(scope.getByRole('button', { name: 'Copy full head commit' })).toBeVisible();
-    await expect(scope.getByText('Merge base', { exact: true })).toHaveCount(0);
 
     repository.git(['update-ref', repository.headRef, repository.futureHeadOid, expectedHead]);
     const afterMovement = await context.request.get(`${parsedUrl.origin}/api/session`, {
@@ -552,10 +442,7 @@ test('range empty state exposes all changed paths without changing interactive c
     const url = await waitForLoopbackUrl(running);
     await page.goto(url, { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: 'No changes match this review scope' })).toBeVisible();
-    await expect(page.getByText('The pinned commits contain no changed files. Details lists the commits.')).toBeVisible();
-    await page.getByRole('button', { name: 'Details', exact: true }).click();
-    const scope = page.getByRole('dialog', { name: 'Details' });
-    await expect(scope.getByText('All changed paths', { exact: true })).toBeVisible();
+    await expect(page.getByText('The pinned commits contain no changed files.')).toBeVisible();
   } finally {
     await stopGeneratedCli(running);
     await context.close();
@@ -593,37 +480,6 @@ test('range content error does not fall back to current refs', async ({ browser 
   }
 });
 
-test('narrow range scope is a focused modal sheet', async ({ browser }, testInfo) => {
-  assertChromiumPrerequisite(browser, testInfo);
-  const repository = await createGitFixture();
-  const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  const page = await context.newPage();
-  const running = startGeneratedCli(repository, undefined, rangeRequest(repository, ['committed.txt']));
-  try {
-    const url = await waitForLoopbackUrl(running);
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
-    const disclosure = page.getByRole('button', { name: 'Details', exact: true });
-    await disclosure.click();
-    const scope = page.getByRole('dialog', { name: 'Details' });
-    const close = scope.getByRole('button', { name: 'Close details' });
-    await expect(close).toBeFocused();
-    const box = await close.boundingBox();
-    expect(box?.width).toBeGreaterThanOrEqual(44);
-    expect(box?.height).toBeGreaterThanOrEqual(44);
-    const lastControl = scope.locator('button:not(:disabled)').last();
-    await page.keyboard.press('Shift+Tab');
-    await expect(lastControl).toBeFocused();
-    await page.keyboard.press('Tab');
-    await expect(close).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(scope).toHaveCount(0);
-    await expect(disclosure).toBeFocused();
-  } finally {
-    await stopGeneratedCli(running);
-    await context.close();
-    await repository.cleanup();
-  }
-});
 
 test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) => {
   assertChromiumPrerequisite(browser, testInfo);
@@ -901,20 +757,6 @@ test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) 
           }),
         ).toContainText(laterFile.newPath?.display ?? laterFile.oldPath?.display ?? '');
 
-        await page.getByRole('button', { name: 'Details', exact: true }).click();
-        const identities = page.getByRole('dialog', {
-          name: 'Details',
-        });
-        const identityRows = identities.locator('.identity-row');
-        await expect(
-          identityRows.nth(0).getByText(expectedBase, { exact: true }),
-        ).toBeVisible();
-        await expect(
-          identityRows.nth(1).getByText(expectedHead, { exact: true }),
-        ).toBeVisible();
-        await expect(
-          identityRows.nth(2).getByText(expectedMergeBase, { exact: true }),
-        ).toBeVisible();
 
         const dirtyWorktreeCount =
           Number(
@@ -959,12 +801,6 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     '--verify',
     repository.headRef,
   ]);
-  const expectedMergeBase = independentlyResolve(repository, [
-    'merge-base',
-    '--all',
-    expectedBase,
-    expectedHead,
-  ]);
   const running = startGeneratedCli(repository);
 
   try {
@@ -979,74 +815,6 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     );
     await expect(page.getByText('Pinned comparison', { exact: true })).toBeVisible();
 
-    const disclosure = page.getByRole('button', {
-      name: 'Details',
-      exact: true,
-    });
-    await expect(disclosure).toHaveAttribute('aria-expanded', 'false');
-    await disclosure.click();
-    await expect(disclosure).toHaveAttribute('aria-expanded', 'true');
-    const panel = page.getByRole('dialog', { name: 'Details' });
-    await expect(panel).toBeVisible();
-
-    const identityRows = panel.locator('.identity-row');
-    await expect(identityRows).toHaveCount(3);
-    await expect(identityRows.nth(0).locator('dt')).toHaveText('Base');
-    await expect(identityRows.nth(1).locator('dt')).toHaveText('Head');
-    await expect(identityRows.nth(2).locator('dt')).toHaveText('Merge base');
-    await expect(identityRows.nth(0).getByText('Base fixture', { exact: true })).toBeVisible();
-    await expect(identityRows.nth(1).getByText('Head fixture', { exact: true })).toBeVisible();
-    await expect(identityRows.nth(0).getByText(expectedBase, { exact: true })).toBeVisible();
-    await expect(identityRows.nth(1).getByText(expectedHead, { exact: true })).toBeVisible();
-    await expect(identityRows.nth(2).getByText(expectedMergeBase, { exact: true })).toBeVisible();
-    await expect(
-      panel.getByText(
-        'This session is pinned to these commits and does not follow moving refs.',
-        { exact: true },
-      ),
-    ).toBeVisible();
-
-    const copyCases = [
-      ['Copy full base commit', expectedBase],
-      ['Copy full head commit', expectedHead],
-      ['Copy full merge-base commit', expectedMergeBase],
-    ] as const;
-    for (const [name, expectedValue] of copyCases) {
-      const button = panel.getByRole('button', { name });
-      await button.click();
-      await expect(button.locator('..').getByRole('status')).toHaveText('Copied');
-      await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(
-        expectedValue,
-      );
-    }
-
-    const baseCopy = panel.getByRole('button', {
-      name: 'Copy full base commit',
-    });
-    await baseCopy.click();
-    await expect(baseCopy.locator('..').getByRole('status')).toHaveText('Copied');
-    await page.waitForTimeout(2_100);
-    await expect(baseCopy.locator('..').getByRole('status')).toBeEmpty();
-
-    await page.evaluate(() => {
-      Object.defineProperty(navigator.clipboard, 'writeText', {
-        configurable: true,
-        value: async () => {
-          throw new DOMException('Clipboard denied', 'NotAllowedError');
-        },
-      });
-    });
-    const failedCopy = panel.getByRole('button', {
-      name: 'Copy full head commit',
-    });
-    await failedCopy.click();
-    await expect(failedCopy.locator('..').getByRole('alert')).toHaveText(
-      'Copy failed. The full value remains available to select.',
-    );
-    await expect(identityRows.nth(1).getByText(expectedHead, { exact: true })).toBeVisible();
-    await page.keyboard.press('Escape');
-    await expect(panel).toHaveCount(0);
-    await expect(disclosure).toBeFocused();
 
     const securityPage = await context.newPage();
     await securityPage.route('**/api/session', async (route) => {
@@ -1159,20 +927,6 @@ test('identity session and empty states', async ({ browser, context, page }, tes
         { exact: true },
       ),
     ).toBeAttached();
-    await dirtyPage.getByRole('button', { name: 'Details', exact: true }).click();
-    const dirtyPanel = dirtyPage.getByRole('dialog', {
-      name: 'Details',
-    });
-    const dirtyHead = dirtyPanel.locator('.identity-row').nth(1);
-    await expect(
-      dirtyHead.getByText(dirtyRepository.root, { exact: true }),
-    ).toBeVisible();
-    await expect(
-      dirtyHead.getByText(
-        "The worktree's committed HEAD will be reviewed. Staged, unstaged, and untracked bytes are ignored.",
-        { exact: true },
-      ),
-    ).toBeVisible();
   } finally {
     await stopGeneratedCli(dirtyRunning);
     await dirtyRepository.cleanup();
@@ -1198,14 +952,13 @@ test('identity session and empty states', async ({ browser, context, page }, tes
     await expect(emptyPage.getByText('Opening pinned comparison…')).toHaveCount(0);
     await expect(emptyPage.locator('.review-main > .empty-state')).toHaveCSS('background-color', toRootRgb('--surface-panel'));
     await expect(emptyPage.locator('.review-main > .empty-state')).toHaveCSS('box-shadow', 'none');
-    await expect(page.getByRole('button', { name: 'Details', exact: true })).toBeVisible();
   } finally {
     await stopGeneratedCli(emptyRunning);
     await emptyRepository.cleanup();
   }
 });
 
-test('metadata and availability states', async ({ browser, context, page }, testInfo) => {
+test('availability states', async ({ browser, context, page }, testInfo) => {
   assertChromiumPrerequisite(browser, testInfo);
   const repository = await createGitFixture();
   const running = startGeneratedCli(repository);
@@ -1340,22 +1093,7 @@ test('metadata and availability states', async ({ browser, context, page }, test
       },
     },
   };
-  const metadata: Record<string, FileMetadataResponse> = Object.fromEntries(
-    files.map((file) => [
-      file.fileId,
-      {
-        ...file,
-        oldMode: '100644',
-        newMode: '100644',
-      },
-    ]),
-  );
   const requestEvidence: Array<{
-    method: string;
-    postData: string | null;
-    url: string;
-  }> = [];
-  const metadataRequestEvidence: Array<{
     method: string;
     postData: string | null;
     url: string;
@@ -1388,23 +1126,6 @@ test('metadata and availability states', async ({ browser, context, page }, test
     });
   });
 
-  await page.route(/\/api\/files\/[^/]+$/u, async (route) => {
-    const request = route.request();
-    const requestUrl = new URL(request.url());
-    const fileId = decodeURIComponent(requestUrl.pathname.split('/').at(-1) ?? '');
-    metadataRequestEvidence.push({
-      method: request.method(),
-      postData: request.postData(),
-      url: request.url(),
-    });
-    const response = metadata[fileId];
-    expect(response, `[behavioral] unexpected file metadata capability ${fileId}`).toBeDefined();
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(response),
-    });
-  });
 
   try {
     const url = await waitForLoopbackUrl(running);
@@ -1421,18 +1142,6 @@ test('metadata and availability states', async ({ browser, context, page }, test
     await expect(heading).toHaveAccessibleName('renamed from 00-src/old\\tname.ts to 00-src/new\\nname.ts');
     await expect(workspace.locator('.monaco-diff-editor')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Details', exact: true }).click();
-    const details = page.getByRole('dialog', { name: 'Details' });
-    const fileDetails = details.getByLabel('File details');
-    await expect(fileDetails.getByRole('heading', { name: 'File details — 00-src/new\\nname.ts' })).toBeVisible();
-    await expect(fileDetails.getByText('Renamed (91% similarity)', { exact: true })).toBeVisible();
-    await expect(fileDetails.getByText('Text file availability', { exact: true })).toBeVisible();
-    await expect(fileDetails.getByText('00-src/old\\tname.ts', { exact: true })).toBeVisible();
-    await expect(fileDetails.getByText('00-src/new\\nname.ts', { exact: true })).toBeVisible();
-    await expect(fileDetails.getByText('12', { exact: true })).toBeVisible();
-    await expect(fileDetails.getByText('4', { exact: true })).toBeVisible();
-    await expect(fileDetails.getByText('100644', { exact: true })).toHaveCount(2);
-    await page.getByRole('button', { name: 'Close details' }).click();
 
     const selectFile = async (fileId: string): Promise<void> => {
       const row = page.locator(`[role="treeitem"][data-file-id="${fileId}"]`);
@@ -1465,40 +1174,7 @@ test('metadata and availability states', async ({ browser, context, page }, test
     const requestUrl = new URL(requestEvidence[0]!.url);
     expect(requestUrl.search).toBe('');
     expect(requestUrl.pathname).toBe(`/api/files/${ids.supported}/content`);
-    expect(new Set(metadataRequestEvidence.map(({ url }) => new URL(url).pathname))).toEqual(
-      new Set(files.map((file) => `/api/files/${file.fileId}`)),
-    );
 
-    const metadataHarness = await startMetadataHarness();
-    try {
-      await page.goto(metadataHarness.url, { waitUntil: 'domcontentloaded' });
-      await page.evaluate(async () => {
-        const { mountMetadataHarness } = await import(`/@id/${'virtual:metadata-pane-harness'}`);
-        document.body.innerHTML = '<div id="metadata-harness"></div>';
-        mountMetadataHarness();
-      });
-
-      const textNotice = page.locator('#metadata-text .inline-notice');
-      const unsupportedNotice = page.locator('#metadata-unsupported .inline-notice');
-      const unavailableNotice = page.locator('#metadata-unavailable .inline-notice');
-      const retryErrorNotice = page.locator('#metadata-retry-error .inline-notice--error');
-
-      for (const notice of [textNotice, unsupportedNotice, unavailableNotice, retryErrorNotice]) {
-        await expect(notice.locator('svg[aria-hidden="true"]')).toHaveCount(1);
-        await expect(notice).toHaveCSS('border-left-width', '3px');
-      }
-
-      await expect(textNotice.getByRole('heading', { name: 'Text file availability' })).toBeVisible();
-      await expect(unsupportedNotice.getByRole('heading', { name: 'File cannot be shown inline' })).toBeVisible();
-      await expect(unavailableNotice.getByRole('heading', { name: 'File content is unavailable' })).toBeVisible();
-      await expect(retryErrorNotice.getByRole('heading', { name: 'File details could not be loaded' })).toBeVisible();
-      await expect(retryErrorNotice.getByRole('alert')).toHaveText('Metadata request failed without exposing a path.');
-      await expect(page.locator('#metadata-text .metadata-value')).toContainText('src/safe text.ts');
-      await expect(page.getByRole('button', { name: 'Retry file details' })).toBeDisabled();
-      await expect(page.getByRole('main')).toHaveCount(1);
-    } finally {
-      await metadataHarness.server.close();
-    }
   } finally {
     sessionGate.resolve();
     await stopGeneratedCli(running);

@@ -515,17 +515,3 @@ test('exact patch retry stays snapshot-only and terminal loss focuses one source
   expect(vueWarnings).toEqual([]);
 });
 
-test('exact patch details remain accessible on a narrow viewport', async ({ page }) => {
-  session = exactPatchSession(true);
-  await page.setViewportSize({ width: 320, height: 640 });
-  await openReview(page);
-
-  const details = page.getByRole('button', { name: 'Details' });
-  await details.click();
-  const dialog = page.getByRole('dialog', { name: 'Details' });
-  await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('heading', { name: 'Comparison' })).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
-  await page.keyboard.press('Escape');
-  await expect(details).toBeFocused();
-});

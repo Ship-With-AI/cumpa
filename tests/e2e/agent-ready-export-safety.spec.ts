@@ -187,8 +187,7 @@ test('attached lifecycle renders waiting, progress, completion, and safe recover
     kind: 'staleAnchors', affectedCommentIds: [], affectedCount: 1,
   }));
   await expect(completion.getByRole('alert').getByText('Review can’t be finished', { exact: true })).toBeFocused();
-  await expect(completion.getByText('Cumpa found stale or unavailable feedback anchors in the accepted review. Affected comments: 1. No feedback was returned. Review the affected comments. Their recorded anchors remain unchanged and non-actionable.', { exact: true })).toBeVisible();
-  await expect(completion.getByRole('button', { name: 'Review stale feedback', exact: true })).toBeVisible();
+  await expect(completion.getByText('Cumpa found stale or unavailable feedback anchors in the accepted review. Affected comments: 1. No feedback returned. Their recorded anchors remain unchanged and may not be actionable in exported feedback.', { exact: true })).toBeVisible();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', {
     kind: 'revisionConflict', expectedRevision: 7, actualRevision: 8,
@@ -199,12 +198,10 @@ test('attached lifecycle renders waiting, progress, completion, and safe recover
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', { kind: 'scopeInvalid' }));
   await expect(completion.getByRole('alert').getByText('Reviewed content changed', { exact: true })).toBeFocused();
-  await expect(completion.getByText('The submitted review scope no longer passes completion validation. No feedback was returned. Inspect the recorded review scope, then relaunch the agent request against valid content.', { exact: true })).toBeVisible();
-  await expect(completion.getByRole('button', { name: 'View review scope', exact: true })).toBeVisible();
+  await expect(completion.getByText('The submitted review scope no longer passes completion validation. No feedback returned. Relaunch agent request against valid content.', { exact: true })).toBeVisible();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', { kind: 'scopeInvalid' }, { isExactPatch: true }));
-  await expect(completion.getByText('The submitted patch content no longer passes completion validation. No feedback was returned. Inspect the recorded patch scope, then relaunch the agent request against valid content.', { exact: true })).toBeVisible();
-  await expect(completion.getByRole('button', { name: 'View patch scope', exact: true })).toBeVisible();
+  await expect(completion.getByText('The submitted patch content no longer passes completion validation. No feedback returned. Relaunch agent request against valid content.', { exact: true })).toBeVisible();
 
   await page.evaluate(() => globalThis.__setAttachedLifecycle('retryableFailure', { kind: 'draftReadOnly' }));
   await expect(completion.getByRole('alert').getByText('Review draft can’t be validated', { exact: true })).toBeFocused();

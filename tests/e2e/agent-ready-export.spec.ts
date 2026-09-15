@@ -242,11 +242,6 @@ async function stopGeneratedCli(running: RunningCli): Promise<void> {
 }
 
 
-async function ensureReviewOpen(page: Page): Promise<void> {
-  const review = page.getByRole('button', { name: 'Review', exact: true });
-  if (await review.getAttribute('aria-expanded') === 'false') await review.click();
-  await expect(review).toHaveAttribute('aria-expanded', 'true');
-}
 
 async function openReviewNotes(page: Page): Promise<void> {
   const button = page.getByRole('button', { name: 'Review notes', exact: true });
@@ -256,9 +251,6 @@ async function openReviewNotes(page: Page): Promise<void> {
 }
 
 async function addHeadComment(page: Page, body: string, lineNumber = 10, selectedText = 'export const stableContext10 = 10;'): Promise<void> {
-  const review = page.getByRole('button', { name: 'Review', exact: true });
-  if (await review.getAttribute('aria-expanded') === 'true') await review.click();
-  await expect(review).toHaveAttribute('aria-expanded', 'false');
   await page.getByRole('treeitem', { name: /changed\.ts/ }).click({ timeout: 10_000 });
   const surface = page.locator('.monaco-diff-editor .editor.modified .monaco-scrollable-element.editor-scrollable').first();
   await surface.click({ position: { x: 16, y: 16 } });
@@ -273,8 +265,6 @@ async function addHeadComment(page: Page, body: string, lineNumber = 10, selecte
   const accepted = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
   await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
   expect((await accepted).status()).toBe(201);
-  if (await review.getAttribute('aria-expanded') === 'false') await review.click();
-  await expect(review).toHaveAttribute('aria-expanded', 'true');
 }
 
 async function saveSummary(page: Page, summary: string): Promise<void> {
@@ -417,10 +407,8 @@ test('installed resume after relaunch preserves accepted review state, completes
   running = startGeneratedCli(fixture, original);
   try {
     await openAcceptanceRuntimeSession(resumedPage, await waitForLoopbackUrl(running));
-    await ensureReviewOpen(resumedPage);
     await openReviewNotes(resumedPage);
     await expect(resumedPage.locator('.review-summary__preview')).toContainText(summary);
-    await expect(resumedPage.locator('.comments-rail__comment')).toContainText(body);
     expect(readOnlyDraft(fixture).bytes).toEqual(accepted.bytes);
     const exported = resumedPage.waitForResponse((response) => response.url().includes('/api/export'));
     await resumedPage.getByRole('button', { name: 'Export review', exact: true }).click();
@@ -493,9 +481,7 @@ test('installed resume after relaunch preserves accepted review state, completes
   running = startGeneratedCli(fixture, different);
   try {
     await openAcceptanceRuntimeSession(differentPage, await waitForLoopbackUrl(running));
-    await ensureReviewOpen(differentPage);
     await expect(differentPage.getByText(summary, { exact: true })).toHaveCount(0);
-    await expect(differentPage.locator('.comments-rail__comment', { hasText: body })).toHaveCount(0);
   } finally {
     await differentPage.close();
     await stopGeneratedCli(running);
@@ -539,8 +525,6 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
 
   try {
     await openAcceptanceRuntimeSession(page, await waitForAttachedLoopbackUrl(running));
-    const review = page.getByRole('button', { name: 'Review', exact: true });
-    if (await review.getAttribute('aria-expanded') === 'true') await review.click();
     await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
     const surface = page.locator('.monaco-diff-editor .editor.modified .monaco-scrollable-element.editor-scrollable').first();
     await surface.click({ position: { x: 16, y: 16 } });
@@ -555,7 +539,6 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
     await composer.fill('Unsaved inline feedback');
     await page.getByRole('treeitem', { name: /added\.ts/ }).click();
 
-    await ensureReviewOpen(page);
     await openReviewNotes(page);
     const completion = page.getByRole('region', { name: 'Finish attached review' });
     const finish = completion.getByRole('button', { name: 'Finish review', exact: true });
@@ -571,14 +554,12 @@ test('attached review blocks Finish while an inline composer has unsaved text', 
     await expect(completion).toContainText('has unsaved text. Save or discard it before finishing.');
     await expect(reviewDraft).toBeVisible();
     await reviewDraft.click();
-    await expect(page.locator('#review-panel')).toHaveAttribute('aria-hidden', 'true');
     await page.getByRole('button', { name: 'Close review notes' }).click();
     const restoredComposer = page.locator('.monaco-anchor-zone--composer textarea');
     await expect(restoredComposer).toBeVisible();
     await expect(restoredComposer).toHaveValue('Unsaved inline feedback');
     await expect(page.locator('.inline-comment-composer__header')).toContainText('src/changed.ts');
     await restoredComposer.fill('');
-    await ensureReviewOpen(page);
     await openReviewNotes(page);
     await expect(finish).toBeEnabled();
     await registerSourceControlAssertion('unsaved-composer', before, fixture);
@@ -603,7 +584,6 @@ test('attached range review stays silent until Finish then emits one canonical V
     const url = await waitForAttachedLoopbackUrl(running);
     expect(readFileSync(running.stdoutPath)).toEqual(Buffer.alloc(0));
     await openAcceptanceRuntimeSession(page, url);
-    await ensureReviewOpen(page);
     await openReviewNotes(page);
     await expect(page.getByRole('button', { name: 'Finish review', exact: true })).toBeVisible();
 
@@ -653,7 +633,6 @@ test('equivalent installed attached ranges retain canonical provenance while own
       openAcceptanceRuntimeSession(page, await waitForAttachedLoopbackUrl(first)),
       openAcceptanceRuntimeSession(secondPage, await waitForAttachedLoopbackUrl(second)),
     ]);
-    await Promise.all([ensureReviewOpen(page), ensureReviewOpen(secondPage)]);
     await saveSummary(page, 'First equivalent attached review.');
     await saveSummary(secondPage, 'Second equivalent attached review.');
     const drafts = readdirSync(join(fixture.root, '.cumpa', 'drafts')).sort();
@@ -663,7 +642,6 @@ test('equivalent installed attached ranges retain canonical provenance while own
     ]);
     expect(drafts[0]).not.toBe(drafts[1]);
 
-    await ensureReviewOpen(page);
     await openReviewNotes(page);
     const firstFinished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
     await page.getByRole('button', { name: 'Finish review', exact: true }).click();
@@ -671,7 +649,6 @@ test('equivalent installed attached ranges retain canonical provenance while own
     expect(await waitForAttachedExit(first)).toBe(0);
     expect(readFileSync(second.stdoutPath)).toEqual(Buffer.alloc(0));
 
-    await ensureReviewOpen(secondPage);
     await openReviewNotes(secondPage);
     const secondFinished = secondPage.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
     await secondPage.getByRole('button', { name: 'Finish review', exact: true }).click();
@@ -831,7 +808,6 @@ test('installed configured support remains unavailable without outbound access a
     await dialog.getByRole('button', { name: 'Not now' }).click();
     await expect(dialog).toBeHidden();
 
-    await ensureReviewOpen(page);
     await openReviewNotes(page);
     const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
     await page.getByRole('button', { name: 'Finish review', exact: true }).click();

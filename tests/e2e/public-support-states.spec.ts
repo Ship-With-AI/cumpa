@@ -192,16 +192,8 @@ function closeAttachedCli(running: RunningAttachedCli): void {
   closeSync(running.stdoutDescriptor);
 }
 
-async function ensureReviewOpen(page: Page): Promise<void> {
-  const review = page.getByRole('button', { name: 'Review', exact: true });
-  if (await review.getAttribute('aria-expanded') === 'false') await review.click();
-  await expect(review).toHaveAttribute('aria-expanded', 'true');
-}
 
 async function addHeadComment(page: Page, body: string): Promise<void> {
-  const review = page.getByRole('button', { name: 'Review', exact: true });
-  if (await review.getAttribute('aria-expanded') === 'true') await review.click();
-  await expect(review).toHaveAttribute('aria-expanded', 'false');
   await page.getByRole('treeitem', { name: /changed\.ts/ }).click();
   const surface = page.locator('.monaco-diff-editor .editor.modified .monaco-scrollable-element.editor-scrollable').first();
   await surface.click({ position: { x: 16, y: 16 } });
@@ -216,7 +208,6 @@ async function addHeadComment(page: Page, body: string): Promise<void> {
   const accepted = page.waitForResponse((response) => response.url().includes('/api/draft/mutations'));
   await page.locator('.monaco-anchor-zone--composer button').filter({ hasText: 'Add comment' }).click();
   expect((await accepted).status()).toBe(201);
-  await ensureReviewOpen(page);
 }
 
 async function saveSummaryAndExport(page: Page, summary: string): Promise<void> {
@@ -281,7 +272,6 @@ async function completeAttachedFinish(browser: Browser): Promise<void> {
     let closed = false;
     try {
       await openRuntimeSession(page, await waitForAttachedLoopbackUrl(running));
-      await ensureReviewOpen(page);
       const finished = page.waitForResponse((response) => response.url().includes('/api/review-completion/finish'));
       await page.getByRole('button', { name: 'Finish review', exact: true }).click();
       expect((await finished).status()).toBe(201);
