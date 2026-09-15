@@ -2646,6 +2646,10 @@ h3.conversation-card__identity {
     flex-wrap: wrap;
   }
 
+  .review-toolbar__active-file {
+    max-width: none;
+  }
+
   .review-toolbar {
     min-height: 48px;
   }
