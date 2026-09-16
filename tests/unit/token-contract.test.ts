@@ -136,7 +136,7 @@ describe('token contract', () => {
     });
 
     try {
-      const before = await server.ssrLoadModule<{ TOKEN_ROOT_CSS: string }>('virtual:cumpa-tokens');
+      const before = await server.ssrLoadModule('virtual:cumpa-tokens') as { TOKEN_ROOT_CSS: string };
       const changed = new Promise<void>((done) => {
         server.watcher.once('change', (path) => {
           if (path === fixture.sourcePath) done();
@@ -144,7 +144,7 @@ describe('token contract', () => {
       });
       writeFileSync(fixture.sourcePath, fixtureRoot({ '--surface-canvas': '#010203' }));
       await changed;
-      const after = await server.ssrLoadModule<{ TOKEN_ROOT_CSS: string }>('virtual:cumpa-tokens');
+      const after = await server.ssrLoadModule('virtual:cumpa-tokens') as { TOKEN_ROOT_CSS: string };
 
       expect(before.TOKEN_ROOT_CSS).toContain('--surface-canvas: #000000;');
       expect(after.TOKEN_ROOT_CSS).toContain('--surface-canvas: #010203;');

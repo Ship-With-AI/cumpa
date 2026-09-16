@@ -66,7 +66,6 @@ const mocks = vi.hoisted(() => {
     originalEditor,
     modifiedEditor,
     defineTheme: vi.fn(),
-    modifiedEditor,
     cursorListeners,
     diffUpdateListeners,
     parseUri: vi.fn((value: string) => value),

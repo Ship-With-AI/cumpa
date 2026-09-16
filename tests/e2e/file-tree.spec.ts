@@ -541,18 +541,16 @@ test('packaged file tree filters and recovers without changing the open file', a
     await expect(tree).toBeVisible();
     await expect(selectedLeaf).toHaveCount(1);
     await expect(tabbableTreeitems).toHaveCount(1);
-    await expect(tabbableTreeitems).toHaveAttribute(
-      'data-file-id',
-      await selectedLeaf.getAttribute('data-file-id'),
-    );
+    const selectedLeafFileId = await selectedLeaf.getAttribute('data-file-id');
+    if (selectedLeafFileId === null) throw new Error('expected the selected leaf to carry data-file-id');
+    await expect(tabbableTreeitems).toHaveAttribute('data-file-id', selectedLeafFileId);
     const trackedRow = tree.getByRole('treeitem', {
       name: /Modified.*tracked\.txt.*\d+ additions?.*1 deletion.*Text/i,
     });
     await trackedRow.click();
-    await expect(selectedLeaf).toHaveAttribute(
-      'data-file-id',
-      await trackedRow.getAttribute('data-file-id'),
-    );
+    const trackedRowFileId = await trackedRow.getAttribute('data-file-id');
+    if (trackedRowFileId === null) throw new Error('expected the tracked row to carry data-file-id');
+    await expect(selectedLeaf).toHaveAttribute('data-file-id', trackedRowFileId);
     const selectedFileId = await selectedLeaf.getAttribute('data-file-id');
     await expect.poll(() => fileRequests.length).toBeGreaterThan(1);
     const fileRequestsBeforeFilter = fileRequests.length;

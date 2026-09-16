@@ -11,6 +11,7 @@ import { createExactPath, type ExactPath } from '../../src/domain/path-bytes.js'
 import {
   createFileTreeModel,
   type FileTreeModel,
+  type VisibleFileTreeDirectory,
   type VisibleFileTreeRow,
 } from '../../src/web/model/file-tree.js';
 
@@ -704,7 +705,7 @@ describe('createFileTreeModel', () => {
       sessionFile(0, { newPath: exactPath(deepPath) }),
     ]).setQuery('leaf.ts');
     const directories = model.visibleRows.filter(
-      (candidate): candidate is FileTreeDirectory =>
+      (candidate): candidate is VisibleFileTreeDirectory =>
         candidate.kind === 'directory',
     );
 

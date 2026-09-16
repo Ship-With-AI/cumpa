@@ -28,10 +28,10 @@ function observableDecorations(
   optionKeys: string[];
 }> {
   return decorations.map(({ range, options }) => ({
-    range: [range.startLineNumber, range.endLineNumber],
+    range: [range.startLineNumber, range.endLineNumber] as const,
     bar: options.linesDecorationsClassName,
     sign: options.glyphMarginClassName,
-    ...(options.className === undefined ? {} : { className: options.className }),
+    ...(typeof options.className === 'string' ? { className: options.className } : {}),
     optionKeys: Object.keys(options).sort(),
   }));
 }
