@@ -32,7 +32,7 @@ Phase: 07 (clean-public-artifact-acceptance) PARTIALLY BLOCKED
 Plan: 7 7
 Status: Partially blocked
 Checkpoint: Six committed public-global, public-npx, and marketplace pre/post reports regenerated the hardened record. ACC-01, ACC-02, and ACC-03 passed their installation-plus-review axis; ACC-04 is `partially-blocked` because every verified row remains `live-entitlement-unavailable` with `substituted: false`. The restored public-global post-Restore linkage finding records the observed false successful Restore while status stayed unverified and the modal stayed non-terminal; no second sign-in, publishing, deployment, or hosted-service change is permitted.
-Last activity: 2026-09-13 — Completed 260913-nx0: test TypeScript projects are now gated in repository CI; all test diagnostics are zero.
+Last activity: 2026-09-16 — Completed quick task 260916-h7p: enable coupon codes.
 
 Progress: [██████████] 100% — 23 23 milestone plans complete
 
@@ -104,18 +104,19 @@ None yet.
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260907-gdm | Reconcile approved proprietary source-available distribution | 2026-09-07 | 483671d | [260907-gdm-reconcile-cumpa-v1-5-with-approved-publi](./quick/260907-gdm-reconcile-cumpa-v1-5-with-approved-publi/) |
-| 260908-d25 | Switch Cumpa to standard MIT and reconcile distribution | 2026-09-08 | 2227f78 | [260908-d25-switch-cumpa-to-mit-and-reconcile-active](./quick/260908-d25-switch-cumpa-to-mit-and-reconcile-active/) |
-| 260913-apr | Bounded support wait; hosted Restore result deliberately reverted | 2026-09-13 | 05384c8 | [260913-apr-hosted-restore-linkage-truth](./quick/260913-apr-hosted-restore-linkage-truth/) |
-| 260913-dzc | Verify live deploy authority stability instead of emptiness | 2026-09-13 | a4edcf3 | [260913-dzc-live-deploy-authority](./quick/260913-dzc-live-deploy-authority/) |
-| 260913-nx0 | Bring tests under `tsc` and gate test typechecks in CI | 2026-09-13 | 4ae6d6b | [260913-nx0-test-typecheck-coverage](./quick/260913-nx0-test-typecheck-coverage/) |
-| 260913-rel | Derive release identity from the manifest and publish 1.5.1 | 2026-09-14 | 7c8363e | [260913-rel-version-derivation](./quick/260913-rel-version-derivation/) |
-| 260914-ci6 | Close the e2e CI gap | 2026-09-14 | 0a1a359 | [260914-ci6-close-e2e-ci-gap](./quick/260914-ci6-close-e2e-ci-gap/) |
-| 260914-hmu | Publish 1.5.2 with the composer draft-loss fix | 2026-09-14 | d49ed2c | [260914-hmu-release-1-5-2](./quick/260914-hmu-release-1-5-2/) |
-| 260915-gxg | Merge the active-file bar into the review navigation bar | 2026-09-15 | c49ea08 | [260915-gxg-merge-active-file-bar-into-nav](./quick/260915-gxg-merge-active-file-bar-into-nav/) |
-| 260915-jbv | Remove the Details, Review, and Keyboard help surfaces | 2026-09-15 | 2feafcc | [260915-jbv-remove-details-review-keyboard-help](./quick/260915-jbv-remove-details-review-keyboard-help/) |
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260907-gdm | Reconcile approved proprietary source-available distribution | 2026-09-07 | 483671d |  | [260907-gdm-reconcile-cumpa-v1-5-with-approved-publi](./quick/260907-gdm-reconcile-cumpa-v1-5-with-approved-publi/) |
+| 260908-d25 | Switch Cumpa to standard MIT and reconcile distribution | 2026-09-08 | 2227f78 |  | [260908-d25-switch-cumpa-to-mit-and-reconcile-active](./quick/260908-d25-switch-cumpa-to-mit-and-reconcile-active/) |
+| 260913-apr | Bounded support wait; hosted Restore result deliberately reverted | 2026-09-13 | 05384c8 |  | [260913-apr-hosted-restore-linkage-truth](./quick/260913-apr-hosted-restore-linkage-truth/) |
+| 260913-dzc | Verify live deploy authority stability instead of emptiness | 2026-09-13 | a4edcf3 |  | [260913-dzc-live-deploy-authority](./quick/260913-dzc-live-deploy-authority/) |
+| 260913-nx0 | Bring tests under `tsc` and gate test typechecks in CI | 2026-09-13 | 4ae6d6b |  | [260913-nx0-test-typecheck-coverage](./quick/260913-nx0-test-typecheck-coverage/) |
+| 260913-rel | Derive release identity from the manifest and publish 1.5.1 | 2026-09-14 | 7c8363e |  | [260913-rel-version-derivation](./quick/260913-rel-version-derivation/) |
+| 260914-ci6 | Close the e2e CI gap | 2026-09-14 | 0a1a359 |  | [260914-ci6-close-e2e-ci-gap](./quick/260914-ci6-close-e2e-ci-gap/) |
+| 260914-hmu | Publish 1.5.2 with the composer draft-loss fix | 2026-09-14 | d49ed2c |  | [260914-hmu-release-1-5-2](./quick/260914-hmu-release-1-5-2/) |
+| 260915-gxg | Merge the active-file bar into the review navigation bar | 2026-09-15 | c49ea08 |  | [260915-gxg-merge-active-file-bar-into-nav](./quick/260915-gxg-merge-active-file-bar-into-nav/) |
+| 260915-jbv | Remove the Details, Review, and Keyboard help surfaces | 2026-09-15 | 2feafcc |  | [260915-jbv-remove-details-review-keyboard-help](./quick/260915-jbv-remove-details-review-keyboard-help/) |
+| 260916-h7p | Enable coupon codes | 2026-09-16 | 8d47c62 | Verified | [260916-h7p-enable-coupon-codes](./quick/260916-h7p-enable-coupon-codes/) |
 
 ## Deferred Items
 
