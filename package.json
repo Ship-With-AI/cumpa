@@ -1,6 +1,6 @@
 {
   "name": "@shipwithai/cumpa",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Local-first review of pinned Git comparisons",
   "license": "MIT",
   "repository": {
