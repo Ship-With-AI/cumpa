@@ -120,8 +120,19 @@ Deno.test("callback validates the hosted user then makes one server-owned suppor
   assert(deps.calls[0]?.name === "claim_support_intent" && deps.calls[0]?.args.p_user_id === userId);
   assert(typeof deps.calls[0]?.args.p_intent_hash === "string" && /^\\x[0-9a-f]{64}$/u.test(deps.calls[0].args.p_intent_hash));
   assert(deps.calls[1]?.name === "record_checkout_session");
+  assert(JSON.stringify(deps.calls[1]?.args) === JSON.stringify({
+    p_intent_id: "22222222-2222-4222-8222-222222222222",
+    p_stripe_session_id: "cs_server",
+    p_user_id: userId,
+    p_installation_id: installationId,
+    p_currency: "usd",
+    p_price_id: "price_4999",
+    p_amount_total: 4999,
+    p_quantity: 1,
+  }));
   assert(JSON.stringify(deps.checkoutCalls[0]) === JSON.stringify({
     mode: "payment",
+    allow_promotion_codes: true,
     line_items: [{ price: "price_4999", quantity: 1 }],
     customer_creation: "always",
     client_reference_id: userId,

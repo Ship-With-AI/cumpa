@@ -133,6 +133,7 @@ export async function handleSupportFlowRequest(request: Request, dependencies = 
     try {
       const checkout = await dependencies.stripe.checkout.sessions.create({
         mode: "payment",
+        allow_promotion_codes: true,
         line_items: [{ price: dependencies.priceId, quantity: 1 }],
         customer_creation: "always",
         client_reference_id: user.data.user.id,
