@@ -51,6 +51,38 @@ export function checkoutSessionInvariant(session: unknown, priceId: string): Ver
   };
 }
 
+// Bounded field names only: never a retrieved value, identifier, or signature detail.
+const rejectionFieldPattern = /^[a-z_]{1,32}$/u;
+
+function failingFields(schema: typeof PaidCheckoutSchema | typeof CompedCheckoutSchema, session: unknown): string | undefined {
+  const parsed = schema.safeParse(session);
+  if (parsed.success) return undefined;
+  const fields: string[] = [];
+  for (const issue of parsed.error.issues) {
+    const field = issue.path[0];
+    if (typeof field === "string" && rejectionFieldPattern.test(field) && !fields.includes(field)) fields.push(field);
+  }
+  return fields.length === 0 ? "shape" : fields.sort().join("+");
+}
+
+// A union reports both branches' failures at once, which buries the real cause. Report the
+// closest shape instead: the branch the session came nearest to satisfying.
+export function describeCheckoutRejection(session: unknown, priceId: string): string {
+  const paid = failingFields(PaidCheckoutSchema, session);
+  const comped = failingFields(CompedCheckoutSchema, session);
+  if (paid !== undefined && comped !== undefined) {
+    const paidWidth = paid.split("+").length;
+    const compedWidth = comped.split("+").length;
+    if (paidWidth !== compedWidth) return paidWidth < compedWidth ? paid : comped;
+    return paid <= comped ? paid : comped;
+  }
+  const parsed = RetrievedCheckoutSchema.safeParse(session);
+  if (!parsed.success) return "shape";
+  if (parsed.data.line_items.data[0].price.id !== priceId) return "price_id";
+  if (!CheckoutMetadataSchema.safeParse(parsed.data.metadata).success) return "metadata";
+  return "none";
+}
+
 export async function fulfillVerifiedCheckout(
   rpc: Rpc,
   eventId: string,

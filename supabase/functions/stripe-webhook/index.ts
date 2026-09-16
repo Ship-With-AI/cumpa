@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
-import { checkoutSessionInvariant, fulfillVerifiedCheckout } from "../_shared/fulfillment.ts";
+import { checkoutSessionInvariant, describeCheckoutRejection, fulfillVerifiedCheckout } from "../_shared/fulfillment.ts";
 
 type Rpc = (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
 type StripeClient = {
@@ -46,11 +46,15 @@ export async function handleStripeWebhookRequest(request: Request, dependencies 
   try {
     event = await dependencies.stripe.webhooks.constructEventAsync(rawBody, signature, dependencies.webhookSecret);
   } catch {
+    dependencies.log?.("stripe_webhook_signature_rejected");
     return json({ error: "invalid_request" }, 400);
   }
   if (event.type !== "checkout.session.completed" && event.type !== "checkout.session.async_payment_succeeded") return json({ received: true });
   const object = event.data.object;
-  if (!event.id || !object || typeof object !== "object" || !("id" in object) || typeof object.id !== "string") return json({ error: "invalid_request" }, 400);
+  if (!event.id || !object || typeof object !== "object" || !("id" in object) || typeof object.id !== "string") {
+    dependencies.log?.("stripe_webhook_event_shape_rejected");
+    return json({ error: "invalid_request" }, 400);
+  }
 
   let session: unknown;
   try {
@@ -60,7 +64,10 @@ export async function handleStripeWebhookRequest(request: Request, dependencies 
     return json({ error: "unavailable" }, 503);
   }
   const checkout = checkoutSessionInvariant(session, dependencies.priceId);
-  if (!checkout) return json({ error: "invalid_request" }, 400);
+  if (!checkout) {
+    dependencies.log?.(`stripe_webhook_invariant_rejected:${describeCheckoutRejection(session, dependencies.priceId)}`);
+    return json({ error: "invalid_request" }, 400);
+  }
   try {
     const fulfillment = await fulfillVerifiedCheckout((name, args) => dependencies.service.rpc(name, args), event.id, checkout);
     if (fulfillment.status === "settled") return json({ received: true });

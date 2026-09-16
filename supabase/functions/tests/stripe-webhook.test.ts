@@ -188,3 +188,53 @@ Deno.test("provider lookup failures are retryable and stage-only", async () => {
   assert(response.status === 503 && JSON.stringify(await response.json()) === '{"error":"unavailable"}');
   assert(JSON.stringify(logs) === '["stripe_webhook_provider_unavailable"]');
 });
+
+Deno.test("rejected deliveries name their branch and failing fields without leaking payloads", async () => {
+  const signatureLogs: unknown[] = [];
+  const signatureDeps = dependencies({
+    stripe: { webhooks: { constructEventAsync: async () => { throw new Error("no signatures found matching whsec_expected"); } } },
+    log: (value: unknown) => signatureLogs.push(value),
+  });
+  const signatureResponse = await handleStripeWebhookRequest(request(), signatureDeps);
+
+  assert(signatureResponse.status === 400, `expected 400, received ${signatureResponse.status}`);
+  assert(JSON.stringify(signatureLogs) === '["stripe_webhook_signature_rejected"]', `unexpected signature logs: ${JSON.stringify(signatureLogs)}`);
+
+  const invariantLogs: unknown[] = [];
+  const invariantDeps = dependencies({
+    stripe: {
+      webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) },
+      checkout: { sessions: { retrieve: async () => session({ payment_status: "no_payment_required", amount_total: 0, payment_intent: null, customer: null }) } },
+    },
+    log: (value: unknown) => invariantLogs.push(value),
+  });
+  const invariantResponse = await handleStripeWebhookRequest(request(), invariantDeps);
+
+  assert(invariantResponse.status === 400 && invariantDeps.calls.length === 0);
+  assert(JSON.stringify(invariantLogs) === '["stripe_webhook_invariant_rejected:customer"]', `unexpected invariant logs: ${JSON.stringify(invariantLogs)}`);
+
+  const priceLogs: unknown[] = [];
+  const priceDeps = dependencies({
+    stripe: {
+      webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) },
+      checkout: { sessions: { retrieve: async () => session({ line_items: { data: [{ price: { id: "price_secret_other" }, quantity: 1 }], has_more: false } }) } },
+    },
+    log: (value: unknown) => priceLogs.push(value),
+  });
+  await handleStripeWebhookRequest(request(), priceDeps);
+  assert(JSON.stringify(priceLogs) === '["stripe_webhook_invariant_rejected:price_id"]', `unexpected price logs: ${JSON.stringify(priceLogs)}`);
+
+  const metadataLogs: unknown[] = [];
+  const metadataDeps = dependencies({
+    stripe: {
+      webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) },
+      checkout: { sessions: { retrieve: async () => session({ metadata: { user_id: "not-a-uuid", installation_id: installationId, intent_id: "22222222-2222-4222-8222-222222222222" } }) } },
+    },
+    log: (value: unknown) => metadataLogs.push(value),
+  });
+  await handleStripeWebhookRequest(request(), metadataDeps);
+  assert(JSON.stringify(metadataLogs) === '["stripe_webhook_invariant_rejected:metadata"]', `unexpected metadata logs: ${JSON.stringify(metadataLogs)}`);
+
+  const leaked = [...signatureLogs, ...invariantLogs, ...priceLogs, ...metadataLogs];
+  assert(!/secret|whsec|signature_|cs_|evt_|not-a-uuid|price_secret|iiii/iu.test(JSON.stringify(leaked).replaceAll("stripe_webhook_signature_rejected", "")), `logs leaked payload detail: ${JSON.stringify(leaked)}`);
+});
