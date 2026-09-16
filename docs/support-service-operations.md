@@ -16,6 +16,16 @@ Packages and redacted evidence retain the canonical-origin-only boundary: no bar
 
 The operator accepted six exact non-secret configuration identifier fingerprints for the reviewed Cumpa CI exposure on 2026-09-08, recorded in `.planning/phases/03-distribution-contract-legal-boundary/03-PUBLICATION-REVIEW.md` under PUB-01. That CI-only disposition covers the reviewed Supabase project ref, GitHub OAuth client ID and historical Stripe price/webhook endpoint IDs. It does not permit secret keys, personal data, new identifier values or additional package contents; keep the raw values out of review records.
 
+## Support Checkout discount and coupon policy
+
+The support Checkout Session is created against one configured Stripe Price (`STRIPE_PRICE_ID`, USD $49.99 / 4999 minor units) and now sets `allow_promotion_codes: true`, so the hosted Checkout page shows a promotion-code entry field. The app never accepts a promotion code from the browser or the local Cumpa client itself; only Dashboard-scoped codes entered on Stripe's own hosted page can apply.
+
+To create a usable code, in the Stripe Dashboard: create a Coupon (Product catalog → Coupons → New) scoped to whatever percentage- or amount-off is desired, then create a Promotion code bound to that coupon (from the coupon's detail page, or Payments → Promotion codes → New). Only a promotion code created this way is redeemable; there is no other issuance path.
+
+Price-stability invariant: the configured Price's unit amount must remain exactly USD 49.99. `record_checkout_session` records `p_amount_total: 4999` as the pre-discount list total before any code is entered, the `support_private.checkout_sessions` table CHECK enforces `amount_total = 4999` on that intent-time row, and the webhook's fulfillment schema separately requires the retrieved Checkout Session's `amount_subtotal` to equal 4999. Changing the Price's amount therefore breaks fulfillment for every purchase, discounted or not, and must never be done without a coordinated code change.
+
+100%-off prohibition: never configure a coupon whose discount reaches 100%-off. A Checkout Session discounted to $0.00 charges nothing and carries no Stripe PaymentIntent, so the fulfillment invariant rejects it and the purchaser is never marked as a verified supporter — an unrecoverable, unfulfillable state. Keep every coupon's effective discount below 100%.
+
 ## Retirement and release scanning
 
 Plan 02-15 proves **configured absence**, not a configured release. Run:
