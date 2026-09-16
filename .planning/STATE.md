@@ -32,7 +32,7 @@ Phase: 07 (clean-public-artifact-acceptance) PARTIALLY BLOCKED
 Plan: 7 7
 Status: Partially blocked
 Checkpoint: Six committed public-global, public-npx, and marketplace pre/post reports regenerated the hardened record. ACC-01, ACC-02, and ACC-03 passed their installation-plus-review axis; ACC-04 is `partially-blocked` because every verified row remains `live-entitlement-unavailable` with `substituted: false`. The restored public-global post-Restore linkage finding records the observed false successful Restore while status stayed unverified and the modal stayed non-terminal; no second sign-in, publishing, deployment, or hosted-service change is permitted.
-Last activity: 2026-09-16 — Completed quick task 260916-h7p: enable coupon codes.
+Last activity: 2026-09-16 — Completed quick task 260916-ide: deployed coupon support to hosted production and published @shipwithai/cumpa@1.6.1 as latest with verified provenance.
 
 Progress: [██████████] 100% — 23 23 milestone plans complete
 
@@ -117,6 +117,7 @@ None yet.
 | 260915-gxg | Merge the active-file bar into the review navigation bar | 2026-09-15 | c49ea08 |  | [260915-gxg-merge-active-file-bar-into-nav](./quick/260915-gxg-merge-active-file-bar-into-nav/) |
 | 260915-jbv | Remove the Details, Review, and Keyboard help surfaces | 2026-09-15 | 2feafcc |  | [260915-jbv-remove-details-review-keyboard-help](./quick/260915-jbv-remove-details-review-keyboard-help/) |
 | 260916-h7p | Enable coupon codes | 2026-09-16 | 8d47c62 | Verified | [260916-h7p-enable-coupon-codes](./quick/260916-h7p-enable-coupon-codes/) |
+| 260916-ide | Deploy coupon support and publish 1.6.1 | 2026-09-16 | 2d3d71e | Verified | [260916-ide-release-1-6-1](./quick/260916-ide-release-1-6-1/) |
 
 ## Deferred Items
 
