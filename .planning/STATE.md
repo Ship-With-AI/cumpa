@@ -126,6 +126,7 @@ None yet.
 | Cleanup | Retire or intentionally consume authenticated orphan file-metadata route/client method — REOPENED 2026-09-15: the Details dialog was its only real caller and quick task 260915-jbv removed it | Deferred | v1.0 close |
 | Verification | Instantiate unsupported/unavailable rows in responsive fixture coverage if that path changes | Deferred | v1.1 close |
 | Design | Align 7px icon-button padding with documented spacing when control geometry changes | Deferred | v1.1 close |
+| Verification | Stabilise two nondeterministic Playwright specs that gate every push to `main`: `tests/e2e/responsive-session.spec.ts:773` and `tests/integration/anchored-workspace.spec.ts:1039` (both failed on the docs-only commit 4016226 and passed on rerun with no change) | Deferred | 260916-ide |
 
 ## Session Continuity
 

@@ -115,7 +115,7 @@ hashes computed locally from the downloaded artifact before publication.
 — no retry, rebuild, rerun, or substitution — and 1.6.1 appeared roughly two
 minutes later with the expected digests.
 
-## Two traps worth remembering
+## Three traps worth remembering
 
 1. **Run consumer `npx` checks from a scratch cwd.** The first
    `npx --yes @shipwithai/cumpa@1.6.1 --version` printed `1.6.0`. It had run with
@@ -127,6 +127,16 @@ minutes later with the expected digests.
    `POST actions/runs/35088078847/pending_deployments` with `state=approved` and a
    comment naming the archive digest, followed by confirming
    `pending_deployments` was empty before treating the gate as passed.
+3. **Two Playwright specs are flaky.** The docs-only bookkeeping push
+   (`4016226`, `.planning/` files only — identical source tree to the already-green
+   `2d3d71e` run) failed `repository-gates` attempt 1 with
+   `tests/e2e/responsive-session.spec.ts:773` ("responsive keyboard and
+   accessibility contract") and
+   `tests/integration/anchored-workspace.spec.ts:1039` ("async comment settlement
+   announces A revision conflict while keeping B active"); 88 passed, 4 skipped.
+   Attempt 2 of the same run passed both jobs with no code change, so these are
+   nondeterministic, not regressions. They gate every push to `main` and should be
+   stabilised — recorded as a deferred item.
 
 ## Cleanup
 
