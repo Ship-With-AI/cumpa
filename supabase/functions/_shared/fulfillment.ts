@@ -32,11 +32,14 @@ const PaidCheckoutSchema = CheckoutIdentitySchema.extend({
   payment_intent: z.string().min(1),
 });
 
-// A fully discounted (comped) session charges nothing, so Stripe creates no PaymentIntent.
+// Stripe reports a 100%-off session as "paid" with a zero total and no PaymentIntent, so the
+// status string cannot distinguish a comp from a charge. The explaining full discount can:
+// amount_subtotal is the list price and amount_discount must cancel it exactly.
 const CompedCheckoutSchema = CheckoutIdentitySchema.extend({
-  payment_status: z.literal("no_payment_required"),
+  payment_status: z.enum(["paid", "no_payment_required"]),
   amount_total: z.literal(0),
   payment_intent: z.null().optional(),
+  total_details: z.object({ amount_discount: z.literal(4999) }),
 });
 
 const RetrievedCheckoutSchema = z.union([PaidCheckoutSchema, CompedCheckoutSchema]);
@@ -47,7 +50,7 @@ export function checkoutSessionInvariant(session: unknown, priceId: string): Ver
   return {
     sessionId: parsed.data.id,
     customerId: parsed.data.customer,
-    paymentIntentId: parsed.data.payment_status === "paid" ? parsed.data.payment_intent : null,
+    paymentIntentId: parsed.data.payment_intent ?? null,
   };
 }
 

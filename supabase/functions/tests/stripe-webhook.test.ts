@@ -78,9 +78,13 @@ Deno.test("a promotion-code discount that keeps the exact list subtotal still se
   assert(deps.calls.length === 1 && deps.calls[0]?.name === "fulfill_checkout_session");
 });
 
+// Stripe reports a 100%-off Checkout Session as payment_status "paid" with a zero total and no
+// PaymentIntent; the full discount is what explains the zero. Shape taken from live event
+// evt_1UGHg1BbrqRlfgZV9Jotp4rp.
+const comped = { payment_status: "paid", amount_total: 0, payment_intent: null, total_details: { amount_discount: 4999, amount_shipping: 0, amount_tax: 0 } };
+
 Deno.test("a fully discounted comped session settles without a PaymentIntent", async () => {
-  const comped = session({ payment_status: "no_payment_required", amount_total: 0, payment_intent: null });
-  const deps = dependencies({ stripe: { webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) }, checkout: { sessions: { retrieve: async () => comped } } } });
+  const deps = dependencies({ stripe: { webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) }, checkout: { sessions: { retrieve: async () => session(comped) } } } });
   const response = await handleStripeWebhookRequest(request(), deps);
 
   assert(response.status === 200, `expected 200, received ${response.status}`);
@@ -90,14 +94,16 @@ Deno.test("a fully discounted comped session settles without a PaymentIntent", a
   }]), `expected one comped settlement keyed by a null PaymentIntent, received ${JSON.stringify(deps.calls)}`);
 });
 
-Deno.test("a comped session still needs the exact list subtotal, price, and a real customer", async () => {
+Deno.test("a zero total settles only when a full discount explains it, and never loosens the charged path", async () => {
   const cases = [
-    { payment_status: "no_payment_required", amount_total: 0, payment_intent: null, amount_subtotal: 3999 },
-    { payment_status: "no_payment_required", amount_total: 0, payment_intent: null, customer: "" },
-    { payment_status: "no_payment_required", amount_total: 0, payment_intent: null, line_items: { data: [{ price: { id: "price_wrong" }, quantity: 1 }], has_more: false } },
-    { payment_status: "no_payment_required", amount_total: 4999, payment_intent: null },
-    { payment_status: "paid", amount_total: 0, payment_intent: null },
-    { payment_status: "unpaid", amount_total: 0, payment_intent: null },
+    { ...comped, amount_subtotal: 3999 },
+    { ...comped, customer: "" },
+    { ...comped, line_items: { data: [{ price: { id: "price_wrong" }, quantity: 1 }], has_more: false } },
+    { ...comped, total_details: { amount_discount: 1000, amount_shipping: 0, amount_tax: 0 } },
+    { ...comped, total_details: undefined },
+    { ...comped, payment_status: "unpaid" },
+    { ...comped, amount_total: 4999 },
+    { payment_status: "paid", amount_total: 2999, payment_intent: null },
   ];
   for (const override of cases) {
     const deps = dependencies({ stripe: { webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) }, checkout: { sessions: { retrieve: async () => session(override) } } } });
@@ -204,7 +210,7 @@ Deno.test("rejected deliveries name their branch and failing fields without leak
   const invariantDeps = dependencies({
     stripe: {
       webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) },
-      checkout: { sessions: { retrieve: async () => session({ payment_status: "no_payment_required", amount_total: 0, payment_intent: null, customer: null }) } },
+      checkout: { sessions: { retrieve: async () => session({ ...comped, customer: null }) } },
     },
     log: (value: unknown) => invariantLogs.push(value),
   });
