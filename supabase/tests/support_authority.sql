@@ -1,6 +1,6 @@
 begin;
 
-select extensions.plan(44);
+select extensions.plan(49);
 
 select extensions.ok(exists (select 1 from pg_namespace where nspname = 'support_private'), 'private authority schema exists');
 select extensions.ok((select count(*) from pg_tables where schemaname = 'support_private') = 5, 'exactly five authority tables exist');
@@ -73,7 +73,8 @@ insert into auth.users (id, aud, role, email, encrypted_password, confirmed_at, 
 values
   ('00000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'supporter-one@example.test', '', now(), now(), now()),
   ('00000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'supporter-two@example.test', '', now(), now(), now()),
-  ('00000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'unpaid@example.test', '', now(), now(), now());
+  ('00000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'unpaid@example.test', '', now(), now(), now()),
+  ('00000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'comped@example.test', '', now(), now(), now());
 
 select extensions.throws_ok(
   $$select support_private.create_support_intent('support', 'bad', decode(repeat('01', 32), 'hex'), now() + interval '5 minutes')$$,
@@ -166,6 +167,33 @@ select extensions.throws_ok(
   $$select support_private.restore_installation('00000000-0000-0000-0000-000000000002', repeat('b', 43))$$,
   'P0001', null,
   'another paid user cannot rebind an installation'
+);
+
+select support_private.create_support_intent('support', repeat('f', 43), decode(repeat('07', 32), 'hex'), now() + interval '5 minutes');
+select * from support_private.claim_support_intent(decode(repeat('07', 32), 'hex'), '00000000-0000-0000-0000-000000000004');
+select support_private.record_checkout_session((select id from support_private.support_intents where intent_hash = decode(repeat('07', 32), 'hex')), 'cs_comped', '00000000-0000-0000-0000-000000000004', repeat('f', 43), 'usd', 'price_support', 4999, 1);
+select extensions.lives_ok(
+  $$select support_private.fulfill_checkout_session('cs_comped', 'evt_comped', 'cus_comped', null)$$,
+  'a fully discounted checkout with no PaymentIntent is fulfilled'
+);
+select extensions.is(support_private.installation_status(repeat('f', 43)), true, 'comped fulfillment verifies its installation');
+
+select support_private.create_support_intent('support', repeat('g', 43), decode(repeat('08', 32), 'hex'), now() + interval '5 minutes');
+select * from support_private.claim_support_intent(decode(repeat('08', 32), 'hex'), '00000000-0000-0000-0000-000000000004');
+select support_private.record_checkout_session((select id from support_private.support_intents where intent_hash = decode(repeat('08', 32), 'hex')), 'cs_comped_then_charged', '00000000-0000-0000-0000-000000000004', repeat('g', 43), 'usd', 'price_support', 4999, 1);
+select extensions.lives_ok(
+  $$select support_private.fulfill_checkout_session('cs_comped_then_charged', 'evt_comped_then_charged', 'cus_comped', 'pi_after_comp')$$,
+  'a comped supporter who later pays raises no payment conflict'
+);
+select extensions.is(support_private.installation_status(repeat('g', 43)), true, 'the later charged fulfillment binds its own installation');
+
+select support_private.create_support_intent('support', repeat('h', 43), decode(repeat('09', 32), 'hex'), now() + interval '5 minutes');
+select * from support_private.claim_support_intent(decode(repeat('09', 32), 'hex'), '00000000-0000-0000-0000-000000000002');
+select support_private.record_checkout_session((select id from support_private.support_intents where intent_hash = decode(repeat('09', 32), 'hex')), 'cs_second_charge', '00000000-0000-0000-0000-000000000002', repeat('h', 43), 'usd', 'price_support', 4999, 1);
+select extensions.throws_ok(
+  $$select support_private.fulfill_checkout_session('cs_second_charge', 'evt_second_charge', 'cus_paid_two', 'pi_different')$$,
+  'P0001', null,
+  'two distinct charged PaymentIntents for one supporter still conflict'
 );
 
 select * from extensions.finish();

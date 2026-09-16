@@ -78,12 +78,32 @@ Deno.test("a promotion-code discount that keeps the exact list subtotal still se
   assert(deps.calls.length === 1 && deps.calls[0]?.name === "fulfill_checkout_session");
 });
 
-Deno.test("a 100%-off session has no PaymentIntent to audit and is rejected before settlement", async () => {
-  const deps = dependencies({ stripe: { webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) }, checkout: { sessions: { retrieve: async () => session({ amount_total: 0 }) } } } });
+Deno.test("a fully discounted comped session settles without a PaymentIntent", async () => {
+  const comped = session({ payment_status: "no_payment_required", amount_total: 0, payment_intent: null });
+  const deps = dependencies({ stripe: { webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) }, checkout: { sessions: { retrieve: async () => comped } } } });
   const response = await handleStripeWebhookRequest(request(), deps);
 
-  assert(response.status === 400);
-  assert(deps.calls.length === 0);
+  assert(response.status === 200, `expected 200, received ${response.status}`);
+  assert(JSON.stringify(deps.calls) === JSON.stringify([{
+    name: "fulfill_checkout_session",
+    args: { p_stripe_session_id: "cs_server_owned", p_stripe_event_id: "evt_server_owned", p_stripe_customer_id: "cus_server_owned", p_stripe_payment_intent_id: null },
+  }]), `expected one comped settlement keyed by a null PaymentIntent, received ${JSON.stringify(deps.calls)}`);
+});
+
+Deno.test("a comped session still needs the exact list subtotal, price, and a real customer", async () => {
+  const cases = [
+    { payment_status: "no_payment_required", amount_total: 0, payment_intent: null, amount_subtotal: 3999 },
+    { payment_status: "no_payment_required", amount_total: 0, payment_intent: null, customer: "" },
+    { payment_status: "no_payment_required", amount_total: 0, payment_intent: null, line_items: { data: [{ price: { id: "price_wrong" }, quantity: 1 }], has_more: false } },
+    { payment_status: "no_payment_required", amount_total: 4999, payment_intent: null },
+    { payment_status: "paid", amount_total: 0, payment_intent: null },
+    { payment_status: "unpaid", amount_total: 0, payment_intent: null },
+  ];
+  for (const override of cases) {
+    const deps = dependencies({ stripe: { webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) }, checkout: { sessions: { retrieve: async () => session(override) } } } });
+    const response = await handleStripeWebhookRequest(request(), deps);
+    assert(response.status === 400 && deps.calls.length === 0, `expected rejection for ${JSON.stringify(override)}, received ${response.status} with ${deps.calls.length} settlements`);
+  }
 });
 
 Deno.test("authority settlement preserves the Supabase client receiver", async () => {
