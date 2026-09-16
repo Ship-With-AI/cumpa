@@ -1,5 +1,93 @@
 # Milestones
 
+## v1.6 Workspace Restyle (Shipped: 2026-09-14)
+
+**Delivered:** One mockup-derived visual system across the workspace and Monaco — dense changed-file tree, quieter Base/Head diff surface, mockup-equivalent shell with Details and Review-notes dialogs — with review behaviour, exports, and support mechanics unchanged.
+
+**Phases completed:** 5 phases, 25 plans, 76 tasks
+**Timeline:** 2026-09-12 → 2026-09-14
+**Git range:** `6279e15` → `de1362e` — 164 files changed, +27,770 / -2,270
+
+**Key accomplishments:**
+
+- Collapsed four independently-authored palettes into one canonical semantic token root, with the Monaco theme deriving byte-identical values from it at build time through a Vite virtual module.
+- Turned an inherited, unwired drift audit into a real gate: `npm run verify:semantic-css` now rejects stray colour literals, orphan tokens, gradients, uppercase hex, and retired vocabulary, and proves it can reject via unconditional self-checks.
+- Rebuilt the changed-file tree as dense rows with signed counts and directory descendant counts, plus a filter that prunes (never rebuilds) the tree so expansion identity and selection survive clearing.
+- Fixed roving tabindex, which the shipped implementation had never satisfied despite a spec asserting it since 2026-07-20.
+- Restyled the diff surface entirely through Monaco's own mechanisms — pinned options, source-correct side labels, responsive code density, and zero-height hunk boundaries that cannot desynchronise comment anchoring.
+- Recomposed the shell around one extracted `ModalDialog` primitive with three dialogs, unified four disagreeing breakpoint systems onto 760/1050/1650, and kept every warning class in the shell behind a single live-region owner.
+- Repaired `tests/e2e/agent-ready-export.spec.ts`, which no default runner executed for the entire milestone and which failed 6/6 once run.
+
+### Final Evidence
+
+- Requirements: 24/24
+- Phase verifications: 08 6/6, 09 25/25, 10 29/29, 11 5/5, 12 4/4 — all `passed`
+- Security audits: 08 25 threats, 09 23/23, 10 17/17, 11 41/41 — all closed
+- UI audits: 09 24/24, 10 24/24, 11 24/24, 12 native-scale visual equivalence signed off
+- Suites at close: 186 unit, 69 git, 142 api, 99 browser, 7 runtime-artifact
+- Milestone audit: status `tech_debt`; archiveable with one accepted inherited item
+
+### Defects found and fixed that predated the restyle
+
+- A browser spec excluded from every default runner, silently rotting for a full milestone.
+- An order-sensitive suite failure root-caused to the runtime packer inheriting `NODE_ENV=development` from a Vite server started by an earlier spec, packaging a development Vue runtime.
+- A pack lock whose stale-owner recovery let two packers delete each other's lock and run concurrently.
+- Roving tabindex never satisfied by the implementation.
+- The v1.0 debt item "retire or intentionally consume the orphan `SessionClient.getFileMetadata()`" is now resolved: the Details dialog is its first real caller.
+- Four immutable evidence records were read as live fixtures through `.planning/phases/`, whose working copies are removed at milestone close. The two v1.4 references were already dangling from an earlier cleanup; removing the v1.5 phase directories broke five unit tests. All four now point at `.planning/milestones/`, their permanent home.
+
+### Retained Technical Debt
+
+- DEBT-01 (audit D-01): `ReviewToolbar.vue` layout containers carry `aria-label` or nothing without a queryable `role`, so `getByRole('group', …)` cannot reach them. Pre-existing and byte-unchanged across v1.6. **Carried to `ROADMAP.md` Backlog at the 2026-09-15 close** (the earlier note said `.planning/REQUIREMENTS.md`, which the close removes), and **re-scoped from four containers to three** — quick task `260915-jbv` deleted the fourth with the review-toolbar actions group.
+- Two release-only specs remain documented external prerequisites, not regressions: `tests/e2e/public-support-states.spec.ts` (published package plus live hosted origin; gate at `:327-329`) and `tests/e2e/marketplace-review.spec.ts:97-99`.
+
+### Archives
+
+- Roadmap: `.planning/milestones/v1.6-ROADMAP.md`
+- Requirements: `.planning/milestones/v1.6-REQUIREMENTS.md`
+- Milestone audit: `.planning/milestones/v1.6-MILESTONE-AUDIT.md`
+- Phase history: `.planning/milestones/v1.6-phases/`
+
+### Post-close changes to the shipped surface (2026-09-15)
+
+The archive alone no longer describes the running app. Four items landed on `restyle` after the
+`de1362e` archive commit, all verified against the live workspace:
+
+- `80c3b92` — the Files toggle emptied the sidebar permanently: Vue resolves a Teleport target
+  once, so `v-if` on `#changed-files` stranded the single file tree in a detached element. Host
+  now hidden with `v-show`; filter text and selection survive hide/show as a side benefit.
+- `8b2a050` — the Review rail rendered transparent over Monaco. Bisected to `5599805`
+  (Phase 11-05), which deleted its only `background` declaration while retiring drawer styles.
+- Quick task `260915-gxg` — removed the active-file context bar; filename, status/counts and the
+  Files toggle moved onto the navigation bar. Two bars became one 41px bar. Caught mid-task: the
+  plan's `flex: 1 1 auto` slid navigation under the open Review rail (pointer-intercept at
+  `anchored-workspace.spec.ts:1037`), and the merged bar rendered 61px because inherited label
+  wrapping — both fixed and pinned by assertions.
+- Quick task `260915-jbv` — removed the Details dialog, the Review comments rail, and Keyboard
+  help outright at the owner's instruction, no relocation. Net −2,991 lines, six files deleted.
+  Accepted losses: comment resolve/reopen/edit/delete, stale and orphaned anchor records, the
+  cross-tab conflict notice, comparison identity, per-file metadata, in-app keyboard help.
+  Reopened the v1.0 file-metadata orphan debt that v1.6 had recorded as resolved, because the
+  Details dialog was `SessionClient.getFileMetadata()`'s only real caller.
+
+Suite at the 2026-09-15 close: 92 passed, 2 external-prerequisite failures
+(`CUMPA_MARKETPLACE_URL_MARKER`, `CUMPA_RUNTIME_CUSTODY_DIR`), 2 not run. `typecheck:web` and
+`verify:semantic-css` clean. Note that `typecheck:web` covers seven `.ts` files and zero `.vue`
+files, and `vue-tsc@3.3.7` cannot run against `typescript@7.0.2` — Vue templates are gated by
+deterministic identifier greps and a runtime console collector, not by a typechecker.
+
+### Branch reconciliation (2026-09-15)
+
+v1.5 and v1.6 were closed on separate branches. `main` archived v1.5 on 2026-09-15 with
+ACC-04 as its known gap and shipped 1.5.2; `restyle` closed v1.6 while still believing v1.5
+was unarchived. When `restyle` merged into `main` (`07d8a50` — 77 commits in, 197 out, 14
+conflicts), the planning tree was taken from `main` wholesale and this v1.6 close was
+re-applied on top of that history. Both closes therefore stand: v1.5's archive and the 1.5.2
+release are authoritative for distribution, v1.6's for the workspace surface. Any sentence
+above implying v1.5 was never archived reflects the pre-merge branch state.
+
+---
+
 ## v1.5 MIT Distribution (Shipped: 2026-09-15)
 
 **Delivered:** Cumpa published on the public npm registry under standard MIT terms, installable globally, through `npx`, or via a public marketplace skill, with SLSA provenance bound to its source commit on every release.

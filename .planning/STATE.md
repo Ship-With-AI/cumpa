@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.5
-milestone_name: MIT Distribution
+milestone: v1.6
+milestone_name: Workspace Restyle
 current_phase: none
 current_phase_name: milestone-complete
 status: complete
-stopped_at: v1.5 MIT Distribution archived; ACC-04 carried forward as the one known gap
-last_updated: "2026-09-15T12:40:00Z"
+stopped_at: v1.6 Workspace Restyle and v1.5 MIT Distribution both archived and reconciled on main; DEBT-01 and ACC-04 carried forward
+last_updated: "2026-09-15T15:30:00Z"
 last_activity: 2026-09-15
-last_activity_desc: Archived the v1.5 MIT Distribution milestone
+last_activity_desc: Merged restyle into main and re-applied the v1.6 close on main's planning history
 progress:
   total_phases: 5
   completed_phases: 5
@@ -114,12 +114,14 @@ None yet.
 | 260913-rel | Derive release identity from the manifest and publish 1.5.1 | 2026-09-14 | 7c8363e | [260913-rel-version-derivation](./quick/260913-rel-version-derivation/) |
 | 260914-ci6 | Close the e2e CI gap | 2026-09-14 | 0a1a359 | [260914-ci6-close-e2e-ci-gap](./quick/260914-ci6-close-e2e-ci-gap/) |
 | 260914-hmu | Publish 1.5.2 with the composer draft-loss fix | 2026-09-14 | d49ed2c | [260914-hmu-release-1-5-2](./quick/260914-hmu-release-1-5-2/) |
+| 260915-gxg | Merge the active-file bar into the review navigation bar | 2026-09-15 | c49ea08 | [260915-gxg-merge-active-file-bar-into-nav](./quick/260915-gxg-merge-active-file-bar-into-nav/) |
+| 260915-jbv | Remove the Details, Review, and Keyboard help surfaces | 2026-09-15 | 2feafcc | [260915-jbv-remove-details-review-keyboard-help](./quick/260915-jbv-remove-details-review-keyboard-help/) |
 
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Cleanup | Retire or intentionally consume authenticated orphan file-metadata route/client method | Deferred | v1.0 close |
+| Cleanup | Retire or intentionally consume authenticated orphan file-metadata route/client method — REOPENED 2026-09-15: the Details dialog was its only real caller and quick task 260915-jbv removed it | Deferred | v1.0 close |
 | Verification | Instantiate unsupported/unavailable rows in responsive fixture coverage if that path changes | Deferred | v1.1 close |
 | Design | Align 7px icon-button padding with documented spacing when control geometry changes | Deferred | v1.1 close |
 

@@ -10,7 +10,35 @@ A developer can accurately review repository-grounded changes chosen by a develo
 
 ## Current State
 
-**Shipped:** v1.5 MIT Distribution on 2026-09-15.
+**Shipped:** v1.6 Workspace Restyle on 2026-09-14 (workspace surface) and v1.5 MIT
+Distribution on 2026-09-15 (distribution). The two milestones were closed on separate
+branches and reconciled when `restyle` merged into `main`; see `MILESTONES.md` for the
+reconciliation note.
+
+**v1.6 Workspace Restyle** — audit status `tech_debt`, archiveable with one accepted item
+(DEBT-01, see `ROADMAP.md` Backlog). The whole browser review workspace renders from one
+canonical semantic token root, with the typed Monaco theme derived byte-identically from it at
+build time. The changed-file tree is dense rows with signed counts and directory descendant
+counts, plus a filter that prunes rather than rebuilds so expansion identity and selection
+survive clearing. The diff surface is restyled entirely through Monaco's own mechanisms. The
+shell is composed around one extracted `ModalDialog` primitive, four disagreeing breakpoint
+systems are unified onto 760/1050/1650, and every warning class sits behind a single
+live-region owner.
+
+**Post-close changes to that surface (2026-09-15), before the merge:** `80c3b92` fixed the
+Files toggle emptying the sidebar permanently (Vue resolves a Teleport target once, so `v-if`
+on `#changed-files` stranded the file tree; now `v-show`). `8b2a050` fixed the Review rail
+rendering transparent over Monaco, bisected to Phase 11-05's `5599805`. Quick task
+`260915-gxg` removed the active-file context bar, moving the filename, its status and counts,
+and the Files toggle onto the navigation bar — one 41px bar replaced two. Quick task
+`260915-jbv` removed the **Details** dialog, the **Review** comments rail, and **Keyboard
+help** outright at the owner's instruction, with no relocation: accepted losses are comment
+resolve/reopen/edit/delete, the stale and orphaned anchor records, the cross-tab conflict
+notice, comparison identity, per-file metadata, and in-app keyboard help. Comment *creation*,
+export, summary, Finish attached review, draft persistence, Changed files, and Support are
+intact.
+
+**v1.5 MIT Distribution:**
 
 Cumpa is published on the public npm registry as `@shipwithai/cumpa` under standard MIT
 terms. Users install it globally, run it through `npx --yes`, or install the public
@@ -112,7 +140,7 @@ blocked under D-07/D-08; see `.planning/milestones/v1.5-ROADMAP.md`.
 - [x] User can launch the application from a Git repository through a CLI that opens a loopback-only browser session.
 - [x] User can interactively select an ordered base and head from local branches and registered worktrees.
 - [x] User can review merge-base-to-head changes in a GitHub-like side-by-side text diff with changed-file navigation and expandable context.
-- [x] User can create, edit, delete, and resolve comments on any visible line on either side of a diff.
+- [x] User can create, edit, delete, and resolve comments on any visible line on either side of a diff. **Narrowed 2026-09-15 by quick task `260915-jbv`:** creation survives (inline, from the diff gutter); edit, delete, resolve and reopen were removed with the Review comments rail at the owner's explicit instruction. Comments still persist to the draft and still appear in exports.
 - [x] User can write an overall review summary while the review remains an editable repository-local draft.
 - [x] User can export a completed review as readable Markdown and versioned JSON containing stable Git identities and context anchors for an applying agent.
 
@@ -299,4 +327,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with the current product state and feedback.
 
 ---
-*Last updated: 2026-09-15 after the v1.5 MIT Distribution milestone shipped; 18/19 requirements validated, ACC-04 blocked under D-07/D-08, `latest` published as 1.5.2*
+*Last updated: 2026-09-15 after `restyle` merged into `main`, reconciling the v1.6 Workspace Restyle close with the v1.5 MIT Distribution close. v1.6 audit status `tech_debt` with DEBT-01 accepted into the ROADMAP Backlog; v1.5 at 18/19 requirements with ACC-04 blocked under D-07/D-08 and `latest` published as 1.5.2.*
