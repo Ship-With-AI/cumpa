@@ -15,6 +15,7 @@ import {
 } from '../../src/cli/request.js';
 import { runOrdinaryAction } from '../../src/cli/run.js';
 import { AttachedCompletionCoordinator } from '../../src/server/attached-completion.js';
+import type { AttachedCompletionOptions } from '../../src/server/capabilities.js';
 import { createSessionApp as createRealSessionApp, type SessionApp } from '../../src/server/app.js';
 import type { PinnedComparison } from '../../src/contracts/comparison.js';
 import { LaunchError } from '../../src/domain/errors.js';
@@ -71,6 +72,10 @@ describe('agent review request protocol', () => {
       ),
     );
 
+    if (parsed.mode !== 'revisions') {
+      throw new Error('Expected a revisions request');
+    }
+
     expect(parsed.revisions).toEqual({
       base: 'refs/heads/main',
       head: 'feature',
@@ -84,6 +89,10 @@ describe('agent review request protocol', () => {
   it('defaults omitted pathspecs to a frozen empty array', async () => {
     const parsed = await readAgentReviewRequest(chunks(bytes(request())));
     const schemaParsed = AgentReviewRequestSchema.parse(request());
+
+    if (parsed.mode !== 'revisions' || schemaParsed.mode !== 'revisions') {
+      throw new Error('Expected revisions requests');
+    }
 
     expect(parsed.revisions.pathspecs).toEqual([]);
     expect(Object.isFrozen(parsed.revisions.pathspecs)).toBe(true);
@@ -197,6 +206,10 @@ describe('exact patch request protocol', () => {
     const parsed = await readAgentReviewRequest(chunks(bytes(patchRequest())));
     const direct = ExactPatchRequestSchema.parse(patchRequest({ patch: { content: patch, target: { kind: 'worktree' } } }));
 
+    if (parsed.mode !== 'patch' || direct.mode !== 'patch') {
+      throw new Error('Expected patch requests');
+    }
+
     expect(parsed).toEqual(patchRequest());
     expect(Buffer.from(parsed.patch.content, 'utf8')).toEqual(Buffer.from(patch, 'utf8'));
     expect(direct.patch.target).toEqual({ kind: 'worktree' });
@@ -258,7 +271,7 @@ describe('ordinary action request ownership', () => {
   it('keeps a non-TTY range attached until Finish writes canonical bytes and its response settles', async () => {
     const events: string[] = [];
     const stdout: Uint8Array[] = [];
-    let attached: { coordinator: AttachedCompletionCoordinator; deliver: (bytes: Uint8Array) => Promise<boolean> } | undefined;
+    let attached: AttachedCompletionOptions | undefined;
     const app = {
       listen: vi.fn(async () => {}),
       server: { address: () => ({ address: '127.0.0.1', port: 43123 }) },
@@ -290,9 +303,6 @@ describe('ordinary action request ownership', () => {
           attached = options.attachedCompletion;
           return app;
         },
-        launchComparison: vi.fn(async () => {
-          throw new Error('non-TTY review must use the attached launcher');
-        }),
         openBrowser: async () => {
           events.push('open');
         },
@@ -314,25 +324,28 @@ describe('ordinary action request ownership', () => {
       expect(attached).toBeDefined();
     });
     expect(attached).toBeDefined();
-    expect(attached!.storageScope).toMatch(/^agent-[0-9a-f]{32}$/u);
+    if (attached === undefined) {
+      throw new Error('Expected attached completion options');
+    }
+    const attachedCompletion = attached;
+    expect(attached.storageScope).toMatch(/^agent-[0-9a-f]{32}$/u);
     expect(stdout).toEqual([]);
     expect(events).toContain('open');
-    await attached!.coordinator.finish(0, async () => ({
+    await attached.coordinator.finish(0, async () => ({
       kind: 'revisionConflict',
       expectedRevision: 0,
       actualRevision: 1,
     }));
-    expect(attached!.coordinator.status()).toEqual({ kind: 'waiting' });
+    expect(attached.coordinator.status()).toEqual({ kind: 'waiting' });
     expect(stdout).toEqual([]);
     expect(events).not.toContain('shutdown');
 
-
     const canonical = new TextEncoder().encode('{"schemaVersion":2}');
-    await attached!.coordinator.finish(0, async () => {
-      await attached!.deliver(canonical);
+    await attached.coordinator.finish(0, async () => {
+      await attachedCompletion.deliver(canonical);
       return { kind: 'completed', revision: 0 };
     });
-    attached!.coordinator.markResponseSettled();
+    attached.coordinator.markResponseSettled();
     await running;
 
     expect(stdout).toEqual([canonical]);
@@ -364,11 +377,15 @@ describe('ordinary action request ownership', () => {
         createRangeComparison: async () => comparison,
         createSessionApp: (pinned, options) => {
           sessionToken = options.sessionToken;
-          const deliver = options.attachedCompletion!.deliver;
+          if (options.attachedCompletion === undefined) {
+            throw new Error('Expected attached completion options');
+          }
+          const attachedCompletion = options.attachedCompletion;
+          const deliver = attachedCompletion.deliver;
           app = createRealSessionApp(pinned, {
             ...options,
             attachedCompletion: {
-              ...options.attachedCompletion!,
+              ...attachedCompletion,
               deliver: async (bytes) => {
                 deliveryAuthorized.resolve();
                 await releaseDelivery.promise;
@@ -377,9 +394,9 @@ describe('ordinary action request ownership', () => {
             },
           });
           const close = app.close.bind(app);
-          vi.spyOn(app, 'close').mockImplementation(async () => {
+          vi.spyOn(app, 'close').mockImplementation((closeListener) => {
             events.push('shutdown');
-            await close();
+            void close().then(closeListener);
           });
           return app;
         },
@@ -433,7 +450,7 @@ describe('ordinary action request ownership', () => {
 
   it('treats exact-patch stdout failure as terminal without retrying delivery', async () => {
     const events: string[] = [];
-    let attached: { coordinator: AttachedCompletionCoordinator; deliver: (bytes: Uint8Array) => Promise<boolean> } | undefined;
+    let attached: AttachedCompletionOptions | undefined;
     const app = {
       listen: vi.fn(async () => {}),
       server: { address: () => ({ address: '127.0.0.1', port: 43124 }) },
@@ -481,8 +498,12 @@ describe('ordinary action request ownership', () => {
     await vi.waitFor(() => {
       expect(attached).toBeDefined();
     });
-    await attached!.coordinator.finish(0, async () => {
-      await attached!.deliver(new TextEncoder().encode('{"schemaVersion":3}'));
+    if (attached === undefined) {
+      throw new Error('Expected attached completion options');
+    }
+    const attachedCompletion = attached;
+    await attached.coordinator.finish(0, async () => {
+      await attachedCompletion.deliver(new TextEncoder().encode('{"schemaVersion":3}'));
       return { kind: 'completed', revision: 0 };
     });
     await running;
@@ -521,8 +542,7 @@ describe('ordinary action request ownership', () => {
     'reports bounded %s failures before listener or browser launch',
     async (_name, error) => {
       const stderr: string[] = [];
-      const stdout: string[] = [];
-      const launch = vi.fn();
+      const stdout: Uint8Array[] = [];
       const setExitStatus = vi.fn();
       const rawGitStderr = 'fatal: invalid pathspec magic';
       const submittedPathspec = ':(invalid)secret';
@@ -541,9 +561,10 @@ describe('ordinary action request ownership', () => {
           createRangeComparison: async () => {
             throw error;
           },
-          launchComparison: launch,
           output: (message) => stderr.push(message),
-          stdout: (message) => stdout.push(message),
+          stdout: (bytes) => {
+            stdout.push(bytes);
+          },
           setExitStatus,
         },
       );
@@ -555,7 +576,6 @@ describe('ordinary action request ownership', () => {
       expect(stderr[0]).not.toContain(submittedPathspec);
       expect(stdout).toEqual([]);
       expect(setExitStatus).toHaveBeenCalledExactlyOnceWith(1);
-      expect(launch).not.toHaveBeenCalled();
     },
   );
 });

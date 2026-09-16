@@ -1,6 +1,6 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { chmodSync, existsSync, linkSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, linkSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs';
 import { homedir, release, tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
@@ -28,18 +28,22 @@ function startChild(command: string, args: readonly string[], environment: NodeJ
   child.on('exit', (code: number | null) => settle({ code, output: Buffer.concat(chunks).toString('utf8') }));
   return Object.freeze({ completion: promise, stop: () => child.kill('SIGTERM') });
 }
-function extractToolCallTrace(output: string): string {
-  const content = new Map<number, string>();
-  for (const line of output.split('\n')) {
-    try {
-      const event = JSON.parse(line) as { assistantMessageEvent?: { type?: string; contentIndex?: number; delta?: string } };
-      const update = event.assistantMessageEvent;
-      if (update?.type === 'toolcall_delta' && typeof update.contentIndex === 'number' && typeof update.delta === 'string') content.set(update.contentIndex, `${content.get(update.contentIndex) ?? ''}${update.delta}`);
-    } catch {
-      continue;
+function extractToolCallTrace(agentDir: string): string {
+  const commands: string[] = [];
+  for (const entry of readdirSync(agentDir, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile() || !entry.name.endsWith('.jsonl')) continue;
+    for (const line of readFileSync(join(entry.parentPath, entry.name), 'utf8').split('\n')) {
+      try {
+        const event = JSON.parse(line) as { message?: { content?: Array<{ type?: string; name?: string; arguments?: { command?: string } }> } };
+        for (const content of event.message?.content ?? []) {
+          if (content.type === 'toolCall') commands.push(`${content.name ?? ''} ${content.arguments?.command ?? ''}`);
+        }
+      } catch {
+        continue;
+      }
     }
   }
-  return [...content.values()].join('\n');
+  return commands.join('\n');
 }
 
 function redactAgentOutput(output: string): string {
@@ -159,12 +163,12 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
       '/skill:cumpa',
       'Use the installed marketplace Cumpa skill you discovered. First run that installed skill\'s bundled check-cumpa.mjs and stop if it fails.',
       `Review this repository only: base ${base}, head ${head}.`,
-      `Start the native hub-supervised Cumpa process with hub.start env explicitly containing BROWSER=${opener}, CUMPA_MARKETPLACE_URL_MARKER=${marker}, and PATH inherited from this process; do not rely on the hub daemon inheriting them.`,
       `After zero exit and canonical validation, write untouched canonical stdout bytes to ${join(profile.root, 'cumpa-result.json')} for the acceptance driver. Do not create this file before exit.`,
       'Do not install, upgrade, use npx, use a source checkout or local tarball, apply feedback, or author feedback yourself.',
     ].join('\n');
     const environment: NodeJS.ProcessEnv = {
       ...profile.env,
+      BROWSER: opener,
       PLAYWRIGHT_BROWSERS_PATH: process.env.PLAYWRIGHT_BROWSERS_PATH ?? join(homedir(), 'Library', 'Caches', 'ms-playwright'),
       CUMPA_MARKETPLACE_URL_MARKER: marker,
       CUMPA_AGENT_READY_EVIDENCE_REPORT: bridge,
@@ -174,12 +178,12 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
     };
     const readinessStarted = new Date().toISOString();
     const browserChild = startChild(process.execPath, [join(projectRoot, 'node_modules/@playwright/test/cli.js'), 'test', '--config', playwrightConfig, 'tests/e2e/marketplace-review.spec.ts'], environment);
-    const agent = startChild('omp', ['--profile', profile.ompProfile, '--no-prewalk', '--model', 'openai-codex/gpt-5.6-terra:high', '--mode', 'json', '--cwd', fixture.nestedCwd, prompt], environment);
+    const agent = startChild('omp', ['--no-prewalk', '--model', 'openai-codex/gpt-5.6-terra:high', '--mode', 'json', '--cwd', fixture.nestedCwd, prompt], environment);
     const browserResult = await browserChild.completion;
     if (browserResult.code !== 0) {
       agent.stop();
       const agentResult = await agent.completion;
-      throw new Error(`[marketplace-profile] agent did not reach loopback readiness: ${redactAgentOutput(agentResult.output).slice(-400)}`);
+      throw new Error(`[marketplace-profile] browser flow failed before completion: ${redactAgentOutput(browserResult.output).slice(-400)}; agent: ${redactAgentOutput(agentResult.output).slice(-400)}`);
     }
     const readiness = statSync(marker).mtime.toISOString();
     const agentResult = await agent.completion;
@@ -187,7 +191,7 @@ test('isolated OMP marketplace skill supervises the exact public CLI through Fin
     expect(agentResult.code).toBe(0);
     expect(completion > readinessStarted).toBe(true);
     expect(completion > readiness).toBe(true);
-    const commandTrace = extractToolCallTrace(redactAgentOutput(agentResult.output));
+    const commandTrace = extractToolCallTrace(profile.agentDir);
     const checker = commandTrace.indexOf('check-cumpa.mjs');
     const launch = commandTrace.indexOf('cumpa', checker + 'check-cumpa.mjs'.length);
     expect(checker).toBeGreaterThanOrEqual(0);

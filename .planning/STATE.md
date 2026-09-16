@@ -1,15 +1,19 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.6
-milestone_name: Workspace Restyle
-status: archived
-last_updated: "2026-09-15T14:00:00.000Z"
+milestone: v1.5
+milestone_name: MIT Distribution
+current_phase: none
+current_phase_name: milestone-complete
+status: complete
+stopped_at: v1.5 MIT Distribution archived; ACC-04 carried forward as the one known gap
+last_updated: "2026-09-15T12:40:00Z"
 last_activity: 2026-09-15
+last_activity_desc: Archived the v1.5 MIT Distribution milestone
 progress:
   total_phases: 5
   completed_phases: 5
-  total_plans: 25
-  completed_plans: 25
+  total_plans: 23
+  completed_plans: 23
   percent: 100
 ---
 
@@ -17,17 +21,20 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-09-15)
+See: .planning/PROJECT.md (updated 2026-09-09)
 
 **Core value:** A developer can accurately review repository-grounded changes chosen by a developer or coding agent and return precise, drift-detectable feedback the agent can act on.
-**Current focus:** Between milestones — v1.6 archived 2026-09-15; v1.7 not yet defined
+**Current focus:** Phase 07 — clean-public-artifact-acceptance partially blocked
 
 ## Current Position
 
-Phase: none — between milestones, previous milestone closed and archived
-Plan: none
-Status: Between milestones. ROADMAP.md is collapsed to the milestone index plus the Backlog (DEBT-01 accepted debt, four DEFER items, the reopened file-metadata orphan). REQUIREMENTS.md is intentionally absent until /gsd-new-milestone writes a fresh one.
-Last activity: 2026-09-15 — v1.6 close completed: roadmap collapsed, requirements and duplicate audit removed after verifying the archives, PROJECT.md evolved, DEBT-01 carried to the Backlog and re-scoped to three containers
+Phase: 07 (clean-public-artifact-acceptance) PARTIALLY BLOCKED
+Plan: 7 7
+Status: Partially blocked
+Checkpoint: Six committed public-global, public-npx, and marketplace pre/post reports regenerated the hardened record. ACC-01, ACC-02, and ACC-03 passed their installation-plus-review axis; ACC-04 is `partially-blocked` because every verified row remains `live-entitlement-unavailable` with `substituted: false`. The restored public-global post-Restore linkage finding records the observed false successful Restore while status stayed unverified and the modal stayed non-terminal; no second sign-in, publishing, deployment, or hosted-service change is permitted.
+Last activity: 2026-09-13 — Completed 260913-nx0: test TypeScript projects are now gated in repository CI; all test diagnostics are zero.
+
+Progress: [██████████] 100% — 23 23 milestone plans complete
 
 ## Performance Metrics
 
@@ -47,7 +54,6 @@ Last activity: 2026-09-15 — v1.6 close completed: roadmap collapsed, requireme
 | v1.3 Agent Review Handoff | 4 | 14 | Complete |
 | v1.4 Voluntary Support | 2 | 22 | Complete |
 | v1.5 MIT Distribution | 5 | TBD | In progress |
-| v1.6 Workspace Restyle | 5 | TBD | Planned |
 
 *Updated after each plan completion.*
 **Per-Plan Metrics:**
@@ -77,7 +83,7 @@ Decisions are logged in PROJECT.md Key Decisions.
 - [Phase 07]: Marketplace OMP auth narrowing. — The temporary OMP profile reused the operator-authorized provider credential copy; every other isolation dimension remains per-path. This is not independent authentication and must be carried into consolidated evidence.
 - [Phase 07]: Use expectedVersion for source-independent CLI and manifest assertions.
 - [Phase 07]: Preserve `partially-blocked` through consolidation. — Real global and npx pre-restore runs passed their review/export/Finish and asset contracts, but the verified ACC-04 row remains `live-entitlement-unavailable` with `substituted: false`.
-- [Phase 07]: Hardened rerun preservation. — `792806a`, `f3b9079`, and `6492551` repaired BL-01 through BL-03; `6492551` also carries a writer correction despite its marketplace-only subject. The fresh reports could not reproduce the established live-entitlement outcome without a second protected sign-in, and the OMP isolation gate reported unhonored redirection. The stale pre-review record remains untouched.
+- [Phase 07]: Hardened evidence regenerated and corrected. — `792806a`, `f3b9079`, and `6492551` repaired BL-01 through BL-03; `6492551` also carries a writer correction despite its marketplace-only subject. `a9722eb` made marketplace readiness harness-owned and `f4963a0` made checker/launch proof derive from the isolated session trace. `48d8570` separates passed ACC-01/02/03 installation-review evidence from partially-blocked ACC-04 support evidence and restores the bounded public-global linkage finding. All six fresh reports remain authoritative; verified rows remain blocked by live entitlement with `substituted: false`.
 
 ### Pending Todos
 
@@ -95,7 +101,6 @@ None yet.
 
 - Phase 3 edited: Reconciled v1.5 Proprietary Distribution with approved public source and reviewed history; preserved all phase numbers, dependencies, and 19 requirement assignments
 - 2026-09-08: Reconciled v1.5 MIT Distribution after the user explicitly abandoned proprietary restrictions. Phase order, all 19 requirement assignments, runtime-only packaging and unrelated publication safety gates remain unchanged.
-- 2026-09-12: Defined v1.6 Workspace Restyle as Phases 08–12 with 24/24 requirements assigned once across semantic foundation, changed-file tree, diff surface, shell/review surfaces, and behavior continuity.
 
 ### Quick Tasks Completed
 
@@ -103,14 +108,18 @@ None yet.
 |---|-------------|------|--------|-----------|
 | 260907-gdm | Reconcile approved proprietary source-available distribution | 2026-09-07 | 483671d | [260907-gdm-reconcile-cumpa-v1-5-with-approved-publi](./quick/260907-gdm-reconcile-cumpa-v1-5-with-approved-publi/) |
 | 260908-d25 | Switch Cumpa to standard MIT and reconcile distribution | 2026-09-08 | 2227f78 | [260908-d25-switch-cumpa-to-mit-and-reconcile-active](./quick/260908-d25-switch-cumpa-to-mit-and-reconcile-active/) |
-| 260915-gxg | Merge the active-file bar into the review navigation bar | 2026-09-15 | c49ea08 | [260915-gxg-merge-active-file-bar-into-nav](./quick/260915-gxg-merge-active-file-bar-into-nav/) |
-| 260915-jbv | Remove the Details, Review, and Keyboard help surfaces | 2026-09-15 | 2feafcc | [260915-jbv-remove-details-review-keyboard-help](./quick/260915-jbv-remove-details-review-keyboard-help/) |
+| 260913-apr | Bounded support wait; hosted Restore result deliberately reverted | 2026-09-13 | 05384c8 | [260913-apr-hosted-restore-linkage-truth](./quick/260913-apr-hosted-restore-linkage-truth/) |
+| 260913-dzc | Verify live deploy authority stability instead of emptiness | 2026-09-13 | a4edcf3 | [260913-dzc-live-deploy-authority](./quick/260913-dzc-live-deploy-authority/) |
+| 260913-nx0 | Bring tests under `tsc` and gate test typechecks in CI | 2026-09-13 | 4ae6d6b | [260913-nx0-test-typecheck-coverage](./quick/260913-nx0-test-typecheck-coverage/) |
+| 260913-rel | Derive release identity from the manifest and publish 1.5.1 | 2026-09-14 | 7c8363e | [260913-rel-version-derivation](./quick/260913-rel-version-derivation/) |
+| 260914-ci6 | Close the e2e CI gap | 2026-09-14 | 0a1a359 | [260914-ci6-close-e2e-ci-gap](./quick/260914-ci6-close-e2e-ci-gap/) |
+| 260914-hmu | Publish 1.5.2 with the composer draft-loss fix | 2026-09-14 | d49ed2c | [260914-hmu-release-1-5-2](./quick/260914-hmu-release-1-5-2/) |
 
 ## Deferred Items
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Cleanup | Retire or intentionally consume authenticated orphan file-metadata route/client method — REOPENED 2026-09-15: the Details dialog was its only real caller and quick task 260915-jbv removed it | Deferred | v1.0 close |
+| Cleanup | Retire or intentionally consume authenticated orphan file-metadata route/client method | Deferred | v1.0 close |
 | Verification | Instantiate unsupported/unavailable rows in responsive fixture coverage if that path changes | Deferred | v1.1 close |
 | Design | Align 7px icon-button padding with documented spacing when control geometry changes | Deferred | v1.1 close |
 

@@ -44,6 +44,7 @@ async function buildApp(repositoryRoot: string) {
   const app = createSessionApp(comparison(repositoryRoot), {
     sessionToken: token,
     objectReader: {
+      inspect: async () => ({ kind: 'available' as const, objectType: 'blob', size: Buffer.byteLength('after\n') }),
       read: async () => ({ kind: 'available' as const, bytes: Buffer.from('after\n', 'utf8') }),
     },
   });

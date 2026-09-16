@@ -14,7 +14,6 @@ type SharedSupportHome = Readonly<{
 
 type ProfilePaths = Readonly<{
   readonly ompRoot: string;
-  readonly ompProfile: string;
   readonly home: string;
   readonly agentDir: string;
   readonly xdgConfigDir: string;
@@ -23,10 +22,13 @@ type ProfilePaths = Readonly<{
   readonly xdgCacheDir: string;
 }>;
 
-type Digest = Readonly<{ readonly present: false } | { readonly present: true; readonly sha256: string }>;
+type Digest = Readonly<
+  | { readonly present: false }
+  | { readonly present: true; readonly sha256: string; readonly entries: Readonly<Record<string, string>> }
+>;
 const projectRoot = resolve(import.meta.dirname, '../..');
 const publishedSkillSha256 = '8974c947bceaf2921fdd74ea900c8af6a85c1c9f94428f66f53eea923d630220';
-const credentialVariables = [
+const providerAuthenticationVariables = [
   'ANTHROPIC_API_KEY',
   'ANTHROPIC_OAUTH_TOKEN',
   'CLAUDE_CODE_OAUTH_TOKEN',
@@ -36,7 +38,17 @@ const credentialVariables = [
 const requiredIsolationVariables = ['HOME', 'PI_CODING_AGENT_DIR'] as const;
 
 type RealOmpProfileDigest = Readonly<Record<
-  'agentDatabase' | 'agents' | 'marketplaces' | 'plugins' | 'xdgConfig' | 'xdgData' | 'xdgState' | 'xdgCache',
+  | 'agentConfiguration'
+  | 'modelConfiguration'
+  | 'brokerCredential'
+  | 'agents'
+  | 'managedSkills'
+  | 'marketplaces'
+  | 'plugins'
+  | 'xdgConfig'
+  | 'xdgData'
+  | 'xdgState'
+  | 'xdgCache',
   Digest
 >>;
 
@@ -48,7 +60,6 @@ export interface IsolatedOmpProfile {
   readonly xdgDataDir: string;
   readonly xdgStateDir: string;
   readonly xdgCacheDir: string;
-  readonly ompProfile: string;
   readonly env: NodeJS.ProcessEnv;
   readonly pluginTreeRoot: string;
   cleanup(): void;
@@ -80,37 +91,51 @@ function sha256(path: string): string {
 function digest(path: string): Digest {
   if (!existsSync(path)) return Object.freeze({ present: false });
   const digest_ = createHash('sha256');
+  const entries: Record<string, string> = {};
   const visited = new Set<string>();
-  const update = (candidate: string, name: string): void => {
+  const update = (candidate: string, name: string, relativePath: string): void => {
     const entry = lstatSync(candidate);
     digest_.update(name);
     if (entry.isSymbolicLink()) {
       const link = readlinkSync(candidate);
       if (!existsSync(candidate)) {
-        digest_.update(`broken-symlink:${link}`);
+        const value = `broken-symlink:${link}`;
+        digest_.update(value);
+        entries[relativePath] = value;
         return;
       }
       const target = realpathSync(candidate);
-      digest_.update(`symlink:${link}:${target}`);
+      const value = `symlink:${link}:${target}`;
+      digest_.update(value);
+      entries[relativePath] = value;
       if (visited.has(target)) return;
       visited.add(target);
-      update(target, 'target');
+      update(target, 'target', `${relativePath}->${target}`);
       return;
     }
     if (entry.isFile()) {
-      digest_.update(readFileSync(candidate));
+      const contents = readFileSync(candidate);
+      digest_.update(contents);
+      entries[relativePath] = `file:${createHash('sha256').update(contents).digest('hex')}`;
       return;
     }
     if (!entry.isDirectory()) {
-      digest_.update(`special:${entry.mode}:${entry.size}:${entry.mtimeMs}`);
+      const value = `special:${entry.mode}:${entry.size}:${entry.mtimeMs}`;
+      digest_.update(value);
+      entries[relativePath] = value;
       return;
     }
+    entries[relativePath] = 'directory';
     for (const child of readdirSync(candidate, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))) {
-      update(join(candidate, child.name), child.name);
+      update(join(candidate, child.name), child.name, join(relativePath, child.name));
     }
   };
-  update(path, '');
-  return Object.freeze({ present: true, sha256: digest_.digest('hex') });
+  update(path, '', '.');
+  return Object.freeze({
+    present: true,
+    sha256: digest_.digest('hex'),
+    entries: Object.freeze(entries),
+  });
 }
 
 export function assessOmpIsolation(
@@ -153,7 +178,6 @@ function profilePaths(root: string): ProfilePaths {
   const ompRoot = join(root, 'omp');
   return Object.freeze({
     ompRoot,
-    ompProfile: 'cumpa-acceptance',
     home: join(ompRoot, 'home'),
     agentDir: join(ompRoot, 'agent'),
     xdgConfigDir: join(ompRoot, 'xdg-config'),
@@ -179,12 +203,13 @@ function isolatedEnvironment(
   paths: ProfilePaths,
   cliPrefixBin?: string,
   extraPath: readonly string[] = [],
-  useOmpProfile = true,
 ): NodeJS.ProcessEnv {
   const omp = requireOmp();
   const env = inheritedEnvironment(process.env);
-  for (const variable of credentialVariables) delete env[variable];
-  if (!useOmpProfile) delete env.OMP_PROFILE;
+  for (const variable of providerAuthenticationVariables) {
+    if (process.env[variable] !== undefined) env[variable] = process.env[variable];
+  }
+  delete env.OMP_PROFILE;
   Object.assign(env, {
     HOME: paths.home,
     USERPROFILE: paths.home,
@@ -193,7 +218,6 @@ function isolatedEnvironment(
     XDG_DATA_HOME: paths.xdgDataDir,
     XDG_STATE_HOME: paths.xdgStateDir,
     XDG_CACHE_HOME: paths.xdgCacheDir,
-    ...(useOmpProfile ? { OMP_PROFILE: paths.ompProfile } : {}),
   });
   const nodeBin = dirname(realpathSync(process.execPath));
   env.PATH = buildIsolatedPath([
@@ -209,9 +233,8 @@ function isolatedEnvironment(
   return env;
 }
 
-function locateInstalledSkill(profile: ProfilePaths, home: string, installationCwd: string): string {
+function locateInstalledSkill(profile: ProfilePaths, installationCwd: string): string {
   const candidates = [
-    join(home, '.omp', 'profiles', profile.ompProfile, 'agent', 'plugins'),
     join(profile.xdgDataDir, 'omp', 'plugins', 'cache'),
     join(profile.xdgDataDir, 'omp', 'plugins'),
     join(profile.agentDir, 'plugins'),
@@ -253,7 +276,7 @@ export function discoverOmpIsolationCapability(): OmpIsolationCapability {
   try {
     const paths = profilePaths(root);
     createDirectories(paths);
-    const env = isolatedEnvironment(paths, undefined, [], false);
+    const env = isolatedEnvironment(paths);
     const result = spawnSync(omp, ['config', 'list'], { cwd: root, env, encoding: 'utf8', shell: false });
     if (result.error !== undefined || result.status !== 0) fail(`OMP isolation probe failed: ${result.stderr}`);
     const after = captureRealOmpProfileDigest();
@@ -268,23 +291,43 @@ export function discoverOmpIsolationCapability(): OmpIsolationCapability {
   }
 }
 
-export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
-  const agentRoot = join(homedir(), '.omp', 'agent');
+export function captureOmpProfileDigest(home = homedir()): RealOmpProfileDigest {
+  const ompRoot = join(home, '.omp');
+  const agentRoot = join(ompRoot, 'agent');
   return Object.freeze({
-    agentDatabase: digest(join(agentRoot, 'agent.db')),
+    agentConfiguration: digest(join(agentRoot, 'config.yml')),
+    modelConfiguration: digest(join(agentRoot, 'models.yml')),
+    brokerCredential: digest(join(ompRoot, 'auth-broker.token')),
     agents: digest(join(agentRoot, 'agents')),
+    managedSkills: digest(join(agentRoot, 'managed-skills')),
     marketplaces: digest(join(agentRoot, 'marketplaces')),
     plugins: digest(join(agentRoot, 'plugins')),
-    xdgConfig: digest(join(homedir(), '.config')),
-    xdgData: digest(join(homedir(), '.local/share')),
-    xdgState: digest(join(homedir(), '.local/state')),
-    xdgCache: digest(join(homedir(), '.cache')),
+    xdgConfig: digest(join(home, '.config', 'omp')),
+    xdgData: digest(join(home, '.local', 'share', 'omp')),
+    xdgState: digest(join(home, '.local', 'state', 'omp')),
+    xdgCache: digest(join(home, '.cache', 'omp')),
+  });
+}
+
+export function captureRealOmpProfileDigest(): RealOmpProfileDigest {
+  return captureOmpProfileDigest();
+}
+
+export function changedOmpProfileEntries(before: RealOmpProfileDigest, after: RealOmpProfileDigest): readonly string[] {
+  return Object.entries(after).flatMap(([root, digest_]) => {
+    const previous = before[root as keyof RealOmpProfileDigest];
+    if (!previous.present || !digest_.present) return JSON.stringify(previous) === JSON.stringify(digest_) ? [] : [root];
+    return [...new Set([...Object.keys(previous.entries), ...Object.keys(digest_.entries)])]
+      .filter((path) => previous.entries[path] !== digest_.entries[path])
+      .map((path) => `${root}:${path}`);
   });
 }
 
 export function assertRealOmpProfileUnchanged(before: RealOmpProfileDigest): void {
   const after = captureRealOmpProfileDigest();
-  if (JSON.stringify(before) !== JSON.stringify(after)) fail('operator real OMP or XDG configuration, data, state, or cache changed');
+  if (JSON.stringify(before) === JSON.stringify(after)) return;
+  const changed = changedOmpProfileEntries(before, after);
+  fail(`operator real OMP or XDG configuration, data, state, or cache changed: ${changed.length === 0 ? 'digest' : changed.join(', ')}`);
 }
 
 /**
@@ -294,7 +337,7 @@ export function assertRealOmpProfileUnchanged(before: RealOmpProfileDigest): voi
 export function provisionApprovedOmpModelAccess(profile: IsolatedOmpProfile): void {
   if (process.env.CUMPA_OMP_PROFILE_AUTH_READY !== '1') fail('operator authorization flag is required before copying provider credentials');
   const source = join(homedir(), '.omp', 'agent');
-  const destination = join(profile.home, '.omp', 'profiles', profile.ompProfile, 'agent');
+  const destination = profile.agentDir;
   mkdirSync(destination, { recursive: true, mode: 0o700 });
   for (const name of ['agent.db', 'config.yml', 'models.yml']) {
     const from = join(source, name);
@@ -325,17 +368,16 @@ export function createIsolatedOmpProfile(options: Readonly<{
     const omp = requireOmp();
     options.supportHome.applyTo(env);
     if (env.HOME !== options.supportHome.home) fail('shared support HOME was not applied last');
-    if (env.OMP_PROFILE !== paths.ompProfile) fail('OMP profile isolation was not configured');
     try {
-      runRuntimeCommand(omp, ['--profile', paths.ompProfile, 'plugin', 'marketplace', 'add', 'Ship-With-AI/skills'], { cwd: root, env });
+      runRuntimeCommand(omp, ['plugin', 'marketplace', 'add', 'Ship-With-AI/skills'], { cwd: root, env });
     } catch (error) {
       if (!String(error).includes('Marketplace "ship-with-ai-skills" already exists')) throw error;
     }
     const installationCwd = options.installationCwd ?? root;
-    runRuntimeCommand(omp, ['--profile', paths.ompProfile, 'plugin', 'install', '--scope', 'project', 'ship-with-ai@ship-with-ai-skills'], { cwd: installationCwd, env });
+    runRuntimeCommand(omp, ['plugin', 'install', '--scope', 'project', 'ship-with-ai@ship-with-ai-skills'], { cwd: installationCwd, env });
     const home = env.HOME;
     if (home === undefined) fail('OMP profile HOME is missing');
-    const skillDirectory = locateInstalledSkill(paths, home, installationCwd);
+    const skillDirectory = locateInstalledSkill(paths, installationCwd);
     assertInstalledSkill(skillDirectory);
     return Object.freeze({
       root,
@@ -345,7 +387,6 @@ export function createIsolatedOmpProfile(options: Readonly<{
       xdgDataDir: paths.xdgDataDir,
       xdgStateDir: paths.xdgStateDir,
       xdgCacheDir: paths.xdgCacheDir,
-      ompProfile: paths.ompProfile,
       env: Object.freeze(env),
       pluginTreeRoot: skillDirectory,
       cleanup() {
@@ -362,6 +403,6 @@ export function createIsolatedOmpProfile(options: Readonly<{
 }
 
 function chmodRoot(path: string): void {
-  // mkdtemp honors the process umask; the profile itself must remain private.
-  writeFileSync(join(path, '.profile-isolation'), 'provider credentials are never inherited; any approved temporary credential copy is read-only and removed with this profile.\n', { mode: 0o600, flag: 'wx' });
+  // mkdtemp honors the process umask; copied credentials remain private and are removed with this profile.
+  writeFileSync(join(path, '.profile-isolation'), 'provider credentials are copied only after explicit operator authorization and removed with this profile.\n', { mode: 0o600, flag: 'wx' });
 }

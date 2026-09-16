@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import * as verifier from '../../scripts/verify-npm-release.mjs';
+import { archiveBasename, packageLabel, packumentUrl, provenanceSubject, registryTarballUrl, version } from '../../scripts/release-identity.mjs';
 
 const execFileAsync = promisify(execFile);
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -17,6 +18,7 @@ const verifierUrl = new URL('../../scripts/verify-npm-release.mjs', import.meta.
 const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 const sha1 = (value: string | Buffer) => createHash('sha1').update(value).digest('hex');
 const integrity = (value: string | Buffer) => `sha512-${createHash('sha512').update(value).digest('base64')}`;
+const mismatchedVersion = '9999.0.0';
 
 type Archive = {
   readonly basename: string;
@@ -57,7 +59,7 @@ function currentCi(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
 
 function archiveIdentity(bytes: Buffer): Archive {
   return {
-    basename: 'shipwithai-cumpa-1.5.0.tgz',
+    basename: archiveBasename,
     byteLength: bytes.byteLength,
     sha256: sha256(bytes),
     npmShasumSha1: sha1(bytes),
@@ -68,7 +70,7 @@ function archiveIdentity(bytes: Buffer): Archive {
 function candidateReports(archive: Archive): Pick<Fixture, 'producer' | 'scanner' | 'acceptance'> {
   const hash = 'b'.repeat(64);
   const runtimeDependencies = { '@fastify/static': '8.3.0', fastify: '5.5.0', zod: '4.4.3' };
-  const packageIdentity = { name: '@shipwithai/cumpa', version: '1.5.0', runtimeDependencies };
+  const packageIdentity = { name: '@shipwithai/cumpa', version, runtimeDependencies };
   const distFiles = ['dist/bin/cumpa.mjs', 'dist/native/directory_exchange.node', 'dist/web/index.html'].map((path) => ({ path, mode: path.endsWith('.mjs') ? 0o755 : 0o644, byteLength: 1, sha256: hash }));
   const distSha256 = sha256(JSON.stringify(distFiles));
   const files = [...distFiles.map(({ path, mode, byteLength }) => ({ path, mode, size: byteLength })), ...['package.json', 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'].map((path) => ({ path, mode: 0o644, size: 1 }))];
@@ -92,11 +94,11 @@ function candidateReports(archive: Archive): Pick<Fixture, 'producer' | 'scanner
   };
   const acceptance = {
     kind: 'cumpa.runtime-artifact-acceptance/v1', status: 'passed', profile: 'stable', purpose: 'candidate', archive, package: packageIdentity,
-    install: { packageLabel: '@shipwithai/cumpa@1.5.0', binLabel: 'cumpa', manifestSha256: hash, dependencyCount: 3, dependencyInventorySha256: hash },
+    install: { packageLabel, binLabel: 'cumpa', manifestSha256: hash, dependencyCount: 3, dependencyInventorySha256: hash },
     scanner, browser: { assets: true, workers: true, codicon: true }, review: { relaunch: true, canonicalV2: true, isolatedDrafts: true, reExport: 'exported' },
     support: { unavailable: true, dismissed: true, unrestricted: true, configured: true, originSha256: producer.support.originSha256 },
     exactPatch: { canonicalV3: true, grounded: true }, native: { observedReExport: true, fallback: 'reExportUnsupported', target: { platform: 'darwin', arch: 'arm64' } },
-    cleanup: { complete: true }, sourceControl: { unchanged: true }, checks: ['PKG-03', 'PKG-04', 'PKG-05', 'REL-03'], limitations: ['Acceptance fixture only.'],
+    cleanup: { complete: true }, sourceControl: { unchanged: true, scenarios: [{ name: 'review', unchanged: true }] }, checks: ['PKG-03', 'PKG-04', 'PKG-05', 'REL-03'], limitations: ['Acceptance fixture only.'],
   };
   return { producer, scanner, acceptance };
 }
@@ -104,7 +106,7 @@ function candidateReports(archive: Archive): Pick<Fixture, 'producer' | 'scanner
 function provenanceStatement() {
   return {
     _type: 'https://in-toto.io/Statement/v1',
-    subject: [{ name: 'pkg:npm/%40shipwithai/cumpa@1.5.0', digest: { sha512: Buffer.from(fixture.archive.npmIntegritySha512.slice(7), 'base64').toString('hex') } }],
+    subject: [{ name: provenanceSubject, digest: { sha512: Buffer.from(fixture.archive.npmIntegritySha512.slice(7), 'base64').toString('hex') } }],
     predicateType: 'https://slsa.dev/provenance/v1',
     predicate: {
       buildDefinition: {
@@ -126,8 +128,8 @@ function verifiedAudit(statement = provenanceStatement()) {
   return {
     invalid: [], missing: [],
     verified: [{
-      name: '@shipwithai/cumpa', version: '1.5.0', location: 'node_modules/@shipwithai/cumpa', registry: 'https://registry.npmjs.org/',
-      attestations: { url: 'https://registry.npmjs.org/-/npm/v1/attestations/@shipwithai%2fcumpa@1.5.0' },
+      name: '@shipwithai/cumpa', version, location: 'node_modules/@shipwithai/cumpa', registry: 'https://registry.npmjs.org/',
+      attestations: { url: `https://registry.npmjs.org/-/npm/v1/attestations/@shipwithai%2fcumpa@${version}` },
       attestationBundles: [statement, { ...statement, predicateType: 'https://docs.npmjs.com/attestations/publish/v0.1' }].map((value) => ({
         predicateType: value.predicateType,
         bundle: { dsseEnvelope: { payloadType: 'application/vnd.in-toto+json', payload: Buffer.from(JSON.stringify(value)).toString('base64'), signatures: [{ keyid: '', sig: 'fixture-only' }] } },
@@ -156,25 +158,25 @@ for (const path of [option('userconfig'), option('globalconfig')]) if (readFileS
 if (args.length === 1 && args[0] === '--version') { console.log('11.19.1'); process.exit(0); }
 mkdirSync(cache, { recursive: true });
 if (basename(process.argv[1]).startsWith('npx')) {
-  if (existsSync(join(cache, 'consumer-used')) || JSON.stringify(args) !== JSON.stringify(['--yes', '@shipwithai/cumpa@1.5.0', '--version'])) process.exit(44);
-  console.log(${JSON.stringify(mode === 'wrong-npx' ? '1.5.1' : '1.5.0')}); process.exit(0);
+  if (existsSync(join(cache, 'consumer-used')) || JSON.stringify(args) !== JSON.stringify(['--yes', ${JSON.stringify(packageLabel)}, '--version'])) process.exit(44);
+  console.log(${JSON.stringify(mode === 'wrong-npx' ? mismatchedVersion : version)}); process.exit(0);
 }
 if (args.includes('install')) {
-  if (!args.includes('@shipwithai/cumpa@1.5.0') || !args.includes('--ignore-scripts') || existsSync(join(cache, 'consumer-used'))) process.exit(45);
+  if (!args.includes(${JSON.stringify(packageLabel)}) || !args.includes('--ignore-scripts') || existsSync(join(cache, 'consumer-used'))) process.exit(45);
   writeFileSync(join(cache, 'consumer-used'), 'fixture');
   const global = args.includes('--global') || args.includes('-g');
   const prefix = option('prefix');
   const target = global ? join(prefix, 'lib/node_modules/@shipwithai/cumpa') : join(process.cwd(), 'node_modules/@shipwithai/cumpa');
   if (${JSON.stringify(mode)} !== 'missing-installed-target' || global) {
     mkdirSync(target, { recursive: true });
-    writeFileSync(join(target, 'package.json'), JSON.stringify({ name: '@shipwithai/cumpa', version: '1.5.0', bin: { cumpa: 'dist/bin/cumpa.mjs' } }));
+    writeFileSync(join(target, 'package.json'), JSON.stringify({ name: '@shipwithai/cumpa', version: ${JSON.stringify(version)}, bin: { cumpa: 'dist/bin/cumpa.mjs' } }));
   }
   if (global) {
     mkdirSync(join(prefix, 'bin'), { recursive: true });
-    writeFileSync(join(prefix, 'bin/cumpa'), '#!${process.execPath}\\nconsole.log("1.5.0");\\n'); chmodSync(join(prefix, 'bin/cumpa'), 0o755);
+    writeFileSync(join(prefix, 'bin/cumpa'), '#!${process.execPath}\\nconsole.log(${JSON.stringify(version)});\\n'); chmodSync(join(prefix, 'bin/cumpa'), 0o755);
   } else {
     const root = JSON.parse(readFileSync('package.json', 'utf8'));
-    writeFileSync('package-lock.json', JSON.stringify({ name: root.name, lockfileVersion: 3, packages: { '': root, 'node_modules/@shipwithai/cumpa': { name: '@shipwithai/cumpa', version: '1.5.0', integrity: ${JSON.stringify(fixture.archive.npmIntegritySha512)}, resolved: 'https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz' } } }));
+    writeFileSync('package-lock.json', JSON.stringify({ name: root.name, lockfileVersion: 3, packages: { '': root, 'node_modules/@shipwithai/cumpa': { name: '@shipwithai/cumpa', version: ${JSON.stringify(version)}, integrity: ${JSON.stringify(fixture.archive.npmIntegritySha512)}, resolved: ${JSON.stringify(registryTarballUrl)} } } }));
   }
   console.log('{}'); process.exit(0);
 }
@@ -195,8 +197,8 @@ process.exit(46);
     if (url.origin !== 'https://registry.npmjs.org') throw new Error('Unexpected registry fixture request');
     if (url.pathname.endsWith('.tgz')) return new Response(mode === 'wrong-download' ? 'wrong bytes' : await readFile(fixture.archivePath, 'utf8'));
     return Response.json({
-      name: '@shipwithai/cumpa', version: '1.5.0',
-      dist: { tarball: 'https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz', shasum: fixture.archive.npmShasumSha1, integrity: fixture.archive.npmIntegritySha512 },
+      name: '@shipwithai/cumpa', version,
+      dist: { tarball: registryTarballUrl, shasum: fixture.archive.npmShasumSha1, integrity: fixture.archive.npmIntegritySha512 },
     });
   });
 }
@@ -306,9 +308,11 @@ describe('npm release verifier', () => {
   });
 
   test('rejects crossed observations, accepted-local fallback authority, failed checks, and output replacement', async () => {
+    expect(mismatchedVersion).not.toBe(version);
     const substitutions: Array<[string, (reports: Pick<Fixture, 'producer' | 'scanner' | 'acceptance'>) => void]> = [
       ['scanner archive', ({ scanner }) => { (scanner.archive as Record<string, unknown>).sha256 = 'd'.repeat(64); }],
-      ['acceptance package', ({ acceptance }) => { ((acceptance.package as Record<string, unknown>).version) = '1.5.1'; }],
+      ['producer archive basename', ({ producer }) => { (producer.archive as Record<string, unknown>).basename = `shipwithai-cumpa-${mismatchedVersion}.tgz`; }],
+      ['acceptance package', ({ acceptance }) => { ((acceptance.package as Record<string, unknown>).version) = mismatchedVersion; }],
       ['accepted-local fallback authority', ({ producer }) => { producer.status = 'accepted-local'; }],
       ['missing native re-export', ({ acceptance }) => { ((acceptance.native as Record<string, unknown>).observedReExport) = false; }],
       ['failed scanner check', ({ scanner }) => { ((scanner.checks as Record<string, unknown>).inventoryParity) = false; }],
@@ -317,6 +321,9 @@ describe('npm release verifier', () => {
       ['installed manifest identity', ({ acceptance }) => { (acceptance.install as Record<string, unknown>).manifestSha256 = 'd'.repeat(64); }],
       ['unknown private producer metadata', ({ producer }) => { (producer.build as Record<string, unknown>).privatePath = '/private/fixture/custody'; }],
       ['unbounded private report text', ({ scanner }) => { scanner.limitations = ['https://abcdefghijklmnopqrst.supabase.co']; }],
+      ['absent source-control scenarios', ({ acceptance }) => { delete (acceptance.sourceControl as Record<string, unknown>).scenarios; }],
+      ['empty source-control scenarios', ({ acceptance }) => { (acceptance.sourceControl as Record<string, unknown>).scenarios = []; }],
+      ['unasserted source-control scenario', ({ acceptance }) => { (acceptance.sourceControl as Record<string, unknown>).scenarios = [{ name: 'review', unchanged: false }]; }],
     ];
     for (const [, mutate] of substitutions) {
       const reports = structuredClone(candidateReports(fixture.archive));
@@ -401,6 +408,7 @@ describe('npm release verifier', () => {
 
   test.for(['passed', 'missing-installed-target', 'missing-attestation', 'wrong-download', 'wrong-npx'])('public verification enforces real consumer observations: %s', async (mode) => {
     await seal();
+    if (mode === 'wrong-npx') expect(mismatchedVersion).not.toBe(version);
     await publicNpmFixture(mode);
     const verifyPublic = verifier.verifyPublicNpmRelease;
     const operation = verifyPublic({
@@ -422,9 +430,15 @@ describe('npm release verifier', () => {
 
 
   test('seals a fixture through the standalone symlinked CLI without project dependencies', async () => {
-    const standalone = join(fixture.root, 'standalone.mjs');
+    const scripts = join(fixture.root, 'scripts');
+    const standalone = join(scripts, 'standalone.mjs');
     const launcher = join(fixture.root, 'entry.mjs');
-    await writeFile(standalone, await readFile(verifierPath));
+    await mkdir(scripts);
+    await Promise.all([
+      writeFile(standalone, await readFile(verifierPath)),
+      writeFile(join(scripts, 'release-identity.mjs'), await readFile(join(projectRoot, 'scripts', 'release-identity.mjs'))),
+      writeJson(join(fixture.root, 'package.json'), { name: '@shipwithai/cumpa', version }),
+    ]);
     await symlink(standalone, launcher);
     const result = await execFileAsync(process.execPath, [
       launcher, 'seal-candidate', '--archive', fixture.archivePath, '--producer-evidence', fixture.producerPath,
@@ -432,6 +446,7 @@ describe('npm release verifier', () => {
     ], { cwd: fixture.root, env: { PATH: process.env.PATH, ...currentCi() }, maxBuffer: 256 * 1024 });
     expect(JSON.parse(result.stdout)).toMatchObject({ status: 'verified', archive: fixture.archive });
     expect(JSON.parse(await readFile(fixture.sealedPath, 'utf8'))).toMatchObject({ status: 'verified', archive: fixture.archive });
+    await expect(stat(join(fixture.root, 'node_modules'))).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
   test('emits bounded failure data without custody, origin, auth, or raw provider payloads', async () => {

@@ -76,12 +76,11 @@ interface GeneratedRangeRequest {
     readonly pathspecs?: readonly string[];
   }>;
 }
-
 function rangeRequest(
   repository: GitFixture,
   pathspecs: readonly string[] = [],
   base = repository.baseRef,
-  head = repository.headRef,
+  head: string = repository.headRef,
 ): GeneratedRangeRequest {
   return {
     kind: 'cumpa.review-request',
@@ -337,17 +336,16 @@ test('generated CLI opens immutable pinned session', async ({ browser, page }, t
     expect(Number(parsedUrl.port)).toBeGreaterThan(0);
     expect(parsedUrl.hash).toMatch(/^#token=[A-Za-z0-9_-]{43,}$/);
 
-    const openerEvidence = await waitForText(
-      running.openerLogPath,
-      (content) => content.length > 0,
+    const terminal = await waitForText(
+      running.outputPath,
+      (content) =>
+        content.includes(`${url}\n`) &&
+        content.includes(
+          'Open the URL above if the browser did not open. Press Ctrl+C to stop.',
+        ),
     );
-    const [openerInvocation] = openerEvidence
-      .trim()
-      .split('\n')
-      .map((line) => JSON.parse(line) as { arguments: string[]; terminal: string });
-    expect(openerInvocation.arguments).toContain(url);
-    expect(openerInvocation.terminal).toContain(`${url}\n`);
-    expect(openerInvocation.terminal).toContain(
+    expect(terminal).toContain(`${url}\n`);
+    expect(terminal).toContain(
       'Open the URL above if the browser did not open. Press Ctrl+C to stop.',
     );
 
@@ -376,16 +374,19 @@ test('generated range request preserves the server-scoped pinned review', async 
     const expectedHead = independentlyResolve(repository, ['rev-parse', '--verify', repository.headRef]);
     const url = await waitForLoopbackUrl(running);
     const terminal = readFileSync(running.outputPath, 'utf8');
-    const openerEvidence = await waitForText(running.openerLogPath, (content) => content.length > 0);
+
     const parsedUrl = new URL(url);
     const token = parsedUrl.hash.slice('#token='.length);
     const sessionResponse = await context.request.get(`${parsedUrl.origin}/api/session`, {
       headers: { authorization: `Bearer ${token}` },
     });
     const session = (await sessionResponse.json()) as SessionResponse;
+    if (!('base' in session)) {
+      throw new Error('Expected a pinned session response.');
+    }
 
     expect(terminal).not.toContain('Base source');
-    expect(openerEvidence.trim().split('\n')).toHaveLength(1);
+
     expect(session.range).toEqual({
       kind: 'revisions',
       baseOid: expectedBase,
@@ -426,6 +427,50 @@ test('generated range invalid native pathspec fails before listener or opener', 
     expect(result.stderr).not.toContain('not-a-magic');
     expect(result.stderr).not.toContain('fatal:');
     expect(result.stderr).not.toMatch(/127\.0\.0\.1|https?:\/\//);
+
+  } finally {
+    await repository.cleanup();
+  }
+});
+
+test('generated CLI records the darwin opener invocation', async () => {
+  test.skip(
+    process.platform !== 'darwin',
+    'the fake opener is intercepted only through PATH, which open consults for `open` on darwin alone; elsewhere it spawns bundled absolute xdg-open',
+  );
+  const repository = await createGitFixture();
+  const running = startGeneratedCli(repository);
+  try {
+    const url = await waitForLoopbackUrl(running);
+    const openerEvidence = await waitForText(
+      running.openerLogPath,
+      (content) => content.length > 0,
+    );
+    const openerInvocations = openerEvidence
+      .trim()
+      .split('\n')
+      .map((line) => JSON.parse(line) as { arguments: string[] });
+
+    expect(openerInvocations).toHaveLength(1);
+    expect(openerInvocations[0]?.arguments).toContain(url);
+  } finally {
+    await stopGeneratedCli(running);
+    await repository.cleanup();
+  }
+});
+
+test('generated invalid range does not invoke the darwin opener', async () => {
+  test.skip(
+    process.platform !== 'darwin',
+    'the fake opener is intercepted only through PATH, which open consults for `open` on darwin alone; elsewhere it spawns bundled absolute xdg-open',
+  );
+  const repository = await createGitFixture();
+  try {
+    const result = await runGeneratedRequest(
+      repository,
+      rangeRequest(repository, [':(not-a-magic)secret']),
+    );
+
     expect(existsSync(result.openerLogPath)).toBe(false);
   } finally {
     await repository.cleanup();
@@ -672,6 +717,9 @@ test('complete packaged Phase 1 ordering matrix', async ({ browser }, testInfo) 
           `[behavioral] ${matrixCase.name} session API`,
         ).toBe(200);
         const session = (await sessionResponse.json()) as SessionResponse;
+        if (!('base' in session)) {
+          throw new Error('Expected a pinned session response.');
+        }
         expect(session.base).toMatchObject({
           label: matrixCase.selections.base.label,
           oid: expectedBase,

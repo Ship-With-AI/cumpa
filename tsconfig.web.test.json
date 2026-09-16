@@ -1,0 +1,29 @@
+{
+  "extends": "./tsconfig.web.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "types": [
+      "node",
+      "vite/client"
+    ],
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": [
+    "src/web/shims-vue.d.ts",
+    "src/web/**/*.ts",
+    "tests/e2e/**/*.ts",
+    "tests/integration/**/*.ts",
+    "tests/unit/agent-ready-export-state.test.ts",
+    "tests/unit/comment-groups.test.ts",
+    "tests/unit/draft-reconciliation.test.ts",
+    "tests/unit/file-tree.test.ts",
+    "tests/unit/line-mapping.test.ts",
+    "tests/unit/markdown-preview.test.ts",
+    "tests/unit/monaco-diff-adapter.test.ts",
+    "tests/unit/monaco-diff-semantics.test.ts",
+    "tests/unit/monaco-theme.test.ts",
+    "tests/unit/workspace-state.test.ts"
+  ]
+}

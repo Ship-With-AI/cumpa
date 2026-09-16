@@ -75,7 +75,7 @@ async function waitForLoopbackUrl(running: RunningCli): Promise<string> {
       ? readFileSync(running.outputPath, 'utf8')
       : '';
     const match = output.match(/http:\/\/127\.0\.0\.1:\d+\/#token=[A-Za-z0-9_-]{43,}/);
-    if (match !== null && fakeOpenerInterceptedUrl(running, match[0])) {
+    if (match !== null) {
       return match[0];
     }
     if (running.child.exitCode !== null || running.child.signalCode !== null) {
@@ -202,6 +202,25 @@ test.beforeAll(() => {
 test.afterAll(() => {
   rmSync(packedRoot, { force: true, recursive: true });
 });
+
+test('packaged anchored review records the darwin opener invocation', async () => {
+  test.skip(
+    process.platform !== 'darwin',
+    'the fake opener is intercepted only through PATH, which open consults for `open` on darwin alone; elsewhere it spawns bundled absolute xdg-open',
+  );
+  const fixture = await createGitFixture({ anchoredReview: true });
+  const running = startGeneratedCli(fixture);
+  try {
+    const url = await waitForLoopbackUrl(running);
+    await expect
+      .poll(() => fakeOpenerInterceptedUrl(running, url))
+      .toBe(true);
+  } finally {
+    await stopGeneratedCli(running);
+    await fixture.cleanup();
+  }
+});
+
 
 test('packaged anchored gap closure recovers a non-line-1 exact anchor', async ({ browser, page }, testInfo) => {
   assertChromium(browser, testInfo);

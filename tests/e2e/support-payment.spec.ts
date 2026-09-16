@@ -134,7 +134,7 @@ if (JSON.stringify(actual) !== database && !functionDeployment) {
   expect(failure?.stderr).not.toContain('sensitive-db-value');
 });
 
-test('live deployment rejects nonzero authority and keeps its smoke non-destructive', async ({}, testInfo) => {
+test('live deployment accepts unchanged populated authority and rejects changed authority', async ({}, testInfo) => {
   const projectRef = 'a'.repeat(20);
   const origin = `https://${projectRef}.supabase.co`;
   const bin = testInfo.outputPath('live-bin');
@@ -145,11 +145,13 @@ test('live deployment rejects nonzero authority and keeps its smoke non-destruct
   await writeFile(npx, '#!/usr/bin/env node\n');
   await chmod(npx, 0o755);
   await writeFile(fetchHook, `
+let authorityCalls = 0;
 globalThis.fetch = async (input, options = {}) => {
   const url = String(input);
   if (url.includes('/database/query')) {
-    if (process.env.NONZERO === 'true') return new Response(JSON.stringify([{ table_name: 'auth.users', id: '11111111-1111-4111-8111-111111111111' }]));
-    return new Response('[]');
+    authorityCalls += 1;
+    const populated = process.env.POPULATED === 'true' || (process.env.CHANGED === 'true' && authorityCalls > 1);
+    return new Response(JSON.stringify(populated ? [{ table_name: 'auth.users', id: '11111111-1111-4111-8111-111111111111' }] : []));
   }
   if (url === 'https://api.stripe.com/v1/prices/price_live') return new Response(JSON.stringify({ object: 'price', active: true, livemode: true, currency: 'usd', unit_amount: 4999, type: 'one_time' }));
   if (url === 'https://api.stripe.com/v1/webhook_endpoints/we_live') return new Response(JSON.stringify({ object: 'webhook_endpoint', status: 'enabled', livemode: true, url: '${origin}/functions/v1/stripe-webhook', enabled_events: process.env.BAD_ENDPOINT === 'true' ? ['checkout.session.completed'] : ['checkout.session.completed', 'checkout.session.async_payment_succeeded'] }));
@@ -193,8 +195,16 @@ globalThis.fetch = async (input, options = {}) => {
     live_smoke: { status: 'passed', non_destructive: true },
   });
   await expect(execFileAsync(process.execPath, [script, ...args], {
-    env: { ...environment, NONZERO: 'true' },
-  })).rejects.toMatchObject({ stderr: expect.stringContaining('evidence authority is not zero') });
+    env: { ...environment, POPULATED: 'true' },
+  })).resolves.toBeDefined();
+  expect(JSON.parse(await readFile(evidence, 'utf8'))).toMatchObject({
+    coherence: { status: 'passed' },
+    live_smoke: { status: 'passed', non_destructive: true },
+    authority: { 'auth.users': { count: 1 } },
+  });
+  await expect(execFileAsync(process.execPath, [script, ...args], {
+    env: { ...environment, CHANGED: 'true' },
+  })).rejects.toMatchObject({ stderr: expect.stringContaining('live deployment changed authority rows') });
   await expect(execFileAsync(process.execPath, [script, ...args], {
     env: { ...environment, BAD_ENDPOINT: 'true' },
   })).rejects.toMatchObject({ stderr: expect.stringContaining('live Stripe coherence failed: endpoint-events') });
@@ -207,10 +217,11 @@ test('workflow verification rejects toolchain, database-order, and retired-input
     ['node', 'node-version: 24', 'node-version: 22', 'workflow is missing required'],
     ['deno', 'deno-version: v2.7.14', 'deno-version: v2.7.13', 'workflow is missing required'],
     ['install', 'npm ci', 'npm install', 'workflow is missing required'],
+    ['test typecheck', 'npm run typecheck:tests', 'npm run typecheck:tests:web', 'workflow is missing required'],
     ['build', 'npm run build', 'npm run build:runtime', 'workflow is missing required'],
     ['browser install', 'npx playwright install --with-deps chromium', 'npx playwright install chromium', 'workflow is missing required'],
     ['vitest', 'npx vitest run --no-file-parallelism', 'npx vitest run --no-file-parallelism tests/unit', 'workflow is missing required'],
-    ['playwright', 'npx playwright test tests/e2e/support-payment.spec.ts tests/e2e/support-recovery.spec.ts tests/e2e/support-restore.spec.ts', 'npx playwright test tests/e2e/support-payment.spec.ts', 'workflow is missing required'],
+    ['playwright', 'npx playwright test', 'npx playwright test tests/e2e/support-payment.spec.ts', 'workflow is missing required'],
     ['deno suite', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'deno test supabase/functions/tests', 'workflow is missing required'],
     ['Supabase pin', 'npx supabase@2.114.0 db start', 'npx supabase db start', 'workflow is missing required'],
     ['project ref', 'SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}', 'SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}', 'workflow does not map the protected project ref'],

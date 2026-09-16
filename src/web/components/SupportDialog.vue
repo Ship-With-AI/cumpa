@@ -5,7 +5,7 @@ import ModalDialog from './ui/ModalDialog.vue';
 
 const props = defineProps<{
   readonly open: boolean;
-  readonly mode: 'invitation' | 'waiting' | 'verified' | 'thankYou';
+  readonly mode: 'invitation' | 'waiting' | 'verified' | 'thankYou' | 'notConfirmed';
   readonly busy: boolean;
 }>();
 
@@ -21,6 +21,7 @@ const status = computed(() => {
   if (props.mode === 'waiting') return 'Waiting for confirmation… You can close this and keep reviewing.';
   if (props.mode === 'verified') return 'Support is verified on this machine.';
   if (props.mode === 'thankYou') return 'Thank you for supporting Cumpa.';
+  if (props.mode === 'notConfirmed') return "Support wasn't confirmed. You can try again.";
   return '';
 });
 
@@ -43,7 +44,7 @@ defineExpose({ focusInitial });
   >
     <div class="support-dialog">
       <p id="support-dialog-status" class="support-dialog__status" aria-live="polite">{{ status }}</p>
-      <template v-if="mode === 'invitation'">
+      <template v-if="mode === 'invitation' || mode === 'notConfirmed'">
         <p>Cumpa stays fully usable. One optional USD $49.99 payment supports development. Paying once stops the launch prompt.</p>
         <div class="support-dialog__actions">
           <button type="button" class="ui-button ui-button--primary" :disabled="busy" @click="emit('support')">Support Cumpa — $49.99</button>

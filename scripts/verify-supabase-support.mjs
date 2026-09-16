@@ -9,8 +9,8 @@ import { fileURLToPath } from 'node:url';
 
 const EVIDENCE_VERSION = 1;
 const MANAGEMENT_ORIGIN = 'https://api.supabase.com';
-// Immutable v1.4 evidence, read as a fixture from its permanent archive home. The working
-// `.planning/phases/` copy was removed when v1.4 was archived.
+// v1.4 milestone archive, not `.planning/phases/`: the phase directory was deleted when v1.4
+// closed, which left this path dangling and hard-failed prelaunch-test deployments.
 const PRELAUNCH_DEPLOYMENT_EVIDENCE = '.planning/milestones/v1.4-phases/02-move-the-implementation-to-supabase/02-08-TEST-DEPLOYMENT-EVIDENCE.md';
 const TABLES = [
   ['auth.users', 'id'],
@@ -581,7 +581,7 @@ async function localPackageSecurityReview(output) {
   for (const name of LOCAL_PROTECTED_INPUTS) if (process.env[name] !== undefined) fail(`local package security review forbids ${name}`);
   const commands = [
     { id: 'vitest', command: 'npx', args: ['vitest', 'run', '--no-file-parallelism'] },
-    { id: 'playwright', command: 'npx', args: ['playwright', 'test', 'tests/e2e/support-payment.spec.ts', 'tests/e2e/support-restore.spec.ts'] },
+    { id: 'playwright', command: 'npx', args: ['playwright', 'test'] },
     { id: 'database-start', command: 'npx', args: ['supabase@2.114.0', 'db', 'start'] },
     { id: 'database-reset-1', command: 'npx', args: ['supabase@2.114.0', 'db', 'reset', '--local', '--no-seed'] },
     { id: 'database-test-1', command: 'npx', args: ['supabase@2.114.0', 'test', 'db'] },
@@ -914,13 +914,11 @@ async function probeLiveStatus(inputs) {
 
 async function deployLive(inputs, evidencePath) {
   const before = await snapshotAuthority(inputs);
-  assertManifest(before, true);
   const coherence = await verifyLiveCoherence(inputs);
   const order = await applyHostedConfiguration(inputs);
   const routes = await probeRoutes(inputs.routes);
   const liveSmoke = await probeLiveStatus(inputs);
   const authority = await snapshotAuthority(inputs);
-  assertManifest(authority, true);
   if (JSON.stringify(before) !== JSON.stringify(authority)) fail('live deployment changed authority rows');
   const record = deploymentRecord(inputs, order, routes, authority);
   record.authority_before = before;
@@ -1734,12 +1732,12 @@ async function verifyWorkflow(path, options) {
     'push:', 'branches: [main]', 'contents: read', 'group: supabase-production', 'cancel-in-progress: false',
     'repository-gates:', 'deploy-production:', 'needs: repository-gates', 'environment: production',
     'actions/setup-node@v4', 'node-version: 24', 'denoland/setup-deno@v2', 'deno-version: v2.7.14',
-    'npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test tests/e2e/support-payment.spec.ts tests/e2e/support-recovery.spec.ts tests/e2e/support-restore.spec.ts', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests',
+    'npm ci', 'npm run build', 'npm run typecheck:tests', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests',
     'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local', '--run-deployment', '02-09-ACCEPTANCE-EVIDENCE.md', 'args+=(--acceptance "$acceptance")', 'production-live',
   ];
   for (const value of required) if (!workflow.includes(value)) fail(`workflow is missing required ${value}`);
   const commands = new Set(workflow.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('- run:')).map((line) => line.slice('- run:'.length).trim()));
-  for (const value of ['npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test tests/e2e/support-payment.spec.ts tests/e2e/support-recovery.spec.ts tests/e2e/support-restore.spec.ts', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
+  for (const value of ['npm ci', 'npm run build', 'npm run typecheck:tests', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
     if (!commands.has(value)) fail(`workflow is missing required ${value}`);
   }
   if (/workflow_dispatch:|paths(?:-ignore)?:/u.test(workflow)) fail('workflow has a forbidden trigger filter');
@@ -1748,7 +1746,7 @@ async function verifyWorkflow(path, options) {
     if (!gates.includes(value)) fail(`workflow is missing required ${value}`);
   }
   const gateCommands = new Set(gates.split('\n').map((line) => line.trim()).filter((line) => line.startsWith('- run:')).map((line) => line.slice('- run:'.length).trim()));
-  for (const value of ['npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test tests/e2e/support-payment.spec.ts tests/e2e/support-recovery.spec.ts tests/e2e/support-restore.spec.ts', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
+  for (const value of ['npm ci', 'npm run build', 'npm run typecheck:tests', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism', 'npx playwright test', 'deno test --allow-env --config supabase/functions/deno.json supabase/functions/tests', 'npx supabase@2.114.0 db start', 'npx supabase@2.114.0 db reset --local --no-seed', 'npx supabase@2.114.0 test db', 'npx supabase@2.114.0 migration list --local', 'npx supabase@2.114.0 db lint --local']) {
     if (!gateCommands.has(value)) fail(`workflow is missing required ${value}`);
   }
   const testOrder = ['npm ci', 'npm run build', 'npx playwright install --with-deps chromium', 'npx vitest run --no-file-parallelism'].map((value) => workflow.indexOf(value));

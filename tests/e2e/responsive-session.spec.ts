@@ -907,11 +907,12 @@ test('responsive keyboard and accessibility contract', async ({
       const bodyLineHeight = resolveToken(canonicalTokens, '--line-height-body');
       const metadataSize = resolveToken(canonicalTokens, '--font-size-metadata');
       const metadataLineHeight = resolveToken(canonicalTokens, '--line-height-metadata');
+      const computedUiFont = expect.stringMatching(/^-apple-system, (?:BlinkMacSystemFont|"system-ui"), "Segoe UI", sans-serif$/);
       expect(typography).toEqual([
-        ['#cumpa-heading', pageHeading, '600', pageHeadingLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['[data-normal-file]', bodySize, '400', bodyLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.availability-marker', metadataSize, '600', metadataLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
-        ['.pin-cue', metadataSize, '600', metadataLineHeight, '-apple-system, "system-ui", "Segoe UI", sans-serif'],
+        ['#cumpa-heading', pageHeading, '600', pageHeadingLineHeight, computedUiFont],
+        ['[data-normal-file]', bodySize, '400', bodyLineHeight, computedUiFont],
+        ['.availability-marker', metadataSize, '600', metadataLineHeight, computedUiFont],
+        ['.pin-cue', metadataSize, '600', metadataLineHeight, computedUiFont],
       ]);
       await expect(page.locator('.path-display').first()).toHaveCSS('font-family', /monospace/);
 

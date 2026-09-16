@@ -74,7 +74,7 @@ function grounded(
         availability: Object.freeze({ kind: 'unsupported' as const, reason: 'binary' as const }),
       }),
     ]),
-    contents: new Map([
+    contents: new Map<string, GroundedExactPatch['contents'] extends ReadonlyMap<string, infer Content> ? Content : never>([
       [fileId, Object.freeze({ preimage: before, postimage: after })],
       [`file_${'q'.repeat(43)}`, Object.freeze({ preimage: undefined, postimage: Buffer.from([0]) })],
     ]),

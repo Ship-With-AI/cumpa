@@ -5,11 +5,10 @@ import { access, chmod, lstat, mkdir, mkdtemp, open, readFile, realpath, rm, sta
 import { tmpdir } from 'node:os';
 import { basename, delimiter, dirname, isAbsolute, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
+import { archiveBasename, packageLabel, packumentUrl, provenanceSubject, registryTarballUrl, version as packageVersion } from './release-identity.mjs';
 
 const execFileAsync = promisify(execFile);
 const packageName = '@shipwithai/cumpa';
-const packageVersion = '1.5.0';
-const packageLabel = `${packageName}@${packageVersion}`;
 const registry = 'https://registry.npmjs.org/';
 const repository = 'Ship-With-AI/cumpa';
 const repositoryId = '1327753770';
@@ -127,7 +126,7 @@ async function readJson(path, label) {
 }
 
 function archiveIdentity(bytes, basenameValue) {
-  if (basenameValue !== 'shipwithai-cumpa-1.5.0.tgz') fail('invalid archive basename');
+  if (basenameValue !== archiveBasename) fail('invalid archive basename');
   return {
     basename: basenameValue,
     byteLength: bytes.byteLength,
@@ -145,7 +144,7 @@ async function readArchive(path) {
 
 function validateArchive(value, label) {
   const archive = allowedObject(value, ['basename', 'byteLength', 'sha256', 'npmShasumSha1', 'npmIntegritySha512'], label, ['files']);
-  if (archive.basename !== 'shipwithai-cumpa-1.5.0.tgz' || !Number.isSafeInteger(archive.byteLength) || archive.byteLength <= 0 || archive.byteLength > maxArchiveBytes) fail(`invalid ${label}`);
+  if (archive.basename !== archiveBasename || !Number.isSafeInteger(archive.byteLength) || archive.byteLength <= 0 || archive.byteLength > maxArchiveBytes) fail(`invalid ${label}`);
   requirePattern(archive.sha256, `${label}.sha256`, sha256Pattern);
   requirePattern(archive.npmShasumSha1, `${label}.npmShasumSha1`, sha1Pattern);
   requirePattern(archive.npmIntegritySha512, `${label}.npmIntegritySha512`, sha512IntegrityPattern);
@@ -264,10 +263,18 @@ function validateAcceptance(value, producer, scanner) {
   allowedObject(value.native, ['observedReExport', 'fallback', 'target'], 'acceptance native');
   allowedObject(value.native.target, ['platform', 'arch'], 'acceptance target');
   allowedObject(value.cleanup, ['complete'], 'acceptance cleanup');
-  allowedObject(value.sourceControl, ['unchanged'], 'acceptance source control');
+  allowedObject(value.sourceControl, ['unchanged', 'scenarios'], 'acceptance source control');
   if (!isRecord(value.support) || value.support.configured !== true || value.support.originSha256 !== producer.support.originSha256 || value.support.unavailable !== true || value.support.dismissed !== true || value.support.unrestricted !== true) fail('acceptance support mismatch');
   if (!isRecord(value.native) || value.native.observedReExport !== true || value.native.fallback !== 'reExportUnsupported' || !isRecord(value.native.target) || value.native.target.platform !== 'darwin' || value.native.target.arch !== 'arm64') fail('acceptance native mismatch');
   if (!isRecord(value.cleanup) || value.cleanup.complete !== true || !isRecord(value.sourceControl) || value.sourceControl.unchanged !== true) fail('acceptance cleanup mismatch');
+  if (
+    !Array.isArray(value.sourceControl.scenarios) || value.sourceControl.scenarios.length === 0
+    || value.sourceControl.scenarios.some((scenario) => {
+      if (!isRecord(scenario)) return true;
+      allowedObject(scenario, ['name', 'unchanged'], 'acceptance source control scenario');
+      return typeof scenario.name !== 'string' || scenario.name.length === 0 || scenario.unchanged !== true;
+    })
+  ) fail('acceptance source control scenario mismatch');
   if (!Array.isArray(value.checks) || JSON.stringify([...value.checks].sort()) !== JSON.stringify([...expectedChecks].sort())) fail('incomplete acceptance checks');
   if (!Array.isArray(value.limitations) || value.limitations.some((entry) => typeof entry !== 'string')) fail('invalid acceptance limitations');
   return {
@@ -409,7 +416,7 @@ export function inspectNpmProvenance({ evidence, audit }) {
   if (!isRecord(statement) || statement._type !== 'https://in-toto.io/Statement/v1' || statement.predicateType !== 'https://slsa.dev/provenance/v1' || !Array.isArray(statement.subject) || statement.subject.length !== 1) fail('invalid provenance statement');
   const subject = statement.subject[0];
   const sha512 = Buffer.from(sealed.archive.npmIntegritySha512.slice('sha512-'.length), 'base64').toString('hex');
-  if (!isRecord(subject) || subject.name !== 'pkg:npm/%40shipwithai/cumpa@1.5.0' || !isRecord(subject.digest) || subject.digest.sha512 !== sha512) fail('provenance subject mismatch');
+  if (!isRecord(subject) || subject.name !== provenanceSubject || !isRecord(subject.digest) || subject.digest.sha512 !== sha512) fail('provenance subject mismatch');
   const predicate = statement.predicate;
   if (!isRecord(predicate) || !isRecord(predicate.buildDefinition) || !isRecord(predicate.runDetails)) fail('invalid provenance predicate');
   const definition = predicate.buildDefinition;
@@ -424,7 +431,7 @@ export function inspectNpmProvenance({ evidence, audit }) {
     subject: { name: subject.name, sha512 },
     claims: { repository, repositoryId, ownerId, workflowPath, ref: branchRef, sourceSha: sealed.ci.sourceSha, runId: sealed.ci.runId, runAttempt: sealed.ci.runAttempt, event: 'workflow_dispatch', runner: 'github-hosted' },
     checks: [
-      ['subject', 'pkg:npm/%40shipwithai/cumpa@1.5.0', subject.name],
+      ['subject', provenanceSubject, subject.name],
       ['sha512', sha512, subject.digest.sha512],
       ['repository', `https://github.com/${repository}`, workflow.repository],
       ['repositoryId', repositoryId, github.repository_id],
@@ -512,7 +519,7 @@ async function fetchBytes(url, limit) {
 function exactDist(metadata) {
   if (!isRecord(metadata) || metadata.name !== packageName || metadata.version !== packageVersion || !isRecord(metadata.dist)) fail('registry metadata mismatch');
   const { tarball, shasum, integrity } = metadata.dist;
-  if (tarball !== 'https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz' || !sha1Pattern.test(shasum) || !sha512IntegrityPattern.test(integrity)) fail('registry distribution metadata mismatch');
+  if (tarball !== registryTarballUrl || !sha1Pattern.test(shasum) || !sha512IntegrityPattern.test(integrity)) fail('registry distribution metadata mismatch');
   return { tarball, shasum, integrity };
 }
 
@@ -528,7 +535,7 @@ async function readInstalledTarget(root, integrity) {
   }
   if (!isRecord(manifest) || manifest.name !== packageName || manifest.version !== packageVersion || !isRecord(lock) || !isRecord(lock.packages)) fail('npm audit target mismatch');
   const entry = lock.packages['node_modules/@shipwithai/cumpa'];
-  if (!isRecord(entry) || (Object.hasOwn(entry, 'name') && entry.name !== packageName) || entry.version !== packageVersion || entry.integrity !== integrity || entry.resolved !== 'https://registry.npmjs.org/@shipwithai/cumpa/-/cumpa-1.5.0.tgz') fail('npm lock target mismatch');
+  if (!isRecord(entry) || (Object.hasOwn(entry, 'name') && entry.name !== packageName) || entry.version !== packageVersion || entry.integrity !== integrity || entry.resolved !== registryTarballUrl) fail('npm lock target mismatch');
 }
 
 export async function verifyPublicNpmRelease({ evidencePath, expectedEvidenceSha256, artifactId, artifactDigest, outputPath }) {
@@ -550,7 +557,7 @@ export async function verifyPublicNpmRelease({ evidencePath, expectedEvidenceSha
     const auditEnv = await protectedNpmEnvironment(join(root, 'audit-npm'));
     const npmVersion = (await run(process.execPath, [npmPath, '--version'], { cwd: root, env: auditEnv })).stdout.trim();
     if (npmVersion !== '11.19.1') fail('unsupported npm version');
-    const packumentBytes = await fetchBytes('https://registry.npmjs.org/@shipwithai%2fcumpa/1.5.0', maxMetadataBytes);
+    const packumentBytes = await fetchBytes(packumentUrl, maxMetadataBytes);
     let metadata;
     try { metadata = JSON.parse(packumentBytes.toString('utf8')); } catch { fail('registry metadata must contain JSON'); }
     const dist = exactDist(metadata);

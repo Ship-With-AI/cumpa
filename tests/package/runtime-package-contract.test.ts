@@ -13,6 +13,8 @@ import {
   assertSupportedNodeVersion,
   verifyPrerequisites,
 } from '../../scripts/verify-prerequisites.mjs';
+import { archiveBasename, version } from '../../scripts/release-identity.mjs';
+
 
 const projectRoot = resolve(import.meta.dirname, '../..');
 const packageManifestPath = join(projectRoot, 'package.json');
@@ -103,7 +105,7 @@ describe('runtime package contract', () => {
         PATH: `${commands}${delimiter}${process.env.PATH ?? ''}`,
       });
 
-      expect(result).toEqual({ code: 0, stderr: '', stdout: '1.5.0\n' });
+      expect(result).toEqual({ code: 0, stderr: '', stdout: `${version}\n` });
       await expect(readFile(gitSentinel)).rejects.toMatchObject({ code: 'ENOENT' });
       await expect(readFile(browserSentinel)).rejects.toMatchObject({ code: 'ENOENT' });
       await expect(readFile(serverSentinel)).rejects.toMatchObject({ code: 'ENOENT' });
@@ -119,8 +121,9 @@ describe('runtime package contract', () => {
       bin: { cumpa: 'dist/bin/cumpa.mjs' },
       engines: { node: '>=24' },
       name: '@shipwithai/cumpa',
-      version: '1.5.0',
+      version,
     });
+    expect(archiveBasename).toBe(`shipwithai-cumpa-${version}.tgz`);
     expect(manifest).not.toHaveProperty('private');
     expect(manifest.files).toEqual([
       'dist/',
@@ -130,6 +133,7 @@ describe('runtime package contract', () => {
     ]);
   });
 
+  // These temp-manifest vectors stay independent: the latter rejects the package name, not its version.
   test('accepts a controlled valid manifest version and rejects malformed metadata', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'cumpa-manifest-'));
     const manifestPath = join(directory, 'package.json');

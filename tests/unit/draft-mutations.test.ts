@@ -165,7 +165,16 @@ describe('aggregate draft mutation reducer', () => {
       current: draft('resolved'),
       mutation: { type: 'reopenComment', commentId },
       verify(next: ReviewDraftV1) {
-        const { resolvedAt: _resolvedAt, ...openComment } = draft('resolved').comments[0];
+        const resolvedComment = draft('resolved').comments[0];
+        expect(resolvedComment).toBeDefined();
+        if (resolvedComment === undefined) {
+          throw new Error('Resolved draft comment is required.');
+        }
+        expect(resolvedComment.state).toBe('resolved');
+        if (resolvedComment.state !== 'resolved') {
+          throw new Error('Expected a resolved draft comment.');
+        }
+        const { resolvedAt: _resolvedAt, ...openComment } = resolvedComment;
         expect(next.comments[0]).toEqual({
           ...openComment,
           state: 'open',

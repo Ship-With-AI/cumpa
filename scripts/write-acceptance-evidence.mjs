@@ -11,6 +11,13 @@ const allowedHttpsUrls = new Set([
   'https://github.com/Ship-With-AI/skills.git',
 ]);
 const hostFields = ['platform', 'arch', 'osRelease', 'node', 'npm', 'git', 'playwright', 'browser'];
+const observedRestoreLinkageFinding = Object.freeze({
+  observed: true,
+  path: 'public-global',
+  window: 'post-restore',
+  description: 'The hosted flow reported a successful Restore while installation status remained unverified and the in-product modal reached no terminal state.',
+  regenerationNote: 'The report-only regeneration did not reproduce this observation because the single authorized Restore sign-in was already consumed.',
+});
 
 function fail(message) {
   throw new Error(`acceptance evidence: ${message}`);
@@ -33,7 +40,8 @@ export function deriveAcceptanceStatus(rows) {
     fail('requirement coverage must include ACC-01 through ACC-04');
   }
   for (const row of rows) {
-    if (!row || !['passed', 'blocked'].includes(row.status)) fail('row status must be passed or blocked');
+    if (!row || !['passed', 'blocked', 'partially-blocked'].includes(row.status)) fail('row status must be passed, blocked, or partially-blocked');
+    if (row.status === 'partially-blocked' && row.requirement !== 'ACC-04') fail('only ACC-04 may be partially blocked');
     blockedRow(row);
     for (const nested of supportRows(row)) {
       if (!nested || !['passed', 'blocked'].includes(nested.status)) fail('support-state row status must be passed or blocked');
@@ -49,7 +57,7 @@ export function deriveAcceptanceStatus(rows) {
       if (!sourceRows.some((row) => row.state === state)) return 'partially-blocked';
     }
   }
-  return rows.some((row) => row.status === 'blocked' || supportRows(row).some((nested) => nested.status === 'blocked'))
+  return rows.some((row) => row.status !== 'passed' || supportRows(row).some((nested) => nested.status === 'blocked'))
     ? 'partially-blocked'
     : 'passed';
 }
@@ -112,7 +120,7 @@ function sharedIdentity(path) {
   return path.sharedSupportIdentity?.shared === true || path.sharedSupportIdentity === true;
 }
 
-function limitationText(paths, restoreDefect) {
+function limitationText(paths, restoreFinding) {
   const limitations = [
     'Local process isolation is not fresh-machine proof.',
     'One macOS host platform and one browser were exercised; no operating-system or browser compatibility matrix is claimed.',
@@ -122,9 +130,69 @@ function limitationText(paths, restoreDefect) {
   ];
   if (paths.some(sharedIdentity)) limitations.push('One shared voluntary-support identity was used across all three installation paths; three distinct identities would have required three protected sign-ins. This operator-confirmed narrowing left npm cache, npm configuration, install prefix, browser profile state, checkout separation, and sanitized PATH isolated per path.');
   if (paths.some((path) => path.providerAuthenticationReused)) limitations.push('The isolated OMP profile reused a temporary read-only copy of the operator provider credential and was not independently authenticated.');
-  if (restoreDefect) limitations.push('restoreReportedCompleteWithoutLinkage was observed and remains a product defect outside Phase 7 scope under D-09.');
+  if (restoreFinding) limitations.push('The public-global Restore linkage finding was observed and remains a product defect outside Phase 7 scope under D-09.');
   for (const reason of new Set(paths.flatMap((path) => supportRows(path).filter((state) => state.status === 'blocked').map((state) => state.reason)).filter(Boolean))) limitations.push(`Blocked support-state reason: ${reason}.`);
   return limitations;
+}
+
+function completeInstallProof(proof, identity) {
+  return proof?.packageLabel === '@shipwithai/cumpa@1.5.0'
+    && proof.resolvedTarball === identity.tarballUrl
+    && proof.resolvedIntegrity === identity.npmIntegritySha512
+    && proof.resolvedVersion === '1.5.0'
+    && proof.binaryContainedInIsolatedPrefix === true
+    && proof.npmInstallAttempts >= 1;
+}
+
+function completeBrowserReview(evidence) {
+  return evidence?.assetGraph?.assets === true
+    && evidence.assetGraph.workers === true
+    && evidence.assetGraph.codicon === true
+    && evidence.reviewExport?.relaunch === true
+    && evidence.reviewExport.canonicalV2 === true
+    && evidence.reviewExport.isolatedDrafts === true
+    && evidence.reviewExport.reExport === 'exported'
+    && evidence.reviewExport.exactPatch?.canonicalV3 === true
+    && evidence.reviewExport.exactPatch.grounded === true
+    && evidence.finish?.finish === true;
+}
+
+function completeMarketplaceReview(evidence) {
+  return evidence?.collection === 'ship-with-ai'
+    && evidence.lifecycle?.terminalExit === 0
+    && evidence.canonical?.nonEmpty === true
+    && evidence.canonical.parseable === true
+    && evidence.canonical.kind === 'cumpa/export'
+    && evidence.canonical.summaryMatchesBrowser === true
+    && evidence.canonical.commentMatchesBrowser === true;
+}
+
+function installationOutcome(path, identity) {
+  if (completeInstallProof(path.installProof, identity)
+    && (completeBrowserReview(path.evidence) || path.installSource === 'marketplace' && completeMarketplaceReview(path.evidence))) {
+    return { status: 'passed' };
+  }
+  return {
+    status: 'blocked',
+    reason: path.reason && path.reason !== 'live-entitlement-unavailable' ? path.reason : 'install-review-evidence-incomplete',
+    substituted: false,
+  };
+}
+
+function normalizeRestoreFinding(finding) {
+  if (!finding) return;
+  if (!finding || finding.observed !== true || finding.path !== 'public-global' || finding.window !== 'post-restore'
+    || typeof finding.description !== 'string' || finding.description.length === 0
+    || typeof finding.regenerationNote !== 'string' || finding.regenerationNote.length === 0) {
+    fail('restore linkage finding is invalid');
+  }
+  return {
+    observed: true,
+    path: 'public-global',
+    window: 'post-restore',
+    description: finding.description,
+    regenerationNote: finding.regenerationNote,
+  };
 }
 
 export function buildAcceptanceEvidence(inputs) {
@@ -137,13 +205,20 @@ export function buildAcceptanceEvidence(inputs) {
     if (path?.installProof?.resolvedIntegrity !== undefined && path.installProof.resolvedIntegrity !== identity.npmIntegritySha512) fail('install proof integrity differs from pinned identity');
     for (const state of supportRows(path)) blockedRow(state);
   }
-  const allStates = paths.flatMap((path) => supportRows(path));
+  const installations = paths.map((path) => {
+    const outcome = installationOutcome(path, identity);
+    if (outcome.status === 'blocked') return { ...path, ...outcome };
+    const { reason, substituted, ...installation } = path;
+    return { ...installation, ...outcome };
+  });
+  const allStates = installations.flatMap((path) => supportRows(path));
   const blockedStates = allStates.filter((state) => state.status === 'blocked');
-  const rows = [
-    ...paths.map((path) => ({ requirement: path.requirement, status: path.status, installSource: path.installSource, ...(path.status === 'blocked' ? { reason: path.reason, substituted: false } : {}) })),
-    { requirement: 'ACC-04', status: blockedStates.length > 0 ? 'blocked' : 'passed', ...(blockedStates.length > 0 ? { reason: blockedStates[0].reason, substituted: false } : {}), supportStates: allStates },
+  const requirements = [
+    ...installations.map((path) => ({ requirement: path.requirement, status: path.status, installSource: path.installSource, ...(path.status === 'blocked' ? { reason: path.reason, substituted: false } : {}) })),
+    { requirement: 'ACC-04', status: blockedStates.length > 0 ? 'partially-blocked' : 'passed', supportStates: allStates },
   ];
-  const status = deriveAcceptanceStatus(rows);
+  const status = deriveAcceptanceStatus(requirements);
+  const restoreFinding = normalizeRestoreFinding(inputs.restoreReportedCompleteWithoutLinkage);
   const record = {
     kind: 'cumpa.public-artifact-acceptance/v1',
     status,
@@ -155,14 +230,15 @@ export function buildAcceptanceEvidence(inputs) {
       ranOutsideCheckout: true,
       preservedUserState: true,
       isolatedDimensions: ['npm-cache', 'npm-configuration', 'install-prefix', 'browser-profile-state', 'checkout-separation', 'sanitized-path'],
-      sharedSupportHome: paths.some(sharedIdentity),
+      sharedSupportHome: installations.some(sharedIdentity),
     },
     artifactIdentity: identity,
     marketplaceIdentity: inputs.marketplaceIdentity,
-    installations: paths,
-    restoreReportedCompleteWithoutLinkage: inputs.restoreReportedCompleteWithoutLinkage === true,
+    requirements,
+    installations,
+    ...(restoreFinding ? { restoreReportedCompleteWithoutLinkage: restoreFinding } : {}),
     localArchivePrerequisite: inputs.localArchivePrerequisite === true,
-    limitations: limitationText(paths, inputs.restoreReportedCompleteWithoutLinkage === true),
+    limitations: limitationText(installations, restoreFinding),
   };
   assertNoPrivateValues(record, inputs.extraForbiddenValues ?? []);
   return record;
@@ -212,7 +288,10 @@ function validateReport(report) {
   }
   if (report.status !== undefined && !['passed', 'blocked'].includes(report.status)) fail('report status is invalid');
   if (report.status === 'blocked') blockedRow(report);
-  if (report.restoreReportedCompleteWithoutLinkage === true && source !== 'global') fail('restore linkage observation is only valid for public-global');
+  if (report.restoreReportedCompleteWithoutLinkage !== undefined) {
+    if (source !== 'global') fail('restore linkage observation is only valid for public-global');
+    normalizeRestoreFinding(report.restoreReportedCompleteWithoutLinkage);
+  }
   return source;
 }
 
@@ -267,7 +346,7 @@ function mergeReports(reports, source, requirement, identity) {
     sourceControlUnchanged: reports.every((report) => aggregateSourceControl(report.sourceControlUnchanged)),
     supportStates,
     cleanup: { removedOwnedRoots: reports.every((report) => report.cleanup?.removedOwnedRoots === true) },
-    ...(source === 'global' && reports.some((report) => report.restoreReportedCompleteWithoutLinkage === true) ? { restoreReportedCompleteWithoutLinkage: true } : {}),
+    ...(source === 'global' && reports.some((report) => report.restoreReportedCompleteWithoutLinkage) ? { restoreReportedCompleteWithoutLinkage: normalizeRestoreFinding(reports.find((report) => report.restoreReportedCompleteWithoutLinkage).restoreReportedCompleteWithoutLinkage) } : {}),
     evidence: source === 'marketplace'
       ? { collection: first.marketplace?.collection, lifecycle: first.lifecycle, canonical: first.canonical }
       : { assetGraph: first.assetGraph, reviewExport: first.reviewExport, finish: first.finish },
@@ -275,9 +354,8 @@ function mergeReports(reports, source, requirement, identity) {
 }
 
 const root = resolve(import.meta.dirname, '..');
-// These are immutable v1.5 evidence records, read as fixtures. They live in the milestone
-// archive, which is their permanent home; the working `.planning/phases/` copies are removed
-// at milestone close, so pointing at those would break on every cleanup.
+// Read from the v1.5 milestone archive, not `.planning/phases/`: phase directories are
+// deleted by GSD cleanup after a milestone closes, while the archive is their permanent home.
 const releaseEvidencePath = join(root, '.planning/milestones/v1.5-phases/05-bootstrap-trusted-stable-publication/05-RELEASE-EVIDENCE.json');
 const marketplaceEvidencePath = join(root, '.planning/milestones/v1.5-phases/06-independent-mit-marketplace-skill/06-PUBLICATION-EVIDENCE.json');
 
@@ -302,7 +380,22 @@ function readMarketplaceIdentity() {
   };
 }
 
-export function writeAcceptanceEvidence({ publicReportPaths = [], marketplaceReportPaths = [], outputPath, acceptedAt, extraForbiddenValues = [] }) {
+/**
+ * @param {{
+ *   publicReportPaths?: string[];
+ *   marketplaceReportPaths?: string[];
+ *   outputPath: string;
+ *   acceptedAt: string;
+ *   extraForbiddenValues?: string[];
+ * }} options
+ */
+export function writeAcceptanceEvidence({
+  publicReportPaths = [],
+  marketplaceReportPaths = [],
+  outputPath,
+  acceptedAt,
+  extraForbiddenValues = [],
+}) {
   if (!isAbsolute(outputPath)) fail('output path must be absolute');
   if (existsSync(outputPath)) fail('output path already exists');
   const identity = readPinnedIdentity();
@@ -330,7 +423,7 @@ export function writeAcceptanceEvidence({ publicReportPaths = [], marketplaceRep
     artifactIdentity: identity,
     marketplaceIdentity: readMarketplaceIdentity(),
     paths,
-    restoreReportedCompleteWithoutLinkage: paths.some((path) => path.restoreReportedCompleteWithoutLinkage === true),
+    restoreReportedCompleteWithoutLinkage: observedRestoreLinkageFinding,
     localArchivePrerequisite: true,
     extraForbiddenValues,
   });

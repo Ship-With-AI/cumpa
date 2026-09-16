@@ -1,6 +1,6 @@
 {
   "name": "@shipwithai/cumpa",
-  "version": "1.5.0",
+  "version": "1.5.2",
   "description": "Local-first review of pinned Git comparisons",
   "license": "MIT",
   "repository": {
@@ -48,7 +48,10 @@
     "accept:public-artifact": "vitest run --no-file-parallelism tests/package/public-artifact-acceptance.test.ts",
     "accept:marketplace-profile": "vitest run --no-file-parallelism tests/package/marketplace-profile-acceptance.test.ts",
     "evidence:public-acceptance": "node scripts/write-acceptance-evidence.mjs",
-    "test:performance": "npm run build:runtime && node tests/performance/production-picker.mjs"
+    "test:performance": "npm run build:runtime && node tests/performance/production-picker.mjs",
+    "typecheck:tests:node": "tsc --noEmit --project tsconfig.test.json",
+    "typecheck:tests:web": "tsc --noEmit --project tsconfig.web.test.json",
+    "typecheck:tests": "npm run typecheck:tests:node && npm run typecheck:tests:web"
   },
   "dependencies": {
     "@fastify/static": "9.3.0",

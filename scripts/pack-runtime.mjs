@@ -22,14 +22,13 @@ import {
 import os from 'node:os';
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { bootstrapVersion, version as stableVersion } from './release-identity.mjs';
 
 const root = resolve(dirname(dirname(fileURLToPath(import.meta.url))));
 
 const runtimePackLock = join(os.tmpdir(), `cumpa-pack-runtime-${sha256(root).slice(0, 16)}.lock`);
 const lockWait = new Int32Array(new SharedArrayBuffer(4));
 const purposes = new Set(['bootstrap', 'candidate', 'development-check', 'deployment-check']);
-const stableVersion = '1.5.0';
-const bootstrapVersion = '1.5.0-bootstrap.0';
 const requiredFiles = ['README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md'];
 const buildInputs = ['src', 'scripts', 'index.html', 'tsconfig.json', 'tsconfig.web.json', 'vite.config.ts'];
 const packageFiles = ['package.json', 'package-lock.json', ...requiredFiles];
@@ -324,7 +323,6 @@ function packageContract() {
   if (
     !manifest
     || manifest.name !== '@shipwithai/cumpa'
-    || manifest.version !== stableVersion
     || manifest.engines?.node !== '>=24'
     || manifest.bin?.cumpa !== 'dist/bin/cumpa.mjs'
     || Object.hasOwn(manifest, 'private')

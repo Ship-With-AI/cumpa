@@ -1,12 +1,10 @@
 import { defineConfig, devices } from '@playwright/test';
+import { custodyGatedSpecs } from './playwright.runtime-artifact.config.js';
 
 export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.spec.ts',
-  testIgnore: [
-    '**/e2e/package-assets.spec.ts',
-    '**/e2e/agent-ready-export.spec.ts',
-  ],
+  testIgnore: custodyGatedSpecs,
   fullyParallel: false,
   forbidOnly: true,
   retries: 0,

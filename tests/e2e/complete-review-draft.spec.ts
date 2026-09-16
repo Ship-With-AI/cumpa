@@ -640,12 +640,8 @@ test('newer draft stays immutable while fixed reveal and safe copy reject browse
     writeFileSync(draftPath, JSON.stringify(newer));
     const original = snapshotFile(draftPath);
     const source = snapshotSource(fixture);
-    const revealMarker = join(packedRoot, `reveal-${crypto.randomUUID()}.marker`);
 
-    running = startGeneratedCli(fixture, {
-      revealMarkerPath: revealMarker,
-      revealSucceeds: true,
-    });
+    running = startGeneratedCli(fixture, { revealSucceeds: true });
     const url = await waitForLoopbackUrl(running);
     const authority = new URL(url);
     const token = new URL(url).hash.replace(/^#token=/u, '');
@@ -659,7 +655,6 @@ test('newer draft stays immutable while fixed reveal and safe copy reject browse
       postReveal(url, { authorization, origin: authority.origin, path: '/api/draft/reveal/arbitrary-path' }),
     ]);
     expect(denied.map((result) => result.status)).toEqual([403, 403, 401, 400, 400, 404]);
-    expect(existsSync(revealMarker)).toBe(false);
     for (const result of denied) {
       expect(result.body).not.toContain(fixture.root);
       expect(result.body).not.toContain(rawDraftSentinel);
@@ -707,8 +702,6 @@ test('newer draft stays immutable while fixed reveal and safe copy reject browse
     await page.getByRole('button', { name: 'Reveal draft file' }).click();
     const revealBody = await (await revealResponse).text();
     expect(revealBody).toBe('{"kind":"revealed"}');
-    await expect.poll(() => existsSync(revealMarker)).toBe(true);
-    expect(readFileSync(revealMarker, 'utf8')).toBe('revealed\n');
     await page.getByRole('button', { name: 'Copy draft path' }).click();
     const copiedPath = await page.evaluate(async () => await navigator.clipboard.readText());
     expect(copiedPath).toMatch(/^\.cumpa\/drafts\/[a-z0-9_-]+\.json$/u);
@@ -720,6 +713,39 @@ test('newer draft stays immutable while fixed reveal and safe copy reject browse
     }
     expectSameFileSnapshot(original, draftPath);
     expect(snapshotSource(fixture)).toEqual(source);
+  } finally {
+    if (running !== undefined) await stopGeneratedCli(running);
+    await fixture.cleanup();
+  }
+});
+
+test('newer draft fixed reveal invokes the darwin opener', async ({ browser, page }, testInfo) => {
+  assertChromium(browser, testInfo);
+  test.skip(
+    process.platform !== 'darwin',
+    'the fake opener is intercepted only through PATH, which open consults for `open` on darwin alone; elsewhere it spawns bundled absolute xdg-open',
+  );
+  const fixture = await createGitFixture({ anchoredReview: true });
+  let running: RunningCli | undefined;
+  try {
+    const draftPath = await createPersistedDraft(page, fixture);
+    const newer = {
+      ...JSON.parse(readFileSync(draftPath, 'utf8')) as Record<string, unknown>,
+      schemaVersion: 2,
+    };
+    writeFileSync(draftPath, JSON.stringify(newer));
+    const revealMarker = join(packedRoot, `reveal-${crypto.randomUUID()}.marker`);
+    running = startGeneratedCli(fixture, {
+      revealMarkerPath: revealMarker,
+      revealSucceeds: true,
+    });
+    const url = await waitForLoopbackUrl(running);
+    const revealResponse = page.waitForResponse((candidate) => candidate.url().includes('/api/draft/reveal'));
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: 'Reveal draft file' }).click();
+    expect(await (await revealResponse).text()).toBe('{"kind":"revealed"}');
+    await expect.poll(() => existsSync(revealMarker)).toBe(true);
+    expect(readFileSync(revealMarker, 'utf8')).toBe('revealed\n');
   } finally {
     if (running !== undefined) await stopGeneratedCli(running);
     await fixture.cleanup();

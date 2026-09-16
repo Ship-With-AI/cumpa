@@ -1,11 +1,18 @@
 import { resolve } from 'node:path';
 import type { ServerResponse } from 'node:http';
+import type {
+  AnchorVerificationDto,
+  ReviewDraftCommentV1,
+} from '../../src/contracts/draft.js';
+
 
 import { expect, test, type Page } from '@playwright/test';
 import {
   DraftLoadResponseSchema,
   DraftMutationRequestSchema,
   DraftMutationResultSchema,
+  type DraftMutationRequest,
+  type SessionResponse,
 } from '../../src/contracts/api.js';
 import { createServer, type ViteDevServer } from 'vite';
 import { canonicalRoot } from '../helpers/canonical-root.js';
@@ -19,7 +26,7 @@ const secondFileId = `file_${'b'.repeat(43)}`;
 const token = 't'.repeat(43);
 let server: ViteDevServer | undefined;
 let origin = '';
-let canonicalComments: unknown[] = [];
+let canonicalComments: WorkspaceComment[] = [];
 let contentRequests: string[] = [];
 type DelayedMutationOutcome = 'accepted' | 'persistenceFailure' | 'revisionConflict';
 
@@ -29,6 +36,10 @@ type DelayedMutation = Readonly<{
   release: () => void;
   notifyReceived: () => void;
   waitForRelease: () => Promise<void>;
+}>;
+
+type WorkspaceComment = ReviewDraftCommentV1 & Readonly<{
+  verification?: AnchorVerificationDto;
 }>;
 
 let delayedMutation: DelayedMutation | undefined;
@@ -52,7 +63,7 @@ const changedFirstText = firstText.replace('export const changed = 2;', 'export 
 const secondText = firstText.replace('export const changed = 2;', 'export const secondChanged = 2;');
 const changedSecondText = secondText.replace('export const secondChanged = 2;', 'export const secondChanged = 3;');
 
-let session = {
+let session: SessionResponse = {
   base: { label: 'base', oid: 'a'.repeat(40) },
   head: { label: 'head', oid: 'b'.repeat(40) },
   mergeBaseOid: 'c'.repeat(40),
@@ -99,7 +110,7 @@ function json(response: ServerResponse, body: unknown, statusCode = 200): void {
   response.end(JSON.stringify(body));
 }
 
-function draftSnapshot(comments: readonly unknown[]) {
+function draftSnapshot(comments: readonly WorkspaceComment[]) {
   return {
     schemaVersion: 1,
     comparison: {
@@ -113,7 +124,7 @@ function draftSnapshot(comments: readonly unknown[]) {
   };
 }
 
-function draftView(comments: readonly object[]) {
+function draftView(comments: readonly WorkspaceComment[]) {
   const draft = draftSnapshot(comments);
   return {
     ...draft,
@@ -126,12 +137,18 @@ function draftView(comments: readonly object[]) {
   };
 }
 
-function draftLoad(comments: readonly object[]) {
+function draftLoad(comments: readonly WorkspaceComment[]) {
   return DraftLoadResponseSchema.parse({
     kind: 'current',
     path: '.cumpa/drafts/anchored-workspace.json',
     draft: draftView(comments),
   });
+}
+
+function isDeleteCommentMutation(
+  mutation: DraftMutationRequest,
+): mutation is Extract<DraftMutationRequest, Readonly<{ type: 'deleteComment' }>> {
+  return mutation.type === 'deleteComment';
 }
 
 function delayNextMutation(outcome: DelayedMutationOutcome): DelayedMutation {
@@ -187,6 +204,8 @@ async function startAppServer(): Promise<string> {
               return;
             }
 
+            const request = mutation.data;
+
             const delayed = delayedMutation;
             if (delayed !== undefined) {
               delayedMutation = undefined;
@@ -220,9 +239,9 @@ async function startAppServer(): Promise<string> {
               return;
             }
 
-            if (mutation.data.type === 'deleteComment') {
+            if (isDeleteCommentMutation(request)) {
               canonicalComments = canonicalComments.filter(
-                (comment) => typeof comment !== 'object' || comment === null || !('id' in comment) || comment.id !== mutation.data.commentId,
+                (comment) => typeof comment !== 'object' || comment === null || !('id' in comment) || comment.id !== request.commentId,
               );
               json(response, DraftMutationResultSchema.parse({
                 kind: 'accepted',
@@ -340,7 +359,7 @@ type MonacoGeometry = Readonly<{
 }>;
 
 async function readMonacoGeometry(page: Page, targetText: string): Promise<MonacoGeometry> {
-  return page.evaluate((text) => {
+  return page.evaluate<MonacoGeometry, string>((text) => {
     const canvasBounds = document.querySelector('.diff-workspace__canvas')?.getBoundingClientRect();
     const rawRect = (element: Element | null): GeometryRect | null => {
       if (element === null) return null;
@@ -673,6 +692,14 @@ test('Phase 07 inline conversation states', async ({ page }) => {
   await expect(inlineAccepted.locator('.review-state-badge svg[aria-hidden="true"]')).toHaveCount(2);
   await expect(page.locator('.monaco-anchor-zone--composer')).toHaveCount(1);
   await expect(page.locator('.monaco-anchor-zone--spacer')).toHaveCount(1);
+  await expect.poll(async () => await page.evaluate(() => {
+    const composerZone = document.querySelector('.monaco-anchor-zone--composer');
+    const spacerZone = document.querySelector('.monaco-anchor-zone--spacer');
+    if (composerZone === null || spacerZone === null) return false;
+    const composerRect = composerZone.getBoundingClientRect();
+    const spacerRect = spacerZone.getBoundingClientRect();
+    return Math.abs(composerRect.top - spacerRect.top) <= 1 && composerRect.height === spacerRect.height;
+  })).toBe(true);
   const acceptedGeometry = await page.evaluate(() => {
     const rect = (element: Element): DOMRect => element.getBoundingClientRect();
     const card = document.querySelector('.monaco-anchor-zone--composer .inline-accepted-comment');
@@ -698,14 +725,14 @@ test('Phase 07 inline conversation states', async ({ page }) => {
       nextCodeTop: nextCode?.top ?? null,
     };
   });
-  expect(acceptedGeometry).not.toBeNull();
-  expect(acceptedGeometry!.cardHeight).toBeGreaterThan(280);
-  expect(acceptedGeometry!.zoneTopDelta).toBeLessThanOrEqual(1);
-  expect(acceptedGeometry!.composerHeight).toBe(acceptedGeometry!.spacerHeight);
-  expect(acceptedGeometry!.cardBottom).toBeLessThanOrEqual(acceptedGeometry!.composerBottom + 1);
-  expect(acceptedGeometry!.nextCodeTop).not.toBeNull();
-  expect(acceptedGeometry!.nextCodeTop!).toBeGreaterThanOrEqual(acceptedGeometry!.composerBottom - 1);
-  expect(acceptedGeometry!.nextCodeTop!).toBeGreaterThanOrEqual(acceptedGeometry!.cardBottom - 1);
+  if (acceptedGeometry === null) throw new Error('expected accepted comment geometry');
+  expect(acceptedGeometry.cardHeight).toBeGreaterThan(280);
+  expect(acceptedGeometry.zoneTopDelta).toBeLessThanOrEqual(1);
+  expect(acceptedGeometry.composerHeight).toBe(acceptedGeometry.spacerHeight);
+  expect(acceptedGeometry.cardBottom).toBeLessThanOrEqual(acceptedGeometry.composerBottom + 1);
+  expect(acceptedGeometry.nextCodeTop).not.toBeNull();
+  expect(acceptedGeometry.nextCodeTop).toBeGreaterThanOrEqual(acceptedGeometry.composerBottom - 1);
+  expect(acceptedGeometry.nextCodeTop).toBeGreaterThanOrEqual(acceptedGeometry.cardBottom - 1);
 
   await expect(inlineAccepted.getByText('Verified', { exact: true })).toBeVisible();
 
@@ -1163,7 +1190,16 @@ test('preserves no-reflow Monaco semantic channels at every phase viewport', asy
     const anchorLine = page.locator('.monaco-anchor-line').first();
     await expect(anchorLine).toHaveCSS('border-left-width', '0px');
     await expect(anchorLine).toHaveCSS('box-shadow', `${toRootRgb('--interactive-accent')} 3px 0px 0px 0px inset`);
-    const anchored = await readMonacoGeometry(page, targetText);
+    let anchored: MonacoGeometry | undefined;
+    await expect.poll(async () => {
+      const candidate = await readMonacoGeometry(page, targetText);
+      if (candidate.zones.length !== 2) return false;
+      if (Math.abs(candidate.zones[0].y - candidate.zones[1].y) > 1) return false;
+      if (candidate.zones[0].height !== candidate.zones[1].height) return false;
+      anchored = candidate;
+      return true;
+    }).toBe(true);
+    if (anchored === undefined) throw new Error('expected settled anchor geometry');
     expectAnchoringNotToReflow(before, anchored);
     expect(anchored.zones).toHaveLength(2);
     expect(Math.abs(anchored.zones[0].y - anchored.zones[1].y)).toBeLessThanOrEqual(1);
@@ -1175,8 +1211,8 @@ test('preserves no-reflow Monaco semantic channels at every phase viewport', asy
     await page.keyboard.press('ArrowRight');
     await page.keyboard.up('Shift');
     await hoverMonacoLine(page, 'head', targetText);
+    await expect.poll(async () => await readMonacoGeometry(page, targetText)).toEqual(anchored);
     const semanticStates = await readMonacoGeometry(page, targetText);
-    expect(semanticStates).toEqual(anchored);
     expect(semanticStates.document.scrollWidth).toBeLessThanOrEqual(semanticStates.document.clientWidth);
   }
 });

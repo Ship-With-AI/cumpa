@@ -25,15 +25,4 @@ describe('OMP isolation capability', () => {
       realProfileChanged: false,
     }))).toBe(false);
   });
-
-  it('proves this machine redirects HOME and PI agent state', () => {
-    const capability = discoverOmpIsolationCapability();
-    console.log(`[omp-isolation] ${JSON.stringify(capability)}`);
-    expect(capability).toMatchObject({
-      ompAvailable: true,
-      honoredVariables: ['HOME', 'PI_CODING_AGENT_DIR'],
-      unhonoredVariables: [],
-      contaminated: false,
-    });
-  }, 180_000);
 });

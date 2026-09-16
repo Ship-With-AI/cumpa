@@ -1,6 +1,6 @@
 # Cumpa distribution operations
 
-This is the maintainer evidence policy for `@shipwithai/cumpa@1.5.0`, not a release receipt. The selected source repository is `Ship-With-AI/cumpa`; its Issues tracker is the sole selected problem/question channel. Cumpa uses the standard MIT open-source license.
+This is the maintainer evidence policy for `@shipwithai/cumpa`, not a release receipt. The selected source repository is `Ship-With-AI/cumpa`; its Issues tracker is the sole selected problem/question channel. Cumpa uses the standard MIT open-source license.
 
 ## Phase 3 — legal and public-source gates
 
@@ -64,7 +64,7 @@ GitHub `production/SUPABASE_PROJECT_REF` remains authoritative. Derive the canon
 
 Under explicit setup authority, use a private one-operation ownership receipt. Require no unresolved operation and no nonterminal competing release run. Acquire the absent `production/CUMPA_RELEASE_SOURCE_SHA` variable with native create semantics, bind it to P, and recheck absence before setting the transient masked `production/CUMPA_RELEASE_BUILD_ORIGIN` secret through stdin. Do not overwrite unknown resources or treat uncertain ownership as permission to delete them. This secret is temporary transport, not a second permanent source.
 
-The input-free `.github/workflows/publish-npm.yml` uses noncanceling concurrency group `cumpa-npm-stable-1.5.0`. Its candidate job's first executable step checks the authorized source variable against `GITHUB_SHA` before checkout, installation or origin use. Only producer/scanner/acceptance steps receive the masked origin. The Darwin ARM64 GitHub-hosted candidate job uses `production`, contents-read permission, Node 24, npm 11.19.1 and a 45-minute execution limit.
+The input-free `.github/workflows/publish-npm.yml` uses noncanceling concurrency group `cumpa-npm-stable`. It serializes stable publishes of any version, a strictly stronger boundary than the former same-version group: a newer dispatch queues behind an in-flight stable run instead of racing the mutable `latest` dist-tag. Its candidate job's first executable step checks the authorized source variable against `GITHUB_SHA` before checkout, installation or origin use. Only producer/scanner/acceptance steps receive the masked origin. The Darwin ARM64 GitHub-hosted candidate job uses `production`, contents-read permission, Node 24, npm 11.19.1 and a 45-minute execution limit.
 
 Dispatch/build/upload needs its own authority. If production review is required, approve only the exact candidate-build job, never a Supabase deployment or the publication environment under that authority. Monitor the candidate job independently; watching the entire run would wait on the deliberately blocked publisher.
 
@@ -88,7 +88,7 @@ Preserve eligible automatic provenance, but do not infer it from authentication,
 
 Use supported npm 11.19.1 to create a fresh private exact-version audit installation with both its actual installed node and matching lockfile. Only then run `npm audit signatures --json --include-attestations`. An empty or lock-only tree, missing target bundle or failed audit proves nothing. Inspect npm's actual cryptographically verified Cumpa SLSA bundle, allowing its separate verified registry publish attestation, and require exact subject, repository, source commit, workflow, ref, event, hosted runner, run and attempt agreement. Record bounded expected/observed/pass comparisons. Do not claim a SLSA level, exhaustive input capture or an unobserved native platform matrix.
 
-Prove a separate clean global install exposes the generated `cumpa --version`, then run literal `npx --yes @shipwithai/cumpa@1.5.0 --version` under another empty cache/prefix. Neither path may fall back to a local archive, checkout dist or shared cache. Write the successful public verification receipt only after scratch cleanup succeeds.
+Prove a separate clean global install exposes the generated `cumpa --version`, then run literal `npx --yes @shipwithai/cumpa@<the exact released version> --version` under another empty cache/prefix. Neither path may fall back to a local archive, checkout dist or shared cache. Write the successful public verification receipt only after scratch cleanup succeeds.
 
 A timeout, failed/absent/mismatched attestation, version collision, byte mismatch, consumer failure or ambiguous publication result stops the success path. Reconcile read-only and retain the actual bounded outcome; do not retry publication, rebuild, rerun, unpublish or substitute the old artifact. Canonical evidence excludes credentials, raw origin/project reference, private custody locations and unbounded provider payloads.
 

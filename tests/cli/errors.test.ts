@@ -12,6 +12,7 @@ import {
 } from '../../src/cli/picker.js';
 import type { PinnedComparison } from '../../src/contracts/comparison.js';
 import type { SourceCandidate } from '../../src/domain/source.js';
+import type { SourceDiscovery } from '../../src/git/candidates.js';
 
 const baseOid = '1'.repeat(40);
 const headOid = '2'.repeat(40);
@@ -59,10 +60,13 @@ const comparison: PinnedComparison = {
 
 function sourceDiscovery(
   initialCandidates: readonly SourceCandidate[],
-) {
+  searchBranches: SourceDiscovery['searchBranches'] = async () => [],
+): SourceDiscovery {
   return {
     initialCandidates,
-    searchBranches: async () => [],
+    candidateEnrichment: Promise.resolve([]),
+    startCandidateEnrichment: () => {},
+    searchBranches,
   };
 }
 
@@ -146,7 +150,7 @@ describe('pre-session terminal failure ownership', () => {
           launchComparison,
           output,
           setExitStatus,
-        } as RunCliDependencies,
+        },
       );
 
       expect(output).toHaveBeenCalledExactlyOnceWith(message);
@@ -195,7 +199,7 @@ describe('pre-session terminal failure ownership', () => {
           launchComparison,
           output,
           setExitStatus,
-        } as RunCliDependencies,
+        },
       );
 
       expect(output).toHaveBeenCalledExactlyOnceWith(message);
@@ -245,7 +249,7 @@ describe('pre-session terminal failure ownership', () => {
         confirmComparison: async () => 'launch',
         launchComparison: async () => undefined,
         output,
-      } as RunCliDependencies,
+      },
     );
 
     expect(output).toHaveBeenCalledExactlyOnceWith(message);
@@ -301,7 +305,7 @@ describe('pre-session terminal failure ownership', () => {
         confirmComparison: async () => 'launch',
         launchComparison: async () => undefined,
         output,
-      } as RunCliDependencies,
+      },
     );
 
     expect(output).toHaveBeenCalledExactlyOnceWith(message);
@@ -346,7 +350,7 @@ describe('pre-session terminal failure ownership', () => {
         confirmComparison: async () => 'launch',
         launchComparison,
         output,
-      } as RunCliDependencies,
+      },
     );
 
     expect(output).toHaveBeenCalledExactlyOnceWith(message);
@@ -439,16 +443,13 @@ describe('pre-session terminal failure ownership', () => {
     await runCli(
       { cwd: '/repo' },
       {
-        discoverCandidates: (async () => {
+        discoverCandidates: async () => {
           discoveries += 1;
-          return {
-            initialCandidates: [baseCandidate],
-            searchBranches: async (term) => {
-              expect(term).toBe(headCandidate.label);
-              return [freshHead];
-            },
-          };
-        }) as never,
+          return sourceDiscovery([baseCandidate], async (term: string) => {
+            expect(term).toBe(headCandidate.label);
+            return [freshHead];
+          });
+        },
         pickSources: async (options) => {
           pickCalls.push(options);
           return attempts === 0
@@ -470,7 +471,7 @@ describe('pre-session terminal failure ownership', () => {
         confirmComparison: async () => 'launch',
         launchComparison: async () => undefined,
         output: vi.fn(),
-      } as RunCliDependencies,
+      },
     );
 
     expect(discoveries).toBe(2);
@@ -494,13 +495,10 @@ describe('pre-session terminal failure ownership', () => {
     await runCli(
       { cwd: '/repo' },
       {
-        discoverCandidates: (async () => {
+        discoverCandidates: async () => {
           discoveries += 1;
-          return {
-            initialCandidates: [baseCandidate],
-            searchBranches: async () => [],
-          };
-        }) as never,
+          return sourceDiscovery([baseCandidate]);
+        },
         pickSources: async (options) => {
           pickCalls.push(options);
           return { base: baseCandidate, head: headCandidate };
@@ -520,7 +518,7 @@ describe('pre-session terminal failure ownership', () => {
         confirmComparison: async () => 'launch',
         launchComparison: async () => undefined,
         output: vi.fn(),
-      } as RunCliDependencies,
+      },
     );
 
     expect(discoveries).toBe(2);

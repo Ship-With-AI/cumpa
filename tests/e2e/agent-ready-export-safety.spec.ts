@@ -9,6 +9,28 @@ import { runGeneratedExport, runGeneratedRecovery, sampleGeneratedStablePair } f
 import { createDirtyGitFixture } from '../helpers/git-fixture.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
 import { createServer, type ViteDevServer } from 'vite';
+import type { FinishReviewResult } from '../../src/contracts/api.js';
+
+type AttachedLifecycle = 'waiting' | 'waitingDisconnected' | 'finishing' | 'completed' | 'retryableFailure' | 'terminalFailure';
+
+type LifecycleHarnessContext = Readonly<{
+  readonly isExactPatch?: boolean;
+  readonly summaryBuffer?: string;
+  readonly conflict?: Readonly<{
+    readonly kind: 'revisionConflict';
+    readonly expectedRevision: number;
+    readonly actualRevision: number;
+  }> | null;
+}>;
+
+declare global {
+  var __setAttachedLifecycle: (
+    next: AttachedLifecycle,
+    nextResult?: FinishReviewResult,
+    context?: LifecycleHarnessContext,
+  ) => void;
+}
+
 
 let lifecycleServer: ViteDevServer;
 let lifecycleUrl: string;

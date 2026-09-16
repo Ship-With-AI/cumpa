@@ -6,6 +6,7 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 import { expect, test } from 'vitest';
 import { z } from 'zod';
+import { bootstrapVersion, version as stableVersion } from '../../scripts/release-identity.mjs';
 
 import { readRuntimeArtifact, rehashRuntimeArtifact } from '../helpers/runtime-artifact.js';
 import { assertSourceControlUnchanged, captureSourceControlSnapshot } from '../helpers/source-control-snapshot.js';
@@ -25,8 +26,8 @@ type SelectedProfile = 'stable' | 'bootstrap';
 
 function profileIdentity(profile: 'bootstrap' | undefined) {
   return profile === 'bootstrap'
-    ? { profile: 'bootstrap' as const, purpose: 'bootstrap' as const, version: '1.5.0-bootstrap.0' as const }
-    : { profile: 'stable' as const, purpose: 'candidate' as const, version: '1.5.0' as const };
+    ? { profile: 'bootstrap' as const, purpose: 'bootstrap' as const, version: bootstrapVersion }
+    : { profile: 'stable' as const, purpose: 'candidate' as const, version: stableVersion };
 }
 
 function packageSchema(version: string) {
@@ -117,7 +118,10 @@ function parseScenarios(
     support: z.strictObject({ unavailable: passed, dismissed: passed, unrestricted: passed }),
     exactPatch: z.strictObject({ canonicalV3: passed, grounded: passed }),
     native: z.strictObject({ observedReExport: z.literal(native), fallback: z.literal('reExportUnsupported') }),
-    sourceControl: z.strictObject({ unchanged: passed }),
+    sourceControl: z.strictObject({
+      unchanged: passed,
+      scenarios: z.array(z.strictObject({ name: z.string().min(1), unchanged: z.literal(true) })).nonempty(),
+    }),
     checks: z.strictObject({ finish: passed }),
   });
   const assets = assetSchema.parse(assetInput);
@@ -229,7 +233,7 @@ test('accepts one supplied candidate through isolated installed browser and Fini
 });
 
 test.for(['stable', 'bootstrap'] as const)('enforces trusted %s scenario identity across passed and substituted reports', (profile) => {
-  const version = profile === 'bootstrap' ? '1.5.0-bootstrap.0' : '1.5.0';
+  const version = profile === 'bootstrap' ? bootstrapVersion : stableVersion;
   const selectedProfile = profile === 'bootstrap' ? 'bootstrap' : undefined;
   const digest = 'a'.repeat(64);
   const expected = {
@@ -268,7 +272,7 @@ test.for(['stable', 'bootstrap'] as const)('enforces trusted %s scenario identit
     support: { unavailable: true, dismissed: true, unrestricted: true },
     exactPatch: { canonicalV3: true, grounded: true },
     native: { observedReExport: native, fallback: 'reExportUnsupported' },
-    sourceControl: { unchanged: true },
+    sourceControl: { unchanged: true, scenarios: [{ name: 'review', unchanged: true }] },
     checks: { finish: true },
   };
   const parsed = parseScenarios('current-run', expected, assets, review, selectedProfile);

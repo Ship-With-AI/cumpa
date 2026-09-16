@@ -31,6 +31,12 @@ type PrototypeState = {
   fileReadySequence: number | undefined;
 };
 
+declare global {
+  interface Window {
+    __monacoStabilityPrototype: PrototypeState;
+  }
+}
+
 async function startPrototypeServer(): Promise<string> {
   server = await createServer({
     configFile: resolve(repositoryRoot, 'vite.config.ts'),
@@ -61,9 +67,7 @@ async function startPrototypeServer(): Promise<string> {
 }
 
 async function readState(page: Page): Promise<PrototypeState> {
-  return page.evaluate(() => (window as Window & {
-    __monacoStabilityPrototype: PrototypeState;
-  }).__monacoStabilityPrototype);
+  return page.evaluate<PrototypeState>(() => window.__monacoStabilityPrototype);
 }
 
 async function openPrototype(page: Page): Promise<void> {
@@ -154,7 +158,7 @@ test('5. follows deterministic file order and public previous/next change contro
   await expect(page.getByTestId('monaco-metrics')).toContainText('fixture-a · typescript');
 });
 
-test('6. restores A → B → A composer text, focus side, and model state after readiness', async ({ page }) => {
+test('6. restores A → B → A composer text, anchor, and model state after readiness', async ({ page }) => {
   await openPrototype(page);
   await page.getByRole('button', { name: 'Add base comment' }).click();
   await page.locator('textarea[aria-label=\"Comment\"]').fill('preserved composer text');
