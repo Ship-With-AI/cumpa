@@ -15,6 +15,7 @@ function session(overrides: Record<string, unknown> = {}) {
     payment_status: "paid",
     currency: "usd",
     amount_total: 4999,
+    amount_subtotal: 4999,
     customer: "cus_server_owned",
     payment_intent: "pi_server_owned",
     metadata: { user_id: userId, installation_id: installationId, intent_id: "22222222-2222-4222-8222-222222222222" },
@@ -69,6 +70,22 @@ Deno.test("valid signed paid exact-product event settles through one atomic auth
   }]));
 });
 
+Deno.test("a promotion-code discount that keeps the exact list subtotal still settles", async () => {
+  const deps = dependencies({ stripe: { webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) }, checkout: { sessions: { retrieve: async () => session({ amount_total: 3999 }) } } } });
+  const response = await handleStripeWebhookRequest(request(), deps);
+
+  assert(response.status === 200);
+  assert(deps.calls.length === 1 && deps.calls[0]?.name === "fulfill_checkout_session");
+});
+
+Deno.test("a 100%-off session has no PaymentIntent to audit and is rejected before settlement", async () => {
+  const deps = dependencies({ stripe: { webhooks: { constructEventAsync: async () => ({ id: "evt_server_owned", type: "checkout.session.completed", data: { object: { id: "cs_server_owned" } } }) }, checkout: { sessions: { retrieve: async () => session({ amount_total: 0 }) } } } });
+  const response = await handleStripeWebhookRequest(request(), deps);
+
+  assert(response.status === 400);
+  assert(deps.calls.length === 0);
+});
+
 Deno.test("authority settlement preserves the Supabase client receiver", async () => {
   const service = {
     active: true,
@@ -99,6 +116,7 @@ Deno.test("irrelevant events and every non-authoritative product fact are ignore
     { payment_status: "unpaid" },
     { currency: "eur" },
     { amount_total: 5000 },
+    { amount_subtotal: 3999 },
     { line_items: { data: [{ price: { id: "price_wrong" }, quantity: 1 }], has_more: false } },
     { line_items: { data: [{ price: { id: "price_4999" }, quantity: 2 }], has_more: false } },
     { metadata: { user_id: "not-a-uuid", installation_id: installationId, intent_id: "22222222-2222-4222-8222-222222222222" } },
