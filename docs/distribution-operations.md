@@ -1,6 +1,6 @@
-# Cumpa distribution operations
+# Cumpà distribution operations
 
-This is the maintainer evidence policy for `@shipwithai/cumpa`, not a release receipt. The selected source repository is `Ship-With-AI/cumpa`; its Issues tracker is the sole selected problem/question channel. Cumpa uses the standard MIT open-source license.
+This is the maintainer evidence policy for `@shipwithai/cumpa`, not a release receipt. The selected source repository is `Ship-With-AI/cumpa`; its Issues tracker is the sole selected problem/question channel. Cumpà uses the standard MIT open-source license.
 
 ## Phase 3 — legal and public-source gates
 
@@ -86,7 +86,7 @@ The publisher downloads the exact artifact ID, independently checks archive SHA-
 
 Preserve eligible automatic provenance, but do not infer it from authentication, an exit code or a UI badge. Independently fetch exact public registry metadata and archive bytes and compare length, SHA-256, npm SHA-1 and SHA-512 with the approved CI candidate.
 
-Use supported npm 11.19.1 to create a fresh private exact-version audit installation with both its actual installed node and matching lockfile. Only then run `npm audit signatures --json --include-attestations`. An empty or lock-only tree, missing target bundle or failed audit proves nothing. Inspect npm's actual cryptographically verified Cumpa SLSA bundle, allowing its separate verified registry publish attestation, and require exact subject, repository, source commit, workflow, ref, event, hosted runner, run and attempt agreement. Record bounded expected/observed/pass comparisons. Do not claim a SLSA level, exhaustive input capture or an unobserved native platform matrix.
+Use supported npm 11.19.1 to create a fresh private exact-version audit installation with both its actual installed node and matching lockfile. Only then run `npm audit signatures --json --include-attestations`. An empty or lock-only tree, missing target bundle or failed audit proves nothing. Inspect npm's actual cryptographically verified Cumpà SLSA bundle, allowing its separate verified registry publish attestation, and require exact subject, repository, source commit, workflow, ref, event, hosted runner, run and attempt agreement. Record bounded expected/observed/pass comparisons. Do not claim a SLSA level, exhaustive input capture or an unobserved native platform matrix.
 
 Prove a separate clean global install exposes the generated `cumpa --version`, then run literal `npx --yes @shipwithai/cumpa@<the exact released version> --version` under another empty cache/prefix. Neither path may fall back to a local archive, checkout dist or shared cache. Write the successful public verification receipt only after scratch cleanup succeeds.
 
